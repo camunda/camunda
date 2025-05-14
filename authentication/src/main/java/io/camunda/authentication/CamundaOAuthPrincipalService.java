@@ -79,9 +79,10 @@ public class CamundaOAuthPrincipalService {
             .collect(Collectors.toSet());
 
     final var roles = roleServices.getRolesByMappingsAndGroups(mappingIds, groups);
+    final var roleIds = roles.stream().map(RoleEntity::roleId).collect(Collectors.toSet());
 
     final var tenants =
-        tenantServices.getTenantsByMappingsAndGroups(mappingIds, groups).stream()
+        tenantServices.getTenantsByMappingsAndGroupsAndRoles(mappingIds, groups, roleIds).stream()
             .map(TenantDTO::fromEntity)
             .toList();
 

@@ -215,8 +215,8 @@ public class CamundaOAuthPrincipalServiceTest {
 
       final var tenantT1 = new TenantEntity(100L, "t1", "Tenant One", "First Tenant");
       final var groupTenant = new TenantEntity(200L, "tenant1", "Tenant One", "First Tenant");
-      when(tenantServices.getTenantsByMappingsAndGroups(
-              Set.of("test-id", "test-id-2"), Set.of("group-g1")))
+      when(tenantServices.getTenantsByMappingsAndGroupsAndRoles(
+              Set.of("test-id", "test-id-2"), Set.of("group-g1"), Set.of("roleR1", "roleGroup")))
           .thenReturn(List.of(tenantT1, groupTenant));
 
       when(authorizationServices.getAuthorizedApplications(
@@ -254,8 +254,8 @@ public class CamundaOAuthPrincipalServiceTest {
       final var tenantEntity1 = new TenantEntity(100L, "t1", "Tenant One", "First Tenant");
       final var tenantEntity2 = new TenantEntity(200L, "t2", "Tenant Two", "Second Tenant");
 
-      when(tenantServices.getTenantsByMappingsAndGroups(
-              Set.of("map-1", "map-2"), Set.of("group-g1")))
+      when(tenantServices.getTenantsByMappingsAndGroupsAndRoles(
+              Set.of("map-1", "map-2"), Set.of("group-g1"), Set.of("roleR1")))
           .thenReturn(List.of(tenantEntity1, tenantEntity2));
 
       final var roleR1 = new RoleEntity(10L, "roleR1", "Role R1", "R1 description");

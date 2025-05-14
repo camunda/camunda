@@ -66,6 +66,7 @@ public class CamundaUserDetailsService implements UserDetailsService {
             .collect(Collectors.toSet());
 
     final var roles = roleServices.getRolesByUserAndGroups(username, groups);
+    final var roleIds = roles.stream().map(RoleEntity::roleId).collect(Collectors.toSet());
 
     final var authorizedApplications =
         authorizationServices.getAuthorizedApplications(
@@ -73,7 +74,7 @@ public class CamundaUserDetailsService implements UserDetailsService {
                 .collect(Collectors.toSet()));
 
     final var tenants =
-        tenantServices.getTenantsByUserAndGroups(username, groups).stream()
+        tenantServices.getTenantsByUserAndGroupsAndRoles(username, groups, roleIds).stream()
             .map(TenantDTO::fromEntity)
             .toList();
 

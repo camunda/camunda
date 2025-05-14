@@ -106,21 +106,25 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
         TenantQuery.of(q -> q.filter(b -> b.memberIds(memberIds).memberType(memberType))));
   }
 
-  public List<TenantEntity> getTenantsByUserAndGroups(
-      final String username, final Set<String> groupIds) {
+  public List<TenantEntity> getTenantsByUserAndGroupsAndRoles(
+      final String username, final Set<String> groupIds, final Set<String> roleIds) {
     final var tenants = new ArrayList<>(getTenantsByMemberIds(Set.of(username), EntityType.USER));
     final var groupTenants = getTenantsByMemberIds(groupIds, EntityType.GROUP);
+    final var roleTenants = getTenantsByMemberIds(roleIds, EntityType.ROLE);
 
     tenants.addAll(groupTenants);
+    tenants.addAll(roleTenants);
     return tenants.stream().distinct().toList();
   }
 
-  public List<TenantEntity> getTenantsByMappingsAndGroups(
-      final Set<String> mappings, final Set<String> groupIds) {
+  public List<TenantEntity> getTenantsByMappingsAndGroupsAndRoles(
+      final Set<String> mappings, final Set<String> groupIds, final Set<String> roleIds) {
     final var tenants = new ArrayList<>(getTenantsByMemberIds(mappings, EntityType.MAPPING));
     final var groupTenants = getTenantsByMemberIds(groupIds, EntityType.GROUP);
+    final var roleTenants = getTenantsByMemberIds(roleIds, EntityType.ROLE);
 
     tenants.addAll(groupTenants);
+    tenants.addAll(roleTenants);
     return tenants.stream().distinct().toList();
   }
 
