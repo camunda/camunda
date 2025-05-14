@@ -17,6 +17,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
+import io.camunda.client.protocol.rest.MappingSearchQueryResult;
 import io.camunda.client.protocol.rest.RoleResult;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
@@ -69,6 +70,7 @@ public class RoleIntegrationTest {
 
   @Test
   void shouldCreateAndGetRoleById() {
+
     // when
     createRole(ROLE_ID_1, ROLE_NAME_1, DESCRIPTION);
     // then
@@ -486,6 +488,119 @@ public class RoleIntegrationTest {
                 .formatted(nonExistingRoleId));
   }
 
+  @Test
+  void shouldAssignMappingToRole() {
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var mappingId = Strings.newRandomValidIdentityId();
+
+    camundaClient.newCreateRoleCommand().roleId(roleId).name("roleName").send().join();
+
+    camundaClient
+        .newCreateMappingCommand()
+        .mappingId(mappingId)
+        .name("mappingName")
+        .claimName("testClaimName")
+        .claimValue("testClaimValue")
+        .send()
+        .join();
+
+    camundaClient.newAssignMappingToRoleCommand(roleId).mappingId(mappingId).send().join();
+
+    Awaitility.await("Mapping is assigned to the role")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        searchMappingRuleByRole(
+                                camundaClient.getConfiguration().getRestAddress().toString(),
+                                roleId)
+                            .getItems())
+                    .hasSize(1)
+                    .anyMatch(m -> mappingId.equals(m.getMappingId())));
+  }
+
+  @Test
+  void shouldRejectAssigningAlreadyAssignedMappingToRole() {
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var mappingId = Strings.newRandomValidIdentityId();
+
+    camundaClient.newCreateRoleCommand().roleId(roleId).name("roleName").send().join();
+    camundaClient
+        .newCreateMappingCommand()
+        .mappingId(mappingId)
+        .name("mappingName")
+        .claimName("someClaimName")
+        .claimValue("someClaimValue")
+        .send()
+        .join();
+
+    camundaClient.newAssignMappingToRoleCommand(roleId).mappingId(mappingId).send().join();
+
+    // when/then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newAssignMappingToRoleCommand(roleId)
+                    .mappingId(mappingId)
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining(
+            "Expected to add entity with ID '"
+                + mappingId
+                + "' to role with ID '"
+                + roleId
+                + "', but the entity is already assigned to this role.");
+  }
+
+  @Test
+  void shouldUnassignMappingOnRoleDeletion() {
+    // given
+    final var roleId = Strings.newRandomValidIdentityId();
+    final var mappingId = Strings.newRandomValidIdentityId();
+
+    camundaClient.newCreateRoleCommand().roleId(roleId).name("roleName").send().join();
+    camundaClient
+        .newCreateMappingCommand()
+        .mappingId(mappingId)
+        .name("mappingName")
+        .claimName("aClaimName")
+        .claimValue("aClaimValue")
+        .send()
+        .join();
+
+    camundaClient.newAssignMappingToRoleCommand(roleId).mappingId(mappingId).send().join();
+
+    Awaitility.await("Mapping is assigned to the role")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        searchMappingRuleByRole(
+                                camundaClient.getConfiguration().getRestAddress().toString(),
+                                roleId)
+                            .getItems())
+                    .hasSize(1)
+                    .anyMatch(m -> mappingId.equals(m.getMappingId())));
+
+    // when
+    camundaClient.newDeleteRoleCommand(roleId).send().join();
+
+    // then
+    Awaitility.await("Mapping is unassigned from deleted role")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        searchMappingRuleByRole(
+                                camundaClient.getConfiguration().getRestAddress().toString(),
+                                roleId)
+                            .getItems())
+                    .hasSize(0)
+                    .noneMatch(m -> mappingId.equals(m.getMappingId())));
+  }
+
   private static void assertRoleCreated(
       final String roleId, final String roleName, final String description) {
     Awaitility.await("Role is created and exported")
@@ -528,6 +643,23 @@ public class RoleIntegrationTest {
     final HttpResponse<String> response =
         HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
     return OBJECT_MAPPER.readValue(response.body(), RoleSearchResponse.class);
+  }
+
+  // TODO once available, this test should use the client to make the request
+  private static MappingSearchQueryResult searchMappingRuleByRole(
+      final String restAddress, final String roleId)
+      throws URISyntaxException, IOException, InterruptedException {
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(
+                new URI(
+                    "%s%s".formatted(restAddress, "v2/roles/" + roleId + "/mapping-rules/search")))
+            .POST(HttpRequest.BodyPublishers.ofString(""))
+            .build();
+
+    final HttpResponse<String> response =
+        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    return OBJECT_MAPPER.readValue(response.body(), MappingSearchQueryResult.class);
   }
 
   private record AuthorizationSearchResponse(
