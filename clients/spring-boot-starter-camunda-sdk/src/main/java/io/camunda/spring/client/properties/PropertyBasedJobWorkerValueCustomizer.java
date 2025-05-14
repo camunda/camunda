@@ -25,19 +25,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.spring.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
-import io.camunda.spring.client.bean.CopyNotNullBeanUtilsBean;
-import io.camunda.spring.client.bean.CopyWithProtectionBeanUtilsBean;
 import io.camunda.spring.client.bean.MethodInfo;
 import io.camunda.spring.client.bean.ParameterInfo;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,10 +42,6 @@ import org.springframework.util.ReflectionUtils;
 public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCustomizer {
   private static final Logger LOG =
       LoggerFactory.getLogger(PropertyBasedJobWorkerValueCustomizer.class);
-  private static final CopyNotNullBeanUtilsBean COPY_NOT_NULL_BEAN_UTILS_BEAN =
-      new CopyNotNullBeanUtilsBean();
-  private static final CopyWithProtectionBeanUtilsBean COPY_WITH_PROTECTION_BEAN_UTILS_BEAN =
-      new CopyWithProtectionBeanUtilsBean(Set.of("name", "type", "fetchVariables"));
 
   private final CamundaClientProperties camundaClientProperties;
 
@@ -77,16 +69,19 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
       LOG.debug("Worker '{}': Force fetch all variables is enabled", jobWorkerValue.getName());
       jobWorkerValue.setFetchVariables(List.of());
     } else {
-      final Set<String> variables = new HashSet<>();
+      final List<String> variables = new ArrayList<>();
       if (jobWorkerValue.getFetchVariables() != null) {
         variables.addAll(jobWorkerValue.getFetchVariables());
+      }
+      if (camundaClientProperties.getWorker().getDefaults().getFetchVariables() != null) {
+        variables.addAll(camundaClientProperties.getWorker().getDefaults().getFetchVariables());
       }
       variables.addAll(
           readZeebeVariableParameters(jobWorkerValue.getMethodInfo()).stream()
               .map(this::extractVariableName)
               .toList());
       variables.addAll(readVariablesAsTypeParameters(jobWorkerValue.getMethodInfo()));
-      jobWorkerValue.setFetchVariables(variables.stream().toList());
+      jobWorkerValue.setFetchVariables(variables.stream().distinct().toList());
       LOG.debug(
           "Worker '{}': Fetching only required variables {}", jobWorkerValue.getName(), variables);
     }
@@ -127,30 +122,64 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
   }
 
   private void applyOverrides(final JobWorkerValue editedJobWorkerValue) {
-    final JobWorkerValue defaults = camundaClientProperties.getWorker().getDefaults();
-    try {
-      if (defaults != null) {
-        COPY_WITH_PROTECTION_BEAN_UTILS_BEAN.copyProperties(editedJobWorkerValue, defaults);
-      }
-    } catch (final IllegalAccessException | InvocationTargetException e) {
-      throw new RuntimeException(
-          "Error while copying properties from " + defaults + " to " + editedJobWorkerValue, e);
-    }
-    final Map<String, JobWorkerValue> workerConfigurationMap = new HashMap<>();
-    if (camundaClientProperties.getWorker().getOverride() != null) {
-      workerConfigurationMap.putAll(camundaClientProperties.getWorker().getOverride());
+    final CamundaClientJobWorkerProperties defaults =
+        camundaClientProperties.getWorker().getDefaults();
+    if (defaults != null) {
+      copyProperties(defaults, editedJobWorkerValue, OverrideSource.defaults);
     }
     final String workerType = editedJobWorkerValue.getType();
-    if (workerConfigurationMap.containsKey(workerType)) {
-      final JobWorkerValue jobWorkerValue = workerConfigurationMap.get(workerType);
-      LOG.debug("Worker '{}': Applying overrides {}", workerType, jobWorkerValue);
-      try {
-        COPY_NOT_NULL_BEAN_UTILS_BEAN.copyProperties(editedJobWorkerValue, jobWorkerValue);
-      } catch (final IllegalAccessException | InvocationTargetException e) {
-        throw new RuntimeException(
-            "Error while copying properties from " + jobWorkerValue + " to " + editedJobWorkerValue,
-            e);
-      }
+    findWorkerOverride(workerType)
+        .ifPresent(
+            jobWorkerValue -> {
+              LOG.debug("Worker '{}': Applying overrides {}", workerType, jobWorkerValue);
+              copyProperties(jobWorkerValue, editedJobWorkerValue, OverrideSource.worker);
+            });
+  }
+
+  private Optional<CamundaClientJobWorkerProperties> findWorkerOverride(final String type) {
+    return Optional.ofNullable(camundaClientProperties.getWorker().getOverride().get(type));
+  }
+
+  private void copyProperties(
+      final CamundaClientJobWorkerProperties source,
+      final JobWorkerValue target,
+      final OverrideSource overrideSource) {
+    if (overrideSource == OverrideSource.worker) {
+      copyProperty(
+          "fetchVariables", overrideSource, source::getFetchVariables, target::setFetchVariables);
+      copyProperty("type", overrideSource, source::getType, target::setType);
+      copyProperty("name", overrideSource, source::getName, target::setName);
+      copyProperty("tenantIds", overrideSource, source::getTenantIds, target::setTenantIds);
+    }
+    copyProperty("timeout", overrideSource, source::getTimeout, target::setTimeout);
+    copyProperty(
+        "maxJobsActive", overrideSource, source::getMaxJobsActive, target::setMaxJobsActive);
+    copyProperty(
+        "requestTimeout", overrideSource, source::getRequestTimeout, target::setRequestTimeout);
+    copyProperty("pollInterval", overrideSource, source::getPollInterval, target::setPollInterval);
+    copyProperty("autoComplete", overrideSource, source::getAutoComplete, target::setAutoComplete);
+    copyProperty("enabled", overrideSource, source::getEnabled, target::setEnabled);
+    copyProperty(
+        "streamEnabled", overrideSource, source::getStreamEnabled, target::setStreamEnabled);
+    copyProperty(
+        "streamTimeout", overrideSource, source::getStreamTimeout, target::setStreamTimeout);
+    copyProperty(
+        "forceFetchAllVariables",
+        overrideSource,
+        source::getForceFetchAllVariables,
+        target::setForceFetchAllVariables);
+    copyProperty("maxRetries", overrideSource, source::getMaxRetries, target::setMaxRetries);
+  }
+
+  private <T> void copyProperty(
+      final String propertyName,
+      final OverrideSource overrideSource,
+      final Supplier<T> getter,
+      final Consumer<T> setter) {
+    final T value = getter.get();
+    if (value != null) {
+      LOG.debug("Overriding property '{}' from source {}", propertyName, overrideSource);
+      setter.accept(value);
     }
   }
 
@@ -198,18 +227,24 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
   }
 
   private void applyDefaultJobWorkerTenantIds(final JobWorkerValue jobWorkerValue) {
-    final Set<String> defaultJobWorkerTenantIds =
-        new HashSet<>(
+    final List<String> tenantIds =
+        new ArrayList<>(
             ofNullable(camundaClientProperties.getWorker().getDefaults().getTenantIds())
                 .orElse(Collections.emptyList()));
-    if (jobWorkerValue.getTenantIds() == null || jobWorkerValue.getTenantIds().isEmpty()) {
-      if (!defaultJobWorkerTenantIds.isEmpty()) {
-        LOG.debug(
-            "Worker '{}': Setting tenantIds to default {}",
-            jobWorkerValue.getTenantIds(),
-            defaultJobWorkerTenantIds);
-        jobWorkerValue.setTenantIds(new ArrayList<>(defaultJobWorkerTenantIds));
-      }
+    if (jobWorkerValue.getTenantIds() != null) {
+      tenantIds.addAll(jobWorkerValue.getTenantIds());
     }
+    if (StringUtils.isNotBlank(camundaClientProperties.getTenantId())) {
+      tenantIds.add(camundaClientProperties.getTenantId());
+    }
+    if (!tenantIds.isEmpty()) {
+      LOG.debug("Worker '{}': Setting tenantIds to {}", jobWorkerValue.getName(), tenantIds);
+      jobWorkerValue.setTenantIds(tenantIds.stream().distinct().toList());
+    }
+  }
+
+  private enum OverrideSource {
+    defaults,
+    worker
   }
 }

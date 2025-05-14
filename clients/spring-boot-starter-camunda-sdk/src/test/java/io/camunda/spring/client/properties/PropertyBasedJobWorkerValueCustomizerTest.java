@@ -19,15 +19,23 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.spring.client.annotation.AnnotationUtil;
 import io.camunda.spring.client.annotation.JobWorker;
 import io.camunda.spring.client.annotation.Variable;
 import io.camunda.spring.client.annotation.VariablesAsType;
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
 import io.camunda.spring.client.bean.ClassInfo;
 import io.camunda.spring.client.bean.MethodInfo;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.DynamicTest;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestFactory;
 
 public class PropertyBasedJobWorkerValueCustomizerTest {
 
@@ -48,6 +56,21 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     }
   }
 
+  @Test
+  void shouldApplyDistinctFetchVariables() {
+    // given
+    final CamundaClientProperties properties = properties();
+    properties.getWorker().getDefaults().setFetchVariables(List.of("a", "b", "c", "a", "b", "c"));
+    final PropertyBasedJobWorkerValueCustomizer customizer =
+        new PropertyBasedJobWorkerValueCustomizer(properties);
+    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "emptyWorker"));
+    // when
+    customizer.customize(jobWorkerValue);
+    // then
+    assertThat(jobWorkerValue.getFetchVariables()).containsExactly("a", "b", "c");
+  }
+
   private static CamundaClientProperties properties() {
     return new CamundaClientProperties();
   }
@@ -66,19 +89,11 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   void sampleWorkerWithEmptyJsonProperty(
       @VariablesAsType final PropertyAnnotatedClassEmptyValue annotatedClass) {}
 
-  @Test
-  void shouldNotAdjustVariableFilterVariablesAsActivatedJobIsInjectedLegacy() {
-    // given
-    final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(properties());
-    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setFetchVariables(List.of("a", "var1", "b"));
-    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "activatedJobWorker"));
-    // when
-    customizer.customize(jobWorkerValue);
-    // then
-    assertThat(jobWorkerValue.getFetchVariables()).containsExactly("a", "var1", "b");
-  }
+  @JobWorker
+  void emptyWorker() {}
+
+  @JobWorker(tenantIds = {"tenant1", "tenant2"})
+  void customTenantWorker() {}
 
   @Test
   void shouldNotAdjustVariableFilterVariablesAsActivatedJobIsInjected() {
@@ -107,19 +122,6 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     customizer.customize(jobWorkerValue);
     // then
     assertThat(jobWorkerValue.getName()).isEqualTo("defaultName");
-  }
-
-  @Test
-  void shouldSetGeneratedNameLegacy() {
-    // given
-    final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(properties());
-    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
-    // when
-    customizer.customize(jobWorkerValue);
-    // then
-    assertThat(jobWorkerValue.getName()).isEqualTo("testBean#sampleWorker");
   }
 
   @Test
@@ -168,19 +170,6 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   }
 
   @Test
-  void shouldSetGeneratedTypeLegacy() {
-    // given
-    final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(properties());
-    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
-    // when
-    customizer.customize(jobWorkerValue);
-    // then
-    assertThat(jobWorkerValue.getType()).isEqualTo("sampleWorker");
-  }
-
-  @Test
   void shouldSetGeneratedType() {
     // given
     final PropertyBasedJobWorkerValueCustomizer customizer =
@@ -220,19 +209,6 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   }
 
   @Test
-  void shouldNotSetNameOfVariablesAsTypeAnnotatedFieldLegacy() {
-    // given
-    final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(properties());
-    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
-    // when
-    customizer.customize(jobWorkerValue);
-    // then
-    assertThat(jobWorkerValue.getFetchVariables()).doesNotContain("var2");
-  }
-
-  @Test
   void shouldNotSetNameOfVariablesAsTypeAnnotatedField() {
     // given
     final PropertyBasedJobWorkerValueCustomizer customizer =
@@ -249,7 +225,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   void shouldApplyOverrides() {
     // given
     final CamundaClientProperties properties = properties();
-    final JobWorkerValue override = new JobWorkerValue();
+    final CamundaClientJobWorkerProperties override = new CamundaClientJobWorkerProperties();
     override.setEnabled(false);
     properties.getWorker().getOverride().put("sampleWorker", override);
     final PropertyBasedJobWorkerValueCustomizer customizer =
@@ -267,7 +243,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   void shouldApplyGlobalOverride() {
     // given
     final CamundaClientProperties properties = properties();
-    final JobWorkerValue override = new JobWorkerValue();
+    final CamundaClientJobWorkerProperties override = new CamundaClientJobWorkerProperties();
     override.setEnabled(false);
     properties.getWorker().setDefaults(override);
     final PropertyBasedJobWorkerValueCustomizer customizer =
@@ -286,7 +262,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     // given
     final CamundaClientProperties properties = properties();
     properties.getWorker().getDefaults().setEnabled(true);
-    final JobWorkerValue override = new JobWorkerValue();
+    final CamundaClientJobWorkerProperties override = new CamundaClientJobWorkerProperties();
     override.setEnabled(false);
     properties.getWorker().getOverride().put("sampleWorker", override);
     final PropertyBasedJobWorkerValueCustomizer customizer =
@@ -351,7 +327,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   @Test
   void shouldOverrideTypeAndNameAndFetchVariablesFromLocalsIfSet() {
     final CamundaClientProperties properties = properties();
-    final JobWorkerValue override = new JobWorkerValue();
+    final CamundaClientJobWorkerProperties override = new CamundaClientJobWorkerProperties();
     override.setType("localOverride");
     override.setName("localName");
     override.setFetchVariables(List.of("overrideVariable"));
@@ -369,6 +345,125 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     assertThat(jobWorkerValue.getFetchVariables()).contains("overrideVariable");
   }
 
+  private Stream<Input<Object>> generateInput() {
+    return Stream.of(
+            //    private String type;
+            new Input<>(
+                "type",
+                CamundaClientJobWorkerProperties::setType,
+                JobWorkerValue::getType,
+                "testType"),
+            //    private String name;
+            new Input<>(
+                "name",
+                CamundaClientJobWorkerProperties::setName,
+                JobWorkerValue::getName,
+                "testName"),
+            //    private Duration timeout;
+            new Input<>(
+                "timeout",
+                CamundaClientJobWorkerProperties::setTimeout,
+                JobWorkerValue::getTimeout,
+                Duration.ofSeconds(60)),
+            //    private Integer maxJobsActive;
+            new Input<>(
+                "maxJobsActive",
+                CamundaClientJobWorkerProperties::setMaxJobsActive,
+                JobWorkerValue::getMaxJobsActive,
+                12),
+            //    private Duration requestTimeout;
+            new Input<>(
+                "requestTimeout",
+                CamundaClientJobWorkerProperties::setRequestTimeout,
+                JobWorkerValue::getRequestTimeout,
+                Duration.ofSeconds(70)),
+            //    private Duration pollInterval;
+            new Input<>(
+                "pollInterval",
+                CamundaClientJobWorkerProperties::setPollInterval,
+                JobWorkerValue::getPollInterval,
+                Duration.ofSeconds(80)),
+            //    private Boolean autoComplete;
+            new Input<>(
+                "autoComplete",
+                CamundaClientJobWorkerProperties::setAutoComplete,
+                JobWorkerValue::getAutoComplete,
+                true),
+            //    private List<String> fetchVariables;
+            new Input<>(
+                "fetchVariables",
+                CamundaClientJobWorkerProperties::setFetchVariables,
+                JobWorkerValue::getFetchVariables,
+                List.of("var1", "var2", "var3")),
+            //    private Boolean enabled;
+            new Input<>(
+                "enabled",
+                CamundaClientJobWorkerProperties::setEnabled,
+                JobWorkerValue::getEnabled,
+                true),
+            //    private List<String> tenantIds;
+            new Input<>(
+                "tenantIds",
+                CamundaClientJobWorkerProperties::setTenantIds,
+                JobWorkerValue::getTenantIds,
+                List.of("tenant1", "tenant2", "tenant3")),
+            //    private Boolean forceFetchAllVariables;
+            new Input<>(
+                "forceFetchAllVariables",
+                CamundaClientJobWorkerProperties::setForceFetchAllVariables,
+                JobWorkerValue::getForceFetchAllVariables,
+                false),
+            //    private Boolean streamEnabled;
+            new Input<>(
+                "streamEnabled",
+                CamundaClientJobWorkerProperties::setStreamEnabled,
+                JobWorkerValue::getStreamEnabled,
+                true),
+            //    private Duration streamTimeout;
+            new Input<>(
+                "streamTimeout",
+                CamundaClientJobWorkerProperties::setStreamTimeout,
+                JobWorkerValue::getStreamTimeout,
+                Duration.ofSeconds(30)),
+            //    private Integer maxRetries;
+            new Input<>(
+                "maxRetries",
+                CamundaClientJobWorkerProperties::setMaxRetries,
+                JobWorkerValue::getMaxRetries,
+                7))
+        .map(
+            i ->
+                new Input<Object>(
+                    i.displayName(),
+                    (BiConsumer<CamundaClientJobWorkerProperties, Object>) i.setter(),
+                    i.getter(),
+                    i.expected()));
+  }
+
+  @TestFactory
+  Stream<DynamicTest> shouldSetGlobalProperties() {
+    return DynamicTest.stream(
+        generateInput(), i -> shouldSetGlobalProperty(i.setter(), i.getter(), i.expected()));
+  }
+
+  private void shouldSetGlobalProperty(
+      final BiConsumer<CamundaClientJobWorkerProperties, Object> setter,
+      final Function<JobWorkerValue, Object> getter,
+      final Object expected) {
+    final CamundaClientProperties properties = properties();
+    final CamundaClientJobWorkerProperties jobWorkerProperties =
+        new CamundaClientJobWorkerProperties();
+    properties.getWorker().setDefaults(jobWorkerProperties);
+    setter.accept(jobWorkerProperties, expected);
+    final PropertyBasedJobWorkerValueCustomizer customizer =
+        new PropertyBasedJobWorkerValueCustomizer(properties);
+    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "emptyWorker"));
+    customizer.customize(jobWorkerValue);
+    final Object result = getter.apply(jobWorkerValue);
+    assertThat(result).isEqualTo(expected);
+  }
+
   @Test
   void shouldNotApplyPropertyAnnotationOnEmptyValue() {
     // given
@@ -382,6 +477,52 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
 
     // then
     assertThat(jobWorkerValue.getFetchVariables()).containsExactly("value");
+  }
+
+  @Test
+  void shouldApplyTenantIdIfNothingElseConfigured() {
+    // given
+    final CamundaClientProperties properties = properties();
+    properties.setTenantId("testTenantId");
+    final PropertyBasedJobWorkerValueCustomizer customizer =
+        new PropertyBasedJobWorkerValueCustomizer(properties);
+    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "emptyWorker"));
+    customizer.customize(jobWorkerValue);
+    assertThat(jobWorkerValue.getTenantIds()).containsOnly("testTenantId");
+  }
+
+  @Test
+  void shouldCombineWorkerDefaultsAnnotationsAndTenantId() {
+    // given
+    final CamundaClientProperties properties = properties();
+    properties.setTenantId("testTenantId");
+    properties.getWorker().getDefaults().setTenantIds(List.of("workerDefaultsTenantId"));
+    final PropertyBasedJobWorkerValueCustomizer customizer =
+        new PropertyBasedJobWorkerValueCustomizer(properties);
+    final JobWorkerValue jobWorkerValue =
+        AnnotationUtil.getJobWorkerValue(methodInfo(this, "testBean", "customTenantWorker")).get();
+    customizer.customize(jobWorkerValue);
+    assertThat(jobWorkerValue.getTenantIds())
+        .containsAll(List.of("testTenantId", "workerDefaultsTenantId", "tenant1", "tenant2"));
+  }
+
+  private record Input<T extends Object>(
+      String displayName,
+      BiConsumer<CamundaClientJobWorkerProperties, T> setter,
+      Function<JobWorkerValue, Object> getter,
+      T expected)
+      implements Named<Input<T>> {
+
+    @Override
+    public String getName() {
+      return displayName;
+    }
+
+    @Override
+    public Input<T> getPayload() {
+      return this;
+    }
   }
 
   private static final class ComplexProcessVariable {
