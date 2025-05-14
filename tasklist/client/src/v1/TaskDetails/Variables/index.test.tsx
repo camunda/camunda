@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, waitFor} from 'common/testing/testing-library';
+import {act, render, screen, waitFor} from 'common/testing/testing-library';
 import {Variables} from './index';
 import * as taskMocks from 'v1/mocks/task';
 import * as variableMocks from 'v1/mocks/variables';
@@ -425,7 +425,9 @@ describe('<Variables />', () => {
       '"valid_value"',
     );
 
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
 
     await waitFor(() =>
       expect(
@@ -435,7 +437,9 @@ describe('<Variables />', () => {
 
     await user.clear(screen.getByLabelText(/1st variable name/i));
 
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
 
     await waitFor(() =>
       expect(
@@ -445,7 +449,9 @@ describe('<Variables />', () => {
 
     await user.type(screen.getByLabelText(/1st variable name/i), 'test ');
 
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
 
     expect(await screen.findByText(/name is invalid/i)).toBeInTheDocument();
   });
@@ -672,7 +678,9 @@ describe('<Variables />', () => {
       },
     );
 
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
     await waitFor(() =>
       expect(screen.getByText(/complete task/i)).toBeEnabled(),
     );
@@ -687,7 +695,9 @@ describe('<Variables />', () => {
     await user.type(screen.getByLabelText(/1st variable name/i), 'var');
     await user.type(screen.getByLabelText(/1st variable value/i), '1');
 
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
     await waitFor(() =>
       expect(screen.getByText(/complete task/i)).toBeEnabled(),
     );
@@ -842,13 +852,17 @@ describe('<Variables />', () => {
       '"newVariableValue"',
     );
 
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
     await waitFor(() =>
       expect(screen.getByText(/complete task/i)).toBeEnabled(),
     );
     await user.click(screen.getByText(/complete task/i));
 
-    vi.runOnlyPendingTimers();
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
     await waitFor(() =>
       expect(mockOnSubmit).toHaveBeenCalledWith([
         {
@@ -1566,5 +1580,70 @@ describe('<Variables />', () => {
         screen.getByLabelText(/1st variable name/i),
       ).not.toHaveAccessibleDescription(/name must be unique/i);
     });
+  });
+
+  it('should handle variables with dots in names correctly', async () => {
+    const variableWithDot = {
+      id: 'var.with.dots',
+      name: 'var.with.dots',
+      value: '"dotted-value"',
+      previewValue: '"dotted-value"',
+      isValueTruncated: false,
+    } satisfies Variable;
+
+    nodeMockServer.use(
+      http.post<never, VariableSearchRequestBody>(
+        '/v1/tasks/:taskId/variables/search',
+        async ({request}) => {
+          if (isRequestingAllVariables(await request.json())) {
+            return HttpResponse.json([variableWithDot]);
+          }
+          return HttpResponse.json(
+            [
+              {
+                message: 'Invalid variables',
+              },
+            ],
+            {status: 400},
+          );
+        },
+      ),
+    );
+
+    const mockOnSubmit = vi.fn();
+    const {user} = render(
+      <Variables
+        task={taskMocks.assignedTask()}
+        user={currentUser}
+        onSubmit={mockOnSubmit}
+        onSubmitFailure={noop}
+        onSubmitSuccess={noop}
+      />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
+
+    expect(await screen.findByText('var.with.dots')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('"dotted-value"')).toBeInTheDocument();
+
+    await user.clear(await screen.findByLabelText('var.with.dots'));
+    await user.type(screen.getByLabelText('var.with.dots'), '"updated-value"');
+
+    vi.runOnlyPendingTimers();
+    await waitFor(() =>
+      expect(screen.getByText(/complete task/i)).toBeEnabled(),
+    );
+
+    await user.click(screen.getByText(/complete task/i));
+
+    await waitFor(() =>
+      expect(mockOnSubmit).toHaveBeenCalledWith([
+        {
+          name: 'var.with.dots',
+          value: '"updated-value"',
+        },
+      ]),
+    );
   });
 });
