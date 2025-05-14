@@ -28,9 +28,9 @@ public class SearchEngineClientUtils {
     this.objectMapper = objectMapper;
   }
 
-  public String listIndices(final List<IndexDescriptor> indexDescriptors) {
+  public String listIndicesByAlias(final List<IndexDescriptor> indexDescriptors) {
     return indexDescriptors.stream()
-        .map(IndexDescriptor::getFullQualifiedName)
+        .map(IndexDescriptor::getAlias)
         .collect(Collectors.joining(","));
   }
 
