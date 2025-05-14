@@ -14,7 +14,6 @@ import io.atomix.cluster.MemberId;
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.impl.DiscoveryMembershipProtocol;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier.ClusterClusterConfigurationAwareCoordinatorSupplier;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
@@ -96,7 +95,7 @@ final class ClusterConfigurationManagementApiTest {
     clientApi =
         new ClusterConfigurationManagementRequestSender(
             gateway.getCommunicationService(),
-            new ClusterClusterConfigurationAwareCoordinatorSupplier(
+            ClusterConfigurationCoordinatorSupplier.of(
                 () -> recordingCoordinator.getClusterConfiguration().join()),
             new ProtoBufSerializer());
 

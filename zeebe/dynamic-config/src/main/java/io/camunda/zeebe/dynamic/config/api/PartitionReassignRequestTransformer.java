@@ -27,7 +27,6 @@ import io.camunda.zeebe.dynamic.config.util.RoundRobinPartitionDistributor;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
@@ -112,12 +111,8 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
     }
 
     final var coordinatorNodeId =
-        currentConfiguration.members().entrySet().stream().min(Entry.comparingByKey()).stream()
-            .map(Entry::getKey)
-            .findFirst();
-    if (coordinatorNodeId.isEmpty()) {
-      return Either.left(new InvalidRequest("No members found in the cluster configuration"));
-    }
+        ClusterConfigurationCoordinatorSupplier.of(() -> currentConfiguration)
+            .getDefaultCoordinator();
 
     final List<PartitionId> oldPartitions = oldDistribution.keySet().stream().sorted().toList();
 
@@ -149,21 +144,20 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
     }
     final var hasNewPartitions = !newPartitions.isEmpty();
 
-    for (final PartitionId partition : newPartitions) {
-      final var newMetadata = newDistribution.get(partition);
-      operations.addAll(addPartition(newMetadata));
-    }
-
     if (hasNewPartitions) {
+      for (final PartitionId partition : newPartitions) {
+        final var newMetadata = newDistribution.get(partition);
+        operations.addAll(addPartition(newMetadata));
+      }
       operations.addAll(
           List.of(
-              new StartPartitionScaleUp(coordinatorNodeId.get(), newPartitionCount.get()),
+              new StartPartitionScaleUp(coordinatorNodeId, newPartitionCount.get()),
               new AwaitRedistributionCompletion(
-                  coordinatorNodeId.get(),
+                  coordinatorNodeId,
                   newPartitionCount.get(),
                   new TreeSet<>(newPartitions.stream().map(PartitionId::id).toList())),
               new AwaitRelocationCompletion(
-                  coordinatorNodeId.get(),
+                  coordinatorNodeId,
                   newPartitionCount.get(),
                   new TreeSet<>(newPartitions.stream().map(PartitionId::id).toList()))));
     }

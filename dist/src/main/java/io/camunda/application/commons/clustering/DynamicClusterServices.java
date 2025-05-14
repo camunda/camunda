@@ -14,7 +14,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClientTopologyMetrics;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.dynamic.config.GatewayClusterConfigurationService;
-import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier.ClusterClusterConfigurationAwareCoordinatorSupplier;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationCoordinatorSupplier;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -75,8 +75,7 @@ public class DynamicClusterServices {
       final BrokerTopologyManager brokerTopologyManager) {
     return new ClusterConfigurationManagementRequestSender(
         clusterCommunicationService,
-        new ClusterClusterConfigurationAwareCoordinatorSupplier(
-            brokerTopologyManager::getClusterConfiguration),
+        ClusterConfigurationCoordinatorSupplier.of(brokerTopologyManager::getClusterConfiguration),
         new ProtoBufSerializer());
   }
 }
