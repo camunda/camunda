@@ -6,80 +6,89 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {observer} from 'mobx-react-lite';
 import {pages} from 'common/routing';
-import {newProcessInstance} from 'v1/newProcessInstance';
-import type {Task} from 'v1/api/types';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {tracking} from 'common/tracking';
 import {useQuery} from '@tanstack/react-query';
-import {request, type RequestError} from 'common/api/request';
-import {api} from 'v1/api';
+import {request} from 'common/api/request';
+import {api} from 'v2/api';
+import type {QueryUserTasksResponseBody} from '@vzeta/camunda-api-zod-schemas/tasklist';
+import type {NewProcessInstance} from 'common/processes/newProcessInstance';
+import {observer} from 'mobx-react-lite';
 
-type NewTasksResponse = Task[];
+type Props = {
+  newInstance: NewProcessInstance;
+};
 
-const NewProcessInstanceTasksPolling: React.FC = observer(() => {
-  const {instance} = newProcessInstance;
-  const navigate = useNavigate();
-  const location = useLocation();
+const NewProcessInstanceTasksPolling: React.FC<Props> = observer(
+  ({newInstance}) => {
+    const {instance} = newInstance;
+    const navigate = useNavigate();
+    const location = useLocation();
 
-  useQuery<NewTasksResponse, RequestError | Error>({
-    queryKey: ['newTasks', instance?.id],
-    enabled: instance !== null,
-    refetchInterval: 1000,
-    queryFn: async () => {
-      const id = instance?.id;
-      if (id === undefined) {
-        throw new Error('Process instance id is undefined');
-      }
-
-      const {response, error} = await request(
-        api.searchTasks({
-          pageSize: 10,
-          processInstanceKey: id,
-          state: 'CREATED',
-        }),
-      );
-
-      if (response !== null) {
-        const data = await response.json();
-
-        if (data.length === 0) {
-          return null;
+    useQuery({
+      queryKey: ['newTasks', instance?.id],
+      enabled: instance !== null,
+      refetchInterval: 1000,
+      queryFn: async () => {
+        const id = instance?.id;
+        if (id === undefined) {
+          throw new Error('Process instance id is undefined');
         }
 
-        newProcessInstance.removeInstance();
+        const {response, error} = await request(
+          api.queryTasks({
+            filter: {
+              processInstanceKey: id,
+              state: 'CREATED',
+            },
+            page: {
+              limit: 10,
+            },
+          }),
+        );
 
-        if (
-          data.length === 1 &&
-          location.pathname === `/${pages.processes()}`
-        ) {
-          const [{id}] = data;
+        if (response !== null) {
+          const data = (await response.json()) as QueryUserTasksResponseBody;
+          const {items} = data;
 
-          tracking.track({
-            eventName: 'process-tasks-polling-ended',
-            outcome: 'single-task-found',
-          });
+          if (items.length === 0) {
+            return null;
+          }
 
-          navigate({pathname: pages.taskDetails(id)});
+          newInstance.removeInstance();
 
-          return null;
+          if (
+            items.length === 1 &&
+            location.pathname === `/${pages.processes()}`
+          ) {
+            const [{userTaskKey}] = items;
+
+            tracking.track({
+              eventName: 'process-tasks-polling-ended',
+              outcome: 'single-task-found',
+            });
+
+            navigate({pathname: pages.taskDetails(userTaskKey)});
+
+            return null;
+          }
+
+          return data;
         }
 
-        return data;
-      }
+        if (error !== null) {
+          throw error;
+        }
 
-      if (error !== null) {
-        throw error;
-      }
+        throw new Error('No tasks found');
+      },
+      gcTime: 0,
+      refetchOnWindowFocus: false,
+    });
 
-      throw new Error('No tasks found');
-    },
-    gcTime: 0,
-    refetchOnWindowFocus: false,
-  });
-
-  return null;
-});
+    return null;
+  },
+);
 
 export {NewProcessInstanceTasksPolling};

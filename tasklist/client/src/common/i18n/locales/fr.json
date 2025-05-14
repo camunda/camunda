@@ -336,6 +336,9 @@
     "relativeDateYearsFmt_time": "d MMM yyyy, p",
     "relativeDateYearsFmt_speech": "d MMMM, yyyy",
     "relativeDateYearsFmt_time_speech": "d MMMM, yyyy 'à' p",
-    "relativeDateUnknown": "'Inconnu'"
+    "relativeDateUnknown": "'Inconnu'",
+    "processesTabPreviousPageButtonLabel": "Page précédente",
+    "processesTabNextPageButtonLabel": "Page suivante",
+    "processesTabPaginationOfLabel": "{{currentPage}} de {{totalPages}}"
   }
 }
