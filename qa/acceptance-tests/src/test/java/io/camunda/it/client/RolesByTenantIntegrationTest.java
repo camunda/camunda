@@ -41,7 +41,8 @@ public class RolesByTenantIntegrationTest {
             () -> {
               final var roles = camundaClient.newRolesByTenantSearchRequest(tenantId).send().join();
               assertThat(roles.items())
-                  .anySatisfy(
+                  .singleElement()
+                  .satisfies(
                       role -> {
                         assertThat(role.getRoleId()).isEqualTo(roleId);
                         assertThat(role.getName()).isEqualTo(roleName);
@@ -93,13 +94,6 @@ public class RolesByTenantIntegrationTest {
     createTenant(tenantId);
     createRole(roleId, roleName, roleDesc);
     camundaClient.newAssignRoleToTenantCommand(tenantId).roleId(roleId).send().join();
-    Awaitility.await("Role should be assigned before retrying")
-        .atMost(TIMEOUT_DATA_AVAILABILITY)
-        .untilAsserted(
-            () -> {
-              final var roles = camundaClient.newRolesByTenantSearchRequest(tenantId).send().join();
-              assertThat(roles.items()).anyMatch(r -> r.getRoleId().equals(roleId));
-            });
     // when and then
     assertThatThrownBy(
             () -> camundaClient.newAssignRoleToTenantCommand(tenantId).roleId(roleId).send().join())
@@ -165,24 +159,11 @@ public class RolesByTenantIntegrationTest {
     createTenant(tenantId);
     createRole(roleId, "name", "desc");
     camundaClient.newAssignRoleToTenantCommand(tenantId).roleId(roleId).send().join();
-
-    Awaitility.await("Role should be visible before unassign")
-        .atMost(TIMEOUT_DATA_AVAILABILITY)
-        .untilAsserted(
-            () -> {
-              final var roles = camundaClient.newRolesByTenantSearchRequest(tenantId).send().join();
-              assertThat(roles.items()).anyMatch(role -> role.getRoleId().equals(roleId));
-            });
     // when
     camundaClient.newUnassignRoleFromTenantCommand(tenantId).roleId(roleId).send().join();
     // then
-    Awaitility.await("Role should be removed from tenant")
-        .atMost(TIMEOUT_DATA_AVAILABILITY)
-        .untilAsserted(
-            () -> {
-              final var roles = camundaClient.newRolesByTenantSearchRequest(tenantId).send().join();
-              assertThat(roles.items()).noneMatch(role -> role.getRoleId().equals(roleId));
-            });
+    final var roles = camundaClient.newRolesByTenantSearchRequest(tenantId).send().join();
+    assertThat(roles.items()).noneMatch(role -> role.getRoleId().equals(roleId));
   }
 
   @Test
@@ -194,6 +175,39 @@ public class RolesByTenantIntegrationTest {
     createRole(roleId, "name", "desc");
 
     // when and then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUnassignRoleFromTenantCommand(tenantId)
+                    .roleId(roleId)
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("404: 'Not Found'")
+        .hasMessageContaining("the role is not assigned to this tenant");
+  }
+
+  @Test
+  void shouldRejectUnassignWithNonExistingTenantId() {
+    final var tenantId = "non-existing-" + Strings.newRandomValidIdentityId();
+    final var roleId = "role-" + Strings.newRandomValidIdentityId();
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUnassignRoleFromTenantCommand(tenantId)
+                    .roleId(roleId)
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("404: 'Not Found'")
+        .hasMessageContaining("no tenant with this ID exists");
+  }
+
+  @Test
+  void shouldRejectUnassignWithNonExistingRoleId() {
+    final var tenantId = "tenant-" + Strings.newRandomValidIdentityId();
+    createTenant(tenantId);
+    final var roleId = "non-existing-" + Strings.newRandomValidIdentityId();
     assertThatThrownBy(
             () ->
                 camundaClient
