@@ -32,7 +32,7 @@ public class SequenceFlowExportHandler implements RdbmsExportHandler<ProcessInst
 
   @Override
   public void export(final Record<ProcessInstanceRecordValue> record) {
-    sequenceFlowWriter.create(map(record));
+    sequenceFlowWriter.createIfNotExists(map(record));
   }
 
   private SequenceFlowDbModel map(final Record<ProcessInstanceRecordValue> record) {

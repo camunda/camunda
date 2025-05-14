@@ -37,6 +37,16 @@ public class SequenceFlowWriter {
             sequenceFlow));
   }
 
+  public void createIfNotExists(final SequenceFlowDbModel sequenceFlow) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.SEQUENCE_FLOW,
+            WriteStatementType.INSERT,
+            sequenceFlow.sequenceFlowId(),
+            "io.camunda.db.rdbms.sql.SequenceFlowMapper.createIfNotExists",
+            sequenceFlow));
+  }
+
   public void scheduleForHistoryCleanup(
       final Long processInstanceKey, final OffsetDateTime historyCleanupDate) {
     executionQueue.executeInQueue(
