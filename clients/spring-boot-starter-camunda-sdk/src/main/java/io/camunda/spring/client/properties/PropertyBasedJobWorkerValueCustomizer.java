@@ -227,22 +227,19 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
   }
 
   private void applyDefaultJobWorkerTenantIds(final JobWorkerValue jobWorkerValue) {
-    final List<String> defaultJobWorkerTenantIds =
+    final List<String> tenantIds =
         new ArrayList<>(
             ofNullable(camundaClientProperties.getWorker().getDefaults().getTenantIds())
                 .orElse(Collections.emptyList()));
-    if (jobWorkerValue.getTenantIds() == null || jobWorkerValue.getTenantIds().isEmpty()) {
-      if (!defaultJobWorkerTenantIds.isEmpty()) {
-        LOG.debug(
-            "Worker '{}': Setting tenantIds to default {}",
-            jobWorkerValue.getName(),
-            defaultJobWorkerTenantIds);
-        jobWorkerValue.setTenantIds(defaultJobWorkerTenantIds);
-      } else if (camundaClientProperties.getTenantId() != null) {
-        LOG.debug("Worker '{}': No tenantIds set, using global default", jobWorkerValue.getName());
-        jobWorkerValue.setTenantIds(
-            Collections.singletonList(camundaClientProperties.getTenantId()));
-      }
+    if (jobWorkerValue.getTenantIds() != null) {
+      tenantIds.addAll(jobWorkerValue.getTenantIds());
+    }
+    if (StringUtils.isNotBlank(camundaClientProperties.getTenantId())) {
+      tenantIds.add(camundaClientProperties.getTenantId());
+    }
+    if (!tenantIds.isEmpty()) {
+      LOG.debug("Worker '{}': Setting tenantIds to {}", jobWorkerValue.getName(), tenantIds);
+      jobWorkerValue.setTenantIds(tenantIds.stream().distinct().toList());
     }
   }
 

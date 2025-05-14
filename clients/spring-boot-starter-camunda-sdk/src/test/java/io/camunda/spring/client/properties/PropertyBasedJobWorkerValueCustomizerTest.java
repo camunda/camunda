@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.spring.client.annotation.AnnotationUtil;
 import io.camunda.spring.client.annotation.JobWorker;
 import io.camunda.spring.client.annotation.Variable;
 import io.camunda.spring.client.annotation.VariablesAsType;
@@ -90,6 +91,9 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
 
   @JobWorker
   void emptyWorker() {}
+
+  @JobWorker(tenantIds = {"tenant1", "tenant2"})
+  void customTenantWorker() {}
 
   @Test
   void shouldNotAdjustVariableFilterVariablesAsActivatedJobIsInjected() {
@@ -486,6 +490,21 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "emptyWorker"));
     customizer.customize(jobWorkerValue);
     assertThat(jobWorkerValue.getTenantIds()).containsOnly("testTenantId");
+  }
+
+  @Test
+  void shouldCombineWorkerDefaultsAnnotationsAndTenantId() {
+    // given
+    final CamundaClientProperties properties = properties();
+    properties.setTenantId("testTenantId");
+    properties.getWorker().getDefaults().setTenantIds(List.of("workerDefaultsTenantId"));
+    final PropertyBasedJobWorkerValueCustomizer customizer =
+        new PropertyBasedJobWorkerValueCustomizer(properties);
+    final JobWorkerValue jobWorkerValue =
+        AnnotationUtil.getJobWorkerValue(methodInfo(this, "testBean", "customTenantWorker")).get();
+    customizer.customize(jobWorkerValue);
+    assertThat(jobWorkerValue.getTenantIds())
+        .containsAll(List.of("testTenantId", "workerDefaultsTenantId", "tenant1", "tenant2"));
   }
 
   private record Input<T extends Object>(
