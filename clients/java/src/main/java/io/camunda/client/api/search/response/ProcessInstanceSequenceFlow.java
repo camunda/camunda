@@ -17,9 +17,6 @@ package io.camunda.client.api.search.response;
 
 public interface ProcessInstanceSequenceFlow {
 
-  /** id for the sequence flow instance */
-  String getSequenceFlowId();
-
   /** process instance key for the sequence flow instance */
   String getProcessInstanceKey();
 
