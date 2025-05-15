@@ -10,6 +10,7 @@ package io.camunda.it.auth;
 import static io.camunda.client.api.search.enums.PermissionType.*;
 import static io.camunda.client.api.search.enums.ResourceType.AUTHORIZATION;
 import static io.camunda.client.api.search.enums.ResourceType.GROUP;
+import static io.camunda.client.api.search.enums.ResourceType.ROLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -44,6 +45,7 @@ class GroupAuthorizationIT {
 
   private static final String GROUP_ID_1 = Strings.newRandomValidIdentityId();
   private static final String GROUP_ID_2 = Strings.newRandomValidIdentityId();
+  private static final String ROLE_ID = Strings.newRandomValidIdentityId();
   private static final String GROUP_NAME_1 = "AGroupName";
   private static final String GROUP_NAME_2 = "BGroupName";
   private static final String ADMIN = "admin";
@@ -61,6 +63,8 @@ class GroupAuthorizationIT {
               new Permissions(GROUP, CREATE, List.of("*")),
               new Permissions(GROUP, UPDATE, List.of("*")),
               new Permissions(GROUP, READ, List.of("*")),
+              new Permissions(ROLE, CREATE, List.of("*")),
+              new Permissions(ROLE, UPDATE, List.of("*")),
               new Permissions(AUTHORIZATION, UPDATE, List.of("*"))));
 
   @UserDefinition
@@ -71,13 +75,17 @@ class GroupAuthorizationIT {
       new User(
           RESTRICTED_WITH_READ,
           DEFAULT_PASSWORD,
-          List.of(new Permissions(GROUP, READ, List.of("*"))));
+          List.of(
+              new Permissions(GROUP, READ, List.of("*")),
+              new Permissions(ROLE, READ, List.of("*"))));
 
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
+    createRole(adminClient);
     createGroup(adminClient, GROUP_ID_1, GROUP_NAME_1);
+    assignGroupToRole(adminClient, GROUP_ID_1, ROLE_ID);
     createGroup(adminClient, GROUP_ID_2, GROUP_NAME_2);
     waitForGroupsToBeCreated(adminClient, 2);
   }
@@ -153,9 +161,44 @@ class GroupAuthorizationIT {
         .hasMessageContaining("404: 'Not Found'");
   }
 
+  @Test
+  void getRolesByGroupShouldReturnRolesIfAuthorized(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    final var roles = camundaClient.newRolesByGroupSearchRequest(GROUP_ID_1).send().join();
+
+    assertThat(roles.items().size()).isEqualTo(1);
+    assertThat(roles.items().getFirst().getRoleId()).isEqualTo(ROLE_ID);
+  }
+
+  @Test
+  void getRolesByGroupShouldReturnNotFoundIfUnauthorized(
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
+    final var roles = camundaClient.newRolesByGroupSearchRequest(GROUP_ID_1).send().join();
+    assertThat(roles.items().size()).isEqualTo(0);
+  }
+
   private static void createGroup(
       final CamundaClient adminClient, final String groupId, final String groupName) {
     adminClient.newCreateGroupCommand().groupId(groupId).name(groupName).send().join();
+  }
+
+  private static void createRole(final CamundaClient adminClient) {
+    adminClient
+        .newCreateRoleCommand()
+        .roleId(ROLE_ID)
+        .name("name")
+        .send()
+        .join();
+  }
+
+  private static void assignGroupToRole(
+      final CamundaClient adminClient, final String groupId, final String roleId) {
+    adminClient
+        .newAssignRoleToGroupCommand()
+        .roleId(roleId)
+        .groupId(groupId)
+        .send()
+        .join();
   }
 
   private static void waitForGroupsToBeCreated(
