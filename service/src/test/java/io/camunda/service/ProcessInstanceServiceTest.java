@@ -14,6 +14,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.SequenceFlowSearchClient;
 import io.camunda.search.entities.ProcessInstanceEntity;
@@ -53,6 +54,7 @@ public final class ProcessInstanceServiceTest {
   private ProcessInstanceServices services;
   private ProcessInstanceSearchClient client;
   private SequenceFlowSearchClient sequenceFlowSearchClient;
+  private IncidentSearchClient incidentClient;
   private SecurityContextProvider securityContextProvider;
   private Authentication authentication;
   private BrokerClient brokerClient;
@@ -62,6 +64,8 @@ public final class ProcessInstanceServiceTest {
     client = mock(ProcessInstanceSearchClient.class);
     sequenceFlowSearchClient = mock(SequenceFlowSearchClient.class);
     authentication = Authentication.none();
+    incidentClient = mock(IncidentSearchClient.class);
+    authentication = mock(Authentication.class);
     when(client.withSecurityContext(any())).thenReturn(client);
     when(sequenceFlowSearchClient.withSecurityContext(any())).thenReturn(sequenceFlowSearchClient);
     securityContextProvider = mock(SecurityContextProvider.class);
@@ -72,6 +76,7 @@ public final class ProcessInstanceServiceTest {
             securityContextProvider,
             client,
             sequenceFlowSearchClient,
+            incidentClient,
             authentication);
   }
 

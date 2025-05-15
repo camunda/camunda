@@ -9,14 +9,18 @@ package io.camunda.service;
 
 import static io.camunda.search.query.SearchQueryBuilders.processInstanceSearchQuery;
 
+import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.SequenceFlowSearchClient;
+import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.SequenceFlowEntity;
+import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
@@ -61,16 +65,19 @@ public final class ProcessInstanceServices
 
   private final ProcessInstanceSearchClient processInstanceSearchClient;
   private final SequenceFlowSearchClient sequenceFlowSearchClient;
+  private final IncidentSearchClient incidentSearchClient;
 
   public ProcessInstanceServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ProcessInstanceSearchClient processInstanceSearchClient,
       final SequenceFlowSearchClient sequenceFlowSearchClient,
+      final IncidentSearchClient incidentSearchClient,
       final Authentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.processInstanceSearchClient = processInstanceSearchClient;
     this.sequenceFlowSearchClient = sequenceFlowSearchClient;
+    this.incidentSearchClient = incidentSearchClient;
   }
 
   @Override
@@ -80,6 +87,7 @@ public final class ProcessInstanceServices
         securityContextProvider,
         processInstanceSearchClient,
         sequenceFlowSearchClient,
+        incidentSearchClient,
         authentication);
   }
 
@@ -291,6 +299,23 @@ public final class ProcessInstanceServices
             .setAuthentication(authentication);
 
     return sendBrokerRequest(brokerRequest);
+  }
+
+  public List<IncidentEntity> incidents(final Long processInstanceKey) {
+    final var processInstance = getByKey(processInstanceKey);
+    final var treePath = processInstance.treePath();
+
+    if (treePath == null || treePath.isBlank()) {
+      return List.of();
+    }
+
+    final var result =
+        incidentSearchClient.searchIncidents(
+            new IncidentQuery.Builder()
+                .filter(new IncidentFilter.Builder().treePaths(treePath).build())
+                .build());
+
+    return result.items();
   }
 
   public record ProcessInstanceCreateRequest(
