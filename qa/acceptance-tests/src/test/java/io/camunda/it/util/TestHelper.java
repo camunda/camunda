@@ -17,12 +17,15 @@ import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
+import io.camunda.client.api.search.filter.IncidentFilter;
+import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import org.awaitility.Awaitility;
 
@@ -102,12 +105,20 @@ public final class TestHelper {
 
   public static void waitForProcessInstancesToStart(
       final CamundaClient camundaClient, final int expectedProcessInstances) {
+    waitForProcessInstancesToStart(camundaClient, f -> {}, expectedProcessInstances);
+  }
+
+  public static void waitForProcessInstancesToStart(
+      final CamundaClient camundaClient,
+      final Consumer<ProcessInstanceFilter> filter,
+      final int expectedProcessInstances) {
     Awaitility.await("should start process instances and import in Operate")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newProcessInstanceSearchRequest().send().join();
+              final var result =
+                  camundaClient.newProcessInstanceSearchRequest().filter(filter).send().join();
               assertThat(result.page().totalItems()).isEqualTo(expectedProcessInstances);
             });
   }
@@ -202,17 +213,25 @@ public final class TestHelper {
 
   public static void waitUntilIncidentsAreActive(
       final CamundaClient camundaClient, final int expectedIncidents) {
-    Awaitility.await("should wait until incidents are resolved")
+    waitUntilIncidentsConditionsAreMet(
+        camundaClient,
+        f -> f.state(IncidentState.ACTIVE),
+        expectedIncidents,
+        "should wait until incidents become active");
+  }
+
+  public static void waitUntilIncidentsConditionsAreMet(
+      final CamundaClient camundaClient,
+      final Consumer<IncidentFilter> filter,
+      final int expectedIncidents,
+      final String awaitMsg) {
+    Awaitility.await(awaitMsg)
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
               final var result =
-                  camundaClient
-                      .newIncidentSearchRequest()
-                      .filter(f -> f.state(IncidentState.ACTIVE))
-                      .send()
-                      .join();
+                  camundaClient.newIncidentSearchRequest().filter(filter).send().join();
               assertThat(result.page().totalItems()).isEqualTo(expectedIncidents);
             });
   }
