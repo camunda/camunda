@@ -173,7 +173,13 @@ public class RolesByTenantIntegrationTest {
     final var roleId = "role-" + Strings.newRandomValidIdentityId();
     createTenant(tenantId);
     createRole(roleId, "name", "desc");
-
+    Awaitility.await("Role should be removed from tenant")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () -> {
+              final var roles = camundaClient.newRolesByTenantSearchRequest(tenantId).send().join();
+              assertThat(roles.items()).noneMatch(role -> role.getRoleId().equals(roleId));
+            });
     // when and then
     assertThatThrownBy(
             () ->
