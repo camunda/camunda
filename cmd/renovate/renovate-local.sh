@@ -2,6 +2,15 @@
 
 set -euo pipefail
 
+# Ensure these environment variables are set before running the script:
+# export GITHUB_TOKEN="your_github_token"
+
+# Check if required environment variables are set
+if [ -z "${GITHUB_TOKEN:-}" ]; then
+    echo "Error: GITHUB_TOKEN environment variable is not set."
+    exit 1
+fi
+
 LOCAL_RENOVATE_CONFIG="../.././.github/renovate.json"
 REPO_NAME="camunda/camunda"
 LOCAL_CACHE_DIR="$(pwd)/renovate_cache"
@@ -19,7 +28,7 @@ echo "Using local Renovate cache at: ${LOCAL_CACHE_DIR}"
 start_time=$(date +%s)
 echo "Renovate run started at: $(date)"
 
-# run renovate
+# Run renovate
 docker run --rm \
   -u "$(id -u):$(id -g)" \
   -e LOG_LEVEL="debug" \
@@ -32,8 +41,7 @@ docker run --rm \
   -v "$(pwd)/${LOCAL_RENOVATE_CONFIG}:/usr/src/app/mounted-renovate-config.json:ro" \
   -e RENOVATE_CACHE_DIR="/cache/renovate" \
   -v "${LOCAL_CACHE_DIR}:/cache/renovate" \
-  \
-  renovate/renovate | tee "/tmp/camunda_$(date +%Y%m%d_%H%M%S).txt"
+  renovate/renovate | tee "/tmp/${REPO_NAME//\//_}_$(date +%Y%m%d_%H%M%S).txt"
 
 end_time=$(date +%s)
 echo "Renovate run finished at: $(date)"
