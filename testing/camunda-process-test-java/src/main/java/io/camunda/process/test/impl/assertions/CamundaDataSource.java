@@ -16,7 +16,7 @@
 package io.camunda.process.test.impl.assertions;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
@@ -119,7 +119,25 @@ public class CamundaDataSource {
     return client.newDecisionInstanceGetRequest(decisionInstanceId).send().join();
   }
 
-  public JsonMapper getJsonMapper() {
-    return client.getConfiguration().getJsonMapper();
+  public EvaluateDecisionResponse evaluateDecisionByDecisionId(
+      final String decisionId, final Object variables) {
+
+    return client
+        .newEvaluateDecisionCommand()
+        .decisionId(decisionId)
+        .variables(variables)
+        .send()
+        .join();
+  }
+
+  public EvaluateDecisionResponse evaluateDecisionByDecisionKey(
+      final long decisionKey, final Object variables) {
+
+    return client
+        .newEvaluateDecisionCommand()
+        .decisionKey(decisionKey)
+        .variables(variables)
+        .send()
+        .join();
   }
 }

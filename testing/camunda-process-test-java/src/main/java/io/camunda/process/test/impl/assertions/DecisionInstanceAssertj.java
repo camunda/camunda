@@ -18,15 +18,17 @@ package io.camunda.process.test.impl.assertions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.NullNode;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.response.MatchedDecisionRule;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.DecisionInstanceState;
 import io.camunda.process.test.api.assertions.DecisionInstanceAssert;
 import io.camunda.process.test.api.assertions.DecisionSelector;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -40,12 +42,18 @@ public class DecisionInstanceAssertj
     implements DecisionInstanceAssert {
 
   private final CamundaDataSource dataSource;
+  private final ObjectMapper jsonMapper = new ObjectMapper();
+  private final DecisionMatchedRulesAssertj decisionMatchedRulesAssertj;
 
   public DecisionInstanceAssertj(
       final CamundaDataSource dataSource, final DecisionSelector decisionSelector) {
 
     super(decisionSelector, DecisionInstanceAssert.class);
+
     this.dataSource = dataSource;
+    this.decisionMatchedRulesAssertj =
+        new DecisionMatchedRulesAssertj(
+            String.format("Expected DecisionInstance [%s]", actual.describe()));
   }
 
   @Override
@@ -54,7 +62,7 @@ public class DecisionInstanceAssertj
         instance ->
             assertThat(instance.getState())
                 .withFailMessage(
-                    "Expected [%s] to have been evaluated, but was %s",
+                    "Expected DecisionInstance [%s] to have been evaluated, but was %s",
                     actual.describe(), formatState(instance.getState()))
                 .isEqualTo(DecisionInstanceState.EVALUATED));
     return this;
@@ -65,19 +73,19 @@ public class DecisionInstanceAssertj
     awaitDecisionInstance(
         instance -> {
           try {
-            final Object result =
-                dataSource.getJsonMapper().fromJson(instance.getResult(), Object.class);
+            final JsonNode result = readJson(instance.getResult());
+            final JsonNode expectedOutputJson = toJson(expectedOutput);
 
             assertThat(result)
                 .withFailMessage(
-                    "Expected [%s] to have output '%s', but was '%s'",
-                    actual.describe(), expectedOutput, formatResult(instance.getResult()))
-                .isEqualTo(expectedOutput);
+                    "Expected DecisionInstance [%s] to have output '%s', but was '%s'",
+                    actual.describe(), expectedOutput, readJson(instance.getResult()))
+                .isEqualTo(expectedOutputJson);
           } catch (final ClientException | IllegalArgumentException e) {
             // instance.getResult() could not be deserialized.
             fail(
-                "Expected [%s] to have output '%s', but was '%s'",
-                actual.describe(), expectedOutput, formatResult(instance.getResult()));
+                "Expected DecisionInstance [%s] to have output '%s', but was '%s'",
+                actual.describe(), expectedOutput, readJson(instance.getResult()));
           }
         });
 
@@ -86,9 +94,6 @@ public class DecisionInstanceAssertj
 
   @Override
   public DecisionInstanceAssert hasMatchedRules(final int... expectedMatchedRuleIndexes) {
-    final List<Integer> expectedMatches =
-        Arrays.stream(expectedMatchedRuleIndexes).boxed().collect(Collectors.toList());
-
     awaitDecisionInstance(
         instance -> {
           final List<Integer> actualMatchedRuleIndices =
@@ -96,18 +101,8 @@ public class DecisionInstanceAssertj
                   .map(MatchedDecisionRule::getRuleIndex)
                   .collect(Collectors.toList());
 
-          assertThat(actualMatchedRuleIndices)
-              .withFailMessage(
-                  "Expected [%s] to have matched rules %s, but did not. Matches:\n"
-                      + "\t- matched: %s\n"
-                      + "\t- missing: %s\n"
-                      + "\t- unexpected: %s",
-                  actual.describe(),
-                  Arrays.toString(expectedMatchedRuleIndexes),
-                  matchingRules(actualMatchedRuleIndices, expectedMatches),
-                  missingRules(actualMatchedRuleIndices, expectedMatches),
-                  unexpectedRules(actualMatchedRuleIndices, expectedMatches))
-              .containsAll(expectedMatches);
+          decisionMatchedRulesAssertj.hasMatchedRules(
+              actualMatchedRuleIndices, expectedMatchedRuleIndexes);
         });
 
     return this;
@@ -115,9 +110,6 @@ public class DecisionInstanceAssertj
 
   @Override
   public DecisionInstanceAssert hasNotMatchedRules(final int... expectedUnmatchedRuleIndexes) {
-    final List<Integer> expectedUnmatchedRules =
-        Arrays.stream(expectedUnmatchedRuleIndexes).boxed().collect(Collectors.toList());
-
     awaitDecisionInstance(
         instance -> {
           final List<Integer> actualMatchedRuleIndices =
@@ -125,32 +117,11 @@ public class DecisionInstanceAssertj
                   .map(MatchedDecisionRule::getRuleIndex)
                   .collect(Collectors.toList());
 
-          assertThat(actualMatchedRuleIndices)
-              .withFailMessage(
-                  "Expected [%s] to not have matched rules %s, but matched %s",
-                  actual.describe(),
-                  Arrays.toString(expectedUnmatchedRuleIndexes),
-                  matchingRules(actualMatchedRuleIndices, expectedUnmatchedRules))
-              .doesNotContainAnyElementsOf(expectedUnmatchedRules);
+          decisionMatchedRulesAssertj.hasNotMatchedRules(
+              actualMatchedRuleIndices, expectedUnmatchedRuleIndexes);
         });
 
     return this;
-  }
-
-  private <T> List<T> matchingRules(final List<T> actualMatches, final List<T> expectedMatches) {
-    return expectedMatches.stream().filter(actualMatches::contains).collect(Collectors.toList());
-  }
-
-  private <T> List<T> missingRules(final List<T> actualMatches, final List<T> expectedMatches) {
-    return expectedMatches.stream()
-        .filter(e -> actualMatches.stream().noneMatch(a -> Objects.equals(a, e)))
-        .collect(Collectors.toList());
-  }
-
-  private <T> List<T> unexpectedRules(final List<T> actualMatches, final List<T> expectedMatches) {
-    return actualMatches.stream()
-        .filter(e -> expectedMatches.stream().noneMatch(a -> Objects.equals(a, e)))
-        .collect(Collectors.toList());
   }
 
   private String formatState(final DecisionInstanceState state) {
@@ -159,10 +130,6 @@ public class DecisionInstanceAssertj
     }
 
     return state.name().toLowerCase();
-  }
-
-  private Object formatResult(final String result) {
-    return dataSource.getJsonMapper().fromJson(result, Object.class);
   }
 
   private void awaitDecisionInstance(final Consumer<DecisionInstance> assertion) {
@@ -179,7 +146,7 @@ public class DecisionInstanceAssertj
 
                 try {
                   assertThat(discoveredDecisionInstance)
-                      .withFailMessage("No decision instance [%s] found.", actual.describe())
+                      .withFailMessage("No DecisionInstance [%s] found.", actual.describe())
                       .isPresent();
                   // We need to use the getById endpoint because only that endpoint contains
                   // the matchedRules() and evaluatedInput data.
@@ -195,6 +162,27 @@ public class DecisionInstanceAssertj
               });
     } catch (final ConditionTimeoutException ignore) {
       fail(failureMessage.get());
+    }
+  }
+
+  private JsonNode readJson(final String value) {
+    if (value == null) {
+      return NullNode.getInstance();
+    }
+
+    try {
+      return jsonMapper.readValue(value, JsonNode.class);
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException(String.format("Failed to read JSON: '%s'", value), e);
+    }
+  }
+
+  private JsonNode toJson(final Object value) {
+    try {
+      return jsonMapper.convertValue(value, JsonNode.class);
+    } catch (final IllegalArgumentException e) {
+      throw new RuntimeException(
+          String.format("Failed to transform value to JSON: '%s'", value), e);
     }
   }
 }
