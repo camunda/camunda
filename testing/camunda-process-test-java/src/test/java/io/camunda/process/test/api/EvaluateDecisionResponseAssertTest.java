@@ -44,7 +44,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class EvaluatedDecisionResponseAssertTest {
+public class EvaluateDecisionResponseAssertTest {
 
   private static final String NAME = "name";
   private static final String DECISION_DEFINITION_ID = "decisionDefinitionId";
@@ -205,13 +205,13 @@ public class EvaluatedDecisionResponseAssertTest {
       // then
       Assertions.assertThatThrownBy(() -> assertThat(evaluateDecision()).hasOutput("foo"))
           .hasMessage(
-              "Expected EvaluateDecisionResponse [name] to have output 'foo', but was '\"outputValue\"'");
+              "Expected EvaluateDecisionResponse [name] to have output '\"foo\"', but was '\"outputValue\"'");
 
       final Map<String, Object> expected = new HashMap<>();
       expected.put("a", "b");
       Assertions.assertThatThrownBy(() -> assertThat(evaluateDecision()).hasOutput(expected))
           .hasMessage(
-              "Expected EvaluateDecisionResponse [name] to have output '{a=b}', but was '\"outputValue\"'");
+              "Expected EvaluateDecisionResponse [name] to have output '{\"a\":\"b\"}', but was '\"outputValue\"'");
     }
 
     @Test
@@ -224,13 +224,13 @@ public class EvaluatedDecisionResponseAssertTest {
       // then
       Assertions.assertThatThrownBy(() -> assertThat(evaluateDecision()).hasOutput("foo"))
           .hasMessage(
-              "Expected EvaluateDecisionResponse [name] to have output 'foo', but was '{\"a\":\"b\",\"v\":2}'");
+              "Expected EvaluateDecisionResponse [name] to have output '\"foo\"', but was '{\"a\":\"b\",\"v\":2}'");
 
       final Map<String, Object> expected = new HashMap<>();
       expected.put("a", "b");
       Assertions.assertThatThrownBy(() -> assertThat(evaluateDecision()).hasOutput(expected))
           .hasMessage(
-              "Expected EvaluateDecisionResponse [name] to have output '{a=b}', but was '{\"a\":\"b\",\"v\":2}'");
+              "Expected EvaluateDecisionResponse [name] to have output '{\"a\":\"b\"}', but was '{\"a\":\"b\",\"v\":2}'");
     }
 
     @Test
@@ -243,13 +243,13 @@ public class EvaluatedDecisionResponseAssertTest {
       // then
       Assertions.assertThatThrownBy(() -> assertThat(evaluateDecision()).hasOutput("foo"))
           .hasMessage(
-              "Expected EvaluateDecisionResponse [name] to have output 'foo', but was '[{\"a\":1,\"b\":2},{\"c\":3,\"d\":4}]'");
+              "Expected EvaluateDecisionResponse [name] to have output '\"foo\"', but was '[{\"a\":1,\"b\":2},{\"c\":3,\"d\":4}]'");
 
       final Map<String, Object> expected = new HashMap<>();
       expected.put("a", "b");
       Assertions.assertThatThrownBy(() -> assertThat(evaluateDecision()).hasOutput(expected))
           .hasMessage(
-              "Expected EvaluateDecisionResponse [name] to have output '{a=b}', but was '[{\"a\":1,\"b\":2},{\"c\":3,\"d\":4}]'");
+              "Expected EvaluateDecisionResponse [name] to have output '{\"a\":\"b\"}', but was '[{\"a\":1,\"b\":2},{\"c\":3,\"d\":4}]'");
     }
   }
 }

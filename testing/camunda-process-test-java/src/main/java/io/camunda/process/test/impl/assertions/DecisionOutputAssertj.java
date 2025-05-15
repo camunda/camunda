@@ -15,57 +15,30 @@
  */
 package io.camunda.process.test.impl.assertions;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
-import io.camunda.client.api.response.EvaluateDecisionResponse;
-import io.camunda.client.api.response.EvaluatedDecision;
-import io.camunda.process.test.api.assertions.EvaluatedDecisionResponseAssert;
-import java.util.Optional;
 import org.assertj.core.api.AbstractAssert;
 
-public class EvaluatedDecisionResponseAssertj
-    extends AbstractAssert<EvaluatedDecisionResponseAssertj, EvaluateDecisionResponse>
-    implements EvaluatedDecisionResponseAssert {
+public class DecisionOutputAssertj extends AbstractAssert<DecisionOutputAssertj, String> {
 
   private final ObjectMapper jsonMapper = new ObjectMapper();
 
-  public EvaluatedDecisionResponseAssertj(final EvaluateDecisionResponse evaluateDecisionResponse) {
-    super(evaluateDecisionResponse, EvaluatedDecisionResponseAssert.class);
+  public DecisionOutputAssertj(final String failureMessagePrefix) {
+    super(failureMessagePrefix, DecisionOutputAssertj.class);
   }
 
-  @Override
-  public EvaluatedDecisionResponseAssert isEvaluated() {
-    assertThat(actual.getFailureMessage())
-        .withFailMessage(
-            "EvaluateDecisionResponse [%s] failed with message: %s",
-            actual.getDecisionId(), actual.getFailureMessage())
-        .isNullOrEmpty();
-
-    return this;
-  }
-
-  @Override
-  public EvaluatedDecisionResponseAssert hasOutput(final Object expectedOutput) {
-    final Optional<EvaluatedDecision> decision =
-        actual.getEvaluatedDecisions().stream().findFirst();
-    assertThat(decision)
-        .withFailMessage("EvaluateDecisionResponse [%s] was not evaluated", actual.getDecisionId())
-        .isPresent();
-
-    final JsonNode result = readJson(actual.getDecisionOutput());
+  public void hasOutput(final String decisionOutput, final Object expectedOutput) {
+    final JsonNode decisionOutputJson = readJson(decisionOutput);
     final JsonNode expectedOutputJson = toJson(expectedOutput);
 
-    assertThat(result)
+    assertThat(decisionOutputJson)
         .withFailMessage(
-            "Expected EvaluateDecisionResponse [%s] to have output '%s', but was '%s'",
-            actual.getDecisionId(), expectedOutput, result)
+            "%s to have output '%s', but was '%s'", actual, expectedOutputJson, decisionOutputJson)
         .isEqualTo(expectedOutputJson);
-
-    return this;
   }
 
   private JsonNode readJson(final String value) {

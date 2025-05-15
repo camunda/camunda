@@ -15,12 +15,6 @@
  */
 package io.camunda.process.test.impl.assertions;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.NullNode;
 import io.camunda.client.api.response.EvaluatedDecision;
 import io.camunda.process.test.api.assertions.EvaluatedDecisionAssert;
 import org.assertj.core.api.AbstractAssert;
@@ -29,28 +23,22 @@ public class EvaluatedDecisionAssertj
     extends AbstractAssert<EvaluatedDecisionAssertj, EvaluatedDecision>
     implements EvaluatedDecisionAssert {
 
-  private final ObjectMapper jsonMapper = new ObjectMapper();
   private final DecisionMatchedRulesAssertj decisionMatchedRulesAssertj;
+  private final DecisionOutputAssertj decisionOutputAssertj;
 
   public EvaluatedDecisionAssertj(final EvaluatedDecision evaluatedDecision) {
     super(evaluatedDecision, EvaluatedDecisionAssert.class);
 
-    this.decisionMatchedRulesAssertj =
-        new DecisionMatchedRulesAssertj(
-            String.format("Expected EvaluatedDecision [%s]", evaluatedDecision.getDecisionId()));
+    final String failureMessagePrefix =
+        String.format("Expected EvaluatedDecision [%s]", evaluatedDecision.getDecisionId());
+
+    this.decisionMatchedRulesAssertj = new DecisionMatchedRulesAssertj(failureMessagePrefix);
+    this.decisionOutputAssertj = new DecisionOutputAssertj(failureMessagePrefix);
   }
 
   @Override
   public EvaluatedDecisionAssert hasOutput(final Object expectedOutput) {
-    final JsonNode result = readJson(actual.getDecisionOutput());
-    final JsonNode expectedOutputJson = toJson(expectedOutput);
-
-    assertThat(result)
-        .withFailMessage(
-            "Expected EvaluatedDecision [%s] to have output '%s', but was '%s'",
-            actual.getDecisionId(), expectedOutput, result)
-        .isEqualTo(expectedOutputJson);
-
+    decisionOutputAssertj.hasOutput(actual.getDecisionOutput(), expectedOutput);
     return this;
   }
 
@@ -66,26 +54,5 @@ public class EvaluatedDecisionAssertj
     this.decisionMatchedRulesAssertj.hasNotMatchedRules(
         actual.getMatchedRules(), expectedUnmatchedRuleIndexes);
     return this;
-  }
-
-  private JsonNode readJson(final String value) {
-    if (value == null) {
-      return NullNode.getInstance();
-    }
-
-    try {
-      return jsonMapper.readValue(value, JsonNode.class);
-    } catch (final JsonProcessingException e) {
-      throw new RuntimeException(String.format("Failed to read JSON: '%s'", value), e);
-    }
-  }
-
-  private JsonNode toJson(final Object value) {
-    try {
-      return jsonMapper.convertValue(value, JsonNode.class);
-    } catch (final IllegalArgumentException e) {
-      throw new RuntimeException(
-          String.format("Failed to transform value to JSON: '%s'", value), e);
-    }
   }
 }

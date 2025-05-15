@@ -20,6 +20,7 @@ import static io.camunda.process.test.api.CamundaAssert.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.EvaluateDecisionResponse;
+import io.camunda.client.api.response.EvaluatedDecision;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.api.CamundaProcessTest;
 import io.camunda.process.test.api.CamundaProcessTestContext;
@@ -33,6 +34,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.assertj.core.api.Assertions;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Decision;
@@ -629,6 +631,35 @@ public class CamundaProcessTestContextIT {
   }
 
   @Test
+  void shouldEvaluateSimpleDecision() {
+    // Given
+    client
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("dmn/simple-decision-table.dmn")
+        .send()
+        .join();
+
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("yes_or_no", "yes");
+
+    // when
+    final EvaluateDecisionResponse response =
+        client
+            .newEvaluateDecisionCommand()
+            .decisionId("simple_decision")
+            .variables(variables)
+            .send()
+            .join();
+
+    // Then
+    assertThat(response).isEvaluated().hasOutput(":)");
+
+    final EvaluatedDecision evaluatedDecision = response.getEvaluatedDecisions().get(0);
+
+    assertThat(evaluatedDecision).hasOutput(":)").hasMatchedRules(1);
+  }
+
+  @Test
   void shouldEvaluateComplexDecision() {
     // Given
     client
@@ -667,6 +698,42 @@ public class CamundaProcessTestContextIT {
         .isEvaluated()
         .hasOutput(10)
         .hasMatchedRules(1);
+  }
+
+  @Test
+  void unableToEvaluateDecision() {
+    // Given
+    client
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("dmn/faulty-decision-table.dmn")
+        .send()
+        .join();
+
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("color", "green");
+    variables.put("language", "german");
+
+    // when
+    final EvaluateDecisionResponse response =
+        client
+            .newEvaluateDecisionCommand()
+            .decisionId("decision_overall_happiness")
+            .variables(variables)
+            .send()
+            .join();
+
+    // Then
+    Assertions.assertThatThrownBy(() -> assertThat(response).isEvaluated())
+        .hasMessageContaining(
+            "Expected to evaluate decision 'decision_overall_happiness', "
+                + "but multiple values aren't allowed for UNIQUE hit policy.");
+
+    Assertions.assertThatThrownBy(
+            () -> assertThat(DecisionSelectors.byId("decision_overall_happiness")).isEvaluated())
+        .hasMessage("No DecisionInstance [decision_overall_happiness] found.");
+    Assertions.assertThatThrownBy(
+            () -> assertThat(DecisionSelectors.byId("decision_language_happiness")).isEvaluated())
+        .hasMessage("No DecisionInstance [decision_language_happiness] found.");
   }
 
   /**

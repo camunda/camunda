@@ -23,16 +23,16 @@ import io.camunda.process.test.api.assertions.DecisionInstanceAssert;
 import io.camunda.process.test.api.assertions.DecisionSelector;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ElementSelectors;
+import io.camunda.process.test.api.assertions.EvaluateDecisionResponseAssert;
 import io.camunda.process.test.api.assertions.EvaluatedDecisionAssert;
-import io.camunda.process.test.api.assertions.EvaluatedDecisionResponseAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.UserTaskAssert;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.DecisionInstanceAssertj;
+import io.camunda.process.test.impl.assertions.EvaluateDecisionResponseAssertj;
 import io.camunda.process.test.impl.assertions.EvaluatedDecisionAssertj;
-import io.camunda.process.test.impl.assertions.EvaluatedDecisionResponseAssertj;
 import io.camunda.process.test.impl.assertions.ProcessInstanceAssertj;
 import io.camunda.process.test.impl.assertions.UserTaskAssertj;
 import java.time.Duration;
@@ -205,9 +205,9 @@ public class CamundaAssert {
    * @param evaluateDecisionResponse the evaluated decision response to assert
    * @return the assertion object
    */
-  public static EvaluatedDecisionResponseAssert assertThat(
+  public static EvaluateDecisionResponseAssert assertThat(
       final EvaluateDecisionResponse evaluateDecisionResponse) {
-    return new EvaluatedDecisionResponseAssertj(evaluateDecisionResponse);
+    return new EvaluateDecisionResponseAssertj(evaluateDecisionResponse);
   }
 
   /**

@@ -18,10 +18,6 @@ package io.camunda.process.test.impl.assertions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.NullNode;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.DecisionInstanceState;
@@ -39,18 +35,20 @@ public class DecisionInstanceAssertj
     implements DecisionInstanceAssert {
 
   private final CamundaDataSource dataSource;
-  private final ObjectMapper jsonMapper = new ObjectMapper();
   private final DecisionMatchedRulesAssertj decisionMatchedRulesAssertj;
+  private final DecisionOutputAssertj decisionOutputAssertj;
 
   public DecisionInstanceAssertj(
       final CamundaDataSource dataSource, final DecisionSelector decisionSelector) {
 
     super(decisionSelector, DecisionInstanceAssert.class);
 
+    final String failureMessagePrefix =
+        String.format("Expected DecisionInstance [%s]", actual.describe());
+
     this.dataSource = dataSource;
-    this.decisionMatchedRulesAssertj =
-        new DecisionMatchedRulesAssertj(
-            String.format("Expected DecisionInstance [%s]", actual.describe()));
+    this.decisionMatchedRulesAssertj = new DecisionMatchedRulesAssertj(failureMessagePrefix);
+    this.decisionOutputAssertj = new DecisionOutputAssertj(failureMessagePrefix);
   }
 
   @Override
@@ -68,23 +66,7 @@ public class DecisionInstanceAssertj
   @Override
   public DecisionInstanceAssert hasOutput(final Object expectedOutput) {
     awaitDecisionInstance(
-        instance -> {
-          try {
-            final JsonNode result = readJson(instance.getResult());
-            final JsonNode expectedOutputJson = toJson(expectedOutput);
-
-            assertThat(result)
-                .withFailMessage(
-                    "Expected DecisionInstance [%s] to have output '%s', but was '%s'",
-                    actual.describe(), expectedOutput, readJson(instance.getResult()))
-                .isEqualTo(expectedOutputJson);
-          } catch (final ClientException | IllegalArgumentException e) {
-            // instance.getResult() could not be deserialized.
-            fail(
-                "Expected DecisionInstance [%s] to have output '%s', but was '%s'",
-                actual.describe(), expectedOutput, readJson(instance.getResult()));
-          }
-        });
+        instance -> decisionOutputAssertj.hasOutput(instance.getResult(), expectedOutput));
 
     return this;
   }
@@ -147,27 +129,6 @@ public class DecisionInstanceAssertj
               });
     } catch (final ConditionTimeoutException ignore) {
       fail(failureMessage.get());
-    }
-  }
-
-  private JsonNode readJson(final String value) {
-    if (value == null) {
-      return NullNode.getInstance();
-    }
-
-    try {
-      return jsonMapper.readValue(value, JsonNode.class);
-    } catch (final JsonProcessingException e) {
-      throw new RuntimeException(String.format("Failed to read JSON: '%s'", value), e);
-    }
-  }
-
-  private JsonNode toJson(final Object value) {
-    try {
-      return jsonMapper.convertValue(value, JsonNode.class);
-    } catch (final IllegalArgumentException e) {
-      throw new RuntimeException(
-          String.format("Failed to transform value to JSON: '%s'", value), e);
     }
   }
 }
