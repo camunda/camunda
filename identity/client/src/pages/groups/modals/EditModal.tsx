@@ -37,6 +37,7 @@ const EditModal: FC<UseEntityModalProps<Group>> = ({
     const { success } = await callUpdateGroup({
       groupId: group.groupId,
       name: groupName.trim(),
+      description: description?.trim(),
     });
 
     if (success) {
