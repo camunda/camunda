@@ -288,6 +288,7 @@ public class ProcessHandlerTest {
             .withProcessDefinitionKey(expectedId)
             .withBpmnProcessId("testProcessId")
             .withVersionTag("processTag")
+            .withVersion(5)
             .withResource(Files.readAllBytes(Path.of(resource.getPath())))
             .build();
 
@@ -305,6 +306,6 @@ public class ProcessHandlerTest {
         .isPresent()
         .get()
         .extracting(CachedProcessEntity::name, CachedProcessEntity::versionTag)
-        .containsExactly("testProcessName", "processTag");
+        .containsExactly("testProcessName", "5");
   }
 }
