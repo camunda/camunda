@@ -2,11 +2,6 @@
 <project version="4">
   <component name="RemoteRepositoriesConfiguration">
     <remote-repository>
-      <option name="id" value="central" />
-      <option name="name" value="Maven Central" />
-      <option name="url" value="https://repo1.maven.org/maven2" />
-    </remote-repository>
-    <remote-repository>
       <option name="id" value="camunda-identity" />
       <option name="name" value="Camunda Identity Repository" />
       <option name="url" value="https://artifacts.camunda.com/artifactory/camunda-identity/" />
@@ -30,11 +25,6 @@
       <option name="id" value="camunda-bpm-nexus-ee" />
       <option name="name" value="Camunda Enterprise Maven Repository" />
       <option name="url" value="https://artifacts.camunda.com/artifactory/private/" />
-    </remote-repository>
-    <remote-repository>
-      <option name="id" value="central" />
-      <option name="name" value="Maven Central repository" />
-      <option name="url" value="https://repo1.maven.org/maven2" />
     </remote-repository>
     <remote-repository>
       <option name="id" value="jboss.community" />
