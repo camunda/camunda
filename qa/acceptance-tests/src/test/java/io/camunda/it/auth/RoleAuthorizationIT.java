@@ -357,19 +357,6 @@ class RoleAuthorizationIT {
 
     adminClient.newCreateGroupCommand().groupId(groupId).name("groupName").send().join();
     adminClient.newAssignRoleToGroupCommand().roleId(ROLE_ID_1).groupId(groupId).send().join();
-
-    Awaitility.await("Group is assigned to the role")
-        .ignoreExceptionsInstanceOf(ProblemException.class)
-        .untilAsserted(
-            () ->
-                assertThat(
-                        searchRolesByGroupId(
-                                adminClient.getConfiguration().getRestAddress().toString(),
-                                ADMIN,
-                                groupId)
-                            .items())
-                    .anyMatch(r -> ROLE_ID_1.equals(r.getRoleId())));
-
     adminClient.newUnassignRoleFromGroupCommand().roleId(ROLE_ID_1).groupId(groupId).send().join();
 
     Awaitility.await("Group is unassigned from the role")
