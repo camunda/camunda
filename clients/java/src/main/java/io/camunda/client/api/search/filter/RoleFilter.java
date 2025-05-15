@@ -22,15 +22,15 @@ public interface RoleFilter extends SearchRequestFilter {
   /**
    * Filter roles by the specified role ID.
    *
-   * @param roleId the role ID
+   * @param roleId the ID of the role
    * @return the updated filter
    */
   RoleFilter roleId(final String roleId);
 
   /**
-   * Filter roles by name.
+   * Filter roles by the specified name.
    *
-   * @param name the role name
+   * @param name the name of the role
    * @return the updated filter
    */
   RoleFilter name(final String name);
