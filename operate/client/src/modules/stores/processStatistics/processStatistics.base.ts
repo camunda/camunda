@@ -22,17 +22,29 @@ import {
   ProcessInstancesStatisticsRequest,
   fetchProcessInstancesStatistics,
 } from 'modules/api/processInstances/fetchProcessInstancesStatistics';
-import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
 import {
   ACTIVE_BADGE,
   CANCELED_BADGE,
   COMPLETED_BADGE,
   INCIDENTS_BADGE,
+  SUBPROCESS_WITH_INCIDENTS,
 } from 'modules/bpmn-js/badgePositions';
 import {
   RequestFilters,
   getProcessInstancesRequestFilters,
 } from 'modules/utils/filter';
+import {BusinessObject, OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
+import {getSubprocessOverlayFromIncidentFlowNodes} from 'modules/utils/flowNodes';
+import {NetworkReconnectionHandler} from '../networkReconnectionHandler';
+
+export type SubprocessOverlay = {
+  payload: {
+    flowNodeState: string;
+  };
+  type: string;
+  flowNodeId: string;
+  position: OverlayPosition;
+};
 
 type State = {
   statistics: ProcessInstancesStatisticsDto[];
@@ -49,6 +61,7 @@ const overlayPositions = {
   incidents: INCIDENTS_BADGE,
   canceled: CANCELED_BADGE,
   completed: COMPLETED_BADGE,
+  subprocessWithIncidents: SUBPROCESS_WITH_INCIDENTS,
 } as const;
 
 class ProcessStatistics extends NetworkReconnectionHandler {
@@ -64,7 +77,7 @@ class ProcessStatistics extends NetworkReconnectionHandler {
       startFetching: action,
       flowNodeStates: computed,
       resetState: action,
-      overlaysData: computed,
+      getOverlaysData: action,
     });
   }
 
@@ -112,13 +125,35 @@ class ProcessStatistics extends NetworkReconnectionHandler {
     this.state.statistics = statistics;
   };
 
-  get overlaysData() {
-    return this.flowNodeStates.map(({flowNodeState, count, flowNodeId}) => ({
-      payload: {flowNodeState, count},
-      type: `statistics-${flowNodeState}`,
-      flowNodeId,
-      position: overlayPositions[flowNodeState],
-    }));
+  getOverlaysData(selectableFlowNodes?: BusinessObject[]) {
+    const overlaysMinusSubprocesses = this.flowNodeStates.map(
+      ({flowNodeState, count, flowNodeId}) => ({
+        payload: {flowNodeState, count},
+        type: `statistics-${flowNodeState}`,
+        flowNodeId,
+        position: overlayPositions[flowNodeState],
+      }),
+    );
+
+    if (!selectableFlowNodes || selectableFlowNodes.length === 0)
+      return overlaysMinusSubprocesses;
+
+    const flowNodeIdsWithIncidents = this.flowNodeStates
+      .filter(({flowNodeState}) => flowNodeState === 'incidents')
+      .map((flowNode) => flowNode.flowNodeId);
+
+    const selectableFlowNodesWithIncidents = selectableFlowNodes.filter(
+      ({id}) => flowNodeIdsWithIncidents.includes(id),
+    );
+
+    const subprocessOverlays = getSubprocessOverlayFromIncidentFlowNodes(
+      selectableFlowNodesWithIncidents,
+      'statistics-incidents',
+    );
+
+    const allOverlays = [...overlaysMinusSubprocesses, ...subprocessOverlays];
+
+    return allOverlays;
   }
 
   get flowNodeStates() {

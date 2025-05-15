@@ -21,7 +21,6 @@ import {processInstanceDetailsStore} from './processInstanceDetails';
 import {modificationsStore} from './modifications';
 import {mockComplexProcess} from 'modules/mocks/mockComplexProcess';
 import {processInstanceDetailsDiagramStore} from './processInstanceDetailsDiagram';
-import {mockSubProcesses} from 'modules/mocks/mockSubProcesses';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {createInstance} from 'modules/testUtils';
 import {mockFetchProcessInstanceDetailStatistics} from 'modules/mocks/api/processInstances/fetchProcessInstanceDetailStatistics';
@@ -274,70 +273,6 @@ describe('stores/processInstanceDetailsStatistics', () => {
     );
 
     window.addEventListener = originalEventListener;
-  });
-
-  it('should not display counts for sub processes', async () => {
-    const subProcessStatistics = [
-      {
-        activityId: 'service-task-1',
-        active: 2,
-        canceled: 0,
-        incidents: 0,
-        completed: 1,
-      },
-      {
-        activityId: 'service-task-2',
-        active: 2,
-        canceled: 0,
-        incidents: 2,
-        completed: 1,
-      },
-      {
-        activityId: 'event-subprocess',
-        active: 4,
-        canceled: 0,
-        incidents: 0,
-        completed: 0,
-      },
-      {
-        activityId: 'subprocess',
-        active: 4,
-        canceled: 0,
-        incidents: 0,
-        completed: 0,
-      },
-    ];
-
-    mockFetchProcessInstanceDetailStatistics().withSuccess(
-      subProcessStatistics,
-    );
-
-    mockFetchProcessXML().withSuccess(mockSubProcesses);
-
-    mockFetchProcessInstance().withSuccess(
-      createInstance({id: PROCESS_INSTANCE_ID, state: 'INCIDENT'}),
-    );
-
-    processInstanceDetailsStore.fetchProcessInstance(PROCESS_INSTANCE_ID);
-    processInstanceDetailsDiagramStore.fetchProcessXml(PROCESS_INSTANCE_ID);
-
-    processInstanceDetailsStatisticsStore.init(PROCESS_INSTANCE_ID);
-
-    await waitFor(() => {
-      expect(processInstanceDetailsDiagramStore.state.status).toBe('fetched');
-    });
-
-    await waitFor(() => {
-      expect(processInstanceDetailsStatisticsStore.state.statistics).toEqual(
-        subProcessStatistics,
-      );
-    });
-
-    expect(processInstanceDetailsStatisticsStore.flowNodeStatistics).toEqual([
-      {count: 2, flowNodeId: 'service-task-1', flowNodeState: 'active'},
-      {count: 2, flowNodeId: 'service-task-2', flowNodeState: 'active'},
-      {count: 2, flowNodeId: 'service-task-2', flowNodeState: 'incidents'},
-    ]);
   });
 
   it('should return selectable flow nodes', async () => {

@@ -34,6 +34,7 @@ import {
   ACTIVE_BADGE,
   INCIDENTS_BADGE,
   COMPLETED_BADGE,
+  SUBPROCESS_WITH_INCIDENTS,
 } from 'modules/bpmn-js/badgePositions';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
@@ -47,6 +48,8 @@ import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstance
 import {ModificationInfoBanner} from './ModificationInfoBanner';
 import {ModificationDropdown} from './ModificationDropdown';
 import {StateOverlay} from 'modules/components/StateOverlay';
+import {SubprocessOverlay} from 'modules/stores/processStatistics/processStatistics.base';
+import {getSubprocessOverlayFromIncidentFlowNodes} from 'modules/utils/flowNodes';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -56,6 +59,7 @@ const overlayPositions = {
   incidents: INCIDENTS_BADGE,
   canceled: CANCELED_BADGE,
   completed: COMPLETED_BADGE,
+  subprocessWithIncidents: SUBPROCESS_WITH_INCIDENTS,
 } as const;
 
 type ModificationBadgePayload = {
@@ -64,7 +68,9 @@ type ModificationBadgePayload = {
 };
 
 const TopPanel: React.FC = observer(() => {
-  const {selectableFlowNodes} = processInstanceDetailsStatisticsStore;
+  const {selectableFlowNodes, flowNodeStatistics} =
+    processInstanceDetailsStatisticsStore;
+  const {businessObjects} = processInstanceDetailsDiagramStore;
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const flowNodeSelection = flowNodeSelectionStore.state.selection;
   const [isInTransition, setIsInTransition] = useState(false);
@@ -80,15 +86,26 @@ const TopPanel: React.FC = observer(() => {
     };
   }, [processInstanceId]);
 
-  const flowNodeStateOverlays =
-    processInstanceDetailsStatisticsStore.flowNodeStatistics.map(
-      ({flowNodeState, count, flowNodeId}) => ({
-        payload: {flowNodeState, count},
-        type: OVERLAY_TYPE_STATE,
-        flowNodeId,
-        position: overlayPositions[flowNodeState],
-      }),
-    );
+  const flowNodeIdsWithIncidents = flowNodeStatistics
+    ?.filter(({flowNodeState}) => flowNodeState === 'incidents')
+    ?.map((flowNode) => flowNode.flowNodeId);
+
+  const selectableFlowNodesWithIncidents = flowNodeIdsWithIncidents?.map(
+    (flowNodeId) => businessObjects?.[flowNodeId],
+  );
+
+  const subprocessOverlays: SubprocessOverlay[] =
+    getSubprocessOverlayFromIncidentFlowNodes(selectableFlowNodesWithIncidents);
+
+  const allFlowNodeStateOverlays = [
+    ...(flowNodeStatistics?.map(({flowNodeState, count, flowNodeId}) => ({
+      payload: {flowNodeState, count},
+      type: OVERLAY_TYPE_STATE,
+      flowNodeId,
+      position: overlayPositions[flowNodeState],
+    })) || []),
+    ...subprocessOverlays,
+  ];
 
   const modificationBadgesPerFlowNode = computed(() =>
     Object.entries(modificationsStore.modificationsByFlowNode).reduce<
@@ -232,10 +249,10 @@ const TopPanel: React.FC = observer(() => {
               overlaysData={
                 isModificationModeEnabled
                   ? [
-                      ...flowNodeStateOverlays,
+                      ...allFlowNodeStateOverlays,
                       ...modificationBadgesPerFlowNode.get(),
                     ]
-                  : flowNodeStateOverlays
+                  : allFlowNodeStateOverlays
               }
               selectedFlowNodeOverlay={
                 isModificationModeEnabled ? (

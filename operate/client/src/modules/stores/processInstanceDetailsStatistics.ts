@@ -35,7 +35,7 @@ import {modificationsStore} from './modifications';
 import {isProcessEndEvent} from 'modules/bpmn-js/utils/isProcessEndEvent';
 import isEqual from 'lodash/isEqual';
 
-type Statistic = ProcessInstanceDetailStatisticsDto & {filteredActive: number};
+type Statistic = ProcessInstanceDetailStatisticsDto;
 
 type State = {
   statistics: ProcessInstanceDetailStatisticsDto[];
@@ -171,10 +171,7 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
           flowNodeState: FlowNodeState;
         }[]
       >((states, flowNodeState) => {
-        const count =
-          flowNodeState === 'active'
-            ? statistic['filteredActive']
-            : statistic[flowNodeState];
+        const count = statistic[flowNodeState];
 
         if (count === 0) {
           return states;
@@ -205,8 +202,6 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
 
       statistics[activityId] = {
         active,
-        filteredActive:
-          businessObject?.$type !== 'bpmn:SubProcess' ? active : 0,
         incidents,
         completed:
           modificationsStore.isModificationModeEnabled ||
@@ -230,7 +225,7 @@ class ProcessInstanceDetailsStatistics extends NetworkReconnectionHandler {
 
   getTotalRunningInstancesVisibleForFlowNode = (flowNodeId: string) => {
     return (
-      (this.statisticsByFlowNode[flowNodeId]?.filteredActive ?? 0) +
+      (this.statisticsByFlowNode[flowNodeId]?.active ?? 0) +
       (this.statisticsByFlowNode[flowNodeId]?.incidents ?? 0)
     );
   };

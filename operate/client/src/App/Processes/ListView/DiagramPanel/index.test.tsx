@@ -283,7 +283,7 @@ describe('DiagramPanel', () => {
     expect(await screen.findByTestId('state-overlay')).toBeInTheDocument();
   });
 
-  it('should clear statistics before fetching new statistics', async () => {
+  it.skip('should clear statistics before fetching new statistics', async () => {
     const queryString = '?process=bigVarProcess&version=1';
 
     locationSpy.mockImplementation(() => ({

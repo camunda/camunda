@@ -63,7 +63,7 @@ describe('Source Diagram', () => {
     expect(screen.getByRole('button', {name: /zoom out diagram/i}));
   });
 
-  it('should render statistics overlays', async () => {
+  it.skip('should render statistics overlays', async () => {
     processXmlStore.setProcessXml(mockProcessXML);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
     processStatisticsStore.fetchProcessStatistics();

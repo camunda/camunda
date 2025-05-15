@@ -69,13 +69,13 @@ describe('stores/processStatistics.base', () => {
     );
   });
 
-  it('should get overlaysData', async () => {
+  it('should get overlays data', async () => {
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
 
     processStatisticsStore.fetchProcessStatistics();
 
     await waitFor(() =>
-      expect(processStatisticsStore.overlaysData).toEqual([
+      expect(processStatisticsStore.getOverlaysData()).toEqual([
         {
           flowNodeId: 'userTask',
           payload: {
