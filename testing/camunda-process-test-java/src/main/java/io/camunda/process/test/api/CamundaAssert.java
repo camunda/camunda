@@ -20,6 +20,7 @@ import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.response.ProcessInstanceResult;
 import io.camunda.process.test.api.assertions.DecisionInstanceAssert;
 import io.camunda.process.test.api.assertions.DecisionSelector;
+import io.camunda.process.test.api.assertions.DecisionSelectors;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
@@ -201,11 +202,7 @@ public class CamundaAssert {
    * @return the assertion object
    */
   public static DecisionInstanceAssertj assertThat(final EvaluateDecisionResponse response) {
-    return new DecisionInstanceAssertj(
-        getDataSource(),
-        decisionInstance ->
-            decisionInstance.getDecisionInstanceKey() == response.getDecisionInstanceKey()
-                && decisionInstance.getDecisionDefinitionId().equals(response.getDecisionId()));
+    return new DecisionInstanceAssertj(getDataSource(), DecisionSelectors.byResponse(response));
   }
 
   // ======== Internal ========

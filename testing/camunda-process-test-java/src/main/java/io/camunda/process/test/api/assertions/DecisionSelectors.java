@@ -191,10 +191,7 @@ public class DecisionSelectors {
     @Override
     public String describe() {
       return String.format(
-          "%s (decisionInstanceKey: %d, decisionId: %s)",
-          response.getDecisionName(),
-          response.getDecisionInstanceKey(),
-          response.getDecisionId());
+          "%s (decisionId: %s)", response.getDecisionName(), response.getDecisionId());
     }
 
     @Override

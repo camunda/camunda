@@ -646,10 +646,7 @@ public class CamundaProcessTestContextIT {
         evaluateDecisionByDecisionId("simple_decision", variables);
 
     // Then
-    assertThat(response)
-        .isEvaluated()
-        .hasOutput(":)")
-        .hasMatchedRules(1);
+    assertThat(response).isEvaluated().hasOutput(":)").hasMatchedRules(1);
   }
 
   @Test
@@ -670,10 +667,7 @@ public class CamundaProcessTestContextIT {
         evaluateDecisionByDecisionId("decision_overall_happiness", variables);
 
     // Then
-    assertThat(response)
-        .isEvaluated()
-        .hasOutput("pretty happy")
-        .hasMatchedRules(3);
+    assertThat(response).isEvaluated().hasOutput("pretty happy").hasMatchedRules(3);
 
     assertThat(DecisionSelectors.byId("decision_color_happiness"))
         .isEvaluated()
@@ -705,7 +699,10 @@ public class CamundaProcessTestContextIT {
 
     // Then
     Assertions.assertThatThrownBy(() -> assertThat(response).isEvaluated())
-        .hasMessageStartingWith("No DecisionInstance");
+        .hasMessage(
+            "No DecisionInstance [Determine Overall Happiness "
+                + "(decisionId: decision_overall_happiness)] "
+                + "found.");
 
     Assertions.assertThatThrownBy(
             () -> assertThat(DecisionSelectors.byId("decision_overall_happiness")).isEvaluated())
