@@ -27,6 +27,7 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
+import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -129,7 +130,12 @@ class RdbmsExporterBatchOperationsIT {
 
     // and the items should be canceled
     final var batchOperationItems =
-        rdbmsService.getBatchOperationReader().getItems(String.valueOf(batchOperationKey));
+        rdbmsService
+            .getBatchOperationItemReader()
+            .search(
+                SearchQueryBuilders.batchOperationItemQuery(
+                    q -> q.filter(f -> f.batchOperationIds(Long.toString(batchOperationKey)))))
+            .items();
     assertThat(batchOperationItems).hasSize(3);
     assertThat(
             batchOperationItems.stream()

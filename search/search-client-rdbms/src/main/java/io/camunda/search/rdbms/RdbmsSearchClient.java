@@ -303,17 +303,10 @@ public class RdbmsSearchClient implements SearchClientsProxy {
   }
 
   @Override
-  public List<BatchOperationItemEntity> getBatchOperationItems(final String batchOperationId) {
-    LOG.debug(
-        "[RDBMS Search Client] Search for batch operation items by batchOperationId: {}",
-        batchOperationId);
-
-    return rdbmsService.getBatchOperationReader().getItems(batchOperationId);
-  }
-
-  @Override
   public SearchQueryResult<BatchOperationItemEntity> searchBatchOperationItems(
       final BatchOperationItemQuery query) {
-    throw new UnsupportedOperationException("Not implemented yet");
+    LOG.debug("[RDBMS Search Client] Search for batch operation items: {}", query);
+
+    return rdbmsService.getBatchOperationItemReader().search(query);
   }
 }

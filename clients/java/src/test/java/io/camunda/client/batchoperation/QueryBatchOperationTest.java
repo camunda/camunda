@@ -38,16 +38,4 @@ public class QueryBatchOperationTest extends ClientRestTest {
     assertThat(request.getUrl()).isEqualTo("/v2/batch-operations/123");
     assertThat(request.getBodyAsString()).isEmpty();
   }
-
-  @Test
-  public void shouldGetBatchOperationItemsByKey() {
-    // when
-    client.newBatchOperationItemsGetRequest(123L).send().join();
-
-    // then
-    final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
-    assertThat(request.getUrl()).isEqualTo("/v2/batch-operations/123/items");
-    assertThat(request.getBodyAsString()).isEmpty();
-  }
 }

@@ -26,7 +26,6 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelBatchOperationRe
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPauseBatchOperationRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerResumeBatchOperationRequest;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,10 +79,6 @@ public final class BatchOperationServices
             .searchBatchOperations(
                 batchOperationQuery(q -> q.filter(f -> f.batchOperationIds(batchOperationId))));
     return getSingleResultOrThrow(result, batchOperationId, "BatchOperation");
-  }
-
-  public List<BatchOperationItemEntity> getItemsById(final String batchOperationId) {
-    return batchOperationSearchClient.getBatchOperationItems(batchOperationId);
   }
 
   public CompletableFuture<BatchOperationLifecycleManagementRecord> cancel(

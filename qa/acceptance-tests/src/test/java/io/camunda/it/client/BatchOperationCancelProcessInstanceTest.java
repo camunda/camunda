@@ -132,7 +132,11 @@ public class BatchOperationCancelProcessInstanceTest {
 
     // and
     final var itemsObj =
-        camundaClient.newBatchOperationItemsGetRequest(batchOperationKey).send().join();
+        camundaClient
+            .newBatchOperationItemsSearchRequest()
+            .filter(f -> f.batchOperationId(Long.toString(batchOperationKey)))
+            .send()
+            .join();
     final var itemKeys = itemsObj.items().stream().map(BatchOperationItem::getItemKey).toList();
 
     assertThat(itemsObj.items()).hasSize(3);

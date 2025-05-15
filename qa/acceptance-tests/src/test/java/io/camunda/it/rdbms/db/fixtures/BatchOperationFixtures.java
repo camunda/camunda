@@ -89,7 +89,7 @@ public final class BatchOperationFixtures {
                 .map(
                     itemKey ->
                         new BatchOperationItemDbModel(
-                            itemKey, itemKey, BatchOperationItemState.ACTIVE))
+                            batchOperationKey, itemKey, itemKey, BatchOperationItemState.ACTIVE))
                 .toList());
     rdbmsWriter.flush();
   }

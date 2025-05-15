@@ -4738,43 +4738,6 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /batch-operations/{batchOperationId}/items:
-    get:
-      tags:
-        - Batch operation
-      operationId: getBatchOperationItems
-      summary: Get batch operation items
-      description: Get items for a batch operation.
-      parameters:
-        - name: batchOperationId
-          in: path
-          required: true
-          description: |
-            The key (or operate legacy ID) of the batch operation.
-          schema:
-            type: string
-      responses:
-        "200":
-          description: The batch operation items were found.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BatchOperationItemSearchQueryResult"
-        "400":
-          description: The provided data is not valid.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: The batch operation was not found.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
-
   /batch-operations/search:
     post:
       tags:

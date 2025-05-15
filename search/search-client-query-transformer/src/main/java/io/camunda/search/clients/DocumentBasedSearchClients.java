@@ -63,7 +63,6 @@ import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
-import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.search.query.TenantQuery;
@@ -540,16 +539,6 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
       final BatchOperationQuery query) {
     return getSearchExecutor()
         .search(query, io.camunda.webapps.schema.entities.operation.BatchOperationEntity.class);
-  }
-
-  @Override
-  public List<BatchOperationItemEntity> getBatchOperationItems(final String batchOperationId) {
-    // TODO must be refactored to always use paged filter #31777
-    return searchBatchOperationItems(
-            SearchQueryBuilders.batchOperationItemQuery()
-                .filter(f -> f.batchOperationIds(batchOperationId))
-                .build())
-        .items();
   }
 
   @Override

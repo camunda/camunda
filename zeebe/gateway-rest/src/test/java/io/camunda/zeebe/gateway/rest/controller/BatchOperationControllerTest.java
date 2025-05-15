@@ -11,7 +11,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.BatchOperationEntity;
-import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -147,44 +146,6 @@ class BatchOperationControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isAccepted();
-  }
-
-  @Test
-  void shouldReturnBatchOperationItems() {
-    final var batchOperationId = "1";
-
-    final var batchOperationItem =
-        new BatchOperationEntity.BatchOperationItemEntity(
-            batchOperationId,
-            11L,
-            12L,
-            BatchOperationItemState.FAILED,
-            OffsetDateTime.parse("2025-03-18T10:57:44+01:00"),
-            "error");
-    when(batchOperationServices.getItemsById(batchOperationId))
-        .thenReturn(List.of(batchOperationItem));
-
-    webClient
-        .get()
-        .uri("/v2/batch-operations/{batchOperationKey}/items", batchOperationId)
-        .accept(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectBody()
-        .json(
-            """
-                        {"items":[
-                            {
-                                "batchOperationId":"1",
-                                "itemKey":"11",
-                                "processInstanceKey":"12",
-                                "state":"FAILED",
-                                "processedDate":"2025-03-18T10:57:44.000+01:00",
-                                "errorMessage": "error"
-                            }
-                        ]}
-                      """);
   }
 
   private static BatchOperationEntity getBatchOperationEntity(final String batchOperationId) {

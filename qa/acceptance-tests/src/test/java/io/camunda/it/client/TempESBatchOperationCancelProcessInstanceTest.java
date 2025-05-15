@@ -130,7 +130,11 @@ public class TempESBatchOperationCancelProcessInstanceTest {
     }
 
     final var items =
-        camundaClient.newBatchOperationItemsGetRequest(batchOperationKey).send().join();
+        camundaClient
+            .newBatchOperationItemsSearchRequest()
+            .filter(f -> f.batchOperationId(Long.toString(batchOperationKey)))
+            .send()
+            .join();
 
     assertThat(items.items()).hasSize(ACTIVE_PROCESS_INSTANCES.size());
   }

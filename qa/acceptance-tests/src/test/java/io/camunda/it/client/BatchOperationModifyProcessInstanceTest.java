@@ -229,7 +229,11 @@ public class BatchOperationModifyProcessInstanceTest {
       final BatchOperationItemState state,
       final List<Long> failedItemKeys) {
     final var itemsObj =
-        camundaClient.newBatchOperationItemsGetRequest(batchOperationKey).send().join();
+        camundaClient
+            .newBatchOperationItemsSearchRequest()
+            .filter(f -> f.batchOperationId(Long.toString(batchOperationKey)))
+            .send()
+            .join();
 
     final var filteredItems =
         itemsObj.items().stream().filter(i -> i.getStatus() == state).toList();
