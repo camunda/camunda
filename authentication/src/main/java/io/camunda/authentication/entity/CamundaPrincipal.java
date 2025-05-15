@@ -12,5 +12,7 @@ public interface CamundaPrincipal {
 
   String getDisplayName();
 
+  String getUsername();
+
   AuthenticationContext getAuthenticationContext();
 }
