@@ -137,7 +137,7 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
         .withReadTimeout(DEFAULT_READINESS_TIMEOUT);
   }
 
-  private static boolean isPartitionReady(String response) {
+  private static boolean isPartitionReady(final String response) {
     return response.matches(".*\"partitionId\"\\s*:\\s*1.*")
         && response.matches(".*\"role\"\\s*:\\s*\"leader\".*")
         && response.matches(".*\"health\"\\s*:\\s*\"healthy\".*");

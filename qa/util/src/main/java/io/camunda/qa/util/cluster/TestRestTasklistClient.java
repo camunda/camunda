@@ -145,6 +145,10 @@ public class TestRestTasklistClient implements CloseableSilently {
     return Base64.getEncoder().encodeToString(basicAuth.getBytes());
   }
 
+  public URI getEndpoint() {
+    return endpoint;
+  }
+
   @Override
   public void close() {
     httpClient.close();

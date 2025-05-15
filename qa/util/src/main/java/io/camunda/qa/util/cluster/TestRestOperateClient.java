@@ -254,6 +254,10 @@ public class TestRestOperateClient implements AutoCloseable {
     return createInternalGetProcessDefinitionByKeyRequest(key).flatMap(this::sendRequest);
   }
 
+  public URI getEndpoint() {
+    return endpoint;
+  }
+
   @Override
   public void close() {
     httpClient.close();
