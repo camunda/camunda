@@ -270,7 +270,8 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper.fromRoleSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::role,
             SearchQueryRequestMapper::applyRoleSortField);
-    return buildSearchQuery(sort, page, SearchQueryBuilders::roleSearchQuery);
+    final var filter = toRoleFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleSearchQuery);
   }
 
   public static Either<ProblemDetail, GroupQuery> toGroupQuery(
@@ -804,6 +805,15 @@ public final class SearchQueryRequestMapper {
     final var builder = FilterBuilders.group();
     if (filter != null) {
       ofNullable(filter.getGroupId()).ifPresent(builder::groupId);
+      ofNullable(filter.getName()).ifPresent(builder::name);
+    }
+    return builder.build();
+  }
+
+  private static RoleFilter toRoleFilter(final RoleFilterRequest filter) {
+    final var builder = FilterBuilders.role();
+    if (filter != null) {
+      ofNullable(filter.getRoleId()).ifPresent(builder::roleId);
       ofNullable(filter.getName()).ifPresent(builder::name);
     }
     return builder.build();
