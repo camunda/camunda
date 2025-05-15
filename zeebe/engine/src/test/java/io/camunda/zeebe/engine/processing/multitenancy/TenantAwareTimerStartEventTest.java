@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Rule;
@@ -44,8 +45,12 @@ public class TenantAwareTimerStartEventTest {
               config ->
                   config
                       .getInitialization()
-                      .setUsers(
-                          List.of(new ConfiguredUser(USERNAME, "password", "name", "email"))));
+                      .setUsers(List.of(new ConfiguredUser(USERNAME, "password", "name", "email"))))
+          .withSecurityConfig(
+              cfg ->
+                  cfg.getInitialization()
+                      .getDefaultRoles()
+                      .put("admin", Map.of("users", List.of(USERNAME))));
 
   private long processDefinitionKey;
 

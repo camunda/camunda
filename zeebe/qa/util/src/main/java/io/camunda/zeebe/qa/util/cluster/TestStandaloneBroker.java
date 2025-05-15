@@ -27,6 +27,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -74,6 +75,10 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
                 InitializationConfiguration.DEFAULT_USER_PASSWORD,
                 InitializationConfiguration.DEFAULT_USER_NAME,
                 InitializationConfiguration.DEFAULT_USER_EMAIL));
+    securityConfig
+        .getInitialization()
+        .getDefaultRoles()
+        .put("admin", Map.of("users", List.of(InitializationConfiguration.DEFAULT_USER_USERNAME)));
     withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
     // by default, we don't want to create the schema as ES/OS containers may not be used in the
     // current test

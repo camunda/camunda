@@ -40,7 +40,12 @@ public class TenantAwareUpdateVariablesTest {
       EngineRule.singlePartition()
           .withIdentitySetup()
           .withSecurityConfig(config -> config.getMultiTenancy().setEnabled(true))
-          .withSecurityConfig(config -> config.getInitialization().setUsers(List.of(DEFAULT_USER)));
+          .withSecurityConfig(config -> config.getInitialization().setUsers(List.of(DEFAULT_USER)))
+          .withSecurityConfig(
+              cfg ->
+                  cfg.getInitialization()
+                      .getDefaultRoles()
+                      .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername()))));
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
 

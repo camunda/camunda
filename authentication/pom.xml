@@ -76,10 +76,6 @@
       <artifactId>camunda-search-client</artifactId>
     </dependency>
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-protocol</artifactId>
-    </dependency>
-    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>

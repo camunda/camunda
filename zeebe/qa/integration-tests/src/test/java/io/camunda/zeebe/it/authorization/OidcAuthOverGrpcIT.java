@@ -29,6 +29,7 @@ import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
@@ -87,6 +88,9 @@ public class OidcAuthOverGrpcIT {
                         List.of(
                             new ConfiguredMapping(
                                 DEFAULT_USER_ID, USER_ID_CLAIM_NAME, DEFAULT_USER_ID)));
+                c.getInitialization()
+                    .getDefaultRoles()
+                    .put("admin", Map.of("mappings", List.of(DEFAULT_USER_ID)));
               });
 
   @BeforeAll
