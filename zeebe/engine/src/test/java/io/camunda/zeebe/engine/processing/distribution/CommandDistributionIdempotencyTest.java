@@ -11,7 +11,7 @@ import static io.camunda.zeebe.engine.processing.processinstance.migration.Migra
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-import io.camunda.search.clients.impl.NoopSearchClientsProxy;
+import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCancelProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCreateProcessor;
@@ -119,7 +119,7 @@ public class CommandDistributionIdempotencyTest {
   public static final EngineRule ENGINE =
       EngineRule.multiplePartition(2)
           .withEngineConfig(c -> c.setBatchOperationSchedulerInterval(Duration.ofDays(1)))
-          .withSearchClientsProxy(new NoopSearchClientsProxy());
+          .withSearchClientsProxy(SearchClientsProxy.noop());
 
   private static final Set<Class<?>> DISTRIBUTING_PROCESSORS =
       new HashSet<>(
