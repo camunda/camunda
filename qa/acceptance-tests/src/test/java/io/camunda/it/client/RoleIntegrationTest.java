@@ -40,6 +40,13 @@ public class RoleIntegrationTest {
 
   private static final String EXISTING_ROLE_ID = Strings.newRandomValidIdentityId();
   private static final String EXISTING_ROLE_NAME = "ARoleName";
+  private static final String ROLE_ID_1 = Strings.newRandomValidIdentityId();
+  private static final String ROLE_ID_2 = Strings.newRandomValidIdentityId();
+  private static final String ROLE_ID_3 = Strings.newRandomValidIdentityId();
+  private static final String ROLE_NAME_1 = "ARoleName";
+  private static final String ROLE_NAME_2 = "BRoleName";
+  private static final String ROLE_NAME_3 = "CRoleName";
+  private static final String DESCRIPTION = "description";
 
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
@@ -430,19 +437,6 @@ public class RoleIntegrationTest {
               final var group = camundaClient.newGroupGetRequest(groupId).send().join();
               assertThat(group).isNotNull();
             });
-  }
-
-  private static void assertRoleAssignedToGroup(final String roleId, final String groupId) {
-    Awaitility.await("Group is assigned to the role")
-        .ignoreExceptionsInstanceOf(ProblemException.class)
-        .untilAsserted(
-            () ->
-                assertThat(
-                        searchRolesByGroupId(
-                                camundaClient.getConfiguration().getRestAddress().toString(),
-                                groupId)
-                            .items())
-                    .anyMatch(r -> roleId.equals(r.getRoleId())));
   }
 
   @Test
