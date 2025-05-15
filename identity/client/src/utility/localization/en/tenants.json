@@ -73,5 +73,17 @@
   "removeGroupFromTenant": "Are you sure you want to remove <strong>{{groupKey}}</strong> from this tenant?",
   "removeMappingFromTenant": "Are you sure you want to remove <strong>{{mappingId}}</strong> from this tenant?",
   "removeRoleFromTenant": "Are you sure you want to remove <strong>{{roleKey}}</strong> from this tenant?",
-  "searchAndAssignGroupToTenant": "Search and assign group to tenant"
+  "searchAndAssignGroupToTenant": "Search and assign group to tenant",
+  "assignClient": "Assign client",
+  "assigningClient": "Assigning client",
+  "assignClientToTenant": "Assign client to tenant",
+  "enterClientId": "Enter client ID",
+  "clientsCouldNotLoad": "Clients could not load",
+  "removeClient": "Remove client",
+  "tenantClientRemoved": "Tenant client removed",
+  "removingClient": "Removing client",
+  "removeClientFromTenant": "Are you sure you want to remove <strong>{{clientId}}</strong> from this tenant?",
+  "unableToLoadClients": "Unable to load clients",
+  "assignClientsToTenant": "Assign clients to this Tenant",
+  "clientId": "Client ID"
 }
