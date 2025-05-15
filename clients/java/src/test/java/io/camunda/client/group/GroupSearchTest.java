@@ -21,6 +21,7 @@ import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.sort.GroupSort;
 import io.camunda.client.api.search.sort.MappingSort;
+import io.camunda.client.api.search.sort.RoleSort;
 import io.camunda.client.api.search.sort.UserSort;
 import io.camunda.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
@@ -89,6 +90,24 @@ public class GroupSearchTest extends ClientRestTest {
     // then
     final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getUrl()).isEqualTo("/v2/groups/groupId/mapping-rules/search");
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
+  }
+
+  @Test
+  public void testRolesSearchByGroup() {
+    // when
+    final String groupId = "groupId";
+    client
+        .newRolesByGroupSearchRequest(groupId)
+        .filter(fn -> fn.name("roleName"))
+        .sort(RoleSort::name)
+        .page(fn -> fn.limit(5))
+        .send()
+        .join();
+
+    // then
+    final LoggedRequest request = gatewayService.getLastRequest();
+    assertThat(request.getUrl()).isEqualTo("/v2/groups/groupId/roles/search");
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
   }
 }
