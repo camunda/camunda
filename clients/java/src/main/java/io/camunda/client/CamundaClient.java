@@ -91,6 +91,7 @@ import io.camunda.client.api.fetch.ProcessDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetCallHierarchyRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
 import io.camunda.client.api.fetch.RoleGetRequest;
+import io.camunda.client.api.fetch.RolesByGroupSearchRequest;
 import io.camunda.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.UsersByGroupSearchRequest;
@@ -2134,4 +2135,21 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the mappings by group search request
    */
   MappingsByGroupSearchRequest newMappingsByGroupSearchRequest(String groupId);
+
+  /**
+   * Executes a search request to query roles by group.
+   *
+   * <pre>
+   *   camundaClient
+   *    .newRolesByGroupSearchRequest(groupId)
+   *    .filter((f) -> f.roleName(roleName))
+   *    .sort((s) -> s.roleName().asc())
+   *    .page((p) -> p.limit(100))
+   *    .send();
+   *  </pre>
+   *
+   * @param groupId the ID of the group
+   * @return a builder for the roles by group search request
+   */
+  RolesByGroupSearchRequest newRolesByGroupSearchRequest(String groupId);
 }

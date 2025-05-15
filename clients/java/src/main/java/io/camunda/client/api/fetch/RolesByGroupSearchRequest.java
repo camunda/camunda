@@ -13,25 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.filter;
+package io.camunda.client.api.fetch;
 
-import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestFilter;
+import io.camunda.client.api.search.filter.RoleFilter;
+import io.camunda.client.api.search.request.FinalSearchRequestStep;
+import io.camunda.client.api.search.request.TypedSearchRequest;
+import io.camunda.client.api.search.response.Role;
+import io.camunda.client.api.search.sort.RoleSort;
 
-public interface RoleFilter extends SearchRequestFilter {
-
-  /**
-   * Filter roles by the specified role ID.
-   *
-   * @param roleId the ID of the role
-   * @return the updated filter
-   */
-  RoleFilter roleId(final String roleId);
-
-  /**
-   * Filter roles by the specified name.
-   *
-   * @param name the name of the role
-   * @return the updated filter
-   */
-  RoleFilter name(final String name);
-}
+public interface RolesByGroupSearchRequest
+    extends TypedSearchRequest<RoleFilter, RoleSort, RolesByGroupSearchRequest>,
+        FinalSearchRequestStep<Role> {}
