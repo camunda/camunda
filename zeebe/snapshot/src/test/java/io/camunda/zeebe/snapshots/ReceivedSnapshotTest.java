@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.snapshots;
 
-import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -17,14 +16,7 @@ import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.SnapshotWriteException;
-import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -33,18 +25,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class ReceivedSnapshotTest {
-
-  private static final Map<String, String> SNAPSHOT_FILE_CONTENTS =
-      Map.of(
-          "file1", "file1 contents",
-          "file2", "file2 contents");
+public class ReceivedSnapshotTest extends SnapshotTransferUtil {
 
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
   @Rule public ActorSchedulerRule scheduler = new ActorSchedulerRule();
-
-  private ConstructableSnapshotStore senderSnapshotStore;
-  private ReceivableSnapshotStore receiverSnapshotStore;
 
   @Before
   public void beforeEach() throws Exception {
@@ -406,25 +390,5 @@ public class ReceivedSnapshotTest {
     }
 
     return receivedSnapshot;
-  }
-
-  private PersistedSnapshot takePersistedSnapshot() {
-    final var transientSnapshot = senderSnapshotStore.newTransientSnapshot(1L, 0L, 1, 0).get();
-    transientSnapshot.take(this::writeSnapshot).join();
-    return transientSnapshot.persist().join();
-  }
-
-  private void writeSnapshot(final Path path) {
-    try {
-      FileUtil.ensureDirectoryExists(path);
-
-      for (final var entry : SNAPSHOT_FILE_CONTENTS.entrySet()) {
-        final var fileName = path.resolve(entry.getKey());
-        final var fileContent = entry.getValue().getBytes(StandardCharsets.UTF_8);
-        Files.write(fileName, fileContent, CREATE_NEW, StandardOpenOption.WRITE);
-      }
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
   }
 }
