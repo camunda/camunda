@@ -124,7 +124,7 @@ jobs:
 
       #########################################################################
       # Build SNAPSHOT Docker image
-      - name: Build SNAPSHOT Docker image`
+      - name: Build SNAPSHOT Docker image
         if: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
         uses: ./.github/actions/build-platform-docker
         with:

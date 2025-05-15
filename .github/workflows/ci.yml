@@ -319,16 +319,13 @@ jobs:
         suite: [ coreFeatures, dataLayer, identity ]
         include:
           - suite: coreFeatures
-            firstSkip: DskipDataLayerUTs
-            secondSkip: DskipDataLayerUTs
+            mavenArguments: "-DskipDataLayerUTs -DskipIdentityUTs"
             suiteName: Core Features
           - suite: dataLayer
-            firstSkip: DskipCoreFeaturesUTs
-            secondSkip: DskipIdentityUTs
+            mavenArguments: "-DskipCoreFeaturesUTs -DskipIdentityUTs"
             suiteName: Data Layers
           - suite: identity
-            firstSkip: DskipDataLayerUTs
-            secondSkip: DskipCoreFeaturesUTs
+            mavenArguments: "-DskipDataLayerUTs -DskipCoreFeaturesUTs"
             suiteName: Identity
           - component: operate
             componentName: Operate
@@ -346,8 +343,7 @@ jobs:
         run: >
           ./mvnw -f ${{matrix.component}} verify -T1C -B -P skipFrontendBuild
           -DskipITs
-          -${{matrix.firstSkip}}
-          -${{matrix.secondSkip}}
+          ${{matrix.mavenArguments}}
           -DskipDockerProfile
           -DskipChecks
           | tee "${BUILD_OUTPUT_FILE_PATH}"
@@ -361,21 +357,20 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
-          name: "[Consolidated UT] ${{ matrix.component }} ${{ matrix.suite }}"
+          name: "[UT] ${{ matrix.component }} ${{ matrix.suite }}"
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "core-features-unit-tests/${{ matrix.component }}/${{ matrix.suite }}"
+          job_name: "consolidated-unit-tests/${{ matrix.component }}/${{ matrix.suite }}"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: ${{ steps.analyze-test-run.outputs.flakyTests }}
+          user_description: "team: ${{ matrix.suiteName }}"
           detailed_junit_flaky_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId:
-            ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   elasticsearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
@@ -1025,24 +1020,9 @@ jobs:
     if: needs.detect-changes.outputs.operate-frontend-changes == 'true'
     needs: [ detect-changes ]
     name: "[FE] Operate"
-    uses: ./.github/workflows/operate-ci-fe-reusable.yml
+    uses: ./.github/workflows/operate-ci-fe.yml
     secrets: inherit
     permissions: {}  # GITHUB_TOKEN unused in this job
-
-  # Runs the CI tests owned by Data Layer. Runs integration tests
-  # owner: Data Layers
-  data-layer-it:
-    if: needs.detect-changes.outputs.tasklist-backend-changes == 'true'
-    name: "[IT] Operate - Data Layers"
-    needs: [ detect-changes ]
-    uses: ./.github/workflows/operate-ci-test-reusable.yml
-    secrets: inherit
-    permissions: {}  # GITHUB_TOKEN unused in this job
-    with:
-      branch: ${{ github.head_ref || github.ref_name }}
-      command: ./mvnw -f operate/qa/integration-tests verify -P operateItOpensearch,docker-opensearch -B -DskipChecks -Dfailsafe.rerunFailingTestsCount=2
-      test-type: Opensearch ITs
-      runner-type: gcp-core-32-default
 
   tasklist-docker-tests:
     # Currently only runs Tasklist Docker tests but should be extended in future to also include backend tests
@@ -1249,7 +1229,6 @@ jobs:
       - build-platform-frontend
       - commitlint
       - consolidated-unit-tests
-      - data-layer-it
       - detect-changes
       - docker-checks
       - elasticsearch-integration-tests
