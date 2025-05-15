@@ -537,6 +537,7 @@ public final class ActorFutureTest {
     final AtomicInteger callbackInvocations = new AtomicInteger(0);
 
     future.onComplete((r, t) -> callbackInvocations.incrementAndGet());
+    future.onSuccess((r) -> callbackInvocations.incrementAndGet());
 
     final Actor completingActor =
         new Actor() {
@@ -551,7 +552,7 @@ public final class ActorFutureTest {
     schedulerRule.workUntilDone();
 
     // then
-    assertThat(callbackInvocations).hasValue(1);
+    assertThat(callbackInvocations).hasValue(2);
   }
 
   @Test
@@ -568,6 +569,7 @@ public final class ActorFutureTest {
         };
 
     future.onComplete((r, t) -> callbackInvocations.incrementAndGet(), decoratedExecutor);
+    future.onSuccess((r) -> callbackInvocations.incrementAndGet(), decoratedExecutor);
 
     final Actor completingActor =
         new Actor() {
@@ -582,8 +584,8 @@ public final class ActorFutureTest {
     schedulerRule.workUntilDone();
 
     // then
-    assertThat(callbackInvocations).hasValue(1);
-    assertThat(executorCount).hasValue(1);
+    assertThat(callbackInvocations).hasValue(2);
+    assertThat(executorCount).hasValue(2);
   }
 
   @Test
@@ -591,8 +593,10 @@ public final class ActorFutureTest {
     // given
     final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     final AtomicReference<Throwable> callBackError = new AtomicReference<>();
+    final AtomicReference<Throwable> callBackErrorOnError = new AtomicReference<>();
 
     future.onComplete((r, t) -> callBackError.set(t));
+    future.onError(callBackErrorOnError::set);
 
     final Actor completingActor =
         new Actor() {
@@ -608,6 +612,9 @@ public final class ActorFutureTest {
 
     // then
     assertThat(callBackError.get())
+        .isInstanceOf(RuntimeException.class)
+        .hasMessageContaining("Expected");
+    assertThat(callBackErrorOnError.get())
         .isInstanceOf(RuntimeException.class)
         .hasMessageContaining("Expected");
   }
@@ -617,6 +624,7 @@ public final class ActorFutureTest {
     // given
     final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     final AtomicReference<Throwable> callBackError = new AtomicReference<>();
+    final AtomicReference<Throwable> callBackErrorOnError = new AtomicReference<>();
 
     final AtomicInteger executorCount = new AtomicInteger(0);
     final Executor decoratedExecutor =
@@ -626,6 +634,7 @@ public final class ActorFutureTest {
         };
 
     future.onComplete((r, t) -> callBackError.set(t), decoratedExecutor);
+    future.onError(callBackErrorOnError::set, decoratedExecutor);
 
     final Actor completingActor =
         new Actor() {
@@ -643,7 +652,10 @@ public final class ActorFutureTest {
     assertThat(callBackError.get())
         .isInstanceOf(RuntimeException.class)
         .hasMessageContaining("Expected");
-    assertThat(executorCount).hasValue(1);
+    assertThat(callBackErrorOnError.get())
+        .isInstanceOf(RuntimeException.class)
+        .hasMessageContaining("Expected");
+    assertThat(executorCount).hasValue(2);
   }
 
   @Test
@@ -651,6 +663,7 @@ public final class ActorFutureTest {
     // given
     final CompletableActorFuture<Integer> future = new CompletableActorFuture<>();
     final AtomicInteger futureResult = new AtomicInteger();
+    final AtomicInteger futureResultOnSuccess = new AtomicInteger();
 
     final Actor completingActor =
         new Actor() {
@@ -672,10 +685,12 @@ public final class ActorFutureTest {
         };
 
     future.onComplete((r, t) -> futureResult.set(r), decoratedExecutor);
+    future.onSuccess(futureResultOnSuccess::set, decoratedExecutor);
 
     // then
     assertThat(futureResult.get()).isOne();
-    assertThat(executorCount).hasValue(1);
+    assertThat(futureResultOnSuccess.get()).isOne();
+    assertThat(executorCount).hasValue(2);
   }
 
   @Test
@@ -683,6 +698,7 @@ public final class ActorFutureTest {
     // given
     final CompletableActorFuture<Integer> future = new CompletableActorFuture<>();
     final AtomicReference<Throwable> futureResult = new AtomicReference<>();
+    final AtomicReference<Throwable> futureResultOnError = new AtomicReference<>();
 
     final Actor completingActor =
         new Actor() {
@@ -705,12 +721,16 @@ public final class ActorFutureTest {
         };
 
     future.onComplete((r, t) -> futureResult.set(t), decoratedExecutor);
+    future.onError(futureResultOnError::set, decoratedExecutor);
 
     // then
     assertThat(futureResult.get())
         .isInstanceOf(RuntimeException.class)
         .hasMessageContaining("Expected");
-    assertThat(executorCount).hasValue(1);
+    assertThat(futureResultOnError.get())
+        .isInstanceOf(RuntimeException.class)
+        .hasMessageContaining("Expected");
+    assertThat(executorCount).hasValue(2);
   }
 
   @Test
