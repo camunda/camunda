@@ -44,21 +44,12 @@ import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.springframework.http.HttpStatus;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class OperateInternalApiRolePermissionsIT {
-
-  public static final String REQUEST_BODY =
-      """
-      {
-        "query": {
-          "bpmnProcessId": "%s",
-          "running": true,
-          "active": true
-        }
-      }""";
 
   @MultiDbTestApplication
   static final TestCamundaApplication STANDALONE_CAMUNDA =
@@ -96,6 +87,8 @@ public class OperateInternalApiRolePermissionsIT {
   private static final User UNAUTHORIZED_USER =
       new User(UNAUTHORIZED_USERNAME, UNAUTHORIZED_USERNAME, List.of());
 
+  private static long processInstanceKey;
+
   @BeforeAll
   public static void beforeAll(
       @Authenticated(ADMIN_USERNAME) final CamundaClient adminClient,
@@ -122,7 +115,7 @@ public class OperateInternalApiRolePermissionsIT {
             "process.bpmn")
         .send()
         .join();
-    final var processInstanceKey =
+    processInstanceKey =
         adminClient
             .newCreateInstanceCommand()
             .bpmnProcessId(PROCESS_ID)
@@ -159,6 +152,26 @@ public class OperateInternalApiRolePermissionsIT {
     assertThat(count.totalCount).describedAs("Has not retrieved any instances").isEqualTo(0);
   }
 
+  @Test
+  void shouldBePermittedToGetUsingInternalApi(
+      @Authenticated(AUTHORIZED_USERNAME) final CamundaClient client) throws Exception {
+    final var statusCode =
+        getRunningProcessInstance(client, AUTHORIZED_USERNAME, processInstanceKey);
+    assertThat(statusCode)
+        .describedAs("Is authorized to get the process instance")
+        .isEqualTo(HttpStatus.OK.value());
+  }
+
+  @Test
+  void shouldBeUnauthorizedToGetUsingInternalApi(
+      @Authenticated(UNAUTHORIZED_USERNAME) final CamundaClient client) throws Exception {
+    final var statusCode =
+        getRunningProcessInstance(client, UNAUTHORIZED_USERNAME, processInstanceKey);
+    assertThat(statusCode)
+        .describedAs("Is unauthorized to get the process instance")
+        .isEqualTo(HttpStatus.FORBIDDEN.value());
+  }
+
   private static void addUserToRole(final URI url, final String roleId, final String username)
       throws Exception {
     final var uri = URI.create(url + "v2/roles/%s/users/%s".formatted(roleId, username));
@@ -185,7 +198,17 @@ public class OperateInternalApiRolePermissionsIT {
     final HttpRequest request =
         HttpRequest.newBuilder()
             .uri(new URI(url))
-            .POST(HttpRequest.BodyPublishers.ofString(REQUEST_BODY.formatted(PROCESS_ID)))
+            .POST(
+                HttpRequest.BodyPublishers.ofString(
+                    """
+              {
+                "query": {
+                  "bpmnProcessId": "%s",
+                  "running": true,
+                  "active": true
+                }
+              }"""
+                        .formatted(PROCESS_ID)))
             .header("Authorization", "Basic %s".formatted(encodedCredentials))
             .header("Content-Type", "application/json")
             .build();
@@ -193,6 +216,25 @@ public class OperateInternalApiRolePermissionsIT {
     // Send the request and get the response
     final var response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
     return OBJECT_MAPPER.readValue(response.body(), ResponseCount.class);
+  }
+
+  private int getRunningProcessInstance(
+      final CamundaClient client, final String username, final long processInstanceKey)
+      throws URISyntaxException, IOException, InterruptedException {
+    final String url =
+        client.getConfiguration().getRestAddress() + BASE_PATH + "/" + processInstanceKey;
+
+    final var encodedCredentials =
+        Base64.getEncoder().encodeToString("%s:%s".formatted(username, username).getBytes());
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(new URI(url))
+            .GET()
+            .header("Authorization", "Basic %s".formatted(encodedCredentials))
+            .build();
+
+    // Send the request and get the response
+    return HTTP_CLIENT.send(request, BodyHandlers.ofString()).statusCode();
   }
 
   private record ResponseCount(int totalCount) {}
