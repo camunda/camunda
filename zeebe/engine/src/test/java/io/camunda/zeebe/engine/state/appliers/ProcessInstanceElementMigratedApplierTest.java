@@ -30,14 +30,14 @@ public class ProcessInstanceElementMigratedApplierTest {
 
   private MutableElementInstanceState elementInstanceState;
   private ProcessState processState;
-  private ProcessInstanceElementMigratedApplier processInstanceElementMigratedApplier;
+  private ProcessInstanceElementMigratedV1Applier processInstanceElementMigratedApplier;
 
   @BeforeEach
   public void setup() {
     elementInstanceState = processingState.getElementInstanceState();
     processState = processingState.getProcessState();
     processInstanceElementMigratedApplier =
-        new ProcessInstanceElementMigratedApplier(elementInstanceState, processState);
+        new ProcessInstanceElementMigratedV1Applier(elementInstanceState, processState);
   }
 
   @Test
