@@ -52,6 +52,84 @@
             #{historyCleanupDate, jdbcType=TIMESTAMP})
   </insert>
 
+  <insert id="createIfNotExists" parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel" databaseId="postgresql">
+    INSERT INTO ${prefix}SEQUENCE_FLOW (FLOW_NODE_ID,
+                                        PROCESS_INSTANCE_KEY,
+                                        PROCESS_DEFINITION_KEY,
+                                        PROCESS_DEFINITION_ID,
+                                        TENANT_ID,
+                                        PARTITION_ID,
+                                        HISTORY_CLEANUP_DATE)
+    VALUES (#{flowNodeId},
+            #{processInstanceKey},
+            #{processDefinitionKey},
+            #{processDefinitionId},
+            #{tenantId},
+            #{partitionId},
+            #{historyCleanupDate, jdbcType=TIMESTAMP})
+    ON CONFLICT DO NOTHING
+  </insert>
+
+  <insert id="createIfNotExists" parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel" databaseId="mariadb">
+    INSERT INTO ${prefix}SEQUENCE_FLOW (FLOW_NODE_ID,
+                                        PROCESS_INSTANCE_KEY,
+                                        PROCESS_DEFINITION_KEY,
+                                        PROCESS_DEFINITION_ID,
+                                        TENANT_ID,
+                                        PARTITION_ID,
+                                        HISTORY_CLEANUP_DATE)
+    VALUES (#{flowNodeId},
+            #{processInstanceKey},
+            #{processDefinitionKey},
+            #{processDefinitionId},
+            #{tenantId},
+            #{partitionId},
+            #{historyCleanupDate, jdbcType=TIMESTAMP})
+    ON DUPLICATE KEY UPDATE FLOW_NODE_ID = FLOW_NODE_ID -- this will not trigger an update
+  </insert>
+
+  <insert id="createIfNotExists" parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel" databaseId="h2">
+    MERGE INTO ${prefix}SEQUENCE_FLOW sf
+      USING dual
+      ON (sf.FLOW_NODE_ID = #{flowNodeId} AND sf.PROCESS_INSTANCE_KEY = #{processInstanceKey})
+    WHEN NOT MATCHED THEN
+    INSERT (FLOW_NODE_ID,
+            PROCESS_INSTANCE_KEY,
+            PROCESS_DEFINITION_KEY,
+            PROCESS_DEFINITION_ID,
+            TENANT_ID,
+            PARTITION_ID,
+            HISTORY_CLEANUP_DATE)
+    VALUES (#{flowNodeId},
+            #{processInstanceKey},
+            #{processDefinitionKey},
+            #{processDefinitionId},
+            #{tenantId},
+            #{partitionId},
+            #{historyCleanupDate, jdbcType=TIMESTAMP})
+  </insert>
+
+  <insert id="createIfNotExists" parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel" databaseId="oracle">
+    MERGE INTO ${prefix}SEQUENCE_FLOW sf
+      USING dual
+      ON (sf.FLOW_NODE_ID = #{flowNodeId} AND sf.PROCESS_INSTANCE_KEY = #{processInstanceKey})
+    WHEN NOT MATCHED THEN
+    INSERT (FLOW_NODE_ID,
+            PROCESS_INSTANCE_KEY,
+            PROCESS_DEFINITION_KEY,
+            PROCESS_DEFINITION_ID,
+            TENANT_ID,
+            PARTITION_ID,
+            HISTORY_CLEANUP_DATE)
+    VALUES (#{flowNodeId},
+            #{processInstanceKey},
+            #{processDefinitionKey},
+            #{processDefinitionId},
+            #{tenantId},
+            #{partitionId},
+            #{historyCleanupDate, jdbcType=TIMESTAMP})
+  </insert>
+
   <update
     flushCache="true"
     id="updateHistoryCleanupDate"

@@ -20,6 +20,7 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.ArrayList;
 import java.util.List;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -60,6 +61,12 @@ public class ProcessInstanceSequenceFlowsTest {
             "multi_instance_subprocess",
             "{\"variables\": [\"foo\", \"bar\"], \"foo\": 2}"));
     TestHelper.waitForProcessInstancesToStart(camundaClient, INSTANCES.size());
+  }
+
+  @AfterAll
+  static void afterAll() {
+    PROCESSES.clear();
+    INSTANCES.clear();
   }
 
   private void waitForSequenceFlows(
