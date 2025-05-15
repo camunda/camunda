@@ -350,6 +350,56 @@ class RoleAuthorizationIT {
         .hasMessageContaining("403: 'Forbidden'");
   }
 
+  @Test
+  void shouldUnassignRoleFromGroupIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    final String groupId = Strings.newRandomValidIdentityId();
+
+    adminClient.newCreateGroupCommand().groupId(groupId).name("groupName").send().join();
+    adminClient.newAssignRoleToGroupCommand().roleId(ROLE_ID_1).groupId(groupId).send().join();
+
+    Awaitility.await("Group is assigned to the role")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        searchRolesByGroupId(
+                                adminClient.getConfiguration().getRestAddress().toString(),
+                                ADMIN,
+                                groupId)
+                            .items())
+                    .anyMatch(r -> ROLE_ID_1.equals(r.getRoleId())));
+
+    adminClient.newUnassignRoleFromGroupCommand().roleId(ROLE_ID_1).groupId(groupId).send().join();
+
+    Awaitility.await("Group is unassigned from the role")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        searchRolesByGroupId(
+                                adminClient.getConfiguration().getRestAddress().toString(),
+                                ADMIN,
+                                groupId)
+                            .items())
+                    .isEmpty());
+  }
+
+  @Test
+  void unassignRoleFromGroupShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUnassignRoleFromGroupCommand()
+                    .roleId(Strings.newRandomValidIdentityId())
+                    .groupId(Strings.newRandomValidIdentityId())
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
+
   private static void createRole(
       final CamundaClient adminClient, final String roleId, final String roleName) {
     createRole(adminClient, roleId, roleName, null);
