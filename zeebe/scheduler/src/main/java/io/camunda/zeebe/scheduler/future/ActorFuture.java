@@ -13,6 +13,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -67,6 +68,68 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
    * @param executor the executor on which the callback will be executed
    */
   void onComplete(BiConsumer<V, Throwable> consumer, Executor executor);
+
+  /**
+   * Runs a callback when the future terminates successfully If the caller is not * an actor, the
+   * consumer is executed in the actor which completes this future. If the caller is * not an actor,
+   * it is recommended to use {@link ActorFuture#onComplete(BiConsumer, Executor)} * instead.
+   *
+   * @param handler to run
+   */
+  default void onSuccess(final Consumer<V> handler) {
+    onComplete(
+        (v, error) -> {
+          if (error == null) {
+            handler.accept(v);
+          }
+        });
+  }
+
+  /**
+   * Runs a callback when the future terminates successfully
+   *
+   * @param handler to run
+   */
+  default void onSuccess(final Consumer<V> handler, final Executor executor) {
+    onComplete(
+        (v, error) -> {
+          if (error == null) {
+            handler.accept(v);
+          }
+        },
+        executor);
+  }
+
+  /**
+   * Runs a callback when the future terminates exceptionally If the caller is not * an actor, the
+   * consumer is executed in the actor which completes this future. If the caller is * not an actor,
+   * it is recommended to use {@link ActorFuture#onComplete(BiConsumer, Executor)} * instead.
+   *
+   * @param handler to run
+   */
+  default void onError(final Consumer<Throwable> handler) {
+    onComplete(
+        (v, error) -> {
+          if (error != null) {
+            handler.accept(error);
+          }
+        });
+  }
+
+  /**
+   * Runs a callback when the future terminates exceptionally
+   *
+   * @param handler to run when
+   */
+  default void onError(final Consumer<Throwable> handler, final Executor executor) {
+    onComplete(
+        (v, error) -> {
+          if (error != null) {
+            handler.accept(error);
+          }
+        },
+        executor);
+  }
 
   boolean isCompletedExceptionally();
 
