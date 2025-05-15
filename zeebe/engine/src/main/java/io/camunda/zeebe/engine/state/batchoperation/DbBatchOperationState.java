@@ -109,24 +109,23 @@ public class DbBatchOperationState implements MutableBatchOperationState {
         batchOperationKey);
 
     // First, get the batch operation
-    final var batch = get(batchOperationKey);
-    if (batch.isEmpty()) {
+    final var batchOperation = get(batchOperationKey);
+    if (batchOperation.isEmpty()) {
       LOGGER.error(
           "Batch operation with key {} not found, cannot append itemKeys to it.",
           batchOperationKey);
       return;
     }
 
+    final var batch = batchOperation.get();
     // Second, get the chunk to append the keys to
-    var chunk = getOrCreateChunk(batch.get());
+    var chunk = getOrCreateChunk(batch);
 
     // Third, append the keys to the chunk, if the chunk is full, a new one is returned
-    for (final long key : itemKeys) {
-      chunk = appendKeyToChunk(batch.get(), chunk, key);
-    }
+    chunk = appendItemsToChunks(batch, chunk, itemKeys);
 
     // Finally, update the batch and the chunk in the column family
-    updateChunkAndBatch(chunk, batch.get());
+    updateChunkAndBatch(chunk, batch);
   }
 
   @Override
@@ -301,6 +300,16 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     }
   }
 
+  private PersistedBatchOperationChunk appendItemsToChunks(
+      final PersistedBatchOperation batch,
+      PersistedBatchOperationChunk chunk,
+      final Set<Long> itemKeys) {
+    for (final long key : itemKeys) {
+      chunk = appendKeyToChunk(batch, chunk, key);
+    }
+    return chunk;
+  }
+
   /**
    * Appends the key to the chunk. If the chunk is full, a new one is created.
    *
@@ -315,8 +324,7 @@ public class DbBatchOperationState implements MutableBatchOperationState {
       chunk = createNewChunk(batch);
     }
 
-    chunk.appendItemKey(key);
-    return chunk;
+    return chunk.appendItemKey(key);
   }
 
   private void updateChunkAndBatch(
