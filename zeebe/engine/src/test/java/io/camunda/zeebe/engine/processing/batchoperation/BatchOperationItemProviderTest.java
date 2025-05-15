@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import static io.camunda.security.auth.Authentication.none;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.SearchClientsProxy;
@@ -18,6 +20,8 @@ import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationItemProvider.Item;
 import java.util.List;
@@ -42,6 +46,8 @@ class BatchOperationItemProviderTest {
     when(engineConfiguration.getBatchOperationQueryPageSize()).thenReturn(10);
     when(engineConfiguration.getBatchOperationQueryInClauseSize()).thenReturn(10);
 
+    when(searchClientsProxy.withSecurityContext(any())).thenReturn(searchClientsProxy);
+
     provider = new BatchOperationItemProvider(searchClientsProxy, engineConfiguration);
   }
 
@@ -63,7 +69,7 @@ class BatchOperationItemProviderTest {
 
     // when
     final var filter = new ProcessInstanceFilter.Builder().build();
-    final var resultKeys = provider.fetchProcessInstanceItems(PARTITION_ID, filter, () -> false);
+    final var resultKeys = provider.fetchProcessInstanceItems(PARTITION_ID, filter, () -> false, none());
 
     // then
     assertThat(resultKeys).containsExactly(new Item(1L, 1L), new Item(2L, 2L), new Item(3L, 3L));
@@ -71,6 +77,39 @@ class BatchOperationItemProviderTest {
     // and partitionId is set in filter
     final var query = queryCaptor.getValue();
     assertThat(query.filter().partitionId()).isEqualTo(PARTITION_ID);
+  }
+
+  @Test
+  public void shouldFetchProcessInstanceKeysWithAuth() {
+    final var queryCaptor = ArgumentCaptor.forClass(ProcessInstanceQuery.class);
+
+    // given
+    final var auth = mock(Authentication.class);
+    final var result =
+        new SearchQueryResult.Builder<ProcessInstanceEntity>()
+            .items(
+                List.of(
+                    mockProcessInstanceEntity(1L),
+                    mockProcessInstanceEntity(2L),
+                    mockProcessInstanceEntity(3L)))
+            .total(3)
+            .build();
+    when(searchClientsProxy.searchProcessInstances(queryCaptor.capture())).thenReturn(result);
+
+    // when
+    final var filter = new ProcessInstanceFilter.Builder().build();
+    final var resultKeys =
+        provider.fetchProcessInstanceItems(PARTITION_ID, filter, () -> false, auth);
+
+    // then
+    assertThat(resultKeys).containsExactly(new Item(1L, 1L), new Item(2L, 2L), new Item(3L, 3L));
+
+    // and partitionId is set in filter
+    final var query = queryCaptor.getValue();
+    assertThat(query.filter().partitionId()).isEqualTo(PARTITION_ID);
+    final var argumentSecurityContextCaptor = ArgumentCaptor.forClass(SecurityContext.class);
+    verify(searchClientsProxy).withSecurityContext(argumentSecurityContextCaptor.capture());
+    assertThat(argumentSecurityContextCaptor.getValue().authentication()).isEqualTo(auth);
   }
 
   @Test
@@ -102,7 +141,8 @@ class BatchOperationItemProviderTest {
 
     // when
     final var filter = new ProcessInstanceFilter.Builder().build();
-    final var resultKeys = provider.fetchProcessInstanceItems(PARTITION_ID, filter, () -> false);
+    final var resultKeys =
+        provider.fetchProcessInstanceItems(PARTITION_ID, filter, () -> false, none());
 
     // then
     assertThat(resultKeys)
@@ -141,7 +181,8 @@ class BatchOperationItemProviderTest {
 
     // when
     final var filter = new ProcessInstanceFilter.Builder().build();
-    final var resultKeys = provider.fetchProcessInstanceItems(PARTITION_ID, filter, () -> false);
+    final var resultKeys =
+        provider.fetchProcessInstanceItems(PARTITION_ID, filter, () -> false, none());
 
     // then
     assertThat(resultKeys).containsExactly(new Item(1L, 1L), new Item(2L, 2L), new Item(3L, 3L));
@@ -186,7 +227,7 @@ class BatchOperationItemProviderTest {
     // when
     final var filter = new ProcessInstanceFilter.Builder().build();
     final var resultItems =
-        provider.fetchProcessInstanceItems(PARTITION_ID, filter, shouldAbort::get);
+        provider.fetchProcessInstanceItems(PARTITION_ID, filter, shouldAbort::get, none());
 
     // then
     assertThat(resultItems).isEmpty();
@@ -227,7 +268,7 @@ class BatchOperationItemProviderTest {
 
     // when
     final var filter = new ProcessInstanceFilter.Builder().build();
-    final var resultKeys = provider.fetchIncidentItems(PARTITION_ID, filter, () -> false);
+    final var resultKeys = provider.fetchIncidentItems(PARTITION_ID, filter, () -> false, none());
 
     // then
     assertThat(resultKeys).containsExactly(new Item(11L, 1L), new Item(12L, 2L), new Item(13L, 3L));

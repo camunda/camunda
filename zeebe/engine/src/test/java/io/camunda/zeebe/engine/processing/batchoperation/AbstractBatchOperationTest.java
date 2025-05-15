@@ -19,6 +19,7 @@ import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationMoveInstruction;
@@ -88,6 +89,30 @@ abstract class AbstractBatchOperationTest {
         .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
         .withFilter(filterBuffer)
         .create(DEFAULT_USER.getUsername())
+        .getValue()
+        .getBatchOperationKey();
+  }
+
+  protected long createNewCancelProcessInstanceBatchOperation(
+      final Set<Long> itemKeys, final AuthInfo auth) {
+    final var result =
+        new SearchQueryResult.Builder<ProcessInstanceEntity>()
+            .items(
+                itemKeys.stream().map(this::mockProcessInstanceEntity).collect(Collectors.toList()))
+            .total(itemKeys.size())
+            .build();
+    Mockito.when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
+        .thenReturn(result);
+
+    final var filterBuffer =
+        convertToBuffer(
+            new ProcessInstanceFilter.Builder().processInstanceKeys(1L, 3L, 8L).build());
+
+    return engine
+        .batchOperation()
+        .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+        .withFilter(filterBuffer)
+        .create(auth)
         .getValue()
         .getBatchOperationKey();
   }

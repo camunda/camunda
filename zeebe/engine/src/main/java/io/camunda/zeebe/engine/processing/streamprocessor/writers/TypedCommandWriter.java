@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
+import org.agrona.DirectBuffer;
 
 /** This interface is supposed to replace TypedCommandWriter */
 public interface TypedCommandWriter {
@@ -44,6 +45,19 @@ public interface TypedCommandWriter {
    *     RecordBatch
    */
   void appendFollowUpCommand(long key, Intent intent, RecordValue value, long operationReference);
+
+  /**
+   * Append a follow up command to the result builder
+   *
+   * @param intent the intent of the command
+   * @param value the record of the command
+   * @param operationReference the operation reference of the command
+   * @param authClaims the authorization claims
+   * @throws ExceededBatchRecordSizeException if the appended command doesn't fit into the
+   *     RecordBatch
+   */
+  void appendFollowUpCommand(
+      long key, Intent intent, RecordValue value, long operationReference, DirectBuffer authClaims);
 
   /**
    * @param commandLength the length of the command that will be written

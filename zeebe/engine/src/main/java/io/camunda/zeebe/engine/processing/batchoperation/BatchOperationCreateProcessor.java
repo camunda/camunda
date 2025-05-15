@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +84,15 @@ public final class BatchOperationCreateProcessor
     recordWithKey.wrap(recordValue);
     recordWithKey.setBatchOperationKey(key);
 
-    stateWriter.appendFollowUpEvent(key, BatchOperationIntent.CREATED, recordWithKey);
+    // Append authorization claims only for state
+    final var stateRecord = new BatchOperationCreationRecord();
+    stateRecord.wrap(recordValue);
+    final var authMap = command.getAuthorizations();
+    if (authMap != null) {
+      stateRecord.setClaims(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(authMap)));
+    }
+
+    stateWriter.appendFollowUpEvent(key, BatchOperationIntent.CREATED, stateRecord);
     responseWriter.writeEventOnCommand(key, BatchOperationIntent.CREATED, recordWithKey, command);
     commandDistributionBehavior
         .withKey(key)

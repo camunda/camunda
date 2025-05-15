@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -14,6 +15,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import java.util.function.Supplier;
+import org.agrona.DirectBuffer;
 
 final class ResultBuilderBackedTypedCommandWriter extends AbstractResultBuilderBackedWriter
     implements TypedCommandWriter {
@@ -36,7 +38,17 @@ final class ResultBuilderBackedTypedCommandWriter extends AbstractResultBuilderB
   @Override
   public void appendFollowUpCommand(
       final long key, final Intent intent, final RecordValue value, final long operationReference) {
-    appendRecord(key, intent, value, operationReference);
+    appendRecord(key, intent, value, operationReference, null);
+  }
+
+  @Override
+  public void appendFollowUpCommand(
+      final long key,
+      final Intent intent,
+      final RecordValue value,
+      final long operationReference,
+      final DirectBuffer claims) {
+    appendRecord(key, intent, value, operationReference, claims);
   }
 
   @Override
@@ -45,11 +57,15 @@ final class ResultBuilderBackedTypedCommandWriter extends AbstractResultBuilderB
   }
 
   private void appendRecord(final long key, final Intent intent, final RecordValue value) {
-    appendRecord(key, intent, value, -1);
+    appendRecord(key, intent, value, -1, null);
   }
 
   private void appendRecord(
-      final long key, final Intent intent, final RecordValue value, final long operationReference) {
+      final long key,
+      final Intent intent,
+      final RecordValue value,
+      final long operationReference,
+      final DirectBuffer authClaims) {
     final var metadata =
         new RecordMetadata()
             .recordType(RecordType.COMMAND)
@@ -57,6 +73,13 @@ final class ResultBuilderBackedTypedCommandWriter extends AbstractResultBuilderB
             .rejectionType(RejectionType.NULL_VAL)
             .rejectionReason("")
             .operationReference(operationReference);
+
+    if (authClaims != null) {
+      final var authInfo = new AuthInfo();
+      authInfo.setClaims(authClaims);
+      metadata.authorization(authInfo);
+    }
+
     resultBuilder().appendRecord(key, value, metadata);
   }
 }

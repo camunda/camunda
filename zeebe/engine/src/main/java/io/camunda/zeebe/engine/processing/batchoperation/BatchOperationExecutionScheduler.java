@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.batchoperation;
 
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.security.auth.Authentication;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationItemProvider.Item;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
@@ -182,15 +183,25 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
           entityKeyProvider.fetchProcessInstanceItems(
               partitionId,
               batchOperation.getEntityFilter(ProcessInstanceFilter.class),
-              abortCondition);
+              abortCondition,
+              getAuthentication(batchOperation));
       case RESOLVE_INCIDENT ->
           entityKeyProvider.fetchIncidentItems(
               partitionId,
               batchOperation.getEntityFilter(ProcessInstanceFilter.class),
-              abortCondition);
+              abortCondition,
+              getAuthentication(batchOperation));
       default ->
           throw new IllegalArgumentException(
               "Unexpected batch operation type: " + batchOperation.getBatchOperationType());
     };
+  }
+
+  private Authentication getAuthentication(final PersistedBatchOperation batchOperation) {
+    if(batchOperation.getClaims() != null) {
+      return Authentication.of(a -> a.claims(batchOperation.getClaims()));
+    } else {
+      return null;
+    }
   }
 }

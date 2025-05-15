@@ -8,6 +8,7 @@
 package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
+import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
@@ -26,6 +27,7 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
   public static final String PROP_ENTITY_FILTER = "entityFilter";
   public static final String PROP_MIGRATION_PLAN = "migrationPlan";
   public static final String PROP_MODIFICATION_PLAN = "modificationPlan";
+  public static final String PROP_CLAIMS = "claims";
 
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY, -1);
   private final EnumProperty<BatchOperationType> batchOperationTypeProp =
@@ -37,14 +39,17 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
   private final ObjectProperty<BatchOperationProcessInstanceModificationPlan> modificationPlanProp =
       new ObjectProperty<>(
           PROP_MODIFICATION_PLAN, new BatchOperationProcessInstanceModificationPlan());
+  // Authentication claims, needed for query + command auth
+  private final DocumentProperty claimsProp = new DocumentProperty("claims");
 
   public BatchOperationCreationRecord() {
-    super(5);
+    super(6);
     declareProperty(batchOperationKeyProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(entityFilterProp)
         .declareProperty(migrationPlanProp)
-        .declareProperty(modificationPlanProp);
+        .declareProperty(modificationPlanProp)
+        .declareProperty(claimsProp);
   }
 
   @Override
@@ -103,6 +108,15 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
     return this;
   }
 
+  public DirectBuffer getClaimsBuffer() {
+    return claimsProp.getValue();
+  }
+
+  public BatchOperationCreationRecord setClaims(final DirectBuffer claims) {
+    claimsProp.setValue(claims);
+    return this;
+  }
+
   public DirectBuffer getEntityFilterBuffer() {
     return entityFilterProp.getValue();
   }
@@ -113,6 +127,7 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
     entityFilterProp.setValue(record.getEntityFilterBuffer());
     migrationPlanProp.getValue().wrap(record.getMigrationPlan());
     modificationPlanProp.getValue().wrap(record.getModificationPlan());
+    claimsProp.setValue(record.getClaimsBuffer());
     return this;
   }
 }

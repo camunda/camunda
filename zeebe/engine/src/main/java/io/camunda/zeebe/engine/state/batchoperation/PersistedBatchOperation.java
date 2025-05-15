@@ -11,6 +11,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
+import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.BatchOperationProcessInstanceModificationPlanValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.Comparator;
+import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -40,16 +42,19 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
       new ObjectProperty<>("modificationPlan", new BatchOperationProcessInstanceModificationPlan());
   private final ArrayProperty<LongValue> chunkKeysProp =
       new ArrayProperty<>("chunkKeys", LongValue::new);
+  // Authentication claims, needed for query + command auth
+  private final DocumentProperty claimsProp = new DocumentProperty("claims");
 
   public PersistedBatchOperation() {
-    super(7);
+    super(8);
     declareProperty(keyProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(statusProp)
         .declareProperty(entityFilterProp)
         .declareProperty(migrationPlanProp)
         .declareProperty(modificationPlanProp)
-        .declareProperty(chunkKeysProp);
+        .declareProperty(chunkKeysProp)
+        .declareProperty(claimsProp);
   }
 
   public PersistedBatchOperation wrap(final BatchOperationCreationRecord record) {
@@ -58,6 +63,7 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
     setEntityFilter(record.getEntityFilterBuffer());
     setMigrationPlan(record.getMigrationPlan());
     setModificationPlan(record.getModificationPlan());
+    setClaims(record.getClaimsBuffer());
     return this;
   }
 
@@ -125,6 +131,23 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
   public PersistedBatchOperation setEntityFilter(final DirectBuffer filter) {
     entityFilterProp.setValue(new UnsafeBuffer(filter));
     return this;
+  }
+
+  public Map<String, Object> getClaims() {
+    if(claimsProp.getValue() != null) {
+      return MsgPackConverter.convertToMap(claimsProp.getValue());
+    } else {
+      return null;
+    }
+  }
+
+  public PersistedBatchOperation setClaims(final DirectBuffer claims) {
+    claimsProp.setValue(claims);
+    return this;
+  }
+
+  public DirectBuffer getClaimsBuffer() {
+    return claimsProp.getValue();
   }
 
   public <T> T getEntityFilter(final Class<T> clazz) {

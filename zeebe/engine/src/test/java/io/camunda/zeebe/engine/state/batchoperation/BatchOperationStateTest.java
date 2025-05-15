@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.BatchOperationStatus;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -54,11 +56,14 @@ public class BatchOperationStateTest {
             .processDefinitionIds("process")
             .processDefinitionVersions(1)
             .build();
+    final String username = "bud spencer";
+    final var claims = Map.of(Authorization.AUTHORIZED_USERNAME, username);
     final var record =
         new BatchOperationCreationRecord()
             .setBatchOperationKey(batchOperationKey)
             .setBatchOperationType(type)
-            .setEntityFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(filter)));
+            .setEntityFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(filter)))
+            .setClaims(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(claims)));
 
     // when
     state.create(batchOperationKey, record);
@@ -72,6 +77,7 @@ public class BatchOperationStateTest {
     assertThat(batchOperation.getBatchOperationType()).isEqualTo(type);
     assertThat(recordFilter).isEqualTo(filter);
     assertThat(batchOperation.getStatus()).isEqualTo(BatchOperationStatus.CREATED);
+    assertThat(batchOperation.getClaims()).containsEntry(Authorization.AUTHORIZED_USERNAME, username);
   }
 
   @Test
