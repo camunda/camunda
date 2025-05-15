@@ -21,50 +21,50 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
+import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.response.EvaluatedDecision;
-import io.camunda.process.test.api.assertions.EvaluatedDecisionAssert;
+import io.camunda.process.test.api.assertions.EvaluatedDecisionResponseAssert;
+import java.util.Optional;
 import org.assertj.core.api.AbstractAssert;
 
-public class EvaluatedDecisionAssertj
-    extends AbstractAssert<EvaluatedDecisionAssertj, EvaluatedDecision>
-    implements EvaluatedDecisionAssert {
+public class EvaluatedDecisionResponseAssertj
+    extends AbstractAssert<EvaluatedDecisionResponseAssertj, EvaluateDecisionResponse>
+    implements EvaluatedDecisionResponseAssert {
 
   private final ObjectMapper jsonMapper = new ObjectMapper();
-  private final DecisionMatchedRulesAssertj decisionMatchedRulesAssertj;
 
-  public EvaluatedDecisionAssertj(final EvaluatedDecision evaluatedDecision) {
-    super(evaluatedDecision, EvaluatedDecisionAssert.class);
-
-    this.decisionMatchedRulesAssertj =
-        new DecisionMatchedRulesAssertj(
-            String.format("Expected EvaluatedDecision [%s]", evaluatedDecision.getDecisionId()));
+  public EvaluatedDecisionResponseAssertj(final EvaluateDecisionResponse evaluateDecisionResponse) {
+    super(evaluateDecisionResponse, EvaluatedDecisionResponseAssert.class);
   }
 
   @Override
-  public EvaluatedDecisionAssert hasOutput(final Object expectedOutput) {
+  public EvaluatedDecisionResponseAssert isEvaluated() {
+    assertThat(actual.getFailureMessage())
+        .withFailMessage(
+            "EvaluateDecisionResponse [%s] failed with message: %s",
+            actual.getDecisionId(), actual.getFailureMessage())
+        .isNullOrEmpty();
+
+    return this;
+  }
+
+  @Override
+  public EvaluatedDecisionResponseAssert hasOutput(final Object expectedOutput) {
+    final Optional<EvaluatedDecision> decision =
+        actual.getEvaluatedDecisions().stream().findFirst();
+    assertThat(decision)
+        .withFailMessage("EvaluateDecisionResponse [%s] was not evaluated", actual.getDecisionId())
+        .isPresent();
+
     final JsonNode result = readJson(actual.getDecisionOutput());
     final JsonNode expectedOutputJson = toJson(expectedOutput);
 
     assertThat(result)
         .withFailMessage(
-            "Expected EvaluatedDecision [%s] to have output '%s', but was '%s'",
+            "Expected EvaluateDecisionResponse [%s] to have output '%s', but was '%s'",
             actual.getDecisionId(), expectedOutput, result)
         .isEqualTo(expectedOutputJson);
 
-    return this;
-  }
-
-  @Override
-  public EvaluatedDecisionAssert hasMatchedRules(final int... expectedMatchedRuleIndexes) {
-    this.decisionMatchedRulesAssertj.hasMatchedRules(
-        actual.getMatchedRules(), expectedMatchedRuleIndexes);
-    return this;
-  }
-
-  @Override
-  public EvaluatedDecisionAssert hasNotMatchedRules(final int... expectedUnmatchedRuleIndexes) {
-    this.decisionMatchedRulesAssertj.hasNotMatchedRules(
-        actual.getMatchedRules(), expectedUnmatchedRuleIndexes);
     return this;
   }
 

@@ -16,6 +16,7 @@
 package io.camunda.process.test.api;
 
 import io.camunda.client.api.response.EvaluateDecisionResponse;
+import io.camunda.client.api.response.EvaluatedDecision;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.response.ProcessInstanceResult;
 import io.camunda.process.test.api.assertions.DecisionInstanceAssert;
@@ -23,6 +24,7 @@ import io.camunda.process.test.api.assertions.DecisionSelector;
 import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.api.assertions.EvaluatedDecisionAssert;
+import io.camunda.process.test.api.assertions.EvaluatedDecisionResponseAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.UserTaskAssert;
@@ -30,6 +32,7 @@ import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.assertions.DecisionInstanceAssertj;
 import io.camunda.process.test.impl.assertions.EvaluatedDecisionAssertj;
+import io.camunda.process.test.impl.assertions.EvaluatedDecisionResponseAssertj;
 import io.camunda.process.test.impl.assertions.ProcessInstanceAssertj;
 import io.camunda.process.test.impl.assertions.UserTaskAssertj;
 import java.time.Duration;
@@ -197,14 +200,24 @@ public class CamundaAssert {
   }
 
   /**
-   * To verify an evaluated decision (via API).
+   * To verify an evaluated decision response (via API).
    *
-   * @param evaluateDecisionResponse the evaluated decision to assert
+   * @param evaluateDecisionResponse the evaluated decision response to assert
    * @return the assertion object
    */
-  public static EvaluatedDecisionAssert assertThat(
+  public static EvaluatedDecisionResponseAssert assertThat(
       final EvaluateDecisionResponse evaluateDecisionResponse) {
-    return new EvaluatedDecisionAssertj(evaluateDecisionResponse);
+    return new EvaluatedDecisionResponseAssertj(evaluateDecisionResponse);
+  }
+
+  /**
+   * To verify an evaluated decision (via API).
+   *
+   * @param evaluatedDecision the evaluated decision to assert
+   * @return the assertion object
+   */
+  public static EvaluatedDecisionAssert assertThat(final EvaluatedDecision evaluatedDecision) {
+    return new EvaluatedDecisionAssertj(evaluatedDecision);
   }
 
   // ======== Internal ========
