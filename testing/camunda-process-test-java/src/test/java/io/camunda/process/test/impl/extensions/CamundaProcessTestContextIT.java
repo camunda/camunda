@@ -19,6 +19,7 @@ import static io.camunda.process.test.api.CamundaAssert.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.api.CamundaProcessTest;
 import io.camunda.process.test.api.CamundaProcessTestContext;
@@ -625,6 +626,47 @@ public class CamundaProcessTestContextIT {
         .isEvaluated()
         .hasOutput(expectedOutput)
         .hasMatchedRules(1, 3);
+  }
+
+  @Test
+  void shouldEvaluateComplexDecision() {
+    // Given
+    client
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("dmn/complex-decision-table.dmn")
+        .send()
+        .join();
+
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("color", "green");
+    variables.put("language", "german");
+
+    // when
+    final EvaluateDecisionResponse response =
+        client
+            .newEvaluateDecisionCommand()
+            .decisionId("decision_overall_happiness")
+            .variables(variables)
+            .send()
+            .join();
+
+    // Then
+    assertThat(response).isEvaluated().hasOutput("pretty happy");
+
+    assertThat(DecisionSelectors.byId("decision_overall_happiness"))
+        .isEvaluated()
+        .hasOutput("pretty happy")
+        .hasMatchedRules(3);
+
+    assertThat(DecisionSelectors.byId("decision_color_happiness"))
+        .isEvaluated()
+        .hasOutput(90)
+        .hasMatchedRules(2);
+
+    assertThat(DecisionSelectors.byName("Language Happiness"))
+        .isEvaluated()
+        .hasOutput(10)
+        .hasMatchedRules(1);
   }
 
   /**
