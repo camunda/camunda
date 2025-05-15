@@ -118,6 +118,7 @@ import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
 import io.camunda.client.api.search.request.RolesByTenantSearchRequest;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
 import io.camunda.client.api.search.request.UserTaskVariableSearchRequest;
+import io.camunda.client.api.search.request.UsersByRoleSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessInstanceElementStatisticsRequest;
@@ -1429,6 +1430,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the unassign user from role command
    */
   UnassignUserFromRoleCommandStep1 newUnassignUserFromRoleCommand(String roleId);
+
+  /**
+   * Executes a search request to query users by role.
+   *
+   * <pre>
+   * camundaClient
+   *   .newUsersByRoleSearchRequest("role-id")
+   *   .filter((f) -> f.username("john"))
+   *   .sort((s) -> s.username().asc())
+   *   .page((p) -> p.limit(100))
+   *   .send();
+   * </pre>
+   *
+   * @param roleId the ID of the role
+   * @return a builder for the users by role search request
+   */
+  UsersByRoleSearchRequest newUsersByRoleSearchRequest(String roleId);
 
   /**
    * Command to create a group.
