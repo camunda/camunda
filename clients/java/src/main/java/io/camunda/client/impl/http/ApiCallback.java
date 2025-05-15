@@ -25,7 +25,7 @@ import io.camunda.client.impl.HttpStatusCode;
 import io.camunda.client.impl.http.ApiResponseConsumer.ApiResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.hc.core5.concurrent.FutureCallback;
 
@@ -34,18 +34,20 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
   private final CompletableFuture<RespT> response;
   private final JsonResponseTransformer<HttpT, RespT> transformer;
   private final Predicate<StatusCode> retryPredicate;
-  private final Runnable retryAction;
-  private final AtomicInteger retries = new AtomicInteger(2);
+  private final Consumer<Integer> retryAction;
+  private final int remainingRetries;
 
   public ApiCallback(
       final CompletableFuture<RespT> response,
       final JsonResponseTransformer<HttpT, RespT> transformer,
       final Predicate<StatusCode> retryPredicate,
-      final Runnable retryAction) {
+      final Consumer<Integer> retryAction,
+      final int remainingRetries) {
     this.response = response;
     this.transformer = transformer;
     this.retryPredicate = retryPredicate;
     this.retryAction = retryAction;
+    this.remainingRetries = remainingRetries;
   }
 
   @Override
@@ -79,8 +81,8 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
 
   private void handleErrorResponse(
       final ApiEntity<HttpT> body, final int code, final String reason) {
-    if (retries.getAndDecrement() > 0 && retryPredicate.test(new HttpStatusCode(code))) {
-      retryAction.run();
+    if (remainingRetries > 0 && retryPredicate.test(new HttpStatusCode(code))) {
+      retryAction.accept(remainingRetries - 1);
       return;
     }
 

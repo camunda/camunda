@@ -15,22 +15,23 @@
  */
 package io.camunda.client.impl.http;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import io.camunda.client.CredentialsProvider.StatusCode;
 import io.camunda.client.impl.http.ApiResponseConsumer.ApiResponse;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class ApiCallbackTest {
 
+  public static final int DEFAULT_REMAINING_RETRIES = 2;
   private CompletableFuture<String> response;
   private JsonResponseTransformer<String, String> transformer;
   private Predicate<StatusCode> retryPredicate;
-  private Runnable retryAction;
+  private Consumer<Integer> retryAction;
   private ApiCallback<String, String> apiCallback;
 
   @BeforeEach
@@ -38,24 +39,23 @@ class ApiCallbackTest {
     response = new CompletableFuture<>();
     transformer = mock(JsonResponseTransformer.class);
     retryPredicate = mock(Predicate.class);
-    retryAction = mock(Runnable.class);
-    apiCallback = new ApiCallback<>(response, transformer, retryPredicate, retryAction);
+    retryAction = mock(Consumer.class);
+    apiCallback =
+        new ApiCallback<>(
+            response, transformer, retryPredicate, retryAction, DEFAULT_REMAINING_RETRIES);
   }
 
   @Test
-  void shouldLimitRetries() {
-    // Arrange
+  void shouldRetryWhenRetryPredicateIsTrueWithDecrementedRetries() {
+    // given
     final ApiResponse<String> apiResponse = mock(ApiResponse.class);
     when(apiResponse.getCode()).thenReturn(500);
     when(retryPredicate.test(any())).thenReturn(true);
 
-    // Act
-    apiCallback.completed(apiResponse);
-    apiCallback.completed(apiResponse);
+    // when
     apiCallback.completed(apiResponse);
 
-    // Assert
-    verify(retryAction, times(2)).run();
-    assertTrue(response.isCompletedExceptionally());
+    // then
+    verify(retryAction, times(1)).accept(eq(DEFAULT_REMAINING_RETRIES - 1));
   }
 }
