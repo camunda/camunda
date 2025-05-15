@@ -16,7 +16,6 @@
 package io.camunda.process.test.impl.assertions;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
@@ -117,9 +116,5 @@ public class CamundaDataSource {
 
   public DecisionInstance getDecisionInstance(final String decisionInstanceId) {
     return client.newDecisionInstanceGetRequest(decisionInstanceId).send().join();
-  }
-
-  public JsonMapper getJsonMapper() {
-    return client.getConfiguration().getJsonMapper();
   }
 }

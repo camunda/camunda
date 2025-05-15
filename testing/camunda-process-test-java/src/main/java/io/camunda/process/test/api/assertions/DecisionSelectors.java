@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.api.assertions;
 
+import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.response.DecisionInstance;
 
@@ -65,6 +66,10 @@ public class DecisionSelectors {
    */
   public static DecisionSelector byId(final String decisionId, final long processInstanceKey) {
     return new DecisionIdSelector(decisionId, processInstanceKey);
+  }
+
+  public static DecisionSelector byResponse(final EvaluateDecisionResponse response) {
+    return new EvaluateDecisionResponseSelector(response);
   }
 
   private static final class DecisionProcessInstanceKeySelector implements DecisionSelector {
@@ -146,8 +151,8 @@ public class DecisionSelectors {
     }
 
     @Override
-    public boolean test(final DecisionInstance userTask) {
-      return decisionDefinitionName.equals(userTask.getDecisionDefinitionName());
+    public boolean test(final DecisionInstance decision) {
+      return decisionDefinitionName.equals(decision.getDecisionDefinitionName());
     }
 
     @Override
@@ -166,6 +171,37 @@ public class DecisionSelectors {
       if (processInstanceKey != null) {
         filter.processInstanceKey(processInstanceKey);
       }
+    }
+  }
+
+  private static final class EvaluateDecisionResponseSelector implements DecisionSelector {
+
+    private final EvaluateDecisionResponse response;
+
+    private EvaluateDecisionResponseSelector(final EvaluateDecisionResponse response) {
+      this.response = response;
+    }
+
+    @Override
+    public boolean test(final DecisionInstance decision) {
+      return decision.getDecisionInstanceKey() == response.getDecisionInstanceKey()
+          && decision.getDecisionDefinitionId().equals(response.getDecisionId());
+    }
+
+    @Override
+    public String describe() {
+      return String.format(
+          "%s (decisionInstanceKey: %d, decisionId: %s)",
+          response.getDecisionName(),
+          response.getDecisionInstanceKey(),
+          response.getDecisionId());
+    }
+
+    @Override
+    public void applyFilter(final DecisionInstanceFilter filter) {
+      filter
+          .decisionInstanceKey(response.getDecisionInstanceKey())
+          .decisionDefinitionId(response.getDecisionId());
     }
   }
 }

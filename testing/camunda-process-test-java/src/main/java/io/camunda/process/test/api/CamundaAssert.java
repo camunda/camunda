@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.api;
 
+import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.response.ProcessInstanceResult;
 import io.camunda.process.test.api.assertions.DecisionInstanceAssert;
@@ -191,6 +192,20 @@ public class CamundaAssert {
    */
   public static DecisionInstanceAssert assertThat(final DecisionSelector decisionSelector) {
     return new DecisionInstanceAssertj(getDataSource(), decisionSelector);
+  }
+
+  /**
+   * To verify an evaluated decision response (via API).
+   *
+   * @param response the evaluated decision response to assert
+   * @return the assertion object
+   */
+  public static DecisionInstanceAssertj assertThat(final EvaluateDecisionResponse response) {
+    return new DecisionInstanceAssertj(
+        getDataSource(),
+        decisionInstance ->
+            decisionInstance.getDecisionInstanceKey() == response.getDecisionInstanceKey()
+                && decisionInstance.getDecisionDefinitionId().equals(response.getDecisionId()));
   }
 
   // ======== Internal ========

@@ -19,6 +19,7 @@ import static io.camunda.process.test.api.CamundaAssert.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.api.CamundaProcessTest;
 import io.camunda.process.test.api.CamundaProcessTestContext;
@@ -32,6 +33,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.assertj.core.api.Assertions;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Decision;
@@ -627,6 +629,92 @@ public class CamundaProcessTestContextIT {
         .hasMatchedRules(1, 3);
   }
 
+  @Test
+  void shouldEvaluateSimpleDecision() {
+    // Given
+    client
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("dmn/simple-decision-table.dmn")
+        .send()
+        .join();
+
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("yes_or_no", "yes");
+
+    // when
+    final EvaluateDecisionResponse response =
+        evaluateDecisionByDecisionId("simple_decision", variables);
+
+    // Then
+    assertThat(response)
+        .isEvaluated()
+        .hasOutput(":)")
+        .hasMatchedRules(1);
+  }
+
+  @Test
+  void shouldEvaluateComplexDecision() {
+    // Given
+    client
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("dmn/complex-decision-table.dmn")
+        .send()
+        .join();
+
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("color", "green");
+    variables.put("language", "german");
+
+    // when
+    final EvaluateDecisionResponse response =
+        evaluateDecisionByDecisionId("decision_overall_happiness", variables);
+
+    // Then
+    assertThat(response)
+        .isEvaluated()
+        .hasOutput("pretty happy")
+        .hasMatchedRules(3);
+
+    assertThat(DecisionSelectors.byId("decision_color_happiness"))
+        .isEvaluated()
+        .hasOutput(90)
+        .hasMatchedRules(2);
+
+    assertThat(DecisionSelectors.byName("Language Happiness"))
+        .isEvaluated()
+        .hasOutput(10)
+        .hasMatchedRules(1);
+  }
+
+  @Test
+  void unableToEvaluateDecision() {
+    // Given
+    client
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("dmn/faulty-decision-table.dmn")
+        .send()
+        .join();
+
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("color", "green");
+    variables.put("language", "german");
+
+    // when
+    final EvaluateDecisionResponse response =
+        evaluateDecisionByDecisionId("decision_overall_happiness", variables);
+
+    // Then
+    Assertions.assertThatThrownBy(() -> assertThat(response).isEvaluated())
+        .hasMessageStartingWith("No DecisionInstance");
+
+    Assertions.assertThatThrownBy(
+            () -> assertThat(DecisionSelectors.byId("decision_overall_happiness")).isEvaluated())
+        .hasMessage("No DecisionInstance [decision_overall_happiness] found.");
+    Assertions.assertThatThrownBy(
+            () -> assertThat(DecisionSelectors.byId("decision_language_happiness")).isEvaluated())
+        .hasMessage("No DecisionInstance [decision_language_happiness] found.");
+  }
+
   /**
    * Deploys a process model and waits until it is accessible via the API.
    *
@@ -862,5 +950,15 @@ public class CamundaProcessTestContextIT {
         .userTask("user-task-1")
         .endEvent("success-end")
         .done();
+  }
+
+  private EvaluateDecisionResponse evaluateDecisionByDecisionId(
+      final String decisionId, final Map<String, Object> variables) {
+    return client
+        .newEvaluateDecisionCommand()
+        .decisionId(decisionId)
+        .variables(variables)
+        .send()
+        .join();
   }
 }
