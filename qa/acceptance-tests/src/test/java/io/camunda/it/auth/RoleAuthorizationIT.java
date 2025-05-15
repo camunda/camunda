@@ -19,6 +19,7 @@ import io.camunda.client.api.response.CreateRoleResponse;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.Role;
+import io.camunda.client.protocol.rest.MappingSearchQueryResult;
 import io.camunda.client.protocol.rest.RoleResult;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
@@ -78,6 +79,7 @@ class RoleAuthorizationIT {
               new Permissions(ResourceType.ROLE, PermissionType.READ, List.of("*")),
               new Permissions(ResourceType.ROLE, PermissionType.DELETE, List.of("*")),
               new Permissions(ResourceType.GROUP, PermissionType.CREATE, List.of("*")),
+              new Permissions(ResourceType.MAPPING_RULE, PermissionType.CREATE, List.of("*")),
               new Permissions(ResourceType.AUTHORIZATION, PermissionType.UPDATE, List.of("*"))));
 
   @UserDefinition
@@ -201,6 +203,55 @@ class RoleAuthorizationIT {
             () -> camundaClient.newRoleGetRequest(Strings.newRandomValidIdentityId()).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("404: 'Not Found'");
+  }
+
+  @Test
+  void shouldAssignRoleToMappingIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    final String roleId = Strings.newRandomValidIdentityId();
+    final String mappingId = Strings.newRandomValidIdentityId();
+
+    createRole(adminClient, roleId, "roleName");
+    adminClient
+        .newCreateMappingCommand()
+        .mappingId(mappingId)
+        .name("mappingName")
+        .claimName("testClaimName")
+        .claimValue("testClaimValue")
+        .send()
+        .join();
+
+    adminClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingId).send().join();
+
+    Awaitility.await("Mapping is assigned to the role")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        searchMappingRuleByRole(
+                                adminClient.getConfiguration().getRestAddress().toString(),
+                                ADMIN,
+                                roleId)
+                            .getItems())
+                    .hasSize(1)
+                    .anyMatch(m -> mappingId.equals(m.getMappingId())));
+
+    adminClient.newDeleteRoleCommand(roleId).send().join();
+  }
+
+  @Test
+  void assignRoleToMappingShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newAssignRoleToMappingCommand()
+                    .roleId(Strings.newRandomValidIdentityId())
+                    .mappingId(Strings.newRandomValidIdentityId())
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
   }
 
   @Test
@@ -367,6 +418,27 @@ class RoleAuthorizationIT {
     final HttpResponse<String> response =
         HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
     return OBJECT_MAPPER.readValue(response.body(), RoleSearchResponse.class);
+  }
+
+  // TODO once available, this test should use the client to make the request
+  private static MappingSearchQueryResult searchMappingRuleByRole(
+      final String restAddress, final String username, final String roleId)
+      throws URISyntaxException, IOException, InterruptedException {
+    final var encodedCredentials =
+        Base64.getEncoder()
+            .encodeToString("%s:%s".formatted(username, DEFAULT_PASSWORD).getBytes());
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(
+                new URI(
+                    "%s%s".formatted(restAddress, "v2/roles/" + roleId + "/mapping-rules/search")))
+            .POST(HttpRequest.BodyPublishers.ofString(""))
+            .header("Authorization", "Basic %s".formatted(encodedCredentials))
+            .build();
+
+    final HttpResponse<String> response =
+        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    return OBJECT_MAPPER.readValue(response.body(), MappingSearchQueryResult.class);
   }
 
   private record RoleSearchResponse(List<RoleResult> items) {}
