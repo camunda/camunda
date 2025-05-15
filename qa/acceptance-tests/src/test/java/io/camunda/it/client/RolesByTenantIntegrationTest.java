@@ -11,17 +11,39 @@ import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AV
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
+import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.collection.Tuple;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.Base64;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 
 @MultiDbTest
 public class RolesByTenantIntegrationTest {
 
+  private static final String ADMIN_USERNAME = "admin";
+  private static final String PASSWORD = "password";
+
   private static CamundaClient camundaClient;
+
+  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
+
+  private static final ObjectMapper OBJECT_MAPPER =
+      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
   @Test
   void shouldAssignRoleToTenant() {
@@ -129,11 +151,13 @@ public class RolesByTenantIntegrationTest {
 
   @Test
   void shouldReturnEmptyListForTenantWithoutRoles() {
+    // given
     final String emptyTenant = "empty-tenant-" + Strings.newRandomValidIdentityId();
     createTenant(emptyTenant);
-
+    waitForTenantsToBeCreated(emptyTenant);
+    // when
     final var roles = camundaClient.newRolesByTenantSearchRequest(emptyTenant).send().join();
-
+    // then
     assertThat(roles.items()).isEmpty();
   }
 
@@ -162,8 +186,13 @@ public class RolesByTenantIntegrationTest {
     // when
     camundaClient.newUnassignRoleFromTenantCommand(tenantId).roleId(roleId).send().join();
     // then
-    final var roles = camundaClient.newRolesByTenantSearchRequest(tenantId).send().join();
-    assertThat(roles.items()).noneMatch(role -> role.getRoleId().equals(roleId));
+    Awaitility.await("Role should be unassigned from tenant")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () -> {
+              final var roles = camundaClient.newRolesByTenantSearchRequest(tenantId).send().join();
+              assertThat(roles.items()).noneMatch(role -> role.getRoleId().equals(roleId));
+            });
   }
 
   @Test
@@ -239,4 +268,45 @@ public class RolesByTenantIntegrationTest {
         .send()
         .join();
   }
+
+  private static void waitForTenantsToBeCreated(final String tenantId) {
+    Awaitility.await("should create tenants and import in ES")
+        .atMost(Duration.ofSeconds(15))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var tenantById = getTenantById(tenantId);
+              // Validate the response
+              assert tenantById.isRight();
+            });
+  }
+
+  // TODO once available, this test should use the client to make the request
+  private static Either<Tuple<HttpStatus, String>, TenantResponse> getTenantById(
+      final String tenantId) throws URISyntaxException, IOException, InterruptedException {
+    final var encodedCredentials =
+        Base64.getEncoder().encodeToString("%s:%s".formatted(ADMIN_USERNAME, PASSWORD).getBytes());
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(
+                new URI(
+                    "%s%s"
+                        .formatted(
+                            camundaClient.getConfiguration().getRestAddress().toString(),
+                            "v2/tenants/%s".formatted(tenantId))))
+            .GET()
+            .header("Authorization", "Basic %s".formatted(encodedCredentials))
+            .build();
+
+    // Send the request and get the response
+    final HttpResponse<String> response =
+        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+
+    if (response.statusCode() == HttpStatus.OK.value()) {
+      return Either.right(OBJECT_MAPPER.readValue(response.body(), TenantResponse.class));
+    }
+    return Either.left(Tuple.of(HttpStatus.resolve(response.statusCode()), response.body()));
+  }
+
+  private record TenantResponse(String tenantId) {}
 }
