@@ -53,6 +53,15 @@ public final class ArrayProperty<T extends BaseValue> extends BaseProperty<Array
   }
 
   @Override
+  public T remove(final int index) {
+    try {
+      return value.remove(index);
+    } catch (final Exception e) {
+      throw new MsgpackPropertyException(getKey(), e);
+    }
+  }
+
+  @Override
   public Stream<T> stream() {
     // ArrayValue is not a thread-safe Iterable
     final var parallel = false;

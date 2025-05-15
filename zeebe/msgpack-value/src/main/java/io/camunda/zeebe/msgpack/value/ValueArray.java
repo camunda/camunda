@@ -15,5 +15,7 @@ public interface ValueArray<T> extends Iterable<T>, RandomAccess {
 
   T add(final int index);
 
+  T remove(int index);
+
   Stream<T> stream();
 }
