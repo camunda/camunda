@@ -18,16 +18,6 @@ package io.camunda.process.test.api.assertions;
 /** The assertion object to verify an evaluated decision. */
 public interface EvaluatedDecisionAssert {
   /**
-   * Verifies that the decision is evaluated. The verification fails if the decision is not
-   * evaluated or if the evaluation fails.
-   *
-   * <p>The assertion waits until the decision is evaluated.
-   *
-   * @return the assertion object
-   */
-  EvaluatedDecisionAssert isEvaluated();
-
-  /**
    * Verifies that the decision is evaluated with the expected output. The verification fails if the
    * decision is not evaluated or the output does not match.
    *
@@ -35,4 +25,20 @@ public interface EvaluatedDecisionAssert {
    * @return the assertion object
    */
   EvaluatedDecisionAssert hasOutput(final Object expectedOutput);
+
+  /**
+   * Verifies that the decision has matched the given rule indices.
+   *
+   * @param expectedMatchedRuleIndexes the rule indices that should have matched
+   * @return the assertion object
+   */
+  EvaluatedDecisionAssert hasMatchedRules(final int... expectedMatchedRuleIndexes);
+
+  /**
+   * Verifies that the decision has not matched the given rule indices.
+   *
+   * @param expectedUnmatchedRuleIndexes the rule indices that should not have matched
+   * @return the assertion object
+   */
+  EvaluatedDecisionAssert hasNotMatchedRules(final int... expectedUnmatchedRuleIndexes);
 }

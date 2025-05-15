@@ -23,16 +23,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
 import io.camunda.client.api.command.ClientException;
-import io.camunda.client.api.response.MatchedDecisionRule;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.DecisionInstanceState;
 import io.camunda.process.test.api.assertions.DecisionInstanceAssert;
 import io.camunda.process.test.api.assertions.DecisionSelector;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
@@ -95,15 +92,9 @@ public class DecisionInstanceAssertj
   @Override
   public DecisionInstanceAssert hasMatchedRules(final int... expectedMatchedRuleIndexes) {
     awaitDecisionInstance(
-        instance -> {
-          final List<Integer> actualMatchedRuleIndices =
-              instance.getMatchedRules().stream()
-                  .map(MatchedDecisionRule::getRuleIndex)
-                  .collect(Collectors.toList());
-
-          decisionMatchedRulesAssertj.hasMatchedRules(
-              actualMatchedRuleIndices, expectedMatchedRuleIndexes);
-        });
+        instance ->
+            decisionMatchedRulesAssertj.hasMatchedRules(
+                instance.getMatchedRules(), expectedMatchedRuleIndexes));
 
     return this;
   }
@@ -111,15 +102,9 @@ public class DecisionInstanceAssertj
   @Override
   public DecisionInstanceAssert hasNotMatchedRules(final int... expectedUnmatchedRuleIndexes) {
     awaitDecisionInstance(
-        instance -> {
-          final List<Integer> actualMatchedRuleIndices =
-              instance.getMatchedRules().stream()
-                  .map(MatchedDecisionRule::getRuleIndex)
-                  .collect(Collectors.toList());
-
-          decisionMatchedRulesAssertj.hasNotMatchedRules(
-              actualMatchedRuleIndices, expectedUnmatchedRuleIndexes);
-        });
+        instance ->
+            decisionMatchedRulesAssertj.hasNotMatchedRules(
+                instance.getMatchedRules(), expectedUnmatchedRuleIndexes));
 
     return this;
   }

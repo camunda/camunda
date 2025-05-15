@@ -44,7 +44,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class EvaluatedDecisionAssertTest {
+public class EvaluatedDecisionResponseAssertTest {
 
   private static final String NAME = "name";
   private static final String DECISION_DEFINITION_ID = "decisionDefinitionId";
@@ -143,7 +143,7 @@ public class EvaluatedDecisionAssertTest {
 
       // then
       Assertions.assertThatThrownBy(() -> assertThat(evaluateDecision()).isEvaluated())
-          .hasMessage("EvaluatedDecision [name] failed with message: Something went wrong.");
+          .hasMessage("EvaluateDecisionResponse [name] failed with message: Something went wrong.");
     }
   }
 
@@ -155,8 +155,7 @@ public class EvaluatedDecisionAssertTest {
       // given
       mockEvaluateDecision(
           evaluateDecisionResponse(
-              STRING_RESULT,
-              () -> Collections.singletonList(decisionResult(STRING_RESULT))));
+              STRING_RESULT, () -> Collections.singletonList(decisionResult(STRING_RESULT))));
 
       // then
       assertThat(evaluateDecision()).hasOutput("outputValue");
@@ -167,8 +166,7 @@ public class EvaluatedDecisionAssertTest {
       // given
       mockEvaluateDecision(
           evaluateDecisionResponse(
-              MAP_RESULT,
-              () -> Collections.singletonList(decisionResult(MAP_RESULT))));
+              MAP_RESULT, () -> Collections.singletonList(decisionResult(MAP_RESULT))));
 
       // then
       final Map<String, Object> expected = new HashMap<>();
@@ -183,8 +181,7 @@ public class EvaluatedDecisionAssertTest {
       // when
       mockEvaluateDecision(
           evaluateDecisionResponse(
-              LIST_RESULT,
-              () -> Collections.singletonList(decisionResult(LIST_RESULT))));
+              LIST_RESULT, () -> Collections.singletonList(decisionResult(LIST_RESULT))));
 
       // then
       final Map<String, Object> firstMatch = new HashMap<>();
@@ -203,19 +200,18 @@ public class EvaluatedDecisionAssertTest {
       // when
       mockEvaluateDecision(
           evaluateDecisionResponse(
-              STRING_RESULT,
-              () -> Collections.singletonList(decisionResult(STRING_RESULT))));
+              STRING_RESULT, () -> Collections.singletonList(decisionResult(STRING_RESULT))));
 
       // then
       Assertions.assertThatThrownBy(() -> assertThat(evaluateDecision()).hasOutput("foo"))
           .hasMessage(
-              "Expected EvaluatedDecision [name] to have output 'foo', but was '\"outputValue\"'");
+              "Expected EvaluateDecisionResponse [name] to have output 'foo', but was '\"outputValue\"'");
 
       final Map<String, Object> expected = new HashMap<>();
       expected.put("a", "b");
       Assertions.assertThatThrownBy(() -> assertThat(evaluateDecision()).hasOutput(expected))
           .hasMessage(
-              "Expected EvaluatedDecision [name] to have output '{a=b}', but was '\"outputValue\"'");
+              "Expected EvaluateDecisionResponse [name] to have output '{a=b}', but was '\"outputValue\"'");
     }
 
     @Test
@@ -223,19 +219,18 @@ public class EvaluatedDecisionAssertTest {
       // when
       mockEvaluateDecision(
           evaluateDecisionResponse(
-              MAP_RESULT,
-              () -> Collections.singletonList(decisionResult(MAP_RESULT))));
+              MAP_RESULT, () -> Collections.singletonList(decisionResult(MAP_RESULT))));
 
       // then
       Assertions.assertThatThrownBy(() -> assertThat(evaluateDecision()).hasOutput("foo"))
           .hasMessage(
-              "Expected EvaluatedDecision [name] to have output 'foo', but was '{\"a\":\"b\",\"v\":2}'");
+              "Expected EvaluateDecisionResponse [name] to have output 'foo', but was '{\"a\":\"b\",\"v\":2}'");
 
       final Map<String, Object> expected = new HashMap<>();
       expected.put("a", "b");
       Assertions.assertThatThrownBy(() -> assertThat(evaluateDecision()).hasOutput(expected))
           .hasMessage(
-              "Expected EvaluatedDecision [name] to have output '{a=b}', but was '{\"a\":\"b\",\"v\":2}'");
+              "Expected EvaluateDecisionResponse [name] to have output '{a=b}', but was '{\"a\":\"b\",\"v\":2}'");
     }
 
     @Test
@@ -243,19 +238,18 @@ public class EvaluatedDecisionAssertTest {
       // when
       mockEvaluateDecision(
           evaluateDecisionResponse(
-              LIST_RESULT,
-              () -> Collections.singletonList(decisionResult(LIST_RESULT))));
+              LIST_RESULT, () -> Collections.singletonList(decisionResult(LIST_RESULT))));
 
       // then
       Assertions.assertThatThrownBy(() -> assertThat(evaluateDecision()).hasOutput("foo"))
           .hasMessage(
-              "Expected EvaluatedDecision [name] to have output 'foo', but was '[{\"a\":1,\"b\":2},{\"c\":3,\"d\":4}]'");
+              "Expected EvaluateDecisionResponse [name] to have output 'foo', but was '[{\"a\":1,\"b\":2},{\"c\":3,\"d\":4}]'");
 
       final Map<String, Object> expected = new HashMap<>();
       expected.put("a", "b");
       Assertions.assertThatThrownBy(() -> assertThat(evaluateDecision()).hasOutput(expected))
           .hasMessage(
-              "Expected EvaluatedDecision [name] to have output '{a=b}', but was '[{\"a\":1,\"b\":2},{\"c\":3,\"d\":4}]'");
+              "Expected EvaluateDecisionResponse [name] to have output '{a=b}', but was '[{\"a\":1,\"b\":2},{\"c\":3,\"d\":4}]'");
     }
   }
 }
