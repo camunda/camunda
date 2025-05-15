@@ -134,8 +134,7 @@ public class RolesByMappingIntegrationTest {
                                 camundaClient.getConfiguration().getRestAddress().toString(),
                                 roleId)
                             .getItems())
-                    .hasSize(0)
-                    .noneMatch(m -> mappingId.equals(m.getMappingId())));
+                    .isEmpty());
   }
 
   @Test
