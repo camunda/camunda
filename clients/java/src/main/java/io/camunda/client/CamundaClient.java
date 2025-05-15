@@ -61,6 +61,7 @@ import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignMappingFromGroupStep1;
+import io.camunda.client.api.command.UnassignRoleFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
@@ -1297,6 +1298,25 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the roles by tenant search request
    */
   RolesByTenantSearchRequest newRolesByTenantSearchRequest(String tenantId);
+
+  /**
+   * Command to unassign a role from a group.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * camundaClient
+   *   .newUnassignRoleFromGroupCommand()
+   *   .roleId("roleId")
+   *   .groupId("groupId")
+   *   .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the unassign role from group command
+   */
+  UnassignRoleFromGroupCommandStep1 newUnassignRoleFromGroupCommand();
 
   /**
    * Command to create a group.

@@ -16,53 +16,54 @@
 package io.camunda.client.impl.command;
 
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.AssignRoleToGroupCommandStep1;
-import io.camunda.client.api.command.AssignRoleToGroupCommandStep1.AssignRoleToGroupCommandStep2;
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.response.AssignRoleToGroupResponse;
+import io.camunda.client.api.command.UnassignRoleFromGroupCommandStep1;
+import io.camunda.client.api.command.UnassignRoleFromGroupCommandStep1.UnassignRoleFromGroupCommandStep2;
+import io.camunda.client.api.response.UnassignRoleFromGroupResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class AssignRoleToGroupCommandImpl
-    implements AssignRoleToGroupCommandStep1, AssignRoleToGroupCommandStep2 {
+public class UnassignRoleFromGroupCommandImpl
+    implements UnassignRoleFromGroupCommandStep1, UnassignRoleFromGroupCommandStep2 {
 
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private String groupId;
   private String roleId;
+  private String groupId;
 
-  public AssignRoleToGroupCommandImpl(final HttpClient httpClient) {
+  public UnassignRoleFromGroupCommandImpl(final HttpClient httpClient) {
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
   }
 
   @Override
-  public AssignRoleToGroupCommandStep2 roleId(final String roleId) {
+  public UnassignRoleFromGroupCommandStep2 roleId(final String roleId) {
     this.roleId = roleId;
     return this;
   }
 
   @Override
-  public AssignRoleToGroupCommandStep2 groupId(final String groupId) {
+  public UnassignRoleFromGroupCommandStep2 groupId(final String groupId) {
     this.groupId = groupId;
     return this;
   }
 
   @Override
-  public FinalCommandStep<AssignRoleToGroupResponse> requestTimeout(final Duration timeout) {
-    httpRequestConfig.setResponseTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS);
+  public FinalCommandStep<UnassignRoleFromGroupResponse> requestTimeout(
+      final Duration requestTimeout) {
+    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public CamundaFuture<AssignRoleToGroupResponse> send() {
+  public CamundaFuture<UnassignRoleFromGroupResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("roleId", roleId);
     ArgumentUtil.ensureNotNullNorEmpty("groupId", groupId);
-    final HttpCamundaFuture<AssignRoleToGroupResponse> result = new HttpCamundaFuture<>();
-    httpClient.put(
+    final HttpCamundaFuture<UnassignRoleFromGroupResponse> result = new HttpCamundaFuture<>();
+    httpClient.delete(
         "/roles/" + roleId + "/groups/" + groupId,
         null, // No request body needed
         httpRequestConfig.build(),
