@@ -59,7 +59,7 @@ public class AssignRoleToGroupCommandImpl
 
   @Override
   public CamundaFuture<AssignRoleToGroupResponse> send() {
-    ArgumentUtil.ensureNotNullNorEmpty("role", roleId);
+    ArgumentUtil.ensureNotNullNorEmpty("roleId", roleId);
     ArgumentUtil.ensureNotNullNorEmpty("groupId", groupId);
     final HttpCamundaFuture<AssignRoleToGroupResponse> result = new HttpCamundaFuture<>();
     httpClient.put(

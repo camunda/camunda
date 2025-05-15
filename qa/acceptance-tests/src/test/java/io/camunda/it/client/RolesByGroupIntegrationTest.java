@@ -261,7 +261,7 @@ public class RolesByGroupIntegrationTest {
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("role must not be null");
+        .hasMessageContaining("roleId must not be null");
   }
 
   @Test
@@ -276,7 +276,7 @@ public class RolesByGroupIntegrationTest {
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("role must not be empty");
+        .hasMessageContaining("roleId must not be empty");
   }
 
   @Test
