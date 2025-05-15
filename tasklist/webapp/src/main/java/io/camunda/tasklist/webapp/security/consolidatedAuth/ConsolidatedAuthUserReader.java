@@ -25,9 +25,6 @@ public class ConsolidatedAuthUserReader implements UserReader {
 
   @Override
   public Optional<UserDTO> getCurrentUserBy(final Authentication authentication) {
-    if (authentication == null) {
-      return Optional.empty();
-    }
     if (authentication.getPrincipal() instanceof final CamundaPrincipal camundaPrincipal) {
       return Optional.of(
           new UserDTO()

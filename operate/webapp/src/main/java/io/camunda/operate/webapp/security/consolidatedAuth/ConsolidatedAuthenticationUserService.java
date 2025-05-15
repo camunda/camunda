@@ -37,6 +37,6 @@ public class ConsolidatedAuthenticationUserService extends AbstractUserService<A
   @Override
   public String getUserToken(final Authentication authentication) {
     throw new UnsupportedOperationException(
-        "Get token is not supported for Elasticsearch authentication");
+        "Get token is not supported for consolidated-auth authentication");
   }
 }
