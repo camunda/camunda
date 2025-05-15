@@ -6,14 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  ApiDefinition,
-  apiDelete,
-  apiGet,
-  apiPost,
-  apiPatch,
-  apiPut,
-} from "../request";
+import { ApiDefinition, apiDelete, apiGet, apiPost, apiPut } from "../request";
 import { SearchResponse } from "src/utility/api";
 import { Role } from "src/utility/api/roles";
 import { Mapping } from "src/utility/api/mappings";
@@ -41,9 +34,10 @@ export const createGroup: ApiDefinition<undefined, Group> = (params) =>
   apiPost(GROUPS_ENDPOINT, params);
 
 export const updateGroup: ApiDefinition<undefined, Group> = (group) => {
-  const { groupId, name } = group;
-  return apiPatch(`${GROUPS_ENDPOINT}/${groupId}`, {
-    changeset: { name },
+  const { groupId, name, description } = group;
+  return apiPut(`${GROUPS_ENDPOINT}/${groupId}`, {
+    name,
+    description,
   });
 };
 
