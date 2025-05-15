@@ -8,14 +8,17 @@
 package io.camunda.exporter.tasks.batchoperations;
 
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.END_DATE;
+import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_COMPLETED_COUNT;
+import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_FAILED_COUNT;
+import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_FINISHED_COUNT;
+import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_TOTAL_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.BATCH_OPERATION_ID;
-import static io.camunda.webapps.schema.entities.operation.OperationState.COMPLETED;
-import static io.camunda.webapps.schema.entities.operation.OperationState.FAILED;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.Script;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketBase;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
@@ -27,6 +30,7 @@ import co.elastic.clients.json.JsonData;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationState;
 import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -35,13 +39,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 
 public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRepository
     implements BatchOperationUpdateRepository {
 
   private static final String BATCH_OPERATION_IDAGG_NAME = "batchOperationId";
+  private static final String BATCH_OPERATION_STATEAGG_NAME = "state";
   private static final Integer RETRY_COUNT = 3;
 
   private final String batchOperationIndex;
@@ -68,31 +72,33 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
   }
 
   @Override
-  public CompletionStage<List<OperationsAggData>> getFinishedOperationsCount(
+  public CompletionStage<List<OperationsAggData>> getOperationsCount(
       final Collection<String> batchOperationIds) {
     if (batchOperationIds == null || batchOperationIds.isEmpty()) {
       return CompletableFuture.completedFuture(List.of());
     }
     final var batchOperationIdsValues = batchOperationIds.stream().map(FieldValue::of).toList();
-    final var completedStatesValues = Stream.of(COMPLETED, FAILED).map(FieldValue::of).toList();
     final var batchOperationIdsQ =
         QueryBuilders.bool(
             b ->
                 b.must(
-                        m ->
-                            m.terms(
-                                t ->
-                                    t.field(OperationTemplate.BATCH_OPERATION_ID)
-                                        .terms(v -> v.value(batchOperationIdsValues))))
-                    .must(
-                        m ->
-                            m.terms(
-                                t ->
-                                    t.field(OperationTemplate.STATE)
-                                        .terms(v -> v.value(completedStatesValues)))));
+                    m ->
+                        m.terms(
+                            t ->
+                                t.field(OperationTemplate.BATCH_OPERATION_ID)
+                                    .terms(v -> v.value(batchOperationIdsValues)))));
     final var aggregation =
         Aggregation.of(
-            a -> a.terms(t -> t.field(BATCH_OPERATION_ID).size(batchOperationIds.size())));
+            a ->
+                a.terms(t -> t.field(BATCH_OPERATION_ID).size(batchOperationIds.size()))
+                    .aggregations(
+                        BATCH_OPERATION_STATEAGG_NAME,
+                        Aggregation.of(
+                            a2 ->
+                                a2.terms(
+                                    t ->
+                                        t.field(OperationTemplate.STATE)
+                                            .size(OperationState.values().length)))));
 
     final var request =
         new SearchRequest.Builder()
@@ -101,7 +107,9 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
             .size(0)
             .aggregations(BATCH_OPERATION_IDAGG_NAME, aggregation)
             .build();
-    return client.search(request, Void.class).thenApply(this::processAggregations);
+    final var result = client.search(request, Void.class).thenApply(this::processAggregations);
+
+    return result;
   }
 
   @Override
@@ -131,16 +139,35 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
         .buckets()
         .array()
         .stream()
-        .map(b -> new OperationsAggData(b.key().stringValue(), b.docCount()))
+        .map(
+            b ->
+                new OperationsAggData(
+                    b.key().stringValue(),
+                    b
+                        .aggregations()
+                        .get(BATCH_OPERATION_STATEAGG_NAME)
+                        .sterms()
+                        .buckets()
+                        .array()
+                        .stream()
+                        .collect(
+                            Collectors.toMap(
+                                item -> item.key().stringValue(), MultiBucketBase::docCount))))
         .collect(Collectors.toList());
   }
 
   private BulkOperation createUpdateOperation(final DocumentUpdate update) {
     final Map<String, Object> params =
         Map.of(
-            "operationsFinishedCount",
+            OPERATIONS_FINISHED_COUNT,
             update.finishedOperationsCount(),
-            "endDate",
+            OPERATIONS_FAILED_COUNT,
+            update.failedOperationsCount(),
+            OPERATIONS_COMPLETED_COUNT,
+            update.completedOperationsCount(),
+            OPERATIONS_TOTAL_COUNT,
+            update.totalOperationsCount(),
+            END_DATE,
             OffsetDateTime.now());
     return new UpdateOperation.Builder<>()
         .index(batchOperationIndex)
@@ -160,7 +187,10 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
             "if (ctx._source.operationsTotalCount <= params.operationsFinishedCount) { "
                 + "   ctx._source.endDate = params.endDate; "
                 + "} "
-                + "ctx._source.operationsFinishedCount = params.operationsFinishedCount;")
+                + "ctx._source.operationsFinishedCount = params.operationsFinishedCount;"
+                + "ctx._source.operationsCompletedCount = params.operationsCompletedCount;"
+                + "ctx._source.operationsFailedCount = params.operationsFailedCount;"
+                + "ctx._source.operationsTotalCount = params.operationsTotalCount;")
         .lang("painless")
         .params(parameters)
         .build();

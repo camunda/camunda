@@ -8,13 +8,16 @@
 package io.camunda.exporter.tasks.batchoperations;
 
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.END_DATE;
+import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_COMPLETED_COUNT;
+import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_FAILED_COUNT;
+import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_FINISHED_COUNT;
+import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.OPERATIONS_TOTAL_COUNT;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.BATCH_OPERATION_ID;
-import static io.camunda.webapps.schema.entities.operation.OperationState.COMPLETED;
-import static io.camunda.webapps.schema.entities.operation.OperationState.FAILED;
 
 import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationState;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collection;
@@ -24,12 +27,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.aggregations.MultiBucketBase;
+import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
@@ -43,7 +47,9 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
     implements BatchOperationUpdateRepository {
 
   private static final String BATCH_OPERATION_IDAGG_NAME = "batchOperationId";
+  private static final String BATCH_OPERATION_STATEAGG_NAME = "state";
   private static final Integer RETRY_COUNT = 3;
+
   private final String batchOperationIndex;
   private final String operationIndex;
 
@@ -68,47 +74,46 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
   }
 
   @Override
-  public CompletionStage<List<OperationsAggData>> getFinishedOperationsCount(
+  public CompletionStage<List<OperationsAggData>> getOperationsCount(
       final Collection<String> batchOperationIds) {
     if (batchOperationIds == null || batchOperationIds.isEmpty()) {
       return CompletableFuture.completedFuture(List.of());
     }
     final var batchOperationIdsValues = batchOperationIds.stream().map(FieldValue::of).toList();
-    final var completedStatesValues =
-        Stream.of(COMPLETED.name(), FAILED.name()).map(FieldValue::of).toList();
-
     final var batchOperationIdsQ =
-        QueryBuilders.terms()
-            .field(BATCH_OPERATION_ID)
-            .terms(v -> v.value(batchOperationIdsValues))
-            .build()
-            .toQuery();
-
-    final var statesQ =
-        QueryBuilders.terms()
-            .field(OperationTemplate.STATE)
-            .terms(v -> v.value(completedStatesValues))
-            .build()
-            .toQuery();
-
-    final var operationsQ =
-        QueryBuilders.bool().must(batchOperationIdsQ, statesQ).build().toQuery();
-
+        QueryBuilders.bool()
+            .must(
+                m ->
+                    m.terms(
+                        t ->
+                            t.field(OperationTemplate.BATCH_OPERATION_ID)
+                                .terms(v -> v.value(batchOperationIdsValues))))
+            .build();
     final var aggregation =
         Aggregation.of(
-            a -> a.terms(t -> t.field(BATCH_OPERATION_ID).size(batchOperationIds.size())));
+            a ->
+                a.terms(t -> t.field(BATCH_OPERATION_ID).size(batchOperationIds.size()))
+                    .aggregations(
+                        BATCH_OPERATION_STATEAGG_NAME,
+                        Aggregation.of(
+                            a2 ->
+                                a2.terms(
+                                    t ->
+                                        t.field(OperationTemplate.STATE)
+                                            .size(OperationState.values().length)))));
 
     final var request =
         new SearchRequest.Builder()
             .index(operationIndex)
-            .query(operationsQ)
+            .query(batchOperationIdsQ.toQuery())
             .size(0)
             .aggregations(BATCH_OPERATION_IDAGG_NAME, aggregation)
             .build();
+
     try {
       return client.search(request, Void.class).thenApply(this::processAggregations);
     } catch (final IOException e) {
-      return CompletableFuture.failedFuture(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -138,9 +143,15 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
   private BulkOperation createUpdateOperation(final DocumentUpdate update) {
     final Map<String, Object> params =
         Map.of(
-            "operationsFinishedCount",
+            OPERATIONS_FINISHED_COUNT,
             update.finishedOperationsCount(),
-            "endDate",
+            OPERATIONS_FAILED_COUNT,
+            update.failedOperationsCount(),
+            OPERATIONS_COMPLETED_COUNT,
+            update.completedOperationsCount(),
+            OPERATIONS_TOTAL_COUNT,
+            update.totalOperationsCount(),
+            END_DATE,
             OffsetDateTime.now());
     return new UpdateOperation.Builder<>()
         .index(batchOperationIndex)
@@ -162,7 +173,10 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
                         "if (ctx._source.operationsTotalCount <= params.operationsFinishedCount) { "
                             + "   ctx._source.endDate = params.endDate; "
                             + "} "
-                            + "ctx._source.operationsFinishedCount = params.operationsFinishedCount;")
+                            + "ctx._source.operationsFinishedCount = params.operationsFinishedCount;"
+                            + "ctx._source.operationsCompletedCount = params.operationsCompletedCount;"
+                            + "ctx._source.operationsFailedCount = params.operationsFailedCount;"
+                            + "ctx._source.operationsTotalCount = params.operationsTotalCount;")
                     .lang("painless")
                     .params(parameters))
         .build();
@@ -176,7 +190,19 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
         .buckets()
         .array()
         .stream()
-        .map(b -> new OperationsAggData(b.key(), b.docCount()))
+        .map(
+            b ->
+                new OperationsAggData(
+                    b.key(),
+                    b
+                        .aggregations()
+                        .get(BATCH_OPERATION_STATEAGG_NAME)
+                        .sterms()
+                        .buckets()
+                        .array()
+                        .stream()
+                        .collect(
+                            Collectors.toMap(StringTermsBucket::key, MultiBucketBase::docCount))))
         .collect(Collectors.toList());
   }
 }

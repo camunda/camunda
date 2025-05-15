@@ -18,8 +18,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import io.camunda.zeebe.util.DateUtil;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -101,7 +99,6 @@ class BatchOperationCompletedHandlerTest {
 
     // then
     assertThat(entity.getState()).isEqualTo(BatchOperationState.COMPLETED);
-    assertThat(entity.getEndDate()).isEqualTo(DateUtil.toOffsetDateTime(record.getTimestamp()));
   }
 
   @Test
@@ -109,10 +106,7 @@ class BatchOperationCompletedHandlerTest {
     // given
     final BatchRequest batchRequest = mock(BatchRequest.class);
     final BatchOperationEntity entity =
-        new BatchOperationEntity()
-            .setId("12345")
-            .setState(BatchOperationState.COMPLETED)
-            .setEndDate(DateUtil.toOffsetDateTime(Instant.now().toEpochMilli()));
+        new BatchOperationEntity().setId("12345").setState(BatchOperationState.COMPLETED);
 
     // when
     handler.flush(entity, batchRequest);
@@ -122,6 +116,5 @@ class BatchOperationCompletedHandlerTest {
     verify(batchRequest).update(eq(indexName), eq("12345"), argumentCaptor.capture());
     final Map<String, Object> updateFields = argumentCaptor.getValue();
     assertThat(updateFields).containsEntry("state", BatchOperationState.COMPLETED);
-    assertThat(updateFields).containsEntry("endDate", entity.getEndDate());
   }
 }
