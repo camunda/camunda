@@ -49,6 +49,11 @@ public class TenantFilterTransformer extends IndexFilterTransformer<TenantFilter
             ? term(TenantIndex.JOIN, IdentityJoinRelationshipType.TENANT.getType())
             : hasParentQuery(
                 IdentityJoinRelationshipType.TENANT.getType(),
-                term(TENANT_ID, filter.joinParentId())));
+                term(TENANT_ID, filter.joinParentId())),
+        filter.childMemberType() == null
+            ? null
+            : hasChildQuery(
+                IdentityJoinRelationshipType.MEMBER.getType(),
+                term(TenantIndex.MEMBER_TYPE, filter.childMemberType().name())));
   }
 }

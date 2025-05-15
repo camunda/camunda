@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.filter;
 import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.FilterBuilders;
 import java.util.List;
@@ -124,6 +125,33 @@ public class GroupQueryTransformerTest extends AbstractTransformerTest {
     // then
     assertThat(searchRequest)
         .isEqualTo(generateSearchQueryForParent("test-parent-id", USER.name()));
+  }
+
+  @Test
+  void shouldQueryGroupsByMemberId() {
+    // given
+    final var filter =
+        FilterBuilders.group((f) -> f.memberId("test-member-id").childMemberType(USER));
+
+    // when
+    final var query = (SearchBoolQuery) transformQuery(filter).queryOption();
+
+    // then
+    final var memberTypeQuery =
+        SearchQuery.of(q1 -> q1.term(t -> t.field("memberType").value(USER.name())));
+    final var expectedChildMemberTypeQuery =
+        SearchQuery.of(q -> q.hasChild(hc -> hc.type("member").query(memberTypeQuery)));
+    final var memberIdQuery =
+        SearchQuery.of(q1 -> q1.term(t -> t.field("memberId").value("test-member-id")));
+    final var expectedChildMemberIdQuery =
+        SearchQuery.of(q -> q.hasChild(hc -> hc.type("member").query(memberIdQuery)));
+    final var joinQuery = SearchQuery.of(q1 -> q1.term(t -> t.field("join").value("group")));
+
+    assertThat(query.filter()).isEmpty();
+    assertThat(query.should()).isEmpty();
+    assertThat(query.must())
+        .containsExactlyInAnyOrder(
+            expectedChildMemberTypeQuery, expectedChildMemberIdQuery, joinQuery);
   }
 
   @Test

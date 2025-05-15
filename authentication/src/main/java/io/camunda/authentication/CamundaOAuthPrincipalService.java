@@ -11,6 +11,7 @@ import io.camunda.authentication.entity.AuthenticationContext.AuthenticationCont
 import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingEntity;
+import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.AuthorizationServices;
@@ -72,25 +73,28 @@ public class CamundaOAuthPrincipalService {
       LOG.debug("No mappings found for these claims: {}", claims);
     }
 
-    final var assignedRoles = roleServices.getRolesByMemberIds(mappingIds, EntityType.MAPPING);
+    final var groups =
+        groupServices.getGroupsByMemberIds(mappingIds, EntityType.MAPPING).stream()
+            .map(GroupEntity::groupId)
+            .collect(Collectors.toSet());
+
+    final var roles = roleServices.getRolesByMappingsAndGroups(mappingIds, groups);
+    final var roleIds = roles.stream().map(RoleEntity::roleId).collect(Collectors.toSet());
+
+    final var tenants =
+        tenantServices.getTenantsByMappingsAndGroupsAndRoles(mappingIds, groups, roleIds).stream()
+            .map(TenantDTO::fromEntity)
+            .toList();
 
     final var authContextBuilder =
         new AuthenticationContextBuilder()
             .withAuthorizedApplications(
                 authorizationServices.getAuthorizedApplications(
-                    Stream.concat(
-                            assignedRoles.stream().map(r -> r.roleKey().toString()),
-                            mappingIds.stream())
+                    Stream.concat(roles.stream().map(RoleEntity::roleId), mappingIds.stream())
                         .collect(Collectors.toSet())))
-            .withTenants(
-                tenantServices.getTenantsByMemberIds(mappingIds).stream()
-                    .map(TenantDTO::fromEntity)
-                    .toList())
-            .withGroups(
-                groupServices.getGroupsByMemberKeys(mappingIds).stream()
-                    .map(GroupEntity::name)
-                    .toList())
-            .withRoles(assignedRoles);
+            .withTenants(tenants)
+            .withGroups(groups.stream().toList())
+            .withRoles(roles);
 
     final var username = getUsernameFromClaims(claims);
     final var clientId = getClientIdFromClaims(claims);

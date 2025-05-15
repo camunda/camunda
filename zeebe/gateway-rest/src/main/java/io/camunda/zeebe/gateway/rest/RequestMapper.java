@@ -625,6 +625,8 @@ public class RequestMapper {
         authenticationBuilder.tenants(
             authenticationContext.tenants().stream().map(TenantDTO::tenantId).toList());
 
+        authenticationBuilder.groupIds(authenticationContext.groups());
+
         if (authenticationContext.username() != null) {
           final var authenticatedUsername = authenticationContext.username();
           claims.put(Authorization.AUTHORIZED_USERNAME, authenticatedUsername);

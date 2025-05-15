@@ -13,13 +13,16 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import io.camunda.authentication.entity.CamundaUser;
+import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserEntity;
-import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.service.AuthorizationServices;
+import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
+import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Collections;
@@ -39,6 +42,7 @@ public class CamundaUserDetailsServiceTest {
   @Mock private AuthorizationServices authorizationServices;
   @Mock private RoleServices roleServices;
   @Mock private TenantServices tenantServices;
+  @Mock private GroupServices groupServices;
   private CamundaUserDetailsService userDetailsService;
 
   @Before
@@ -46,7 +50,7 @@ public class CamundaUserDetailsServiceTest {
     MockitoAnnotations.openMocks(this).close();
     userDetailsService =
         new CamundaUserDetailsService(
-            userService, authorizationServices, roleServices, tenantServices);
+            userService, authorizationServices, roleServices, tenantServices, groupServices);
   }
 
   @Test
@@ -61,13 +65,21 @@ public class CamundaUserDetailsServiceTest {
                 null));
 
     final var roleId = "admin";
-    when(authorizationServices.getAuthorizedApplications(Set.of(roleId, TEST_USER_ID)))
+    when(authorizationServices.getAuthorizedApplications(Set.of(roleId, "roleGroup", TEST_USER_ID)))
         .thenReturn(List.of("operate", "identity"));
-    final RoleEntity adminRole = new RoleEntity(2L, roleId, "ADMIN", "description");
-    when(roleServices.findAll(
-            RoleQuery.of(
-                q -> q.filter(f -> f.memberId(TEST_USER_ID).childMemberType(EntityType.USER)))))
-        .thenReturn(List.of(adminRole));
+    final var adminGroup = new GroupEntity(1L, "admin", "Admin Group", "description");
+    when(groupServices.getGroupsByMemberId(TEST_USER_ID, EntityType.USER))
+        .thenReturn(List.of(adminGroup));
+
+    final var adminRole = new RoleEntity(2L, roleId, "ADMIN", "description");
+    final var groupRole = new RoleEntity(3L, "roleGroup", "Role Group", "description");
+    final var adminTenant = new TenantEntity(100L, "tenant1", "Tenant One", "First Tenant");
+    final var groupTenant = new TenantEntity(200L, "tenant1", "Tenant One", "First Tenant");
+    when(roleServices.getRolesByUserAndGroups(TEST_USER_ID, Set.of(adminGroup.groupId())))
+        .thenReturn(List.of(adminRole, groupRole));
+    when(tenantServices.getTenantsByUserAndGroupsAndRoles(
+            TEST_USER_ID, Set.of(adminGroup.groupId()), Set.of(roleId, groupRole.roleId())))
+        .thenReturn(List.of(adminTenant, groupTenant));
 
     // when
     final CamundaUser user = (CamundaUser) userDetailsService.loadUserByUsername(TEST_USER_ID);
@@ -82,7 +94,10 @@ public class CamundaUserDetailsServiceTest {
     assertThat(user.getAuthenticationContext().username()).isEqualTo(TEST_USER_ID);
     assertThat(user.getAuthenticationContext().authorizedApplications())
         .containsExactlyInAnyOrder("operate", "identity");
-    assertThat(user.getAuthenticationContext().roles()).isEqualTo(List.of(adminRole));
+    assertThat(user.getAuthenticationContext().roles()).isEqualTo(List.of(adminRole, groupRole));
+    assertThat(user.getAuthenticationContext().groups()).isEqualTo(List.of(adminGroup.groupId()));
+    assertThat(user.getAuthenticationContext().tenants())
+        .isEqualTo(List.of(TenantDTO.fromEntity(adminTenant), TenantDTO.fromEntity(groupTenant)));
   }
 
   @Test

@@ -19,12 +19,14 @@ import io.camunda.db.rdbms.read.service.GroupReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
 import io.camunda.it.rdbms.db.fixtures.GroupFixtures;
+import io.camunda.it.rdbms.db.fixtures.GroupMemberFixtures;
 import io.camunda.it.rdbms.db.fixtures.TenantFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.sort.GroupSort;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -86,7 +88,12 @@ public class GroupSpecificFilterIT {
   public void shouldFindWithSpecificFilter(final GroupFilter filter) {
     createAndSaveRandomGroups(rdbmsWriter);
     createAndSaveGroup(
-        rdbmsWriter, GroupFixtures.createRandomized(b -> b.groupKey(1337L).name("Group 1337")));
+        rdbmsWriter,
+        GroupFixtures.createRandomized(
+            b -> b.groupId("groupId").groupKey(1337L).name("Group 1337")));
+    GroupMemberFixtures.createAndSaveRandomGroupMember(
+        rdbmsWriter,
+        b -> b.groupId("groupId").entityId("entityId").entityType(EntityType.USER.name()));
 
     final var searchResult =
         groupReader.search(
@@ -101,7 +108,8 @@ public class GroupSpecificFilterIT {
   static List<GroupFilter> shouldFindWithSpecificFilterParameters() {
     return List.of(
         new GroupFilter.Builder().groupKey(1337L).build(),
-        new GroupFilter.Builder().name("Group 1337").build());
+        new GroupFilter.Builder().name("Group 1337").build(),
+        new GroupFilter.Builder().memberId("entityId").childMemberType(EntityType.USER).build());
   }
 
   private void addGroupToTenant(final String tenantId, final String entityId) {
