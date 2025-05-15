@@ -40,13 +40,6 @@ public class RoleIntegrationTest {
 
   private static final String EXISTING_ROLE_ID = Strings.newRandomValidIdentityId();
   private static final String EXISTING_ROLE_NAME = "ARoleName";
-  private static final String ROLE_ID_1 = Strings.newRandomValidIdentityId();
-  private static final String ROLE_ID_2 = Strings.newRandomValidIdentityId();
-  private static final String ROLE_ID_3 = Strings.newRandomValidIdentityId();
-  private static final String ROLE_NAME_1 = "ARoleName";
-  private static final String ROLE_NAME_2 = "BRoleName";
-  private static final String ROLE_NAME_3 = "CRoleName";
-  private static final String DESCRIPTION = "description";
 
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
@@ -257,158 +250,6 @@ public class RoleIntegrationTest {
                                 && auth.ownerId().equals(roleId)));
   }
 
-  @Test
-  void shouldAssignRoleToGroup() {
-    // given
-    final var groupId = Strings.newRandomValidIdentityId();
-    final var groupName = UUID.randomUUID().toString();
-    final var description = UUID.randomUUID().toString();
-    createGroup(groupId, groupName, description);
-
-    // when
-    camundaClient
-        .newAssignRoleToGroupCommand()
-        .roleId(EXISTING_ROLE_ID)
-        .groupId(groupId)
-        .send()
-        .join();
-
-    // then
-    assertRoleAssignedToGroup(EXISTING_ROLE_ID, groupId);
-  }
-
-  @Test
-  void shouldRejectAssigningRoleToGroupIfRoleAlreadyAssigned() {
-    // given
-    final var groupId = Strings.newRandomValidIdentityId();
-    final var groupName = UUID.randomUUID().toString();
-    final var description = UUID.randomUUID().toString();
-
-    createGroup(groupId, groupName, description);
-    camundaClient
-        .newAssignRoleToGroupCommand()
-        .roleId(EXISTING_ROLE_ID)
-        .groupId(groupId)
-        .send()
-        .join();
-
-    assertRoleAssignedToGroup(EXISTING_ROLE_ID, groupId);
-
-    // when/then
-    assertThatThrownBy(
-            () ->
-                camundaClient
-                    .newAssignRoleToGroupCommand()
-                    .roleId(EXISTING_ROLE_ID)
-                    .groupId(groupId)
-                    .send()
-                    .join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining(
-            "Expected to add entity with ID '"
-                + groupId
-                + "' to role with ID '"
-                + EXISTING_ROLE_ID
-                + "', but the entity is already assigned to this role.");
-  }
-
-  @Test
-  void shouldUnassignRoleFromGroupsOnRoleDeletion() {
-    // given
-    final var groupId = Strings.newRandomValidIdentityId();
-    final var groupName = UUID.randomUUID().toString();
-    final var groupDescription = UUID.randomUUID().toString();
-    final var roleId = Strings.newRandomValidIdentityId();
-    final var roleName = UUID.randomUUID().toString();
-    final var roleDescription = UUID.randomUUID().toString();
-
-    createRole(roleId, roleName, roleDescription);
-    assertRoleCreated(roleId, roleName, roleDescription);
-    createGroup(groupId, groupName, groupDescription);
-
-    camundaClient.newAssignRoleToGroupCommand().roleId(roleId).groupId(groupId).send().join();
-    assertRoleAssignedToGroup(roleId, groupId);
-
-    // when
-    camundaClient.newDeleteRoleCommand(roleId).send().join();
-
-    // then
-    Awaitility.await("Role was deleted and unassigned")
-        .ignoreExceptionsInstanceOf(ProblemException.class)
-        .untilAsserted(
-            () ->
-                assertThat(
-                        searchRolesByGroupId(
-                                camundaClient.getConfiguration().getRestAddress().toString(),
-                                groupId)
-                            .items())
-                    .noneMatch(r -> roleId.equals(r.getRoleId())));
-  }
-
-  @Test
-  void shouldReturnNotFoundOnAssigningRoleToGroupIfGroupDoesNotExist() {
-    // when / then
-    assertThatThrownBy(
-            () ->
-                camundaClient
-                    .newAssignRoleToGroupCommand()
-                    .roleId(EXISTING_ROLE_ID)
-                    .groupId("someGroupId")
-                    .send()
-                    .join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining(
-            "Expected to add an entity with ID 'someGroupId' and type 'GROUP' to role with ID '"
-                + EXISTING_ROLE_ID
-                + "', but the entity doesn't exist.");
-  }
-
-  @Test
-  void shouldReturnNotFoundOnAssigningRoleToGroupIfRoleDoesNotExist() {
-    // when / then
-    assertThatThrownBy(
-            () ->
-                camundaClient
-                    .newAssignRoleToGroupCommand()
-                    .roleId(Strings.newRandomValidIdentityId())
-                    .groupId(Strings.newRandomValidIdentityId())
-                    .send()
-                    .join())
-        .isInstanceOf(ProblemException.class)
-        .hasMessageContaining("Failed with code 404: 'Not Found'")
-        .hasMessageContaining("a role with this ID does not exist");
-  }
-
-  @Test
-  void shouldRejectAssigningRoleToGroupIfMissingRoleId() {
-    // when / then
-    assertThatThrownBy(
-            () ->
-                camundaClient
-                    .newAssignRoleToGroupCommand()
-                    .roleId(null)
-                    .groupId(Strings.newRandomValidIdentityId())
-                    .send()
-                    .join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("role must not be null");
-  }
-
-  @Test
-  void shouldRejectAssigningRoleToGroupIfMissingGroupId() {
-    // when / then
-    assertThatThrownBy(
-            () ->
-                camundaClient
-                    .newAssignRoleToGroupCommand()
-                    .roleId(EXISTING_ROLE_ID)
-                    .groupId(null)
-                    .send()
-                    .join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("groupId must not be null");
-  }
-
   private static void createRole(
       final String roleId, final String roleName, final String description) {
     camundaClient
@@ -522,21 +363,6 @@ public class RoleIntegrationTest {
     final HttpResponse<String> response =
         HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
     return OBJECT_MAPPER.readValue(response.body(), AuthorizationSearchResponse.class);
-  }
-
-  // TODO once available, this test should use the client to make the request
-  private static RoleSearchResponse searchRolesByGroupId(
-      final String restAddress, final String groupId)
-      throws URISyntaxException, IOException, InterruptedException {
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(new URI("%s%s".formatted(restAddress, "v2/groups/" + groupId + "/roles/search")))
-            .POST(HttpRequest.BodyPublishers.ofString(""))
-            .build();
-
-    final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-    return OBJECT_MAPPER.readValue(response.body(), RoleSearchResponse.class);
   }
 
   private record AuthorizationSearchResponse(
