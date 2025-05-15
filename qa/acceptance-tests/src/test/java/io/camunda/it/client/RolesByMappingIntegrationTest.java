@@ -194,6 +194,29 @@ public class RolesByMappingIntegrationTest {
   }
 
   @Test
+  void shouldReturnNotFoundOnAssigningRoleToMappingIfMappingDoesNotExist() {
+    // given
+    final var mappingId = Strings.newRandomValidIdentityId();
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newAssignRoleToMappingCommand()
+                    .roleId(EXISTING_ROLE_ID)
+                    .mappingId(mappingId)
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining(
+            "Expected to add an entity with ID '"
+                + mappingId
+                + "' and type 'MAPPING' to role with ID '"
+                + EXISTING_ROLE_ID
+                + "', but the entity doesn't exist.");
+  }
+
+  @Test
   void shouldRejectAssigningRoleToMappingIfMissingMappingId() {
     // when / then
     assertThatThrownBy(
@@ -220,7 +243,7 @@ public class RolesByMappingIntegrationTest {
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("role must not be null");
+        .hasMessageContaining("roleId must not be null");
   }
 
   // TODO once available, this test should use the client to make the request

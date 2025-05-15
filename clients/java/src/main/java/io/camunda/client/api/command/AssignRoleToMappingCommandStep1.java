@@ -17,7 +17,7 @@ package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.AssignRoleToMappingResponse;
 
-/** Command to assign a mapping to a role. */
+/** Command to assign a role to a mapping. */
 public interface AssignRoleToMappingCommandStep1 {
 
   /**
