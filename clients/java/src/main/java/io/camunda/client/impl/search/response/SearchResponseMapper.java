@@ -177,6 +177,13 @@ public final class SearchResponseMapper {
         response.getDescription());
   }
 
+  public static SearchResponse<Role> toRolesResponse(final RoleSearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<Role> instances =
+        toSearchResponseInstances(response.getItems(), SearchResponseMapper::toRoleResponse);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
   public static Group toGroupResponse(final GroupResult response) {
     return new GroupImpl(response.getGroupId(), response.getName(), response.getDescription());
   }

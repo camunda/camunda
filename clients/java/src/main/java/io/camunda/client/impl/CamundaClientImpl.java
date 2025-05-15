@@ -28,6 +28,7 @@ import io.camunda.client.api.command.AssignMappingToGroupStep1;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.client.api.command.AssignRoleToGroupCommandStep1;
 import io.camunda.client.api.command.AssignRoleToMappingCommandStep1;
+import io.camunda.client.api.command.AssignRoleToTenantCommandStep1;
 import io.camunda.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.client.api.command.AssignUserToGroupCommandStep1;
 import io.camunda.client.api.command.AssignUserToTenantCommandStep1;
@@ -71,6 +72,7 @@ import io.camunda.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignMappingFromGroupStep1;
+import io.camunda.client.api.command.UnassignRoleFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
@@ -117,6 +119,7 @@ import io.camunda.client.api.search.request.IncidentSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
+import io.camunda.client.api.search.request.RolesByTenantSearchRequest;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
 import io.camunda.client.api.search.request.UserTaskVariableSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
@@ -130,6 +133,7 @@ import io.camunda.client.impl.command.AssignMappingToGroupCommandImpl;
 import io.camunda.client.impl.command.AssignMappingToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignRoleToGroupCommandImpl;
 import io.camunda.client.impl.command.AssignRoleToMappingCommandImpl;
+import io.camunda.client.impl.command.AssignRoleToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignUserTaskCommandImpl;
 import io.camunda.client.impl.command.AssignUserToGroupCommandImpl;
 import io.camunda.client.impl.command.AssignUserToTenantCommandImpl;
@@ -172,6 +176,7 @@ import io.camunda.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.client.impl.command.TopologyRequestImpl;
 import io.camunda.client.impl.command.UnassignGroupFromTenantCommandImpl;
 import io.camunda.client.impl.command.UnassignMappingFromGroupCommandImpl;
+import io.camunda.client.impl.command.UnassignRoleFromTenantCommandImpl;
 import io.camunda.client.impl.command.UnassignUserFromGroupCommandImpl;
 import io.camunda.client.impl.command.UnassignUserTaskCommandImpl;
 import io.camunda.client.impl.command.UpdateAuthorizationCommandImpl;
@@ -214,6 +219,7 @@ import io.camunda.client.impl.search.request.MappingsByGroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessDefinitionSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessInstanceSequenceFlowsRequestImpl;
+import io.camunda.client.impl.search.request.RolesByTenantSearchRequestImpl;
 import io.camunda.client.impl.search.request.UserTaskSearchRequestImpl;
 import io.camunda.client.impl.search.request.UserTaskVariableSearchRequestImpl;
 import io.camunda.client.impl.search.request.UsersByGroupSearchRequestImpl;
@@ -834,6 +840,22 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public AssignRoleToGroupCommandStep1 newAssignRoleToGroupCommand() {
     return new AssignRoleToGroupCommandImpl(httpClient);
+  }
+
+  @Override
+  public AssignRoleToTenantCommandStep1 newAssignRoleToTenantCommand(final String tenantId) {
+    return new AssignRoleToTenantCommandImpl(httpClient, tenantId);
+  }
+
+  @Override
+  public UnassignRoleFromTenantCommandStep1 newUnassignRoleFromTenantCommand(
+      final String tenantId) {
+    return new UnassignRoleFromTenantCommandImpl(httpClient, tenantId);
+  }
+
+  @Override
+  public RolesByTenantSearchRequest newRolesByTenantSearchRequest(final String tenantId) {
+    return new RolesByTenantSearchRequestImpl(httpClient, jsonMapper, tenantId);
   }
 
   @Override
