@@ -155,7 +155,21 @@
       "description": "Automerge all updates with green CI.",
       "matchPackagePatterns": ["*"],
       "automerge": true,
-      "addLabels": ["automerge"]
+      "addLabels": [
+        "automerge"
+      ]
+    },
+    {
+      "matchDatasources": [
+        "maven"
+      ],
+      "registryUrls": [
+        "https://repo.maven.apache.org/maven2",
+        "https://artifacts.camunda.com/artifactory/zeebe-io/",
+        "https://artifacts.camunda.com/artifactory/zeebe-io-snapshots/",
+        "https://artifacts.camunda.com/artifactory/camunda-identity/",
+        "https://artifacts.camunda.com/artifactory/camunda-identity-snapshots/"
+      ]
     }
   ],
   "dockerfile": {

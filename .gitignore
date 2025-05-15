@@ -66,3 +66,5 @@ c8run/*.class
 
 /camunda.mv.db
 /camunda.trace.db
+
+renovate_cache/
