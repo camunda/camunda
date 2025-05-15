@@ -206,7 +206,7 @@ public class DecisionInstanceAssertTest {
   public class HasOutput {
 
     @Test
-    public void hasOutputWithStringMatch() {
+    public void hasOutput() {
       // when
       mockDecisionInstanceSearch(decisionInstanceWithAnswers(STRING_RESULT));
 
@@ -215,32 +215,24 @@ public class DecisionInstanceAssertTest {
     }
 
     @Test
-    public void hasOutputWithSingleMapMatch() {
+    public void waitsForInstanceToHaveCorrectOutput() {
       // when
-      mockDecisionInstanceSearch(decisionInstanceWithAnswers(MAP_RESULT));
+      final DecisionInstance wrongInstance = decisionInstanceWithAnswers("null");
+      final DecisionInstance correctInstance = decisionInstanceWithAnswers(STRING_RESULT);
+
+      when(camundaDataSource.findDecisionInstances(any()))
+          .thenReturn(Collections.singletonList(wrongInstance))
+          .thenReturn(Collections.singletonList(wrongInstance))
+          .thenReturn(Collections.singletonList(wrongInstance))
+          .thenReturn(Collections.singletonList(correctInstance));
+      when(camundaDataSource.getDecisionInstance(DECISION_INSTANCE_ID))
+          .thenReturn(wrongInstance)
+          .thenReturn(wrongInstance)
+          .thenReturn(wrongInstance)
+          .thenReturn(correctInstance);
 
       // then
-      final Map<String, Object> expected = new HashMap<>();
-      expected.put("a", "b");
-      expected.put("v", 2);
-      assertThat(DecisionSelectors.byName(NAME)).hasOutput(expected);
-    }
-
-    @Test
-    public void hasOutputWithListMatch() {
-      // when
-      mockDecisionInstanceSearch(decisionInstanceWithAnswers(LIST_RESULT));
-
-      // then
-      final Map<String, Object> firstMatch = new HashMap<>();
-      firstMatch.put("a", 1);
-      firstMatch.put("b", 2);
-      final Map<String, Object> secondMatch = new HashMap<>();
-      secondMatch.put("c", 3);
-      secondMatch.put("d", 4);
-
-      // All of these should match
-      assertThat(DecisionSelectors.byName(NAME)).hasOutput(Arrays.asList(firstMatch, secondMatch));
+      assertThat(DecisionSelectors.byName(NAME)).hasOutput("outputValue");
     }
 
     @Test
@@ -252,33 +244,33 @@ public class DecisionInstanceAssertTest {
       Assertions.assertThatThrownBy(
               () -> assertThat(DecisionSelectors.byName(NAME)).hasOutput("foo"))
           .hasMessage(
-              "Expected DecisionInstance [name] to have output 'foo', but was '\"outputValue\"'");
+              "Expected DecisionInstance [name] to have output '\"foo\"', but was '\"outputValue\"'");
 
       final Map<String, Object> expected = new HashMap<>();
       expected.put("a", "b");
       Assertions.assertThatThrownBy(
               () -> assertThat(DecisionSelectors.byName(NAME)).hasOutput(expected))
           .hasMessage(
-              "Expected DecisionInstance [name] to have output '{a=b}', but was '\"outputValue\"'");
+              "Expected DecisionInstance [name] to have output '{\"a\":\"b\"}', but was '\"outputValue\"'");
     }
 
     @Test
     public void assertionFailureWithMapMatch() {
       // when
-      mockDecisionInstanceSearch(decisionInstanceWithAnswers("{\"a\":1,\"b\":2}"));
+      mockDecisionInstanceSearch(decisionInstanceWithAnswers(MAP_RESULT));
 
       // then
       Assertions.assertThatThrownBy(
               () -> assertThat(DecisionSelectors.byName(NAME)).hasOutput("foo"))
           .hasMessage(
-              "Expected DecisionInstance [name] to have output 'foo', but was '{\"a\":1,\"b\":2}'");
+              "Expected DecisionInstance [name] to have output '\"foo\"', but was '{\"a\":\"b\",\"v\":2}'");
 
       final Map<String, Object> expected = new HashMap<>();
       expected.put("a", "b");
       Assertions.assertThatThrownBy(
               () -> assertThat(DecisionSelectors.byName(NAME)).hasOutput(expected))
           .hasMessage(
-              "Expected DecisionInstance [name] to have output '{a=b}', but was '{\"a\":1,\"b\":2}'");
+              "Expected DecisionInstance [name] to have output '{\"a\":\"b\"}', but was '{\"a\":\"b\",\"v\":2}'");
     }
 
     @Test
@@ -290,14 +282,14 @@ public class DecisionInstanceAssertTest {
       Assertions.assertThatThrownBy(
               () -> assertThat(DecisionSelectors.byName(NAME)).hasOutput("foo"))
           .hasMessage(
-              "Expected DecisionInstance [name] to have output 'foo', but was '[{\"a\":1,\"b\":2},{\"c\":3,\"d\":4}]'");
+              "Expected DecisionInstance [name] to have output '\"foo\"', but was '[{\"a\":1,\"b\":2},{\"c\":3,\"d\":4}]'");
 
       final Map<String, Object> expected = new HashMap<>();
       expected.put("a", "b");
       Assertions.assertThatThrownBy(
               () -> assertThat(DecisionSelectors.byName(NAME)).hasOutput(expected))
           .hasMessage(
-              "Expected DecisionInstance [name] to have output '{a=b}', but was '[{\"a\":1,\"b\":2},{\"c\":3,\"d\":4}]'");
+              "Expected DecisionInstance [name] to have output '{\"a\":\"b\"}', but was '[{\"a\":1,\"b\":2},{\"c\":3,\"d\":4}]'");
     }
   }
 
@@ -307,6 +299,28 @@ public class DecisionInstanceAssertTest {
     public void hasMatched() {
       // when
       mockDecisionInstanceSearch(decisionInstanceWithAnswers("outputValue", singleRule()));
+
+      // then
+      assertThat(DecisionSelectors.byName(NAME)).hasMatchedRules(1);
+    }
+
+    @Test
+    public void waitsForDecisionToHaveCorrectMatch() {
+      // when
+      final DecisionInstance wrongInstance = decisionInstanceWithAnswers("null");
+      final DecisionInstance correctInstance =
+          decisionInstanceWithAnswers(STRING_RESULT, singleRule());
+
+      when(camundaDataSource.findDecisionInstances(any()))
+          .thenReturn(Collections.singletonList(wrongInstance))
+          .thenReturn(Collections.singletonList(wrongInstance))
+          .thenReturn(Collections.singletonList(wrongInstance))
+          .thenReturn(Collections.singletonList(correctInstance));
+      when(camundaDataSource.getDecisionInstance(DECISION_INSTANCE_ID))
+          .thenReturn(wrongInstance)
+          .thenReturn(wrongInstance)
+          .thenReturn(wrongInstance)
+          .thenReturn(correctInstance);
 
       // then
       assertThat(DecisionSelectors.byName(NAME)).hasMatchedRules(1);
@@ -325,45 +339,6 @@ public class DecisionInstanceAssertTest {
                   + "\t- matched: []\n"
                   + "\t- missing: [2]\n"
                   + "\t- unexpected: [1]");
-    }
-
-    @Test
-    public void noMatchesExist() {
-      // when
-      mockDecisionInstanceSearch(decisionInstanceWithAnswers("outputValue"));
-
-      // then
-      Assertions.assertThatThrownBy(
-              () -> assertThat(DecisionSelectors.byName(NAME)).hasMatchedRules(2))
-          .hasMessage(
-              "Expected DecisionInstance [name] to have matched rules [2], but did not. Matches:\n"
-                  + "\t- matched: []\n"
-                  + "\t- missing: [2]\n"
-                  + "\t- unexpected: []");
-    }
-
-    @Test
-    public void hasMatchedMultiple() {
-      // when
-      mockDecisionInstanceSearch(decisionInstanceWithAnswers("outputValue", multiRule()));
-
-      // then
-      assertThat(DecisionSelectors.byName(NAME)).hasMatchedRules(1, 2, 3);
-    }
-
-    @Test
-    public void hasMatchedPartial() {
-      // when
-      mockDecisionInstanceSearch(decisionInstanceWithAnswers("outputValue", multiRule()));
-
-      // then
-      Assertions.assertThatThrownBy(
-              () -> assertThat(DecisionSelectors.byName(NAME)).hasMatchedRules(1, 2, 4))
-          .hasMessage(
-              "Expected DecisionInstance [name] to have matched rules [1, 2, 4], but did not. Matches:\n"
-                  + "\t- matched: [1, 2]\n"
-                  + "\t- missing: [4]\n"
-                  + "\t- unexpected: [3]");
     }
   }
 

@@ -15,6 +15,8 @@
  */
 package io.camunda.process.test.impl.assertions;
 
+import static org.assertj.core.api.Fail.fail;
+
 import io.camunda.client.api.response.MatchedDecisionRule;
 import java.util.Arrays;
 import java.util.List;
@@ -34,10 +36,9 @@ public class DecisionMatchedRulesAssertj
   public void hasMatchedRules(
       final List<MatchedDecisionRule> matchedRules, final int... expectedMatchedRuleIndexes) {
 
+    final List<Integer> expectedMatches = validateExpectedRuleIndexes(expectedMatchedRuleIndexes);
     final List<Integer> actualMatchedRuleIndices =
         matchedRules.stream().map(MatchedDecisionRule::getRuleIndex).collect(Collectors.toList());
-    final List<Integer> expectedMatches =
-        Arrays.stream(expectedMatchedRuleIndexes).boxed().collect(Collectors.toList());
 
     Assertions.assertThat(actualMatchedRuleIndices)
         .withFailMessage(
@@ -56,18 +57,18 @@ public class DecisionMatchedRulesAssertj
   public void hasNotMatchedRules(
       final List<MatchedDecisionRule> matchedRules, final int... expectedUnmatchedRuleIndexes) {
 
-    final List<Integer> actualMatchedRuleIndices =
+    final List<Integer> expectedUnmatchedRuleIndexList =
+        validateExpectedRuleIndexes(expectedUnmatchedRuleIndexes);
+    final List<Integer> actualMatchedRuleIndexes =
         matchedRules.stream().map(MatchedDecisionRule::getRuleIndex).collect(Collectors.toList());
-    final List<Integer> expectedUnmatchedRules =
-        Arrays.stream(expectedUnmatchedRuleIndexes).boxed().collect(Collectors.toList());
 
-    Assertions.assertThat(actualMatchedRuleIndices)
+    Assertions.assertThat(actualMatchedRuleIndexes)
         .withFailMessage(
             "%s to not have matched rules %s, but matched %s",
             actual,
             Arrays.toString(expectedUnmatchedRuleIndexes),
-            matchingRules(actualMatchedRuleIndices, expectedUnmatchedRules))
-        .doesNotContainAnyElementsOf(expectedUnmatchedRules);
+            matchingRules(actualMatchedRuleIndexes, expectedUnmatchedRuleIndexList))
+        .doesNotContainAnyElementsOf(expectedUnmatchedRuleIndexList);
   }
 
   private <T> List<T> matchingRules(final List<T> actualMatches, final List<T> expectedMatches) {
@@ -84,5 +85,20 @@ public class DecisionMatchedRulesAssertj
     return actualMatches.stream()
         .filter(e -> expectedMatches.stream().noneMatch(a -> Objects.equals(a, e)))
         .collect(Collectors.toList());
+  }
+
+  private List<Integer> validateExpectedRuleIndexes(final int... ruleIndexes) {
+    if (ruleIndexes.length == 0) {
+      fail("No matched rules given. Please provide at least one matched rule index.");
+    }
+
+    final List<Integer> ruleIndexList =
+        Arrays.stream(ruleIndexes).boxed().collect(Collectors.toList());
+
+    if (ruleIndexList.stream().anyMatch(i -> i <= 0)) {
+      fail("Matched rule indexes contain illegal values: %s", Arrays.toString(ruleIndexes));
+    }
+
+    return ruleIndexList;
   }
 }

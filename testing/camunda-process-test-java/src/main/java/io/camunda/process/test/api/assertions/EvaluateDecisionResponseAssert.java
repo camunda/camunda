@@ -16,7 +16,7 @@
 package io.camunda.process.test.api.assertions;
 
 /** The assertion object to verify an evaluated decision response. */
-public interface EvaluatedDecisionResponseAssert {
+public interface EvaluateDecisionResponseAssert {
   /**
    * Verifies that the decision is evaluated. The verification fails if the decision is not
    * evaluated or if the evaluation fails.
@@ -25,7 +25,7 @@ public interface EvaluatedDecisionResponseAssert {
    *
    * @return the assertion object
    */
-  EvaluatedDecisionResponseAssert isEvaluated();
+  EvaluateDecisionResponseAssert isEvaluated();
 
   /**
    * Verifies that the decision is evaluated with the expected output. The verification fails if the
@@ -34,5 +34,5 @@ public interface EvaluatedDecisionResponseAssert {
    * @param expectedOutput the expected output value
    * @return the assertion object
    */
-  EvaluatedDecisionResponseAssert hasOutput(final Object expectedOutput);
+  EvaluateDecisionResponseAssert hasOutput(final Object expectedOutput);
 }

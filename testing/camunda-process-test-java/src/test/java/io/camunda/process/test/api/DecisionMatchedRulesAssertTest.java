@@ -18,9 +18,7 @@ package io.camunda.process.test.api;
 import static io.camunda.process.test.api.CamundaAssert.assertThat;
 
 import io.camunda.client.api.response.EvaluatedDecision;
-import io.camunda.client.api.response.MatchedDecisionRule;
 import io.camunda.client.impl.response.EvaluatedDecisionImpl;
-import io.camunda.client.impl.response.MatchedDecisionRuleImpl;
 import io.camunda.client.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.client.protocol.rest.EvaluatedDecisionResult;
 import io.camunda.client.protocol.rest.MatchedDecisionRuleItem;
@@ -80,10 +78,10 @@ public class DecisionMatchedRulesAssertTest {
 
   private static Stream<Arguments> positiveUnmatchedRuleScenarios() {
     return Stream.of(
-        Arguments.of(evaluatedDecision(decisionResult(singleRule())), new int[] {0}),
+        Arguments.of(evaluatedDecision(decisionResult(singleRule())), new int[] {3}),
         Arguments.of(evaluatedDecision(decisionResult(singleRule())), new int[] {2}),
-        Arguments.of(evaluatedDecision(decisionResult(singleRule())), new int[] {0, 0}),
-        Arguments.of(evaluatedDecision(decisionResult(multiRule())), new int[] {0}),
+        Arguments.of(evaluatedDecision(decisionResult(singleRule())), new int[] {2, 2}),
+        Arguments.of(evaluatedDecision(decisionResult(multiRule())), new int[] {4}),
         Arguments.of(evaluatedDecision(decisionResult(multiRule())), new int[] {4, 5, 6}));
   }
 
@@ -206,6 +204,37 @@ public class DecisionMatchedRulesAssertTest {
       Assertions.assertThatThrownBy(() -> assertThat(decision).hasNotMatchedRules(1, 2, 4))
           .hasMessage(
               "Expected EvaluatedDecision [name] to not have matched rules [1, 2, 4], but matched [1, 2]");
+    }
+  }
+
+  @Nested
+  class EdgeCases {
+    @Test
+    void shouldFailIfNoMatchedRulesGiven() {
+      // then
+      final EvaluatedDecision decision = evaluatedDecision(decisionResult(multiRule()));
+      Assertions.assertThatThrownBy(() -> assertThat(decision).hasMatchedRules())
+          .hasMessage("No matched rules given. Please provide at least one matched rule index.");
+
+      Assertions.assertThatThrownBy(() -> assertThat(decision).hasNotMatchedRules())
+          .hasMessage("No matched rules given. Please provide at least one matched rule index.");
+    }
+
+    @Test
+    void shouldFailIfIllegalIndexValueGiven() {
+      // then
+      final EvaluatedDecision decision = evaluatedDecision(decisionResult(multiRule()));
+      Assertions.assertThatThrownBy(() -> assertThat(decision).hasMatchedRules(-1))
+          .hasMessage("Matched rule indexes contain illegal values: [-1]");
+
+      Assertions.assertThatThrownBy(() -> assertThat(decision).hasNotMatchedRules(-1))
+          .hasMessage("Matched rule indexes contain illegal values: [-1]");
+
+      Assertions.assertThatThrownBy(() -> assertThat(decision).hasMatchedRules(-1, 0))
+          .hasMessage("Matched rule indexes contain illegal values: [-1, 0]");
+
+      Assertions.assertThatThrownBy(() -> assertThat(decision).hasNotMatchedRules(-1, 0))
+          .hasMessage("Matched rule indexes contain illegal values: [-1, 0]");
     }
   }
 }
