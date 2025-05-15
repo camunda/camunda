@@ -142,3 +142,31 @@ export const unassignTenantMapping: ApiDefinition<
   UnassignTenantMappingParams
 > = ({ tenantId, mappingId }) =>
   apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/mappings/${mappingId}`);
+
+type GetTenantClientsParams = {
+  tenantId: string;
+};
+
+export type Client = {
+  clientId: string;
+};
+
+export const getClientsByTenantId: ApiDefinition<
+  SearchResponse<Client>,
+  GetTenantClientsParams
+> = ({ tenantId }) => apiPost(`${TENANTS_ENDPOINT}/${tenantId}/clients/search`);
+
+type AssignTenantClientParams = GetTenantClientsParams & Client;
+export const assignTenantClient: ApiDefinition<
+  undefined,
+  AssignTenantClientParams
+> = ({ tenantId, clientId }) => {
+  return apiPut(`${TENANTS_ENDPOINT}/${tenantId}/clients/${clientId}`);
+};
+
+type UnassignTenantClientParams = AssignTenantClientParams;
+export const unassignTenantClient: ApiDefinition<
+  undefined,
+  UnassignTenantClientParams
+> = ({ tenantId, clientId }) =>
+  apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/clients/${clientId}`);
