@@ -242,13 +242,6 @@ public final class SearchResponseMapper {
     return new SearchResponseImpl<>(instances, page);
   }
 
-  public static SearchResponse<Role> toRolesResponse(final RoleSearchQueryResult response) {
-    final SearchResponsePage page = toSearchResponsePage(response.getPage());
-    final List<Role> instances =
-        toSearchResponseInstances(response.getItems(), SearchResponseMapper::toRoleResponse);
-    return new SearchResponseImpl<>(instances, page);
-  }
-
   public static List<ProcessInstanceCallHierarchyEntryResponse>
       toProcessInstanceCallHierarchyEntryResponse(
           final ProcessInstanceCallHierarchyEntry[] entries) {

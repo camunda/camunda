@@ -183,22 +183,12 @@ class GroupAuthorizationIT {
   }
 
   private static void createRole(final CamundaClient adminClient) {
-    adminClient
-        .newCreateRoleCommand()
-        .roleId(ROLE_ID)
-        .name("name")
-        .send()
-        .join();
+    adminClient.newCreateRoleCommand().roleId(ROLE_ID).name("name").send().join();
   }
 
   private static void assignGroupToRole(
       final CamundaClient adminClient, final String groupId, final String roleId) {
-    adminClient
-        .newAssignRoleToGroupCommand()
-        .roleId(roleId)
-        .groupId(groupId)
-        .send()
-        .join();
+    adminClient.newAssignRoleToGroupCommand().roleId(roleId).groupId(groupId).send().join();
   }
 
   private static void waitForGroupsToBeCreated(
