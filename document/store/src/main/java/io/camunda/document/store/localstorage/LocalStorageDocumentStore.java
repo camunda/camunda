@@ -41,17 +41,12 @@ public class LocalStorageDocumentStore implements DocumentStore {
       org.slf4j.LoggerFactory.getLogger(LocalStorageDocumentStore.class);
   private static final List<String> INVALID_DOCUMENT_ID_CHARACTERS = List.of("..", "/", "\\");
   private final Path storagePath;
-  private final FileHandler fileHandler;
   private final ExecutorService executor;
   private final ObjectMapper mapper;
 
   public LocalStorageDocumentStore(
-      final Path storagePath,
-      final FileHandler fileHandler,
-      final ObjectMapper mapper,
-      final ExecutorService executor) {
+      final Path storagePath, final ObjectMapper mapper, final ExecutorService executor) {
     this.storagePath = storagePath;
-    this.fileHandler = fileHandler;
     this.mapper = mapper;
     this.executor = executor;
   }
@@ -110,26 +105,27 @@ public class LocalStorageDocumentStore implements DocumentStore {
   private Either<DocumentError, DocumentReference> createDocumentInternal(
       final DocumentCreationRequest request) {
     final String documentId = getDocumentId(request);
-    if (!documentIdIsValid(documentId)) {
-      return Either.left(new InvalidInput(generateInvalidDocumentIdMessage(documentId)));
+
+    final Path documentPath;
+    try {
+      documentPath = resolveInStorage(documentId);
+    } catch (final IllegalArgumentException e) {
+      return Either.left(new InvalidInput(e.getMessage()));
     }
-    final Path documentFilePath = resolveInStorage(documentId);
-    final Path documentMetaDataFilePath = resolveInStorage(documentId + METADATA_SUFFIX);
+    final Path documentMetadataPath = resolveInStorage(documentId + METADATA_SUFFIX);
 
     // remove inconsistent data if it exists (rare occurrence)
-    if (fileHandler.fileExists(documentFilePath)
-        != fileHandler.fileExists(documentMetaDataFilePath)) {
+    if (fileExists(documentPath) != fileExists(documentMetadataPath)) {
       try {
-        fileHandler.delete(documentFilePath);
-        fileHandler.delete(documentMetaDataFilePath);
+        deleteFile(documentPath);
+        deleteFile(documentMetadataPath);
       } catch (final IOException e) {
         LOGGER.warn("Error deleting document or metadata with document ID {}", documentId);
         return Either.left(new UnknownDocumentError(e));
       }
     }
 
-    if (fileHandler.fileExists(documentFilePath)
-        && fileHandler.fileExists(documentMetaDataFilePath)) {
+    if (fileExists(documentPath) && fileExists(documentMetadataPath)) {
       return Either.left(new DocumentAlreadyExists(documentId));
     }
 
@@ -140,8 +136,8 @@ public class LocalStorageDocumentStore implements DocumentStore {
               stream -> {
                 try (final InputStream metadataStream =
                     new ByteArrayInputStream(mapper.writeValueAsBytes(request.metadata()))) {
-                  fileHandler.createFile(stream, documentFilePath);
-                  fileHandler.createFile(metadataStream, documentMetaDataFilePath);
+                  createFile(stream, documentPath);
+                  createFile(metadataStream, documentMetadataPath);
                 }
               });
       return Either.right(new DocumentReference(documentId, contentHash, request.metadata()));
@@ -151,18 +147,20 @@ public class LocalStorageDocumentStore implements DocumentStore {
   }
 
   private Either<DocumentError, DocumentContent> getDocumentInternal(final String documentId) {
-    if (!documentIdIsValid(documentId)) {
-      return Either.left(new InvalidInput(generateInvalidDocumentIdMessage(documentId)));
+    final Path documentPath;
+    try {
+      documentPath = resolveInStorage(documentId);
+    } catch (final IllegalArgumentException e) {
+      return Either.left(new InvalidInput(e.getMessage()));
     }
-    final Path documentPath = resolveInStorage(documentId);
     final Path documentMetadataPath = resolveInStorage(documentId + METADATA_SUFFIX);
 
-    if (!fileHandler.fileExists(documentPath) || !fileHandler.fileExists(documentMetadataPath)) {
+    if (!fileExists(documentPath) || !fileExists(documentMetadataPath)) {
       return Either.left(new DocumentNotFound(documentId));
     }
 
     try {
-      final InputStream inputStream = fileHandler.getInputStream(documentPath);
+      final InputStream inputStream = getInputStream(documentPath);
       final DocumentMetadataModel metadataModel =
           mapper.readValue(documentMetadataPath.toFile(), DocumentMetadataModel.class);
 
@@ -175,12 +173,17 @@ public class LocalStorageDocumentStore implements DocumentStore {
   }
 
   private Either<DocumentError, Void> deleteDocumentInternal(final String documentId) {
-    final Path documentPath = resolveInStorage(documentId);
+    final Path documentPath;
+    try {
+      documentPath = resolveInStorage(documentId);
+    } catch (final IllegalArgumentException e) {
+      return Either.left(new InvalidInput(e.getMessage()));
+    }
     final Path documentMetadataPath = resolveInStorage(documentId + METADATA_SUFFIX);
 
     try {
-      fileHandler.delete(documentPath);
-      fileHandler.delete(documentMetadataPath);
+      deleteFile(documentPath);
+      deleteFile(documentMetadataPath);
     } catch (final IOException e) {
       return Either.left(new UnknownDocumentError(e));
     }
@@ -189,16 +192,20 @@ public class LocalStorageDocumentStore implements DocumentStore {
 
   private Either<DocumentError, Void> verifyContentHashInternal(
       final String documentId, final String contentHash) {
-    final Path documentPath = resolveInStorage(documentId);
+    final Path documentPath;
+    try {
+      documentPath = resolveInStorage(documentId);
+    } catch (final IllegalArgumentException e) {
+      return Either.left(new InvalidInput(e.getMessage()));
+    }
 
-    if (!fileHandler.fileExists(documentPath)) {
+    if (!fileExists(documentPath)) {
       return Either.left(new DocumentNotFound(documentId));
     }
 
     try {
       final var calculatedHash =
-          InputStreamHashCalculator.streamAndCalculateHash(
-              fileHandler.getInputStream(documentPath));
+          InputStreamHashCalculator.streamAndCalculateHash(getInputStream(documentPath));
       if (!calculatedHash.equals(contentHash)) {
         return Either.left(new DocumentHashMismatch(documentId, contentHash));
       }
@@ -208,22 +215,25 @@ public class LocalStorageDocumentStore implements DocumentStore {
     return Either.right(null);
   }
 
-  private Path resolveInStorage(final String fileName) {
-    // Prevent path traversal
-    final var resolved = storagePath.resolve(fileName).normalize();
-    if (!resolved.startsWith(storagePath)) {
-      // Don't provide the actual path in the error message to avoid leaking information
-      throw new IllegalArgumentException("Cannot store %s".formatted(fileName));
-    }
-    return resolved;
-  }
-
   private static String getDocumentId(final DocumentCreationRequest request) {
     return request.documentId() == null ? UUID.randomUUID().toString() : request.documentId();
   }
 
-  private boolean documentIdIsValid(final String documentId) {
-    return INVALID_DOCUMENT_ID_CHARACTERS.stream().noneMatch(documentId::contains);
+  private Path resolveInStorage(final String fileName) {
+    if (fileNameIsInvalid(fileName)) {
+      throw new IllegalArgumentException(generateInvalidDocumentIdMessage(fileName));
+    }
+    // Prevent path traversal
+    final var resolved = storagePath.resolve(fileName).normalize();
+    if (!resolved.startsWith(storagePath)) {
+      // Don't provide the actual path in the error message to avoid leaking information
+      throw new IllegalArgumentException("Cannot use %s as a filename".formatted(fileName));
+    }
+    return resolved;
+  }
+
+  private boolean fileNameIsInvalid(final String documentId) {
+    return INVALID_DOCUMENT_ID_CHARACTERS.stream().anyMatch(documentId::contains);
   }
 
   private String generateInvalidDocumentIdMessage(final String documentId) {
@@ -231,5 +241,21 @@ public class LocalStorageDocumentStore implements DocumentStore {
         + documentId
         + "' cannot contain the following: "
         + String.join(", ", INVALID_DOCUMENT_ID_CHARACTERS);
+  }
+
+  private InputStream getInputStream(final Path documentPath) throws IOException {
+    return Files.newInputStream(documentPath);
+  }
+
+  private void createFile(final InputStream stream, final Path path) throws IOException {
+    Files.copy(stream, path);
+  }
+
+  private boolean fileExists(final Path path) {
+    return Files.exists(path);
+  }
+
+  private void deleteFile(final Path path) throws IOException {
+    Files.deleteIfExists(path);
   }
 }

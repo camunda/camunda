@@ -27,8 +27,7 @@ public class LocalStorageDocumentStoreProvider implements DocumentStoreProvider 
 
     LOG.info("Storage path created at {}", storagePath);
 
-    return new LocalStorageDocumentStore(
-        storagePath, new FileHandler(), new ObjectMapper(), executor);
+    return new LocalStorageDocumentStore(storagePath, new ObjectMapper(), executor);
   }
 
   private Path getStoragePath(final DocumentStoreConfigurationRecord configuration) {
