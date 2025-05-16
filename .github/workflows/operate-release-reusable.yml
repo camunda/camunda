@@ -134,12 +134,12 @@ jobs:
         run: |
           ./mvnw -f operate release:prepare -P -docker,skipFrontendBuild \
           -DpushChanges=false \
-          -DskipTests=true -B -T$LIMITS_CPU --fail-at-end \
+          -DskipTests=true -B -T"$LIMITS_CPU" --fail-at-end \
           -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
-          -Dtag=$TAG_VERSION \
-          -DreleaseVersion=$RELEASE_VERSION \
-          -DdevelopmentVersion=$NEXT_DEVELOPMENT_VERSION \
-          -Darguments='-Dmaven.deploy.skip=$DRY_RUN -P -docker -DskipTests=true -DskipNexusStagingDeployMojo=$DRY_RUN -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -f pom.xml'
+          -Dtag="$TAG_VERSION" \
+          -DreleaseVersion="$RELEASE_VERSION" \
+          -DdevelopmentVersion="$NEXT_DEVELOPMENT_VERSION" \
+          -Darguments="-Dmaven.deploy.skip=$DRY_RUN -P -docker -DskipTests=true -DskipNexusStagingDeployMojo=$DRY_RUN -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -f pom.xml"
 
       # Pushing changes manually since maven-release-plugin fails in subfolders:
       # https://issues.apache.org/jira/browse/MRELEASE-885
@@ -153,9 +153,9 @@ jobs:
         run: |
           ./mvnw -f operate release:perform -P -docker \
           -DlocalCheckout=true \
-          -DskipTests=true -B -T$LIMITS_CPU --fail-at-end \
+          -DskipTests=true -B -T"$LIMITS_CPU" --fail-at-end \
           -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
-          -Darguments='-Dmaven.deploy.skip=$DRY_RUN -P -docker -DskipTests=true -DskipNexusStagingDeployMojo=$DRY_RUN -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -f pom.xml'
+          -Darguments="-Dmaven.deploy.skip=$DRY_RUN -P -docker -DskipTests=true -DskipNexusStagingDeployMojo=$DRY_RUN -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn -f pom.xml"
 
       - name: Create a GitHub release
         if: ${{ env.CREATE_A_RELEASE == 'true' }}
@@ -184,14 +184,14 @@ jobs:
           cd operate/target/checkout/distro/target
 
           # create checksums
-          sha1sum ${ARTIFACT}-${RELEASE_VERSION}.tar.gz > ${ARTIFACT}-${RELEASE_VERSION}.tar.gz.sha1sum
-          sha1sum ${ARTIFACT}-${RELEASE_VERSION}.zip > ${ARTIFACT}-${RELEASE_VERSION}.zip.sha1sum
+          sha1sum "${ARTIFACT}-${RELEASE_VERSION}.tar.gz" > "${ARTIFACT}-${RELEASE_VERSION}.tar.gz.sha1sum"
+          sha1sum "${ARTIFACT}-${RELEASE_VERSION}.zip >" "${ARTIFACT}-${RELEASE_VERSION}.zip.sha1sum"
 
           # upload to github release
           curl -sL https://github.com/github-release/github-release/releases/download/v0.10.0/linux-amd64-github-release.bz2 | bzip2 -fd - > github-release
           chmod +x github-release
 
-          for f in ${ARTIFACT}-${RELEASE_VERSION}.{tar.gz,zip}{,.sha1sum}; do
+          for f in "${ARTIFACT}-${RELEASE_VERSION}".{tar.gz,zip}{,.sha1sum}; do
             if $DRY_RUN; then
               echo "'${f}' file was created, skip upload in dryRun mode"
             elif $GITHUB_UPLOAD_RELEASE; then
@@ -212,15 +212,15 @@ jobs:
           DOCKER_USERNAME: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
           DOCKER_PASSWORD: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
         run: |
-          echo "$DOCKER_PASSWORD" | docker login --username $DOCKER_USERNAME --password-stdin
+          echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
           docker buildx create --use
 
           commit_hash=$(git rev-parse --verify HEAD)
           date_time_stamp=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
 
-          export VERSION=$VERSION
-          export DATE=$date_time_stamp
-          export REVISION=$commit_hash
+          export VERSION="$VERSION"
+          export DATE="$date_time_stamp"
+          export REVISION="$commit_hash"
           export BASE_IMAGE=docker.io/library/alpine:3.19.1
           sudo apt update
           sudo apt install -y jq
@@ -231,49 +231,49 @@ jobs:
           # First amd64
           docker buildx build \
             -f operate.Dockerfile \
-            -t $IMAGE_NAME:$IMAGE_TAG \
-            --build-arg VERSION=$VERSION \
-            --build-arg DATE=$date_time_stamp \
-            --build-arg REVISION=$commit_hash \
+            -t "$IMAGE_NAME:$IMAGE_TAG" \
+            --build-arg VERSION="$VERSION" \
+            --build-arg DATE="$date_time_stamp" \
+            --build-arg REVISION="$commit_hash" \
             --platform linux/amd64 \
             --provenance false \
             --load \
             .
           export ARCHITECTURE=amd64
-          bash ./.ci/docker/test/verify.sh $IMAGE_NAME:$IMAGE_TAG
+          bash ./.ci/docker/test/verify.sh "$IMAGE_NAME:$IMAGE_TAG"
 
           # Now arm64
           docker buildx build \
             -f operate.Dockerfile \
-            -t $IMAGE_NAME:$IMAGE_TAG \
-            --build-arg VERSION=$VERSION \
-            --build-arg DATE=$date_time_stamp \
-            --build-arg REVISION=$commit_hash \
+            -t "$IMAGE_NAME:$IMAGE_TAG" \
+            --build-arg VERSION="$VERSION" \
+            --build-arg DATE="$date_time_stamp" \
+            --build-arg REVISION="$commit_hash" \
             --platform linux/arm64 \
             --provenance false \
             --load \
             .
           export ARCHITECTURE=arm64
-          bash ./.ci/docker/test/verify.sh $IMAGE_NAME:$IMAGE_TAG
+          bash ./.ci/docker/test/verify.sh "$IMAGE_NAME:$IMAGE_TAG"
 
-          if ${CREATE_A_RELEASE}; then
+          if "${CREATE_A_RELEASE}"; then
             docker buildx build -f operate.Dockerfile . \
             --platform linux/arm64,linux/amd64 \
-            --build-arg VERSION=$VERSION \
-            --build-arg REVISION=$commit_hash \
-            --build-arg DATE=$date_time_stamp \
+            --build-arg VERSION="$VERSION" \
+            --build-arg REVISION="$commit_hash" \
+            --build-arg DATE="$date_time_stamp" \
             --provenance false \
-            -t $IMAGE_NAME:$IMAGE_TAG \
+            -t "$IMAGE_NAME:$IMAGE_TAG" \
             --push
 
-            if ${IS_LATEST}; then
+            if "${IS_LATEST}"; then
               docker buildx build -f operate.Dockerfile . \
               --platform linux/arm64,linux/amd64 \
-              --build-arg VERSION=$VERSION \
-              --build-arg REVISION=$commit_hash \
-              --build-arg DATE=$date_time_stamp \
+              --build-arg VERSION="$VERSION" \
+              --build-arg REVISION="$commit_hash" \
+              --build-arg DATE="$date_time_stamp" \
               --provenance false \
-              -t $IMAGE_NAME:latest \
+              -t "$IMAGE_NAME":latest \
               --push
             fi
           fi

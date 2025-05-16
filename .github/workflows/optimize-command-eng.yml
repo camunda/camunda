@@ -92,7 +92,7 @@ jobs:
              [ "${{ steps.parse-args.outputs.arg1 }}" != 'reject' ] &&
              [ "${{ steps.parse-args.outputs.arg1 }}" != 'start' ] &&
              [ "${{ steps.parse-args.outputs.arg1 }}" != 'review' ]; then
-            echo "Invalid command. See `/help` for more information"
+            echo "Invalid command. See '/help' for more information"
             exit 1
           fi
 
