@@ -8,6 +8,7 @@
 package io.camunda.search.clients.transformers.sort;
 
 import static io.camunda.webapps.schema.descriptors.index.TenantIndex.KEY;
+import static io.camunda.webapps.schema.descriptors.index.TenantIndex.MEMBER_ID;
 import static io.camunda.webapps.schema.descriptors.index.TenantIndex.NAME;
 import static io.camunda.webapps.schema.descriptors.index.TenantIndex.TENANT_ID;
 
@@ -19,6 +20,7 @@ public class TenantFieldSortingTransformer implements FieldSortingTransformer {
       case "key" -> KEY;
       case "tenantId" -> TENANT_ID;
       case "name" -> NAME;
+      case "memberId" -> MEMBER_ID;
       default -> throw new IllegalArgumentException("Unknown sortField: " + domainField);
     };
   }
