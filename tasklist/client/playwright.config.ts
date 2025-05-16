@@ -18,6 +18,7 @@ const IS_E2E = Boolean(process.env.IS_E2E);
  */
 const config: PlaywrightTestConfig = {
   testDir: './e2e',
+  testIgnore: ['**/fixtures/**'],
   expect: {
     timeout: 10000,
     toHaveScreenshot: {threshold: 0.1},
@@ -40,7 +41,22 @@ const config: PlaywrightTestConfig = {
     : 'html',
   projects: [
     {
-      name: 'chromium',
+      name: 'visual',
+      testMatch: /.*visual.*/,
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
+    {
+      name: 'e2e',
+      testMatch: /.*e2e.*/,
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
+    {
+      name: 'a11y',
+      testMatch: /.*a11y.*/,
       use: {
         ...devices['Desktop Chrome'],
       },

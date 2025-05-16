@@ -22,7 +22,7 @@ const files = {
   browser: ['src/**/*.{js,jsx,ts,tsx}'],
   test: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'src/setupTests.ts'],
   node: [
-    'e2e/**/*',
+    'e2e/**/*.{js,jsx,ts,tsx}',
     'playwright.config.ts',
     'vite.config.ts',
     'stylelint.config.js',

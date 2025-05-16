@@ -8,7 +8,7 @@
 
 import {expect} from '@playwright/test';
 import {deploy, createInstances} from '@/utils/zeebeClient';
-import {test} from '@/test-fixtures';
+import {test} from '@/fixtures/test';
 
 test.beforeAll(async () => {
   await deploy('./e2e/resources/usertask_with_variables.bpmn');
