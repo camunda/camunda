@@ -4,6 +4,7 @@
   "roles": "Roles",
   "tenants": "Tenants",
   "mappings": "Mappings",
+  "clients": "Clients",
   "authorizations": "Authorizations",
   "unauthorized": "Unauthorized",
   "sessionExpired": "Looks like your session has expired",
@@ -37,5 +38,6 @@
   "somethingsWrong": "Something's wrong",
   "name": "Name",
   "email": "Email",
-  "description": "Description"
+  "description": "Description",
+  "Tabs": "Tabs"
 }
