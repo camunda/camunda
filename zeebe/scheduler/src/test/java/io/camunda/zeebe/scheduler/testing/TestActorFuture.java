@@ -20,6 +20,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.agrona.LangUtil;
@@ -117,23 +118,27 @@ public final class TestActorFuture<V> implements ActorFuture<V> {
   @Override
   public <U> ActorFuture<U> andThen(
       final Function<V, ActorFuture<U>> next, final Executor executor) {
+    return andThen(
+        (v, err) -> {
+          if (err != null) {
+            final var future = new TestActorFuture<U>();
+            future.completeExceptionally(err);
+            return future;
+          } else {
+            return next.apply(v);
+          }
+        },
+        executor);
+  }
+
+  @Override
+  public <U> ActorFuture<U> andThen(
+      final BiFunction<V, Throwable, ActorFuture<U>> next, final Executor executor) {
     final ActorFuture<U> nextFuture = new CompletableActorFuture<>();
     onComplete(
         (thisResult, thisError) -> {
-          if (thisError != null) {
-            nextFuture.completeExceptionally(thisError);
-          } else {
-            next.apply(thisResult)
-                .onComplete(
-                    (nextResult, nextError) -> {
-                      if (nextError != null) {
-                        nextFuture.completeExceptionally(nextError);
-                      } else {
-                        nextFuture.complete(nextResult);
-                      }
-                    },
-                    executor);
-          }
+          final var future = next.apply(thisResult, thisError);
+          future.onComplete(nextFuture, executor);
         },
         executor);
     return nextFuture;

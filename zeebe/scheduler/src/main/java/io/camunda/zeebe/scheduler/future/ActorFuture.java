@@ -13,6 +13,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -188,6 +189,8 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
    * @param <U> the type of the new future
    */
   <U> ActorFuture<U> andThen(Function<V, ActorFuture<U>> next, Executor executor);
+
+  <U> ActorFuture<U> andThen(BiFunction<V, Throwable, ActorFuture<U>> next, Executor executor);
 
   /**
    * Similar to {@link CompletableFuture#thenApply(Function)} in that it applies a function to the
