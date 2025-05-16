@@ -21,6 +21,13 @@ public record SnapshotChunkRecord(
     long totalFileSize)
     implements SnapshotChunk {
 
+  private static final SnapshotChunkRecord EMPTY =
+      new SnapshotChunkRecord("", 0, "", 0, new byte[0], 0, 0);
+
+  public static SnapshotChunkRecord empty() {
+    return EMPTY;
+  }
+
   @Override
   public String getSnapshotId() {
     return snapshotId;

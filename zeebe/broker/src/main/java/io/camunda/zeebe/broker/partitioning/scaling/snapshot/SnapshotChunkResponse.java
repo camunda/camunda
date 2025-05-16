@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.partitioning.scaling.snapshot;
 
 import io.camunda.zeebe.snapshots.SnapshotChunk;
+import java.util.Optional;
 import java.util.UUID;
 
-public record SnapshotChunkResponse(UUID transferId, SnapshotChunk chunk) {}
+public record SnapshotChunkResponse(UUID transferId, Optional<SnapshotChunk> chunk) {}
