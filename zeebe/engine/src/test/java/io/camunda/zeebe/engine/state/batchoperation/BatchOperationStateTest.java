@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -228,10 +229,10 @@ public class BatchOperationStateTest {
     final var batchOperationKey = createDefaultBatch(1, 0);
 
     // when
-    final var keys = state.getNextItemKeys(batchOperationKey, 5);
+    final var key = state.getNextItemKey(batchOperationKey);
 
     // then
-    assertThat(keys).isEmpty();
+    assertThat(key).isEmpty();
   }
 
   @Test
@@ -255,9 +256,13 @@ public class BatchOperationStateTest {
     assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(0);
     assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(0);
 
-    final var nextKeys = state.getNextItemKeys(batchOperationKey, 5);
-    assertThat(nextKeys).hasSize(5);
-    assertThat(nextKeys).containsSequence(List.of(0L, 1L, 2L, 3L, 4L));
+    for (long i = 0; i < 10; i++) {
+      final var nextKey = state.getNextItemKey(batchOperationKey);
+      assertThat(nextKey).isEqualTo(Optional.of(i));
+
+      // remove the key to test that we can get the next one
+      state.removeItemKey(batchOperationKey, i);
+    }
   }
 
   @Test
@@ -280,8 +285,18 @@ public class BatchOperationStateTest {
 
     assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(0);
     assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(0);
+    final var nextKeys = new ArrayList<Long>();
+    for (long i = 0; i < 10; i++) {
+      final var nextKey = state.getNextItemKey(batchOperationKey);
+      nextKey.ifPresent(
+          k -> {
+            nextKeys.add(k);
 
-    final var nextKeys = state.getNextItemKeys(batchOperationKey, 10);
+            // remove the key to test that we can get the next one
+            state.removeItemKey(batchOperationKey, k);
+          });
+    }
+
     assertThat(nextKeys).hasSize(5);
     assertThat(nextKeys).containsSequence(List.of(0L, 1L, 2L, 3L, 4L));
   }
@@ -348,8 +363,12 @@ public class BatchOperationStateTest {
     final var batchOperationKey = createDefaultBatch(1, MAX_DB_CHUNK_SIZE * 3);
 
     // when
-    state.removeItemKeys(
-        batchOperationKey, LongStream.rangeClosed(0, 5).boxed().collect(Collectors.toSet()));
+    LongStream.rangeClosed(0, 5)
+        .boxed()
+        .forEach(
+            i -> {
+              state.removeItemKey(batchOperationKey, i);
+            });
 
     // then
     final var persistedBatchOperation = state.get(batchOperationKey).get();
@@ -357,9 +376,8 @@ public class BatchOperationStateTest {
     assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(0);
     assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(2);
 
-    final var nextItemKeys = state.getNextItemKeys(batchOperationKey, 5);
-    assertThat(nextItemKeys).hasSize(5);
-    assertThat(nextItemKeys).containsSequence(List.of(6L, 7L, 8L, 9L, 10L));
+    final var nextItemKey = state.getNextItemKey(batchOperationKey).get();
+    assertThat(nextItemKey).isEqualTo(6L);
   }
 
   @Test
@@ -368,9 +386,9 @@ public class BatchOperationStateTest {
     final var batchOperationKey = createDefaultBatch(1, MAX_DB_CHUNK_SIZE * 3);
 
     // when
-    state.removeItemKeys(
-        batchOperationKey,
-        LongStream.range(0, MAX_DB_CHUNK_SIZE).boxed().collect(Collectors.toSet()));
+    LongStream.range(0, MAX_DB_CHUNK_SIZE)
+        .boxed()
+        .forEach(i -> state.removeItemKey(batchOperationKey, i));
 
     // then
     final var persistedBatchOperation = state.get(batchOperationKey).get();
@@ -378,10 +396,8 @@ public class BatchOperationStateTest {
     assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(1);
     assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(2);
 
-    final var nextItemKeys = state.getNextItemKeys(batchOperationKey, 3);
-    assertThat(nextItemKeys)
-        .containsSequence(
-            List.of(MAX_DB_CHUNK_SIZE, MAX_DB_CHUNK_SIZE + 1L, MAX_DB_CHUNK_SIZE + 2L));
+    final var nextItemKey = state.getNextItemKey(batchOperationKey).get();
+    assertThat(nextItemKey).isEqualTo(MAX_DB_CHUNK_SIZE);
   }
 
   private long createDefaultBatch(final long batchOperationKey, final long numKeys) {
@@ -429,7 +445,7 @@ public class BatchOperationStateTest {
 
     // then
     assertThat(state.get(batchOperationKey)).isEmpty();
-    assertThat(state.getNextItemKeys(batchOperationKey, 20)).isEmpty();
+    assertThat(state.getNextItemKey(batchOperationKey)).isEmpty();
   }
 
   @Test

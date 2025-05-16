@@ -7,27 +7,22 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 
-import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
-import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public final class BatchOperationExecutionRecord extends UnifiedRecordValue
     implements BatchOperationExecutionRecordValue {
 
   public static final String PROP_BATCH_OPERATION_KEY = "batchOperationKey";
-  public static final String PROP_ITEM_KEY_LIST = "itemKeys";
+  public static final String PROP_ITEM_KEY = "itemKey";
 
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
-  private final ArrayProperty<LongValue> itemKeysProp =
-      new ArrayProperty<>(PROP_ITEM_KEY_LIST, LongValue::new);
+  private final LongProperty itemKeyProp = new LongProperty(PROP_ITEM_KEY, -1L);
 
   public BatchOperationExecutionRecord() {
     super(2);
-    declareProperty(batchOperationKeyProp).declareProperty(itemKeysProp);
+    declareProperty(batchOperationKeyProp).declareProperty(itemKeyProp);
   }
 
   @Override
@@ -42,19 +37,19 @@ public final class BatchOperationExecutionRecord extends UnifiedRecordValue
   }
 
   @Override
-  public Set<Long> getItemKeys() {
-    return itemKeysProp.stream().map(LongValue::getValue).collect(Collectors.toSet());
+  public Long getItemKey() {
+    return itemKeyProp.getValue();
   }
 
-  public BatchOperationExecutionRecord setItemKeys(final Set<Long> keys) {
-    itemKeysProp.reset();
-    keys.forEach(key -> itemKeysProp.add().setValue(key));
+  public BatchOperationExecutionRecord setItemKey(final Long key) {
+    itemKeyProp.reset();
+    itemKeyProp.setValue(key);
     return this;
   }
 
   public BatchOperationExecutionRecord wrap(final BatchOperationExecutionRecord record) {
     setBatchOperationKey(record.getBatchOperationKey());
-    setItemKeys(record.getItemKeys());
+    setItemKey(record.getItemKey());
     return this;
   }
 }
