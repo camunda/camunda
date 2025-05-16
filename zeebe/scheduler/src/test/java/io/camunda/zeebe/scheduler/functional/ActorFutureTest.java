@@ -532,6 +532,7 @@ final class ActorFutureTest {
     final AtomicInteger callbackInvocations = new AtomicInteger(0);
 
     future.onComplete((r, t) -> callbackInvocations.incrementAndGet());
+    future.onSuccess((r) -> callbackInvocations.incrementAndGet());
 
     final Actor completingActor =
         new Actor() {
@@ -546,7 +547,7 @@ final class ActorFutureTest {
     schedulerRule.workUntilDone();
 
     // then
-    assertThat(callbackInvocations).hasValue(1);
+    assertThat(callbackInvocations).hasValue(2);
   }
 
   @Test
@@ -563,6 +564,7 @@ final class ActorFutureTest {
         };
 
     future.onComplete((r, t) -> callbackInvocations.incrementAndGet(), decoratedExecutor);
+    future.onSuccess((r) -> callbackInvocations.incrementAndGet(), decoratedExecutor);
 
     final Actor completingActor =
         new Actor() {
@@ -577,8 +579,8 @@ final class ActorFutureTest {
     schedulerRule.workUntilDone();
 
     // then
-    assertThat(callbackInvocations).hasValue(1);
-    assertThat(executorCount).hasValue(1);
+    assertThat(callbackInvocations).hasValue(2);
+    assertThat(executorCount).hasValue(2);
   }
 
   @Test
@@ -586,8 +588,10 @@ final class ActorFutureTest {
     // given
     final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     final AtomicReference<Throwable> callBackError = new AtomicReference<>();
+    final AtomicReference<Throwable> callBackErrorOnError = new AtomicReference<>();
 
     future.onComplete((r, t) -> callBackError.set(t));
+    future.onError(callBackErrorOnError::set);
 
     final Actor completingActor =
         new Actor() {
@@ -603,6 +607,9 @@ final class ActorFutureTest {
 
     // then
     assertThat(callBackError.get())
+        .isInstanceOf(RuntimeException.class)
+        .hasMessageContaining("Expected");
+    assertThat(callBackErrorOnError.get())
         .isInstanceOf(RuntimeException.class)
         .hasMessageContaining("Expected");
   }
@@ -612,6 +619,7 @@ final class ActorFutureTest {
     // given
     final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     final AtomicReference<Throwable> callBackError = new AtomicReference<>();
+    final AtomicReference<Throwable> callBackErrorOnError = new AtomicReference<>();
 
     final AtomicInteger executorCount = new AtomicInteger(0);
     final Executor decoratedExecutor =
@@ -621,6 +629,7 @@ final class ActorFutureTest {
         };
 
     future.onComplete((r, t) -> callBackError.set(t), decoratedExecutor);
+    future.onError(callBackErrorOnError::set, decoratedExecutor);
 
     final Actor completingActor =
         new Actor() {
@@ -638,7 +647,10 @@ final class ActorFutureTest {
     assertThat(callBackError.get())
         .isInstanceOf(RuntimeException.class)
         .hasMessageContaining("Expected");
-    assertThat(executorCount).hasValue(1);
+    assertThat(callBackErrorOnError.get())
+        .isInstanceOf(RuntimeException.class)
+        .hasMessageContaining("Expected");
+    assertThat(executorCount).hasValue(2);
   }
 
   @Test
@@ -646,6 +658,7 @@ final class ActorFutureTest {
     // given
     final CompletableActorFuture<Integer> future = new CompletableActorFuture<>();
     final AtomicInteger futureResult = new AtomicInteger();
+    final AtomicInteger futureResultOnSuccess = new AtomicInteger();
 
     final Actor completingActor =
         new Actor() {
@@ -667,10 +680,12 @@ final class ActorFutureTest {
         };
 
     future.onComplete((r, t) -> futureResult.set(r), decoratedExecutor);
+    future.onSuccess(futureResultOnSuccess::set, decoratedExecutor);
 
     // then
     assertThat(futureResult.get()).isOne();
-    assertThat(executorCount).hasValue(1);
+    assertThat(futureResultOnSuccess.get()).isOne();
+    assertThat(executorCount).hasValue(2);
   }
 
   @Test
@@ -678,6 +693,7 @@ final class ActorFutureTest {
     // given
     final CompletableActorFuture<Integer> future = new CompletableActorFuture<>();
     final AtomicReference<Throwable> futureResult = new AtomicReference<>();
+    final AtomicReference<Throwable> futureResultOnError = new AtomicReference<>();
 
     final Actor completingActor =
         new Actor() {
@@ -700,12 +716,16 @@ final class ActorFutureTest {
         };
 
     future.onComplete((r, t) -> futureResult.set(t), decoratedExecutor);
+    future.onError(futureResultOnError::set, decoratedExecutor);
 
     // then
     assertThat(futureResult.get())
         .isInstanceOf(RuntimeException.class)
         .hasMessageContaining("Expected");
-    assertThat(executorCount).hasValue(1);
+    assertThat(futureResultOnError.get())
+        .isInstanceOf(RuntimeException.class)
+        .hasMessageContaining("Expected");
+    assertThat(executorCount).hasValue(2);
   }
 
   @Test
@@ -723,6 +743,41 @@ final class ActorFutureTest {
 
     // when -- chain on uncompleted future
     final var chainedFuture = future1.andThen(r -> future2, decoratedExecutor);
+
+    // then -- nothing ran yet
+    assertThat(chainedFuture).isNotDone();
+    assertThat(executorCount).hasValue(0);
+
+    // when -- complete initial future
+    future1.complete(null);
+
+    // then -- chained future is still not completed
+    assertThat(chainedFuture).isNotDone();
+    assertThat(executorCount).hasValue(1);
+
+    // when -- complete next future
+    future2.complete(null);
+
+    // then -- chained future is completed
+    assertThat(chainedFuture).isDone();
+    assertThat(executorCount).hasValue(2);
+  }
+
+  @Test
+  void shouldChainWithAndThenWithBifunction() {
+    // given
+    final AtomicInteger executorCount = new AtomicInteger(0);
+    final Executor decoratedExecutor =
+        runnable -> {
+          executorCount.getAndIncrement();
+          runnable.run();
+        };
+
+    final var future1 = new CompletableActorFuture<>();
+    final var future2 = new CompletableActorFuture<>();
+
+    // when -- chain on uncompleted future
+    final var chainedFuture = future1.andThen((r, err) -> future2, decoratedExecutor);
 
     // then -- nothing ran yet
     assertThat(chainedFuture).isNotDone();
@@ -770,6 +825,34 @@ final class ActorFutureTest {
 
     // then
     assertThat(chained).succeedsWithin(Duration.ofSeconds(1)).isEqualTo("expected");
+  }
+
+  @Test
+  void andThenBiFunctionPropagatesValue() {
+    final var chained =
+        CompletableActorFuture.completed("expected")
+            .andThen((v, err) -> CompletableActorFuture.completed(v), Runnable::run);
+    assertThat(chained).isDone();
+    assertThat(chained).succeedsWithin(Duration.ZERO).isEqualTo("expected");
+  }
+
+  @Test
+  void andThenBiFunctionPropagatesError() {
+    final var chained =
+        CompletableActorFuture.completedExceptionally(new RuntimeException("expected"))
+            .andThen((v, err) -> CompletableActorFuture.completedExceptionally(err), Runnable::run);
+    assertThat(chained).isDone();
+    assertThat(chained).failsWithin(Duration.ZERO).withThrowableThat().withMessage("expected");
+  }
+
+  @Test
+  void andThenCanAbsolveAFailedFuture() {
+    // given
+    final var chained =
+        CompletableActorFuture.completedExceptionally(new RuntimeException(""))
+            .andThen((v, throwable) -> CompletableActorFuture.completed(1), Runnable::run);
+    assertThat(chained).isDone();
+    assertThat(chained).succeedsWithin(Duration.ZERO).isEqualTo(1);
   }
 
   @Test
