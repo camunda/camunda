@@ -390,6 +390,28 @@ public class CamundaProcessTestExtension
     return this;
   }
 
+  public CamundaProcessTestExtension withRuntimeMode(final CamundaRuntimeMode runtimeMode) {
+    containerRuntimeBuilder.withRuntimeMode(runtimeMode);
+    return this;
+  }
+
+  public CamundaProcessTestExtension withRemoteCamunda(
+      final String restApiAddress, final String grpcApiAddress, final String monitoringApiAddress) {
+    containerRuntimeBuilder
+        .withRuntimeMode(CamundaRuntimeMode.REMOTE)
+        .withRemoteCamundaRestApiAddress(restApiAddress)
+        .withRemoteCamundaGrpcApiAddress(grpcApiAddress)
+        .withRemoteCamundaMonitoringApiAddress(monitoringApiAddress);
+    return this;
+  }
+
+  public CamundaProcessTestExtension withRemoteConnector(final String restApiAddress) {
+    containerRuntimeBuilder
+        .withConnectorsEnabled(true)
+        .withRemoteConnectorsRestApiAddress(restApiAddress);
+    return this;
+  }
+
   private void closeCreatedClients() {
     for (final AutoCloseable client : createdClients) {
       try {
@@ -398,10 +420,5 @@ public class CamundaProcessTestExtension
         LOG.debug("Failed to close client, continue.", e);
       }
     }
-  }
-
-  public CamundaProcessTestExtension withRemoteRuntime() {
-    containerRuntimeBuilder.withRemoteRuntime();
-    return this;
   }
 }

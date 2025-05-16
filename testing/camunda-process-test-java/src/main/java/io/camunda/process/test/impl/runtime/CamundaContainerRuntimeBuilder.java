@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.impl.runtime;
 
+import io.camunda.process.test.api.CamundaRuntimeMode;
 import io.camunda.process.test.impl.containers.ContainerFactory;
 import io.camunda.process.test.impl.extension.CamundaRuntimeConnection;
 import io.camunda.process.test.impl.extension.RemoteRuntimeConnection;
@@ -55,7 +56,8 @@ public class CamundaContainerRuntimeBuilder {
   private boolean connectorsEnabled = false;
   private final Map<String, String> connectorsSecrets = new HashMap<>();
 
-  private boolean remoteRuntime = false;
+  private CamundaRuntimeMode runtimeMode = CamundaRuntimeMode.MANAGED;
+
   private URI remoteCamundaRestApiAddress =
       URI.create(ContainerRuntimeDefaults.REMOTE_CAMUNDA_REST_API_ADDRESS);
   private URI remoteCamundaGrpcApiAddress =
@@ -186,46 +188,49 @@ public class CamundaContainerRuntimeBuilder {
     return this;
   }
 
-  public CamundaContainerRuntimeBuilder withRemoteRuntime() {
-    remoteRuntime = true;
+  public CamundaContainerRuntimeBuilder withRuntimeMode(final CamundaRuntimeMode runtimeMode) {
+    this.runtimeMode = runtimeMode;
     return this;
   }
 
   public CamundaContainerRuntimeBuilder withRemoteCamundaRestApiAddress(
-      final URI remoteCamundaRestApiAddress) {
-    this.remoteCamundaRestApiAddress = remoteCamundaRestApiAddress;
+      final String remoteCamundaRestApiAddress) {
+    this.remoteCamundaRestApiAddress = URI.create(remoteCamundaRestApiAddress);
     return this;
   }
 
   public CamundaContainerRuntimeBuilder withRemoteCamundaGrpcApiAddress(
-      final URI remoteCamundaGrpcApiAddress) {
-    this.remoteCamundaGrpcApiAddress = remoteCamundaGrpcApiAddress;
+      final String remoteCamundaGrpcApiAddress) {
+    this.remoteCamundaGrpcApiAddress = URI.create(remoteCamundaGrpcApiAddress);
     return this;
   }
 
   public CamundaContainerRuntimeBuilder withRemoteCamundaMonitoringApiAddress(
-      final URI remoteCamundaMonitoringApiAddress) {
-    this.remoteCamundaMonitoringApiAddress = remoteCamundaMonitoringApiAddress;
+      final String remoteCamundaMonitoringApiAddress) {
+    this.remoteCamundaMonitoringApiAddress = URI.create(remoteCamundaMonitoringApiAddress);
     return this;
   }
 
   public CamundaContainerRuntimeBuilder withRemoteConnectorsRestApiAddress(
-      final URI remoteConnectorsRestApiAddress) {
-    this.remoteConnectorsRestApiAddress = remoteConnectorsRestApiAddress;
+      final String remoteConnectorsRestApiAddress) {
+    this.remoteConnectorsRestApiAddress = URI.create(remoteConnectorsRestApiAddress);
     return this;
   }
 
   // ============ Build =================
 
   public CamundaRuntimeConnection build() {
-    if (remoteRuntime) {
-      return new RemoteRuntimeConnection(
-          remoteCamundaRestApiAddress,
-          remoteCamundaGrpcApiAddress,
-          remoteCamundaMonitoringApiAddress,
-          connectorsEnabled ? remoteConnectorsRestApiAddress : null);
-    } else {
-      return new CamundaContainerRuntime(this, containerFactory);
+    switch (runtimeMode) {
+      case MANAGED:
+        return new CamundaContainerRuntime(this, containerFactory);
+      case REMOTE:
+        return new RemoteRuntimeConnection(
+            remoteCamundaRestApiAddress,
+            remoteCamundaGrpcApiAddress,
+            remoteCamundaMonitoringApiAddress,
+            connectorsEnabled ? remoteConnectorsRestApiAddress : null);
+      default:
+        throw new IllegalStateException("Unknown runtime mode: " + runtimeMode);
     }
   }
 
@@ -299,7 +304,23 @@ public class CamundaContainerRuntimeBuilder {
     return connectorsSecrets;
   }
 
-  public boolean isRemoteRuntime() {
-    return remoteRuntime;
+  public CamundaRuntimeMode getRuntimeMode() {
+    return runtimeMode;
+  }
+
+  public URI getRemoteCamundaRestApiAddress() {
+    return remoteCamundaRestApiAddress;
+  }
+
+  public URI getRemoteCamundaGrpcApiAddress() {
+    return remoteCamundaGrpcApiAddress;
+  }
+
+  public URI getRemoteCamundaMonitoringApiAddress() {
+    return remoteCamundaMonitoringApiAddress;
+  }
+
+  public URI getRemoteConnectorsRestApiAddress() {
+    return remoteConnectorsRestApiAddress;
   }
 }
