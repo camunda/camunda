@@ -170,11 +170,7 @@ public final class SearchResponseMapper {
   }
 
   public static Role toRoleResponse(final RoleResult response) {
-    return new RoleImpl(
-        ParseUtil.parseLongOrNull(response.getRoleKey()),
-        response.getRoleId(),
-        response.getName(),
-        response.getDescription());
+    return new RoleImpl(response.getRoleId(), response.getName(), response.getDescription());
   }
 
   public static SearchResponse<Role> toRolesResponse(final RoleSearchQueryResult response) {

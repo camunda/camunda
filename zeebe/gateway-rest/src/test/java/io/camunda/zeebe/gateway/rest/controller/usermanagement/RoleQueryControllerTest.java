@@ -71,7 +71,6 @@ public class RoleQueryControllerTest extends RestControllerTest {
             """
             {
               "name": "Role Name",
-              "roleKey": "100",
               "roleId": "roleId",
               "description": "description"
             }""");
@@ -147,19 +146,16 @@ public class RoleQueryControllerTest extends RestControllerTest {
           {
              "items": [
                {
-                 "roleKey": "100",
                  "name": "Role 1",
                  "roleId": "role1",
                  "description": "description 1"
                },
                {
-                 "roleKey": "200",
                  "name": "Role 2",
                  "roleId": "role2",
                  "description": "description 2"
                },
                {
-                 "roleKey": "300",
                  "name": "Role 12",
                  "roleId": "role12",
                  "description": "description 12"
@@ -247,19 +243,16 @@ public class RoleQueryControllerTest extends RestControllerTest {
           {
              "items": [
                {
-                 "userKey": "100",
                  "username": "user1",
                  "name": "User 1",
                  "email": "user1@example.com"
                },
                {
-                 "userKey": "200",
                  "username": "user2",
                  "name": "User 2",
                  "email": "user2@example.com"
                },
                {
-                 "userKey": "300",
                  "username": "user3",
                  "name": "User 3",
                  "email": "user3@example.com"

@@ -146,13 +146,13 @@ public class RoleIT {
     final var searchResult =
         roleReader.search(
             new RoleQuery(
-                new RoleFilter.Builder().roleKey(role.roleKey()).name(role.name()).build(),
+                new RoleFilter.Builder().roleId(role.roleId()).name(role.name()).build(),
                 RoleSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
-    assertThat(searchResult.items().getFirst().roleKey()).isEqualTo(role.roleKey());
+    assertThat(searchResult.items().getFirst().roleId()).isEqualTo(role.roleId());
   }
 
   @TestTemplate

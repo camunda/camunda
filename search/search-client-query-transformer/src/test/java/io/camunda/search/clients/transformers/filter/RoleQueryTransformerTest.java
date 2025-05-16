@@ -18,23 +18,6 @@ import org.junit.jupiter.api.Test;
 public class RoleQueryTransformerTest extends AbstractTransformerTest {
 
   @Test
-  public void shouldQueryByRoleKey() {
-    // given
-    final var filter = FilterBuilders.role((f) -> f.roleKey(12345L));
-
-    // when
-    final var query = (SearchBoolQuery) transformQuery(filter).queryOption();
-
-    // then
-    assertThat(query.filter()).isEmpty();
-    assertThat(query.should()).isEmpty();
-    assertThat(query.must())
-        .containsExactlyInAnyOrder(
-            SearchQuery.of(q1 -> q1.term(t -> t.field("key").value(12345L))),
-            SearchQuery.of(q1 -> q1.term(t -> t.field("join").value("role"))));
-  }
-
-  @Test
   void shouldQueryByRoleId() {
     // given
     final var filter = FilterBuilders.role((f) -> f.roleId("role1"));
@@ -138,8 +121,7 @@ public class RoleQueryTransformerTest extends AbstractTransformerTest {
   @Test
   void shouldQueryByMultipleRoleFields() {
     // given
-    final var filter =
-        FilterBuilders.role((f) -> f.roleKey(12345L).roleId("role1").name("TestRole"));
+    final var filter = FilterBuilders.role((f) -> f.roleId("role1").name("TestRole"));
 
     // when
     final var query = (SearchBoolQuery) transformQuery(filter).queryOption();
@@ -149,7 +131,6 @@ public class RoleQueryTransformerTest extends AbstractTransformerTest {
     assertThat(query.should()).isEmpty();
     assertThat(query.must())
         .containsExactlyInAnyOrder(
-            SearchQuery.of(q -> q.term(t -> t.field("key").value(12345L))),
             SearchQuery.of(q -> q.term(t -> t.field("roleId").value("role1"))),
             SearchQuery.of(q -> q.term(t -> t.field("name").value("TestRole"))),
             SearchQuery.of(q -> q.term(t -> t.field("join").value("role"))));

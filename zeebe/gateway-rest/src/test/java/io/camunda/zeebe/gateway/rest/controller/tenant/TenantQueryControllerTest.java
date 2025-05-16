@@ -189,13 +189,11 @@ public class TenantQueryControllerTest extends RestControllerTest {
       {
          "items": [
            {
-             "roleKey": %s,
              "name": "%s",
              "description": "%s",
              "roleId": "%s"
            },
            {
-             "roleKey": %s,
              "name": "%s",
              "description": "%s",
              "roleId": "%s"
@@ -211,11 +209,9 @@ public class TenantQueryControllerTest extends RestControllerTest {
 
   private static final String EXPECTED_ROLE_RESPONSE =
       ROLE_RESPONSE.formatted(
-          "\"%s\"".formatted(ROLE_ENTITIES.get(0).roleKey()),
           ROLE_ENTITIES.get(0).name(),
           ROLE_ENTITIES.get(0).description(),
           ROLE_ENTITIES.get(0).roleId(),
-          "\"%s\"".formatted(ROLE_ENTITIES.get(1).roleKey()),
           ROLE_ENTITIES.get(1).name(),
           ROLE_ENTITIES.get(1).description(),
           ROLE_ENTITIES.get(1).roleId(),

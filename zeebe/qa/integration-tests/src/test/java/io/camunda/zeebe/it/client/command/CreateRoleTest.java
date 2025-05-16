@@ -53,7 +53,6 @@ class CreateRoleTest {
             .join();
 
     // then
-    assertThat(response.getRoleKey()).isGreaterThan(0);
     assertThat(response.getRoleId()).isEqualTo(ROLE_ID);
     assertThat(response.getName()).isEqualTo(ROLE_NAME);
     assertThat(response.getDescription()).isEqualTo(ROLE_DESCRIPTION);

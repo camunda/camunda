@@ -7103,9 +7103,6 @@ components:
     RoleCreateResult:
       type: object
       properties:
-        roleKey:
-          description: The key of the created role.
-          type: string
         roleId:
           description: The ID of the created role.
           type: string
@@ -7130,9 +7127,6 @@ components:
     RoleUpdateResult:
       type: object
       properties:
-        roleKey:
-          type: string
-          description: The key of the updated role.
         name:
           type: string
           description: The display name of the updated role.
@@ -7149,9 +7143,6 @@ components:
         name:
           type: string
           description: The role name.
-        roleKey:
-          type: string
-          description: The role key.
         roleId:
           type: string
           description: The role id.
@@ -7165,7 +7156,6 @@ components:
           description: The field to sort by.
           type: string
           enum:
-            - roleKey
             - name
             - roleId
         order:

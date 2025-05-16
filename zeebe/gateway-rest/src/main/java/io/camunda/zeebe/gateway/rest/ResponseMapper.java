@@ -519,7 +519,6 @@ public final class ResponseMapper {
   public static ResponseEntity<Object> toRoleCreateResponse(final RoleRecord roleRecord) {
     final var response =
         new RoleCreateResult()
-            .roleKey(KeyUtil.keyToString(roleRecord.getRoleKey()))
             .roleId(roleRecord.getRoleId())
             .name(roleRecord.getName())
             .description(roleRecord.getDescription());
@@ -529,7 +528,6 @@ public final class ResponseMapper {
   public static ResponseEntity<Object> toRoleUpdateResponse(final RoleRecord roleRecord) {
     final var response =
         new RoleUpdateResult()
-            .roleKey(KeyUtil.keyToString(roleRecord.getRoleKey()))
             .roleId(roleRecord.getRoleId())
             .description(roleRecord.getDescription())
             .name(roleRecord.getName());

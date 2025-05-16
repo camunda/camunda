@@ -50,7 +50,6 @@
 
   <sql id="searchFilter">
     WHERE 1 = 1
-    <if test="filter.roleKey != null">AND r.ROLE_KEY = #{filter.roleKey}</if>
     <if test="filter.roleId != null">AND r.ROLE_ID = #{filter.roleId}</if>
     <if test="filter.name != null">AND r.NAME = #{filter.name}</if>
     <if test="filter.memberIds != null">
