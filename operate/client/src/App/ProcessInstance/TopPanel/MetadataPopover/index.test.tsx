@@ -41,7 +41,7 @@ jest.mock('date-fns', () => ({
 
 describe('MetadataPopover', () => {
   beforeEach(() => {
-    init([]);
+    init('process-instance', []);
     flowNodeSelectionStore.init();
     mockFetchProcessDefinitionXml().withSuccess('');
   });

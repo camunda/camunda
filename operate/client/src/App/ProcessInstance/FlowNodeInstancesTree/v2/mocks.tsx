@@ -59,6 +59,18 @@ const eventSubprocessProcessInstance: ProcessInstanceEntity = Object.freeze(
   }),
 );
 
+const mockEventSubprocessInstance: ProcessInstance = {
+  processInstanceKey: '2251799813686118',
+  state: 'ACTIVE',
+  startDate: '2018-06-21',
+  processDefinitionKey: '2251799813686038',
+  processDefinitionVersion: 1,
+  processDefinitionId: 'eventSubprocessProcess',
+  tenantId: '<default>',
+  processDefinitionName: 'Event subprocess Process',
+  hasIncident: true,
+};
+
 const nestedSubProcessesInstance = Object.freeze(
   createInstance({
     id: '227539842356787',
@@ -843,5 +855,6 @@ export {
   multipleSubprocessesWithTwoRunningScopesMock,
   mockRunningNodeInstance,
   eventSubprocessProcessInstance,
+  mockEventSubprocessInstance,
   Wrapper,
 };

@@ -102,7 +102,7 @@ describe('VariablePanel', () => {
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
-    init(statistics);
+    init('process-instance', statistics);
     flowNodeSelectionStore.init();
     processInstanceDetailsStore.setProcessInstance(
       createInstance({

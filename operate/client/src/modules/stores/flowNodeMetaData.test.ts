@@ -55,14 +55,14 @@ describe('stores/flowNodeMetaData', () => {
   });
 
   it('should initially set meta data to null', () => {
-    init([]);
+    init('process-instance', []);
     expect(flowNodeMetaDataStore.state.metaData).toBe(null);
   });
 
   it('should fetch and set meta data', async () => {
     mockFetchFlowNodeMetadata().withSuccess(metaData);
 
-    init([]);
+    init('process-instance', []);
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'ServiceTask_1',
       flowNodeInstanceId: '2251799813689409',
@@ -88,7 +88,7 @@ describe('stores/flowNodeMetaData', () => {
       eventListeners[event] = cb;
     });
 
-    init([]);
+    init('process-instance', []);
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'ServiceTask_1',
       flowNodeInstanceId: '2251799813689409',
@@ -117,7 +117,7 @@ describe('stores/flowNodeMetaData', () => {
   it('should not fetch metadata in modification mode if flow node does not have any running/finished instances', async () => {
     modificationsStore.enableModificationMode();
 
-    init([]);
+    init('process-instance', []);
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'ServiceTask_2',
       flowNodeInstanceId: '2251799813689409',

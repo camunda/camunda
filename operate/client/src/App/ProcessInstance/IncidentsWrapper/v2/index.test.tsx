@@ -11,6 +11,7 @@ import {IncidentsWrapper} from './index';
 import {mockIncidents, Wrapper} from '../tests/mocks';
 import {incidentsStore} from 'modules/stores/incidents';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
+import {mockProcessInstance} from 'App/ProcessInstance/v2/mocks';
 
 describe('IncidentsFilter', () => {
   beforeEach(async () => {
@@ -22,9 +23,15 @@ describe('IncidentsFilter', () => {
   });
 
   it('should render the table', async () => {
-    render(<IncidentsWrapper setIsInTransition={jest.fn()} />, {
-      wrapper: Wrapper,
-    });
+    render(
+      <IncidentsWrapper
+        processInstance={mockProcessInstance}
+        setIsInTransition={jest.fn()}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     const table = within(await screen.findByRole('table'));
 
@@ -37,9 +44,15 @@ describe('IncidentsFilter', () => {
   });
 
   it('should render the filters', async () => {
-    const {user} = render(<IncidentsWrapper setIsInTransition={jest.fn()} />, {
-      wrapper: Wrapper,
-    });
+    const {user} = render(
+      <IncidentsWrapper
+        processInstance={mockProcessInstance}
+        setIsInTransition={jest.fn()}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     await user.click(
       await screen.findByRole('combobox', {name: /filter by incident type/i}),

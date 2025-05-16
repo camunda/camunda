@@ -10,8 +10,8 @@ import {IncidentsTable} from '.';
 import {createIncident} from 'modules/testUtils';
 import {render, screen} from 'modules/testing-library';
 import {incidentsStore} from 'modules/stores/incidents';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {Wrapper, incidentsMock, firstIncident} from './mocks';
+import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 
 describe('Selection', () => {
   it('should deselect selected incident', async () => {
@@ -20,10 +20,13 @@ describe('Selection', () => {
       incidents: [firstIncident],
       count: 1,
     });
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: firstIncident.flowNodeId,
-      isMultiInstance: false,
-    });
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: firstIncident.flowNodeId,
+        isMultiInstance: false,
+      },
+    );
 
     const {user} = render(<IncidentsTable />, {wrapper: Wrapper});
     expect(screen.getByRole('row', {selected: true})).toBeInTheDocument();
@@ -39,10 +42,13 @@ describe('Selection', () => {
     ];
 
     incidentsStore.setIncidents({...incidentsMock, incidents});
-    flowNodeSelectionStore.selectFlowNode({
-      flowNodeId: 'myTask',
-      isMultiInstance: false,
-    });
+    selectFlowNode(
+      {},
+      {
+        flowNodeId: 'myTask',
+        isMultiInstance: false,
+      },
+    );
 
     const {user} = render(<IncidentsTable />, {wrapper: Wrapper});
     expect(screen.getAllByRole('row', {selected: true})).toHaveLength(2);

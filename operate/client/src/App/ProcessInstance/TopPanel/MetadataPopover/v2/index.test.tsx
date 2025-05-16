@@ -55,7 +55,7 @@ const mockProcessInstance: ProcessInstance = {
 
 describe('MetadataPopover', () => {
   beforeEach(() => {
-    init([]);
+    init('process-instance', []);
     flowNodeSelectionStore.init();
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessDefinitionXml().withSuccess('');

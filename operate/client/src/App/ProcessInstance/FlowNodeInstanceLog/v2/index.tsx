@@ -24,11 +24,16 @@ import {Skeleton} from '../Skeleton';
 import {ExecutionCountToggle} from '../ExecutionCountToggle';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
+import {
+  useInstanceExecutionHistory,
+  useIsInstanceExecutionHistoryAvailable,
+} from 'modules/hooks/flowNodeInstance';
 
 const FlowNodeInstanceLog: React.FC = observer(() => {
+  const instanceExecutionHistory = useInstanceExecutionHistory();
+  const isInstanceExecutionHistoryAvailable =
+    useIsInstanceExecutionHistoryAvailable();
   const {
-    instanceExecutionHistory,
-    isInstanceExecutionHistoryAvailable,
     state: {status: flowNodeInstanceStatus},
   } = flowNodeInstanceStore;
 
@@ -56,7 +61,7 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
         <InstanceHistory ref={instanceHistoryRef}>
           <NodeContainer>
             <TreeView
-              label={`${instanceExecutionHistory!.flowNodeId} instance history`}
+              label={`${instanceExecutionHistory?.flowNodeId} instance history`}
               hideLabel
             >
               {

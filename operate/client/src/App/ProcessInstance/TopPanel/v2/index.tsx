@@ -29,7 +29,7 @@ import {
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {computed} from 'mobx';
 import {OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
-import {Diagram} from 'modules/components/Diagram';
+import {Diagram} from 'modules/components/Diagram/v2';
 import {MetadataPopover} from '../MetadataPopover/v2';
 import {ModificationBadgeOverlay} from '../ModificationBadgeOverlay';
 import {ModificationInfoBanner} from '../ModificationInfoBanner';
@@ -118,7 +118,7 @@ const TopPanel: React.FC = observer(() => {
 
   useEffect(() => {
     if (flowNodeInstancesStatistics?.items) {
-      init(flowNodeInstancesStatistics.items);
+      init('process-instance', flowNodeInstancesStatistics.items);
     }
   });
 

@@ -14,7 +14,11 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {observer} from 'mobx-react';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {useTotalRunningInstancesForFlowNode} from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
-import {getSelectedRunningInstanceCount} from 'modules/utils/flowNodeSelection';
+import {
+  clearSelection,
+  getSelectedRunningInstanceCount,
+} from 'modules/utils/flowNodeSelection';
+import {useRootNode} from 'modules/hooks/flowNodeSelection';
 
 type SelectedFlowNodeOverlayProps = {
   selectedFlowNodeRef: SVGElement;
@@ -58,6 +62,7 @@ const Diagram: React.FC<Props> = observer(
     const selectedRunningInstanceCount = getSelectedRunningInstanceCount(
       totalRunningInstances ?? 0,
     );
+    const rootNode = useRootNode();
 
     function getViewer() {
       if (viewerRef.current === null) {
@@ -118,11 +123,11 @@ const Diagram: React.FC<Props> = observer(
           );
 
           if (rootElementId !== currentSelectionRootId) {
-            flowNodeSelectionStore.clearSelection();
+            clearSelection(rootNode);
           }
         };
       }
-    }, [viewer, onFlowNodeSelection]);
+    }, [viewer, onFlowNodeSelection, rootNode]);
 
     useEffect(() => {
       return () => {
