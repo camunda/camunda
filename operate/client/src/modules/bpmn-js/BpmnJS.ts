@@ -98,14 +98,39 @@ class BpmnJS {
     const {
       container,
       xml,
-      selectableFlowNodes = [],
-      selectedFlowNodeIds,
+      selectableFlowNodes: unfilteredSelectableFlowNodes = [],
+      selectedFlowNodeIds: unfilteredSelectedFlowNodeIds,
       overlaysData = [],
       highlightedSequenceFlows = [],
-      highlightedFlowNodeIds = [],
+      highlightedFlowNodeIds: unfilteredHighlightedFlowNodeIds = [],
       nonSelectableNodeTooltipText,
       hasOuterBorderOnSelection,
     } = options;
+
+    const selectedFlowNodeIds = unfilteredSelectedFlowNodeIds?.filter(
+      (flowNodeId) => {
+        const element = this.#navigatedViewer
+          ?.get('elementRegistry')
+          .get(flowNodeId);
+        return element !== undefined;
+      },
+    );
+    const highlightedFlowNodeIds = unfilteredHighlightedFlowNodeIds?.filter(
+      (flowNodeId) => {
+        const element = this.#navigatedViewer
+          ?.get('elementRegistry')
+          .get(flowNodeId);
+        return element !== undefined;
+      },
+    );
+    const selectableFlowNodes = unfilteredSelectableFlowNodes?.filter(
+      (flowNodeId) => {
+        const element = this.#navigatedViewer
+          ?.get('elementRegistry')
+          .get(flowNodeId);
+        return element !== undefined;
+      },
+    );
 
     if (this.#navigatedViewer === null) {
       this.#createViewer(container);
