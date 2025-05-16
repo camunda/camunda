@@ -644,13 +644,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RoleSearchQueryResult"
-  /tenants/{tenantId}/applications/{clientId}:
+  /tenants/{tenantId}/clients/{clientId}:
     put:
       tags:
         - Tenant
-      operationId: assignApplicationToTenant
-      summary: Assign an application to a tenant
-      description: Assign an application to a specified tenant.
+      operationId: assignClientToTenant
+      summary: Assign a client to a tenant
+      description: Assign a client to a specified tenant.
       parameters:
         - name: tenantId
           in: path
@@ -682,7 +682,7 @@ paths:
     delete:
       tags:
         - Tenant
-      operationId: removeApplicationFromTenant
+      operationId: removeClientFromTenant
       summary: Remove a client from a tenant
       description: Removes a single client from a specified tenant.
       parameters:
