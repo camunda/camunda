@@ -483,6 +483,7 @@
             <configuration>
               <arguments>
                 <argument>${project.build.resources[0].directory}/broker-protocol.xml</argument>
+                <argument>${project.build.resources[0].directory}/transfer-snapshot-schema.xml</argument>
               </arguments>
             </configuration>
           </execution>
