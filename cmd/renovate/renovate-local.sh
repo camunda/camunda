@@ -14,12 +14,14 @@ fi
 LOCAL_RENOVATE_CONFIG="../.././.github/renovate.json"
 REPO_NAME="camunda/camunda"
 LOCAL_CACHE_DIR="$(pwd)/renovate_cache"
+LOCAL_BASE_DIR="$(pwd)/renovate"
 
 if [ ! -f "$LOCAL_RENOVATE_CONFIG" ]; then
     echo "Error: Local Renovate config file '$LOCAL_RENOVATE_CONFIG' not found."
     exit 1
 fi
 mkdir -p "${LOCAL_CACHE_DIR}"
+mkdir -p "${LOCAL_BASE_DIR}"
 
 echo "Processing repository: ${REPO_NAME}"
 echo "Using Renovate configuration from: ${LOCAL_RENOVATE_CONFIG}"
@@ -37,8 +39,11 @@ docker run --rm \
   -e RENOVATE_PLATFORM="github" \
   -e RENOVATE_TOKEN="${GITHUB_TOKEN}" \
   -e RENOVATE_REPOSITORIES="${REPO_NAME}" \
+  -e RENOVATE_REQUIRE_CONFIG="ignored" \
   -e RENOVATE_CONFIG_FILE="/usr/src/app/mounted-renovate-config.json" \
   -v "$(pwd)/${LOCAL_RENOVATE_CONFIG}:/usr/src/app/mounted-renovate-config.json:ro" \
+  -e RENOVATE_BASE_DIR="/tmp/renovate" \
+  -v "${LOCAL_BASE_DIR}:/tmp/renovate" \
   -e RENOVATE_CACHE_DIR="/cache/renovate" \
   -v "${LOCAL_CACHE_DIR}:/cache/renovate" \
   renovate/renovate | tee "/tmp/${REPO_NAME//\//_}_$(date +%Y%m%d_%H%M%S).txt"

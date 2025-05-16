@@ -37,6 +37,15 @@
   },
   "packageRules": [
     {
+      "matchDatasources": [
+        "maven"
+      ],
+      "registryUrls": [
+        "https://repo.maven.apache.org/maven2",
+        "https://artifacts.camunda.com/artifactory/public/"
+      ]
+    },
+    {
       "description": "Enable separateMinorPatch so updates to latest patch are not ignored in maintenance branches.",
       "separateMinorPatch": true,
       "matchBaseBranches": [
