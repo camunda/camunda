@@ -21,6 +21,7 @@ import io.camunda.zeebe.spring.client.configuration.MetricsDefaultConfiguration;
 import io.camunda.zeebe.spring.client.configuration.ZeebeActuatorConfiguration;
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientAllAutoConfiguration;
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientProdAutoConfiguration;
+import io.camunda.zeebe.spring.client.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.camunda.zeebe.spring.client.event.ZeebeLifecycleEventProducer;
 import io.camunda.zeebe.spring.client.testsupport.SpringZeebeTestContext;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
@@ -33,6 +34,7 @@ import org.springframework.context.annotation.Configuration;
 
 /** Enabled by META-INF of Spring Boot Starter to provide beans for Camunda Clients */
 @Configuration
+@ConditionalOnCamundaClientEnabled
 @ImportAutoConfiguration({
   ZeebeClientProdAutoConfiguration.class,
   ZeebeClientAllAutoConfiguration.class,

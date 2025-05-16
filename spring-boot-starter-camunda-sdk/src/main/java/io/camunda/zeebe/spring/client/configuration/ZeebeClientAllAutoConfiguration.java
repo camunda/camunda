@@ -19,6 +19,7 @@ import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.worker.BackoffSupplier;
 import io.camunda.zeebe.client.impl.worker.ExponentialBackoffBuilderImpl;
 import io.camunda.zeebe.spring.client.annotation.customizer.ZeebeWorkerValueCustomizer;
+import io.camunda.zeebe.spring.client.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.camunda.zeebe.spring.client.jobhandling.CommandExceptionHandlingStrategy;
 import io.camunda.zeebe.spring.client.jobhandling.DefaultCommandExceptionHandlingStrategy;
 import io.camunda.zeebe.spring.client.jobhandling.JobWorkerManager;
@@ -28,16 +29,11 @@ import io.camunda.zeebe.spring.client.properties.CommonConfigurationProperties;
 import io.camunda.zeebe.spring.client.properties.PropertyBasedZeebeWorkerValueCustomizer;
 import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
-@ConditionalOnProperty(
-    prefix = "zeebe.client",
-    name = "enabled",
-    havingValue = "true",
-    matchIfMissing = true)
+@ConditionalOnCamundaClientEnabled
 @Import(AnnotationProcessorConfiguration.class)
 @EnableConfigurationProperties({
   ZeebeClientConfigurationProperties.class,
