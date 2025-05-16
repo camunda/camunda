@@ -26,7 +26,9 @@ import { Description } from "src/components/layout/DetailsPageDescription";
 import Members from "src/pages/groups/detail/members";
 import Roles from "src/pages/groups/detail/roles";
 import Mappings from "src/pages/groups/detail/mappings";
+import Clients from "src/pages/groups/detail/clients";
 import { isOIDC } from "src/configuration";
+import { IS_GROUP_CLIENTS_SUPPORTED } from "src/feature-flags";
 
 const Details: FC = () => {
   const navigate = useNavigate();
@@ -111,6 +113,15 @@ const Details: FC = () => {
                         label: t("mappings"),
                         content: <Mappings groupId={group.groupId} />,
                       },
+                      ...(IS_GROUP_CLIENTS_SUPPORTED
+                        ? [
+                            {
+                              key: "clients",
+                              label: t("clients"),
+                              content: <Clients groupId={group?.groupId} />,
+                            },
+                          ]
+                        : []),
                     ]
                   : []),
               ]}
