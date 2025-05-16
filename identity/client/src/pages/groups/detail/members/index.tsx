@@ -11,7 +11,7 @@ import { TrashCan } from "@carbon/react/icons";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
-import { getMembersByGroup } from "src/utility/api/membership";
+import { searchMembersByGroup } from "src/utility/api/membership";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import AssignMembersModal from "src/pages/groups/detail/members/AssignMembersModal";
@@ -31,7 +31,7 @@ const Members: FC<MembersProps> = ({ groupId }) => {
     loading,
     success,
     reload,
-  } = useApi(getMembersByGroup, {
+  } = useApi(searchMembersByGroup, {
     groupId: groupId,
   });
 
@@ -89,8 +89,9 @@ const Members: FC<MembersProps> = ({ groupId }) => {
   const membersListHeaders: MembersListHeaders = isOIDC
     ? [{ header: t("username"), key: "username" }]
     : [
-        { header: t("userId"), key: "key" },
         { header: t("username"), key: "username" },
+        { header: t("name"), key: "name" },
+        { header: t("email"), key: "email" },
       ];
 
   return (

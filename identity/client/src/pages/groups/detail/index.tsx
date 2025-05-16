@@ -24,7 +24,6 @@ import EditModal from "src/pages/groups/modals/EditModal";
 import DeleteModal from "src/pages/groups/modals/DeleteModal";
 import { Description } from "src/components/layout/DetailsPageDescription";
 import {
-  IS_GROUP_USERS_SUPPORTED,
   IS_GROUP_ROLES_SUPPORTED,
   IS_GROUP_MAPPINGS_SUPPORTED,
 } from "src/feature-flags";
@@ -95,46 +94,40 @@ const Details: FC = () => {
             </Flex>
           )}
         </Stack>
-        {(IS_GROUP_USERS_SUPPORTED ||
-          IS_GROUP_ROLES_SUPPORTED ||
-          IS_GROUP_MAPPINGS_SUPPORTED) &&
-          group && (
-            <Section>
-              <Tabs
-                tabs={[
-                  ...(IS_GROUP_USERS_SUPPORTED
-                    ? [
-                        {
-                          key: "users",
-                          label: t("users"),
-                          content: <Members groupId={group.groupId} />,
-                        },
-                      ]
-                    : []),
-                  ...(IS_GROUP_ROLES_SUPPORTED
-                    ? [
-                        {
-                          key: "roles",
-                          label: t("roles"),
-                          content: <Roles groupId={group.groupId} />,
-                        },
-                      ]
-                    : []),
-                  ...(IS_GROUP_MAPPINGS_SUPPORTED && isOIDC
-                    ? [
-                        {
-                          key: "mappings",
-                          label: t("mappings"),
-                          content: <Mappings groupId={group.groupId} />,
-                        },
-                      ]
-                    : []),
-                ]}
-                selectedTabKey={tab}
-                path={`../${id}`}
-              />
-            </Section>
-          )}
+        {group && (
+          <Section>
+            <Tabs
+              tabs={[
+                {
+                  key: "users",
+                  label: t("users"),
+                  content: <Members groupId={group.groupId} />,
+                },
+
+                ...(IS_GROUP_ROLES_SUPPORTED
+                  ? [
+                      {
+                        key: "roles",
+                        label: t("roles"),
+                        content: <Roles groupId={group.groupId} />,
+                      },
+                    ]
+                  : []),
+                ...(IS_GROUP_MAPPINGS_SUPPORTED && isOIDC
+                  ? [
+                      {
+                        key: "mappings",
+                        label: t("mappings"),
+                        content: <Mappings groupId={group.groupId} />,
+                      },
+                    ]
+                  : []),
+              ]}
+              selectedTabKey={tab}
+              path={`../${id}`}
+            />
+          </Section>
+        )}
         {editModal}
         {deleteModal}
       </>
