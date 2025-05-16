@@ -23,37 +23,38 @@ import java.util.function.Supplier;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 
 public interface ExceptionHelper {
-  static <R> R withPersistenceException(Supplier<R> supplier) throws PersistenceException {
+  static <R> R withPersistenceException(final Supplier<R> supplier) throws PersistenceException {
     try {
       return supplier.get();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new PersistenceException(e.getMessage(), e.getCause());
     }
   }
 
-  static <R> R withPersistenceException(Supplier<R> supplier, String errorMessage)
+  static <R> R withPersistenceException(
+      final Supplier<R> supplier, final Supplier<String> errorMessageSupplier)
       throws PersistenceException {
     try {
       return supplier.get();
-    } catch (Exception e) {
-      throw new PersistenceException(errorMessage, e);
+    } catch (final Exception e) {
+      throw new PersistenceException(errorMessageSupplier.get(), e);
     }
   }
 
-  static <R> R withOperateRuntimeException(ExceptionSupplier<R> supplier) {
+  static <R> R withOperateRuntimeException(final ExceptionSupplier<R> supplier) {
     try {
       return supplier.get();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OperateRuntimeException(e.getMessage(), e.getCause());
     }
   }
 
-  public static <R> R withIOException(ExceptionSupplier<R> supplier) throws IOException {
+  public static <R> R withIOException(final ExceptionSupplier<R> supplier) throws IOException {
     try {
       return supplier.get();
-    } catch (OpenSearchException e) {
+    } catch (final OpenSearchException e) {
       throw e;
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new IOException(e.getMessage(), e.getCause());
     }
   }

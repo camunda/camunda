@@ -79,9 +79,10 @@ public class OpensearchBatchRequest implements BatchRequest {
                     op.index(
                         idx ->
                             idx.index(index).id(entity.getId()).document(entity).routing(routing))),
-        String.format(
-            "Error preparing the query to index [%s] of entity type [%s] with routing",
-            entity.getClass().getName(), entity));
+        () ->
+            String.format(
+                "Error preparing the query to index [%s] of entity type [%s] with routing",
+                entity, entity.getClass().getName()));
 
     return this;
   }
@@ -106,9 +107,10 @@ public class OpensearchBatchRequest implements BatchRequest {
                 op ->
                     op.update(
                         upd -> upd.index(index).id(id).upsert(entity).document(updateFields))),
-        String.format(
-            "Error preparing the query to upsert [%s] of entity type [%s]",
-            entity.getClass().getName(), entity));
+        () ->
+            String.format(
+                "Error preparing the query to upsert [%s] of entity type [%s]",
+                entity, entity.getClass().getName()));
 
     return this;
   }
@@ -140,9 +142,10 @@ public class OpensearchBatchRequest implements BatchRequest {
                                 .upsert(entity)
                                 .document(updateFields)
                                 .routing(routing))),
-        String.format(
-            "Error preparing the query to upsert [%s] of entity type [%s] with routing",
-            entity.getClass().getName(), entity));
+        () ->
+            String.format(
+                "Error preparing the query to upsert [%s] of entity type [%s] with routing",
+                entity, entity.getClass().getName()));
 
     return this;
   }
@@ -173,12 +176,10 @@ public class OpensearchBatchRequest implements BatchRequest {
                                 .upsert(entity)
                                 .script(script(script, parameters))
                                 .retryOnConflict(UPDATE_RETRY_COUNT))),
-        String.format(
+        () ->
             String.format(
                 "Error preparing the query to upsert [%s] of entity type [%s] with script and routing",
-                entity.getClass().getName(), entity),
-            index,
-            id));
+                entity, entity.getClass().getName()));
     return this;
   }
 
@@ -211,12 +212,10 @@ public class OpensearchBatchRequest implements BatchRequest {
                                 .script(script(script, parameters))
                                 .routing(routing)
                                 .retryOnConflict(UPDATE_RETRY_COUNT))),
-        String.format(
+        () ->
             String.format(
                 "Error preparing the query to upsert [%s] of entity type [%s] with script and routing",
-                entity.getClass().getName(), entity),
-            index,
-            id));
+                entity, entity.getClass().getName()));
     return this;
   }
 
@@ -237,8 +236,9 @@ public class OpensearchBatchRequest implements BatchRequest {
                                 .id(id)
                                 .document(updateFields)
                                 .retryOnConflict(UPDATE_RETRY_COUNT))),
-        String.format(
-            "Error preparing the query to update index [%s] document with id [%s]", index, id));
+        () ->
+            String.format(
+                "Error preparing the query to update index [%s] document with id [%s]", index, id));
 
     return this;
   }
@@ -256,8 +256,9 @@ public class OpensearchBatchRequest implements BatchRequest {
                                 .id(id)
                                 .document(entity)
                                 .retryOnConflict(UPDATE_RETRY_COUNT))),
-        String.format(
-            "Error preparing the query to update index [%s] document with id [%s]", index, id));
+        () ->
+            String.format(
+                "Error preparing the query to update index [%s] document with id [%s]", index, id));
 
     return this;
   }
@@ -281,8 +282,9 @@ public class OpensearchBatchRequest implements BatchRequest {
                                 .id(id)
                                 .script(script(script, parameters))
                                 .retryOnConflict(UPDATE_RETRY_COUNT))),
-        String.format(
-            "Error preparing the query to update index [%s] document with id [%s]", index, id));
+        () ->
+            String.format(
+                "Error preparing the query to update index [%s] document with id [%s]", index, id));
 
     return this;
   }
