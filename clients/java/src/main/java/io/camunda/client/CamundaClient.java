@@ -1436,7 +1436,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newUsersByRoleSearchRequest("role-id")
+   *   .newUsersByRoleSearchRequest("roleId")
    *   .filter((f) -> f.username("john"))
    *   .sort((s) -> s.username().asc())
    *   .page((p) -> p.limit(100))

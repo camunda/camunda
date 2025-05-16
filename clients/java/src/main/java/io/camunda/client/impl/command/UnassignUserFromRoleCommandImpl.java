@@ -56,7 +56,8 @@ public class UnassignUserFromRoleCommandImpl implements UnassignUserFromRoleComm
     ArgumentUtil.ensureNotNullNorEmpty("roleId", roleId);
     ArgumentUtil.ensureNotNullNorEmpty("username", username);
     final HttpCamundaFuture<UnassignUserFromRoleResponse> result = new HttpCamundaFuture<>();
-    httpClient.delete("/roles/" + roleId + "/users/" + username, httpRequestConfig.build(), result);
+    httpClient.delete(
+        String.format("/roles/%s/users/%s", roleId, username), httpRequestConfig.build(), result);
     return result;
   }
 }
