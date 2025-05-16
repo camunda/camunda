@@ -47,6 +47,18 @@ const runningOrderProcessInstance: InstanceMock = {
       activityId: 'SequenceFlow_0j6tsnn',
     },
   ],
+  sequenceFlowsV2: {
+    items: [
+      {
+        processInstanceKey: '225179981395430',
+        elementId: 'SequenceFlow_0j6tsnn',
+        tenantId: '',
+        processDefinitionId: '',
+        processDefinitionKey: '',
+        sequenceFlowId: '',
+      },
+    ],
+  },
   flowNodeInstances: {
     '225179981395430': {
       children: [

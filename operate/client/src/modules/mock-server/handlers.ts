@@ -7,61 +7,13 @@
  */
 
 import {
-  GetProcessSequenceFlowsResponseBody,
   GetProcessInstanceCallHierarchyResponseBody,
   ProcessInstance,
 } from '@vzeta/camunda-api-zod-schemas/operate';
 import {ProcessInstanceState} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
-import {RequestHandler, RestRequest, rest} from 'msw';
+import {RequestHandler, rest} from 'msw';
 
 const mockEndpoints = [
-  rest.get(
-    '/v2/process-instances/:processInstanceKey/sequence-flows',
-    async (req: RestRequest<GetProcessSequenceFlowsResponseBody>, res, ctx) => {
-      const mockResponse: GetProcessSequenceFlowsResponseBody = {
-        items: [
-          {
-            processInstanceKey: '2251799814752788',
-            sequenceFlowKey: 'Flow_0z4mequ',
-            processDefinitionKey: 2251799814751761,
-            processDefinitionId: '2251799814751761',
-          },
-          {
-            processInstanceKey: '2251799814752788',
-            sequenceFlowKey: 'SequenceFlow_0oxsuty',
-            processDefinitionKey: 2251799814751761,
-            processDefinitionId: '2251799814751761',
-          },
-          {
-            processInstanceKey: '2251799814752788',
-            sequenceFlowKey: 'SequenceFlow_12gxvr0',
-            processDefinitionKey: 2251799814751761,
-            processDefinitionId: '2251799814751761',
-          },
-          {
-            processInstanceKey: '2251799814752788',
-            sequenceFlowKey: 'SequenceFlow_1gvaaro',
-            processDefinitionKey: 2251799814751761,
-            processDefinitionId: '2251799814751761',
-          },
-          {
-            processInstanceKey: '2251799814752788',
-            sequenceFlowKey: 'SequenceFlow_1j24jks',
-            processDefinitionKey: 2251799814751761,
-            processDefinitionId: '2251799814751761',
-          },
-          {
-            processInstanceKey: '2251799814752788',
-            sequenceFlowKey: 'SequenceFlow_1ti40d3',
-            processDefinitionKey: 2251799814751761,
-            processDefinitionId: '2251799814751761',
-          },
-        ],
-      };
-
-      return res(ctx.json(mockResponse));
-    },
-  ),
   rest.get(
     '/v2/process-instances/:processInstanceKey',
     async (req, res, ctx) => {

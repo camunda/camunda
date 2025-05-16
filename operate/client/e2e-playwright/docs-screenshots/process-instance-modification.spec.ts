@@ -33,6 +33,7 @@ test.describe('process instance modification', () => {
         flowNodeInstances: eventBasedGatewayProcessInstance.flowNodeInstances,
         statisticsV2: eventBasedGatewayProcessInstance.statisticsV2,
         sequenceFlows: eventBasedGatewayProcessInstance.sequenceFlows,
+        sequenceFlowsV2: eventBasedGatewayProcessInstance.sequenceFlowsV2,
         variables: [],
         incidents: eventBasedGatewayProcessInstance.incidents,
         xml: eventBasedGatewayProcessInstance.xml,
@@ -134,6 +135,7 @@ test.describe('process instance modification', () => {
         flowNodeInstances: eventBasedGatewayProcessInstance.flowNodeInstances,
         statisticsV2: eventBasedGatewayProcessInstance.statisticsV2,
         sequenceFlows: eventBasedGatewayProcessInstance.sequenceFlows,
+        sequenceFlowsV2: eventBasedGatewayProcessInstance.sequenceFlowsV2,
         variables: [],
         incidents: eventBasedGatewayProcessInstance.incidents,
         xml: eventBasedGatewayProcessInstance.xml,
@@ -251,6 +253,7 @@ test.describe('process instance modification', () => {
         flowNodeInstances: eventBasedGatewayProcessInstance.flowNodeInstances,
         statisticsV2: eventBasedGatewayProcessInstance.statisticsV2,
         sequenceFlows: eventBasedGatewayProcessInstance.sequenceFlows,
+        sequenceFlowsV2: eventBasedGatewayProcessInstance.sequenceFlowsV2,
         variables: [
           {
             id: '2251799813888430-test',
@@ -392,6 +395,7 @@ test.describe('process instance modification', () => {
         flowNodeInstances: eventBasedGatewayProcessInstance.flowNodeInstances,
         statisticsV2: eventBasedGatewayProcessInstance.statisticsV2,
         sequenceFlows: eventBasedGatewayProcessInstance.sequenceFlows,
+        sequenceFlowsV2: eventBasedGatewayProcessInstance.sequenceFlowsV2,
         variables: [],
         incidents: eventBasedGatewayProcessInstance.incidents,
         xml: eventBasedGatewayProcessInstance.xml,

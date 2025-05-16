@@ -271,6 +271,34 @@ const orderProcessInstance: {
         activityId: 'Flow_1wtuk91',
       },
     ],
+    sequenceFlowsV2: {
+      items: [
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_09wy0mk',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_0biglsj',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_1wtuk91',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+      ],
+    },
     variables: [
       {
         id: '2251799813725328-orderId',
@@ -481,6 +509,42 @@ const orderProcessInstance: {
         activityId: 'Flow_1wtuk91',
       },
     ],
+    sequenceFlowsV2: {
+      items: [
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_09wy0mk',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_0biglsj',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_1fosyfk',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_1wtuk91',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+      ],
+    },
     variables: [
       {
         id: '2251799813725328-orderId',
@@ -695,6 +759,58 @@ const orderProcessInstance: {
         activityId: 'Flow_1wtuk91',
       },
     ],
+    sequenceFlowsV2: {
+      items: [
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_09wy0mk',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_0biglsj',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_0vv7a45',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_0yovrqa',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_1fosyfk',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+        {
+          processInstanceKey: '2251799813725328',
+          elementId: 'Flow_1wtuk91',
+          tenantId: '',
+          processDefinitionId: '',
+          processDefinitionKey: '',
+          sequenceFlowId: '',
+        },
+      ],
+    },
     variables: [
       {
         id: '2251799813725328-orderId',

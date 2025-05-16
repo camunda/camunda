@@ -288,101 +288,99 @@ const TopPanel: React.FC = observer(() => {
         )}
       <DiagramPanel>
         <DiagramShell status={getStatus()}>
-          {processDefinitionData?.xml !== undefined &&
-            businessObjects &&
-            processedSequenceFlows && (
-              <Diagram
-                xml={processDefinitionData?.xml}
-                selectableFlowNodes={
-                  isModificationModeEnabled
-                    ? modifiableFlowNodes
-                    : selectableFlowNodes
-                }
-                selectedFlowNodeIds={
-                  flowNodeSelection?.flowNodeId
-                    ? [flowNodeSelection.flowNodeId]
-                    : undefined
-                }
-                onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
-                  if (modificationsStore.state.status === 'moving-token') {
-                    flowNodeSelectionStore.clearSelection();
-                    finishMovingToken(
-                      affectedTokenCount,
-                      visibleAffectedTokenCount,
-                      businessObjects,
+          {processDefinitionData?.xml !== undefined && businessObjects && (
+            <Diagram
+              xml={processDefinitionData?.xml}
+              selectableFlowNodes={
+                isModificationModeEnabled
+                  ? modifiableFlowNodes
+                  : selectableFlowNodes
+              }
+              selectedFlowNodeIds={
+                flowNodeSelection?.flowNodeId
+                  ? [flowNodeSelection.flowNodeId]
+                  : undefined
+              }
+              onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
+                if (modificationsStore.state.status === 'moving-token') {
+                  flowNodeSelectionStore.clearSelection();
+                  finishMovingToken(
+                    affectedTokenCount,
+                    visibleAffectedTokenCount,
+                    businessObjects,
+                    flowNodeId,
+                  );
+                } else {
+                  if (modificationsStore.state.status !== 'adding-token') {
+                    flowNodeSelectionStore.selectFlowNode({
                       flowNodeId,
-                    );
-                  } else {
-                    if (modificationsStore.state.status !== 'adding-token') {
-                      flowNodeSelectionStore.selectFlowNode({
-                        flowNodeId,
-                        isMultiInstance,
-                      });
-                    }
+                      isMultiInstance,
+                    });
                   }
-                }}
-                overlaysData={
-                  isModificationModeEnabled
-                    ? [
-                        ...(flowNodeStateOverlays ?? []),
-                        ...modificationBadgesPerFlowNode.get(),
-                      ]
-                    : flowNodeStateOverlays
                 }
-                selectedFlowNodeOverlay={
-                  isModificationModeEnabled ? (
-                    <ModificationDropdown />
-                  ) : (
-                    !isIncidentBarOpen && <MetadataPopover />
-                  )
-                }
-                highlightedSequenceFlows={[
-                  ...processedSequenceFlows,
-                  ...compensationAssociationIds,
-                ]}
-                highlightedFlowNodeIds={executedFlowNodes?.map(
-                  ({elementId}) => elementId,
-                )}
-              >
-                {stateOverlays.map((overlay) => {
-                  const payload = overlay.payload as {
-                    flowNodeState: FlowNodeState | 'completedEndEvents';
-                    count: number;
-                  };
+              }}
+              overlaysData={
+                isModificationModeEnabled
+                  ? [
+                      ...(flowNodeStateOverlays ?? []),
+                      ...modificationBadgesPerFlowNode.get(),
+                    ]
+                  : flowNodeStateOverlays
+              }
+              selectedFlowNodeOverlay={
+                isModificationModeEnabled ? (
+                  <ModificationDropdown />
+                ) : (
+                  !isIncidentBarOpen && <MetadataPopover />
+                )
+              }
+              highlightedSequenceFlows={[
+                ...(processedSequenceFlows || []),
+                ...compensationAssociationIds,
+              ]}
+              highlightedFlowNodeIds={executedFlowNodes?.map(
+                ({elementId}) => elementId,
+              )}
+            >
+              {stateOverlays.map((overlay) => {
+                const payload = overlay.payload as {
+                  flowNodeState: FlowNodeState | 'completedEndEvents';
+                  count: number;
+                };
 
-                  return (
-                    <StateOverlay
-                      key={`${overlay.flowNodeId}-${payload.flowNodeState}`}
-                      state={payload.flowNodeState}
-                      count={payload.count}
-                      container={overlay.container}
-                      isFaded={hasPendingCancelOrMoveModification({
-                        flowNodeId: overlay.flowNodeId,
-                        flowNodeInstanceKey: undefined,
-                        modificationsByFlowNode,
-                      })}
-                      title={
-                        payload.flowNodeState === 'completed'
-                          ? 'Execution Count'
-                          : undefined
-                      }
-                    />
-                  );
-                })}
-                {modificationBadgeOverlays?.map((overlay) => {
-                  const payload = overlay.payload as ModificationBadgePayload;
+                return (
+                  <StateOverlay
+                    key={`${overlay.flowNodeId}-${payload.flowNodeState}`}
+                    state={payload.flowNodeState}
+                    count={payload.count}
+                    container={overlay.container}
+                    isFaded={hasPendingCancelOrMoveModification({
+                      flowNodeId: overlay.flowNodeId,
+                      flowNodeInstanceKey: undefined,
+                      modificationsByFlowNode,
+                    })}
+                    title={
+                      payload.flowNodeState === 'completed'
+                        ? 'Execution Count'
+                        : undefined
+                    }
+                  />
+                );
+              })}
+              {modificationBadgeOverlays?.map((overlay) => {
+                const payload = overlay.payload as ModificationBadgePayload;
 
-                  return (
-                    <ModificationBadgeOverlay
-                      key={overlay.flowNodeId}
-                      container={overlay.container}
-                      newTokenCount={payload.newTokenCount}
-                      cancelledTokenCount={payload.cancelledTokenCount}
-                    />
-                  );
-                })}
-              </Diagram>
-            )}
+                return (
+                  <ModificationBadgeOverlay
+                    key={overlay.flowNodeId}
+                    container={overlay.container}
+                    newTokenCount={payload.newTokenCount}
+                    cancelledTokenCount={payload.cancelledTokenCount}
+                  />
+                );
+              })}
+            </Diagram>
+          )}
         </DiagramShell>
         {processInstance?.hasIncident && (
           <IncidentsWrapper setIsInTransition={setIsInTransition} />
