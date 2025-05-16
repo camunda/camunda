@@ -477,6 +477,21 @@ class RoleAuthorizationIT {
         .hasMessageContaining("403: 'Forbidden'");
   }
 
+  @Test
+  void assignRoleToClientShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newAssignRoleToClientCommand()
+                    .roleId(Strings.newRandomValidIdentityId())
+                    .clientId(Strings.newRandomValidIdentityId())
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
+
   private static void createRole(
       final CamundaClient adminClient, final String roleId, final String roleName) {
     createRole(adminClient, roleId, roleName, null);
