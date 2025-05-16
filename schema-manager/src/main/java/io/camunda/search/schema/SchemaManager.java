@@ -25,6 +25,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.agrona.LangUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,29 +96,17 @@ public class SchemaManager {
   }
 
   private void updateSchemaSettings() {
-    final var existingTemplateNames =
-        searchEngineClient
-            .getMappings(config.connect().getIndexPrefix() + "*", MappingSource.INDEX_TEMPLATE)
-            .keySet();
+    indexTemplateDescriptors.forEach(
+        desc -> {
+          searchEngineClient.updateIndexTemplateSettings(
+              desc, getIndexSettingsFromConfig(desc.getIndexName()));
+        });
 
-    final var existingIndexNames = existingIndexNames();
+    getAllIndexDescriptors().forEach(this::updateIndexReplicaCount);
+  }
 
-    indexTemplateDescriptors.stream()
-        .filter(desc -> existingTemplateNames.contains(desc.getTemplateName()))
-        .forEach(
-            desc -> {
-              searchEngineClient.updateIndexTemplateSettings(
-                  desc, getIndexSettingsFromConfig(desc.getIndexName()));
-            });
-
-    // update matching index for the index template descriptor
-    indexTemplateDescriptors.stream()
-        .filter(desc -> existingIndexNames.contains(desc.getFullQualifiedName()))
-        .forEach(this::updateIndexReplicaCount);
-
-    indexDescriptors.stream()
-        .filter(desc -> existingIndexNames.contains(desc.getFullQualifiedName()))
-        .forEach(this::updateIndexReplicaCount);
+  private Collection<IndexDescriptor> getAllIndexDescriptors() {
+    return Stream.concat(indexDescriptors.stream(), indexTemplateDescriptors.stream()).toList();
   }
 
   private void updateIndexReplicaCount(final IndexDescriptor indexDescriptor) {

@@ -71,7 +71,8 @@ public class SchemaManagerIT {
             CONFIG_PREFIX + "-template_name",
             "/mappings.json");
 
-    index = mockIndex(CONFIG_PREFIX + "-qualified_name", "alias", "index_name", "/mappings.json");
+    index =
+        mockIndex(CONFIG_PREFIX + "-index-qualified_name", "alias", "index_name", "/mappings.json");
 
     when(indexTemplate.getFullQualifiedName()).thenReturn(CONFIG_PREFIX + "-qualified_name");
   }
@@ -726,6 +727,93 @@ public class SchemaManagerIT {
                 retrievedIndexTemplate.at("/index_template/template/mappings"),
                 "/mappings-added-property.json"))
         .isTrue();
+  }
+
+  @TestTemplate
+  void shouldUpdateTemplateIndicesWithNewMapping(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws IOException {
+    // given
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config),
+            Set.of(),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    schemaManager.startup();
+
+    final String runtimeIndexName = indexTemplate.getFullQualifiedName();
+    final var initialRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
+    assertThat(mappingsMatch(initialRuntimeIndex.get("mappings"), "/mappings.json")).isTrue();
+
+    final String archiveIndexName = indexTemplate.getIndexPattern().replace("*", "-archived");
+    searchClientAdapter.index("123", archiveIndexName, Map.of("hello", "foo", "world", "bar"));
+    final var initialArchiveIndex = searchClientAdapter.getIndexAsNode(archiveIndexName);
+    assertThat(mappingsMatch(initialArchiveIndex.get("mappings"), "/mappings.json")).isTrue();
+
+    // when
+    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+    schemaManager.startup();
+
+    // then
+    final var updatedRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
+    assertThat(mappingsMatch(updatedRuntimeIndex.get("mappings"), "/mappings-added-property.json"))
+        .isTrue();
+
+    final var updatedArchiveIndex = searchClientAdapter.getIndexAsNode(archiveIndexName);
+    assertThat(mappingsMatch(updatedArchiveIndex.get("mappings"), "/mappings-added-property.json"))
+        .isTrue();
+  }
+
+  @TestTemplate
+  void shouldUpdateTemplateIndicesWithNewReplicaCount(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws IOException {
+    // given
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config),
+            Set.of(),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    schemaManager.startup();
+
+    final var replicaSettingPath = "/settings/index/number_of_replicas";
+    final var shardsSettingPath = "/settings/index/number_of_shards";
+
+    final String runtimeIndexName = indexTemplate.getFullQualifiedName();
+    final var initialRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
+
+    assertThat(initialRuntimeIndex.at(replicaSettingPath).asInt()).isEqualTo(0);
+    assertThat(initialRuntimeIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
+
+    final String archiveIndexName = indexTemplate.getIndexPattern().replace("*", "-archived");
+    searchClientAdapter.index("123", archiveIndexName, Map.of("hello", "foo", "world", "bar"));
+
+    final var initialArchiveIndex = searchClientAdapter.getIndexAsNode(archiveIndexName);
+    assertThat(initialArchiveIndex.at(replicaSettingPath).asInt()).isEqualTo(0);
+    assertThat(initialArchiveIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
+
+    // when
+    config.index().setNumberOfReplicas(5);
+    config.index().setNumberOfShards(5);
+
+    schemaManager.startup();
+
+    // then
+    final var updatedRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
+
+    assertThat(updatedRuntimeIndex.at(replicaSettingPath).asInt()).isEqualTo(5);
+    assertThat(updatedRuntimeIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
+
+    final var updatedArchiveIndex = searchClientAdapter.getIndexAsNode(archiveIndexName);
+
+    assertThat(updatedArchiveIndex.at(replicaSettingPath).asInt()).isEqualTo(5);
+    assertThat(updatedArchiveIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
   }
 
   @TestTemplate

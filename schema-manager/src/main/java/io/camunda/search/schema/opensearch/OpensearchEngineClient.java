@@ -199,7 +199,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
       final var errMsg =
           String.format(
               "settings PUT failed for the following indices [%s]",
-              utils.listIndices(indexDescriptors));
+              utils.listIndicesByAlias(indexDescriptors));
       LOG.error(errMsg, e);
       throw new SearchEngineException(errMsg, e);
     }
@@ -387,7 +387,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
                 deserializeJson(
                     org.opensearch.client.opensearch.indices.IndexSettings._DESERIALIZER, inp));
     return new PutIndicesSettingsRequest.Builder()
-        .index(utils.listIndices(indexDescriptors))
+        .index(utils.listIndicesByAlias(indexDescriptors))
         .settings(settings)
         .build();
   }
@@ -460,7 +460,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
             .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 
     return new PutMappingRequest.Builder()
-        .index(indexDescriptor.getFullQualifiedName())
+        .index(indexDescriptor.getAlias())
         .properties(opensearchProperties)
         .build();
   }
