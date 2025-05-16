@@ -19,6 +19,7 @@ import { Mapping } from "src/utility/api/mappings";
 export const ROLES_ENDPOINT = "/roles";
 
 export type Role = {
+  roleId: string;
   roleKey: string;
   name: string;
   description: string;
