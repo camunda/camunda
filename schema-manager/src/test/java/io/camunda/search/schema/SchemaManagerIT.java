@@ -750,7 +750,7 @@ public class SchemaManagerIT {
 
     final String archiveIndexName = indexTemplate.getIndexPattern().replace("*", "-archived");
     searchClientAdapter.index("123", archiveIndexName, Map.of("hello", "foo", "world", "bar"));
-    final var initialArchiveIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
+    final var initialArchiveIndex = searchClientAdapter.getIndexAsNode(archiveIndexName);
     assertThat(mappingsMatch(initialArchiveIndex.get("mappings"), "/mappings.json")).isTrue();
 
     // when
