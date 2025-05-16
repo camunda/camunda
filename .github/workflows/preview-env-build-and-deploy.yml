@@ -58,8 +58,8 @@ jobs:
         env:
           HEAD_REF: ${{ github.head_ref }}
         run: |
-          GIT_COMMIT_HASH=$(git rev-parse $HEAD_REF)
-          echo "VERSION=pr-$GIT_COMMIT_HASH" >> $GITHUB_ENV
+          GIT_COMMIT_HASH=$(git rev-parse "$HEAD_REF")
+          echo "VERSION=pr-$GIT_COMMIT_HASH" >> "$GITHUB_ENV"
 
       - uses: ./.github/actions/build-platform-docker
         with:
@@ -170,7 +170,7 @@ jobs:
             --name ${app_name} \
             --revision ${revision} \
             --helm-set git.branch=${revision} \
-            --upsert" >> $GITHUB_ENV
+            --upsert" >> "$GITHUB_ENV"
         env:
           docker_tag: "pr-${{ github.event.pull_request.head.sha }}"
           revision: ${{ env.BRANCH_NAME }}

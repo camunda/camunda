@@ -120,30 +120,57 @@ jobs:
         run: |
           set -x
 
-          export TARGET=$([[ ! -z '${{ inputs.target }}' ]] && echo '${{ inputs.target }}' || echo "${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}")
-          export VERSION=$([[ ! -z '${{ inputs.version }}' ]] && echo '${{ inputs.version }}' || ./mvnw -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec 2>/dev/null)
-          export VERSION_TAG=$([[ "${VERSION}" == *-SNAPSHOT ]] && echo 'development' || echo "${VERSION}")
-          export LIFECYCLE=$([[ "${VERSION}" == *-SNAPSHOT ]] && echo 'development' || echo 'production')
+          if [ -n "${{ inputs.target }}" ]; then
+             TARGET="${{ inputs.target }}"
+          else
+            TARGET="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+          fi
+          export TARGET
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION=$(./mvnw -q -Dexec.executable=echo -Dexec.args="${project.version}" --non-recursive exec:exec 2>/dev/null)
+          fi
+          export VERSION
+          if [[ "${VERSION}" == *-SNAPSHOT ]]; then
+            VERSION_TAG="development"
+            LIFECYCLE="development"
+          else
+            VERSION_TAG="${VERSION}"
+            LIFECYCLE="production"
+          fi
+          export VERSION_TAG
+          export LIFECYCLE
 
           # use inputs.dockerImage if present; otherwise if building, use the output of the build step; otherwise infer from version and default repository camunda/zeebe
-          export DOCKER_IMAGE=$([[ ! -z '${{ inputs.dockerImage }}' ]] && echo '${{ inputs.dockerImage }}' || ([[ '${{ inputs.build }}' == 'true' ]] && echo '${{ steps.build-zeebe-docker.outputs.image }}' || echo "camunda/zeebe:${VERSION}"))
+          if [ -n "${{ inputs.dockerImage }}" ]; then
+            DOCKER_IMAGE="${{ inputs.dockerImage }}"
+          elif [ "${{ inputs.build }}" == "true" ]; then
+            DOCKER_IMAGE="${{ steps.build-zeebe-docker.outputs.image }}"
+          else
+            DOCKER_IMAGE="camunda/zeebe:${VERSION}"
+          fi
+          export DOCKER_IMAGE
 
           if [[ '${{ inputs.useMinorVersion }}' == 'true' ]]; then
-            export TARGET="$(echo $VERSION | sed -E -e 's/\.[^.]*$//')"
+            TARGET="$(echo "$VERSION" | sed -E -e 's/\.[^.]*$//')"
+            export TARGET
           fi
 
-          echo "SNYK_ARGS=" \
-            "--show-vulnerable-paths=all" \
-            "--severity-threshold=high" \
-            "--org=team-zeebe" \
-            "--project-lifecycle=${LIFECYCLE}" \
-            "--project-tags=version=${VERSION_TAG}" \
-            "--target-reference=${TARGET}" >> $GITHUB_ENV
-          echo "TARGET=${TARGET}" >> $GITHUB_ENV
-          echo "SNYK_COMMAND=${{ (inputs.monitor && 'monitor') || 'test' }}" >> $GITHUB_ENV
-          echo "SARIF=${{ (inputs.monitor && 'false') || 'true' }}" >> $GITHUB_ENV
-          echo "DOCKER_IMAGE=${DOCKER_IMAGE}" >> $GITHUB_ENV
-          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          {
+            echo "SNYK_ARGS=" \
+              "--show-vulnerable-paths=all" \
+              "--severity-threshold=high" \
+              "--org=team-zeebe" \
+              "--project-lifecycle=${LIFECYCLE}" \
+              "--project-tags=version=${VERSION_TAG}" \
+              "--target-reference=${TARGET}"
+            echo "TARGET=${TARGET}"
+            echo "SNYK_COMMAND=${{ (inputs.monitor && 'monitor') || 'test' }}"
+            echo "SARIF=${{ (inputs.monitor && 'false') || 'true' }}"
+            echo "DOCKER_IMAGE=${DOCKER_IMAGE}"
+            echo "VERSION=${VERSION}"
+          } >> "$GITHUB_ENV"
       - name: Run Snyk
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
@@ -183,14 +210,15 @@ jobs:
           for project in "${JAVA_PROJECTS[@]}"; do
             PROJECT_NAME="zeebe(${TARGET}):${project}/pom.xml"
             ensureExists "${project}/pom.xml"
-            snyk "${SNYK_COMMAND}" --file=${project}/pom.xml "'--project-name=${PROJECT_NAME}'" ${SNYK_ARGS} "$(output "${SARIF}" "${project/\//-}")" || exitCode=1
+            # shellcheck disable=SC2153
+            snyk "${SNYK_COMMAND}" --file="${project}/pom.xml" "'--project-name=${PROJECT_NAME}'" "${SNYK_ARGS}" "$(output "${SARIF}" "${project/\//-}")" || exitCode=1
           done
 
           # The `container` command does not yet support setting a target reference, as this is a beta
           # feature at the moment. It's added here anyway for now, and hopefully support will come soon.
           PROJECT_NAME="zeebe(${TARGET}):Dockerfile"
           ensureExists "Dockerfile"
-          snyk container "${SNYK_COMMAND}" "${DOCKER_IMAGE}" --file=Dockerfile "'--project-name=${PROJECT_NAME}'" ${SNYK_ARGS} "$(output "${SARIF}" 'docker')" || exitCode=1
+          snyk container "${SNYK_COMMAND}" "${DOCKER_IMAGE}" --file=Dockerfile "'--project-name=${PROJECT_NAME}'" "${SNYK_ARGS}" "$(output "${SARIF}" 'docker')" || exitCode=1
 
           # Only fail if we entirely failed to parse the projects
           if [[ $exitCode -gt 1 ]]; then
@@ -201,8 +229,9 @@ jobs:
       - name: Code Scanning summary
         if: ${{ ! inputs.monitor }}
         run: |
-          export PR_NUMBER=$(echo $GITHUB_REF | awk 'BEGIN { FS = "/" } ; { print $3 }')
-          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          PR_NUMBER=$(echo "$GITHUB_REF" | awk 'BEGIN { FS = "/" } ; { print $3 }')
+          export PR_NUMBER
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
             ## Result Links
             - [Snyk projects](https://app.snyk.io/org/team-zeebe/projects)
           EOF
