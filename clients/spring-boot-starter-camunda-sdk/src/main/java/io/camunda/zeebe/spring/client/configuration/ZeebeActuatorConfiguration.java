@@ -18,6 +18,7 @@ package io.camunda.zeebe.spring.client.configuration;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.spring.client.actuator.MicrometerMetricsRecorder;
 import io.camunda.zeebe.spring.client.actuator.ZeebeClientHealthIndicator;
+import io.camunda.zeebe.spring.client.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.camunda.zeebe.spring.client.metrics.MetricsRecorder;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration;
@@ -30,6 +31,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 
 @AutoConfigureBefore(MetricsDefaultConfiguration.class)
+@ConditionalOnCamundaClientEnabled
 @ConditionalOnClass({
   EndpointAutoConfiguration.class,
   MeterRegistry.class
