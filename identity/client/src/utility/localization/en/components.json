@@ -39,5 +39,13 @@
   "name": "Name",
   "email": "Email",
   "description": "Description",
-  "Tabs": "Tabs"
+  "Tabs": "Tabs",
+  "clientId": "Client ID",
+  "assignClient": "Assign client",
+  "assigningClient": "Assigning client",
+  "removeClient": "Remove client",
+  "removingClient": "Removing client",
+  "enterClientId": "Enter client ID",
+  "clientsCouldNotLoad": "Clients could not load",
+  "unableToLoadClients": "Unable to load clients"
 }
