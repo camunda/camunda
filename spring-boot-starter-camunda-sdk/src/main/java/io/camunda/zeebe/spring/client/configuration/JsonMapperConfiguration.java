@@ -13,7 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+<<<<<<< HEAD:spring-boot-starter-camunda-sdk/src/main/java/io/camunda/zeebe/spring/client/configuration/JsonMapperConfiguration.java
 package io.camunda.zeebe.spring.client.configuration;
+=======
+package io.camunda.process.test.impl.configuration;
+
+import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT;
+import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
+>>>>>>> e7c26b7d (refactor: move default objectMapper to test setup):testing/camunda-process-test-spring/src/main/java/io/camunda/process/test/impl/configuration/CamundaProcessTestDefaultConfiguration.java
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.common.json.SdkObjectMapper;
@@ -44,10 +51,17 @@ public class JsonMapperConfiguration {
 
   @Bean(name = "commonJsonMapper")
   @ConditionalOnMissingBean
+<<<<<<< HEAD:spring-boot-starter-camunda-sdk/src/main/java/io/camunda/zeebe/spring/client/configuration/JsonMapperConfiguration.java
   public io.camunda.common.json.JsonMapper commonJsonMapper() {
     if (objectMapper == null) {
       return new SdkObjectMapper();
     }
     return new SdkObjectMapper(objectMapper.copy());
+=======
+  public ObjectMapper objectMapper() {
+    return new ObjectMapper()
+        .configure(FAIL_ON_UNKNOWN_PROPERTIES, false)
+        .configure(ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true);
+>>>>>>> e7c26b7d (refactor: move default objectMapper to test setup):testing/camunda-process-test-spring/src/main/java/io/camunda/process/test/impl/configuration/CamundaProcessTestDefaultConfiguration.java
   }
 }

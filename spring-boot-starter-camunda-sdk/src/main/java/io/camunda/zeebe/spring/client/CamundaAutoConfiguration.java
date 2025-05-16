@@ -15,11 +15,17 @@
  */
 package io.camunda.zeebe.spring.client;
 
+<<<<<<< HEAD:spring-boot-starter-camunda-sdk/src/main/java/io/camunda/zeebe/spring/client/CamundaAutoConfiguration.java
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.spring.client.configuration.JsonMapperConfiguration;
 import io.camunda.zeebe.spring.client.configuration.MetricsDefaultConfiguration;
 import io.camunda.zeebe.spring.client.configuration.ZeebeActuatorConfiguration;
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientAllAutoConfiguration;
+=======
+import io.camunda.client.CamundaClient;
+import io.camunda.spring.client.event.CamundaLifecycleEventProducer;
+import io.camunda.spring.client.testsupport.CamundaSpringProcessTestContext;
+>>>>>>> e7c26b7d (refactor: move default objectMapper to test setup):clients/spring-boot-starter-camunda-sdk/src/main/java/io/camunda/spring/client/configuration/CamundaAutoConfiguration.java
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientProdAutoConfiguration;
 import io.camunda.zeebe.spring.client.event.ZeebeLifecycleEventProducer;
 import io.camunda.zeebe.spring.client.testsupport.SpringZeebeTestContext;
