@@ -92,9 +92,13 @@ import {ReactComponent as FlowNodeEventCompensationIntermediateThrow} from 'modu
 import {ReactComponent as FlowNodeEventCompensationBoundary} from 'modules/components/Icon/flow-node-compensation-boundary-event.svg';
 
 const getSVGComponent = (
-  businessObject: BusinessObject,
+  businessObject: BusinessObject | undefined,
   isMultiInstanceBody: boolean,
 ) => {
+  if (businessObject === undefined) {
+    return FlowNodeTask;
+  }
+
   if (isMultiInstanceBody) {
     switch (getMultiInstanceType(businessObject)) {
       case 'parallel':
@@ -277,7 +281,7 @@ const getSVGComponent = (
 
 type Props = {
   flowNodeInstanceType: FlowNodeInstance['type'];
-  diagramBusinessObject: BusinessObject;
+  diagramBusinessObject: BusinessObject | undefined;
   className?: string;
   hasLeftMargin?: boolean;
 };
@@ -296,9 +300,12 @@ const FlowNodeIcon: React.FC<Props> = ({
   return (
     <SVGIcon
       SVGComponent={SVGComponent}
-      $isGateway={['bpmn:ParallelGateway', 'bpmn:ExclusiveGateway'].includes(
-        diagramBusinessObject.$type,
-      )}
+      $isGateway={
+        diagramBusinessObject !== undefined &&
+        ['bpmn:ParallelGateway', 'bpmn:ExclusiveGateway'].includes(
+          diagramBusinessObject.$type,
+        )
+      }
       className={className}
       $hasLeftMargin={hasLeftMargin}
     />

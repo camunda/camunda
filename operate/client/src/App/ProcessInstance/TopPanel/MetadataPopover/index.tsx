@@ -21,82 +21,85 @@ import {MultiIncidents} from './MultiIncidents';
 
 type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;
+  diagramCanvasRef?: React.RefObject<Element>;
 };
 
-const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
-  const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
-  const {metaData} = flowNodeMetaDataStore.state;
+const MetadataPopover: React.FC<Props> = observer(
+  ({selectedFlowNodeRef, diagramCanvasRef}) => {
+    const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
+    const {metaData} = flowNodeMetaDataStore.state;
 
-  if (flowNodeId === undefined || metaData === null) {
-    return null;
-  }
+    if (flowNodeId === undefined || metaData === null) {
+      return null;
+    }
 
-  const {instanceMetadata, incident, incidentCount} = metaData;
+    const {instanceMetadata, incident, incidentCount} = metaData;
 
-  return (
-    <Popover
-      referenceElement={selectedFlowNodeRef}
-      middlewareOptions={[
-        offset(10),
-        flip({
-          fallbackPlacements: ['top', 'right', 'left'],
-        }),
-      ]}
-      variant="arrow"
-    >
-      <Stack gap={3}>
-        {metaData.instanceCount !== null && metaData.instanceCount > 1 && (
-          <>
-            <Header
-              title={`This Flow Node triggered ${metaData.instanceCount} times`}
-            />
-            <Content>
-              To view details for any of these, select one Instance in the
-              Instance History.
-            </Content>
-          </>
-        )}
+    return (
+      <Popover
+        referenceElement={selectedFlowNodeRef ?? diagramCanvasRef?.current}
+        middlewareOptions={[
+          offset(10),
+          flip({
+            fallbackPlacements: ['top', 'right', 'left'],
+          }),
+        ]}
+        variant="arrow"
+      >
+        <Stack gap={3}>
+          {metaData.instanceCount !== null && metaData.instanceCount > 1 && (
+            <>
+              <Header
+                title={`This Flow Node triggered ${metaData.instanceCount} times`}
+              />
+              <Content>
+                To view details for any of these, select one Instance in the
+                Instance History.
+              </Content>
+            </>
+          )}
 
-        {instanceMetadata !== null && (
-          <>
-            <Details metaData={metaData} flowNodeId={flowNodeId} />
-            {incident !== null && (
-              <>
-                <Divider />
-                <Incident
-                  processInstanceId={
-                    processInstanceDetailsStore.state.processInstance?.id
-                  }
-                  incident={incident}
-                  onButtonClick={() => {
-                    incidentsStore.clearSelection();
-                    incidentsStore.toggleFlowNodeSelection(flowNodeId);
-                    incidentsStore.toggleErrorTypeSelection(
-                      incident.errorType.id,
-                    );
-                    incidentsStore.setIncidentBarOpen(true);
-                  }}
-                />
-              </>
-            )}
-          </>
-        )}
-        {incidentCount > 1 && (
-          <>
-            <Divider />
-            <MultiIncidents
-              count={incidentCount}
-              onButtonClick={() => {
-                incidentsStore.clearSelection();
-                incidentsStore.toggleFlowNodeSelection(flowNodeId);
-                incidentsStore.setIncidentBarOpen(true);
-              }}
-            />
-          </>
-        )}
-      </Stack>
-    </Popover>
-  );
-});
+          {instanceMetadata !== null && (
+            <>
+              <Details metaData={metaData} flowNodeId={flowNodeId} />
+              {incident !== null && (
+                <>
+                  <Divider />
+                  <Incident
+                    processInstanceId={
+                      processInstanceDetailsStore.state.processInstance?.id
+                    }
+                    incident={incident}
+                    onButtonClick={() => {
+                      incidentsStore.clearSelection();
+                      incidentsStore.toggleFlowNodeSelection(flowNodeId);
+                      incidentsStore.toggleErrorTypeSelection(
+                        incident.errorType.id,
+                      );
+                      incidentsStore.setIncidentBarOpen(true);
+                    }}
+                  />
+                </>
+              )}
+            </>
+          )}
+          {incidentCount > 1 && (
+            <>
+              <Divider />
+              <MultiIncidents
+                count={incidentCount}
+                onButtonClick={() => {
+                  incidentsStore.clearSelection();
+                  incidentsStore.toggleFlowNodeSelection(flowNodeId);
+                  incidentsStore.setIncidentBarOpen(true);
+                }}
+              />
+            </>
+          )}
+        </Stack>
+      </Popover>
+    );
+  },
+);
 
 export {MetadataPopover};

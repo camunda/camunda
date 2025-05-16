@@ -27,6 +27,19 @@ describe('FlowNodeIcon', () => {
     ).toBeInTheDocument();
   });
 
+  it('should render default icon for deleted flow node', () => {
+    render(
+      <FlowNodeIcon
+        flowNodeInstanceType=""
+        diagramBusinessObject={undefined}
+      />,
+    );
+
+    expect(
+      screen.getByText('flow-node-task-undefined.svg'),
+    ).toBeInTheDocument();
+  });
+
   it('should render parallel multi instance body', () => {
     render(
       <FlowNodeIcon
