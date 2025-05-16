@@ -37,7 +37,10 @@ public class CamundaProcessTestExtensionIT {
 
   @RegisterExtension
   private static CamundaProcessTestExtension EXTENSION =
-      new CamundaProcessTestExtension().withRemoteRuntime();
+      new CamundaProcessTestExtension()
+          .withRuntimeMode(CamundaRuntimeMode.REMOTE)
+          .withRemoteCamunda(
+              "http://localhost:8080", "http://localhost:26500", "http://localhost:9600");
 
   // to be injected
   private CamundaClient client;
