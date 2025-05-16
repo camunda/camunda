@@ -24,7 +24,8 @@ public class GetSnapshotChunkEncodingTest {
   public void shouldSerializeAndDeserializeGetSnapshotChunkRequest(final String lastChunkName) {
     final Optional<String> optionalChunkName =
         lastChunkName.isEmpty() ? Optional.empty() : Optional.of(lastChunkName);
-    final var request = new GetSnapshotChunk(23, UUID.randomUUID(), optionalChunkName);
+    final var request =
+        new GetSnapshotChunk(23, UUID.randomUUID(), optionalChunkName, optionalChunkName);
     final var serializer = new GetSnapshotChunkSerializer();
     final var deserializer = new GetSnapshotChunkDeserializer();
     final var buffer = ByteBuffer.allocate(4096);
