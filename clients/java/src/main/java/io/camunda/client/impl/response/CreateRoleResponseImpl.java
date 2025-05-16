@@ -19,15 +19,9 @@ import io.camunda.client.api.response.CreateRoleResponse;
 import io.camunda.client.protocol.rest.RoleCreateResult;
 
 public class CreateRoleResponseImpl implements CreateRoleResponse {
-  private long roleKey;
   private String roleId;
   private String name;
   private String description;
-
-  @Override
-  public long getRoleKey() {
-    return roleKey;
-  }
 
   @Override
   public String getRoleId() {
@@ -45,7 +39,6 @@ public class CreateRoleResponseImpl implements CreateRoleResponse {
   }
 
   public CreateRoleResponseImpl setResponse(final RoleCreateResult response) {
-    roleKey = Long.parseLong(response.getRoleKey());
     roleId = response.getRoleId();
     name = response.getName();
     description = response.getDescription();

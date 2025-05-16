@@ -17,8 +17,6 @@ package io.camunda.client.api.search.response;
 
 public interface Role {
 
-  Long getRoleKey();
-
   String getRoleId();
 
   String getName();

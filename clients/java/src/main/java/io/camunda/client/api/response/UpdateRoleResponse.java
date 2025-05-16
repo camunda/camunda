@@ -16,12 +16,6 @@
 package io.camunda.client.api.response;
 
 public interface UpdateRoleResponse {
-  /**
-   * Returns the key of the updated role.
-   *
-   * @return the key of the updated role.
-   */
-  long getRoleKey();
 
   /**
    * Returns the ID of the updated role.

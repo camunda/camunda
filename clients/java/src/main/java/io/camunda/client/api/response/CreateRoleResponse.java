@@ -18,13 +18,6 @@ package io.camunda.client.api.response;
 public interface CreateRoleResponse {
 
   /**
-   * Returns the key of the created role.
-   *
-   * @return the key of the created role.
-   */
-  long getRoleKey();
-
-  /**
    * Returns the ID of the created role.
    *
    * @return the ID of the created role.

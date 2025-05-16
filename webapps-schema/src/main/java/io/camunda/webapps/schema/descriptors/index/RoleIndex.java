@@ -17,7 +17,6 @@ public class RoleIndex extends AbstractIndexDescriptor implements Prio5Backup {
   public static final String INDEX_NAME = "role";
   public static final String INDEX_VERSION = "8.8.0";
 
-  public static final String KEY = "key";
   public static final String ROLE_ID = "roleId";
   public static final String NAME = "name";
   public static final String DESCRIPTION = "description";

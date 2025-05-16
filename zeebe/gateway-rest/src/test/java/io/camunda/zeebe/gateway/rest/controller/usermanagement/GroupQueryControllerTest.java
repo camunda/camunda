@@ -127,19 +127,16 @@ public class GroupQueryControllerTest extends RestControllerTest {
       {
         "items":[
           {
-            "roleKey":"1",
             "roleId":"%s",
             "name":"role1",
             "description":"role1 description"
           },
           {
-            "roleKey":"2",
             "roleId":"%s",
             "name":"role2",
             "description":"role2 description"
           },
           {
-            "roleKey":"3",
             "roleId":"%s",
             "name":"role3",
             "description":"role3 description"

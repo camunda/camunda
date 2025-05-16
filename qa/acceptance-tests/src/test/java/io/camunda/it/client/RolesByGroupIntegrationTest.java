@@ -55,7 +55,6 @@ public class RolesByGroupIntegrationTest {
               assertThat(role.getRoleId()).isEqualTo(EXISTING_ROLE_ID);
               assertThat(role.getName()).isEqualTo("ARoleName");
               assertThat(role.getDescription()).isEqualTo("description");
-              assertThat(role.getRoleKey()).isPositive();
             });
   }
 

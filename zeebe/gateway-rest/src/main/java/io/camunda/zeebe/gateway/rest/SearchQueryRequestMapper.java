@@ -1073,7 +1073,6 @@ public final class SearchQueryRequestMapper {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case ROLE_KEY -> builder.roleKey();
         case NAME -> builder.name();
         case ROLE_ID -> builder.roleId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));

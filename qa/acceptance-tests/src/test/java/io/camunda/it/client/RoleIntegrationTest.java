@@ -347,7 +347,6 @@ public class RoleIntegrationTest {
               assertThat(role.getRoleId()).isEqualTo(roleId);
               assertThat(role.getName()).isEqualTo(roleName);
               assertThat(role.getDescription()).isEqualTo(description);
-              assertThat(role.getRoleKey()).isPositive();
             });
   }
 

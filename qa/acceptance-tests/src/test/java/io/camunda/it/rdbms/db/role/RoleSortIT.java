@@ -36,19 +36,19 @@ public class RoleSortIT {
   public static final Long PARTITION_ID = 0L;
 
   @TestTemplate
-  public void shouldSortByRoleKeyAsc(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldSortByRoleIdAsc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
-        b -> b.roleKey().asc(),
-        Comparator.comparing(RoleEntity::roleKey));
+        b -> b.roleId().asc(),
+        Comparator.comparing(RoleEntity::roleId));
   }
 
   @TestTemplate
-  public void shouldSortByRoleKeyDesc(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldSortByRoleIdDesc(final CamundaRdbmsTestApplication testApplication) {
     testSorting(
         testApplication.getRdbmsService(),
-        b -> b.roleKey().desc(),
-        Comparator.comparing(RoleEntity::roleKey).reversed());
+        b -> b.roleId().desc(),
+        Comparator.comparing(RoleEntity::roleId).reversed());
   }
 
   private void testSorting(

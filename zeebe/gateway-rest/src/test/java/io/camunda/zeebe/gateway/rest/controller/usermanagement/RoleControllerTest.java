@@ -273,13 +273,12 @@ public class RoleControllerTest extends RestControllerTest {
         .json(
             """
             {
-              "roleKey": "%d",
               "roleId": "%s",
               "name": "%s",
               "description": "%s"
             }
             """
-                .formatted(roleKey, roleId, roleName, description));
+                .formatted(roleId, roleName, description));
 
     // then
     verify(roleServices, times(1)).updateRole(request);

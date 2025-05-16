@@ -428,7 +428,6 @@ public final class SearchQueryResponseMapper {
 
   public static RoleResult toRole(final RoleEntity roleEntity) {
     return new RoleResult()
-        .roleKey(KeyUtil.keyToString(roleEntity.roleKey()))
         .roleId(roleEntity.roleId())
         .description(roleEntity.description())
         .name(roleEntity.name());
