@@ -33,7 +33,7 @@ export const waitForItemInList = async (
           emptyStateLocator?.waitFor(),
         ]);
       } else {
-        await page.getByRole("cell").first().waitFor();
+        page.getByRole("cell").filter({ hasText: /.+/ }).first().waitFor();
       }
 
       return await item.isVisible();
