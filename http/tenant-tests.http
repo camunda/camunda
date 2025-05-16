@@ -112,73 +112,48 @@ Accept: application/json
   });
 %}
 
-###Uncomment when available
+### Create Group
+# @name create-group
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Content-Type: application/json
+Accept: application/json
 
-#### Assign Mapping Rule to Tenant
-## @name assign-mapping-rule
-#PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/mapping-rules/{{MAPPING_KEY}}
-#Authorization: Basic {{BASIC_AUTH_TOKEN}}
-#Accept: application/json
-#
-#> {%
-#  client.test("Mapping rule assignment should be successful", function () {
-#    client.assert(response.status === 204, "Response status is not 204");
-#  });
-#%}
-#
-#### Remove Mapping Rule from Tenant
-## @name remove-mapping-rule
-#DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/mapping-rules/{{MAPPING_KEY}}
-#Authorization: Basic {{BASIC_AUTH_TOKEN}}
-#Accept: application/json
-#
-#> {%
-#  client.test("Mapping rule removal should be successful", function () {
-#    client.assert(response.status === 204, "Response status is not 204");
-#  });
-#%}
+{
+  "groupId": "testGroup1",
+  "name": "TestGroup1"
+}
 
-#### Create Group
-## @name create-group
-#POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups
-#Authorization: Basic {{BASIC_AUTH_TOKEN}}
-#Content-Type: application/json
-#Accept: application/json
-#
-#{
-#  "name": "ApiTestGroup"
-#}
-#
-#> {%
-#  client.test("Group creation should be successful", function () {
-#    client.assert(response.status === 201, "Response status is not 201");
-#    client.global.set("GROUP_KEY", response.body.groupKey);
-#  });
-#%}
+> {%
+  client.test("Group creation should be successful", function () {
+    client.assert(response.status === 201, "Response status is not 201");
+    client.global.set("GROUP_ID", response.body.groupId);
+  });
+%}
 
-#### Assign Group to Tenant
-## @name assign-group-to-tenant
-#PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/groups/{{GROUP_KEY}}
-#Authorization: Basic {{BASIC_AUTH_TOKEN}}
-#Accept: application/json
-#
-#> {%
-#  client.test("Group assignment should be successful", function () {
-#    client.assert(response.status === 204, "Response status is not 204");
-#  });
-#%}
+### Assign Group to Tenant
+# @name assign-group-to-tenant
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/groups/{{GROUP_ID}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/json
 
-#### Remove Group from Tenant
-## @name remove-group-from-tenant
-#DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/groups/{{GROUP_KEY}}
-#Authorization: Basic {{BASIC_AUTH_TOKEN}}
-#Accept: application/json
-#
-#> {%
-#  client.test("Group removal should be successful", function () {
-#    client.assert(response.status === 204, "Response status is not 204");
-#  });
-#%}
+> {%
+  client.test("Group assignment should be successful", function () {
+    client.assert(response.status === 204, "Response status is not 204");
+  });
+%}
+
+### Remove Group from Tenant
+# @name remove-group-from-tenant
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/groups/{{GROUP_ID}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Group removal should be successful", function () {
+    client.assert(response.status === 204, "Response status is not 204");
+  });
+%}
 
 ### Search Tenants
 # @name search-tenants
@@ -197,6 +172,22 @@ Accept: application/json
   client.test("Tenant search should be successful", function () {
     client.assert(response.status === 200, "Response status is not 200");
     client.assert(response.body.items[0].tenantId === "testTenant1", "Tenant was not found");
+  });
+%}
+
+### Delete Group
+# @name delete-group
+< {%
+  import {wait} from "js/wait";
+  wait(3);
+%}
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}
+Authorization: Basic {{BASIC_AUTH_TOKEN}}
+Accept: application/json
+
+> {%
+  client.test("Group deletion should be successful", function () {
+    client.assert(response.status === 204, "Response status is not 204");
   });
 %}
 

@@ -34,12 +34,13 @@ Accept: application/json
 > {%
   client.test("User creation should be authorized", function () {
     client.assert(response.status === 201, "Response status is not 201");
+    client.global.set("USERNAME", response.body.username);
   });
 %}
 
 ###
 # @name test-user-update
-PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users/sergii
+PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users/{{USERNAME}}
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
 Content-Type: application/json
 Accept: application/json
@@ -61,7 +62,7 @@ Accept: application/json
 # @name test-user-search
 < {%
   import {wait} from "js/wait"
-  wait(3)
+  wait(4)
 %}
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users/search
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
@@ -76,7 +77,7 @@ Accept: application/json
     }
   ],
   "filter": {
-    "username": "sergii"
+    "username": "{{USERNAME}}"
   },
   "page": {
     "from": 0,
@@ -92,8 +93,10 @@ Accept: application/json
   client.test("Response should be JSON", function () {
     client.assert(response.headers.valueOf("Content-Type").includes("application/json"), "Response is not JSON");
   });
+  let expectedUsername = client.global.get("USERNAME");
+
   client.test("Response should contain updated user data", function () {
-    client.assert(response.body.items[0].username === "sergii", "Username was not updated correctly");
+    client.assert(response.body.items[0].username === expectedUsername, "Username was not found");
     client.assert(response.body.items[0].name === "Sergii Updated", "Name was not updated correctly");
     client.assert(response.body.items[0].email === "sergii.updated@camunda.com", "Email was not updated correctly");
   });
@@ -105,7 +108,7 @@ Accept: application/json
   import {wait} from "js/wait"
   wait(4)
 %}
-DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users/sergii
+DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users/{{USERNAME}}
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
 Content-Type: application/json
 Accept: application/json
@@ -215,7 +218,7 @@ Accept: application/json
 # @name test-authorization-search
 < {%
   import {wait} from "js/wait";
-  wait(2);
+  wait(3);
 %}
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations/search
 Authorization: Basic {{BASIC_AUTH_TOKEN}}

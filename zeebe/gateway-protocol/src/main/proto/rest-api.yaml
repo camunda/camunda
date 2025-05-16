@@ -622,8 +622,8 @@ paths:
       tags:
         - Tenant
       operationId: assignApplicationToTenant
-      summary: Assign a user to a tenant
-      description: Assign a single user to a specified tenant.
+      summary: Assign an application to a tenant
+      description: Assign an application to a specified tenant.
       parameters:
         - name: tenantId
           in: path
