@@ -6,9 +6,7 @@
   ],
   "commitMessagePrefix": "deps:",
   "baseBranches": [
-    "/^stable\\/8\\..*/",
-    "stable/operate-8.5",
-    "main"
+    "renovate-unification"
   ],
   "dependencyDashboard": true,
   "prConcurrentLimit": 30,
@@ -35,6 +33,24 @@
       "automerge"
     ]
   },
+  "hostRules": [
+    {
+      "matchHost": "https://artifacts.camunda.com/artifactory/zeebe-io/",
+      "enabled": false
+    },
+    {
+      "matchHost": "https://artifacts.camunda.com/artifactory/zeebe-io-snapshots/",
+      "enabled": false
+    },
+    {
+      "matchHost": "https://artifacts.camunda.com/artifactory/camunda-identity/",
+      "enabled": false
+    },
+    {
+      "matchHost": "https://artifacts.camunda.com/artifactory/camunda-identity-snapshots/",
+      "enabled": false
+    }
+  ],
   "packageRules": [
     {
       "matchDatasources": ["maven"],
