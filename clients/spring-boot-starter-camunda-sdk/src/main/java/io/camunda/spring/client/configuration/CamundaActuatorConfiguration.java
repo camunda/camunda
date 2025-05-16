@@ -18,6 +18,7 @@ package io.camunda.spring.client.configuration;
 import io.camunda.client.CamundaClient;
 import io.camunda.spring.client.actuator.CamundaClientHealthIndicator;
 import io.camunda.spring.client.actuator.MicrometerMetricsRecorder;
+import io.camunda.spring.client.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.camunda.spring.client.metrics.MetricsRecorder;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration;
@@ -30,6 +31,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
 
 @AutoConfigureBefore(MetricsDefaultConfiguration.class)
+@ConditionalOnCamundaClientEnabled
 @ConditionalOnClass({
   EndpointAutoConfiguration.class,
   MeterRegistry.class

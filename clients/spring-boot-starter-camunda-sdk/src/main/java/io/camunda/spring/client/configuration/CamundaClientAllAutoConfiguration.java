@@ -21,6 +21,7 @@ import static java.util.Optional.ofNullable;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.spring.client.annotation.customizer.JobWorkerValueCustomizer;
+import io.camunda.spring.client.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.spring.client.jobhandling.CommandExceptionHandlingStrategy;
 import io.camunda.spring.client.jobhandling.DefaultCommandExceptionHandlingStrategy;
@@ -37,16 +38,11 @@ import io.camunda.spring.client.properties.PropertyBasedJobWorkerValueCustomizer
 import io.camunda.zeebe.client.ZeebeClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 
-@ConditionalOnProperty(
-    prefix = "camunda.client",
-    name = "enabled",
-    havingValue = "true",
-    matchIfMissing = true)
+@ConditionalOnCamundaClientEnabled
 @Import({
   AnnotationProcessorConfiguration.class,
   JsonMapperConfiguration.class,

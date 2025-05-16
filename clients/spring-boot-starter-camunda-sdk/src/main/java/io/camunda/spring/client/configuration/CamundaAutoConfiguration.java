@@ -20,6 +20,7 @@ import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKN
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
+import io.camunda.spring.client.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.camunda.spring.client.event.CamundaLifecycleEventProducer;
 import io.camunda.spring.client.testsupport.CamundaSpringProcessTestContext;
 import io.camunda.zeebe.spring.client.configuration.ZeebeClientProdAutoConfiguration;
@@ -33,6 +34,7 @@ import org.springframework.context.annotation.Configuration;
 
 /** Enabled by META-INF of Spring Boot Starter to provide beans for Camunda Clients */
 @Configuration
+@ConditionalOnCamundaClientEnabled
 @ImportAutoConfiguration({
   CamundaClientProdAutoConfiguration.class,
   CamundaClientAllAutoConfiguration.class,
