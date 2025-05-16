@@ -26,6 +26,7 @@ import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
@@ -261,6 +262,11 @@ public class RdbmsSearchClient implements SearchClientsProxy {
     LOG.debug("[RDBMS Search Client] Search for tenants: {}", query);
 
     return rdbmsService.getTenantReader().search(query);
+  }
+
+  @Override
+  public SearchQueryResult<TenantMemberEntity> searchTenantMembers(final TenantQuery filter) {
+    throw new UnsupportedOperationException("Tenant member search not implemented on RDBMS");
   }
 
   @Override
