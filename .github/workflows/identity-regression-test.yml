@@ -1,6 +1,9 @@
 name: Identity API Regression Tests
 
 on:
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       branch:
@@ -39,6 +42,7 @@ jobs:
           - 'user-authorizations-tests.http'
           - 'tenant-tests.http'
           - 'group-tests.http'
+          - 'mapping-rules.http'
 
     runs-on: ubuntu-latest
     environment: '${{ matrix.env }}-http-tests'
@@ -72,6 +76,42 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@7709c609789c5e27b757a85817483caadbb5939a
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/qa/ci/github.com/apps/camunda/entra-credentials CLIENT_ID;
+            secret/data/products/qa/ci/github.com/apps/camunda/entra-credentials CLIENT_SECRET;
+            secret/data/products/qa/ci/github.com/apps/camunda/entra-credentials AUDIENCE;
+            secret/data/products/qa/ci/github.com/apps/camunda/entra-credentials INITIAL_CLAIM_VALUE;
+            secret/data/products/qa/ci/github.com/apps/camunda/entra-credentials ISSUER_URI;
+            secret/data/products/qa/ci/github.com/apps/camunda/entra-credentials TOKEN_URL;
+
+      - name: Merge Secrets into Existing HTTP Client Env File
+        run: |
+          jq \
+            --arg client_id "$CLIENT_ID" \
+            --arg client_secret "$CLIENT_SECRET" \
+            --arg token_url "$TOKEN_URL" \
+            --arg audience "$AUDIENCE" \
+            '.local += {
+              CLIENT_ID: $client_id,
+              CLIENT_SECRET: $client_secret,
+              TOKEN_URL: $token_url,
+              AUDIENCE: $audience
+            }' http/http-client.private.env.json > http/tmp.env.json && mv http/tmp.env.json http/http-client.private.env.json
+        env:
+          CLIENT_ID: ${{ steps.secrets.outputs.CLIENT_ID }}
+          CLIENT_SECRET: ${{ steps.secrets.outputs.CLIENT_SECRET }}
+          TOKEN_URL: ${{ steps.secrets.outputs.TOKEN_URL }}
+          AUDIENCE: ${{ steps.secrets.outputs.AUDIENCE }}
+
       - name: Package camunda-dist
         shell: bash
         id: build-dist
@@ -83,7 +123,8 @@ jobs:
           cd ./dist/target
           tar -xvzf camunda-zeebe-8.8.0-SNAPSHOT.tar.gz
 
-      - name: Start Camunda
+      - name: Start Camunda (default config)
+        if: matrix.case != 'mapping-rules.http'
         run: |
           cd ./dist/target/camunda-zeebe-8.8.0-SNAPSHOT
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter && \
@@ -93,6 +134,27 @@ jobs:
           export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true && \
           export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false && \
           export SPRING_PROFILES_ACTIVE=identity,tasklist,operate,broker,consolidated-auth && \
+          ./bin/camunda &
+          sleep 60
+
+      - name: Start Camunda (OIDC config for mapping-rules)
+        if: matrix.case == 'mapping-rules.http'
+        run: |
+          cd ./dist/target/camunda-zeebe-8.8.0-SNAPSHOT
+          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter && \
+          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://localhost:9200  && \
+          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE=100  && \
+          export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false  && \
+          export CAMUNDA_SECURITY_AUTHENTICATION_METHOD=OIDC  && \
+          export CAMUNDA_SECURITY_AUTHENTICATION_OIDC_CLIENTID=${{ steps.secrets.outputs.CLIENT_ID}}  && \
+          export CAMUNDA_SECURITY_AUTHENTICATION_OIDC_CLIENTSECRET=${{ steps.secrets.outputs.CLIENT_SECRET}}  && \
+          export CAMUNDA_SECURITY_AUTHENTICATION_OIDC_ISSUERURI=${{ steps.secrets.outputs.ISSUER_URI}}  && \
+          export CAMUNDA_SECURITY_AUTHENTICATION_OIDC_REDIRECTURI=http://localhost:8080/sso-callback  && \
+          export INITIAL_CLAIM_VALUE=${{ steps.secrets.outputs.INITIAL_CLAIM_VALUE}}  && \
+          export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=false && \
+          export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false && \
+          export CAMUNDA_SECURITY_MULTITENANCY_ENABLED=false && \
+          export SPRING_PROFILES_ACTIVE=identity,broker,consolidated-auth && \
           ./bin/camunda &
           sleep 60
 
