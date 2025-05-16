@@ -42,6 +42,7 @@ public final class DecisionInstanceFixtures extends CommonFixtures {
             .evaluationDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .result("result-" + RANDOM.nextInt(10000))
             .evaluationFailure("failure-" + RANDOM.nextInt(10000))
+            .evaluationFailureMessage("failure-message" + RANDOM.nextInt(10000))
             .decisionType(randomEnum(DecisionInstanceEntity.DecisionDefinitionType.class))
             .tenantId("tenant-" + RANDOM.nextInt(10000))
             .state(randomEnum(DecisionInstanceEntity.DecisionInstanceState.class))
