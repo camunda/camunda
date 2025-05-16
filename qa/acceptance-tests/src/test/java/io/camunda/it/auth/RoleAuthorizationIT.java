@@ -312,6 +312,21 @@ class RoleAuthorizationIT {
   }
 
   @Test
+  void unassignRoleFromClientShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUnassignRoleFromClientCommand()
+                    .roleId(Strings.newRandomValidIdentityId())
+                    .clientId(Strings.newRandomValidIdentityId())
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
+
+  @Test
   void shouldAssignRoleToGroupIfAuthorized(@Authenticated(ADMIN) final CamundaClient adminClient) {
     final String roleId = Strings.newRandomValidIdentityId();
     final String groupId = Strings.newRandomValidIdentityId();
@@ -437,6 +452,21 @@ class RoleAuthorizationIT {
                     .newUnassignRoleFromGroupCommand()
                     .roleId(Strings.newRandomValidIdentityId())
                     .groupId(Strings.newRandomValidIdentityId())
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
+
+  @Test
+  void assignRoleToClientShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newAssignRoleToClientCommand()
+                    .roleId(Strings.newRandomValidIdentityId())
+                    .clientId(Strings.newRandomValidIdentityId())
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
