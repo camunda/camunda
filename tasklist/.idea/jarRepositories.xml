@@ -17,11 +17,6 @@
       <option name="url" value="https://repo.maven.apache.org/maven2" />
     </remote-repository>
     <remote-repository>
-      <option name="id" value="elasticsearch" />
-      <option name="name" value="Elasticsearch Repository" />
-      <option name="url" value="https://artifacts.elastic.co/maven/" />
-    </remote-repository>
-    <remote-repository>
       <option name="id" value="camunda-identity-snapshot" />
       <option name="name" value="Camunda Identity Snapshot Repository" />
       <option name="url" value="https://artifacts.camunda.com/artifactory/camunda-identity-snapshots/" />
