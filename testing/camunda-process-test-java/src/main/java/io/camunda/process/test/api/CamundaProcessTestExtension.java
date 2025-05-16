@@ -16,6 +16,7 @@
 package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
@@ -132,8 +133,7 @@ public class CamundaProcessTestExtension
 
     camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
-            runtimeConnection.getCamundaRestApiAddress(),
-            runtimeConnection.getCamundaGrpcApiAddress(),
+            containerRuntimeBuilder.getCamundaClientBuilderSupplier(),
             runtimeConnection.getConnectorsRestApiAddress(),
             createdClients::add,
             camundaManagementClient);
@@ -395,17 +395,20 @@ public class CamundaProcessTestExtension
     return this;
   }
 
-  public CamundaProcessTestExtension withRemoteCamunda(
-      final String restApiAddress, final String grpcApiAddress, final String monitoringApiAddress) {
-    containerRuntimeBuilder
-        .withRuntimeMode(CamundaRuntimeMode.REMOTE)
-        .withRemoteCamundaRestApiAddress(restApiAddress)
-        .withRemoteCamundaGrpcApiAddress(grpcApiAddress)
-        .withRemoteCamundaMonitoringApiAddress(monitoringApiAddress);
+  public CamundaProcessTestExtension withCamundaClient(
+      final Supplier<CamundaClientBuilder> camundaClientBuilderSupplier) {
+    containerRuntimeBuilder.withCamundaClientBuilder(camundaClientBuilderSupplier);
     return this;
   }
 
-  public CamundaProcessTestExtension withRemoteConnector(final String restApiAddress) {
+  public CamundaProcessTestExtension withRemoteCamundaMonitoringApiAddress(
+      final String restApiAddress) {
+    containerRuntimeBuilder.withRemoteCamundaMonitoringApiAddress(restApiAddress);
+    return this;
+  }
+
+  public CamundaProcessTestExtension withRemoteConnectorsRestApiAddress(
+      final String restApiAddress) {
     containerRuntimeBuilder
         .withConnectorsEnabled(true)
         .withRemoteConnectorsRestApiAddress(restApiAddress);

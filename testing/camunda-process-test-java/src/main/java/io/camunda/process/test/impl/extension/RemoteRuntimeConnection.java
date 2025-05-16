@@ -7,9 +7,13 @@
  */
 package io.camunda.process.test.impl.extension;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.process.test.impl.client.HttpClientUtil;
 import java.io.IOException;
 import java.net.URI;
+import java.util.function.Supplier;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
@@ -28,12 +32,13 @@ public class RemoteRuntimeConnection implements CamundaRuntimeConnection {
   private final URI connectorsRestApiAddress;
 
   public RemoteRuntimeConnection(
-      final URI camundaRestApiAddress,
-      final URI camundaGrpcApiAddress,
+      final Supplier<CamundaClientBuilder> camundaClientBuilderSupplier,
       final URI camundaMonitoringApiAddress,
       final URI connectorsRestApiAddress) {
-    this.camundaRestApiAddress = camundaRestApiAddress;
-    this.camundaGrpcApiAddress = camundaGrpcApiAddress;
+    final CamundaClientConfiguration clientConfiguration =
+        getClientConfiguration(camundaClientBuilderSupplier);
+    camundaRestApiAddress = clientConfiguration.getRestAddress();
+    camundaGrpcApiAddress = clientConfiguration.getGrpcAddress();
     this.camundaMonitoringApiAddress = camundaMonitoringApiAddress;
     this.connectorsRestApiAddress = connectorsRestApiAddress;
   }
@@ -84,6 +89,14 @@ public class RemoteRuntimeConnection implements CamundaRuntimeConnection {
   @Override
   public URI getConnectorsRestApiAddress() {
     return connectorsRestApiAddress;
+  }
+
+  private CamundaClientConfiguration getClientConfiguration(
+      final Supplier<CamundaClientBuilder> camundaClientBuilderSupplier) {
+    final CamundaClientBuilder clientBuilder = camundaClientBuilderSupplier.get();
+    try (final CamundaClient camundaClient = clientBuilder.build()) {
+      return camundaClient.getConfiguration();
+    }
   }
 
   private void checkConnection(final URI readyEndpoint) throws IOException {

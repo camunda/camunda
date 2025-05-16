@@ -13,6 +13,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import java.net.URI;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -25,8 +26,13 @@ public class RemoteCamundaProcessTestExtensionIT {
   private static CamundaProcessTestExtension EXTENSION =
       new CamundaProcessTestExtension()
           .withRuntimeMode(CamundaRuntimeMode.REMOTE)
-          .withRemoteCamunda(
-              "http://localhost:8080", "http://localhost:26500", "http://localhost:9600");
+          .withCamundaClient(
+              () ->
+                  CamundaClient.newClientBuilder()
+                      .restAddress(URI.create("http://localhost:8080"))
+                      .grpcAddress(URI.create("http://localhost:26500")))
+      // .withRemoteCamundaMonitoringApiAddress("http://localhost:9600")
+      ;
 
   // to be injected
   private CamundaClient client;
