@@ -197,10 +197,20 @@ public final class MicrometerUtil {
       public String asString() {
         return "partition";
       }
+    },
+    TARGET_PARTITION {
+      @Override
+      public String asString() {
+        return "targetPartition";
+      }
     };
 
     public static Tags tags(final int partitionId) {
       return Tags.of(PARTITION.asString(), String.valueOf(partitionId));
+    }
+
+    public static Tags targetPartitionTags(final int targetPartitionId) {
+      return Tags.of(TARGET_PARTITION.asString(), String.valueOf(targetPartitionId));
     }
   }
 }

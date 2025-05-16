@@ -209,6 +209,7 @@ public final class CommandDistributionBehavior {
       final long distributionKey) {
     final var valueType = distributionRecord.getValueType();
     final var intent = distributionRecord.getIntent();
+    final var queueId = distributionRecord.getQueueId();
 
     commandDistributionDistributing.reset();
 
@@ -220,6 +221,7 @@ public final class CommandDistributionBehavior {
         commandDistributionDistributing
             .setPartitionId(partition)
             .setValueType(valueType)
+            .setQueueId(queueId)
             .setIntent(intent));
 
     // This getter makes a hard copy of the command value, which we need to send the command to the
@@ -264,6 +266,8 @@ public final class CommandDistributionBehavior {
               acknowledgeRecord);
           return true;
         });
+
+    distributionState.getMetrics().sentAcknowledgeDistribution(receiverPartitionId);
   }
 
   private <T extends UnifiedRecordValue> void requestContinuation(
