@@ -141,9 +141,10 @@ jobs:
         run: |
           pip install trcli
           trcli -y -h $TESTRAIL_HOST \
-            --project 'Core Application' \
+            --project 'C8' \
             --username $TESTRAIL_USERNAME \
             --key $TESTRAIL_KEY \
-            parse_junit --title "Nightly Core Application Run Test Results - $BRANCH_NAME - $(date '+%Y-%m-%d %H:%M:%S')" \
+            parse_junit --suite-id 17050 \ 
+            --title "Nightly Core Application Run Test Results - $BRANCH_NAME - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
             -f $JUNIT_RESULTS_FILE

@@ -156,10 +156,11 @@ jobs:
         run: |
           pip install trcli
           trcli -y -h $TESTRAIL_HOST \
-            --project 'Core Application' \
+            --project 'C8' \
             --username $TESTRAIL_USERNAME \
             --key $TESTRAIL_KEY \
-            parse_junit --title "On Demand Core Application Test Run Results -  ${{ github.event.inputs.branch }}" \
+            parse_junit --suite-id 17050 \
+            --title "On Demand Core Application Test Run Results -  ${{ github.event.inputs.branch }}" \
             --close-run \
             -f $JUNIT_RESULTS_FILE
 
