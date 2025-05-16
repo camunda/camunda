@@ -555,14 +555,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UserSearchQueryRequest"
+              $ref: "#/components/schemas/TenantMemberSearchQueryRequest"
       responses:
         "200":
           description: The search result of users for the tenant.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserSearchResult"
+                $ref: "#/components/schemas/TenantMemberSearchResult"
   /tenants/{tenantId}/clients/search:
     post:
       tags:
