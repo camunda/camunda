@@ -40,7 +40,7 @@ const DeleteModal: FC<RemoveGroupRoleModalProps> = ({
     if (groupId && role) {
       const { success } = await callUnassignRole({
         groupId,
-        roleKey: role.roleKey,
+        roleId: role.roleId,
       });
 
       if (success) {
