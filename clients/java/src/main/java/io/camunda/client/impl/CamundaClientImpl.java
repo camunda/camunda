@@ -31,6 +31,7 @@ import io.camunda.client.api.command.AssignRoleToMappingCommandStep1;
 import io.camunda.client.api.command.AssignRoleToTenantCommandStep1;
 import io.camunda.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.client.api.command.AssignUserToGroupCommandStep1;
+import io.camunda.client.api.command.AssignUserToRoleCommandStep1;
 import io.camunda.client.api.command.AssignUserToTenantCommandStep1;
 import io.camunda.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
@@ -75,6 +76,7 @@ import io.camunda.client.api.command.UnassignMappingFromGroupStep1;
 import io.camunda.client.api.command.UnassignRoleFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
+import io.camunda.client.api.command.UnassignUserFromRoleCommandStep1;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
@@ -123,6 +125,7 @@ import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
 import io.camunda.client.api.search.request.RolesByTenantSearchRequest;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
 import io.camunda.client.api.search.request.UserTaskVariableSearchRequest;
+import io.camunda.client.api.search.request.UsersByRoleSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessInstanceElementStatisticsRequest;
@@ -137,6 +140,7 @@ import io.camunda.client.impl.command.AssignRoleToMappingCommandImpl;
 import io.camunda.client.impl.command.AssignRoleToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignUserTaskCommandImpl;
 import io.camunda.client.impl.command.AssignUserToGroupCommandImpl;
+import io.camunda.client.impl.command.AssignUserToRoleCommandImpl;
 import io.camunda.client.impl.command.AssignUserToTenantCommandImpl;
 import io.camunda.client.impl.command.BroadcastSignalCommandImpl;
 import io.camunda.client.impl.command.CancelProcessInstanceCommandImpl;
@@ -180,6 +184,7 @@ import io.camunda.client.impl.command.UnassignMappingFromGroupCommandImpl;
 import io.camunda.client.impl.command.UnassignRoleFromGroupCommandImpl;
 import io.camunda.client.impl.command.UnassignRoleFromTenantCommandImpl;
 import io.camunda.client.impl.command.UnassignUserFromGroupCommandImpl;
+import io.camunda.client.impl.command.UnassignUserFromRoleCommandImpl;
 import io.camunda.client.impl.command.UnassignUserTaskCommandImpl;
 import io.camunda.client.impl.command.UpdateAuthorizationCommandImpl;
 import io.camunda.client.impl.command.UpdateGroupCommandImpl;
@@ -225,6 +230,7 @@ import io.camunda.client.impl.search.request.RolesByTenantSearchRequestImpl;
 import io.camunda.client.impl.search.request.UserTaskSearchRequestImpl;
 import io.camunda.client.impl.search.request.UserTaskVariableSearchRequestImpl;
 import io.camunda.client.impl.search.request.UsersByGroupSearchRequestImpl;
+import io.camunda.client.impl.search.request.UsersByRoleSearchRequestImpl;
 import io.camunda.client.impl.search.request.VariableSearchRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionElementStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessInstanceElementStatisticsRequestImpl;
@@ -863,6 +869,21 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public UnassignRoleFromGroupCommandStep1 newUnassignRoleFromGroupCommand() {
     return new UnassignRoleFromGroupCommandImpl(httpClient);
+  }
+
+  @Override
+  public AssignUserToRoleCommandStep1 newAssignUserToRoleCommand(final String roleId) {
+    return new AssignUserToRoleCommandImpl(httpClient, roleId);
+  }
+
+  @Override
+  public UnassignUserFromRoleCommandStep1 newUnassignUserFromRoleCommand(final String roleId) {
+    return new UnassignUserFromRoleCommandImpl(roleId, httpClient);
+  }
+
+  @Override
+  public UsersByRoleSearchRequest newUsersByRoleSearchRequest(final String roleId) {
+    return new UsersByRoleSearchRequestImpl(httpClient, jsonMapper, roleId);
   }
 
   @Override
