@@ -15,6 +15,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.ClusterConfigurationAssert;
 import io.camunda.zeebe.dynamic.config.PartitionStateAssert;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
 import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
@@ -65,7 +66,7 @@ final class PartitionBootstrapApplierTest {
       // when
       final var result =
           new PartitionBootstrapApplier(
-                  partitionId, priority, localMemberId, partitionChangeExecutor)
+                  partitionId, priority, localMemberId, false, partitionChangeExecutor)
               .init(configurationWithActivePartition);
 
       // then
@@ -77,7 +78,7 @@ final class PartitionBootstrapApplierTest {
       // when
       final var result =
           new PartitionBootstrapApplier(
-                  partitionId + 1, priority, localMemberId, partitionChangeExecutor)
+                  partitionId + 1, priority, localMemberId, false, partitionChangeExecutor)
               .init(initialConfiguration);
 
       // then
@@ -92,7 +93,7 @@ final class PartitionBootstrapApplierTest {
       // when
       final var result =
           new PartitionBootstrapApplier(
-                  partitionId, priority, localMemberId, partitionChangeExecutor)
+                  partitionId, priority, localMemberId, false, partitionChangeExecutor)
               .init(configurationWithInactiveMember);
 
       // then
@@ -112,7 +113,7 @@ final class PartitionBootstrapApplierTest {
       // when
       final var result =
           new PartitionBootstrapApplier(
-                  partitionId, priority, localMemberId, partitionChangeExecutor)
+                  partitionId, priority, localMemberId, false, partitionChangeExecutor)
               .init(topologyWithPartitionBootstrapping);
 
       // then
@@ -127,7 +128,7 @@ final class PartitionBootstrapApplierTest {
       // when
       final var result =
           new PartitionBootstrapApplier(
-                  partitionId, priority, localMemberId, partitionChangeExecutor)
+                  partitionId, priority, localMemberId, false, partitionChangeExecutor)
               .init(initialConfiguration);
 
       // then
@@ -162,7 +163,9 @@ final class PartitionBootstrapApplierTest {
       // when
       final var result =
           new PartitionBootstrapApplier(
-                  1, priority, localMemberId, Optional.of(partitionConfig), partitionChangeExecutor)
+                  new PartitionBootstrapOperation(
+                      localMemberId, 1, priority, Optional.of(partitionConfig), false),
+                  partitionChangeExecutor)
               .init(configWithoutPartition);
 
       // then
@@ -201,7 +204,9 @@ final class PartitionBootstrapApplierTest {
       // when
       final var result =
           new PartitionBootstrapApplier(
-                  2, priority, localMemberId, Optional.empty(), partitionChangeExecutor)
+                  new PartitionBootstrapOperation(
+                      localMemberId, 2, priority, Optional.empty(), false),
+                  partitionChangeExecutor)
               .init(clusterConfiguration);
 
       // then
@@ -220,9 +225,27 @@ final class PartitionBootstrapApplierTest {
   }
 
   @Nested
-  final class Apply {
+  final class ApplyWithoutSnapshot extends Apply {
+    public ApplyWithoutSnapshot() {
+      super(false);
+    }
+  }
+
+  @Nested
+  final class ApplyWithSnapshot extends Apply {
+    public ApplyWithSnapshot() {
+      super(true);
+    }
+  }
+
+  abstract class Apply {
     private PartitionBootstrapApplier partitionBootstrapApplier;
     private ClusterConfiguration operationInitialized;
+    private final boolean initFromSnapshot;
+
+    public Apply(final boolean initFromSnapshot) {
+      this.initFromSnapshot = initFromSnapshot;
+    }
 
     @BeforeEach
     void init() {
@@ -232,10 +255,9 @@ final class PartitionBootstrapApplierTest {
               .updateMember(
                   localMemberId,
                   m -> m.addPartition(1, PartitionState.active(priority, partitionConfig)));
-
       partitionBootstrapApplier =
           new PartitionBootstrapApplier(
-              partitionId, priority, localMemberId, partitionChangeExecutor);
+              partitionId, priority, localMemberId, initFromSnapshot, partitionChangeExecutor);
       // when
       operationInitialized =
           partitionBootstrapApplier.init(initialTopology).get().apply(initialTopology);
@@ -244,7 +266,8 @@ final class PartitionBootstrapApplierTest {
     @Test
     void shouldFailFutureIfBootstrappingFailed() {
       // given
-      when(partitionChangeExecutor.bootstrap(partitionId, priority, partitionConfig))
+      when(partitionChangeExecutor.bootstrap(
+              partitionId, priority, partitionConfig, initFromSnapshot))
           .thenReturn(CompletableActorFuture.completedExceptionally(new RuntimeException("FAIL")));
 
       // when
@@ -257,7 +280,8 @@ final class PartitionBootstrapApplierTest {
     @Test
     void shouldUpdateStateToActive() {
       // given
-      when(partitionChangeExecutor.bootstrap(partitionId, priority, partitionConfig))
+      when(partitionChangeExecutor.bootstrap(
+              partitionId, priority, partitionConfig, initFromSnapshot))
           .thenReturn(CompletableActorFuture.completed(null));
 
       // when

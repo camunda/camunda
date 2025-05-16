@@ -151,13 +151,14 @@ public final class PartitionManagerImpl
               .get(localMemberId)
               .getPartition(partitionMetadata.id().id())
               .config();
-      bootstrapPartition(partitionMetadata, initialPartitionConfig);
+      bootstrapPartition(partitionMetadata, initialPartitionConfig, false);
     }
   }
 
   private ActorFuture<Void> bootstrapPartition(
       final PartitionMetadata partitionMetadata,
-      final DynamicPartitionConfig initialPartitionConfig) {
+      final DynamicPartitionConfig initialPartitionConfig,
+      final boolean initializeFromSnapshot) {
     final var result = concurrencyControl.<Void>createFuture();
     final var id = partitionMetadata.id().id();
     final var context =
@@ -173,6 +174,7 @@ public final class PartitionManagerImpl
             zeebePartitionFactory,
             brokerCfg,
             initialPartitionConfig,
+            initializeFromSnapshot,
             brokerMeterRegistry);
     final var partition = Partition.bootstrapping(context);
     partitions.put(id, partition);
@@ -200,6 +202,7 @@ public final class PartitionManagerImpl
             zeebePartitionFactory,
             brokerCfg,
             initialPartitionConfig,
+            false,
             brokerMeterRegistry);
     final var partition = Partition.joining(context);
     final var previousPartition = partitions.putIfAbsent(id, partition);
@@ -349,7 +352,10 @@ public final class PartitionManagerImpl
 
   @Override
   public ActorFuture<Void> bootstrap(
-      final int partitionId, final int priority, final DynamicPartitionConfig partitionConfig) {
+      final int partitionId,
+      final int priority,
+      final DynamicPartitionConfig partitionConfig,
+      final boolean initializeFromSnapshot) {
     final int targetPriority = priority;
 
     final MemberId localMember = managementService.getMembershipService().getLocalMember().id();
@@ -368,7 +374,9 @@ public final class PartitionManagerImpl
     final ActorFuture<Void> future = concurrencyControl.createFuture();
 
     concurrencyControl.run(
-        () -> bootstrapPartition(partitionMetadata, partitionConfig).onComplete(future));
+        () ->
+            bootstrapPartition(partitionMetadata, partitionConfig, initializeFromSnapshot)
+                .onComplete(future));
     return future;
   }
 

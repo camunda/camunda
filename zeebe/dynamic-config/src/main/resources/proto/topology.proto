@@ -140,6 +140,7 @@ message PartitionBootstrapOperation {
   int32 partitionId = 1;
   int32 priority = 2;
   optional PartitionConfig config = 3;
+  bool initializeFromConfig = 4;
 }
 
 message StartPartitionScaleUpOperation { int32 desiredPartitionCount = 2; }
