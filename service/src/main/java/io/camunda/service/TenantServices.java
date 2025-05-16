@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import io.camunda.search.clients.TenantSearchClient;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.SearchQueryResult;
@@ -51,6 +52,14 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
             securityContextProvider.provideSecurityContext(
                 authentication, Authorization.of(a -> a.tenant().read())))
         .searchTenants(query);
+  }
+
+  public SearchQueryResult<TenantMemberEntity> searchMembers(final TenantQuery query) {
+    return tenantSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.tenant().read())))
+        .searchTenantMembers(query);
   }
 
   public List<TenantEntity> findAll(final TenantQuery query) {
