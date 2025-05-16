@@ -62,5 +62,6 @@
   "claimName": "Claim name",
   "claimValue": "Claim value",
   "searchAndAssignMappingToGroup": "Search and assign mapping to group",
-  "removeMappingConfirmation": "Are you sure you want to remove <strong>{{mappingId}}</strong> from this group?"
+  "removeMappingConfirmation": "Are you sure you want to remove <strong>{{mappingId}}</strong> from this group?",
+  "accessDisclaimer": "Members of this group will be given access to permissions assigned to this role."
 }
