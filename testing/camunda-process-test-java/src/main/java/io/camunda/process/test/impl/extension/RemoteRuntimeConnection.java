@@ -30,11 +30,13 @@ public class RemoteRuntimeConnection implements CamundaRuntimeConnection {
   private final URI camundaGrpcApiAddress;
   private final URI camundaMonitoringApiAddress;
   private final URI connectorsRestApiAddress;
+  private final Supplier<CamundaClientBuilder> camundaClientBuilderSupplier;
 
   public RemoteRuntimeConnection(
       final Supplier<CamundaClientBuilder> camundaClientBuilderSupplier,
       final URI camundaMonitoringApiAddress,
       final URI connectorsRestApiAddress) {
+    this.camundaClientBuilderSupplier = camundaClientBuilderSupplier;
     final CamundaClientConfiguration clientConfiguration =
         getClientConfiguration(camundaClientBuilderSupplier);
     camundaRestApiAddress = clientConfiguration.getRestAddress();
@@ -89,6 +91,11 @@ public class RemoteRuntimeConnection implements CamundaRuntimeConnection {
   @Override
   public URI getConnectorsRestApiAddress() {
     return connectorsRestApiAddress;
+  }
+
+  @Override
+  public Supplier<CamundaClientBuilder> createClientBuilder() {
+    return camundaClientBuilderSupplier;
   }
 
   private CamundaClientConfiguration getClientConfiguration(

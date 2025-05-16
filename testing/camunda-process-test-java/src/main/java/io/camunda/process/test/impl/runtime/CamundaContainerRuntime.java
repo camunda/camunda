@@ -15,6 +15,8 @@
  */
 package io.camunda.process.test.impl.runtime;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.ContainerFactory;
@@ -28,6 +30,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -176,6 +179,15 @@ public class CamundaContainerRuntime implements AutoCloseable, CamundaRuntimeCon
     } else {
       return URI.create("http://localhost:8080/connectors-disabled");
     }
+  }
+
+  @Override
+  public Supplier<CamundaClientBuilder> createClientBuilder() {
+    return () ->
+        CamundaClient.newClientBuilder()
+            .restAddress(getCamundaRestApiAddress())
+            .grpcAddress(getCamundaGrpcApiAddress())
+            .usePlaintext();
   }
 
   public CamundaContainer getCamundaContainer() {

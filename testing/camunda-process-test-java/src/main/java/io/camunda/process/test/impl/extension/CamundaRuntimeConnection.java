@@ -7,7 +7,9 @@
  */
 package io.camunda.process.test.impl.extension;
 
+import io.camunda.client.CamundaClientBuilder;
 import java.net.URI;
+import java.util.function.Supplier;
 
 public interface CamundaRuntimeConnection extends AutoCloseable {
 
@@ -20,4 +22,6 @@ public interface CamundaRuntimeConnection extends AutoCloseable {
   URI getCamundaGrpcApiAddress();
 
   URI getConnectorsRestApiAddress();
+
+  Supplier<CamundaClientBuilder> createClientBuilder();
 }
