@@ -47,4 +47,8 @@ export const endpoints = {
     getUrl: ({processInstanceKey}: {processInstanceKey: string}) =>
       `/v2/process-instances/${processInstanceKey}/call-hierarchy`,
   },
+  searchVariables: {
+    method: 'POST',
+    getUrl: () => `/v2/variables/search`,
+  },
 };
