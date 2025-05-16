@@ -102,9 +102,10 @@ jobs:
         id: build-dist
         run: |
           ./mvnw -B -T1C -DskipTests -DskipChecks -Dflatten.skip=true -Dskip.fe.build=false package
-          export ARTIFACT=$(./mvnw -pl dist/ help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
-          echo "distball=dist/target/${ARTIFACT}.tar.gz" >> $GITHUB_OUTPUT
-          echo "distzip=dist/target/${ARTIFACT}.zip" >> $GITHUB_OUTPUT
+          ARTIFACT=$(./mvnw -pl dist/ help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
+          export ARTIFACT
+          echo "distball=dist/target/${ARTIFACT}.tar.gz" >> "$GITHUB_OUTPUT"
+          echo "distzip=dist/target/${ARTIFACT}.zip" >> "$GITHUB_OUTPUT"
 
       - name: Upload camunda-dist
         uses: actions/upload-artifact@v4
@@ -200,7 +201,7 @@ jobs:
           --data '{
             "text": "Job *${{ github.job }}* in workflow *${{ github.workflow }}* failed for *${{ github.repository }}*!\nBranch: ${{ github.ref }}\nCommit: ${{ github.sha }}\nRun: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>\nLogs: <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts|View Artifacts>"
           }' \
-          $SLACK_WEBHOOK_URL
+          "$SLACK_WEBHOOK_URL"
 
   test_c8run_e2e_on_windows:
     name: C8Run Test Windows
@@ -235,7 +236,12 @@ jobs:
           path: c8run
 
       - name: Get version of camunda-dist
-        run: echo CAMUNDA_VERSION=$(ls camunda-zeebe*.zip | grep -o 'camunda-zeebe-.*' | sed 's/camunda-zeebe-//' | sed 's/\.zip//') >> $GITHUB_ENV
+        run: |
+          for file in camunda-zeebe*.zip; do
+            version=$(echo "$file" | sed -E 's/camunda-zeebe-(.*)\.zip/\1/')
+            echo "CAMUNDA_VERSION=$version" >> "$GITHUB_ENV"
+            break  # just use the first matching file
+          done
         shell: bash
         working-directory: .\c8run
 
@@ -265,7 +271,7 @@ jobs:
           java-version: "22"
 
       - name: Set env
-        run: echo "JAVA_HOME=${JAVA_HOME_22_X64}" >> $GITHUB_ENV
+        run: echo "JAVA_HOME=${JAVA_HOME_22_X64}" >> "$GITHUB_ENV"
         shell: bash
 
       - name: Run c8run

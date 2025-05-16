@@ -63,10 +63,11 @@ jobs:
         name: Calculate image tag
         shell: bash
         run: |
+          # shellcheck disable=SC2153
           # Replace dots and slashes with dashes
           branch=${BRANCH/[\/\.]/-}
           version=$(./mvnw help:evaluate -q -DforceStdout -D"expression=project.version")
-          echo "image-tag=$version-$branch" >> $GITHUB_OUTPUT
+          echo "image-tag=$version-$branch" >> "$GITHUB_OUTPUT"
         env:
           BRANCH: ${{ inputs.branch }}
       - name: Maven Build
@@ -74,9 +75,10 @@ jobs:
         id: build-camunda
         run: |
           ./mvnw -B -T1C -DskipTests -DskipChecks -Dflatten.skip=true -Dskip.fe.build=false package
-          export ARTIFACT=$(./mvnw -pl dist/ help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
-          echo "distball=dist/target/${ARTIFACT}.tar.gz" >> $GITHUB_OUTPUT
-          echo "distzip=dist/target/${ARTIFACT}.zip" >> $GITHUB_OUTPUT
+          ARTIFACT=$(./mvnw -pl dist/ help:evaluate -Dexpression=project.build.finalName -q -DforceStdout)
+          export ARTIFACT
+          echo "distball=dist/target/${ARTIFACT}.tar.gz" >> "$GITHUB_OUTPUT"
+          echo "distzip=dist/target/${ARTIFACT}.zip" >> "$GITHUB_OUTPUT"
       - uses: ./.github/actions/build-platform-docker
         id: build-push-camunda-docker
         name: Build & Push zeebe-io/camunda

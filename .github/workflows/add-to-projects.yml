@@ -35,7 +35,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
       - id: has-project
-        run: echo "result=${{ fromJSON(steps.get_project_count.outputs.data).repository.issue.projectsV2.totalCount > 0 }}" >> $GITHUB_OUTPUT
+        run: echo "result=${{ fromJSON(steps.get_project_count.outputs.data).repository.issue.projectsV2.totalCount > 0 }}" >> "$GITHUB_OUTPUT"
       - id: add-to-zdp
         name: Add to ZDP project
         if: ${{ steps.has-project.outputs.result == 'false' }}

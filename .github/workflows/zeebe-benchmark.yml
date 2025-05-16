@@ -103,7 +103,7 @@ jobs:
       - name: Get image tag
         id: image-tag
         run: |
-          echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
   build-zeebe-image:
     name: Build Zeebe
@@ -228,7 +228,7 @@ jobs:
       - name: Find previous Helm chart release version
         id: find-chart-release
         run: |
-          echo "chart-release=$(helm get metadata -o json --namespace ${{ inputs.name }} ${{ inputs.name }} | jq --raw-output .version)" >> $GITHUB_OUTPUT
+          echo "chart-release=$(helm get metadata -o json --namespace ${{ inputs.name }} ${{ inputs.name }} | jq --raw-output .version)" >> "$GITHUB_OUTPUT"
       - name: Helm install
         run: >
           helm upgrade --install ${{ inputs.name }} zeebe-benchmark/zeebe-benchmark
@@ -253,7 +253,7 @@ jobs:
       - name: Summarize deployment
         if: success()
         run: |
-          cat >> $GITHUB_STEP_SUMMARY <<EOF
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
             ## Benchmark \`${{ inputs.name }}\` values
             \`\`\`yaml
             $(helm get values ${{ inputs.name }} -n ${{ inputs.name }})

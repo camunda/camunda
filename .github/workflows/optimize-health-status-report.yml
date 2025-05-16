@@ -47,7 +47,7 @@ jobs:
 
       - name: Format infra report for Slack
         id: format-report
-        run: echo "formatted_report=${{ steps.get-report.outputs.infra_report }}" | sed ':a;N;$!ba;s/\n/\\n/g' >> $GITHUB_ENV
+        run: echo "formatted_report=${{ steps.get-report.outputs.infra_report }}" | sed ':a;N;$!ba;s/\n/\\n/g' >> "$GITHUB_ENV"
 
       - name: Send report to slack channel
         uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0

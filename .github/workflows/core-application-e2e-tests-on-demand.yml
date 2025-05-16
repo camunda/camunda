@@ -82,7 +82,7 @@ jobs:
           done
 
           if [ "$ready" == "true" ]; then
-            echo "ready=true" >> $GITHUB_OUTPUT
+            echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "Services failed to start in time."
             exit 1
@@ -155,14 +155,14 @@ jobs:
           JUNIT_RESULTS_FILE: "qa/core-application-e2e-test-suite/test-results/junit-report.xml"
         run: |
           pip install trcli
-          trcli -y -h $TESTRAIL_HOST \
+          trcli -y -h "$TESTRAIL_HOST" \
             --project 'C8' \
-            --username $TESTRAIL_USERNAME \
-            --key $TESTRAIL_KEY \
+            --username "$TESTRAIL_USERNAME" \
+            --key "$TESTRAIL_KEY" \
             parse_junit --suite-id 17050 \
             --title "On Demand Core Application Test Run Results -  ${{ github.event.inputs.branch }}" \
             --close-run \
-            -f $JUNIT_RESULTS_FILE
+            -f "$JUNIT_RESULTS_FILE"
 
       - uses: actions/upload-artifact@v4
         if: failure()
