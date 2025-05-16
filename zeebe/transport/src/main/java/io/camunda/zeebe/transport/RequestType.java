@@ -23,6 +23,7 @@ public enum RequestType {
   ADMIN("admin"),
 
   BACKUP("backup"),
+  SNAPSHOT("snapshot"),
 
   // All other request types are considered unknown
   // This value exists mainly for testing purposes

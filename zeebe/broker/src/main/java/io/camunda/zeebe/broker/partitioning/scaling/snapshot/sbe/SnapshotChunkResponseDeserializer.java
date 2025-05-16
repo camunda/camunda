@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.partitioning.scaling.snapshot.sbe;
 
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotChunkRecord;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotChunkResponse;
+import java.util.Optional;
 import java.util.UUID;
 import org.agrona.DirectBuffer;
 
@@ -25,6 +26,9 @@ public class SnapshotChunkResponseDeserializer {
     final var checksum = decoder.checksum();
     final var fileBlockPosition = decoder.fileBlockPosition();
     final var totalFileSize = decoder.totalFileSize();
+    if (totalCount == 0 && checksum == 0 && fileBlockPosition == 0 && totalFileSize == 0) {
+      return new SnapshotChunkResponse(transferId, Optional.empty());
+    }
     final var snapshotId = decoder.snapshotId();
     final var chunkName = decoder.chunkName();
     final var content = new byte[decoder.contentLength()];
@@ -32,6 +36,6 @@ public class SnapshotChunkResponseDeserializer {
     final var chunk =
         new SnapshotChunkRecord(
             snapshotId, totalCount, chunkName, checksum, content, fileBlockPosition, totalFileSize);
-    return new SnapshotChunkResponse(transferId, chunk);
+    return new SnapshotChunkResponse(transferId, Optional.of(chunk));
   }
 }

@@ -35,7 +35,7 @@
     <data name="lastChunkName" id="4" type="varDataEncoding" />
   </sbe:message>
 
-  <sbe:message name="SnapshotChunkResponse" id="3">
+  <sbe:message name="SnapshotChunkResponse" id="2">
     <field name="transferId" id="1" type="UUID"/>
     <field name="totalCount" id="2" type="int32"/>
     <field name="checksum" id="3" type="uint64"/>
