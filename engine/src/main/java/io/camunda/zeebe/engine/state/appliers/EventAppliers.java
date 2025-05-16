@@ -185,7 +185,28 @@ public final class EventAppliers implements EventApplier {
         new ProcessInstanceSequenceFlowTakenApplier(elementInstanceState, processState));
     register(
         ProcessInstanceIntent.ELEMENT_MIGRATED,
+        1,
         new ProcessInstanceElementMigratedApplier(elementInstanceState));
+    /*
+    We skipped version 2 of the applier in 8.5 and must do the same for 8.4 since we are backporting
+    the solution to 8.4. Please find the reasoning copied from the 8.5 version's event applier.
+
+    We had to skip version 2 of the applier because there is already a V2 applier in 8.6 and
+    higher versions. If we do not skip V2, when the leader broker is upgrading from 8.5 to 8.6,
+    it would apply a V2 applier (already exist in higher versions). But a broker not upgraded
+    to 8.6 yet will replay the event with the old V2 applier (exist in 8.5). This will cause data
+    inconsistency.
+
+    Instead, we introduced a V3 applier in 8.5 and lower versions and will forward-port it to 8.6+
+    versions. Plus, in the 8.6+ versions, we will duplicate the V2 applier as V4, so that new events
+    will use the latest applier in order. Applier versions must do the same changes in the state
+    across all application versions.
+     */
+    register(
+        ProcessInstanceIntent.ELEMENT_MIGRATED,
+        3,
+        new ProcessInstanceElementMigratedV3Applier(
+            elementInstanceState, processState, state.getMessageState()));
   }
 
   private void registerProcessInstanceCreationAppliers(final MutableProcessingState state) {
