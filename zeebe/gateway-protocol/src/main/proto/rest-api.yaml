@@ -617,7 +617,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RoleSearchQueryResult"
-  /tenants/{tenantId}/applications/{clientId}:
+  /tenants/{tenantId}/clients/{clientId}:
     put:
       tags:
         - Tenant
