@@ -31,9 +31,13 @@ public class ValidateProcessTest extends AbstractZeebeValidationTest {
       {"non-executable-elements.bpmn", valid()},
       {"collaboration-with-lanes.bpmn", valid()},
       {
+        "default-base-start-event-end-event-process-id-missing.bpmn",
+        singletonList(expect(Process.class, "Element id must be present and not empty."))
+      },
+      {
         Bpmn.createExecutableProcess().done(),
         singletonList(expect(Process.class, "Must have at least one start event"))
-      },
+      }
     };
   }
 }
