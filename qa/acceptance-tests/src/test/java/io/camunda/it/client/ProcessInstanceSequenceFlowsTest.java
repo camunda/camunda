@@ -92,6 +92,7 @@ public class ProcessInstanceSequenceFlowsTest {
     // given
     final var processDefinitionKey = PROCESSES.get(0).getProcessDefinitionKey();
     final var processInstanceKey = INSTANCES.get(0).getProcessInstanceKey();
+    waitForSequenceFlows(camundaClient, processInstanceKey, 1);
 
     // when
     final var actual =
@@ -114,6 +115,7 @@ public class ProcessInstanceSequenceFlowsTest {
     // given
     final var processDefinitionKey = PROCESSES.get(1).getProcessDefinitionKey();
     final var processInstanceKey = INSTANCES.get(1).getProcessInstanceKey();
+    waitForSequenceFlows(camundaClient, processInstanceKey, 2);
 
     // when
     final var actual =
@@ -142,6 +144,7 @@ public class ProcessInstanceSequenceFlowsTest {
     // given
     final var processDefinitionKey = PROCESSES.get(2).getProcessDefinitionKey();
     final var processInstanceKey = INSTANCES.get(2).getProcessInstanceKey();
+    waitForSequenceFlows(camundaClient, processInstanceKey, 3);
 
     // when
     final var actual =
