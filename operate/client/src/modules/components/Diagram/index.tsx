@@ -136,12 +136,12 @@ const Diagram: React.FC<Props> = observer(
             {children}
           </>
         )}
-        {!isViewboxChanging &&
-          React.isValidElement(selectedFlowNodeOverlay) &&
-          React.cloneElement(selectedFlowNodeOverlay, {
-            selectedFlowNodeRef: viewer.selectedFlowNode,
-            diagramCanvasRef,
-          })}
+        {!isViewboxChanging && React.isValidElement(selectedFlowNodeOverlay)
+          ? React.cloneElement(selectedFlowNodeOverlay, {
+              selectedFlowNodeRef: viewer.selectedFlowNode,
+              diagramCanvasRef,
+            })
+          : null}
       </StyledDiagram>
     );
   },
