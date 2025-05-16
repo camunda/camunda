@@ -40,6 +40,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Base64;
 import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -103,7 +104,8 @@ public class OperateInternalApiRolePermissionsIT {
         .ownerType(OwnerType.ROLE)
         .resourceId("*")
         .resourceType(PROCESS_DEFINITION)
-        .permissionTypes(PermissionType.READ_PROCESS_INSTANCE)
+        .permissionTypes(
+            PermissionType.READ_PROCESS_INSTANCE, PermissionType.UPDATE_PROCESS_INSTANCE)
         .send()
         .join();
     addUserToRole(adminClient.getConfiguration().getRestAddress(), roleId, AUTHORIZED_USERNAME);
@@ -172,6 +174,26 @@ public class OperateInternalApiRolePermissionsIT {
         .isEqualTo(HttpStatus.FORBIDDEN.value());
   }
 
+  @Test
+  void shouldBePermittedToAddVariable(
+      @Authenticated(AUTHORIZED_USERNAME) final CamundaClient client) throws Exception {
+    final var statusCode =
+        addVariableToProcessInstance(client, AUTHORIZED_USERNAME, processInstanceKey);
+    assertThat(statusCode)
+        .describedAs("Is authorized to add variable")
+        .isEqualTo(HttpStatus.OK.value());
+  }
+
+  @Test
+  void shouldBeUnauthorizedToAddVariable(
+      @Authenticated(UNAUTHORIZED_USERNAME) final CamundaClient client) throws Exception {
+    final var statusCode =
+        addVariableToProcessInstance(client, UNAUTHORIZED_USERNAME, processInstanceKey);
+    assertThat(statusCode)
+        .describedAs("Is unauthorized to add variable")
+        .isEqualTo(HttpStatus.FORBIDDEN.value());
+  }
+
   private static void addUserToRole(final URI url, final String roleId, final String username)
       throws Exception {
     final var uri = URI.create(url + "v2/roles/%s/users/%s".formatted(roleId, username));
@@ -233,6 +255,39 @@ public class OperateInternalApiRolePermissionsIT {
             .header("Authorization", "Basic %s".formatted(encodedCredentials))
             .build();
 
+    // Send the request and get the response
+    return HTTP_CLIENT.send(request, BodyHandlers.ofString()).statusCode();
+  }
+
+  private int addVariableToProcessInstance(
+      final CamundaClient client, final String username, final long processInstanceKey)
+      throws URISyntaxException, IOException, InterruptedException {
+    final String url =
+        client.getConfiguration().getRestAddress()
+            + BASE_PATH
+            + "/"
+            + processInstanceKey
+            + "/operation";
+
+    final var encodedCredentials =
+        Base64.getEncoder().encodeToString("%s:%s".formatted(username, username).getBytes());
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(new URI(url))
+            .POST(
+                HttpRequest.BodyPublishers.ofString(
+                    """
+              {
+                "operationType": "ADD_VARIABLE",
+                "name": "addVariable",
+                "variableScopeId": "%s",
+                "variableName": "%s",
+                "variableValue": "%s"
+              }"""
+                        .formatted(processInstanceKey, UUID.randomUUID(), UUID.randomUUID())))
+            .header("Authorization", "Basic %s".formatted(encodedCredentials))
+            .header("Content-Type", "application/json")
+            .build();
     // Send the request and get the response
     return HTTP_CLIENT.send(request, BodyHandlers.ofString()).statusCode();
   }
