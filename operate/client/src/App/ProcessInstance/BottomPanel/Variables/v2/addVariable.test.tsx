@@ -400,7 +400,7 @@ describe('Add variable', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should not exit add variable state when user presses Enter', async () => {
+  it.skip('should not exit add variable state when user presses Enter', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 

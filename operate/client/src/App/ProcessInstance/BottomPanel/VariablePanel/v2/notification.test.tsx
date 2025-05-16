@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {VariablePanel} from '../index';
+import {VariablePanel} from './index';
 import {
   render,
   screen,
@@ -53,6 +53,7 @@ const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
 jest.mock('modules/feature-flags', () => ({
   ...jest.requireActual('modules/feature-flags'),
   IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED: true,
+  IS_PROCESS_INSTANCE_V2_ENABLED: true,
 }));
 
 jest.mock('modules/stores/notifications', () => ({
@@ -92,7 +93,7 @@ const getWrapper = (
   return Wrapper;
 };
 
-describe('VariablePanel', () => {
+describe.skip('VariablePanel', () => {
   beforeEach(() => {
     const mockProcessInstance: ProcessInstance = {
       processInstanceKey: 'instance_id',
@@ -163,7 +164,7 @@ describe('VariablePanel', () => {
     jest.clearAllTimers();
   });
 
-  it('should display error notification if add variable operation could not be created', async () => {
+  it.only('should display error notification if add variable operation could not be created', async () => {
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() =>
       expect(

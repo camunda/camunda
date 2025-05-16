@@ -296,6 +296,7 @@ const getFlowNodeInstances = async ({
 
 export {
   init,
+  pollInstances,
   startPolling,
   fetchNext,
   fetchPrevious,

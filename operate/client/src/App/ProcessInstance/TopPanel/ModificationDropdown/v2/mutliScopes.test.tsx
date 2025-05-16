@@ -7,7 +7,6 @@
  */
 
 import {screen} from '@testing-library/react';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {modificationsStore} from 'modules/stores/modifications';
 import {open} from 'modules/mocks/diagrams';
 import {renderPopover} from './mocks';
@@ -16,6 +15,7 @@ import {act} from 'react';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {cancelAllTokens} from 'modules/utils/modifications';
+import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 
 describe('Modification Dropdown - Multi Scopes', () => {
   const stats = {
@@ -87,9 +87,12 @@ describe('Modification Dropdown - Multi Scopes', () => {
     renderPopover();
 
     act(() => {
-      flowNodeSelectionStore.selectFlowNode({
-        flowNodeId: 'TaskB',
-      });
+      selectFlowNode(
+        {},
+        {
+          flowNodeId: 'TaskB',
+        },
+      );
     });
 
     expect(
@@ -106,9 +109,12 @@ describe('Modification Dropdown - Multi Scopes', () => {
       renderPopover();
 
       act(() => {
-        flowNodeSelectionStore.selectFlowNode({
-          flowNodeId: 'TaskB',
-        });
+        selectFlowNode(
+          {},
+          {
+            flowNodeId: 'TaskB',
+          },
+        );
       });
 
       expect(
@@ -152,9 +158,12 @@ describe('Modification Dropdown - Multi Scopes', () => {
       renderPopover();
 
       act(() => {
-        flowNodeSelectionStore.selectFlowNode({
-          flowNodeId: 'TaskB',
-        });
+        selectFlowNode(
+          {},
+          {
+            flowNodeId: 'TaskB',
+          },
+        );
       });
 
       expect(
@@ -174,9 +183,12 @@ describe('Modification Dropdown - Multi Scopes', () => {
       act(() => cancelAllTokens('TaskB', 0, 0, {}));
 
       act(() =>
-        flowNodeSelectionStore.selectFlowNode({
-          flowNodeId: 'TaskB',
-        }),
+        selectFlowNode(
+          {},
+          {
+            flowNodeId: 'TaskB',
+          },
+        ),
       );
 
       expect(
@@ -199,9 +211,12 @@ describe('Modification Dropdown - Multi Scopes', () => {
       act(() => cancelAllTokens('TaskB', 0, 0, {}));
 
       act(() =>
-        flowNodeSelectionStore.selectFlowNode({
-          flowNodeId: 'TaskB',
-        }),
+        selectFlowNode(
+          {},
+          {
+            flowNodeId: 'TaskB',
+          },
+        ),
       );
 
       expect(

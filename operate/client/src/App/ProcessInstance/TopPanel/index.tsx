@@ -115,7 +115,7 @@ const TopPanel: React.FC = observer(() => {
 
   useEffect(() => {
     if (flowNodeInstancesStatistics?.items) {
-      init('process-instance', flowNodeInstancesStatistics.items);
+      init(processInstanceId, flowNodeInstancesStatistics.items);
     }
   });
 

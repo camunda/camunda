@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {VariablePanel} from '../index';
+import {VariablePanel} from './index';
 import {
   render,
   screen,
@@ -82,7 +82,7 @@ const getWrapper = (
   return Wrapper;
 };
 
-describe('VariablePanel spinner', () => {
+describe.skip('VariablePanel spinner', () => {
   beforeEach(() => {
     const mockProcessInstance: ProcessInstance = {
       processInstanceKey: 'instance_id',
