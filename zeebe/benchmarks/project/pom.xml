@@ -129,7 +129,7 @@
     </dependency>
   </dependencies>
 
-  <repositories>
+  <!-- <repositories>
     <repository>
       <releases>
         <enabled>true</enabled>
@@ -153,7 +153,7 @@
       <name>Zeebe Snapshot Repository</name>
       <url>https://artifacts.camunda.com/artifactory/zeebe-io-snapshots/</url>
     </repository>
-  </repositories>
+  </repositories> -->
 
   <build>
     <plugins>
