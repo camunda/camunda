@@ -209,6 +209,15 @@ public final class EventAppliers implements EventApplier {
         2,
         new ProcessInstanceElementMigratedV2Applier(
             elementInstanceState, processState, state.getMessageState()));
+    /*
+    Need to forward-port the V3 applier introduced in #30187. It is the same as V2 applier, but since
+    the latest version is V3, we need to register it here as well.
+     */
+    register(
+        ProcessInstanceIntent.ELEMENT_MIGRATED,
+        3,
+        new ProcessInstanceElementMigratedV3Applier(
+            elementInstanceState, processState, state.getMessageState()));
   }
 
   private void registerProcessInstanceCreationAppliers(final MutableProcessingState state) {
