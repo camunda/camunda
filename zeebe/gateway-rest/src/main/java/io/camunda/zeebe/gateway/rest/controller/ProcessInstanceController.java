@@ -193,6 +193,22 @@ public class ProcessInstanceController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationModify);
   }
 
+  @CamundaGetMapping(path = "/{processInstanceKey}/incidents")
+  public ResponseEntity<Object> getIncidents(
+      @PathVariable("processInstanceKey") final Long processInstanceKey) {
+    try {
+      return ResponseEntity.ok()
+          .body(
+              SearchQueryResponseMapper.toIncidents(
+                  processInstanceServices
+                      .withAuthentication(RequestMapper.getAuthentication())
+                      .incidents(processInstanceKey)));
+
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
   private ResponseEntity<ProcessInstanceSearchQueryResult> search(
       final ProcessInstanceQuery query) {
     try {
