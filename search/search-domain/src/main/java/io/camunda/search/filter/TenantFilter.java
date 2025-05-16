@@ -26,6 +26,17 @@ public record TenantFilter(
     return builderFunction.apply(new Builder()).build();
   }
 
+  public Builder toBuilder() {
+    return new Builder()
+        .key(key)
+        .tenantId(tenantId)
+        .name(name)
+        .joinParentId(joinParentId)
+        .memberType(entityType)
+        .memberIds(memberIds)
+        .childMemberType(childMemberType);
+  }
+
   public static final class Builder implements ObjectBuilder<TenantFilter> {
 
     private Long key;
