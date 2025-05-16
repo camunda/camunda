@@ -47,6 +47,11 @@ public class RolesByClientIntegrationTest {
   }
 
   @Test
+  void shouldUnassignRoleFromClient() {
+    // TODO: client search is currently in implementation
+  }
+
+  @Test
   void shouldUnassignRoleFromClientOnRoleDeletion() {
     // TODO: client search is currently in implementation
   }
@@ -82,12 +87,51 @@ public class RolesByClientIntegrationTest {
   }
 
   @Test
+  void shouldRejectUnassigningRoleIfRoleNotAssignedToClient() {
+    // given
+    final var clientId = Strings.newRandomValidIdentityId();
+
+    // when/then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUnassignRoleFromClientCommand()
+                    .roleId(EXISTING_ROLE_ID)
+                    .clientId(clientId)
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining(
+            "Expected to remove entity with ID '"
+                + clientId
+                + "' from role with ID '"
+                + EXISTING_ROLE_ID
+                + "', but the entity is not assigned to this role.");
+  }
+
+  @Test
   void shouldReturnNotFoundOnAssigningRoleToClientIfRoleDoesNotExist() {
     // when / then
     assertThatThrownBy(
             () ->
                 camundaClient
                     .newAssignRoleToClientCommand()
+                    .roleId(Strings.newRandomValidIdentityId())
+                    .clientId(Strings.newRandomValidIdentityId())
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 404: 'Not Found'")
+        .hasMessageContaining("a role with this ID does not exist");
+  }
+
+  @Test
+  void shouldReturnNotFoundOnUnassigningRoleFromClientIfRoleDoesNotExist() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUnassignRoleFromClientCommand()
                     .roleId(Strings.newRandomValidIdentityId())
                     .clientId(Strings.newRandomValidIdentityId())
                     .send()
@@ -113,12 +157,42 @@ public class RolesByClientIntegrationTest {
   }
 
   @Test
+  void shouldRejectUnassigningRoleFromClientIfMissingClientId() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUnassignRoleFromClientCommand()
+                    .roleId(EXISTING_ROLE_ID)
+                    .clientId(null)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("clientId must not be null");
+  }
+
+  @Test
   void shouldRejectAssigningRoleToClientIfMissingRoleId() {
     // when / then
     assertThatThrownBy(
             () ->
                 camundaClient
                     .newAssignRoleToClientCommand()
+                    .roleId(null)
+                    .clientId(Strings.newRandomValidIdentityId())
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("roleId must not be null");
+  }
+
+  @Test
+  void shouldRejectUnassigningRolefromClientIfMissingRoleId() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUnassignRoleFromClientCommand()
                     .roleId(null)
                     .clientId(Strings.newRandomValidIdentityId())
                     .send()
