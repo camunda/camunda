@@ -336,6 +336,62 @@ class RoleAuthorizationIT {
   }
 
   @Test
+  void shouldUnassignRoleFromMappingIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    final String mappingId = Strings.newRandomValidIdentityId();
+
+    adminClient
+        .newCreateMappingCommand()
+        .mappingId(mappingId)
+        .name("mappingName")
+        .claimName("claimName")
+        .claimValue("claimValue")
+        .send()
+        .join();
+
+    adminClient
+        .newAssignRoleToMappingCommand()
+        .roleId(ROLE_ID_1)
+        .mappingId(mappingId)
+        .send()
+        .join();
+
+    adminClient
+        .newUnassignRoleFromMappingCommand()
+        .roleId(ROLE_ID_1)
+        .mappingId(mappingId)
+        .send()
+        .join();
+
+    Awaitility.await("Mapping is unassigned from the role")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        searchRolesByGroupId(
+                                adminClient.getConfiguration().getRestAddress().toString(),
+                                ADMIN,
+                                mappingId)
+                            .items())
+                    .isEmpty());
+  }
+
+  @Test
+  void unassignRoleFromMappingShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUnassignRoleFromMappingCommand()
+                    .roleId(Strings.newRandomValidIdentityId())
+                    .mappingId(Strings.newRandomValidIdentityId())
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
+
+  @Test
   void assignRoleToGroupShouldReturnForbiddenIfUnauthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
     assertThatThrownBy(
