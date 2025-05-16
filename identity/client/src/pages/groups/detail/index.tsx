@@ -27,10 +27,12 @@ import {
   IS_GROUP_USERS_SUPPORTED,
   IS_GROUP_ROLES_SUPPORTED,
   IS_GROUP_MAPPINGS_SUPPORTED,
+  IS_GROUP_CLIENTS_SUPPORTED,
 } from "src/feature-flags";
 import Members from "src/pages/groups/detail/members";
 import Roles from "src/pages/groups/detail/roles";
 import Mappings from "src/pages/groups/detail/mappings";
+import Clients from "src/pages/groups/detail/clients";
 import { isOIDC } from "src/configuration";
 
 const Details: FC = () => {
@@ -97,7 +99,8 @@ const Details: FC = () => {
         </Stack>
         {(IS_GROUP_USERS_SUPPORTED ||
           IS_GROUP_ROLES_SUPPORTED ||
-          IS_GROUP_MAPPINGS_SUPPORTED) &&
+          IS_GROUP_MAPPINGS_SUPPORTED ||
+          true) &&
           group && (
             <Section>
               <Tabs
@@ -126,6 +129,15 @@ const Details: FC = () => {
                           key: "mappings",
                           label: t("mappings"),
                           content: <Mappings groupId={group?.groupKey} />,
+                        },
+                      ]
+                    : []),
+                  ...(IS_GROUP_CLIENTS_SUPPORTED && isOIDC
+                    ? [
+                        {
+                          key: "clients",
+                          label: t("clients"),
+                          content: <Clients groupId={group?.groupId} />,
                         },
                       ]
                     : []),

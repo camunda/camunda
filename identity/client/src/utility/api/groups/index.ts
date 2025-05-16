@@ -21,6 +21,7 @@ import { Mapping } from "src/utility/api/mappings";
 export const GROUPS_ENDPOINT = "/groups";
 
 export type Group = {
+  groupId: string;
   groupKey: string;
   name: string;
   description?: string;
@@ -37,7 +38,10 @@ export const getGroupDetails: ApiDefinition<Group, GetGroupParams> = ({
   groupKey,
 }) => apiGet(`${GROUPS_ENDPOINT}/${groupKey}`);
 
-export type CreateGroupParams = { name: Group["name"] };
+export type CreateGroupParams = {
+  groupId: Group["groupId"];
+  name: Group["name"];
+};
 
 export const createGroup: ApiDefinition<undefined, CreateGroupParams> = (
   params,
@@ -106,3 +110,31 @@ export const unassignGroupMapping: ApiDefinition<
   UnassignGroupMappingParams
 > = ({ groupId, mappingId }) =>
   apiDelete(`${GROUPS_ENDPOINT}/${groupId}/mapping-rules/${mappingId}`);
+
+type GetGroupClientsParams = {
+  groupId: string;
+};
+
+export type Client = {
+  clientId: string;
+};
+
+export const getClientsByGroupId: ApiDefinition<
+  SearchResponse<Client>,
+  GetGroupClientsParams
+> = ({ groupId }) => apiPost(`${GROUPS_ENDPOINT}/${groupId}/clients/search`);
+
+type AssignGroupClientParams = GetGroupClientsParams & Client;
+export const assignGroupClient: ApiDefinition<
+  undefined,
+  AssignGroupClientParams
+> = ({ groupId, clientId }) => {
+  return apiPut(`${GROUPS_ENDPOINT}/${groupId}/clients/${clientId}`);
+};
+
+type UnassignGroupClientParams = AssignGroupClientParams;
+export const unassignGroupClient: ApiDefinition<
+  undefined,
+  UnassignGroupClientParams
+> = ({ groupId, clientId }) =>
+  apiDelete(`${GROUPS_ENDPOINT}/${groupId}/clients/${clientId}`);

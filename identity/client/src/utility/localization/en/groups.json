@@ -62,5 +62,9 @@
   "claimName": "Claim name",
   "claimValue": "Claim value",
   "searchAndAssignMappingToGroup": "Search and assign mapping to group",
-  "removeMappingConfirmation": "Are you sure you want to remove <strong>{{mappingId}}</strong> from this group?"
+  "removeMappingConfirmation": "Are you sure you want to remove <strong>{{mappingId}}</strong> from this group?",
+  "assignClientToGroup": "Assign client to group",
+  "groupClientRemoved": "Group client removed",
+  "removeClientFromGroup": "Are you sure you want to remove <strong>{{clientId}}</strong> from this group?",
+  "assignClientsToGroup": "Assign clients to this Group"
 }
