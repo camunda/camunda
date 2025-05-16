@@ -764,6 +764,41 @@ final class ActorFutureTest {
   }
 
   @Test
+  void shouldChainWithAndThenWithBifunction() {
+    // given
+    final AtomicInteger executorCount = new AtomicInteger(0);
+    final Executor decoratedExecutor =
+        runnable -> {
+          executorCount.getAndIncrement();
+          runnable.run();
+        };
+
+    final var future1 = new CompletableActorFuture<>();
+    final var future2 = new CompletableActorFuture<>();
+
+    // when -- chain on uncompleted future
+    final var chainedFuture = future1.andThen((r, err) -> future2, decoratedExecutor);
+
+    // then -- nothing ran yet
+    assertThat(chainedFuture).isNotDone();
+    assertThat(executorCount).hasValue(0);
+
+    // when -- complete initial future
+    future1.complete(null);
+
+    // then -- chained future is still not completed
+    assertThat(chainedFuture).isNotDone();
+    assertThat(executorCount).hasValue(1);
+
+    // when -- complete next future
+    future2.complete(null);
+
+    // then -- chained future is completed
+    assertThat(chainedFuture).isDone();
+    assertThat(executorCount).hasValue(2);
+  }
+
+  @Test
   void andThenChainPropagatesInitialException() {
     // given
     final var future1 = new CompletableActorFuture<>();
@@ -790,6 +825,34 @@ final class ActorFutureTest {
 
     // then
     assertThat(chained).succeedsWithin(Duration.ofSeconds(1)).isEqualTo("expected");
+  }
+
+  @Test
+  void andThenBiFunctionPropagatesValue() {
+    final var chained =
+        CompletableActorFuture.completed("expected")
+            .andThen((v, err) -> CompletableActorFuture.completed(v), Runnable::run);
+    assertThat(chained).isDone();
+    assertThat(chained).succeedsWithin(Duration.ZERO).isEqualTo("expected");
+  }
+
+  @Test
+  void andThenBiFunctionPropagatesError() {
+    final var chained =
+        CompletableActorFuture.completedExceptionally(new RuntimeException("expected"))
+            .andThen((v, err) -> CompletableActorFuture.completedExceptionally(err), Runnable::run);
+    assertThat(chained).isDone();
+    assertThat(chained).failsWithin(Duration.ZERO).withThrowableThat().withMessage("expected");
+  }
+
+  @Test
+  void andThenCanAbsolveAFailedFuture() {
+    // given
+    final var chained =
+        CompletableActorFuture.completedExceptionally(new RuntimeException(""))
+            .andThen((v, throwable) -> CompletableActorFuture.completed(1), Runnable::run);
+    assertThat(chained).isDone();
+    assertThat(chained).succeedsWithin(Duration.ZERO).isEqualTo(1);
   }
 
   @Test
