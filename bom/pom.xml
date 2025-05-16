@@ -175,18 +175,6 @@
       <name>Camunda BPM Snapshot Repository</name>
       <url>https://artifacts.camunda.com/artifactory/camunda-bpm-snapshots/</url>
     </repository>
-
-    <repository>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-      <id>elasticsearch</id>
-      <name>Elasticsearch Repository</name>
-      <url>https://artifacts.elastic.co/maven/</url>
-    </repository>
   </repositories>
 
   <build>
