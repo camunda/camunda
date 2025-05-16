@@ -288,7 +288,6 @@ public class ProcessHandlerTest {
             .withProcessDefinitionKey(expectedId)
             .withBpmnProcessId("testProcessId")
             .withVersionTag("processTag")
-            .withVersion(5)
             .withResource(Files.readAllBytes(Path.of(resource.getPath())))
             .build();
 
@@ -306,6 +305,36 @@ public class ProcessHandlerTest {
         .isPresent()
         .get()
         .extracting(CachedProcessEntity::name, CachedProcessEntity::versionTag)
-        .containsExactly("testProcessName", "5");
+        .containsExactly("testProcessName", "processTag");
+  }
+
+  @Test
+  void shouldUseProcessVersionIfVersionTagIsNull() throws IOException {
+    final var resource = getClass().getClassLoader().getResource("process/test-process.bpmn");
+    final ImmutableProcess processRecordValue =
+        ImmutableProcess.builder()
+            .from(factory.generateObject(ImmutableProcess.class))
+            .withProcessDefinitionKey(123)
+            .withBpmnProcessId("testProcessId")
+            .withVersionTag(null)
+            .withVersion(3)
+            .withResource(Files.readAllBytes(Path.of(resource.getPath())))
+            .build();
+
+    final Record<Process> processRecord =
+        factory.generateRecord(
+            ValueType.PROCESS,
+            r -> r.withIntent(ProcessIntent.CREATED).withValue(processRecordValue));
+
+    // when
+    final ProcessEntity processEntity = new ProcessEntity();
+    underTest.updateEntity(processRecord, processEntity);
+
+    // then
+    assertThat(processCache.get(processRecord.getValue().getProcessDefinitionKey()))
+        .isPresent()
+        .get()
+        .extracting(CachedProcessEntity::name, CachedProcessEntity::versionTag)
+        .containsExactly("testProcessName", "3");
   }
 }
