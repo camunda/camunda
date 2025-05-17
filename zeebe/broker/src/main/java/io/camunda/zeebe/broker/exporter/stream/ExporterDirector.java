@@ -378,8 +378,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       LangUtil.rethrowUnchecked(e);
     }
 
-    isOpened.set(true);
-
     // remove exporters from state
     // which are no longer in our configuration
     clearExporterState();
@@ -543,6 +541,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     actor.runOnCompletion(
         containerOpenFutures,
         (error) -> {
+          isOpened.set(true);
           if (state.hasExporters()) {
             final long snapshotPosition = state.getLowestPosition();
             // start reading and exporting
