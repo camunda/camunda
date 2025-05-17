@@ -13,6 +13,7 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public final class InFlightLongPollingActivateJobsRequestsState<T> {
 
@@ -21,7 +22,7 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
   private final Queue<InflightActivateJobsRequest<T>> activeRequests = new LinkedList<>();
   private final Queue<InflightActivateJobsRequest<T>> pendingRequests = new LinkedList<>();
   private final Set<InflightActivateJobsRequest<T>> activeRequestsToBeRepeated = new HashSet<>();
-  private int failedAttempts;
+  private final AtomicInteger failedAttempts = new AtomicInteger();
   private long lastUpdatedTime;
 
   private final AtomicBoolean ongoingNotification = new AtomicBoolean(false);
@@ -33,12 +34,12 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
   }
 
   public void incrementFailedAttempts(final long lastUpdatedTime) {
-    failedAttempts++;
+    failedAttempts.incrementAndGet();
     this.lastUpdatedTime = lastUpdatedTime;
   }
 
   public boolean shouldAttempt(final int attemptThreshold) {
-    return failedAttempts < attemptThreshold;
+    return failedAttempts.get() < attemptThreshold;
   }
 
   public void resetFailedAttempts() {
@@ -46,11 +47,11 @@ public final class InFlightLongPollingActivateJobsRequestsState<T> {
   }
 
   public int getFailedAttempts() {
-    return failedAttempts;
+    return failedAttempts.get();
   }
 
   public void setFailedAttempts(final int failedAttempts) {
-    this.failedAttempts = failedAttempts;
+    this.failedAttempts.set(failedAttempts);
     if (failedAttempts == 0) {
       activeRequestsToBeRepeated.addAll(activeRequests);
     }

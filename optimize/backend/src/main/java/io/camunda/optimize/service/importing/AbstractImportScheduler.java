@@ -25,7 +25,7 @@ public abstract class AbstractImportScheduler<T extends SchedulerConfig>
       org.slf4j.LoggerFactory.getLogger(AbstractImportScheduler.class);
   protected final List<ImportMediator> importMediators;
   protected final T dataImportSourceDto;
-  protected boolean isImporting = false;
+  protected volatile boolean isImporting = false;
 
   public AbstractImportScheduler(
       final List<ImportMediator> importMediators, final T dataImportSourceDto) {

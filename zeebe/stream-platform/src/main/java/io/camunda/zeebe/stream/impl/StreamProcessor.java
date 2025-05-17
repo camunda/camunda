@@ -106,7 +106,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private CompletableActorFuture<Void> openFuture;
   private final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
   private volatile long lastTickTime;
-  private boolean shouldProcess = true;
+  private volatile boolean shouldProcess = true;
   private ActorFuture<LastProcessingPositions> replayCompletedFuture;
 
   private final List<RecordProcessor> recordProcessors = new ArrayList<>();

@@ -237,7 +237,7 @@ public class DataGenerator {
     private final BlockingQueue<Future> futures;
     private volatile boolean shuttingDown = false;
 
-    private int responseCount = 0;
+    private final AtomicInteger responseCount = new AtomicInteger();
 
     public ResponseChecker(final BlockingQueue<Future> futures) {
       this.futures = futures;
@@ -254,15 +254,15 @@ public class DataGenerator {
         } catch (final InterruptedException ex) {
           Thread.currentThread().interrupt();
         }
-        responseCount++;
-        if (responseCount % 1000 == 0) {
+        responseCount.incrementAndGet();
+        if (responseCount.get() % 1000 == 0) {
           LOGGER.info("{} process instances started", responseCount);
         }
       }
     }
 
     public int getResponseCount() {
-      return responseCount;
+      return responseCount.get();
     }
 
     public void close() {
@@ -275,7 +275,7 @@ public class DataGenerator {
 
     private final BlockingQueue<Future> futures;
 
-    private boolean shuttingDown = false;
+    private volatile boolean shuttingDown = false;
 
     private final AtomicInteger countSimpleProcess;
     private final AtomicInteger countCallActivityProcess;

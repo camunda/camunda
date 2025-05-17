@@ -36,7 +36,7 @@ public class OperationExecutor extends Thread {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OperationExecutor.class);
 
-  private boolean shutdown = false;
+  private volatile boolean shutdown = false;
   private final int defaultBackoff = 2000;
 
   @Autowired private List<OperationHandler> handlers;
@@ -52,7 +52,7 @@ public class OperationExecutor extends Thread {
   @Qualifier("operationsThreadPoolExecutor")
   private ThreadPoolTaskExecutor operationsTaskExecutor;
 
-  private List<ExecutionFinishedListener> listeners = new ArrayList<>();
+  private final List<ExecutionFinishedListener> listeners = new ArrayList<>();
 
   public void startExecuting() {
     if (operateProperties.getOperationExecutor().isExecutorEnabled()) {
@@ -79,7 +79,7 @@ public class OperationExecutor extends Thread {
           sleepFor(defaultBackoff);
         }
 
-      } catch (Exception ex) {
+      } catch (final Exception ex) {
         // retry
         LOGGER.error(
             "Something went wrong, while executing operations batch. Will be retried.", ex);
@@ -96,7 +96,7 @@ public class OperationExecutor extends Thread {
     final List<OperationEntity> lockedOperations = batchOperationWriter.lockBatch();
 
     // execute all locked operations
-    for (OperationEntity operation : lockedOperations) {
+    for (final OperationEntity operation : lockedOperations) {
       final OperationHandler handler = getOperationHandlers().get(operation.getType());
       if (handler == null) {
         LOGGER.info(
@@ -115,18 +115,18 @@ public class OperationExecutor extends Thread {
   public Map<OperationType, OperationHandler> getOperationHandlers() {
     // populate handlers map
     final Map<OperationType, OperationHandler> handlerMap = new HashMap<>();
-    for (OperationHandler handler : handlers) {
+    for (final OperationHandler handler : handlers) {
       handler.getTypes().forEach(t -> handlerMap.put(t, handler));
     }
     return handlerMap;
   }
 
-  public void registerListener(ExecutionFinishedListener listener) {
-    this.listeners.add(listener);
+  public void registerListener(final ExecutionFinishedListener listener) {
+    listeners.add(listener);
   }
 
   private void notifyExecutionFinishedListeners() {
-    for (ExecutionFinishedListener listener : listeners) {
+    for (final ExecutionFinishedListener listener : listeners) {
       listener.onExecutionFinished();
     }
   }

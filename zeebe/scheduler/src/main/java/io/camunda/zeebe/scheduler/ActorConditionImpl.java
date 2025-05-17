@@ -16,7 +16,7 @@ public final class ActorConditionImpl implements ActorCondition, ActorSubscripti
   private final String conditionName;
   private final ActorTask task;
   private final AtomicLong triggerCount;
-  private long runCount = 0;
+  private final AtomicLong runCount = new AtomicLong(0L);
 
   public ActorConditionImpl(final String conditionName, final ActorJob job) {
     this.conditionName = conditionName;
@@ -38,7 +38,7 @@ public final class ActorConditionImpl implements ActorCondition, ActorSubscripti
 
   @Override
   public boolean poll() {
-    return triggerCount.get() > runCount;
+    return triggerCount.get() > runCount.get();
   }
 
   @Override
@@ -53,7 +53,7 @@ public final class ActorConditionImpl implements ActorCondition, ActorSubscripti
 
   @Override
   public void onJobCompleted() {
-    runCount++;
+    runCount.incrementAndGet();
   }
 
   @Override

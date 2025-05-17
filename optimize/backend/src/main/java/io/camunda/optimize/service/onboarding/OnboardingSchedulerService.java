@@ -43,7 +43,7 @@ public class OnboardingSchedulerService extends AbstractScheduledService
   private final CustomerOnboardingDataImportService onboardingDataService;
   private CCSaaSOnboardingPanelNotificationService saaSPanelNotificationService;
   @Autowired private ApplicationContext applicationContext;
-  private int intervalToCheckForOnboardingDataInSeconds;
+  private volatile int intervalToCheckForOnboardingDataInSeconds;
   private Consumer<String> emailNotificationHandler;
   private Consumer<String> panelNotificationHandler;
 
