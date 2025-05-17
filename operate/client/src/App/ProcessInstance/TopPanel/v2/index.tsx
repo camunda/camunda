@@ -109,7 +109,7 @@ const TopPanel: React.FC = observer(() => {
   const affectedTokenCount = totalMoveOperationRunningInstances || 1;
   const visibleAffectedTokenCount =
     totalMoveOperationRunningInstancesVisible || 1;
-  const {data: processedSequenceFlows} =
+  const {data: processedSequenceFlowsFromHook} =
     useProcessSequenceFlows(processInstanceId);
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const rootNode = useRootNode();
@@ -344,7 +344,7 @@ const TopPanel: React.FC = observer(() => {
                 )
               }
               highlightedSequenceFlows={[
-                ...(processedSequenceFlows || []),
+                ...(processedSequenceFlowsFromHook || []),
                 ...compensationAssociationIds,
               ]}
               highlightedFlowNodeIds={executedFlowNodes?.map(
