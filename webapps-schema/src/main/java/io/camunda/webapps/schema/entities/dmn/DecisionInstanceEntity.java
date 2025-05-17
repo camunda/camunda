@@ -28,7 +28,8 @@ public class DecisionInstanceEntity
   private Integer executionIndex;
   private DecisionInstanceState state;
   private OffsetDateTime evaluationDate;
-  private String evaluationFailure;
+  @Deprecated private String evaluationFailure;
+  private String evaluationFailureMessage;
   private Long position;
   private long decisionRequirementsKey;
   private String decisionRequirementsId;
@@ -127,6 +128,15 @@ public class DecisionInstanceEntity
 
   public DecisionInstanceEntity setEvaluationFailure(final String evaluationFailure) {
     this.evaluationFailure = evaluationFailure;
+    return this;
+  }
+
+  public String getEvaluationFailureMessage() {
+    return evaluationFailureMessage;
+  }
+
+  public DecisionInstanceEntity setEvaluationFailureMessage(final String evaluationFailureMessage) {
+    this.evaluationFailureMessage = evaluationFailureMessage;
     return this;
   }
 
@@ -333,6 +343,7 @@ public class DecisionInstanceEntity
             state,
             evaluationDate,
             evaluationFailure,
+            evaluationFailureMessage,
             position,
             decisionRequirementsKey,
             decisionRequirementsId,
@@ -378,6 +389,7 @@ public class DecisionInstanceEntity
         && state == that.state
         && Objects.equals(evaluationDate, that.evaluationDate)
         && Objects.equals(evaluationFailure, that.evaluationFailure)
+        && Objects.equals(evaluationFailureMessage, that.evaluationFailureMessage)
         && Objects.equals(position, that.position)
         && Objects.equals(decisionRequirementsId, that.decisionRequirementsId)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)

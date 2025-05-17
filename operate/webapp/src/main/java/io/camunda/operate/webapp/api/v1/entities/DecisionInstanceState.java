@@ -27,4 +27,15 @@ public enum DecisionInstanceState {
         return UNKNOWN;
     }
   }
+
+  public static DecisionInstanceState fromString(final String state) {
+    if (state == null) {
+      return UNSPECIFIED;
+    }
+    try {
+      return DecisionInstanceState.valueOf(state);
+    } catch (final IllegalArgumentException ex) {
+      return UNKNOWN;
+    }
+  }
 }

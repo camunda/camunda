@@ -31,6 +31,7 @@ public class DecisionInstanceEntityTransformer
         toDecisionInstanceState(source.getState()),
         source.getEvaluationDate(),
         source.getEvaluationFailure(),
+        source.getEvaluationFailureMessage(),
         source.getProcessDefinitionKey(),
         source.getProcessInstanceKey(),
         source.getTenantId(),

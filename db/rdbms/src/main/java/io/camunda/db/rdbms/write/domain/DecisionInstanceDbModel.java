@@ -20,6 +20,7 @@ public record DecisionInstanceDbModel(
     DecisionInstanceState state,
     OffsetDateTime evaluationDate,
     String evaluationFailure,
+    String evaluationFailureMessage,
     String result,
     Long flowNodeInstanceKey,
     String flowNodeId,
@@ -50,6 +51,7 @@ public record DecisionInstanceDbModel(
     private DecisionInstanceState state;
     private OffsetDateTime evaluationDate;
     private String evaluationFailure;
+    private String evaluationFailureMessage;
     private String result;
     private Long flowNodeInstanceKey;
     private String flowNodeId;
@@ -90,6 +92,11 @@ public record DecisionInstanceDbModel(
 
     public Builder evaluationFailure(final String value) {
       evaluationFailure = value;
+      return this;
+    }
+
+    public Builder evaluationFailureMessage(final String value) {
+      evaluationFailureMessage = value;
       return this;
     }
 
@@ -186,6 +193,7 @@ public record DecisionInstanceDbModel(
           state,
           evaluationDate,
           evaluationFailure,
+          evaluationFailureMessage,
           result,
           flowNodeInstanceKey,
           flowNodeId,
