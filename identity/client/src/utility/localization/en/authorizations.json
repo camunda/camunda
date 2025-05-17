@@ -6,6 +6,7 @@
   "DECISION_REQUIREMENTS_DEFINITION": "Decision requirements definition",
   "RESOURCE": "Resource",
   "GROUP": "Group",
+  "CLIENT": "Client",
   "MAPPING_RULE": "Mapping rule",
   "MESSAGE": "Message",
   "PROCESS_DEFINITION": "Process definition",
