@@ -19,6 +19,8 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.PersistedSnapshotReservation;
+import io.camunda.zeebe.snapshots.PersistedSnapshotReservation.Reason;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
@@ -34,6 +36,7 @@ import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.zip.CRC32C;
 import java.util.zip.Checksum;
@@ -194,6 +197,17 @@ public final class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapsh
 
     reservations.add(reservation);
     return CompletableActorFuture.completed(reservation);
+  }
+
+  @Override
+  public ActorFuture<PersistedSnapshotReservation> reserveWithPersistence(
+      final UUID id, final long validUntil, final Reason reason) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public ActorFuture<PersistedSnapshotReservation> getPersistedSnapshotReservation(final UUID id) {
+    throw new UnsupportedOperationException();
   }
 
   @Override

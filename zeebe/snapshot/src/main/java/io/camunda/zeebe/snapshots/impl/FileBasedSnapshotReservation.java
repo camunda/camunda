@@ -8,18 +8,32 @@
 package io.camunda.zeebe.snapshots.impl;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.snapshots.SnapshotReservation;
+import io.camunda.zeebe.snapshots.PersistedSnapshotReservation;
+import java.util.UUID;
 
-public class FileBasedSnapshotReservation implements SnapshotReservation {
+public record FileBasedSnapshotReservation(
+    FileBasedSnapshotReservationStore reservations,
+    UUID reservationId,
+    boolean isInMemory,
+    long validUntil,
+    Reason reason)
+    implements PersistedSnapshotReservation {
 
-  private final FileBasedSnapshot snapshot;
+  public static FileBasedSnapshotReservation inMemory(
+      final FileBasedSnapshotReservationStore reservations) {
+    return new FileBasedSnapshotReservation(reservations, UUID.randomUUID(), true, 0L, null);
+  }
 
-  public FileBasedSnapshotReservation(final FileBasedSnapshot snapshot) {
-    this.snapshot = snapshot;
+  public static FileBasedSnapshotReservation persisted(
+      final FileBasedSnapshotReservationStore reservations,
+      final UUID reservationId,
+      final long validUntil,
+      final Reason reason) {
+    return new FileBasedSnapshotReservation(reservations, reservationId, false, validUntil, reason);
   }
 
   @Override
   public ActorFuture<Void> release() {
-    return snapshot.removeReservation(this);
+    return reservations.removeReservation(this);
   }
 }

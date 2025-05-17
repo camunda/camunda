@@ -12,13 +12,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
+import io.camunda.zeebe.snapshots.PersistedSnapshotReservation.Reason;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.InstantSource;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,11 +44,19 @@ public final class FileBasedSnapshotTest {
   @Rule public ActorSchedulerRule scheduler = new ActorSchedulerRule();
 
   private Path snapshotDir;
+  private Path reservationsDir;
   private TestActor actor;
+  private final InstantSource clock =
+      Clock.fixed(
+          LocalDateTime.of(LocalDate.of(2025, 4, 30), LocalTime.of(8, 30))
+              .toInstant(ZoneOffset.UTC),
+          ZoneId.of("UTC"));
+  private final long validUntil = clock.millis() + Duration.ofMinutes(5).toMillis();
 
   @Before
   public void beforeEach() throws Exception {
     snapshotDir = temporaryFolder.newFolder("store", "snapshots").toPath();
+    reservationsDir = temporaryFolder.newFolder("store", "reservations").toPath();
     actor = new TestActor();
     scheduler.submitActor(actor);
   }
@@ -47,8 +65,13 @@ public final class FileBasedSnapshotTest {
   public void shouldDeleteSnapshot() throws IOException {
     // given
     final var snapshotPath = snapshotDir.resolve("snapshot");
-    final Path checksumPath = snapshotDir.resolve("checksum");
+    final var checksumPath = snapshotDir.resolve("checksum");
     final var snapshot = createSnapshot(snapshotPath, checksumPath);
+    final var reservationPath = reservationsDir.resolve(snapshot.getReservationsPath());
+
+    assertThat(reservationPath).exists();
+    assertThat(snapshotPath).exists();
+    assertThat(checksumPath).exists();
 
     // when
     snapshot.delete();
@@ -56,6 +79,7 @@ public final class FileBasedSnapshotTest {
     // then
     assertThat(snapshotPath).doesNotExist();
     assertThat(checksumPath).doesNotExist();
+    assertThat(reservationPath).doesNotExist();
   }
 
   @Test
@@ -70,6 +94,97 @@ public final class FileBasedSnapshotTest {
 
     // then
     assertThat(snapshot.isReserved()).isTrue();
+  }
+
+  @Test
+  public void shouldReserveSnapshotPersistently() throws IOException {
+    // given
+    final var snapshotPath = snapshotDir.resolve("snapshot");
+    final Path checksumPath = snapshotDir.resolve("checksum");
+    var snapshot = createSnapshot(snapshotPath, checksumPath);
+    final var id = UUID.randomUUID();
+    final var reservationId =
+        snapshot.reserveWithPersistence(id, validUntil, Reason.SCALE_UP).join().reservationId();
+    assertThat(snapshot.isReserved()).isTrue();
+
+    // when
+    snapshot = openSnapshot(snapshotPath, checksumPath);
+
+    // then
+    assertThat(snapshot.isReserved()).isTrue();
+
+    // when
+    final var reservation = snapshot.getPersistedSnapshotReservation(reservationId).join();
+    reservation.release().join();
+
+    assertThat(snapshot.isReserved()).isFalse();
+  }
+
+  @Test
+  public void shouldReserveSnapshotPersistentlyAndInMemory() throws IOException {
+    // given
+    final var snapshotPath = snapshotDir.resolve("snapshot");
+    final Path checksumPath = snapshotDir.resolve("checksum");
+    final var snapshot = createSnapshot(snapshotPath, checksumPath);
+    final var id = UUID.randomUUID();
+    final var persistedReservation =
+        snapshot.reserveWithPersistence(id, validUntil, Reason.BACKUP).join();
+    assertThat(snapshot.isReserved()).isTrue();
+    final var inMemoryReservation = snapshot.reserve().join();
+    assertThat(snapshot.isReserved()).isTrue();
+
+    // when
+    persistedReservation.release().join();
+    // then
+    assertThat(snapshot.isReserved()).isTrue();
+    // when
+    inMemoryReservation.release().join();
+    // then
+    assertThat(snapshot.isReserved()).isFalse();
+  }
+
+  @Test
+  public void shouldAssignANewReservationIdAfterARestart() throws IOException {
+    // given
+    final var snapshotPath = snapshotDir.resolve("snapshot");
+    final Path checksumPath = snapshotDir.resolve("checksum");
+    var snapshot = createSnapshot(snapshotPath, checksumPath);
+    final var id = UUID.randomUUID();
+    final var reservationId =
+        snapshot.reserveWithPersistence(id, validUntil, Reason.SCALE_UP).join().reservationId();
+    assertThat(snapshot.isReserved()).isTrue();
+
+    // when
+    snapshot = openSnapshot(snapshotPath, checksumPath);
+
+    // then
+    assertThat(snapshot.isReserved()).isTrue();
+
+    // when
+    final var id2 = UUID.randomUUID();
+    final var newReservation =
+        snapshot.reserveWithPersistence(id2, validUntil, Reason.SCALE_UP).join();
+    // then
+    assertThat(newReservation.reservationId()).isNotEqualTo(reservationId);
+
+    // when
+    newReservation.release().join();
+    // the first reservation is still active
+    assertThat(snapshot.isReserved()).isTrue();
+  }
+
+  @Test
+  public void shouldRelaseReservationAfterTimeout() throws IOException {
+    // given
+    final var snapshotPath = snapshotDir.resolve("snapshot");
+    final Path checksumPath = snapshotDir.resolve("checksum");
+    final var snapshot = createSnapshot(snapshotPath, checksumPath);
+    final var id = UUID.randomUUID();
+    // when
+    snapshot.reserveWithPersistence(id, clock.millis() - 1000L, Reason.SCALE_UP).join();
+
+    // then
+    assertThat(snapshot.isReserved()).isFalse();
   }
 
   @Test
@@ -124,11 +239,29 @@ public final class FileBasedSnapshotTest {
     return new FileBasedSnapshot(
         snapshotPath,
         checksumPath,
+        reservationsDir,
         new SfvChecksumImpl(),
         metadata,
         null,
         s -> {},
-        actor.getActorControl());
+        actor.getActorControl(),
+        clock);
+  }
+
+  // Opens an already persisted snapshot to simulate restarts
+  private FileBasedSnapshot openSnapshot(final Path snapshotPath, final Path checksumPath)
+      throws IOException {
+    final var metadata = new FileBasedSnapshotId(1L, 1L, 1L, 1L, 0);
+    return new FileBasedSnapshot(
+        snapshotPath,
+        checksumPath,
+        reservationsDir,
+        new SfvChecksumImpl(),
+        metadata,
+        null,
+        s -> {},
+        actor.getActorControl(),
+        clock);
   }
 
   static class TestActor extends Actor {

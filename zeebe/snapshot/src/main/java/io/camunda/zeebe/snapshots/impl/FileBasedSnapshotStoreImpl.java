@@ -26,11 +26,14 @@ import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.InstantSource;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.HashSet;
@@ -58,6 +61,10 @@ public final class FileBasedSnapshotStoreImpl {
   // versions, because the new checksum calculation already order the metadata file explicitly
   // instead of using the implicit sort order.
   static final String METADATA_FILE_NAME = "zeebe.metadata";
+
+  // The same considerations for the naming made for METADATA_FILE_NAME apply to this file as well.
+  static final String RESERVATIONS_DIRECTORY = "zeebe-reservations";
+
   // first is the metadata and the second the received snapshot count
   private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedSnapshotStoreImpl.class);
   private static final String CHECKSUM_SUFFIX = ".checksum";
@@ -79,22 +86,28 @@ public final class FileBasedSnapshotStoreImpl {
   private final Set<FileBasedSnapshot> availableSnapshots = new HashSet<>();
   private final CRC32CChecksumProvider checksumProvider;
   private final ConcurrencyControl actor;
+  private final Path reservationsDirectory;
+  private final InstantSource clock;
 
   public FileBasedSnapshotStoreImpl(
       final int brokerId,
       final Path root,
       final CRC32CChecksumProvider checksumProvider,
       final ConcurrencyControl actor,
-      final SnapshotMetrics snapshotMetrics) {
+      final SnapshotMetrics snapshotMetrics,
+      final InstantSource clock) {
     this.brokerId = brokerId;
     snapshotsDirectory = root.resolve(SNAPSHOTS_DIRECTORY);
     pendingDirectory = root.resolve(PENDING_DIRECTORY);
+    reservationsDirectory = root.resolve(RESERVATIONS_DIRECTORY);
     this.actor = actor;
     this.snapshotMetrics = snapshotMetrics;
+    this.clock = clock;
 
     try {
       FileUtil.ensureDirectoryExists(snapshotsDirectory);
       FileUtil.ensureDirectoryExists(pendingDirectory);
+      FileUtil.ensureDirectoryExists(reservationsDirectory);
     } catch (final IOException e) {
       throw new UncheckedIOException("Failed to create snapshot directories", e);
     }
@@ -103,6 +116,16 @@ public final class FileBasedSnapshotStoreImpl {
 
     listeners = new CopyOnWriteArraySet<>();
     this.checksumProvider = Objects.requireNonNull(checksumProvider);
+  }
+
+  @VisibleForTesting
+  public FileBasedSnapshotStoreImpl(
+      final int brokerId,
+      final Path root,
+      final CRC32CChecksumProvider checksumProvider,
+      final ConcurrencyControl actor,
+      final SnapshotMetrics snapshotMetrics) {
+    this(brokerId, root, checksumProvider, actor, snapshotMetrics, Clock.systemUTC());
   }
 
   public void start() {
@@ -204,7 +227,15 @@ public final class FileBasedSnapshotStoreImpl {
 
       final var metadata = collectMetadata(path, snapshotId);
       return new FileBasedSnapshot(
-          path, checksumPath, actualChecksum, snapshotId, metadata, this::onSnapshotDeleted, actor);
+          path,
+          checksumPath,
+          reservationsDirectory,
+          actualChecksum,
+          snapshotId,
+          metadata,
+          this::onSnapshotDeleted,
+          actor,
+          clock);
     } catch (final Exception e) {
       LOGGER.warn("Could not load snapshot in {}", path, e);
       return null;
@@ -513,11 +544,13 @@ public final class FileBasedSnapshotStoreImpl {
           new FileBasedSnapshot(
               destination,
               checksumPath,
+              reservationsDirectory,
               immutableChecksumsSFV,
               snapshotId,
               metadata,
               this::onSnapshotDeleted,
-              actor);
+              actor,
+              clock);
       final var failed =
           !currentPersistedSnapshotRef.compareAndSet(
               currentPersistedSnapshot, newPersistedSnapshot);
