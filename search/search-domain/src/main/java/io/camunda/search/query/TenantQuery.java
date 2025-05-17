@@ -23,6 +23,10 @@ public record TenantQuery(TenantFilter filter, TenantSort sort, SearchQueryPage 
     return fn.apply(new TenantQuery.Builder()).build();
   }
 
+  public Builder toBuilder() {
+    return new Builder().filter(filter).sort(sort).page(page);
+  }
+
   public static final class Builder
       extends SearchQueryBase.AbstractQueryBuilder<TenantQuery.Builder>
       implements TypedSearchQueryBuilder<

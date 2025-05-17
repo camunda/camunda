@@ -167,6 +167,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
     setupRecord.addRole(new RoleRecord().setRoleId(connectorsRoleId).setName("Connectors"));
     setupRecord.addAuthorization(
         new AuthorizationRecord()
+            .setOwnerType(AuthorizationOwnerType.ROLE)
             .setOwnerId(connectorsRoleId)
             .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
             .setResourceId(WILDCARD_PERMISSION)
@@ -176,6 +177,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
                     PermissionType.UPDATE_PROCESS_INSTANCE)));
     setupRecord.addAuthorization(
         new AuthorizationRecord()
+            .setOwnerType(AuthorizationOwnerType.ROLE)
             .setOwnerId(connectorsRoleId)
             .setResourceType(AuthorizationResourceType.MESSAGE)
             .setResourceId(WILDCARD_PERMISSION)
