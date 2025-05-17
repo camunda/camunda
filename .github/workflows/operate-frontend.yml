@@ -1,8 +1,8 @@
-# description: Workflow for Front-End end unit tests. The workflow also performs an ESLint check
+# description: Workflow for Front-End end unit tests
 # test location: operate/client/src/App
 # owner:
 ---
-name: Operate Frontend
+name: "[Legacy] Operate"
 on:
   push:
     branches:
@@ -24,9 +24,12 @@ concurrency:
   group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
 jobs:
-  linting-and-testing:
-    name: Linting & Testing
+  # Operate FE Unit tests do not meet the stability requirements to be in Unified CI.
+  fe-unit-tests:
+    name: "[FE] Unit Tests"
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {} # GITHUB_TOKEN unused in this job
     defaults:
       run:
         working-directory: operate/client
@@ -40,13 +43,8 @@ jobs:
           directory: operate/client
       - run: yarn install --frozen-lockfile
         name: Install dependencies
-      - run: yarn ts-check
-        name: Type checks
-      - run: yarn eslint
-        name: ESLint
       - run: yarn test:ci
         name: Unit & Integration tests
-
       - name: Observe build status
         if: always()
         continue-on-error: true
