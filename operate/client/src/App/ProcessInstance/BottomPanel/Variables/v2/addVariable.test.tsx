@@ -31,7 +31,7 @@ describe('Add variable', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
   });
 
-  it.skip('should show/hide add variable inputs', async () => {
+  it('should show/hide add variable inputs', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchVariables().withSuccess(mockVariables);
@@ -82,7 +82,7 @@ describe('Add variable', () => {
     ).not.toBeInTheDocument();
   });
 
-  it.skip('should not allow empty value', async () => {
+  it('should not allow empty value', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 

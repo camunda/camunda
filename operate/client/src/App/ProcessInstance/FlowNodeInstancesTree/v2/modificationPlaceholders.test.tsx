@@ -99,6 +99,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
           parentScopeIds: generateParentScopeIds(
             mockNestedSubProcessBusinessObjects,
             'user_task',
+            'nested_sub_process',
           ),
         },
       });
@@ -113,6 +114,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
           parentScopeIds: generateParentScopeIds(
             mockNestedSubProcessBusinessObjects,
             'user_task',
+            'nested_sub_process',
           ),
         },
       });
@@ -306,10 +308,13 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     expect(screen.queryByTestId('cancel-icon')).not.toBeInTheDocument();
   });
 
-  it.skip('should show and remove one cancel modification flow nodes', async () => {
+  it('should show and remove one cancel modification flow nodes', async () => {
     processInstanceDetailsStore.init({id: processInstanceId});
     flowNodeInstanceStore.init();
 
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      multiInstanceProcessInstance,
+    );
     mockFetchFlowNodeInstances().withSuccess(multipleFlowNodeInstances);
 
     await waitFor(() => {
@@ -334,7 +339,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
 
     act(() => {
       modificationsStore.enableModificationMode();
-      cancelAllTokens('peterJoin', 2, 2, {});
+      cancelAllTokens('peterJoin', 0, 0, {});
     });
 
     expect(

@@ -265,6 +265,7 @@ describe('Modification Summary Modal', () => {
         visibleAffectedTokenCount: 1,
         newScopeCount: 1,
         businessObjects: {},
+        bpmnProcessId: '123',
       });
     });
 
@@ -361,6 +362,7 @@ describe('Modification Summary Modal', () => {
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
       businessObjects: {},
+      bpmnProcessId: '123',
     });
 
     modificationsStore.addMoveModification({
@@ -371,6 +373,7 @@ describe('Modification Summary Modal', () => {
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
       businessObjects: {},
+      bpmnProcessId: '123',
     });
 
     const {user} = render(
@@ -776,12 +779,18 @@ describe('Modification Summary Modal', () => {
       ...mockProcessInstance,
       parentProcessInstanceKey: '2',
     });
-    mockFetchCallHierarchy().withSuccess({
-      items: [
-        {processInstanceKey: '3', processDefinitionName: 'some root process'},
-        {processInstanceKey: '2', processDefinitionName: 'some parent process'},
-      ],
-    });
+    mockFetchCallHierarchy().withSuccess([
+      {
+        processInstanceKey: '3',
+        processDefinitionName: 'some root process',
+        processDefinitionKey: 'process-key',
+      },
+      {
+        processInstanceKey: '2',
+        processDefinitionName: 'some parent process',
+        processDefinitionKey: 'process-key',
+      },
+    ]);
 
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
