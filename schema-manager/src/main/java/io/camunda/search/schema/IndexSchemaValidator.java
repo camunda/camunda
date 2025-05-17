@@ -60,17 +60,21 @@ public class IndexSchemaValidator {
    *
    * @param mappings is a map of all the mappings to compare.
    * @param indexDescriptors is the set of all index descriptors representing desired schema states.
+   * @param mappingSource is the source of the mappings, either {@link MappingSource#INDEX} or
+   *     {@link MappingSource#INDEX_TEMPLATE}.
    * @return new mapping properties to add to schemas, so they align with the descriptors.
    * @throws IndexSchemaValidationException if the existing indices cannot be updated with the given
    *     mappings.
    */
   public Map<IndexDescriptor, Collection<IndexMappingProperty>> validateIndexMappings(
-      final Map<String, IndexMapping> mappings, final Collection<IndexDescriptor> indexDescriptors)
+      final Map<String, IndexMapping> mappings,
+      final Collection<IndexDescriptor> indexDescriptors,
+      final MappingSource mappingSource)
       throws IndexSchemaValidationException {
     final Map<IndexDescriptor, Collection<IndexMappingProperty>> newFields = new HashMap<>();
     for (final IndexDescriptor indexDescriptor : indexDescriptors) {
       final Map<String, IndexMapping> indexMappingsGroup =
-          filterIndexMappings(mappings, indexDescriptor);
+          filterIndexMappings(mappings, indexDescriptor, mappingSource);
       // we don't check indices that were not yet created
       if (!indexMappingsGroup.isEmpty()) {
         final IndexMappingDifference difference =
@@ -148,11 +152,16 @@ public class IndexSchemaValidator {
    *
    * @param indexMappings represents mappings that will be checked
    * @param indexDescriptor represents the desired state of indices/index templates
+   * @param mappingSource represents the source of the mappings, either {@link MappingSource#INDEX}
+   *     or {@link MappingSource#INDEX_TEMPLATE}
    * @return a filtered map of all indexMappings matching the descriptor
    */
   private Map<String, IndexMapping> filterIndexMappings(
-      final Map<String, IndexMapping> indexMappings, final IndexDescriptor indexDescriptor) {
-    if (indexDescriptor instanceof IndexTemplateDescriptor) {
+      final Map<String, IndexMapping> indexMappings,
+      final IndexDescriptor indexDescriptor,
+      final MappingSource mappingSource) {
+    if (mappingSource == MappingSource.INDEX_TEMPLATE
+        && indexDescriptor instanceof IndexTemplateDescriptor) {
       return indexMappings.entrySet().stream()
           .filter(
               e -> e.getKey().equals(((IndexTemplateDescriptor) indexDescriptor).getTemplateName()))
