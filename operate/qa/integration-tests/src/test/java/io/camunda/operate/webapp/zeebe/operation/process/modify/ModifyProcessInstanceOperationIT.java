@@ -19,13 +19,14 @@ import static org.mockito.Mockito.withSettings;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3;
+import io.camunda.client.api.response.ModifyProcessInstanceResponse;
+import io.camunda.client.impl.CamundaClientFutureImpl;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
+import io.camunda.operate.util.j5templates.OperateZeebeSearchAbstractIT;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification.Type;
-import io.camunda.operate.webapp.zeebe.operation.ModifyProcessZeebeWrapper;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
@@ -41,22 +42,22 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
+public class ModifyProcessInstanceOperationIT extends OperateZeebeSearchAbstractIT {
   private static final Long MOCK_PROCESS_DEFINITION_KEY = 2251799813685249L;
   private static final Long MOCK_PROCESS_INSTANCE_KEY = 2251799813685251L;
 
-  @MockBean private ModifyProcessZeebeWrapper mockZeebeHelper;
-  @Autowired private SingleStepModifyProcessInstanceHandler modifyProcessInstanceHandler;
+  @Autowired private ModifyProcessInstanceHandler modifyProcessInstanceHandler;
   @Autowired private BatchOperationTemplate batchOperationTemplate;
   @Autowired private OperationTemplate operationTemplate;
   @Autowired private OperateProperties operateProperties;
-  @MockBean private FlowNodeInstanceReader mockFlowNodeInstanceReader;
+  @MockitoBean private FlowNodeInstanceReader mockFlowNodeInstanceReader;
   private ModifyProcessInstanceCommandStep1 mockZeebeCommand;
 
   @Test
   public void shouldAddToken() throws Exception {
+    // given
     // Setup mocks
     createMockZeebeCommand();
 
@@ -76,14 +77,16 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
         createOperationEntityDocument(batchOperationId, modifyInstructions);
     searchContainerManager.refreshIndices("*operation*");
 
+    // when
     // Test execution of the operation entity
     modifyProcessInstanceHandler.handleWithException(operation);
 
+    // then
     // Refresh the indices so any bulk operation updates show on queries
     searchContainerManager.refreshIndices("*operation*");
 
     // Validate the command sent to zeebe has all expected subcommands
-    assertThat(Mockito.mockingDetails(mockZeebeCommand).getInvocations()).hasSize(1);
+    assertThat(Mockito.mockingDetails(mockZeebeCommand).getInvocations()).hasSize(3);
     verify(mockZeebeCommand, times(1)).activateElement("taskB");
 
     // Validate the operation entity was updated in search to COMPLETED and all locks removed
@@ -103,6 +106,7 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldAddTokenWithVariables() throws Exception {
+    // given
     // Setup mocks
     createMockZeebeCommand();
 
@@ -125,14 +129,16 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
         createOperationEntityDocument(batchOperationId, modifyInstructions);
     searchContainerManager.refreshIndices("*operation*");
 
+    // when
     // Test execution of the operation entity
     modifyProcessInstanceHandler.handleWithException(operation);
 
+    // then
     // Refresh the indices so any bulk operation updates show on queries
     searchContainerManager.refreshIndices("*operation*");
 
     // Validate the command sent to zeebe has all expected subcommands
-    assertThat(Mockito.mockingDetails(mockZeebeCommand).getInvocations()).hasSize(2);
+    assertThat(Mockito.mockingDetails(mockZeebeCommand).getInvocations()).hasSize(4);
     verify((ModifyProcessInstanceCommandStep3) mockZeebeCommand, times(1))
         .withVariables(Map.of("c", "d"), "taskB");
     verify(mockZeebeCommand, times(1)).activateElement("taskB");
@@ -154,6 +160,7 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldCancelToken() throws Exception {
+    // given
     // Setup mocks
     createMockZeebeCommand();
     when(mockFlowNodeInstanceReader.getFlowNodeInstanceKeysByIdAndStates(
@@ -179,9 +186,11 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
         createOperationEntityDocument(batchOperationId, modifyInstructions);
     searchContainerManager.refreshIndices("*operation*");
 
+    // when
     // Test execution of the operation entity
     modifyProcessInstanceHandler.handleWithException(operation);
 
+    // then
     // Refresh the indices so any bulk operation updates show on queries
     searchContainerManager.refreshIndices("*operation*");
 
@@ -191,7 +200,7 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
             MOCK_PROCESS_INSTANCE_KEY, "taskA", List.of(FlowNodeState.ACTIVE));
 
     // Validate the command sent to zeebe has all expected subcommands
-    assertThat(Mockito.mockingDetails(mockZeebeCommand).getInvocations()).hasSize(1);
+    assertThat(Mockito.mockingDetails(mockZeebeCommand).getInvocations()).hasSize(3);
     verify(mockZeebeCommand, times(1)).terminateElement(123L);
 
     // Validate the operation entity was updated in search to COMPLETED and all locks removed
@@ -211,6 +220,7 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
 
   @Test
   public void shouldMoveToken() throws Exception {
+    // given
     // Setup mocks
     createMockZeebeCommand();
     when(mockFlowNodeInstanceReader.getFlowNodeInstanceKeysByIdAndStates(
@@ -236,9 +246,11 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
         createOperationEntityDocument(batchOperationId, modifyInstructions);
     searchContainerManager.refreshIndices("*operation*");
 
+    // when
     // Test execution of the operation entity
     modifyProcessInstanceHandler.handleWithException(operation);
 
+    // then
     // Refresh the indices so any bulk operation updates show on queries
     searchContainerManager.refreshIndices("*operation*");
 
@@ -248,7 +260,7 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
             MOCK_PROCESS_INSTANCE_KEY, "taskA", List.of(FlowNodeState.ACTIVE));
 
     // Validate the command sent to zeebe has all expected subcommands
-    assertThat(Mockito.mockingDetails(mockZeebeCommand).getInvocations()).hasSize(3);
+    assertThat(Mockito.mockingDetails(mockZeebeCommand).getInvocations()).hasSize(5);
     verify(mockZeebeCommand, times(1)).activateElement("taskB");
     verify(mockZeebeCommand, times(1)).terminateElement(123L);
     verify((ModifyProcessInstanceCommandStep2) mockZeebeCommand, times(1)).and();
@@ -286,8 +298,11 @@ public class ModifyProcessInstanceOperationIT extends OperateSearchAbstractIT {
             .withVariables(anyMap(), anyString()))
         .thenReturn((ModifyProcessInstanceCommandStep3) mockZeebeCommand);
 
-    when(mockZeebeHelper.newModifyProcessInstanceCommand(MOCK_PROCESS_INSTANCE_KEY))
-        .thenReturn(mockZeebeCommand);
+    when(mockCamundaClient.newModifyProcessInstanceCommand(anyLong())).thenReturn(mockZeebeCommand);
+
+    final var response = new CamundaClientFutureImpl<ModifyProcessInstanceResponse, Void>();
+    response.complete(Mockito.mock(ModifyProcessInstanceResponse.class));
+    when(((ModifyProcessInstanceCommandStep3) mockZeebeCommand).send()).thenReturn(response);
   }
 
   private void createBatchCommandDocument(final String batchOperationId) throws IOException {
