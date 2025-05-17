@@ -84,9 +84,12 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
     // update local cache so that the process info is available immediately to the process instance
     // record handler
+    final var processVersionField =
+        entity.getVersionTag() != null
+            ? entity.getVersionTag()
+            : Integer.toString(entity.getVersion());
     final var cachedProcessEntity =
-        new CachedProcessEntity(
-            entity.getName(), entity.getVersionTag(), entity.getCallActivityIds());
+        new CachedProcessEntity(entity.getName(), processVersionField, entity.getCallActivityIds());
     processCache.put(process.getProcessDefinitionKey(), cachedProcessEntity);
   }
 
