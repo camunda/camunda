@@ -72,6 +72,10 @@ import io.camunda.exporter.handlers.batchoperation.BatchOperationCompletedHandle
 import io.camunda.exporter.handlers.batchoperation.BatchOperationCreatedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationLifecycleManagementHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationStartedHandler;
+import io.camunda.exporter.handlers.batchoperation.ProcessInstanceCancellationOperationHandler;
+import io.camunda.exporter.handlers.batchoperation.ProcessInstanceMigrationOperationHandler;
+import io.camunda.exporter.handlers.batchoperation.ProcessInstanceModificationOperationHandler;
+import io.camunda.exporter.handlers.batchoperation.ResolveIncidentOperationHandler;
 import io.camunda.exporter.handlers.operation.OperationFromIncidentHandler;
 import io.camunda.exporter.handlers.operation.OperationFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandler;
@@ -270,6 +274,14 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new BatchOperationLifecycleManagementHandler(
                 indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
             new BatchOperationChunkCreatedItemHandler(
+                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
+            new ProcessInstanceCancellationOperationHandler(
+                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
+            new ProcessInstanceMigrationOperationHandler(
+                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
+            new ProcessInstanceModificationOperationHandler(
+                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
+            new ResolveIncidentOperationHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()));
 
     indicesWithCustomErrorHandlers =
