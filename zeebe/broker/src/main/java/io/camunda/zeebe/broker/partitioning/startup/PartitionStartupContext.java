@@ -35,6 +35,7 @@ public final class PartitionStartupContext {
   private final ZeebePartitionFactory zeebePartitionFactory;
   private final BrokerCfg brokerConfig;
   private final DynamicPartitionConfig initialPartitionConfig;
+  private final boolean initializeFromSnapshot;
   private final MeterRegistry brokerMeterRegistry;
 
   private Path partitionDirectory;
@@ -56,6 +57,7 @@ public final class PartitionStartupContext {
       final ZeebePartitionFactory zeebePartitionFactory,
       final BrokerCfg brokerConfig,
       final DynamicPartitionConfig initialPartitionConfig,
+      final boolean initializeFromSnapshot,
       final MeterRegistry brokerMeterRegistry) {
     this.schedulingService = schedulingService;
     this.topologyManager = topologyManager;
@@ -68,6 +70,7 @@ public final class PartitionStartupContext {
     this.zeebePartitionFactory = zeebePartitionFactory;
     this.brokerConfig = brokerConfig;
     this.initialPartitionConfig = initialPartitionConfig;
+    this.initializeFromSnapshot = initializeFromSnapshot;
     this.brokerMeterRegistry = brokerMeterRegistry;
   }
 
@@ -168,5 +171,9 @@ public final class PartitionStartupContext {
 
   public MeterRegistry brokerMeterRegistry() {
     return brokerMeterRegistry;
+  }
+
+  public boolean isInitializeFromSnapshot() {
+    return initializeFromSnapshot;
   }
 }

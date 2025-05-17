@@ -371,7 +371,7 @@ final class ClusterConfigurationManagementApiTest {
             new MemberJoinOperation(id1),
             new PartitionJoinOperation(id1, 2, 1),
             new PartitionLeaveOperation(id0, 2, 1),
-            new PartitionBootstrapOperation(id0, 3, 1),
+            new PartitionBootstrapOperation(id0, 3, 1, true),
             new StartPartitionScaleUp(id0, 3),
             new AwaitRedistributionCompletion(id0, 3, new TreeSet<>(List.of(3))),
             new AwaitRelocationCompletion(id0, 3, new TreeSet<>(List.of(3))));
@@ -398,7 +398,7 @@ final class ClusterConfigurationManagementApiTest {
             new MemberJoinOperation(id1),
             new PartitionJoinOperation(id1, 2, 1),
             new PartitionLeaveOperation(id0, 2, 1),
-            new PartitionBootstrapOperation(id0, 3, 1),
+            new PartitionBootstrapOperation(id0, 3, 1, true),
             new StartPartitionScaleUp(id0, 3),
             new AwaitRedistributionCompletion(id0, 3, new TreeSet<>(List.of(3))),
             new AwaitRelocationCompletion(id0, 3, new TreeSet<>(List.of(3))));

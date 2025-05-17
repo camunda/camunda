@@ -104,7 +104,8 @@ public final class PurgeRequestTransformer implements ConfigurationChangeRequest
                 memberId,
                 partitionId,
                 partitionState.priority(),
-                Optional.of(partitionState.config())));
+                Optional.of(partitionState.config()),
+                false));
       }
     };
   }

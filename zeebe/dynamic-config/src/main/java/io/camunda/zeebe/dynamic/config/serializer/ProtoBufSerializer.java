@@ -456,7 +456,8 @@ public class ProtoBufSerializer
     final var builder =
         Topology.PartitionBootstrapOperation.newBuilder()
             .setPartitionId(bootstrapOperation.partitionId())
-            .setPriority(bootstrapOperation.priority());
+            .setPriority(bootstrapOperation.priority())
+            .setInitializeFromConfig(bootstrapOperation.initializeFromSnapshot());
     bootstrapOperation
         .config()
         .ifPresent(config -> builder.setConfig(encodePartitionConfig(config)));
@@ -651,7 +652,8 @@ public class ProtoBufSerializer
           memberId,
           bootstrapOperation.getPartitionId(),
           bootstrapOperation.getPriority(),
-          partitionConfig);
+          partitionConfig,
+          bootstrapOperation.getInitializeFromConfig());
     } else if (topologyChangeOperation.hasInitiateScaleUpPartitions()) {
       return new StartPartitionScaleUp(
           memberId,

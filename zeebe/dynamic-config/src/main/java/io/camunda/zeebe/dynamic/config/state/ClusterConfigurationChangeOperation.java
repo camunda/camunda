@@ -158,12 +158,19 @@ public sealed interface ClusterConfigurationChangeOperation {
      *     config from partition 1 is used.
      */
     record PartitionBootstrapOperation(
-        MemberId memberId, int partitionId, int priority, Optional<DynamicPartitionConfig> config)
+        MemberId memberId,
+        int partitionId,
+        int priority,
+        Optional<DynamicPartitionConfig> config,
+        boolean initializeFromSnapshot)
         implements PartitionChangeOperation {
 
       public PartitionBootstrapOperation(
-          final MemberId memberId, final int partitionId, final int priority) {
-        this(memberId, partitionId, priority, Optional.empty());
+          final MemberId memberId,
+          final int partitionId,
+          final int priority,
+          final boolean initializeFromSnapshot) {
+        this(memberId, partitionId, priority, Optional.empty(), initializeFromSnapshot);
       }
     }
   }

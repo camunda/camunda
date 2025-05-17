@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config.changes;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeAppliers.MemberOperationApplier;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionBootstrapOperation;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.MemberState.State;
@@ -29,18 +30,17 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
   private final MemberId memberId;
   private final PartitionChangeExecutor partitionChangeExecutor;
   private final Optional<DynamicPartitionConfig> config;
+  private final boolean initializeFromSnapshot;
   private DynamicPartitionConfig partitionConfig;
 
   public PartitionBootstrapApplier(
-      final int partitionId,
-      final int priority,
-      final MemberId memberId,
-      final Optional<DynamicPartitionConfig> config,
+      final PartitionBootstrapOperation operation,
       final PartitionChangeExecutor partitionChangeExecutor) {
-    this.partitionId = partitionId;
-    this.priority = priority;
-    this.memberId = memberId;
-    this.config = config;
+    partitionId = operation.partitionId();
+    priority = operation.priority();
+    memberId = operation.memberId();
+    config = operation.config();
+    initializeFromSnapshot = operation.initializeFromSnapshot();
     this.partitionChangeExecutor = partitionChangeExecutor;
   }
 
@@ -48,11 +48,13 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
       final int partitionId,
       final int priority,
       final MemberId memberId,
+      final boolean initializeFromSnapshot,
       final PartitionChangeExecutor partitionChangeExecutor) {
     this.partitionId = partitionId;
     this.priority = priority;
     this.memberId = memberId;
     config = Optional.empty();
+    this.initializeFromSnapshot = initializeFromSnapshot;
     this.partitionChangeExecutor = partitionChangeExecutor;
   }
 
@@ -114,7 +116,7 @@ public class PartitionBootstrapApplier implements MemberOperationApplier {
         new CompletableActorFuture<>();
 
     partitionChangeExecutor
-        .bootstrap(partitionId, priority, partitionConfig)
+        .bootstrap(partitionId, priority, partitionConfig, initializeFromSnapshot)
         .onComplete(
             (ignore, error) -> {
               if (error == null) {

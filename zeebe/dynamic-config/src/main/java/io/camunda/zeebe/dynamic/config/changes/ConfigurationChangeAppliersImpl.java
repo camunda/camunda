@@ -90,12 +90,7 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
               enableExporterOperation.initializeFrom(),
               partitionChangeExecutor);
       case final PartitionBootstrapOperation bootstrapOperation ->
-          new PartitionBootstrapApplier(
-              bootstrapOperation.partitionId(),
-              bootstrapOperation.priority(),
-              bootstrapOperation.memberId(),
-              bootstrapOperation.config(),
-              partitionChangeExecutor);
+          new PartitionBootstrapApplier(bootstrapOperation, partitionChangeExecutor);
       case final DeleteHistoryOperation deleteHistoryOperation ->
           new DeleteHistoryApplier(deleteHistoryOperation.memberId(), clusterChangeExecutor);
       case final ScaleUpOperation scaleUpOperation ->
