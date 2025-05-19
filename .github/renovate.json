@@ -35,6 +35,11 @@
       "automerge"
     ]
   },
+  "hostRules": [
+    {
+      "timeout": 10000
+    }
+  ],
   "packageRules": [
     {
       "matchDatasources": [
