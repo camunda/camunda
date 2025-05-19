@@ -25,6 +25,7 @@ import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GroupEntity;
+import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
@@ -61,6 +62,8 @@ import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionInputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.zeebe.gateway.protocol.rest.FormResult;
+import io.camunda.zeebe.gateway.protocol.rest.GroupMemberResult;
+import io.camunda.zeebe.gateway.protocol.rest.GroupMemberSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentResult;
@@ -203,6 +206,17 @@ public final class SearchQueryResponseMapper {
         .items(
             ofNullable(result.items())
                 .map(SearchQueryResponseMapper::toGroups)
+                .orElseGet(List::of));
+  }
+
+  public static GroupMemberSearchResult toGroupMemberSearchQueryResponse(
+      final SearchQueryResult<GroupMemberEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new GroupMemberSearchResult()
+        .page(toSearchQueryPageResponse(result))
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toGroupMembers)
                 .orElseGet(List::of));
   }
 
@@ -442,6 +456,15 @@ public final class SearchQueryResponseMapper {
         .groupId(groupEntity.groupId())
         .name(groupEntity.name())
         .description(groupEntity.description());
+  }
+
+  private static List<GroupMemberResult> toGroupMembers(
+      final List<GroupMemberEntity> groupMembers) {
+    return groupMembers.stream().map(SearchQueryResponseMapper::toGroupMember).toList();
+  }
+
+  private static GroupMemberResult toGroupMember(final GroupMemberEntity groupMember) {
+    return new GroupMemberResult().memberId(groupMember.id());
   }
 
   private static List<TenantResult> toTenants(final List<TenantEntity> tenants) {

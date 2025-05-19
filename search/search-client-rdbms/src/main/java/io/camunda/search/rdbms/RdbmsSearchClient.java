@@ -18,6 +18,7 @@ import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GroupEntity;
+import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
@@ -211,6 +212,11 @@ public class RdbmsSearchClient implements SearchClientsProxy {
     LOG.debug("[RDBMS Search Client] Search for groups: {}", query);
 
     return rdbmsService.getGroupReader().search(query);
+  }
+
+  @Override
+  public SearchQueryResult<GroupMemberEntity> searchGroupMembers(final GroupQuery query) {
+    throw new UnsupportedOperationException("Group member search not implemented on RDBMS");
   }
 
   @Override

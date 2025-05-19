@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import io.camunda.search.clients.GroupSearchClient;
 import io.camunda.search.entities.GroupEntity;
+import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.GroupQuery;
@@ -143,6 +144,14 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
         BrokerGroupMemberRequest.createRemoveRequest(groupMemberDTO.groupId)
             .setMemberId(groupMemberDTO.memberId)
             .setMemberType(groupMemberDTO.memberType));
+  }
+
+  public SearchQueryResult<GroupMemberEntity> searchMembers(final GroupQuery query) {
+    return groupSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.group().read())))
+        .searchGroupMembers(query);
   }
 
   public record GroupDTO(String groupId, String name, String description) {}

@@ -19,6 +19,7 @@ import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GroupEntity;
+import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
@@ -111,6 +112,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
 
   @Override
   public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery query) {
+    return SearchQueryResult.empty();
+  }
+
+  @Override
+  public SearchQueryResult<GroupMemberEntity> searchGroupMembers(final GroupQuery filter) {
     return SearchQueryResult.empty();
   }
 
