@@ -28,7 +28,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 @Retention(RUNTIME)
 @Documented
 @ConditionalOnProperty(
-    name = "camunda.client.zeebe.enabled",
+    name = {"camunda.client.zeebe.enabled", "zeebe.client.enabled"},
     havingValue = "true",
     matchIfMissing = true)
 public @interface ConditionalOnCamundaClientEnabled {}
