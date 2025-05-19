@@ -26,20 +26,24 @@ import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandPro
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.immutable.RequestMetadataState;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.engine.state.instance.UserTaskTransitionTriggerRequestMetadata;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
+import io.camunda.zeebe.protocol.impl.record.value.RequestMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.RequestMetadataIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Optional;
+import java.util.Set;
 
 @ExcludeAuthorizationCheck
 public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
@@ -58,9 +62,12 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
   private final UserTaskCommandProcessors commandProcessors;
   private final ProcessState processState;
-  private final MutableUserTaskState userTaskState;
+  private final UserTaskState userTaskState;
   private final ElementInstanceState elementInstanceState;
   private final VariableState variableState;
+  private final RequestMetadataState requestMetadataState;
+
+  private final KeyGenerator keyGenerator;
 
   private final BpmnJobBehavior jobBehavior;
 
@@ -82,7 +89,9 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     this.userTaskState = userTaskState;
     elementInstanceState = state.getElementInstanceState();
     variableState = state.getVariableState();
+    requestMetadataState = state.getRequestMetadataState();
 
+    this.keyGenerator = keyGenerator;
     jobBehavior = bpmnBehaviors.jobBehavior();
 
     rejectionWriter = writers.rejection();
@@ -152,7 +161,9 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     switch (lifecycleState) {
       case COMPLETING ->
           writeRejectionForCommand(command, persistedRecord, UserTaskIntent.COMPLETION_DENIED);
-      case ASSIGNING, CLAIMING ->
+      case ASSIGNING ->
+          writeRejectionForCommand(command, persistedRecord, UserTaskIntent.ASSIGNMENT_DENIED);
+      case CLAIMING ->
           writeRejectionForCommand(command, persistedRecord, UserTaskIntent.ASSIGNMENT_DENIED);
       case UPDATING ->
           writeRejectionForCommand(command, persistedRecord, UserTaskIntent.UPDATE_DENIED);
@@ -197,18 +208,12 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
     if (userTaskElement.hasTaskListeners(eventType)) {
       /*
-       * Store the original command's metadata (requestId, requestStreamId) before creating
-       * the first task listener job. This metadata will be used later to finalize the original
-       * command after all task listeners have been processed, ensuring that the engine can respond
-       * appropriately to the original command request.
-       *
-       * Note:
-       * Typically, persistence logic should be handled via `*Applier` classes. However, since
-       * this involves request-related data, so in the case of command reconstruction,
-       * we will have new request values anyway, so persisting these data here is acceptable.
-       * A similar approach has been used in `ProcessInstanceCreationCreateWithResultProcessor`.
+       * Emit a `REQUEST_METADATA.RECEIVED` event that includes the original command's metadata
+       * (requestId, requestStreamId, operationReference) before creating the first task listener job.
+       * This metadata will be used later to finalize the original command after all task listeners
+       * have been processed, ensuring that the engine can respond appropriately to the initial request.
        */
-      storeUserTaskRecordRequestMetadata(command);
+      appendRequestMetadataReceivedEvent(persistedRecord.getElementInstanceKey(), command);
 
       final var listener = userTaskElement.getTaskListeners(eventType).getFirst();
       final var userTaskElementInstance = getUserTaskElementInstance(persistedRecord);
@@ -224,18 +229,22 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     return command instanceof RetryTypedRecord<UserTaskRecord>;
   }
 
-  private void storeUserTaskRecordRequestMetadata(final TypedRecord<UserTaskRecord> command) {
+  void appendRequestMetadataReceivedEvent(
+      final long elementInstanceKey, final TypedRecord<UserTaskRecord> command) {
     if (!command.hasRequestMetadata()) {
       return;
     }
 
     final var metadata =
-        new UserTaskTransitionTriggerRequestMetadata()
+        new RequestMetadataRecord()
+            .setScopeKey(elementInstanceKey)
+            .setValueType(ValueType.USER_TASK)
             .setIntent(command.getIntent())
-            .setTriggerType(ValueType.USER_TASK)
             .setRequestId(command.getRequestId())
-            .setRequestStreamId(command.getRequestStreamId());
-    userTaskState.storeRecordRequestMetadata(command.getValue().getUserTaskKey(), metadata);
+            .setRequestStreamId(command.getRequestStreamId())
+            .setOperationReference(command.getOperationReference());
+    final long key = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(key, RequestMetadataIntent.RECEIVED, metadata);
   }
 
   private void handleCommandRejection(
@@ -259,59 +268,59 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       final UserTaskIntent intent) {
 
     persistedRecord.setDeniedReason(command.getValue().getDeniedReason());
-    final var recordRequestMetadata =
-        userTaskState.findRecordRequestMetadata(persistedRecord.getUserTaskKey());
-
     stateWriter.appendFollowUpEvent(persistedRecord.getUserTaskKey(), intent, persistedRecord);
-    recordRequestMetadata.ifPresent(
-        metadata -> {
-          switch (metadata.getTriggerType()) {
-            case USER_TASK ->
-                responseWriter.writeRejection(
-                    command.getKey(),
-                    mapDeniedIntentToResponseIntent(intent),
-                    command.getValue(),
-                    command.getValueType(),
-                    RejectionType.INVALID_STATE,
-                    mapDeniedIntentToResponseRejectionReason(
-                        intent,
-                        persistedRecord.getUserTaskKey(),
-                        command.getValue().getDeniedReason()),
-                    metadata.getRequestId(),
-                    metadata.getRequestStreamId());
-            case VARIABLE_DOCUMENT -> {
-              final long userTaskInstanceKey = command.getValue().getElementInstanceKey();
-              variableState
-                  .findVariableDocumentState(userTaskInstanceKey)
-                  .ifPresent(
-                      variableDocumentState -> {
-                        final long variableDocumentKey = variableDocumentState.getKey();
-                        final var variableDocumentRecord = variableDocumentState.getRecord();
-                        stateWriter.appendFollowUpEvent(
-                            variableDocumentKey,
-                            VariableDocumentIntent.UPDATE_DENIED,
-                            variableDocumentRecord);
+    final var eligibleValueTypes = Set.of(ValueType.USER_TASK, ValueType.VARIABLE_DOCUMENT);
+    requestMetadataState
+        .findAllByScopeKey(persistedRecord.getElementInstanceKey())
+        .filter(m -> eligibleValueTypes.contains(m.valueType()))
+        .forEach(
+            metadata -> {
+              switch (metadata.valueType()) {
+                case USER_TASK ->
+                    responseWriter.writeRejection(
+                        command.getKey(),
+                        mapDeniedIntentToResponseIntent(intent),
+                        command.getValue(),
+                        command.getValueType(),
+                        RejectionType.INVALID_STATE,
+                        mapDeniedIntentToResponseRejectionReason(
+                            intent,
+                            persistedRecord.getUserTaskKey(),
+                            command.getValue().getDeniedReason()),
+                        metadata.requestId(),
+                        metadata.requestStreamId());
+                case VARIABLE_DOCUMENT -> {
+                  final long userTaskInstanceKey = command.getValue().getElementInstanceKey();
+                  variableState
+                      .findVariableDocumentState(userTaskInstanceKey)
+                      .ifPresent(
+                          variableDocumentState -> {
+                            final long variableDocumentKey = variableDocumentState.getKey();
+                            final var variableDocumentRecord = variableDocumentState.getRecord();
+                            stateWriter.appendFollowUpEvent(
+                                variableDocumentKey,
+                                VariableDocumentIntent.UPDATE_DENIED,
+                                variableDocumentRecord);
 
-                        final var deniedReason =
-                            USER_TASK_VARIABLE_UPDATE_REJECTION.formatted(
-                                userTaskInstanceKey, command.getValue().getDeniedReason());
-                        responseWriter.writeRejection(
-                            variableDocumentKey,
-                            VariableDocumentIntent.UPDATE,
-                            variableDocumentRecord,
-                            ValueType.VARIABLE_DOCUMENT,
-                            RejectionType.INVALID_STATE,
-                            deniedReason,
-                            metadata.getRequestId(),
-                            metadata.getRequestStreamId());
-                      });
-            }
-            default ->
-                throw new IllegalArgumentException(
-                    "Unexpected user task transition trigger type: '%s'"
-                        .formatted(metadata.getTriggerType()));
-          }
-        });
+                            final var deniedReason =
+                                USER_TASK_VARIABLE_UPDATE_REJECTION.formatted(
+                                    userTaskInstanceKey, command.getValue().getDeniedReason());
+                            responseWriter.writeRejection(
+                                variableDocumentKey,
+                                VariableDocumentIntent.UPDATE,
+                                variableDocumentRecord,
+                                ValueType.VARIABLE_DOCUMENT,
+                                RejectionType.INVALID_STATE,
+                                deniedReason,
+                                metadata.requestId(),
+                                metadata.requestStreamId());
+                          });
+                }
+              }
+
+              stateWriter.appendFollowUpEvent(
+                  metadata.metadataKey(), RequestMetadataIntent.PROCESSED, metadata.record());
+            });
   }
 
   private ExecutableUserTask getUserTaskElement(final UserTaskRecord userTaskRecord) {
