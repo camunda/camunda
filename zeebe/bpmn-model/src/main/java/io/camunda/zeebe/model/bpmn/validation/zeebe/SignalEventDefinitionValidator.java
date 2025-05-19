@@ -31,7 +31,6 @@ public class SignalEventDefinitionValidator
   public void validate(
       final SignalEventDefinition element,
       final ValidationResultCollector validationResultCollector) {
-    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
     if (element.getSignal() == null) {
       validationResultCollector.addError(0, "Must reference a signal");
     }

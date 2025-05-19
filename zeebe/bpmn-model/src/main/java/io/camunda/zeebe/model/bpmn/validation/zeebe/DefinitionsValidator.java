@@ -31,7 +31,6 @@ public class DefinitionsValidator implements ModelElementValidator<Definitions> 
   @Override
   public void validate(
       final Definitions element, final ValidationResultCollector validationResultCollector) {
-    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
     final Collection<Process> processes = element.getChildElementsByType(Process.class);
 
     if (!processes.stream().anyMatch(p -> p.isExecutable())) {
