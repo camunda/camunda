@@ -7,6 +7,8 @@
  */
 package io.camunda.tasklist.webapp.service;
 
+import static io.camunda.tasklist.webapp.util.ErrorHandlingUtils.getErrorMessageFromBrokerException;
+
 import io.camunda.client.impl.command.StreamUtil;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.JobServices;
@@ -266,7 +268,6 @@ public class CamundaServicesBasedAdapter implements TasklistServicesAdapter {
         return new ForbiddenActionException("Process not found", exception);
       }
     }
-    return new TasklistRuntimeException(
-        String.format("Failed to execute request with %s", exception.getMessage()), exception);
+    return new TasklistRuntimeException(getErrorMessageFromBrokerException(exception));
   }
 }

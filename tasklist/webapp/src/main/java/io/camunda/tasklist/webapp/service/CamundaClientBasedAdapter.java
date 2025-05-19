@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.service;
 
-import static io.camunda.tasklist.util.ErrorHandlingUtils.getErrorMessage;
+import static io.camunda.tasklist.webapp.util.ErrorHandlingUtils.getErrorMessageFromClientException;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ClientException;
@@ -76,7 +76,7 @@ public class CamundaClientBasedAdapter implements TasklistServicesAdapter {
       try {
         camundaClient.newUserTaskAssignCommand(task.getKey()).assignee(assignee).send().join();
       } catch (final ClientException exception) {
-        throw new TasklistRuntimeException(getErrorMessage(exception));
+        throw new TasklistRuntimeException(getErrorMessageFromClientException(exception));
       }
     }
   }
@@ -92,7 +92,7 @@ public class CamundaClientBasedAdapter implements TasklistServicesAdapter {
       try {
         camundaClient.newUserTaskUnassignCommand(task.getKey()).send().join();
       } catch (final ClientException exception) {
-        throw new TasklistRuntimeException(getErrorMessage(exception));
+        throw new TasklistRuntimeException(getErrorMessageFromClientException(exception));
       }
     }
   }
@@ -111,7 +111,7 @@ public class CamundaClientBasedAdapter implements TasklistServicesAdapter {
         camundaClient.newUserTaskCompleteCommand(task.getKey()).variables(variables).send().join();
       }
     } catch (final ClientException exception) {
-      throw new TasklistRuntimeException(getErrorMessage(exception));
+      throw new TasklistRuntimeException(getErrorMessageFromClientException(exception));
     }
   }
 
