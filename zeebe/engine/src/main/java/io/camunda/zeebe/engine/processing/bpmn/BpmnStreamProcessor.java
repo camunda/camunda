@@ -23,19 +23,24 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionListener;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.protocol.impl.record.value.RequestMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.RequestMetadataIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
@@ -56,12 +61,14 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   private final ProcessInstanceStateTransitionGuard stateTransitionGuard;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final TypedRejectionWriter rejectionWriter;
+  private final StateWriter stateWriter;
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnStateBehavior stateBehavior;
   private final BpmnJobBehavior jobBehavior;
   private final EventTriggerBehavior eventTriggerBehavior;
   private final VariableBehavior variableBehavior;
   private final EventScopeInstanceState eventScopeInstanceState;
+  private final KeyGenerator keyGenerator;
 
   public BpmnStreamProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -72,6 +79,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     processState = processingState.getProcessState();
 
     rejectionWriter = writers.rejection();
+    stateWriter = writers.state();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     stateTransitionGuard = bpmnBehaviors.stateTransitionGuard();
     stateTransitionBehavior =
@@ -81,12 +89,14 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             processEngineMetrics,
             this::getContainerProcessor,
             writers);
-    processors = new BpmnElementProcessors(bpmnBehaviors, stateTransitionBehavior, config);
+    processors =
+        new BpmnElementProcessors(bpmnBehaviors, stateTransitionBehavior, processingState, config);
     stateBehavior = bpmnBehaviors.stateBehavior();
     jobBehavior = bpmnBehaviors.jobBehavior();
     eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();
     variableBehavior = bpmnBehaviors.variableBehavior();
     eventScopeInstanceState = processingState.getEventScopeInstanceState();
+    keyGenerator = processingState.getKeyGenerator();
   }
 
   private BpmnElementContainerProcessor<ExecutableFlowElement> getContainerProcessor(
@@ -112,7 +122,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         .ifRightOrLeft(
             ok -> {
               LOGGER.trace("Process process instance event [context: {}]", context);
-              processEvent(intent, processor, element);
+              processEvent(record, intent, processor, element);
             },
             violation ->
                 rejectionWriter.appendRejection(
@@ -154,6 +164,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   }
 
   private void processEvent(
+      final TypedRecord<ProcessInstanceRecord> command,
       final ProcessInstanceIntent intent,
       final BpmnElementProcessor<ExecutableFlowElement> processor,
       final ExecutableFlowElement element) {
@@ -175,6 +186,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             .ifLeft(failure -> incidentBehavior.createIncident(failure, completingContext));
         break;
       case TERMINATE_ELEMENT:
+        appendRequestMetadataReceivedEventForProcessTermination(command);
         final var terminatingContext = stateTransitionBehavior.transitionToTerminating(context);
         final var transitionOutcome = processor.onTerminate(element, terminatingContext);
         if (transitionOutcome == TransitionOutcome.CONTINUE) {
@@ -343,5 +355,26 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         recordValue.getTenantId(),
         recordValue.getElementIdBuffer(),
         processor.getType());
+  }
+
+  void appendRequestMetadataReceivedEventForProcessTermination(
+      final TypedRecord<ProcessInstanceRecord> command) {
+    final boolean isProcessElement =
+        command.getValue().getBpmnElementType() == BpmnElementType.PROCESS;
+    final boolean hasOperationReference = command.getOperationReference() != -1;
+    if (!isProcessElement || !hasOperationReference) {
+      return;
+    }
+
+    final var metadata =
+        new RequestMetadataRecord()
+            .setScopeKey(command.getValue().getProcessInstanceKey())
+            .setValueType(ValueType.PROCESS_INSTANCE)
+            .setIntent(command.getIntent())
+            .setRequestId(command.getRequestId())
+            .setRequestStreamId(command.getRequestStreamId())
+            .setOperationReference(command.getOperationReference());
+    final long key = keyGenerator.nextKey();
+    stateWriter.appendFollowUpEvent(key, RequestMetadataIntent.RECEIVED, metadata);
   }
 }
