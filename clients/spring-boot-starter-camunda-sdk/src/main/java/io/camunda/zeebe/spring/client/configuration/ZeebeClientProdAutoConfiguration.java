@@ -15,12 +15,12 @@
  */
 package io.camunda.zeebe.spring.client.configuration;
 
-import io.camunda.spring.client.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.impl.ZeebeClientImpl;
 import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
+import io.camunda.zeebe.spring.client.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.camunda.zeebe.spring.client.jobhandling.ZeebeClientExecutorService;
 import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
 import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
@@ -35,7 +35,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 
 /*
