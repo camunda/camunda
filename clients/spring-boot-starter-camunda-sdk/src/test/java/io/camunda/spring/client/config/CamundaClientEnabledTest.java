@@ -18,7 +18,7 @@ package io.camunda.spring.client.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.spring.client.configuration.CamundaClientProdAutoConfiguration;
+import io.camunda.spring.client.configuration.CamundaAutoConfiguration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +28,7 @@ public class CamundaClientEnabledTest {
 
   @Nested
   @SpringBootTest(
-      classes = CamundaClientProdAutoConfiguration.class,
+      classes = CamundaAutoConfiguration.class,
       properties = {"camunda.client.enabled=false"})
   class CurrentConfiguration {
     @Autowired(required = false)
@@ -42,7 +42,7 @@ public class CamundaClientEnabledTest {
 
   @Nested
   @SpringBootTest(
-      classes = CamundaClientProdAutoConfiguration.class,
+      classes = CamundaAutoConfiguration.class,
       properties = {"camunda.client.zeebe.enabled=false"})
   class ZeebeClientConfiguration {
     @Autowired(required = false)
@@ -56,7 +56,7 @@ public class CamundaClientEnabledTest {
 
   @Nested
   @SpringBootTest(
-      classes = CamundaClientProdAutoConfiguration.class,
+      classes = CamundaAutoConfiguration.class,
       properties = {"zeebe.client.enabled=false"})
   class LegacyConfiguration {
     @Autowired(required = false)
@@ -69,7 +69,7 @@ public class CamundaClientEnabledTest {
   }
 
   @Nested
-  @SpringBootTest(classes = CamundaClientProdAutoConfiguration.class)
+  @SpringBootTest(classes = CamundaAutoConfiguration.class)
   class DefaultTest {
     @Autowired(required = false)
     CamundaClient camundaClient;
