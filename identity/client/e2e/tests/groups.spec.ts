@@ -50,7 +50,9 @@ test.describe.serial("groups CRUD", () => {
       name: NEW_GROUP.name,
     });
 
-    await waitForItemInList(page, item);
+    await waitForItemInList(page, item, {
+      emptyStateLocator: groupsPage.emptyState,
+    });
   });
 
   test("edits a group", async ({ page, groupsPage }) => {
@@ -86,6 +88,9 @@ test.describe.serial("groups CRUD", () => {
       name: EDITED_GROUP.name,
     });
 
-    await waitForItemInList(page, item, { shouldBeVisible: false });
+    await waitForItemInList(page, item, {
+      shouldBeVisible: false,
+      emptyStateLocator: groupsPage.emptyState,
+    });
   });
 });

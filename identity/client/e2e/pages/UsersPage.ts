@@ -37,6 +37,7 @@ export class UsersPage {
   readonly closeDeleteUserModal: Locator;
   readonly deleteUserModalCancelButton: Locator;
   readonly deleteUserModalDeleteButton: Locator;
+  readonly emptyState: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -134,6 +135,7 @@ export class UsersPage {
         name: /delete user/i,
       },
     );
+    this.emptyState = page.getByText("No users created yet");
   }
 
   async navigateToUsers() {

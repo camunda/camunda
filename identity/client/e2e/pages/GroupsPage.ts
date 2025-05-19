@@ -33,16 +33,15 @@ export class GroupsPage {
   readonly closeDeleteGroupModal: Locator;
   readonly deleteGroupModalCancelButton: Locator;
   readonly deleteGroupModalDeleteButton: Locator;
+  readonly emptyState: Locator;
 
   constructor(page: Page) {
     this.page = page;
     // List page
     this.groupsList = page.getByRole("table");
-    this.createGroupButton = page
-      .getByRole("button", {
-        name: /create( a)? group/i,
-      })
-      .first();
+    this.createGroupButton = page.getByRole("button", {
+      name: /create( a)? group/i,
+    });
     this.editGroupButton = (rowName) =>
       this.groupsList.getByRole("row", { name: rowName }).getByLabel(/edit/i);
     this.deleteGroupButton = (rowName) =>
@@ -112,6 +111,7 @@ export class GroupsPage {
         name: /delete group/i,
       },
     );
+    this.emptyState = page.getByText("No groups created yet");
   }
 
   async navigateToGroups() {
