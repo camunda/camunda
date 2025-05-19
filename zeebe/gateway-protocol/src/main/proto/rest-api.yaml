@@ -3300,14 +3300,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UserSearchQueryRequest"
+              $ref: "#/components/schemas/GroupMemberSearchQueryRequest"
       responses:
         "200":
           description: The users assigned to the group.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserSearchResult"
+                $ref: "#/components/schemas/GroupMemberSearchResult"
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
@@ -7312,6 +7312,44 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/GroupResult"
+    GroupMemberResult:
+      type: object
+      properties:
+        memberId:
+          description: The ID of the member.
+          type: string
+    GroupMemberSearchResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          description: The matching members.
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupMemberResult"
+    GroupMemberSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/GroupMemberSearchQuerySortRequest"
+    GroupMemberSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - memberId
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
     MappingRuleCreateUpdateRequest:
       type: object
       properties:
