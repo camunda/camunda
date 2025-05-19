@@ -35,18 +35,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 
 /*
  * All configurations that will only be used in production code - meaning NO TEST cases
  */
-@ConditionalOnProperty(
-    prefix = "camunda.client.zeebe",
-    name = "enabled",
-    havingValue = "true",
-    matchIfMissing = true)
 @ConditionalOnCamundaClientEnabled
 @ConditionalOnMissingBean(SpringZeebeTestContext.class)
 @ImportAutoConfiguration({
