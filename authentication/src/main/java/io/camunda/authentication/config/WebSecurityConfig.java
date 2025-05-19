@@ -75,12 +75,12 @@ import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfToken;
-import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.security.web.header.writers.CrossOriginEmbedderPolicyHeaderWriter.CrossOriginEmbedderPolicy;
 import org.springframework.security.web.header.writers.CrossOriginOpenerPolicyHeaderWriter.CrossOriginOpenerPolicy;
 import org.springframework.security.web.header.writers.CrossOriginResourcePolicyHeaderWriter.CrossOriginResourcePolicy;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter.HeaderValue;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -464,7 +464,9 @@ public class WebSecurityConfig {
                   logout
                       .logoutUrl(LOGOUT_URL)
                       .logoutSuccessHandler(WebSecurityConfig::noContentSuccessHandler)
-                      .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN))
+                      .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN)
+                      .invalidateHttpSession(true)
+                      .clearAuthentication(true))
           .exceptionHandling(
               exceptionHandling ->
                   exceptionHandling
@@ -626,7 +628,9 @@ public class WebSecurityConfig {
                   logout
                       .logoutUrl(LOGOUT_URL)
                       .logoutSuccessHandler(WebSecurityConfig::noContentSuccessHandler)
-                      .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN))
+                      .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN)
+                      .invalidateHttpSession(true)
+                      .clearAuthentication(true))
           .addFilterAfter(webApplicationAuthorizationCheckFilter, AuthorizationFilter.class)
           .build();
     }
