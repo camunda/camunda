@@ -12,7 +12,6 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Set;
 
 public record RoleFilter(
-    Long roleKey,
     String roleId,
     String name,
     String description,
@@ -25,7 +24,6 @@ public record RoleFilter(
     implements FilterBase {
   public Builder toBuilder() {
     return new Builder()
-        .roleKey(roleKey)
         .roleId(roleId)
         .name(name)
         .description(description)
@@ -37,7 +35,6 @@ public record RoleFilter(
   }
 
   public static final class Builder implements ObjectBuilder<RoleFilter> {
-    private Long roleKey;
     private String roleId;
     private String name;
     private String description;
@@ -47,11 +44,6 @@ public record RoleFilter(
     private Set<String> roleIds;
     private EntityType childMemberType;
     private String tenantId;
-
-    public Builder roleKey(final Long value) {
-      roleKey = value;
-      return this;
-    }
 
     public Builder roleId(final String value) {
       roleId = value;
@@ -108,7 +100,6 @@ public record RoleFilter(
         throw new IllegalArgumentException("If memberIds is set, childMemberType must be set too");
       }
       return new RoleFilter(
-          roleKey,
           roleId,
           name,
           description,

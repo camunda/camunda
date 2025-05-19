@@ -19,22 +19,14 @@ import io.camunda.client.api.search.response.Role;
 
 public class RoleImpl implements Role {
 
-  private final long roleKey;
   private final String roleId;
   private final String name;
   private final String description;
 
-  public RoleImpl(
-      final long roleKey, final String roleId, final String name, final String description) {
-    this.roleKey = roleKey;
+  public RoleImpl(final String roleId, final String name, final String description) {
     this.roleId = roleId;
     this.name = name;
     this.description = description;
-  }
-
-  @Override
-  public Long getRoleKey() {
-    return roleKey;
   }
 
   @Override

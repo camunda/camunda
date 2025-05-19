@@ -158,7 +158,6 @@ public class RoleSpecificFilterIT {
   static List<RoleFilter> shouldFindWithSpecificFilterParameters() {
     return List.of(
         new RoleFilter.Builder().roleId(ROLE_ID).build(),
-        new RoleFilter.Builder().roleKey(ROLE_KEY).build(),
         new RoleFilter.Builder().name(ROLE_NAME).build(),
         new RoleFilter.Builder().memberId(ENTITY_ID).childMemberType(ENTITY_TYPE).build());
   }
