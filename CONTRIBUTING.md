@@ -224,11 +224,11 @@ You can run the Camunda distribution via IntelliJ for development purposes.
    - If you receive an error on saving the project structure settings regarding the `zeebe-gateway-protocol`
      not being able to contain the `src/main/proto` directory, fix this by removing the mentioned source
      root from `zeebe-gateway-protocol` module in the _Modules_ tab.
-4. Start an Elasticsearch instance as described above. Alternatively, you can start it via Docker from
+4. Start an Elasticsearch instance as [described above](#run). Alternatively, you can start it via Docker from
    the `operate` directory:
 
    ```sh
-   cd operate && docker compose up -d elasticsearch
+   docker compose -f operate/docker-compose.yml up -d elasticsearch
    ```
 5. Use the provided `StandaloneCamunda DEV` run configuration to start the distribution or create
    and start a new Spring Boot run configuration with the following settings:
