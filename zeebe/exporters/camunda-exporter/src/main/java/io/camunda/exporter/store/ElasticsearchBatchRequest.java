@@ -196,7 +196,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
                         "%s failed for type [%s] and id [%s]: %s",
                         item.operationType(), item.index(), item.id(), item.error().reason()))
             .collect(Collectors.joining(", \n"));
-    LOGGER.warn("Bulk request execution failed: \n[{}]", errorMessages);
+    LOGGER.debug("Bulk request execution failed: \n[{}]", errorMessages);
 
     errorItems.forEach(
         item -> {
