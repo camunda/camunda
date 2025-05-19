@@ -37,6 +37,7 @@ docker run --rm \
   -e RENOVATE_PLATFORM="github" \
   -e RENOVATE_TOKEN="${GITHUB_TOKEN}" \
   -e RENOVATE_REPOSITORIES="${REPO_NAME}" \
+  -e RENOVATE_REQUIRE_CONFIG="ignored" \
   -e RENOVATE_CONFIG_FILE="/usr/src/app/mounted-renovate-config.json" \
   -v "$(pwd)/${LOCAL_RENOVATE_CONFIG}:/usr/src/app/mounted-renovate-config.json:ro" \
   -e RENOVATE_CACHE_DIR="/cache/renovate" \
