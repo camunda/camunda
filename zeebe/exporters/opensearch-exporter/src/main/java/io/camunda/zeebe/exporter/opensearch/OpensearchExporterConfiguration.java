@@ -105,6 +105,7 @@ public class OpensearchExporterConfiguration {
       case COMPENSATION_SUBSCRIPTION -> index.compensationSubscription;
       case MESSAGE_CORRELATION -> index.messageCorrelation;
       case AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION -> index.adHocSubProcessActivityActivation;
+      case REQUEST_METADATA -> index.requestMetadata;
       default -> false;
     };
   }
@@ -205,6 +206,8 @@ public class OpensearchExporterConfiguration {
     public boolean batchOperationExecution = false;
     public boolean batchOperationLifecycleManagement = false;
 
+    public boolean requestMetadata = false;
+
     // index settings
     private Integer numberOfShards = null;
     private Integer numberOfReplicas = null;
@@ -297,6 +300,8 @@ public class OpensearchExporterConfiguration {
           + resourceDeletion
           + ", adHocSubProcessActivityActivation="
           + adHocSubProcessActivityActivation
+          + ", requestMetadata="
+          + requestMetadata
           + ", recordDistribution="
           + commandDistribution
           + ", form="

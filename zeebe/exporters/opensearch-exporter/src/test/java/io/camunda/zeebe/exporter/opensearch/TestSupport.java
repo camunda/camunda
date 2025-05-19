@@ -70,6 +70,7 @@ final class TestSupport {
       case BATCH_OPERATION_LIFECYCLE_MANAGEMENT -> config.batchOperationLifecycleManagement = value;
       case AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION ->
           config.adHocSubProcessActivityActivation = value;
+      case REQUEST_METADATA -> config.requestMetadata = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);
@@ -121,7 +122,8 @@ final class TestSupport {
             ValueType.BATCH_OPERATION_CREATION,
             ValueType.BATCH_OPERATION_CHUNK,
             ValueType.BATCH_OPERATION_EXECUTION,
-            ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT);
+            ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
+            ValueType.REQUEST_METADATA);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 }
