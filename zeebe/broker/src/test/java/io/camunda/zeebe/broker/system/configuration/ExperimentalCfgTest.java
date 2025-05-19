@@ -181,4 +181,39 @@ final class ExperimentalCfgTest {
     // then
     assertThat(raftCfg.isPreallocateSegmentFiles()).isTrue();
   }
+
+  @Test
+  void shouldHaveDefaultVersionCheckRestriction() {
+    // given
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
+    final var experimental = cfg.getExperimental();
+
+    // then
+    assertThat(experimental.isVersionCheckRestrictionEnabled()).isTrue();
+  }
+
+  @Test
+  void shouldSetVersionCheckRestrictionFromEnv() {
+    // given
+    environment.put("zeebe.broker.experimental.versionCheckRestrictionEnabled", "false");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
+    final var experimental = cfg.getExperimental();
+
+    // then
+    assertThat(experimental.isVersionCheckRestrictionEnabled()).isFalse();
+  }
+
+  @Test
+  void shouldSetVersionCheckRestrictionFromConfig() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("experimental-cfg", environment);
+    final var experimental = cfg.getExperimental();
+
+    // then
+    assertThat(experimental.isVersionCheckRestrictionEnabled()).isFalse();
+  }
 }
