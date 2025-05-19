@@ -36,14 +36,13 @@ class LocalStorageDocumentStoreTest {
 
   private Path storagePath;
   private LocalStorageDocumentStore documentStore;
-  private final FileHandler fileHandler = new FileHandler();
 
   @BeforeEach
   void setUp() throws IOException {
     storagePath = Files.createTempDirectory(UUID.randomUUID().toString());
     documentStore =
         new LocalStorageDocumentStore(
-            storagePath, fileHandler, new ObjectMapper(), Executors.newSingleThreadExecutor());
+            storagePath, new ObjectMapper(), Executors.newSingleThreadExecutor());
   }
 
   @AfterEach
