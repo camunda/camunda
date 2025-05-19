@@ -32,6 +32,7 @@ public class ProcessValidator implements ModelElementValidator<Process> {
   @Override
   public void validate(
       final Process element, final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
 
     final Collection<StartEvent> topLevelStartEvents =
         element.getChildElementsByType(StartEvent.class);

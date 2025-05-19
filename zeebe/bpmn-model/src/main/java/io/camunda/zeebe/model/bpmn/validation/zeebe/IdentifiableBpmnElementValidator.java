@@ -13,26 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
-package io.camunda.zeebe.model.bpmn.instance;
+import io.camunda.zeebe.model.bpmn.instance.IdentifiableBpmnElement;
+import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
-import io.camunda.zeebe.model.bpmn.instance.di.DiagramElement;
-import java.util.Collection;
+public class IdentifiableBpmnElementValidator {
 
-/**
- * The BPMN baseElement element
- *
- * @author Daniel Meyer
- */
-public interface BaseElement extends IdentifiableBpmnElement {
-
-  Collection<Documentation> getDocumentations();
-
-  ExtensionElements getExtensionElements();
-
-  void setExtensionElements(ExtensionElements extensionElements);
-
-  <T extends BpmnModelElementInstance> T getSingleExtensionElement(Class<T> type);
-
-  DiagramElement getDiagramElement();
+  public static <T extends IdentifiableBpmnElement> void validate(
+      final T element, final ValidationResultCollector validationResultCollector) {
+    if (element.getId() == null || element.getId().isEmpty()) {
+      validationResultCollector.addError(0, "Element id must be present and not empty.");
+    }
+  }
 }

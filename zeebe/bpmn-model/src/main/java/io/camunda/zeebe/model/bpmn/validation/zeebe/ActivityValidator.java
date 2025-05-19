@@ -29,6 +29,7 @@ public class ActivityValidator implements ModelElementValidator<Activity> {
   @Override
   public void validate(
       final Activity element, final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
 
     ModelUtil.verifyNoDuplicatedBoundaryEvents(
         element, error -> validationResultCollector.addError(0, error));

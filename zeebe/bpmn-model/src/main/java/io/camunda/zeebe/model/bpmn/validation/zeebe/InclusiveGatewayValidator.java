@@ -30,6 +30,7 @@ public class InclusiveGatewayValidator implements ModelElementValidator<Inclusiv
   @Override
   public void validate(
       final InclusiveGateway element, final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
 
     final SequenceFlow defaultFlow = element.getDefault();
     if (defaultFlow != null) {

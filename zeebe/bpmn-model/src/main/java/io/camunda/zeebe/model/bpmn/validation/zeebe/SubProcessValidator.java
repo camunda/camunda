@@ -50,6 +50,7 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
   @Override
   public void validate(
       final SubProcess element, final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
     final Collection<StartEvent> startEvents = element.getChildElementsByType(StartEvent.class);
 
     if (startEvents.size() != 1 && !(element instanceof AdHocSubProcess)) {

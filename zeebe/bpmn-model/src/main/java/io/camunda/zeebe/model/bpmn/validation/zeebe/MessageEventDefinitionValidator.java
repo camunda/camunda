@@ -33,7 +33,6 @@ public class MessageEventDefinitionValidator
   public void validate(
       final MessageEventDefinition element,
       final ValidationResultCollector validationResultCollector) {
-
     if (!isMessageThrowEvent(element) && element.getMessage() == null) {
       validationResultCollector.addError(0, "Must reference a message");
     }

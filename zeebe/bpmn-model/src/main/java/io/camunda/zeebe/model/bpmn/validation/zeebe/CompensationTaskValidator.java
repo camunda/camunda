@@ -30,6 +30,7 @@ public class CompensationTaskValidator implements ModelElementValidator<Task> {
   @Override
   public void validate(
       final Task element, final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
 
     final String isForCompensation =
         element.getAttributeValue(BpmnModelConstants.BPMN_ATTRIBUTE_IS_FOR_COMPENSATION);

@@ -55,6 +55,8 @@ public class BoundaryEventValidator implements ModelElementValidator<BoundaryEve
   @Override
   public void validate(
       final BoundaryEvent element, final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
+
     if (element.getAttachedTo() == null) {
       validationResultCollector.addError(0, "Must be attached to an activity");
     }

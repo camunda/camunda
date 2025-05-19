@@ -33,6 +33,7 @@ public class GatewayValidator implements ModelElementValidator<Gateway> {
   @Override
   public void validate(
       final Gateway element, final ValidationResultCollector validationResultCollector) {
+    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
 
     validateExecutionListenersDefinitionForElement(
         element,
