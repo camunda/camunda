@@ -18,25 +18,18 @@ package io.camunda.zeebe.spring.client.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.spring.client.configuration.ZeebeClientProdAutoConfiguration;
-import io.camunda.zeebe.spring.client.properties.CamundaClientProperties;
-import io.camunda.zeebe.spring.client.properties.ZeebeClientConfigurationProperties;
+import io.camunda.zeebe.spring.client.configuration.CamundaAutoConfiguration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 
 public class ZeebeClientEnabledTest {
 
   @Nested
   @SpringBootTest(
-      classes = ZeebeClientProdAutoConfiguration.class,
+      classes = CamundaAutoConfiguration.class,
       properties = {"camunda.client.zeebe.enabled=false"})
-  @EnableConfigurationProperties({
-    ZeebeClientConfigurationProperties.class,
-    CamundaClientProperties.class
-  })
   class ZeebeClientConfiguration {
     @Autowired(required = false)
     ZeebeClient zeebeClient;
@@ -49,12 +42,8 @@ public class ZeebeClientEnabledTest {
 
   @Nested
   @SpringBootTest(
-      classes = ZeebeClientProdAutoConfiguration.class,
+      classes = CamundaAutoConfiguration.class,
       properties = {"zeebe.client.enabled=false"})
-  @EnableConfigurationProperties({
-    ZeebeClientConfigurationProperties.class,
-    CamundaClientProperties.class
-  })
   class LegacyConfiguration {
     @Autowired(required = false)
     ZeebeClient zeebeClient;
@@ -66,11 +55,7 @@ public class ZeebeClientEnabledTest {
   }
 
   @Nested
-  @SpringBootTest(classes = ZeebeClientProdAutoConfiguration.class)
-  @EnableConfigurationProperties({
-    ZeebeClientConfigurationProperties.class,
-    CamundaClientProperties.class
-  })
+  @SpringBootTest(classes = CamundaAutoConfiguration.class)
   class DefaultTest {
     @Autowired(required = false)
     ZeebeClient zeebeClient;
