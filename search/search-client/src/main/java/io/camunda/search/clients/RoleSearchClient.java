@@ -8,6 +8,7 @@
 package io.camunda.search.clients;
 
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.SecurityContext;
@@ -16,6 +17,8 @@ import java.util.List;
 public interface RoleSearchClient {
 
   SearchQueryResult<RoleEntity> searchRoles(RoleQuery filter);
+
+  SearchQueryResult<RoleMemberEntity> searchRoleMembers(RoleQuery filter);
 
   List<RoleEntity> findAllRoles(RoleQuery filter);
 

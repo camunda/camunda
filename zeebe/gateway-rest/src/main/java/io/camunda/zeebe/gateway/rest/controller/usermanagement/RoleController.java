@@ -21,6 +21,8 @@ import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.RoleMemberSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.RoleMemberSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
@@ -158,6 +160,36 @@ public class RoleController {
   private UserQuery buildUserQuery(final String roleId, final UserQuery userQuery) {
     return userQuery.toBuilder()
         .filter(userQuery.filter().toBuilder().roleId(roleId).build())
+        .build();
+  }
+
+  @CamundaPostMapping(path = "/{roleId}/clients/search")
+  public ResponseEntity<RoleMemberSearchResult> searchClientsByRole(
+      @PathVariable final String roleId,
+      @RequestBody(required = false) final RoleMemberSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toRoleQuery(query)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            roleQuery -> searchMembersInRole(roleId, EntityType.CLIENT, roleQuery));
+  }
+
+  private ResponseEntity<RoleMemberSearchResult> searchMembersInRole(
+      final String tenantId, final EntityType memberType, final RoleQuery query) {
+    try {
+      final var result =
+          roleServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .searchMembers(buildRoleMemberQuery(tenantId, memberType, query));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toRoleMemberSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private RoleQuery buildRoleMemberQuery(
+      final String roleId, final EntityType memberType, final RoleQuery query) {
+    return query.toBuilder()
+        .filter(query.filter().toBuilder().joinParentId(roleId).memberType(memberType).build())
         .build();
   }
 

@@ -274,6 +274,21 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleSearchQuery);
   }
 
+  public static Either<ProblemDetail, RoleQuery> toRoleQuery(
+      final RoleMemberSearchQueryRequest request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.roleSearchQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromRoleMemberSearchQuerySortRequest(request.getSort()),
+            SortOptionBuilders::role,
+            SearchQueryRequestMapper::applyRoleMemberSortField);
+    final var filter = FilterBuilders.role().build();
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleSearchQuery);
+  }
+
   public static Either<ProblemDetail, GroupQuery> toGroupQuery(
       final GroupSearchQueryRequest request) {
     if (request == null) {
@@ -1079,6 +1094,17 @@ public final class SearchQueryRequestMapper {
       }
     }
     return validationErrors;
+  }
+
+  private static List<String> applyRoleMemberSortField(
+      final RoleMemberSearchQuerySortRequest.FieldEnum field, final RoleSort.Builder builder) {
+    return switch (field) {
+      case null -> List.of(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+      case MEMBER_ID -> {
+        builder.memberId();
+        yield List.of();
+      }
+    };
   }
 
   private static List<String> applyGroupSortField(

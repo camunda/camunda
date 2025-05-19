@@ -31,6 +31,7 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UsageMetricsCount;
@@ -82,6 +83,8 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSequenceFlowResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSequenceFlowsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.RoleMemberResult;
+import io.camunda.zeebe.gateway.protocol.rest.RoleMemberSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
@@ -193,6 +196,16 @@ public final class SearchQueryResponseMapper {
         .page(page)
         .items(
             ofNullable(result.items()).map(SearchQueryResponseMapper::toRoles).orElseGet(List::of));
+  }
+
+  public static RoleMemberSearchResult toRoleMemberSearchQueryResponse(
+      final SearchQueryResult<RoleMemberEntity> result) {
+    return new RoleMemberSearchResult()
+        .page(toSearchQueryPageResponse(result))
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toRoleMembers)
+                .orElseGet(List::of));
   }
 
   public static GroupSearchQueryResult toGroupSearchQueryResponse(
@@ -454,6 +467,14 @@ public final class SearchQueryResponseMapper {
         .name(tenantEntity.name())
         .description(tenantEntity.description())
         .tenantId(tenantEntity.tenantId());
+  }
+
+  private static List<RoleMemberResult> toRoleMembers(final List<RoleMemberEntity> members) {
+    return members.stream().map(SearchQueryResponseMapper::toRoleMember).toList();
+  }
+
+  private static RoleMemberResult toRoleMember(final RoleMemberEntity roleMember) {
+    return new RoleMemberResult().memberId(roleMember.id());
   }
 
   private static List<MappingResult> toMappings(final List<MappingEntity> mappings) {

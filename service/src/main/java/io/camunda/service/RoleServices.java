@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.RoleQuery;
@@ -51,6 +52,14 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
             securityContextProvider.provideSecurityContext(
                 authentication, Authorization.of(a -> a.role().read())))
         .searchRoles(query);
+  }
+
+  public SearchQueryResult<RoleMemberEntity> searchMembers(final RoleQuery query) {
+    return roleSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.role().read())))
+        .searchRoleMembers(query);
   }
 
   public List<RoleEntity> getRolesByMemberIds(

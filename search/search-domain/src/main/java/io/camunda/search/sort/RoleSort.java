@@ -35,6 +35,11 @@ public record RoleSort(List<FieldSorting> orderings) implements SortOption {
       return this;
     }
 
+    public Builder memberId() {
+      currentOrdering = new FieldSorting("memberId", null);
+      return this;
+    }
+
     @Override
     protected Builder self() {
       return this;
