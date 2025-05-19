@@ -37,7 +37,7 @@ class ErrorHandlingUtilsTest {
     when(problemException.details()).thenReturn(problemDetail);
 
     // When
-    final String result = ErrorHandlingUtils.getErrorMessage(problemException);
+    final String result = ErrorHandlingUtils.getErrorMessageFromClientException(problemException);
 
     // Then
     final String expectedMessage =
@@ -61,7 +61,7 @@ class ErrorHandlingUtilsTest {
                     UserTaskIntent.ASSIGN, 123L, RejectionType.INVALID_STATE, reason)));
 
     // When
-    final String result = ErrorHandlingUtils.getErrorMessage(brokerException);
+    final String result = ErrorHandlingUtils.getErrorMessageFromBrokerException(brokerException);
 
     // Then
     final String expectedMessage =
@@ -75,14 +75,14 @@ class ErrorHandlingUtilsTest {
   }
 
   @Test
-  void testGetErrorMessageWithTimeoutException() {
+  void testGetErrorMessageWithClientTimeoutException() {
     // Given
     final SocketTimeoutException socketTimeoutException = new SocketTimeoutException("10 SECONDS");
-    final Throwable timeoutException =
+    final ClientException timeoutException =
         new ClientException("Timeout occurred", new ClientException(socketTimeoutException));
 
     // When
-    final String result = ErrorHandlingUtils.getErrorMessage(timeoutException);
+    final String result = ErrorHandlingUtils.getErrorMessageFromClientException(timeoutException);
 
     // Then
     final String expectedMessage =
@@ -95,12 +95,44 @@ class ErrorHandlingUtilsTest {
   }
 
   @Test
-  void testGetErrorMessageWithGenericException() {
+  void testGetErrorMessageWithBrokerTimeoutException() {
+    // Given
+    final TimeoutException timeoutException = new TimeoutException("10 SECONDS");
+    final CamundaBrokerException brokerException = new CamundaBrokerException(timeoutException);
+
+    // When
+    final String result = ErrorHandlingUtils.getErrorMessageFromBrokerException(brokerException);
+
+    // Then
+    final String expectedMessage =
+        """
+          { "title": "TASK_PROCESSING_TIMEOUT",
+            "detail": "The request timed out while processing the task."
+          }
+          """;
+    assertEquals(expectedMessage, result);
+  }
+
+  @Test
+  void testGetErrorMessageWithGenericClientException() {
     // Given
     final ClientException genericException = new ClientException("Generic error occurred");
 
     // When
-    final String result = ErrorHandlingUtils.getErrorMessage(genericException);
+    final String result = ErrorHandlingUtils.getErrorMessageFromClientException(genericException);
+
+    // Then
+    assertEquals("Generic error occurred", result);
+  }
+
+  @Test
+  void testGetErrorMessageWithGenericBrokerException() {
+    // Given
+    final CamundaBrokerException genericException =
+        new CamundaBrokerException("Generic error occurred");
+
+    // When
+    final String result = ErrorHandlingUtils.getErrorMessageFromBrokerException(genericException);
 
     // Then
     assertEquals("Generic error occurred", result);
@@ -123,55 +155,5 @@ class ErrorHandlingUtilsTest {
           }
           """;
     assertEquals(expectedMessage, result);
-  }
-
-  @Test
-  void testIsCausedByTimeoutExceptionWithClientTimeoutException() {
-    // Given
-    final SocketTimeoutException socketTimeoutException = new SocketTimeoutException("10 SECONDS");
-    final Throwable timeoutException =
-        new ClientException("Timeout occurred", new ClientException(socketTimeoutException));
-
-    // When
-    final boolean result = ErrorHandlingUtils.isCausedByTimeoutException(timeoutException);
-
-    // Then
-    assertTrue(result);
-  }
-
-  @Test
-  void testIsCausedByTimeoutExceptionWithBrokerTimeoutException() {
-    // Given
-    final TimeoutException timeoutException = new TimeoutException("10 SECONDS");
-    final Throwable camundaBrokerException = new CamundaBrokerException(timeoutException);
-
-    // When
-    final boolean result = ErrorHandlingUtils.isCausedByTimeoutException(camundaBrokerException);
-
-    // Then
-    assertTrue(result);
-  }
-
-  @Test
-  void testIsCausedByTimeoutExceptionWithoutTimeoutException() {
-    // Given
-    final Exception genericException = new Exception("Generic error occurred");
-
-    // When
-    final boolean result = ErrorHandlingUtils.isCausedByTimeoutException(genericException);
-
-    // Then
-    assertFalse(result);
-  }
-
-  @Test
-  void testIsCausedByTimeoutExceptionWithNullThrowable() {
-
-    // When
-    ErrorHandlingUtils.isCausedByTimeoutException(null);
-    final boolean result = false;
-
-    // Then
-    assertFalse(result);
   }
 }

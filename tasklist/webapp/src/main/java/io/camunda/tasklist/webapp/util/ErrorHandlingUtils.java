@@ -7,11 +7,12 @@
  */
 package io.camunda.tasklist.webapp.util;
 
-import io.camunda.client.api.ProblemDetail;
+import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import java.util.Objects;
+import java.net.SocketTimeoutException;
 import java.util.concurrent.TimeoutException;
 
 public abstract class ErrorHandlingUtils {
@@ -22,28 +23,32 @@ public abstract class ErrorHandlingUtils {
   public static final String TASK_NOT_ASSIGNED = "TASK_NOT_ASSIGNED";
   public static final String TASK_NOT_ASSIGNED_TO_CURRENT_USER =
       "TASK_NOT_ASSIGNED_TO_CURRENT_USER";
+  public static final String TASK_PROCESSING_TIMEOUT = "TASK_PROCESSING_TIMEOUT";
+  public static final String TIMEOUT_ERROR_MESSAGE =
+      "The request timed out while processing the task.";
 
-  public static String getErrorMessage(final Throwable exception) {
-    final String errorMessage;
-
-    if (exception.getCause() instanceof final BrokerRejectionException ex
-        && ex.getRejection().type().equals(RejectionType.INVALID_STATE)) {
-      errorMessage =
-          createErrorMessage(ex.getRejection().type().name(), ex.getRejection().reason());
-    } else if (exception instanceof final ProblemException ex
-        && Objects.equals(ex.details().getStatus(), 409)
-        && INVALID_STATE.equals(ex.details().getTitle())) {
-      final ProblemDetail problemDetail = ex.details();
-      errorMessage = createErrorMessage(problemDetail.getTitle(), problemDetail.getDetail());
-    } else if (isCausedByTimeoutException(exception)) {
-      errorMessage =
-          createErrorMessage(
-              "TASK_PROCESSING_TIMEOUT", "The request timed out while processing the task.");
-    } else {
-      errorMessage = exception.getMessage();
+  public static String getErrorMessageFromBrokerException(final CamundaBrokerException exception) {
+    if (exception.getCause() instanceof final BrokerRejectionException brokerRejectionException
+        && brokerRejectionException.getRejection().type().equals(RejectionType.INVALID_STATE)) {
+      return createErrorMessage(
+          brokerRejectionException.getRejection().type().name(),
+          brokerRejectionException.getRejection().reason());
+    } else if (exception.getCause() instanceof TimeoutException) {
+      return createErrorMessage(TASK_PROCESSING_TIMEOUT, TIMEOUT_ERROR_MESSAGE);
     }
+    return exception.getMessage();
+  }
 
-    return errorMessage;
+  public static String getErrorMessageFromClientException(final ClientException exception) {
+    if (exception instanceof final ProblemException problemException
+        && problemException.details().getTitle().equals(INVALID_STATE)) {
+      return createErrorMessage(
+          problemException.details().getTitle(), problemException.details().getDetail());
+    } else if (exception.getCause() != null
+        && exception.getCause().getCause() instanceof SocketTimeoutException) {
+      return createErrorMessage(TASK_PROCESSING_TIMEOUT, TIMEOUT_ERROR_MESSAGE);
+    }
+    return exception.getMessage();
   }
 
   public static String createErrorMessage(final String title, final String detail) {
@@ -54,12 +59,5 @@ public abstract class ErrorHandlingUtils {
       }
       """,
         title, detail);
-  }
-
-  public static boolean isCausedByTimeoutException(final Throwable throwable) {
-    return throwable != null
-        && (throwable.getCause() instanceof TimeoutException
-            || throwable.getCause() != null
-                && throwable.getCause().getCause() instanceof java.net.SocketTimeoutException);
   }
 }
