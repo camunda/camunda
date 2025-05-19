@@ -84,7 +84,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
       - name: Start Elasticsearch with Docker Compose
-        run: docker-compose -f operate/docker-compose.yml up -d elasticsearch
+        run: docker compose -f operate/docker-compose.yml up -d elasticsearch
 
       - name: Import Secrets
         id: secrets
