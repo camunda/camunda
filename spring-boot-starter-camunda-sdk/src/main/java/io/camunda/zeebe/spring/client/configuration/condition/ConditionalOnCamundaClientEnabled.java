@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.spring.client.configuration.condition;
+package io.camunda.zeebe.spring.client.configuration.condition;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
@@ -27,5 +27,5 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 @Target({TYPE, METHOD})
 @Retention(RUNTIME)
 @Documented
-@ConditionalOnProperty(name = "camunda.client.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "zeebe.client.enabled", havingValue = "true", matchIfMissing = true)
 public @interface ConditionalOnCamundaClientEnabled {}
