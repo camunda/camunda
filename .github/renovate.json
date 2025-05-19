@@ -46,8 +46,7 @@
         "maven"
       ],
       "registryUrls": [
-        "https://repo.maven.apache.org/maven2",
-        "https://artifacts.camunda.com/artifactory/public/"
+        "https://repo.maven.apache.org/maven2"
       ]
     },
     {
