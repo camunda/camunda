@@ -7,6 +7,14 @@ on:
         description: 'Branch to run tests on'
         required: true
         default: 'main'
+      multi-tenancy:
+        description: 'Enable MT?'
+        required: true
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
 
 concurrency:
   cancel-in-progress: true
@@ -40,6 +48,7 @@ jobs:
           - 'tenant-tests.http'
           - 'group-tests.http'
           - 'mapping-rules.http'
+          - 'role-tests.http'
 
     runs-on: ubuntu-latest
     environment: '${{ matrix.env }}-http-tests'
@@ -118,18 +127,22 @@ jobs:
       - name: Extract Distribution Tarball
         run: |
           cd ./dist/target
-          tar -xvzf camunda-zeebe-8.8.0-SNAPSHOT.tar.gz
+          tarball=$(ls camunda-zeebe-*.tar.gz)
+          tar -xvzf "$tarball"
 
       - name: Start Camunda (default config)
         if: matrix.case != 'mapping-rules.http'
         run: |
-          cd ./dist/target/camunda-zeebe-8.8.0-SNAPSHOT
+          cd ./dist/target
+          dir=$(ls -d camunda-zeebe-*/)
+          cd "$dir"
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter && \
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://localhost:9200  && \
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE=100  && \
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false  && \
           export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true && \
           export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false && \
+          export CAMUNDA_SECURITY_MULTITENANCY_ENABLED=${{ inputs.multi-tenancy }}  && \
           export SPRING_PROFILES_ACTIVE=identity,tasklist,operate,broker,consolidated-auth && \
           ./bin/camunda &
           sleep 60
@@ -150,7 +163,7 @@ jobs:
           export INITIAL_CLAIM_VALUE=${{ steps.secrets.outputs.INITIAL_CLAIM_VALUE}}  && \
           export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=false && \
           export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false && \
-          export CAMUNDA_SECURITY_MULTITENANCY_ENABLED=false && \
+          export CAMUNDA_SECURITY_MULTITENANCY_ENABLED=${{ inputs.multi-tenancy }} && \
           export SPRING_PROFILES_ACTIVE=identity,broker,consolidated-auth && \
           ./bin/camunda &
           sleep 60
