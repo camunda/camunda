@@ -21,14 +21,15 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.engine.state.instance.UserTaskTransitionTriggerRequestMetadata;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.spec.MsgpackReaderException;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
+import io.camunda.zeebe.protocol.impl.record.value.RequestMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.RequestMetadataIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -149,7 +150,7 @@ public final class VariableDocumentUpdateProcessor
               ExecutableUserTask.class);
 
       if (userTaskElement.hasTaskListeners(ZeebeTaskListenerEventType.updating)) {
-        storeRecordRequestMetadata(userTaskKey, record);
+        appendRequestMetadataReceivedEvent(record);
 
         final var listener =
             userTaskElement.getTaskListeners(ZeebeTaskListenerEventType.updating).getFirst();
@@ -227,18 +228,20 @@ public final class VariableDocumentUpdateProcessor
     return context;
   }
 
-  void storeRecordRequestMetadata(
-      final long userTaskKey, final TypedRecord<VariableDocumentRecord> command) {
+  void appendRequestMetadataReceivedEvent(final TypedRecord<VariableDocumentRecord> command) {
     if (!command.hasRequestMetadata()) {
       return;
     }
 
     final var metadata =
-        new UserTaskTransitionTriggerRequestMetadata()
+        new RequestMetadataRecord()
+            .setScopeKey(command.getValue().getScopeKey())
+            .setValueType(ValueType.VARIABLE_DOCUMENT)
             .setIntent(command.getIntent())
-            .setTriggerType(ValueType.VARIABLE_DOCUMENT)
             .setRequestId(command.getRequestId())
-            .setRequestStreamId(command.getRequestStreamId());
-    userTaskState.storeRecordRequestMetadata(userTaskKey, metadata);
+            .setRequestStreamId(command.getRequestStreamId())
+            .setOperationReference(command.getOperationReference());
+    final long key = keyGenerator.nextKey();
+    writers.state().appendFollowUpEvent(key, RequestMetadataIntent.RECEIVED, metadata);
   }
 }
