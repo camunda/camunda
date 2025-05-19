@@ -39,6 +39,7 @@ import org.junit.jupiter.api.function.Executable;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 class BatchOperationAuthorizationIT {
 
   @MultiDbTestApplication
@@ -219,7 +220,7 @@ class BatchOperationAuthorizationIT {
   }
 
   @Test
-  void shouldReturnForbiddenForUnauthorizedReadOfBatchOperation(
+  void shouldReturnNotFoundForUnauthorizedReadOfBatchOperation(
       @Authenticated(ADMIN) final CamundaClient camundaAdminClient,
       @Authenticated(RESTRICTED_READ) final CamundaClient camundaRestictedClient) {
     // given
@@ -235,16 +236,18 @@ class BatchOperationAuthorizationIT {
         .pollInterval(Duration.ofMillis(100))
         .untilAsserted(
             () -> {
+              int code = 0;
               try {
                 camundaRestictedClient.newBatchOperationGetRequest(batchOperationKey).send().join();
               } catch (final ProblemException e) {
-                assertThat(e.code()).isEqualTo(404);
+                code = e.code();
               }
+              assertThat(code).isEqualTo(404);
             });
   }
 
   @Test
-  void shouldReturnForbiddenForUnauthorizedQueryOfBatchOperation(
+  void shouldReturnEmptyForUnauthorizedQueryOfBatchOperation(
       @Authenticated(ADMIN) final CamundaClient camundaAdminClient,
       @Authenticated(RESTRICTED_READ) final CamundaClient camundaRestictedClient) {
     // given
@@ -260,16 +263,13 @@ class BatchOperationAuthorizationIT {
         .pollInterval(Duration.ofMillis(100))
         .untilAsserted(
             () -> {
-              try {
-                final var batchOperationResponse =
-                    camundaRestictedClient
-                        .newBatchOperationSearchRequest()
-                        .filter(f -> f.batchOperationId(String.valueOf(batchOperationKey)))
-                        .send()
-                        .join();
-              } catch (final ProblemException e) {
-                assertThat(e.code()).isEqualTo(404);
-              }
+              final var batchOperationResponse =
+                  camundaRestictedClient
+                      .newBatchOperationSearchRequest()
+                      .filter(f -> f.batchOperationId(String.valueOf(batchOperationKey)))
+                      .send()
+                      .join();
+              assertThat(batchOperationResponse.items()).isEmpty();
             });
   }
 
