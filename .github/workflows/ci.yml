@@ -76,7 +76,7 @@ jobs:
       CONFTEST_VERSION: '0.58.0'
     steps:
       - uses: actions/checkout@v4
-      - uses: camunda/infra-global-github-actions/actionlint@shellcheck-in-actionlint
+      - uses: camunda/infra-global-github-actions/actionlint@main
         with:
           version: ${{ env.ACTIONLINT_VERSION }}
           ignore: |-
@@ -1171,8 +1171,8 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - run: |
-          EXIT_CODE="${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}"
-          exit "$EXIT_CODE"
+          # shellcheck disable=SC2242
+          exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}
 
   deploy-snapshots:
     name: Deploy snapshot artifacts
