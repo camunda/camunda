@@ -15,6 +15,7 @@ For community-maintained Camunda projects, please visit the [Camunda Community H
 - [Build and run Camunda from source](#build-and-run-camunda-from-source)
   - [Build](#build)
   - [Run](#run)
+    - [Run via IntelliJ](#run-via-intellij)
   - [Test execution](#test-execution)
     - [Test troubleshooting](#test-troubleshooting)
   - [Build profiling](#build-profiling)
@@ -204,6 +205,52 @@ To start Camunda:
 * Run `CAMUNDA_HOME/bin/camunda` (macOS/Linux) (or `CAMUNDA_HOME\bin\camunda.bat` on Windows).
 
 If you need to change any of the default configuration values for Camunda, the configuration files are available in `CAMUNDA_HOME/config`. After updating the configuration you need to restart any running services for the changes to take effect.
+
+#### Run via IntelliJ
+
+You can run the Camunda distribution via IntelliJ for development purposes.
+
+1. Run a **full build** of the project via Maven as [described above](#build). Make sure to use
+   `install` as we need to depend on 2 locally built artifacts.
+2. Open the project in IntelliJ.
+3. Currently, there is an issue with the `com.auth0.mvc-auth-commons` library being transformed to
+   a Jakarta-compatible version during the Maven build process, but this change not being picked up
+   by IntelliJ.
+   - To address this, open the _Project Structure_ dialog and add the following 2 libraries to the
+     classpath of your JDK (`<version>` being the current snapshot version, e.g. `8.8.0`):
+     - `$HOME/.m2/repository/io/camunda/operate-mvc-auth-commons/<version>-SNAPSHOT/operate-mvc-auth-commons-<version>-SNAPSHOT.jar`
+     - `$HOME/.m2/repository/io/camunda/tasklist-mvc-auth-commons/<version>-SNAPSHOT/tasklist-mvc-auth-commons-<version>-SNAPSHOT.jar`
+
+     ![intellij-module-settings.png](docs/assets/intellij-module-settings.png)
+
+4. Start an Elasticsearch instance as [described above](#run). Alternatively, you can start it via Docker from
+   the `operate` directory:
+
+   ```sh
+   docker compose -f operate/docker-compose.yml up -d elasticsearch
+   ```
+5. Use the provided `StandaloneCamunda DEV` run configuration to start the distribution or create
+   and start a new Spring Boot run configuration with the following settings:
+   - **Module**: `camunda-zeebe`
+   - **Main class**: `io.camunda.application.StandaloneCamunda`
+   - **Active profiles**: `identity,tasklist,operate,broker,consolidated-auth,dev`
+   - **Environment variables**:
+
+     ```
+     ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://localhost:9200
+     ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false
+     ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME=io.camunda.exporter.CamundaExporter
+     ```
+6. The webapps should be available on the following URLs with default credentials (`demo`/`demo`):
+   - [Tasklist](http://localhost:8080/tasklist)
+   - [Operate](http://localhost:8080/operate)
+   - [Identity](http://localhost:8080/identity)
+
+##### Troubleshooting
+
+- If you receive an error on saving the project structure settings regarding the
+  `zeebe-gateway-protocol` not being able to contain the `src/main/proto` directory, fix this by
+  removing the mentioned source root from `zeebe-gateway-protocol` module in the _Modules_ tab.
 
 ### Test execution
 
