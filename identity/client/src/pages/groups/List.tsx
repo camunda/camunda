@@ -35,7 +35,7 @@ const List: FC = () => {
   const [addGroup, addModal] = useModal(AddModal, reload);
   const [updateGroup, editModal] = useEntityModal(EditModal, reload);
   const [deleteGroup, deleteModal] = useEntityModal(DeleteModal, reload);
-  const showDetails = ({ groupId }: Group) => navigate(`${groupId}`);
+  const showDetails = ({ groupId }: Group) => navigate(groupId);
 
   const pageHeader = (
     <PageHeader title="Groups" linkText="groups" linkUrl="/concepts/groups/" />

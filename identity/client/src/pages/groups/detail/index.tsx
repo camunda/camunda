@@ -85,7 +85,7 @@ const Details: FC = () => {
                   <p>
                     {t("groupId")}: {group.groupId}
                   </p>
-                  {group?.description && (
+                  {group.description && (
                     <Description>
                       {t("description")}: {group.description}
                     </Description>
@@ -107,7 +107,7 @@ const Details: FC = () => {
                         {
                           key: "users",
                           label: t("users"),
-                          content: <Members groupId={group?.groupId} />,
+                          content: <Members groupId={group.groupId} />,
                         },
                       ]
                     : []),
@@ -116,7 +116,7 @@ const Details: FC = () => {
                         {
                           key: "roles",
                           label: t("roles"),
-                          content: <Roles groupId={group?.groupId} />,
+                          content: <Roles groupId={group.groupId} />,
                         },
                       ]
                     : []),
@@ -125,7 +125,7 @@ const Details: FC = () => {
                         {
                           key: "mappings",
                           label: t("mappings"),
-                          content: <Mappings groupId={group?.groupId} />,
+                          content: <Mappings groupId={group.groupId} />,
                         },
                       ]
                     : []),

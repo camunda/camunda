@@ -17,7 +17,7 @@ import { useNotifications } from "src/components/notifications";
 import { deleteGroup, Group } from "src/utility/api/groups";
 
 const DeleteModal: FC<UseEntityModalProps<Group>> = ({
-  entity: group,
+  entity: { groupId },
   open,
   onClose,
   onSuccess,
@@ -29,7 +29,7 @@ const DeleteModal: FC<UseEntityModalProps<Group>> = ({
 
   const handleSubmit = async () => {
     const { success } = await callDeleteGroup({
-      groupId: group.groupId,
+      groupId,
     });
     if (success) {
       enqueueNotification({
@@ -51,11 +51,8 @@ const DeleteModal: FC<UseEntityModalProps<Group>> = ({
       confirmLabel={t("deleteGroup")}
     >
       <p>
-        <Translate
-          i18nKey="deleteGroupConfirmation"
-          values={{ groupId: group.groupId }}
-        >
-          Are you sure you want to delete <strong>{group.groupId}</strong>? This
+        <Translate i18nKey="deleteGroupConfirmation" values={{ groupId }}>
+          Are you sure you want to delete <strong>{groupId}</strong>? This
           action cannot be undone.
         </Translate>
       </p>
