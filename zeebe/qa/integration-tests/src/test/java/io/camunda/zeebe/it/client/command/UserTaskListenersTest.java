@@ -1023,10 +1023,10 @@ public class UserTaskListenersTest {
         UserTaskIntent.CANCELING, UserTaskIntent.COMPLETE_TASK_LISTENER, UserTaskIntent.CANCELED);
 
     assertThat(
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
-            .withRecordKey(processInstanceKey)
-            .withValueType(ValueType.PROCESS_INSTANCE)
-            .getFirst())
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withRecordKey(processInstanceKey)
+                .withValueType(ValueType.PROCESS_INSTANCE)
+                .getFirst())
         .hasOperationReference(operationReference);
   }
 
@@ -1066,9 +1066,9 @@ public class UserTaskListenersTest {
         UserTaskIntent.UPDATING, UserTaskIntent.COMPLETE_TASK_LISTENER, UserTaskIntent.UPDATED);
 
     assertThat(
-        RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATED)
-            .withScopeKey(userTaskInstanceKey)
-            .getFirst())
+            RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATED)
+                .withScopeKey(userTaskInstanceKey)
+                .getFirst())
         .hasOperationReference(operationReference);
   }
 }

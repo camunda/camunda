@@ -316,6 +316,10 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
                                 metadata.requestStreamId());
                           });
                 }
+                default ->
+                    throw new IllegalArgumentException(
+                        "Unexpected value type: '%s', only %s are expected"
+                            .formatted(metadata.valueType(), eligibleValueTypes));
               }
 
               stateWriter.appendFollowUpEvent(

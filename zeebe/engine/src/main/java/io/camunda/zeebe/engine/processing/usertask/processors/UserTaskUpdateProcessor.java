@@ -129,6 +129,10 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
                                     metadata.requestId(),
                                     metadata.requestStreamId());
                               });
+                  default ->
+                      throw new IllegalArgumentException(
+                          "Unexpected value type: '%s', only %s are expected"
+                              .formatted(metadata.valueType(), eligibleValueTypes));
                 }
                 stateWriter.appendFollowUpEvent(
                     metadata.metadataKey(), RequestMetadataIntent.PROCESSED, metadata.record());

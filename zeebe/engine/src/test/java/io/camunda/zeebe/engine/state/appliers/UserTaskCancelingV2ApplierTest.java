@@ -121,7 +121,7 @@ public class UserTaskCancelingV2ApplierTest {
         userTaskKey,
         UserTaskIntent.UPDATING,
         userTaskRecord.copy().setVariables(variablesBuffer).setVariablesChanged());
-    var requestMetadataRecord =
+    final var requestMetadataRecord =
         new RequestMetadataRecord()
             .setScopeKey(elementInstanceKey)
             .setIntent(VariableDocumentIntent.UPDATE)
@@ -185,7 +185,7 @@ public class UserTaskCancelingV2ApplierTest {
     testSetup.applyEventToState(
         userTaskKey, UserTaskIntent.CLAIMING, userTaskRecord.copy().setAssignee("john"));
     // persist request metadata
-    var requestMetadataRecord =
+    final var requestMetadataRecord =
         new RequestMetadataRecord()
             .setScopeKey(elementInstanceKey)
             .setIntent(UserTaskIntent.CLAIM)
