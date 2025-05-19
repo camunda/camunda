@@ -106,7 +106,7 @@ jobs:
       - name: Determine fetch depth for checkout
         id: depth
         run: |
-          echo "depth=$((${{ github.event.pull_request.commits }} + 1))" >> $GITHUB_OUTPUT
+          echo "depth=$((${{ github.event.pull_request.commits }} + 1))" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
