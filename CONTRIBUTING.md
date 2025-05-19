@@ -220,10 +220,9 @@ You can run the Camunda distribution via IntelliJ for development purposes.
      classpath of your JDK (`<version>` being the current snapshot version, e.g. `8.8.0`):
      - `$HOME/.m2/repository/io/camunda/operate-mvc-auth-commons/<version>-SNAPSHOT/operate-mvc-auth-commons-<version>-SNAPSHOT.jar`
      - `$HOME/.m2/repository/io/camunda/tasklist-mvc-auth-commons/<version>-SNAPSHOT/tasklist-mvc-auth-commons-<version>-SNAPSHOT.jar`
-   - Example: ![intellij-module-settings.png](docs/assets/intellij-module-settings.png)
-   - If you receive an error on saving the project structure settings regarding the `zeebe-gateway-protocol`
-     not being able to contain the `src/main/proto` directory, fix this by removing the mentioned source
-     root from `zeebe-gateway-protocol` module in the _Modules_ tab.
+
+     ![intellij-module-settings.png](docs/assets/intellij-module-settings.png)
+
 4. Start an Elasticsearch instance as [described above](#run). Alternatively, you can start it via Docker from
    the `operate` directory:
 
@@ -246,6 +245,12 @@ You can run the Camunda distribution via IntelliJ for development purposes.
    - [Tasklist](http://localhost:8080/tasklist)
    - [Operate](http://localhost:8080/operate)
    - [Identity](http://localhost:8080/identity)
+
+##### Troubleshooting
+
+- If you receive an error on saving the project structure settings regarding the
+  `zeebe-gateway-protocol` not being able to contain the `src/main/proto` directory, fix this by
+  removing the mentioned source root from `zeebe-gateway-protocol` module in the _Modules_ tab.
 
 ### Test execution
 
