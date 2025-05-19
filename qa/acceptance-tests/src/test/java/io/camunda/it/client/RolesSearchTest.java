@@ -40,7 +40,7 @@ public class RolesSearchTest {
   @Test
   void searchShouldReturnRoleFilteredByRoleId() {
     final var roleSearchResponse =
-        camundaClient.newRoleSearchRequest().filter(fn -> fn.name(ROLE_NAME_1)).send().join();
+        camundaClient.newRolesSearchRequest().filter(fn -> fn.name(ROLE_NAME_1)).send().join();
 
     assertThat(roleSearchResponse.items())
         .hasSize(1)
@@ -51,7 +51,7 @@ public class RolesSearchTest {
   @Test
   void searchShouldReturnRolesFilteredByName() {
     final var roleSearchResponse =
-        camundaClient.newRoleSearchRequest().filter(fn -> fn.roleId(ROLE_ID_1)).send().join();
+        camundaClient.newRolesSearchRequest().filter(fn -> fn.roleId(ROLE_ID_1)).send().join();
 
     assertThat(roleSearchResponse.items())
         .hasSize(1)
@@ -62,21 +62,21 @@ public class RolesSearchTest {
   @Test
   void searchShouldReturnEmptyListWhenSearchingForNonExistingRoleId() {
     final var roleSearchResponse =
-        camundaClient.newRoleSearchRequest().filter(fn -> fn.roleId("someRoleId")).send().join();
+        camundaClient.newRolesSearchRequest().filter(fn -> fn.roleId("someRoleId")).send().join();
     assertThat(roleSearchResponse.items()).isEmpty();
   }
 
   @Test
   void searchShouldReturnEmptyListWhenSearchingForNonExistingRoleName() {
     final var roleSearchResponse =
-        camundaClient.newRoleSearchRequest().filter(fn -> fn.name("someRoleName")).send().join();
+        camundaClient.newRolesSearchRequest().filter(fn -> fn.name("someRoleName")).send().join();
     assertThat(roleSearchResponse.items()).isEmpty();
   }
 
   @Test
   void searchShouldReturnRolesSortedByName() {
     final var roleSearchResponse =
-        camundaClient.newRoleSearchRequest().sort(s -> s.name().desc()).send().join();
+        camundaClient.newRolesSearchRequest().sort(s -> s.name().desc()).send().join();
 
     assertThat(roleSearchResponse.items())
         .hasSize(5)

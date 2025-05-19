@@ -1195,7 +1195,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the roles search request
    */
-  RolesSearchRequest newRoleSearchRequest();
+  RolesSearchRequest newRolesSearchRequest();
 
   /**
    * Command to update a role.

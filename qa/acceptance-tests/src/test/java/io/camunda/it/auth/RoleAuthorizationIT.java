@@ -103,7 +103,7 @@ class RoleAuthorizationIT {
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var roleSearchResponse = adminClient.newRoleSearchRequest().send().join();
+              final var roleSearchResponse = adminClient.newRolesSearchRequest().send().join();
               assertThat(roleSearchResponse.items().stream().map(Role::getRoleId).toList())
                   .containsAll(Arrays.asList(ADMIN, ROLE_ID_1, ROLE_ID_2));
             });
@@ -134,7 +134,7 @@ class RoleAuthorizationIT {
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var roleSearchResponse = adminClient.newRoleSearchRequest().send().join();
+              final var roleSearchResponse = adminClient.newRolesSearchRequest().send().join();
               assertThat(roleSearchResponse.items().stream().map(Role::getRoleId).toList())
                   .contains(roleId);
             });
@@ -223,7 +223,7 @@ class RoleAuthorizationIT {
   void searchRolesShouldReturnRoleByIdIfAuthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
     final var roleSearchResponse =
-        camundaClient.newRoleSearchRequest().filter(fn -> fn.roleId(ROLE_ID_1)).send().join();
+        camundaClient.newRolesSearchRequest().filter(fn -> fn.roleId(ROLE_ID_1)).send().join();
 
     assertThat(roleSearchResponse.items())
         .hasSize(1)
@@ -235,7 +235,7 @@ class RoleAuthorizationIT {
   void searchRolesShouldReturnRoleByNameIfAuthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
     final var roleSearchResponse =
-        camundaClient.newRoleSearchRequest().filter(fn -> fn.name(ROLE_NAME_1)).send().join();
+        camundaClient.newRolesSearchRequest().filter(fn -> fn.name(ROLE_NAME_1)).send().join();
 
     assertThat(roleSearchResponse.items())
         .hasSize(1)
@@ -246,7 +246,7 @@ class RoleAuthorizationIT {
   @Test
   void searchRolesShouldReturnEmptyListIfUnauthorized(
       @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
-    final var roleSearchResponse = camundaClient.newRoleSearchRequest().send().join();
+    final var roleSearchResponse = camundaClient.newRolesSearchRequest().send().join();
     assertThat(roleSearchResponse.items()).hasSize(0).map(Role::getName).isEmpty();
   }
 
@@ -302,7 +302,7 @@ class RoleAuthorizationIT {
   @Test
   void searchShouldReturnAuthorizedRoles(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) throws Exception {
-    final var roleSearchResponse = camundaClient.newRoleSearchRequest().send().join();
+    final var roleSearchResponse = camundaClient.newRolesSearchRequest().send().join();
 
     assertThat(roleSearchResponse.items())
         .map(Role::getName)

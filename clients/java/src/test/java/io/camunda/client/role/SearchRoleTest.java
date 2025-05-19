@@ -46,7 +46,7 @@ public class SearchRoleTest extends ClientRestTest {
   public void shouldSearchRoles() {
     // when
     client
-        .newRoleSearchRequest()
+        .newRolesSearchRequest()
         .filter(fn -> fn.name("roleName"))
         .sort(RoleSort::name)
         .page(fn -> fn.limit(5))

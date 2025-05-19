@@ -829,7 +829,7 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public RolesSearchRequest newRoleSearchRequest() {
+  public RolesSearchRequest newRolesSearchRequest() {
     return new RolesSearchRequestImpl(httpClient, jsonMapper);
   }
 
