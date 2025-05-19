@@ -7,31 +7,23 @@
  */
 package io.camunda.zeebe.broker.partitioning.scaling.snapshot;
 
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.transport.snapshotapi.GetSnapshotChunkBrokerRequest;
-import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferService;
-import io.camunda.zeebe.transport.ClientTransport;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Function;
+import java.util.concurrent.CompletableFuture;
 
 public class SnapshotTransferServiceClient implements SnapshotTransferService {
 
-  private final ClientTransport client;
-  private final Function<Integer, String> nodeAddressProvider;
-  private final ConcurrencyControl concurrencyControl;
+  private final BrokerClient client;
 
-  public SnapshotTransferServiceClient(
-      final ClientTransport client,
-      final Function<Integer, String> nodeAddressProvider,
-      final ConcurrencyControl concurrencyControl) {
+  public SnapshotTransferServiceClient(final BrokerClient client) {
     this.client = client;
-    this.nodeAddressProvider = nodeAddressProvider;
-    this.concurrencyControl = concurrencyControl;
   }
 
   @Override
@@ -56,27 +48,26 @@ public class SnapshotTransferServiceClient implements SnapshotTransferService {
       final UUID transferId) {
     final var request = new GetSnapshotChunk(partition, transferId, snapshotId, previousChunkName);
     final var brokerRequest = new GetSnapshotChunkBrokerRequest(request);
-    return client
-        .sendRequest(
-            () -> nodeAddressProvider.apply(request.partitionId()),
-            brokerRequest,
-            Duration.ofSeconds(30))
-        .thenApply(brokerRequest::getResponse, concurrencyControl)
-        .andThen(
+    final var future = new CompletableActorFuture<SnapshotChunk>();
+    client
+        .sendRequestWithRetry(brokerRequest, Duration.ofSeconds(30))
+        .thenCompose(
             response -> {
               if (response.isResponse()) {
-                return CompletableActorFuture.completed(
+                return CompletableFuture.completedFuture(
                     response.getResponse().chunk().orElse(null));
               } else {
                 if (response.isRejection()) {
-                  return CompletableActorFuture.completedExceptionally(
+                  return CompletableFuture.failedFuture(
                       new RuntimeException(response.getRejection().toString()));
                 } else {
-                  return CompletableActorFuture.completedExceptionally(
+                  return CompletableFuture.failedFuture(
                       new RuntimeException("Unexpected response: " + response));
                 }
               }
-            },
-            concurrencyControl);
+            })
+        .whenComplete(future);
+
+    return future;
   }
 }

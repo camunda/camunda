@@ -8,10 +8,17 @@
 package io.camunda.zeebe.broker.transport.snapshotapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
+import io.camunda.zeebe.broker.client.api.BrokerClientRequestMetrics;
+import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
+import io.camunda.zeebe.broker.client.impl.BrokerClusterStateImpl;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotTransferServiceClient;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -25,6 +32,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.util.NetUtil;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Map;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.SnowflakeIdGenerator;
@@ -51,6 +59,7 @@ public class SnapshotApiRequestHandlerTest extends SnapshotTransferUtil {
   private AtomixServerTransport serverTransport;
   private SnapshotApiRequestHandler snapshotHandler;
   private SnapshotTransferServiceClient client;
+  private BrokerClientImpl brokerClient;
 
   @BeforeEach
   void setup() {
@@ -65,8 +74,25 @@ public class SnapshotApiRequestHandlerTest extends SnapshotTransferUtil {
             new MessagingConfig(),
             registry);
     messagingService.start().join();
-    clientTransport = new AtomixClientTransportAdapter(messagingService);
-    scheduler.submitActor(clientTransport).join();
+
+    final var clusterService = mock(ClusterEventService.class);
+    final var brokerTopology = mock(BrokerTopologyManager.class);
+    final var clusterState = new BrokerClusterStateImpl();
+    clusterState.addBrokerIfAbsent(1);
+    clusterState.addPartitionIfAbsent(1);
+    clusterState.setPartitionLeader(1, 1, 1);
+    clusterState.setBrokerAddressIfPresent(1, serverAddress);
+    when(brokerTopology.getTopology()).thenReturn(clusterState);
+    final var metrics = mock(BrokerClientRequestMetrics.class);
+    brokerClient =
+        new BrokerClientImpl(
+            Duration.ofSeconds(5),
+            messagingService,
+            clusterService,
+            scheduler,
+            brokerTopology,
+            metrics);
+    brokerClient.start();
 
     serverTransport = new AtomixServerTransport(messagingService, new SnowflakeIdGenerator(1L));
     scheduler.submitActor(serverTransport).join();
@@ -89,9 +115,7 @@ public class SnapshotApiRequestHandlerTest extends SnapshotTransferUtil {
             0, partitionId, receiverDirectory, snapshotPath -> Map.of(), new SimpleMeterRegistry());
 
     scheduler.submitActor((Actor) receiverSnapshotStore).join();
-    client =
-        new SnapshotTransferServiceClient(
-            clientTransport, (ignored) -> serverAddress, clientTransport);
+    client = new SnapshotTransferServiceClient(brokerClient);
   }
 
   @AfterEach
@@ -100,6 +124,7 @@ public class SnapshotApiRequestHandlerTest extends SnapshotTransferUtil {
     CloseHelper.closeAll(
         senderSnapshotStore,
         receiverSnapshotStore,
+        brokerClient,
         serverTransport,
         clientTransport,
         snapshotHandler,
