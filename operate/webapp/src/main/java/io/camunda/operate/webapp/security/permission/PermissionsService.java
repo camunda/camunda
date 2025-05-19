@@ -268,6 +268,7 @@ public class PermissionsService {
         .user(authenticatedUsername)
         .roleIds(authenticatedRoleIds)
         .tenants(authenticatedTenantIds)
+        .groupIds(authenticatedGroupIds)
         .build();
   }
 
