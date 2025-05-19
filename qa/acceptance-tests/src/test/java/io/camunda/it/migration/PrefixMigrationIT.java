@@ -38,7 +38,6 @@ import java.util.Collections;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.testcontainers.Testcontainers;
@@ -249,7 +248,6 @@ public class PrefixMigrationIT {
   }
 
   @Test
-  @Disabled("https://github.com/camunda/camunda/issues/30126")
   void shouldReindexDocumentsDuringPrefixMigration() throws IOException {
     // given
     final var camunda87 = createCamundaContainer();
