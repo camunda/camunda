@@ -10,7 +10,15 @@ on:
       multi-tenancy:
         description: 'Enable MT?'
         required: true
-        default: 'true'
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+      authorizations:
+        description: 'Enable Authorizations?'
+        required: true
+        default: 'false'
         type: choice
         options:
           - 'true'
@@ -54,20 +62,6 @@ jobs:
     environment: '${{ matrix.env }}-http-tests'
     env:
       LC_ALL: C.UTF-8
-
-#    services:
-#      elasticsearch:
-#        image: docker.elastic.co/elasticsearch/elasticsearch:8.17.3
-#        env:
-#          discovery.type: single-node
-#          cluster.name: docker-cluster
-#          bootstrap.memory_lock: true
-#          xpack.security.enabled: false
-#          ES_JAVA_OPTS: "-Xms1024m -Xmx1024m -XX:UseSVE=0 -XX:+IgnoreUnrecognizedVMOptions"
-#          CLI_JAVA_OPTS: "-XX:UseSVE=0 -XX:+IgnoreUnrecognizedVMOptions"
-#        ports:
-#          - 9200:9200
-#          - 9300:9300
 
     steps:
       - name: Checkout repository
@@ -144,7 +138,7 @@ jobs:
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://localhost:9200 && \
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE=100 && \
           export ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS=false && \
-          export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true && \
+          export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=${{ inputs.authorizations }} && \
           export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false && \
           export CAMUNDA_SECURITY_MULTITENANCY_ENABLED=${{ inputs.multi-tenancy }} && \
           export SPRING_PROFILES_ACTIVE=identity,tasklist,operate,broker,consolidated-auth && \
@@ -165,7 +159,7 @@ jobs:
           export CAMUNDA_SECURITY_AUTHENTICATION_OIDC_ISSUERURI=${{ steps.secrets.outputs.ISSUER_URI}} && \
           export CAMUNDA_SECURITY_AUTHENTICATION_OIDC_REDIRECTURI=http://localhost:8080/sso-callback && \
           export INITIAL_CLAIM_VALUE=${{ steps.secrets.outputs.INITIAL_CLAIM_VALUE}}  && \
-          export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=false && \
+          export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=${{ inputs.authorizations }} && \
           export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false && \
           export CAMUNDA_SECURITY_MULTITENANCY_ENABLED=${{ inputs.multi-tenancy }} && \
           export SPRING_PROFILES_ACTIVE=identity,broker,consolidated-auth && \
@@ -194,4 +188,4 @@ jobs:
 
       - name: Shut down Docker Compose
         if: always()
-        run: docker-compose -f operate/docker-compose.yml down -v
+        run: docker compose -f operate/docker-compose.yml down -v
