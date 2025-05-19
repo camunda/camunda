@@ -26,7 +26,6 @@ import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
@@ -134,13 +133,13 @@ public class RoleController {
   }
 
   @CamundaPostMapping(path = "/{roleId}/users/search")
-  public ResponseEntity<UserSearchResult> searchUsersByRole(
+  public ResponseEntity<RoleMemberSearchResult> searchUsersByRole(
       @PathVariable final String roleId,
-      @RequestBody(required = false) final UserSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toUserQuery(query)
+      @RequestBody(required = false) final RoleMemberSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toRoleQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            userQuery -> searchUsersInRole(roleId, userQuery));
+            userQuery -> searchMembersInRole(roleId, EntityType.USER, userQuery));
   }
 
   private ResponseEntity<UserSearchResult> searchUsersInRole(

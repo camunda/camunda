@@ -2746,14 +2746,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UserSearchQueryRequest"
+              $ref: "#/components/schemas/RoleMemberSearchQueryRequest"
       responses:
         "200":
           description: The users assigned to the role.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserSearchResult"
+                $ref: "#/components/schemas/RoleMemberSearchResult"
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
