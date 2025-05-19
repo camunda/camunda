@@ -43,6 +43,12 @@ public class EvaluatedDecisionAssertj
   }
 
   @Override
+  public EvaluatedDecisionAssert hasNoMatchedRules() {
+    decisionMatchedRulesAssertj.hasNoMatchedRules(actual.getMatchedRules());
+    return this;
+  }
+
+  @Override
   public EvaluatedDecisionAssert hasMatchedRules(final int... expectedMatchedRuleIndexes) {
     this.decisionMatchedRulesAssertj.hasMatchedRules(
         actual.getMatchedRules(), expectedMatchedRuleIndexes);

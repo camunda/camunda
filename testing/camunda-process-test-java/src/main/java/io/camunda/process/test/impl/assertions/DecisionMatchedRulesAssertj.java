@@ -33,6 +33,15 @@ public class DecisionMatchedRulesAssertj
     super(failureMessagePrefix, DecisionMatchedRulesAssertj.class);
   }
 
+  public void hasNoMatchedRules(final List<MatchedDecisionRule> matchedRules) {
+    final List<Integer> actualMatchedRuleIndices =
+        matchedRules.stream().map(MatchedDecisionRule::getRuleIndex).collect(Collectors.toList());
+
+    Assertions.assertThat(matchedRules)
+        .withFailMessage("%s to have no matches, but matched %s", actual, actualMatchedRuleIndices)
+        .isEmpty();
+  }
+
   public void hasMatchedRules(
       final List<MatchedDecisionRule> matchedRules, final int... expectedMatchedRuleIndexes) {
 

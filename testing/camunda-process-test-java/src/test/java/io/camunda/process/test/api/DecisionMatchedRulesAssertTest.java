@@ -208,6 +208,26 @@ public class DecisionMatchedRulesAssertTest {
   }
 
   @Nested
+  class HasNoMatchedRules {
+
+    @Test
+    void hasNoMatchedRules() {
+      // then
+      final EvaluatedDecision decision = evaluatedDecision(decisionResult());
+      CamundaAssert.assertThat(decision).hasNoMatchedRules();
+    }
+
+    @Test
+    void hasMatches() {
+      // then
+      final EvaluatedDecision decision = evaluatedDecision(decisionResult(multiRule()));
+      Assertions.assertThatThrownBy(() -> assertThat(decision).hasNoMatchedRules())
+          .hasMessage(
+              "Expected EvaluatedDecision [name] to have no matches, but matched [1, 2, 3]");
+    }
+  }
+
+  @Nested
   class EdgeCases {
     @Test
     void shouldFailIfNoMatchedRulesGiven() {

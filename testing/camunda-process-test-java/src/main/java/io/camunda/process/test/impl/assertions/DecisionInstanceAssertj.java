@@ -72,6 +72,14 @@ public class DecisionInstanceAssertj
   }
 
   @Override
+  public DecisionInstanceAssert hasNoMatchedRules() {
+    awaitDecisionInstance(
+        instance -> decisionMatchedRulesAssertj.hasNoMatchedRules(instance.getMatchedRules()));
+
+    return this;
+  }
+
+  @Override
   public DecisionInstanceAssert hasMatchedRules(final int... expectedMatchedRuleIndexes) {
     awaitDecisionInstance(
         instance ->

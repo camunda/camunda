@@ -27,6 +27,13 @@ public interface EvaluatedDecisionAssert {
   EvaluatedDecisionAssert hasOutput(final Object expectedOutput);
 
   /**
+   * Verifies that the decision matched nothing.
+   *
+   * @return the assertion object
+   */
+  EvaluatedDecisionAssert hasNoMatchedRules();
+
+  /**
    * Verifies that the decision has matched the given rule indices.
    *
    * @param expectedMatchedRuleIndexes the rule indices that should have matched
