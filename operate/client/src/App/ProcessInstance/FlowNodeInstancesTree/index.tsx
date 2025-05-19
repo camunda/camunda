@@ -200,13 +200,13 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
         value={flowNodeInstance.id}
         aria-label={nodeName}
         renderIcon={() => {
-          return businessObject !== undefined ? (
+          return (
             <FlowNodeIcon
               flowNodeInstanceType={flowNodeInstance.type}
               diagramBusinessObject={businessObject}
               hasLeftMargin={!hasChildren}
             />
-          ) : undefined;
+          );
         }}
         onSelect={() => {
           if (modificationsStore.state.status === 'adding-token') {
