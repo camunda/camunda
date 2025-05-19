@@ -30,8 +30,10 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -986,5 +988,87 @@ public class UserTaskListenersTest {
         .extracting(Record::getIntent)
         .describedAs("Verify the expected sequence of User Task intents")
         .containsSequence(intents);
+  }
+
+  @Test
+  void shouldCancelProcessInstanceWithUserTaskAfterCancelingListener() {
+    // given
+    final int operationReference = 111;
+    final var listenerType = "canceling_listener";
+    final var userTaskKey =
+        resourcesHelper.createSingleUserTask(
+            t -> t.zeebeTaskListener(l -> l.canceling().type(listenerType)));
+    final var processInstanceKey =
+        RecordingExporter.userTaskRecords()
+            .withRecordKey(userTaskKey)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+
+    final JobHandler completeJob =
+        (jobClient, job) -> client.newCompleteCommand(job).withResult().send().join();
+    client.newWorker().jobType(listenerType).handler(completeJob).open();
+
+    // when: cancel process instance to trigger a canceling transition for user task
+    final var cancelProcessInstanceFuture =
+        client
+            .newCancelInstanceCommand(processInstanceKey)
+            .operationReference(operationReference)
+            .send();
+
+    ZeebeAssertHelper.assertJobCompleted(listenerType);
+    assertThatCode(cancelProcessInstanceFuture::join).doesNotThrowAnyException();
+
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.CANCELING, UserTaskIntent.COMPLETE_TASK_LISTENER, UserTaskIntent.CANCELED);
+
+    assertThat(
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+            .withRecordKey(processInstanceKey)
+            .withValueType(ValueType.PROCESS_INSTANCE)
+            .getFirst())
+        .hasOperationReference(operationReference);
+  }
+
+  @Test
+  void shouldUpdateUserTaskAfterUpdatingListenersWhenTriggeredByTaskVariableUpdate() {
+    // given
+    final int operationReference = 111;
+    final var listenerType = "updating_listener";
+    final var userTaskKey =
+        resourcesHelper.createSingleUserTask(
+            t -> t.zeebeTaskListener(l -> l.updating().type(listenerType)));
+    final var userTaskInstanceKey =
+        RecordingExporter.userTaskRecords()
+            .withRecordKey(userTaskKey)
+            .getFirst()
+            .getValue()
+            .getElementInstanceKey();
+
+    final JobHandler completeJob =
+        (jobClient, job) -> client.newCompleteCommand(job).withResult().send().join();
+    client.newWorker().jobType(listenerType).handler(completeJob).open();
+
+    // when: updating variables to trigger an update transition
+    final var updateVariablesFuture =
+        client
+            .newSetVariablesCommand(userTaskInstanceKey)
+            .useRest()
+            .variables(Map.of("approvalStatus", "APPROVED"))
+            .local(true)
+            .operationReference(operationReference)
+            .send();
+
+    ZeebeAssertHelper.assertJobCompleted(listenerType);
+    assertThatCode(updateVariablesFuture::join).doesNotThrowAnyException();
+
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.UPDATING, UserTaskIntent.COMPLETE_TASK_LISTENER, UserTaskIntent.UPDATED);
+
+    assertThat(
+        RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATED)
+            .withScopeKey(userTaskInstanceKey)
+            .getFirst())
+        .hasOperationReference(operationReference);
   }
 }
