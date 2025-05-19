@@ -55,19 +55,19 @@ jobs:
     env:
       LC_ALL: C.UTF-8
 
-    services:
-      elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.17.3
-        env:
-          discovery.type: single-node
-          cluster.name: docker-cluster
-          bootstrap.memory_lock: true
-          xpack.security.enabled: false
-          ES_JAVA_OPTS: -Xms1024m -Xmx1024m -XX:UseSVE=0 -XX:+IgnoreUnrecognizedVMOptions
-          CLI_JAVA_OPTS: -XX:UseSVE=0 -XX:+IgnoreUnrecognizedVMOptions
-        ports:
-          - 9200:9200
-          - 9300:9300
+#    services:
+#      elasticsearch:
+#        image: docker.elastic.co/elasticsearch/elasticsearch:8.17.3
+#        env:
+#          discovery.type: single-node
+#          cluster.name: docker-cluster
+#          bootstrap.memory_lock: true
+#          xpack.security.enabled: false
+#          ES_JAVA_OPTS: "-Xms1024m -Xmx1024m -XX:UseSVE=0 -XX:+IgnoreUnrecognizedVMOptions"
+#          CLI_JAVA_OPTS: "-XX:UseSVE=0 -XX:+IgnoreUnrecognizedVMOptions"
+#        ports:
+#          - 9200:9200
+#          - 9300:9300
 
     steps:
       - name: Checkout repository
@@ -82,6 +82,9 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Start Elasticsearch with Docker Compose
+        run: docker-compose -f operate/docker-compose.yml up -d elasticsearch
 
       - name: Import Secrets
         id: secrets
@@ -188,3 +191,7 @@ jobs:
         if: always()
         run: |
           rm http/http-client.private.env.json
+
+      - name: Shut down Docker Compose
+        if: always()
+        run: docker-compose -f operate/docker-compose.yml down -v
