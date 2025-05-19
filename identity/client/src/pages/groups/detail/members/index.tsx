@@ -65,9 +65,7 @@ const Members: FC<MembersProps> = ({ groupId }) => {
       <>
         <C3EmptyState
           heading={t("assignUsersToGroup")}
-          description={t(
-            "Members of this group will be given access and roles that are assigned to this group.",
-          )}
+          description={t("membersAccessDisclaimer")}
           button={{
             label: t("assignUser"),
             onClick: openAssignModal,

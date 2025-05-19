@@ -30,6 +30,7 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     const { success } = await callAddRole({
       name: roleName,
       description: description,
+      roleId: roleId,
     });
 
     if (success) {

@@ -65,7 +65,7 @@ const Roles: FC<RolesProps> = ({ groupId }) => {
       <>
         <C3EmptyState
           heading={t("assignRolesToGroup")}
-          description={t("accessDisclaimer")}
+          description={t("roleAccessDisclaimer")}
           button={{
             label: t("assignRole"),
             onClick: openAssignModal,

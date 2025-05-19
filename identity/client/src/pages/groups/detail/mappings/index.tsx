@@ -65,7 +65,7 @@ const Mappings: FC<MappingsProps> = ({ groupId }) => {
       <>
         <C3EmptyState
           heading={t("assignMappingsToGroup")}
-          description={t("groupMemberAccessDisclaimer")}
+          description={t("membersAccessDisclaimer")}
           button={{
             label: t("assignMapping"),
             onClick: openAssignModal,
