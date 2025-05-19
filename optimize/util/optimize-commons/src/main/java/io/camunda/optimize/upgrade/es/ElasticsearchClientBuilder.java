@@ -96,7 +96,8 @@ public class ElasticsearchClientBuilder {
         }
 
         builder.setHttpClientConfigCallback(
-            createHttpClientConfigCallback(configurationService, sslContext));
+            createHttpClientConfigCallback(
+                configurationService, sslContext, pluginRepository.asRequestInterceptor()));
       } catch (final Exception e) {
         final String message = "Could not build secured Elasticsearch client.";
         throw new OptimizeRuntimeException(message, e);
