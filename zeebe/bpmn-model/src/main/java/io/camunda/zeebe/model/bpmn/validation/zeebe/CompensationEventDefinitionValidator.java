@@ -36,7 +36,6 @@ public class CompensationEventDefinitionValidator
   public void validate(
       final CompensateEventDefinition compensateEventDefinition,
       final ValidationResultCollector validationResultCollector) {
-    IdentifiableBpmnElementValidator.validate(compensateEventDefinition, validationResultCollector);
 
     final String activityRef =
         compensateEventDefinition.getAttributeValue(BpmnModelConstants.BPMN_ATTRIBUTE_ACTIVITY_REF);

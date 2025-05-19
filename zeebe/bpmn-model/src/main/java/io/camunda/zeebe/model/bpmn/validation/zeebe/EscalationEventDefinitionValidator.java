@@ -38,7 +38,6 @@ public class EscalationEventDefinitionValidator
   public void validate(
       final EscalationEventDefinition element,
       final ValidationResultCollector validationResultCollector) {
-    IdentifiableBpmnElementValidator.validate(element, validationResultCollector);
     final Escalation escalation = element.getEscalation();
     final ModelElementInstance parentElement = element.getParentElement();
 
