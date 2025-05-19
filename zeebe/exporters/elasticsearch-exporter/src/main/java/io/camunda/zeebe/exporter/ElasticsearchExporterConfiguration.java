@@ -127,6 +127,7 @@ public class ElasticsearchExporterConfiguration {
       case PROCESS_INSTANCE -> index.processInstance;
       case USER_TASK -> index.userTask;
       case JOB -> index.job;
+      case MESSAGE -> index.message;
       default -> false;
     };
   }

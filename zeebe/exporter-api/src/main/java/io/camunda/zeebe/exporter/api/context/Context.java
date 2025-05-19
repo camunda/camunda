@@ -17,6 +17,7 @@ package io.camunda.zeebe.exporter.api.context;
 
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.InstantSource;
 import org.slf4j.Logger;
@@ -80,5 +81,9 @@ public interface Context {
      * @return {@code true} if records with this type of value should be exported.
      */
     boolean acceptValue(ValueType valueType);
+
+    default boolean acceptIntent(final Intent intent) {
+      return true;
+    }
   }
 }

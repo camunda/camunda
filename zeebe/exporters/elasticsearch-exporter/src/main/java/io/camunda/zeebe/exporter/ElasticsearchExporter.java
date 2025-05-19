@@ -18,6 +18,8 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
@@ -443,6 +445,15 @@ public class ElasticsearchExporter implements Exporter {
     @Override
     public boolean acceptValue(final ValueType valueType) {
       return configuration.shouldIndexValueType(valueType);
+    }
+
+    @Override
+    public boolean acceptIntent(final Intent intent) {
+      if (intent instanceof MessageIntent) {
+        return intent.equals(MessageIntent.EXPIRED);
+      }
+
+      return true;
     }
   }
 }

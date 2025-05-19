@@ -18,6 +18,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
@@ -29,8 +30,9 @@ import org.mockito.Mockito;
 public final class MessageBatchExpireProcessorTest {
 
   private final StateWriter stateWriter = Mockito.mock(StateWriter.class);
+  private final MessageState messageState = Mockito.mock(MessageState.class);
   final MessageBatchExpireProcessor messageBatchExpireProcessor =
-      new MessageBatchExpireProcessor(stateWriter);
+      new MessageBatchExpireProcessor(stateWriter, messageState);
 
   @Test
   public void shouldStopProcessingWhenExceedingBatchLimit() {

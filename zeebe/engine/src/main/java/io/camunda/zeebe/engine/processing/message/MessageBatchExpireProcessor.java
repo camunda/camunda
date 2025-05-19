@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.record.intent.MessageIntent.*;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
@@ -24,12 +25,15 @@ public final class MessageBatchExpireProcessor implements TypedRecordProcessor<M
 
   private static final Logger LOG = LoggerFactory.getLogger(MessageBatchExpireProcessor.class);
   private final StateWriter stateWriter;
+  private final MessageState messageState;
 
   private final MessageRecord emptyDeleteMessageCommand =
       new MessageRecord().setName("").setCorrelationKey("").setTimeToLive(-1L);
 
-  public MessageBatchExpireProcessor(final StateWriter stateWriter) {
+  public MessageBatchExpireProcessor(
+      final StateWriter stateWriter, final MessageState messageState) {
     this.stateWriter = stateWriter;
+    this.messageState = messageState;
   }
 
   @Override
@@ -39,7 +43,8 @@ public final class MessageBatchExpireProcessor implements TypedRecordProcessor<M
     final int totalMessagesCount = record.getValue().getMessageKeys().size();
     for (final long messageKey : record.getValue().getMessageKeys()) {
       try {
-        stateWriter.appendFollowUpEvent(messageKey, EXPIRED, emptyDeleteMessageCommand);
+        stateWriter.appendFollowUpEvent(
+            messageKey, EXPIRED, messageState.getMessage(messageKey).getMessage());
         expiredMessagesCount++;
       } catch (final ExceededBatchRecordSizeException exceededBatchRecordSizeException) {
         LOG.warn(

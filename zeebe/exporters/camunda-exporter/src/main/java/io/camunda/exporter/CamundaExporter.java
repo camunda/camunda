@@ -20,6 +20,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.GROUP;
 import static io.camunda.zeebe.protocol.record.ValueType.INCIDENT;
 import static io.camunda.zeebe.protocol.record.ValueType.JOB;
 import static io.camunda.zeebe.protocol.record.ValueType.MAPPING;
+import static io.camunda.zeebe.protocol.record.ValueType.MESSAGE;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MIGRATION;
@@ -56,6 +57,7 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
@@ -290,7 +292,7 @@ public class CamundaExporter implements Exporter {
 
     if (writer.getBatchSize() == configuration.getBulk().getSize()) {
       LOG.info(
-          """
+"""
 Cached maximum batch size [{}] number of records, exporting will block at the current position of [{}] while waiting for the importers to finish
 processing records from previous version
 """,
@@ -428,7 +430,8 @@ processing records from previous version
             BATCH_OPERATION_CREATION,
             BATCH_OPERATION_EXECUTION,
             BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
-            BATCH_OPERATION_CHUNK);
+            BATCH_OPERATION_CHUNK,
+            MESSAGE);
 
     @Override
     public boolean acceptType(final RecordType recordType) {
@@ -438,6 +441,18 @@ processing records from previous version
     @Override
     public boolean acceptValue(final ValueType valueType) {
       return VALUE_TYPES_2_EXPORT.contains(valueType);
+    }
+
+    @Override
+    public boolean acceptIntent(final Intent intent) {
+      /*if (intent instanceof MessageIntent) {
+        LOG.error("exporting message expired");
+        return intent.equals(MessageIntent.EXPIRED);
+      }
+
+      LOG.error("exporting regular record");*/
+
+      return true;
     }
   }
 }
