@@ -114,6 +114,7 @@
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
+      <optional>true</optional>
     </dependency>
 
     <dependency>
@@ -124,6 +125,7 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-actuator-autoconfigure</artifactId>
+      <optional>true</optional>
     </dependency>
 
     <dependency>
