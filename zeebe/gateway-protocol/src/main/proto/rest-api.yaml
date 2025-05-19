@@ -7166,7 +7166,7 @@ components:
         - $ref: "#/components/schemas/SearchQueryResponse"
       properties:
         items:
-          description: The matching clients.
+          description: The matching members.
           type: array
           items:
             $ref: "#/components/schemas/TenantMemberResult"
