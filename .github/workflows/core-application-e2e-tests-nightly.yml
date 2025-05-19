@@ -144,7 +144,7 @@ jobs:
             --project 'C8' \
             --username $TESTRAIL_USERNAME \
             --key $TESTRAIL_KEY \
-            parse_junit --suite-id 17050 \ 
+            parse_junit --suite-id 17050 \
             --title "Nightly Core Application Run Test Results - $BRANCH_NAME - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
             -f $JUNIT_RESULTS_FILE
