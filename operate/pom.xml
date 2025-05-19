@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.8.0-SNAPSHOT</version>
+    <version>8.8.0-alpha4.1-rc1</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
@@ -40,9 +40,9 @@
     <includeITNames>**/*IT.java</includeITNames>
     <excludeITNames>**/OpenSearch*IT.java, **/Opensearch*IT.java</excludeITNames>
     <excludeUnitTestNames>**/*IT.java</excludeUnitTestNames>
-    <excludeCoreFeaturesTestNames></excludeCoreFeaturesTestNames>
-    <excludeDataLayerTestNames></excludeDataLayerTestNames>
-    <excludeIdentityTestNames></excludeIdentityTestNames>
+    <excludeCoreFeaturesTestNames />
+    <excludeDataLayerTestNames />
+    <excludeIdentityTestNames />
     <itDatabase>elasticsearch</itDatabase>
     <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
