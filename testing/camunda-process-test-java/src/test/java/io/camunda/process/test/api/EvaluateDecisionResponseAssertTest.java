@@ -16,9 +16,6 @@
 package io.camunda.process.test.api;
 
 import static io.camunda.process.test.api.CamundaAssert.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.impl.response.EvaluateDecisionResponseImpl;
@@ -72,16 +69,6 @@ public class EvaluateDecisionResponseAssertTest {
     CamundaAssert.setAssertionTimeout(CamundaAssert.DEFAULT_ASSERTION_TIMEOUT);
   }
 
-  private EvaluateDecisionResponse evaluateDecision() {
-    return camundaDataSource.evaluateDecisionByDecisionId(DECISION_DEFINITION_ID, null);
-  }
-
-  private void mockEvaluateDecision(final EvaluateDecisionResponse mockedResponse) {
-
-    when(camundaDataSource.evaluateDecisionByDecisionId(eq(DECISION_DEFINITION_ID), any()))
-        .thenReturn(mockedResponse);
-  }
-
   private EvaluateDecisionResponse evaluateDecisionResponse(
       final String result, final Supplier<List<EvaluatedDecisionResult>> decisionSupplier) {
 
@@ -115,11 +102,8 @@ public class EvaluateDecisionResponseAssertTest {
 
     @Test
     public void isEvaluated() {
-      // given
-      mockEvaluateDecision(evaluateDecisionResponse(STRING_RESULT, Collections::emptyList));
-
       // then
-      assertThat(evaluateDecision()).isEvaluated();
+      assertThat(evaluateDecisionResponse(STRING_RESULT, Collections::emptyList)).isEvaluated();
     }
 
     @Test
@@ -139,10 +123,8 @@ public class EvaluateDecisionResponseAssertTest {
                   .evaluatedDecisions(Collections.emptyList()),
               null);
 
-      mockEvaluateDecision(evaluateDecisionResponse);
-
       // then
-      Assertions.assertThatThrownBy(() -> assertThat(evaluateDecision()).isEvaluated())
+      Assertions.assertThatThrownBy(() -> assertThat(evaluateDecisionResponse).isEvaluated())
           .hasMessage("EvaluateDecisionResponse [name] failed with message: Something went wrong.");
     }
   }
@@ -152,37 +134,28 @@ public class EvaluateDecisionResponseAssertTest {
 
     @Test
     public void hasOutputWithStringMatch() {
-      // given
-      mockEvaluateDecision(
-          evaluateDecisionResponse(
-              STRING_RESULT, () -> Collections.singletonList(decisionResult(STRING_RESULT))));
-
       // then
-      assertThat(evaluateDecision()).hasOutput("outputValue");
+      assertThat(
+              evaluateDecisionResponse(
+                  STRING_RESULT, () -> Collections.singletonList(decisionResult(STRING_RESULT))))
+          .hasOutput("outputValue");
     }
 
     @Test
     public void hasOutputWithSingleMapMatch() {
-      // given
-      mockEvaluateDecision(
-          evaluateDecisionResponse(
-              MAP_RESULT, () -> Collections.singletonList(decisionResult(MAP_RESULT))));
-
       // then
       final Map<String, Object> expected = new HashMap<>();
       expected.put("a", "b");
       expected.put("v", 2);
 
-      assertThat(evaluateDecision()).hasOutput(expected);
+      assertThat(
+              evaluateDecisionResponse(
+                  MAP_RESULT, () -> Collections.singletonList(decisionResult(MAP_RESULT))))
+          .hasOutput(expected);
     }
 
     @Test
     public void hasOutputWithListMatch() {
-      // when
-      mockEvaluateDecision(
-          evaluateDecisionResponse(
-              LIST_RESULT, () -> Collections.singletonList(decisionResult(LIST_RESULT))));
-
       // then
       final Map<String, Object> firstMatch = new HashMap<>();
       firstMatch.put("a", 1);
@@ -192,24 +165,27 @@ public class EvaluateDecisionResponseAssertTest {
       secondMatch.put("d", 4);
 
       // All of these should match
-      assertThat(evaluateDecision()).hasOutput(Arrays.asList(firstMatch, secondMatch));
+      assertThat(
+              evaluateDecisionResponse(
+                  LIST_RESULT, () -> Collections.singletonList(decisionResult(LIST_RESULT))))
+          .hasOutput(Arrays.asList(firstMatch, secondMatch));
     }
 
     @Test
     public void assertionFailureWithStringMatch() {
       // when
-      mockEvaluateDecision(
+      final EvaluateDecisionResponse decisionResponse =
           evaluateDecisionResponse(
-              STRING_RESULT, () -> Collections.singletonList(decisionResult(STRING_RESULT))));
+              STRING_RESULT, () -> Collections.singletonList(decisionResult(STRING_RESULT)));
 
       // then
-      Assertions.assertThatThrownBy(() -> assertThat(evaluateDecision()).hasOutput("foo"))
+      Assertions.assertThatThrownBy(() -> assertThat(decisionResponse).hasOutput("foo"))
           .hasMessage(
               "Expected EvaluateDecisionResponse [name] to have output '\"foo\"', but was '\"outputValue\"'");
 
       final Map<String, Object> expected = new HashMap<>();
       expected.put("a", "b");
-      Assertions.assertThatThrownBy(() -> assertThat(evaluateDecision()).hasOutput(expected))
+      Assertions.assertThatThrownBy(() -> assertThat(decisionResponse).hasOutput(expected))
           .hasMessage(
               "Expected EvaluateDecisionResponse [name] to have output '{\"a\":\"b\"}', but was '\"outputValue\"'");
     }
@@ -217,18 +193,18 @@ public class EvaluateDecisionResponseAssertTest {
     @Test
     public void assertionFailureWithMapMatch() {
       // when
-      mockEvaluateDecision(
+      final EvaluateDecisionResponse decisionResponse =
           evaluateDecisionResponse(
-              MAP_RESULT, () -> Collections.singletonList(decisionResult(MAP_RESULT))));
+              MAP_RESULT, () -> Collections.singletonList(decisionResult(MAP_RESULT)));
 
       // then
-      Assertions.assertThatThrownBy(() -> assertThat(evaluateDecision()).hasOutput("foo"))
+      Assertions.assertThatThrownBy(() -> assertThat(decisionResponse).hasOutput("foo"))
           .hasMessage(
               "Expected EvaluateDecisionResponse [name] to have output '\"foo\"', but was '{\"a\":\"b\",\"v\":2}'");
 
       final Map<String, Object> expected = new HashMap<>();
       expected.put("a", "b");
-      Assertions.assertThatThrownBy(() -> assertThat(evaluateDecision()).hasOutput(expected))
+      Assertions.assertThatThrownBy(() -> assertThat(decisionResponse).hasOutput(expected))
           .hasMessage(
               "Expected EvaluateDecisionResponse [name] to have output '{\"a\":\"b\"}', but was '{\"a\":\"b\",\"v\":2}'");
     }
@@ -236,18 +212,18 @@ public class EvaluateDecisionResponseAssertTest {
     @Test
     public void assertionFailureWithListMatch() {
       // when
-      mockEvaluateDecision(
+      final EvaluateDecisionResponse decisionResponse =
           evaluateDecisionResponse(
-              LIST_RESULT, () -> Collections.singletonList(decisionResult(LIST_RESULT))));
+              LIST_RESULT, () -> Collections.singletonList(decisionResult(LIST_RESULT)));
 
       // then
-      Assertions.assertThatThrownBy(() -> assertThat(evaluateDecision()).hasOutput("foo"))
+      Assertions.assertThatThrownBy(() -> assertThat(decisionResponse).hasOutput("foo"))
           .hasMessage(
               "Expected EvaluateDecisionResponse [name] to have output '\"foo\"', but was '[{\"a\":1,\"b\":2},{\"c\":3,\"d\":4}]'");
 
       final Map<String, Object> expected = new HashMap<>();
       expected.put("a", "b");
-      Assertions.assertThatThrownBy(() -> assertThat(evaluateDecision()).hasOutput(expected))
+      Assertions.assertThatThrownBy(() -> assertThat(decisionResponse).hasOutput(expected))
           .hasMessage(
               "Expected EvaluateDecisionResponse [name] to have output '{\"a\":\"b\"}', but was '[{\"a\":1,\"b\":2},{\"c\":3,\"d\":4}]'");
     }

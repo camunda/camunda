@@ -17,6 +17,7 @@ package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.mock.JobWorkerMock;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -196,4 +197,26 @@ public interface CamundaProcessTestContext {
    * @param variables a map of variables to set for the mocked DMN decision
    */
   void mockDmnDecision(final String decisionId, final Map<String, Object> variables);
+
+  /**
+   * Evaluate a decision by its decision ID and set the provided variables.
+   *
+   * @param decisionId the element ID of the decision to evaluate
+   * @param variables a map of variables to set for the evaluation
+   * @return the evaluated decision response
+   * @see io.camunda.client.api.response.EvaluateDecisionResponse
+   */
+  EvaluateDecisionResponse evaluateDecisionByDecisionId(
+      final String decisionId, final Object variables);
+
+  /**
+   * Evaluate a decision by the decision key and set the provided variables.
+   *
+   * @param decisionKey the decision key of the decision to evaluate
+   * @param variables a map of variables to set for the evaluation
+   * @return the evaluated decision response
+   * @see io.camunda.client.api.response.EvaluateDecisionResponse
+   */
+  EvaluateDecisionResponse evaluateDecisionByDecisionKey(
+      final long decisionKey, final Object variables);
 }

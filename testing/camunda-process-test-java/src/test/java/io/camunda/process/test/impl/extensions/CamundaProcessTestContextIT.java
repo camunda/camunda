@@ -644,12 +644,7 @@ public class CamundaProcessTestContextIT {
 
     // when
     final EvaluateDecisionResponse response =
-        client
-            .newEvaluateDecisionCommand()
-            .decisionId("simple_decision")
-            .variables(variables)
-            .send()
-            .join();
+        processTestContext.evaluateDecisionByDecisionId("simple_decision", variables);
 
     // Then
     assertThat(response).isEvaluated().hasOutput(":)");
@@ -674,12 +669,7 @@ public class CamundaProcessTestContextIT {
 
     // when
     final EvaluateDecisionResponse response =
-        client
-            .newEvaluateDecisionCommand()
-            .decisionId("decision_overall_happiness")
-            .variables(variables)
-            .send()
-            .join();
+        processTestContext.evaluateDecisionByDecisionId("decision_overall_happiness", variables);
 
     // Then
     assertThat(response).isEvaluated().hasOutput("pretty happy");
@@ -715,12 +705,7 @@ public class CamundaProcessTestContextIT {
 
     // when
     final EvaluateDecisionResponse response =
-        client
-            .newEvaluateDecisionCommand()
-            .decisionId("decision_overall_happiness")
-            .variables(variables)
-            .send()
-            .join();
+        processTestContext.evaluateDecisionByDecisionId("decision_overall_happiness", variables);
 
     // Then
     Assertions.assertThatThrownBy(() -> assertThat(response).isEvaluated())
