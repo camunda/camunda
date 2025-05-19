@@ -47,5 +47,6 @@
   "removingClient": "Removing client",
   "enterClientId": "Enter client ID",
   "clientsCouldNotLoad": "Clients could not load",
-  "unableToLoadClients": "Unable to load clients"
+  "unableToLoadClients": "Unable to load clients",
+  "searchByClientId": "Search by client ID"
 }

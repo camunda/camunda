@@ -48,5 +48,9 @@
   "mappingId": "Mapping ID",
   "mappingName": "Mapping name",
   "claimName": "Claim name",
-  "claimValue": "Claim value"
+  "claimValue": "Claim value",
+  "assignClientToRole": "Assign client to role",
+  "roleClientRemoved": "Role client removed",
+  "removeClientFromRole": "Are you sure you want to remove <strong>{{clientId}}</strong> from this role?",
+  "assignClientsToRole": "Assign clients to this role"
 }
