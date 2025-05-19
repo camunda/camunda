@@ -80,7 +80,7 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
 
   @Override
   public void deleteResource(final long resourceKey, final String operationId) {
-    executeCamundaServiceAuthenticated(
+    executeCamundaServiceAnonymously(
         (authentication) ->
             withOperationReference(
                 operationReference ->
@@ -92,7 +92,7 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
   @Override
   public void migrateProcessInstance(
       final long processInstanceKey, final MigrationPlan migrationPlan, final String operationId) {
-    executeCamundaServiceAuthenticated(
+    executeCamundaServiceAnonymously(
         (authentication) ->
             withOperationReference(
                 operationReference ->
@@ -116,7 +116,7 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
       final long processInstanceKey,
       final List<Modification> modifications,
       final String operationId) {
-    executeCamundaServiceAuthenticated(
+    executeCamundaServiceAnonymously(
         (authentication) ->
             withOperationReference(
                 operationReference ->
@@ -127,7 +127,7 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
 
   @Override
   public void cancelProcessInstance(final long processInstanceKey, final String operationId) {
-    executeCamundaServiceAuthenticated(
+    executeCamundaServiceAnonymously(
         (authentication) ->
             withOperationReference(
                 operationReference ->
@@ -139,14 +139,14 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
   @Override
   public void updateJobRetries(final long jobKey, final int retries, final String operationId) {
     // operationId is not used in the updateJob service method
-    executeCamundaServiceAuthenticated(
+    executeCamundaServiceAnonymously(
         (authentication) -> jobServices.updateJob(jobKey, new UpdateJobChangeset(retries, null)));
   }
 
   @Override
   public void resolveIncident(final long incidentKey, final String operationId) {
     // operationId is not used in the updateJob service method
-    executeCamundaServiceAuthenticated(
+    executeCamundaServiceAnonymously(
         (authentication) -> incidentServices.resolveIncident(incidentKey));
   }
 
@@ -158,7 +158,7 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
       final String operationId) {
     final var variableDocumentRecord =
         // operationId is not used in the updateJob service method
-        executeCamundaServiceAuthenticated(
+        executeCamundaServiceAnonymously(
             (authentication) ->
                 withOperationReference(
                     operationReference ->
@@ -182,9 +182,9 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
     return null;
   }
 
-  private <T> T executeCamundaServiceAuthenticated(
+  private <T> T executeCamundaServiceAnonymously(
       final Function<Authentication, CompletableFuture<T>> method) {
-    return executeCamundaService(method, RequestMapper.getAuthentication());
+    return executeCamundaService(method, RequestMapper.getAnonymousAuthentication());
   }
 
   private <T> T executeCamundaService(
