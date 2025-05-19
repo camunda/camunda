@@ -15,13 +15,11 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.RoleMemberEntity;
-import io.camunda.search.entities.UserEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.RoleSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.MappingServices;
@@ -30,7 +28,6 @@ import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
-import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -216,15 +213,15 @@ public class RoleQueryControllerTest extends RestControllerTest {
   void shouldSearchUsersByRole() {
     // given
     final var roleId = "roleId";
-    when(userServices.search(any(UserQuery.class)))
+    when(roleServices.searchMembers(any(RoleQuery.class)))
         .thenReturn(
-            new SearchQueryResult.Builder<UserEntity>()
+            new SearchQueryResult.Builder<RoleMemberEntity>()
                 .total(3)
                 .items(
                     List.of(
-                        new UserEntity(100L, "user1", "User 1", "user1@example.com", "password1"),
-                        new UserEntity(200L, "user2", "User 2", "user2@example.com", "password2"),
-                        new UserEntity(300L, "user3", "User 3", "user3@example.com", "password3")))
+                        new RoleMemberEntity("user1", EntityType.USER),
+                        new RoleMemberEntity("user2", EntityType.USER),
+                        new RoleMemberEntity("user3", EntityType.USER)))
                 .build());
 
     // when /then
@@ -245,19 +242,13 @@ public class RoleQueryControllerTest extends RestControllerTest {
           {
              "items": [
                {
-                 "username": "user1",
-                 "name": "User 1",
-                 "email": "user1@example.com"
+                 "memberId": "user1"
                },
                {
-                 "username": "user2",
-                 "name": "User 2",
-                 "email": "user2@example.com"
+                 "memberId": "user2"
                },
                {
-                 "username": "user3",
-                 "name": "User 3",
-                 "email": "user3@example.com"
+                 "memberId": "user3"
                }
              ],
              "page": {
@@ -267,10 +258,10 @@ public class RoleQueryControllerTest extends RestControllerTest {
              }
            }""");
 
-    verify(userServices)
-        .search(
-            new UserQuery.Builder()
-                .filter(f -> f.roleId(roleId).usernames(Collections.emptySet()))
+    verify(roleServices)
+        .searchMembers(
+            new RoleQuery.Builder()
+                .filter(f -> f.memberType(EntityType.USER).joinParentId(roleId))
                 .build());
   }
 
