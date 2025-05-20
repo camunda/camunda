@@ -329,6 +329,19 @@ public class SearchRequestSortMapper {
         .collect(Collectors.toList());
   }
 
+  public static List<GroupUserSearchQuerySortRequest> toGroupUserSearchQuerySortRequest(
+      final List<SearchRequestSort> requests) {
+    return requests.stream()
+        .map(
+            r -> {
+              final GroupUserSearchQuerySortRequest request = new GroupUserSearchQuerySortRequest();
+              request.setField(GroupUserSearchQuerySortRequest.FieldEnum.fromValue(r.getField()));
+              request.setOrder(r.getOrder());
+              return request;
+            })
+        .collect(Collectors.toList());
+  }
+
   public static List<IncidentSearchQuerySortRequest> toIncidentSearchQuerySortRequest(
       final List<SearchRequestSort> requests) {
     return requests.stream()

@@ -24,6 +24,7 @@ import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.DecisionRequirements;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Group;
+import io.camunda.client.api.search.response.GroupUser;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.Mapping;
 import io.camunda.client.api.search.response.ProcessDefinition;
@@ -190,6 +191,18 @@ public final class SearchResponseMapper {
         response.getUsername(),
         response.getName(),
         response.getEmail());
+  }
+
+  public static SearchResponse<GroupUser> toGroupUsersResponse(
+      final GroupUserSearchResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<GroupUser> instances =
+        toSearchResponseInstances(response.getItems(), SearchResponseMapper::toGroupUser);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static GroupUser toGroupUser(final GroupUserResult response) {
+    return new GroupUserImpl(response.getUsername());
   }
 
   public static Mapping toMappingResponse(final MappingResult response) {

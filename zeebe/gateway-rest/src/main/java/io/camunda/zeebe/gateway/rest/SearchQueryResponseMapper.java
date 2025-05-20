@@ -213,7 +213,7 @@ public final class SearchQueryResponseMapper {
       final SearchQueryResult<GroupMemberEntity> result) {
     final var page = toSearchQueryPageResponse(result);
     return new GroupUserSearchResult()
-        .page(toSearchQueryPageResponse(result))
+        .page(page)
         .items(
             ofNullable(result.items())
                 .map(SearchQueryResponseMapper::toGroupUsers)
