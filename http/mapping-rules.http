@@ -139,6 +139,31 @@ Accept: application/json
   });
 %}
 
+### Search Mapping for Group
+# @name search-mapping-for-group
+< {%
+  import {wait} from "js/wait";
+  wait(3);
+%}
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}/mapping-rules/search
+Authorization: Bearer {{TOKEN}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "filter": {
+    "mappingId": "{{MAPPING_ID}}"
+  }
+}
+
+> {%
+  client.test("Mapping search should be successful", function () {
+    let expectedMappingId = client.global.get("MAPPING_ID");
+    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.body.items[0].mappingId === expectedMappingId, "Mapping was not found");
+  });
+%}
+
 ### Remove Mapping Rule from Group
 # @name remove-mapping-rule-from-group
 DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}/mapping-rules/{{MAPPING_ID}}
