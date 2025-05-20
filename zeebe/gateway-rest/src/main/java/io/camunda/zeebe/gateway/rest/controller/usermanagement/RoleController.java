@@ -143,12 +143,12 @@ public class RoleController {
   }
 
   private ResponseEntity<RoleUserSearchResult> searchUsersInRole(
-      final String tenantId, final RoleQuery query) {
+      final String roleId, final RoleQuery query) {
     try {
       final var result =
           roleServices
               .withAuthentication(RequestMapper.getAuthentication())
-              .searchMembers(buildRoleMemberQuery(tenantId, EntityType.USER, query));
+              .searchMembers(buildRoleMemberQuery(roleId, EntityType.USER, query));
       return ResponseEntity.ok(SearchQueryResponseMapper.toRoleUserSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
