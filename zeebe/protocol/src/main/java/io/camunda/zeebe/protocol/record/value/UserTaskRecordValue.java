@@ -82,4 +82,9 @@ public interface UserTaskRecordValue
   long getProcessDefinitionKey();
 
   int getPriority();
+
+  /**
+   * @return the variable update semantics used when updating variables on the user task
+   */
+  UserTaskVariablesUpdateSemantic getVariableUpdateSemantics();
 }
