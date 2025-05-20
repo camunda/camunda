@@ -7,9 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.distribution;
 
-import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
-import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import java.time.Duration;
@@ -54,8 +52,7 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
 
   private static final Logger LOG = LoggerFactory.getLogger(CommandRedistributor.class);
 
-  private final DistributionState distributionState;
-  private final InterPartitionCommandSender commandSender;
+  private final CommandDistributionBehavior distributionBehavior;
 
   /**
    * Tracks the number of attempted retry cycles for each retriable distribution. Note that this
@@ -64,33 +61,29 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
    */
   private final Map<RetriableDistribution, Long> retryCyclesPerDistribution = new HashMap<>();
 
-  public CommandRedistributor(
-      final DistributionState distributionState, final InterPartitionCommandSender commandSender) {
-    this.distributionState = distributionState;
-    this.commandSender = commandSender;
+  public CommandRedistributor(final CommandDistributionBehavior distributionBehavior) {
+    this.distributionBehavior = distributionBehavior;
   }
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
     context
         .getScheduleService()
-        .runAtFixedRate(COMMAND_REDISTRIBUTION_INTERVAL, this::redistribute);
-  }
-
-  // TODO: maybe push this one level higher in the SchedulerService to monitor all tasks
-  public void redistribute() {
-    distributionState.getMetrics().timedRedistribution(this::runRetryCycle);
+        .runAtFixedRate(COMMAND_REDISTRIBUTION_INTERVAL, this::runRetryCycle);
   }
 
   private void runRetryCycle() {
     final var retriableDistributions = new HashSet<RetriableDistribution>();
-    distributionState.foreachRetriableDistribution(
-        (distributionKey, record) -> {
-          final var retriable = new RetriableDistribution(distributionKey, record.getPartitionId());
-          retriableDistributions.add(retriable);
-          retryDistribution(retriable, record);
-          return true;
-        });
+    distributionBehavior
+        .getDistributionState()
+        .foreachRetriableDistribution(
+            (distributionKey, record) -> {
+              final var retriable =
+                  new RetriableDistribution(distributionKey, record.getPartitionId());
+              retriableDistributions.add(retriable);
+              retryDistribution(retriable, record);
+              return true;
+            });
 
     // Remove retry cycle tracking for completed distributions, i.e. those not visited in this cycle
     retryCyclesPerDistribution.keySet().removeIf(Predicate.not(retriableDistributions::contains));
@@ -110,14 +103,16 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
         commandDistributionRecord.getIntent(),
         retriable.partitionId);
 
-    distributionState.getMetrics().retryInflightDistribution(retriable.partitionId);
+    distributionBehavior.getMetrics().retryInflightDistribution(retriable.partitionId);
 
-    commandSender.sendCommand(
-        retriable.partitionId,
-        commandDistributionRecord.getValueType(),
-        commandDistributionRecord.getIntent(),
-        retriable.distributionKey,
-        commandDistributionRecord.getCommandValue());
+    distributionBehavior
+        .getCommandSender()
+        .sendCommand(
+            retriable.partitionId,
+            commandDistributionRecord.getValueType(),
+            commandDistributionRecord.getIntent(),
+            retriable.distributionKey,
+            commandDistributionRecord.getCommandValue());
   }
 
   /**

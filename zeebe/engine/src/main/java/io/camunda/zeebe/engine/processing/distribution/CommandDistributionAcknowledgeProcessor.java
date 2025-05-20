@@ -9,14 +9,11 @@ package io.camunda.zeebe.engine.processing.distribution;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 @ExcludeAuthorizationCheck
@@ -30,8 +27,6 @@ public class CommandDistributionAcknowledgeProcessor
 
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final DistributionState distributionState;
-  private final TypedCommandWriter commandWriter;
-  private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
 
   public CommandDistributionAcknowledgeProcessor(
@@ -40,8 +35,6 @@ public class CommandDistributionAcknowledgeProcessor
       final Writers writers) {
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.distributionState = distributionState;
-    commandWriter = writers.command();
-    stateWriter = writers.state();
     rejectionWriter = writers.rejection();
   }
 
@@ -61,26 +54,6 @@ public class CommandDistributionAcknowledgeProcessor
       return;
     }
 
-    stateWriter.appendFollowUpEvent(
-        distributionKey, CommandDistributionIntent.ACKNOWLEDGED, recordValue);
-
-    commandDistributionBehavior.getMetrics().removeInflightDistribution(partitionId);
-    commandDistributionBehavior.getMetrics().removePendingDistribution(partitionId);
-
-    final var queueId = distributionState.getQueueIdForDistribution(distributionKey);
-    queueId.ifPresent(
-        queue -> commandDistributionBehavior.distributeNextInQueue(queue, partitionId));
-
-    if (!distributionState.hasPendingDistribution(distributionKey)) {
-      final var finishRecord =
-          new CommandDistributionRecord()
-              .setPartitionId(record.getPartitionId())
-              .setValueType(recordValue.getValueType())
-              .setIntent(recordValue.getIntent());
-      queueId.ifPresent(finishRecord::setQueueId);
-
-      commandWriter.appendFollowUpCommand(
-          distributionKey, CommandDistributionIntent.FINISH, finishRecord);
-    }
+    commandDistributionBehavior.onAcknowledgeDistribution(distributionKey, recordValue);
   }
 }

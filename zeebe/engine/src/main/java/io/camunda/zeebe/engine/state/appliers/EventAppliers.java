@@ -504,7 +504,6 @@ public final class EventAppliers implements EventApplier {
         new CommandDistributionStartedApplier(distributionState));
     register(
         CommandDistributionIntent.DISTRIBUTING,
-        1,
         new CommandDistributionDistributingApplier(distributionState));
     register(
         CommandDistributionIntent.ACKNOWLEDGED,
