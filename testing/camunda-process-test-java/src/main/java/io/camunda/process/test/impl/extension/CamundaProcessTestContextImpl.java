@@ -53,8 +53,12 @@ import org.camunda.bpm.model.dmn.instance.Decision;
 import org.camunda.bpm.model.dmn.instance.Definitions;
 import org.camunda.bpm.model.dmn.instance.LiteralExpression;
 import org.camunda.bpm.model.dmn.instance.Text;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CamundaProcessTestContextImpl implements CamundaProcessTestContext {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(CamundaProcessTestContextImpl.class);
 
   private static final int TIMEOUT = 40;
 
@@ -138,6 +142,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   @Override
   public void increaseTime(final Duration timeToAdd) {
+    LOGGER.debug("Increase the time by {}", timeToAdd);
     camundaManagementClient.increaseTime(timeToAdd);
   }
 
@@ -145,6 +150,11 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   public JobWorkerMock mockJobWorker(final String jobType) {
     final CamundaClient client = createClient();
     return new JobWorkerMockImpl(jobType, client);
+  }
+
+  @Override
+  public void mockChildProcess(final String childProcessId) {
+    mockChildProcess(childProcessId, new HashMap<>());
   }
 
   @Override
@@ -161,16 +171,96 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                             e.zeebeOutput(
                                 "=" + client.getConfiguration().getJsonMapper().toJson(v), k)))
             .done();
-    client
-        .newDeployResourceCommand()
-        .addProcessModel(processModel, "test-process.bpmn")
-        .send()
-        .join();
+
+    LOGGER.debug(
+        "Mock: Deploy a child process '{}' with result variables {}", childProcessId, variables);
+
+    final String resourceName = childProcessId + ".bpmn";
+    client.newDeployResourceCommand().addProcessModel(processModel, resourceName).send().join();
   }
 
   @Override
-  public void mockChildProcess(final String childProcessId) {
-    mockChildProcess(childProcessId, new HashMap<>());
+  public void completeJob(final String jobType) {
+    completeJob(jobType, new HashMap<>());
+  }
+
+  @Override
+  public void completeJob(final String jobType, final Map<String, Object> variables) {
+    final CamundaClient client = createClient();
+    final ActivatedJob job = getActivatedJob(jobType);
+
+    LOGGER.debug(
+        "Complete job with variables {} [job-type: '{}', job-key: '{}']",
+        variables,
+        jobType,
+        job.getKey());
+    client.newCompleteCommand(job).variables(variables).send().join();
+  }
+
+  @Override
+  public void throwBpmnErrorFromJob(final String jobType, final String errorCode) {
+    throwBpmnErrorFromJob(jobType, errorCode, new HashMap<>());
+  }
+
+  @Override
+  public void throwBpmnErrorFromJob(
+      final String jobType, final String errorCode, final Map<String, Object> variables) {
+    final CamundaClient client = createClient();
+    final ActivatedJob job = getActivatedJob(jobType);
+
+    LOGGER.debug(
+        "Throw BPMN error with error code {} and variables {} [job-type: '{}', job-key: '{}']",
+        errorCode,
+        variables,
+        jobType,
+        job.getKey());
+    client.newThrowErrorCommand(job).errorCode(errorCode).variables(variables).send().join();
+  }
+
+  @Override
+  public void completeUserTask(final String taskName) {
+    completeUserTask(UserTaskSelectors.byTaskName(taskName), new HashMap<>());
+  }
+
+  @Override
+  public void completeUserTask(final String taskName, final Map<String, Object> variables) {
+    completeUserTask(UserTaskSelectors.byTaskName(taskName), variables);
+  }
+
+  @Override
+  public void completeUserTask(final UserTaskSelector userTaskSelector) {
+    completeUserTask(userTaskSelector, new HashMap<>());
+  }
+
+  @Override
+  public void completeUserTask(
+      final UserTaskSelector userTaskSelector, final Map<String, Object> variables) {
+    final CamundaClient client = createClient();
+    final AtomicReference<Long> userTaskKey = new AtomicReference<>();
+    Awaitility.await("until user task is active")
+        .ignoreExceptions()
+        .atMost(Duration.ofSeconds(2 * TIMEOUT))
+        .untilAsserted(
+            () -> {
+              final Future<SearchResponse<UserTask>> userTaskFuture =
+                  client.newUserTaskSearchRequest().send();
+              Assertions.assertThat(userTaskFuture)
+                  .succeedsWithin(Duration.ofSeconds(TIMEOUT))
+                  .extracting(SearchResponse::items)
+                  .satisfies(
+                      items -> {
+                        final List<UserTask> tasks =
+                            items.stream()
+                                .filter(userTaskSelector::test)
+                                .collect(Collectors.toList());
+                        Assertions.assertThat(tasks).isNotEmpty();
+                        userTaskKey.set(items.get(0).getUserTaskKey());
+                      });
+            });
+
+    LOGGER.debug(
+        "Complete user task with variables {} [user-task-key: '{}']", variables, userTaskKey.get());
+    client.newUserTaskCompleteCommand(userTaskKey.get()).variables(variables).send().join();
   }
 
   @Override
@@ -199,83 +289,15 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     literalExpression.setText(text);
     decision.addChildElement(literalExpression);
 
+    LOGGER.debug("Mock: Deploy a DMN '{}' with result variables {}", decisionId, variables);
+
+    final String resourceName = decisionId + ".dmn";
     client
         .newDeployResourceCommand()
         .addResourceStream(
-            new ByteArrayInputStream(Dmn.convertToString(modelInstance).getBytes()),
-            decisionId + ".dmn")
+            new ByteArrayInputStream(Dmn.convertToString(modelInstance).getBytes()), resourceName)
         .send()
         .join();
-  }
-
-  @Override
-  public void completeJob(final String jobType) {
-    completeJob(jobType, new HashMap<>());
-  }
-
-  @Override
-  public void completeJob(final String jobType, final Map<String, Object> variables) {
-    final CamundaClient client = createClient();
-    final ActivatedJob job = getActivatedJob(jobType);
-    client.newCompleteCommand(job).variables(variables).send().join();
-  }
-
-  @Override
-  public void throwBpmnErrorFromJob(final String jobType, final String errorCode) {
-    throwBpmnErrorFromJob(jobType, errorCode, new HashMap<>());
-  }
-
-  @Override
-  public void throwBpmnErrorFromJob(
-      final String jobType, final String errorCode, final Map<String, Object> variables) {
-    final CamundaClient client = createClient();
-    final ActivatedJob job = getActivatedJob(jobType);
-    client.newThrowErrorCommand(job).errorCode(errorCode).variables(variables).send().join();
-  }
-
-  @Override
-  public void completeUserTask(final String taskName) {
-    completeUserTask(UserTaskSelectors.byTaskName(taskName), new HashMap<>());
-  }
-
-  @Override
-  public void completeUserTask(final String taskName, final Map<String, Object> variables) {
-    completeUserTask(UserTaskSelectors.byTaskName(taskName), variables);
-  }
-
-  @Override
-  public void completeUserTask(final UserTaskSelector userTaskSelector) {
-    completeUserTask(userTaskSelector, new HashMap<>());
-  }
-
-  @Override
-  public void completeUserTask(
-      final UserTaskSelector userTaskSelector, final Map<String, Object> variables) {
-    final CamundaClient client = createClient();
-    final SearchResponse<UserTask> result = client.newUserTaskSearchRequest().send().join();
-    final AtomicReference<Long> userTaskKey = new AtomicReference<>();
-    Awaitility.await("until user task is active")
-        .ignoreExceptions()
-        .atMost(Duration.ofSeconds(2 * TIMEOUT))
-        .untilAsserted(
-            () -> {
-              final Future<SearchResponse<UserTask>> userTaskFuture =
-                  client.newUserTaskSearchRequest().send();
-              Assertions.assertThat(userTaskFuture)
-                  .succeedsWithin(Duration.ofSeconds(TIMEOUT))
-                  .extracting(SearchResponse::items)
-                  .satisfies(
-                      items -> {
-                        final List<UserTask> tasks =
-                            items.stream()
-                                .filter(userTaskSelector::test)
-                                .collect(Collectors.toList());
-                        Assertions.assertThat(tasks).isNotEmpty();
-                        userTaskKey.set(items.get(0).getUserTaskKey());
-                      });
-            });
-
-    client.newUserTaskCompleteCommand(userTaskKey.get()).variables(variables).send().join();
   }
 
   private ActivatedJob getActivatedJob(final String jobType) {
