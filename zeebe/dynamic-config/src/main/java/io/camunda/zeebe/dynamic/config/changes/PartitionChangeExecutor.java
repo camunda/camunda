@@ -57,7 +57,10 @@ public interface PartitionChangeExecutor {
    * @return a future that completes when the partition is bootstrapped
    */
   ActorFuture<Void> bootstrap(
-      int partitionId, int priority, DynamicPartitionConfig partitionConfig);
+      int partitionId,
+      int priority,
+      DynamicPartitionConfig partitionConfig,
+      boolean initializeFromConfig);
 
   /**
    * Updates the priority of the member used for raft priority election for the given partition.

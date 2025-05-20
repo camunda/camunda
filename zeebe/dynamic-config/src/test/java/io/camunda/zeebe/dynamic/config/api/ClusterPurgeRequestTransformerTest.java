@@ -63,8 +63,10 @@ final class ClusterPurgeRequestTransformerTest {
                       new PartitionLeaveOperation(id1, 0, 0),
                       new PartitionLeaveOperation(id1, 1, 0),
                       new DeleteHistoryOperation(id0),
-                      new PartitionBootstrapOperation(id0, 0, 2, Optional.of(partitionConfig)),
-                      new PartitionBootstrapOperation(id1, 1, 2, Optional.of(partitionConfig)),
+                      new PartitionBootstrapOperation(
+                          id0, 0, 2, Optional.of(partitionConfig), false),
+                      new PartitionBootstrapOperation(
+                          id1, 1, 2, Optional.of(partitionConfig), false),
                       new PartitionJoinOperation(id1, 0, 1),
                       new PartitionJoinOperation(id0, 1, 1));
             });
@@ -105,9 +107,12 @@ final class ClusterPurgeRequestTransformerTest {
                       new PartitionLeaveOperation(id1, 1, 0),
                       new PartitionLeaveOperation(id1, 2, 0),
                       new DeleteHistoryOperation(id0),
-                      new PartitionBootstrapOperation(id0, 0, 2, Optional.of(partitionConfig)),
-                      new PartitionBootstrapOperation(id1, 1, 2, Optional.of(partitionConfig)),
-                      new PartitionBootstrapOperation(id0, 2, 2, Optional.of(partitionConfig)),
+                      new PartitionBootstrapOperation(
+                          id0, 0, 2, Optional.of(partitionConfig), false),
+                      new PartitionBootstrapOperation(
+                          id1, 1, 2, Optional.of(partitionConfig), false),
+                      new PartitionBootstrapOperation(
+                          id0, 2, 2, Optional.of(partitionConfig), false),
                       new PartitionJoinOperation(id1, 0, 1),
                       new PartitionJoinOperation(id0, 1, 1),
                       new PartitionJoinOperation(id1, 2, 1));
@@ -144,7 +149,7 @@ final class ClusterPurgeRequestTransformerTest {
               assertThat(operations)
                   .contains(
                       new PartitionBootstrapOperation(
-                          id0, 0, 2, Optional.of(partitionConfigWithExporter)));
+                          id0, 0, 2, Optional.of(partitionConfigWithExporter), false));
             });
   }
 
@@ -183,8 +188,9 @@ final class ClusterPurgeRequestTransformerTest {
         .satisfies(
             operations -> {
               assertThat(operations)
-                  .contains(new PartitionBootstrapOperation(id0, 0, 2, Optional.of(config0)))
-                  .contains(new PartitionBootstrapOperation(id1, 1, 2, Optional.of(config1)));
+                  .contains(new PartitionBootstrapOperation(id0, 0, 2, Optional.of(config0), false))
+                  .contains(
+                      new PartitionBootstrapOperation(id1, 1, 2, Optional.of(config1), false));
             });
   }
 }
