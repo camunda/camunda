@@ -27,7 +27,7 @@ public class ClientBasedAdapter implements OperateServicesAdapter {
   private static final Logger LOGGER = LoggerFactory.getLogger(ClientBasedAdapter.class);
 
   private CamundaClient camundaClient;
-  private ModifyProcessZeebeWrapper modifyProcessZeebeWrapper;
+  private final ModifyProcessZeebeWrapper modifyProcessZeebeWrapper;
 
   public ClientBasedAdapter(
       final CamundaClient camundaClient,
@@ -107,15 +107,6 @@ public class ClientBasedAdapter implements OperateServicesAdapter {
 
   public void setCamundaClient(final CamundaClient camundaClient) {
     this.camundaClient = camundaClient;
-  }
-
-  public ModifyProcessZeebeWrapper getModifyProcessZeebeWrapper() {
-    return modifyProcessZeebeWrapper;
-  }
-
-  public void setModifyProcessZeebeWrapper(
-      final ModifyProcessZeebeWrapper modifyProcessZeebeWrapper) {
-    this.modifyProcessZeebeWrapper = modifyProcessZeebeWrapper;
   }
 
   public static <T extends CommandWithOperationReferenceStep<T>> T withOperationReference(

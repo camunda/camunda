@@ -222,9 +222,6 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
       if (type.equals(RejectionType.NOT_FOUND)) {
         return new NotFoundException(message, exception);
       }
-      if (type.equals(RejectionType.UNAUTHORIZED) || type.equals(RejectionType.FORBIDDEN)) {
-        return new NotAuthorizedException(message, exception);
-      }
     }
     if (exception.getCause() instanceof final BrokerErrorException brokerError) {
       final var errorCode = brokerError.getError().getCode();
@@ -347,13 +344,6 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
                     new ProcessInstanceModificationTerminateInstruction()
                         .setElementInstanceKey(instanceKey)));
     LOGGER.debug("Cancel token from flowNodeInstanceKeys {} ", flowNodeInstanceKeys);
-  }
-
-  private void addVariableInstruction(
-      final Long processInstanceKey, final Modification modification, final Long operationId) {
-    final Long scopeKey =
-        modification.getScopeKey() == null ? processInstanceKey : modification.getScopeKey();
-    setVariables(scopeKey, modification.getVariables(), true, String.valueOf(operationId));
   }
 
   private int calculateNewTokensCount(
