@@ -59,8 +59,6 @@ defaults:
     shell: bash
 
 jobs:
-<<<<<<< HEAD
-=======
   init:
     name: Create C8Run tag/release
     runs-on: ubuntu-latest
@@ -89,7 +87,6 @@ jobs:
         env:
           GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
->>>>>>> 7054ed09d55 (fix: moved package commands out to their out package leaving only the start/stop cmd in the distributed binary (#31694))
   release:
     name: C8Run - ${{ matrix.os.name }}
     runs-on: ${{ matrix.os.id }}
@@ -170,10 +167,6 @@ jobs:
         with:
           go-version: ">=1.23.1"
           cache: false # disabling since not working anyways without a cache-dependency-path specified
-<<<<<<< HEAD
-
-=======
->>>>>>> 7054ed09d55 (fix: moved package commands out to their out package leaving only the start/stop cmd in the distributed binary (#31694))
       - name: Build artifact runtime distro
         working-directory: ${{ matrix.os.workingDir }}
         run: go build -o ${{ matrix.os.c8runArtifactName }} ./cmd/c8run
