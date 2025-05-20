@@ -20,9 +20,9 @@ import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.RoleClientSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.RoleClientSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.RoleMemberSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.RoleMemberSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
@@ -164,23 +164,23 @@ public class RoleController {
   }
 
   @CamundaPostMapping(path = "/{roleId}/clients/search")
-  public ResponseEntity<RoleMemberSearchResult> searchClientsByRole(
+  public ResponseEntity<RoleClientSearchResult> searchClientsByRole(
       @PathVariable final String roleId,
-      @RequestBody(required = false) final RoleMemberSearchQueryRequest query) {
+      @RequestBody(required = false) final RoleClientSearchQueryRequest query) {
     return SearchQueryRequestMapper.toRoleQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            roleQuery -> searchMembersInRole(roleId, EntityType.CLIENT, roleQuery));
+            roleQuery -> searchClientsInRole(roleId, roleQuery));
   }
 
-  private ResponseEntity<RoleMemberSearchResult> searchMembersInRole(
-      final String tenantId, final EntityType memberType, final RoleQuery query) {
+  private ResponseEntity<RoleClientSearchResult> searchClientsInRole(
+      final String tenantId, final RoleQuery query) {
     try {
       final var result =
           roleServices
               .withAuthentication(RequestMapper.getAuthentication())
-              .searchMembers(buildRoleMemberQuery(tenantId, memberType, query));
-      return ResponseEntity.ok(SearchQueryResponseMapper.toRoleMemberSearchQueryResponse(result));
+              .searchMembers(buildRoleMemberQuery(tenantId, EntityType.CLIENT, query));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toRoleClientSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

@@ -83,8 +83,8 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSequenceFlowResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSequenceFlowsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.RoleMemberResult;
-import io.camunda.zeebe.gateway.protocol.rest.RoleMemberSearchResult;
+import io.camunda.zeebe.gateway.protocol.rest.RoleClientResult;
+import io.camunda.zeebe.gateway.protocol.rest.RoleClientSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
@@ -198,13 +198,13 @@ public final class SearchQueryResponseMapper {
             ofNullable(result.items()).map(SearchQueryResponseMapper::toRoles).orElseGet(List::of));
   }
 
-  public static RoleMemberSearchResult toRoleMemberSearchQueryResponse(
+  public static RoleClientSearchResult toRoleClientSearchQueryResponse(
       final SearchQueryResult<RoleMemberEntity> result) {
-    return new RoleMemberSearchResult()
+    return new RoleClientSearchResult()
         .page(toSearchQueryPageResponse(result))
         .items(
             ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toRoleMembers)
+                .map(SearchQueryResponseMapper::toRoleClients)
                 .orElseGet(List::of));
   }
 
@@ -469,12 +469,12 @@ public final class SearchQueryResponseMapper {
         .tenantId(tenantEntity.tenantId());
   }
 
-  private static List<RoleMemberResult> toRoleMembers(final List<RoleMemberEntity> members) {
-    return members.stream().map(SearchQueryResponseMapper::toRoleMember).toList();
+  private static List<RoleClientResult> toRoleClients(final List<RoleMemberEntity> members) {
+    return members.stream().map(SearchQueryResponseMapper::toRoleClient).toList();
   }
 
-  private static RoleMemberResult toRoleMember(final RoleMemberEntity roleMember) {
-    return new RoleMemberResult().memberId(roleMember.id());
+  private static RoleClientResult toRoleClient(final RoleMemberEntity roleMember) {
+    return new RoleClientResult().clientId(roleMember.id());
   }
 
   private static List<MappingResult> toMappings(final List<MappingEntity> mappings) {

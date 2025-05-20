@@ -2788,14 +2788,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RoleMemberSearchQueryRequest"
+              $ref: "#/components/schemas/RoleClientSearchQueryRequest"
       responses:
         "200":
           description: The clients assigned to the role.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RoleMemberSearchResult"
+                $ref: "#/components/schemas/RoleClientSearchResult"
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
@@ -7240,13 +7240,13 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RoleResult"
-    RoleMemberResult:
+    RoleClientResult:
       type: object
       properties:
-        memberId:
-          description: The ID of the member.
+        clientId:
+          description: The ID of the client.
           type: string
-    RoleMemberSearchResult:
+    RoleClientSearchResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
@@ -7255,8 +7255,8 @@ components:
           description: The matching members.
           type: array
           items:
-            $ref: "#/components/schemas/RoleMemberResult"
-    RoleMemberSearchQueryRequest:
+            $ref: "#/components/schemas/RoleClientResult"
+    RoleClientSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       type: object
@@ -7265,15 +7265,15 @@ components:
           description: Sort field criteria.
           type: array
           items:
-            $ref: "#/components/schemas/RoleMemberSearchQuerySortRequest"
-    RoleMemberSearchQuerySortRequest:
+            $ref: "#/components/schemas/RoleClientSearchQuerySortRequest"
+    RoleClientSearchQuerySortRequest:
       type: object
       properties:
         field:
           description: The field to sort by.
           type: string
           enum:
-            - memberId
+            - clientId
         order:
           $ref: "#/components/schemas/SortOrderEnum"
       required:
