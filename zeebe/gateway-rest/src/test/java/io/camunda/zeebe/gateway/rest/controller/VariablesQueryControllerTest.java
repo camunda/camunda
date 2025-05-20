@@ -327,6 +327,46 @@ public class VariablesQueryControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldInvalidateVariableSearchQueryWithConflictingPaginationTypes() {
+    // given
+    final var request =
+        """
+            {
+                "page": {
+                    "searchAfter": ["a"],
+                    "from": 4
+                }
+            }""";
+    final var expectedResponse =
+        String.format(
+            """
+                {
+                  "type": "about:blank",
+                  "title": "INVALID_ARGUMENT",
+                  "status": 400,
+                  "detail": "Both searchAfter/searchBefore and from cannot be set at the same time.",
+                  "instance": "%s"
+                }""",
+            VARIABLE_TASKS_SEARCH_URL);
+    // when / then
+    webClient
+        .post()
+        .uri(VARIABLE_TASKS_SEARCH_URL)
+        .accept(APPLICATION_JSON)
+        .contentType(APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+
+    verify(variableServices, never()).search(any(VariableQuery.class));
+  }
+
+  @Test
   void shouldGetVariableByKey() {
     // when / then
     webClient
