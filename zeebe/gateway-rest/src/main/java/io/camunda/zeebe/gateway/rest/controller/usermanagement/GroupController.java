@@ -18,7 +18,6 @@ import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
-import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
@@ -51,17 +50,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class GroupController {
 
   private final GroupServices groupServices;
-  private final UserServices userServices;
   private final MappingServices mappingServices;
   private final RoleServices roleServices;
 
   public GroupController(
       final GroupServices groupServices,
-      final UserServices userServices,
       final MappingServices mappingServices,
       final RoleServices roleServices) {
     this.groupServices = groupServices;
-    this.userServices = userServices;
     this.mappingServices = mappingServices;
     this.roleServices = roleServices;
   }
