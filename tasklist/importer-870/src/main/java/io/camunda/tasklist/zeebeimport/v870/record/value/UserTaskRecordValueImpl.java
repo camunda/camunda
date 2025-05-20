@@ -8,6 +8,7 @@
 package io.camunda.tasklist.zeebeimport.v870.record.value;
 
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskVariablesUpdateSemantic;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -36,6 +37,7 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
   private long processDefinitionKey;
 
   private Map<String, Object> variables;
+  private UserTaskVariablesUpdateSemantic variableUpdateSemantics;
 
   private String tenantId;
 
@@ -216,6 +218,16 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
   }
 
   @Override
+  public UserTaskVariablesUpdateSemantic getVariableUpdateSemantics() {
+    return variableUpdateSemantics;
+  }
+
+  public void setVariableUpdateSemantics(
+      final UserTaskVariablesUpdateSemantic variableUpdateSemantics) {
+    this.variableUpdateSemantics = variableUpdateSemantics;
+  }
+
+  @Override
   public String getTenantId() {
     return tenantId;
   }
@@ -249,6 +261,7 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
         processDefinitionVersion,
         processDefinitionKey,
         variables,
+        variableUpdateSemantics,
         tenantId,
         processInstanceKey,
         changedAttributes,
@@ -270,6 +283,7 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
         && processDefinitionVersion == that.processDefinitionVersion
         && processDefinitionKey == that.processDefinitionKey
         && processInstanceKey == that.processInstanceKey
+        && variableUpdateSemantics == that.variableUpdateSemantics
         && Objects.equals(assignee, that.assignee)
         && Objects.equals(candidateGroups, that.candidateGroups)
         && Objects.equals(candidateUsers, that.candidateUsers)
@@ -319,6 +333,8 @@ public class UserTaskRecordValueImpl implements UserTaskRecordValue {
         + processDefinitionKey
         + ", variables="
         + variables
+        + ", variableUpdateSemantics="
+        + variableUpdateSemantics
         + ", tenantId='"
         + tenantId
         + '\''
