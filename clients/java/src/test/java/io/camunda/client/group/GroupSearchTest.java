@@ -20,9 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.sort.GroupSort;
+import io.camunda.client.api.search.sort.GroupUserSort;
 import io.camunda.client.api.search.sort.MappingSort;
 import io.camunda.client.api.search.sort.RoleSort;
-import io.camunda.client.api.search.sort.UserSort;
 import io.camunda.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
 
@@ -63,8 +63,7 @@ public class GroupSearchTest extends ClientRestTest {
     final String groupId = "groupId";
     client
         .newUsersByGroupSearchRequest(groupId)
-        .filter(fn -> fn.username("username"))
-        .sort(UserSort::name)
+        .sort(GroupUserSort::username)
         .page(fn -> fn.limit(5))
         .send()
         .join();

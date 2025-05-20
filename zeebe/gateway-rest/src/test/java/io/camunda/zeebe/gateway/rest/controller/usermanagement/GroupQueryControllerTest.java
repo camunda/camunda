@@ -14,23 +14,22 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.GroupEntity;
+import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.RoleEntity;
-import io.camunda.search.entities.UserEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.GroupSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
-import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
 import java.util.stream.Stream;
@@ -76,36 +75,24 @@ public class GroupQueryControllerTest extends RestControllerTest {
   private static final String GROUP_BASE_URL = "/v2/groups";
   private static final String GROUP_SEARCH_URL = GROUP_BASE_URL + "/search";
 
-  private static final List<UserEntity> USER_ENTITIES =
+  private static final List<GroupMemberEntity> GROUP_MEMBER_ENTITIES =
       List.of(
-          new UserEntity(
-              1L, Strings.newRandomValidIdentityId(), "user1", "user1@email.com", "password"),
-          new UserEntity(
-              2L, Strings.newRandomValidIdentityId(), "user2", "user2@email.com", "password"),
-          new UserEntity(
-              3L, Strings.newRandomValidIdentityId(), "user3", "user3@email.com", "password"));
+          new GroupMemberEntity(Strings.newRandomValidIdentityId(), EntityType.USER),
+          new GroupMemberEntity(Strings.newRandomValidIdentityId(), EntityType.USER),
+          new GroupMemberEntity(Strings.newRandomValidIdentityId(), EntityType.USER));
 
   private static final String USER_RESPONSE =
       """
       {
         "items":[
           {
-            "userKey":"1",
-            "username":"%s",
-            "name":"user1",
-            "email":"user1@email.com"
+            "username":"%s"
           },
           {
-            "userKey":"2",
-            "username":"%s",
-            "name":"user2",
-            "email":"user2@email.com"
+            "username":"%s"
           },
           {
-            "userKey":"3",
-            "username":"%s",
-            "name":"user3",
-            "email":"user3@email.com"
+            "username":"%s"
           }
         ],
         "page":{
@@ -158,9 +145,9 @@ public class GroupQueryControllerTest extends RestControllerTest {
 
   private static final String EXPECTED_USER_RESPONSE =
       USER_RESPONSE.formatted(
-          USER_ENTITIES.get(0).username(),
-          USER_ENTITIES.get(1).username(),
-          USER_ENTITIES.get(2).username());
+          GROUP_MEMBER_ENTITIES.get(0).id(),
+          GROUP_MEMBER_ENTITIES.get(1).id(),
+          GROUP_MEMBER_ENTITIES.get(2).id());
 
   private static final List<MappingEntity> MAPPNING_ENTITIES =
       List.of(
@@ -199,14 +186,12 @@ public class GroupQueryControllerTest extends RestControllerTest {
           MAPPNING_ENTITIES.get(0).mappingId(), MAPPNING_ENTITIES.get(1).mappingId());
 
   @MockBean private GroupServices groupServices;
-  @MockBean private UserServices userServices;
   @MockBean private MappingServices mappingServices;
   @MockBean private RoleServices roleServices;
 
   @BeforeEach
   void setup() {
     when(groupServices.withAuthentication(any(Authentication.class))).thenReturn(groupServices);
-    when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
     when(roleServices.withAuthentication(any(Authentication.class))).thenReturn(roleServices);
     when(mappingServices.withAuthentication(any(Authentication.class))).thenReturn(mappingServices);
   }
@@ -415,11 +400,11 @@ public class GroupQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchGroupUsersWithSorting() {
     // given
-    when(userServices.search(any(UserQuery.class)))
+    when(groupServices.searchMembers(any(GroupQuery.class)))
         .thenReturn(
-            new SearchQueryResult.Builder<UserEntity>()
-                .total(USER_ENTITIES.size())
-                .items(USER_ENTITIES)
+            new SearchQueryResult.Builder<GroupMemberEntity>()
+                .total(GROUP_MEMBER_ENTITIES.size())
+                .items(GROUP_MEMBER_ENTITIES)
                 .firstSortValues(new Object[] {"f"})
                 .lastSortValues(new Object[] {"v"})
                 .build());
@@ -448,11 +433,11 @@ public class GroupQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchGroupUsersWithEmptyQuery() {
     // given
-    when(userServices.search(any(UserQuery.class)))
+    when(groupServices.searchMembers(any(GroupQuery.class)))
         .thenReturn(
-            new SearchQueryResult.Builder<UserEntity>()
-                .total(USER_ENTITIES.size())
-                .items(USER_ENTITIES)
+            new SearchQueryResult.Builder<GroupMemberEntity>()
+                .total(GROUP_MEMBER_ENTITIES.size())
+                .items(GROUP_MEMBER_ENTITIES)
                 .firstSortValues(new Object[] {"f"})
                 .lastSortValues(new Object[] {"v"})
                 .build());
