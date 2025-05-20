@@ -226,18 +226,25 @@ public class BatchOperationModifyProcessInstanceTest {
       final long batchOperationKey,
       final BatchOperationItemState state,
       final List<Long> failedItemKeys) {
-    final var itemsObj =
-        camundaClient
-            .newBatchOperationItemsSearchRequest()
-            .filter(f -> f.batchOperationId(Long.toString(batchOperationKey)))
-            .send()
-            .join();
+    await("should have items with state")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .pollInterval(Duration.ofMillis(100))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var itemsObj =
+                  camundaClient
+                      .newBatchOperationItemsSearchRequest()
+                      .filter(f -> f.batchOperationId(Long.toString(batchOperationKey)))
+                      .send()
+                      .join();
 
-    final var filteredItems =
-        itemsObj.items().stream().filter(i -> i.getStatus() == state).toList();
-    assertThat(filteredItems).hasSize(failedItemKeys.size());
-    assertThat(filteredItems.stream().map(BatchOperationItem::getItemKey))
-        .hasSize(failedItemKeys.size());
+              final var filteredItems =
+                  itemsObj.items().stream().filter(i -> i.getStatus() == state).toList();
+              assertThat(filteredItems).hasSize(failedItemKeys.size());
+              assertThat(filteredItems.stream().map(BatchOperationItem::getItemKey))
+                  .hasSize(failedItemKeys.size());
+            });
   }
 
   public void processInstanceHasActiveUserTasks(
