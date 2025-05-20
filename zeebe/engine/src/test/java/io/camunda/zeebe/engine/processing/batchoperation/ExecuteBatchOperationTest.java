@@ -10,9 +10,11 @@ package io.camunda.zeebe.engine.processing.batchoperation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
 
@@ -22,7 +24,9 @@ public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest 
   public void shouldExecuteBatchOperationForCancelProcessInstance() {
     // given
     final var processInstanceKeys = Set.of(1L, 2L, 3L);
-    final var batchOperationKey = createNewCancelProcessInstanceBatchOperation(processInstanceKeys);
+    final Map<String, Object> claims = Map.of("claim1", "value1", "claim2", "value2");
+    final var batchOperationKey =
+        createNewCancelProcessInstanceBatchOperation(processInstanceKeys, claims);
 
     // then we have executed and completed event
     assertThat(
@@ -44,9 +48,15 @@ public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest 
     // and we have several cancel process commands
     processInstanceKeys.forEach(
         key -> {
-          assertThat(RecordingExporter.processInstanceRecords().withProcessInstanceKey(key))
-              .extracting(Record::getIntent)
-              .containsSequence(ProcessInstanceIntent.CANCEL);
+          final var cancelCommandList =
+              RecordingExporter.processInstanceRecords()
+                  .withRecordType(RecordType.COMMAND)
+                  .withProcessInstanceKey(key)
+                  .toList();
+          assertThat(cancelCommandList).hasSize(1);
+          final var cancelCommand = cancelCommandList.getFirst();
+          assertThat(cancelCommand.getIntent()).isEqualTo(ProcessInstanceIntent.CANCEL);
+          assertThat(cancelCommand.getAuthorizations()).isEqualTo(claims);
         });
   }
 

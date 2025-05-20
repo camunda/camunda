@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -29,6 +30,8 @@ public final class ResolveIncidentBatchExecutorTest extends AbstractBatchOperati
   @Test
   public void shouldResolveJobIncident() {
     // given
+    final Map<String, Object> claims = Map.of("claim1", "value1", "claim2", "value2");
+
     // create a process with a failed job
     engine
         .deployment()
@@ -70,7 +73,8 @@ public final class ResolveIncidentBatchExecutorTest extends AbstractBatchOperati
             .getKey();
 
     final var batchOperationKey =
-        createNewResolveIncidentsBatchOperation(Map.of(processInstanceKey, Set.of(incidentKey)));
+        createNewResolveIncidentsBatchOperation(
+            Map.of(processInstanceKey, Set.of(incidentKey)), claims);
 
     // then we have executed and completed event
     assertThat(
@@ -93,14 +97,22 @@ public final class ResolveIncidentBatchExecutorTest extends AbstractBatchOperati
     assertThat(RecordingExporter.jobRecords().withRecordKey(failedEvent.getKey()))
         .extracting(Record::getIntent)
         .containsSequence(JobIntent.UPDATE_RETRIES);
-    assertThat(RecordingExporter.incidentRecords().withRecordKey(incidentKey))
-        .extracting(Record::getIntent)
-        .containsSequence(IncidentIntent.RESOLVE);
+
+    final var incidentCommands =
+        RecordingExporter.incidentRecords()
+            .withRecordType(RecordType.COMMAND)
+            .withRecordKey(incidentKey)
+            .toList();
+    assertThat(incidentCommands).hasSize(1);
+    assertThat(incidentCommands.getFirst().getIntent()).isEqualTo(IncidentIntent.RESOLVE);
+    assertThat(incidentCommands.getFirst().getAuthorizations()).isEqualTo(claims);
   }
 
   @Test
   public void shouldResolveNonJobIncident() {
     // given
+    final Map<String, Object> claims = Map.of("claim1", "value1", "claim2", "value2");
+
     // create a process with a failed job
     engine
         .deployment()
@@ -127,7 +139,8 @@ public final class ResolveIncidentBatchExecutorTest extends AbstractBatchOperati
             .getKey();
 
     final var batchOperationKey =
-        createNewResolveIncidentsBatchOperation(Map.of(processInstanceKey, Set.of(incidentKey)));
+        createNewResolveIncidentsBatchOperation(
+            Map.of(processInstanceKey, Set.of(incidentKey)), claims);
 
     // then we have executed and completed event
     assertThat(
