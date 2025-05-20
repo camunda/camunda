@@ -34,6 +34,8 @@ import io.camunda.zeebe.gateway.protocol.rest.TenantResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.TenantUserSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.TenantUserSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
@@ -116,13 +118,13 @@ public class TenantController {
   }
 
   @CamundaPostMapping(path = "/{tenantId}/users/search")
-  public ResponseEntity<TenantMemberSearchResult> searchUsersInTenant(
+  public ResponseEntity<TenantUserSearchResult> searchUsersInTenant(
       @PathVariable final String tenantId,
-      @RequestBody(required = false) final TenantMemberSearchQueryRequest query) {
+      @RequestBody(required = false) final TenantUserSearchQueryRequest query) {
     return SearchQueryRequestMapper.toTenantQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            tenantQuery -> searchMembersInTenant(tenantId, EntityType.USER, tenantQuery));
+            tenantQuery -> searchUsersInTenant(tenantId, tenantQuery));
   }
 
   @CamundaPutMapping(path = "/{tenantId}/clients/{clientId}")
@@ -235,7 +237,7 @@ public class TenantController {
     return SearchQueryRequestMapper.toTenantQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            tenantQuery -> searchMembersInTenant(tenantId, EntityType.CLIENT, tenantQuery));
+            tenantQuery -> searchClientsInTenant(tenantId, tenantQuery));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createTenant(final TenantDTO tenantDTO) {
@@ -275,13 +277,26 @@ public class TenantController {
     }
   }
 
-  private ResponseEntity<TenantClientSearchResult> searchMembersInTenant(
-      final String tenantId, final EntityType memberType, final TenantQuery query) {
+  private ResponseEntity<TenantUserSearchResult> searchUsersInTenant(
+      final String tenantId, final TenantQuery query) {
     try {
       final var result =
           tenantServices
               .withAuthentication(RequestMapper.getAuthentication())
-              .searchMembers(buildTenantMemberQuery(tenantId, memberType, query));
+              .searchMembers(buildTenantMemberQuery(tenantId, EntityType.USER, query));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toTenantUserSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private ResponseEntity<TenantClientSearchResult> searchClientsInTenant(
+      final String tenantId, final TenantQuery query) {
+    try {
+      final var result =
+          tenantServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .searchMembers(buildTenantMemberQuery(tenantId, EntityType.CLIENT, query));
       return ResponseEntity.ok(SearchQueryResponseMapper.toTenantClientSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);

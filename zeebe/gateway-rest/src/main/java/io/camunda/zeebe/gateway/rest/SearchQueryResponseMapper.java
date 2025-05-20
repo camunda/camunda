@@ -98,6 +98,8 @@ import io.camunda.zeebe.gateway.protocol.rest.TenantClientResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantClientSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.TenantUserResult;
+import io.camunda.zeebe.gateway.protocol.rest.TenantUserSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.UsageMetricsResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserResult;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
@@ -256,6 +258,16 @@ public final class SearchQueryResponseMapper {
         .items(
             ofNullable(result.items())
                 .map(SearchQueryResponseMapper::toTenants)
+                .orElseGet(List::of));
+  }
+
+  public static TenantUserSearchResult toTenantUserSearchQueryResponse(
+      final SearchQueryResult<TenantMemberEntity> result) {
+    return new TenantUserSearchResult()
+        .page(toSearchQueryPageResponse(result))
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toTenantUsers)
                 .orElseGet(List::of));
   }
 
@@ -516,11 +528,19 @@ public final class SearchQueryResponseMapper {
         .tenantId(tenantEntity.tenantId());
   }
 
-  public static List<TenantClientResult> toTenantClients(final List<TenantMemberEntity> members) {
+  private static List<TenantUserResult> toTenantUsers(final List<TenantMemberEntity> members) {
+    return members.stream().map(SearchQueryResponseMapper::toTenantUser).toList();
+  }
+
+  private static List<TenantClientResult> toTenantClients(final List<TenantMemberEntity> members) {
     return members.stream().map(SearchQueryResponseMapper::toTenantClient).toList();
   }
 
-  public static TenantClientResult toTenantClient(final TenantMemberEntity tenantMember) {
+  private static TenantUserResult toTenantUser(final TenantMemberEntity tenantMember) {
+    return new TenantUserResult().username(tenantMember.id());
+  }
+
+  private static TenantClientResult toTenantClient(final TenantMemberEntity tenantMember) {
     return new TenantClientResult().clientId(tenantMember.id());
   }
 
