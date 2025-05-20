@@ -138,16 +138,23 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
 
   @Override
   public void updateJobRetries(final long jobKey, final int retries, final String operationId) {
-    // operationId is not used in the updateJob service method
     executeCamundaServiceAnonymously(
-        (authentication) -> jobServices.updateJob(jobKey, new UpdateJobChangeset(retries, null)));
+        (authentication) ->
+            withOperationReference(
+                operationReference ->
+                    jobServices.updateJob(
+                        jobKey, new UpdateJobChangeset(retries, null), operationReference),
+                operationId));
   }
 
   @Override
   public void resolveIncident(final long incidentKey, final String operationId) {
-    // operationId is not used in the updateJob service method
     executeCamundaServiceAnonymously(
-        (authentication) -> incidentServices.resolveIncident(incidentKey));
+        (authentication) ->
+            withOperationReference(
+                operationReference ->
+                    incidentServices.resolveIncident(incidentKey, operationReference),
+                operationId));
   }
 
   @Override
@@ -157,7 +164,6 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
       final boolean local,
       final String operationId) {
     final var variableDocumentRecord =
-        // operationId is not used in the updateJob service method
         executeCamundaServiceAnonymously(
             (authentication) ->
                 withOperationReference(
