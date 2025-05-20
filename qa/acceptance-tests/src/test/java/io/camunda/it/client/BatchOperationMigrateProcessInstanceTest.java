@@ -88,7 +88,7 @@ public class BatchOperationMigrateProcessInstanceTest {
 
     // then
     Awaitility.await("should complete batch operation")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .pollInterval(Duration.ofMillis(100))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
@@ -108,7 +108,7 @@ public class BatchOperationMigrateProcessInstanceTest {
             });
 
     Awaitility.await("should update batch operation items")
-        .atMost(Duration.ofSeconds(15))
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
         .pollInterval(Duration.ofMillis(100))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
