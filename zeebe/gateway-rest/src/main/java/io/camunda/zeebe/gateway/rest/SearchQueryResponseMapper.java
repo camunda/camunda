@@ -64,6 +64,8 @@ import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionInputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.zeebe.gateway.protocol.rest.FormResult;
+import io.camunda.zeebe.gateway.protocol.rest.GroupClientResult;
+import io.camunda.zeebe.gateway.protocol.rest.GroupClientSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUserResult;
@@ -247,6 +249,17 @@ public final class SearchQueryResponseMapper {
         .items(
             ofNullable(result.items())
                 .map(SearchQueryResponseMapper::toGroupUsers)
+                .orElseGet(List::of));
+  }
+
+  public static GroupClientSearchResult toGroupClientSearchQueryResponse(
+      final SearchQueryResult<GroupMemberEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new GroupClientSearchResult()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toGroupClients)
                 .orElseGet(List::of));
   }
 
@@ -514,6 +527,15 @@ public final class SearchQueryResponseMapper {
 
   private static GroupUserResult toGroupUser(final GroupMemberEntity groupMember) {
     return new GroupUserResult().username(groupMember.id());
+  }
+
+  private static List<GroupClientResult> toGroupClients(
+      final List<GroupMemberEntity> groupMembers) {
+    return groupMembers.stream().map(SearchQueryResponseMapper::toGroupClient).toList();
+  }
+
+  private static GroupClientResult toGroupClient(final GroupMemberEntity groupMember) {
+    return new GroupClientResult().clientId(groupMember.id());
   }
 
   private static List<TenantResult> toTenants(final List<TenantEntity> tenants) {

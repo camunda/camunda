@@ -18,6 +18,8 @@ import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
+import io.camunda.zeebe.gateway.protocol.rest.GroupClientSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.GroupClientSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
@@ -166,6 +168,16 @@ public class GroupController {
             userQuery -> searchRolesInGroup(groupId, userQuery));
   }
 
+  @CamundaPostMapping(path = "/{groupId}/clients/search")
+  public ResponseEntity<GroupClientSearchResult> clientsByGroup(
+      @PathVariable final String groupId,
+      @RequestBody(required = false) final GroupClientSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toGroupQuery(query)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            groupQuery -> searchClientsInGroup(groupId, groupQuery));
+  }
+
   @CamundaGetMapping(path = "/{groupId}")
   public ResponseEntity<Object> getGroup(@PathVariable final String groupId) {
     try {
@@ -234,6 +246,19 @@ public class GroupController {
               .withAuthentication(RequestMapper.getAuthentication())
               .searchMembers(buildGroupMemberQuery(groupId, EntityType.USER, groupQuery));
       return ResponseEntity.ok(SearchQueryResponseMapper.toGroupUserSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private ResponseEntity<GroupClientSearchResult> searchClientsInGroup(
+      final String groupId, final GroupQuery groupQuery) {
+    try {
+      final var result =
+          groupServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .searchMembers(buildGroupMemberQuery(groupId, EntityType.CLIENT, groupQuery));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toGroupClientSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
