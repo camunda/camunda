@@ -2746,14 +2746,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/RoleMemberSearchQueryRequest"
+              $ref: "#/components/schemas/RoleUserSearchQueryRequest"
       responses:
         "200":
           description: The users assigned to the role.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RoleMemberSearchResult"
+                $ref: "#/components/schemas/RoleUserSearchResult"
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
@@ -7240,6 +7240,44 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RoleResult"
+    RoleUserResult:
+      type: object
+      properties:
+        username:
+          description: The username of the user.
+          type: string
+    RoleUserSearchResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          description: The matching users.
+          type: array
+          items:
+            $ref: "#/components/schemas/RoleUserResult"
+    RoleUserSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/RoleUserSearchQuerySortRequest"
+    RoleUserSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - username
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
     RoleClientResult:
       type: object
       properties:

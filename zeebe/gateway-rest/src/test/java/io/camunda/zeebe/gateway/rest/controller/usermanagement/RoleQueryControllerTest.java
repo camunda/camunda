@@ -242,13 +242,13 @@ public class RoleQueryControllerTest extends RestControllerTest {
           {
              "items": [
                {
-                 "memberId": "user1"
+                 "username": "user1"
                },
                {
-                 "memberId": "user2"
+                 "username": "user2"
                },
                {
-                 "memberId": "user3"
+                 "username": "user3"
                }
              ],
              "page": {
