@@ -73,6 +73,7 @@ public class ModifyProcessInstanceBatchOperationExecutor implements BatchOperati
         processInstanceKey,
         ProcessInstanceModificationIntent.MODIFY,
         command,
-        batchOperation.getKey());
+        batchOperation.getKey(),
+        batchOperation.getAuthentication().claims());
   }
 }

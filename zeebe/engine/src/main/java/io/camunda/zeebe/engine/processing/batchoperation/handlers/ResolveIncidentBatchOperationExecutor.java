@@ -43,6 +43,10 @@ public class ResolveIncidentBatchOperationExecutor implements BatchOperationExec
     LOGGER.trace("Resolving incident with key '{}'", itemKey);
     final var command = new IncidentRecord();
     commandWriter.appendFollowUpCommand(
-        itemKey, IncidentIntent.RESOLVE, command, batchOperation.getKey());
+        itemKey,
+        IncidentIntent.RESOLVE,
+        command,
+        batchOperation.getKey(),
+        batchOperation.getAuthentication().claims());
   }
 }

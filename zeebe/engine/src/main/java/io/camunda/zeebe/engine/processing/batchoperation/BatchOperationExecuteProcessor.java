@@ -98,7 +98,7 @@ public final class BatchOperationExecuteProcessor
     final var followupCommand = new BatchOperationExecutionRecord();
     followupCommand.setBatchOperationKey(batchKey);
     commandWriter.appendFollowUpCommand(
-        command.getKey(), BatchOperationExecutionIntent.EXECUTE, followupCommand, batchKey);
+        command.getKey(), BatchOperationExecutionIntent.EXECUTE, followupCommand, batchKey, null);
   }
 
   private PersistedBatchOperation getBatchOperation(final long batchOperationKey) {
