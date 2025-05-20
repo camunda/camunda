@@ -30,6 +30,7 @@ import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.MappingFilter;
 import io.camunda.search.filter.Operation;
+import io.camunda.search.filter.JobFilter;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
@@ -51,6 +52,7 @@ import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
@@ -71,6 +73,7 @@ import io.camunda.search.sort.DecisionRequirementsSort;
 import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.search.sort.GroupSort;
 import io.camunda.search.sort.IncidentSort;
+import io.camunda.search.sort.JobSort;
 import io.camunda.search.sort.MappingSort;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.ProcessInstanceSort;
@@ -264,6 +267,51 @@ public final class SearchQueryRequestMapper {
             SearchQueryRequestMapper::applyProcessInstanceSortField);
     final var filter = toProcessInstanceFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::processInstanceSearchQuery);
+  }
+
+  public static Either<ProblemDetail, JobQuery> toJobQuery(final JobSearchQueryRequest request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.jobSearchQuery().build());
+    }
+
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromJobSearchQuerySortRequest(request.getSort()),
+            SortOptionBuilders::job,
+            SearchQueryRequestMapper::applyJobSortField);
+    final var filter = toJobFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::jobSearchQuery);
+  }
+
+  private static JobFilter toJobFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.JobFilter filter) {
+    final var builder = FilterBuilders.job();
+    if (filter != null) {
+      ofNullable(filter.getState())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::stateOperations);
+      ofNullable(filter.getType())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::typeOperations);
+      ofNullable(filter.getWorker())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::workerOperations);
+      ofNullable(filter.getProcessInstanceKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::processInstanceKeyOperations);
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::processDefinitionKeyOperations);
+      ofNullable(filter.getElementInstanceKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::elementInstanceKeyOperations);
+      ofNullable(filter.getElementId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::elementIdOperations);
+    }
+
+    return builder.build();
   }
 
   public static Either<ProblemDetail, RoleQuery> toRoleQuery(final RoleSearchQueryRequest request) {
@@ -1171,6 +1219,31 @@ public final class SearchQueryRequestMapper {
         case END_DATE -> builder.endDate();
         case STATE -> builder.state();
         case HAS_INCIDENT -> builder.hasIncident();
+        case TENANT_ID -> builder.tenantId();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  private static List<String> applyJobSortField(
+      final JobSearchQuerySortRequest.FieldEnum field, final JobSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
+        case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
+        case ELEMENT_INSTANCE_KEY -> builder.elementInstanceKey();
+        case ELEMENT_ID -> builder.elementId();
+        case JOB_KEY -> builder.jobKey();
+        case TYPE -> builder.type();
+        case WORKER -> builder.worker();
+        case STATE -> builder.state();
+        case JOB_KIND -> builder.jobKind();
+        case LISTENER_EVENT_TYPE -> builder.listenerEventType();
+        case END_DATE -> builder.endDate();
         case TENANT_ID -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
