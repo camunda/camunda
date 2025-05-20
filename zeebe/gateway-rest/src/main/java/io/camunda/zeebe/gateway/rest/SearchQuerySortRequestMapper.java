@@ -34,9 +34,8 @@ public class SearchQuerySortRequestMapper {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
-  public static List<SearchQuerySortRequest<GroupMemberSearchQuerySortRequest.FieldEnum>>
-      fromGroupMemberSearchQuerySortRequest(
-          final List<GroupMemberSearchQuerySortRequest> requests) {
+  public static List<SearchQuerySortRequest<GroupUserSearchQuerySortRequest.FieldEnum>>
+      fromGroupUserSearchQuerySortRequest(final List<GroupUserSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 

@@ -3300,14 +3300,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/GroupMemberSearchQueryRequest"
+              $ref: "#/components/schemas/GroupUserSearchQueryRequest"
       responses:
         "200":
           description: The users assigned to the group.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GroupMemberSearchResult"
+                $ref: "#/components/schemas/GroupUserSearchResult"
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
@@ -7312,13 +7312,13 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/GroupResult"
-    GroupMemberResult:
+    GroupUserResult:
       type: object
       properties:
-        memberId:
-          description: The ID of the member.
+        username:
+          description: The username of the user.
           type: string
-    GroupMemberSearchResult:
+    GroupUserSearchResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
@@ -7327,8 +7327,8 @@ components:
           description: The matching members.
           type: array
           items:
-            $ref: "#/components/schemas/GroupMemberResult"
-    GroupMemberSearchQueryRequest:
+            $ref: "#/components/schemas/GroupUserResult"
+    GroupUserSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       type: object
@@ -7337,15 +7337,15 @@ components:
           description: Sort field criteria.
           type: array
           items:
-            $ref: "#/components/schemas/GroupMemberSearchQuerySortRequest"
-    GroupMemberSearchQuerySortRequest:
+            $ref: "#/components/schemas/GroupUserSearchQuerySortRequest"
+    GroupUserSearchQuerySortRequest:
       type: object
       properties:
         field:
           description: The field to sort by.
           type: string
           enum:
-            - memberId
+            - username
         order:
           $ref: "#/components/schemas/SortOrderEnum"
       required:

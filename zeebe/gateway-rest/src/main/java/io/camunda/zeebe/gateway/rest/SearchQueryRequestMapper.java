@@ -290,16 +290,16 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, GroupQuery> toGroupQuery(
-      final GroupMemberSearchQueryRequest request) {
+      final GroupUserSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.groupSearchQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            SearchQuerySortRequestMapper.fromGroupMemberSearchQuerySortRequest(request.getSort()),
+            SearchQuerySortRequestMapper.fromGroupUserSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::group,
-            SearchQueryRequestMapper::applyGroupMemberSortField);
+            SearchQueryRequestMapper::applyGroupUserSortField);
     final var filter = FilterBuilders.group().build();
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::groupSearchQuery);
   }
@@ -1111,11 +1111,11 @@ public final class SearchQueryRequestMapper {
     return validationErrors;
   }
 
-  private static List<String> applyGroupMemberSortField(
-      final GroupMemberSearchQuerySortRequest.FieldEnum field, final GroupSort.Builder builder) {
+  private static List<String> applyGroupUserSortField(
+      final GroupUserSearchQuerySortRequest.FieldEnum field, final GroupSort.Builder builder) {
     return switch (field) {
       case null -> List.of(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
-      case MEMBER_ID -> {
+      case USERNAME -> {
         builder.memberId();
         yield List.of();
       }

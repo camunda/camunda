@@ -20,11 +20,11 @@ import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.GroupMemberSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.GroupMemberSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.GroupUserSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.GroupUserSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
@@ -141,13 +141,13 @@ public class GroupController {
   }
 
   @CamundaPostMapping(path = "/{groupId}/users/search")
-  public ResponseEntity<GroupMemberSearchResult> usersByGroup(
+  public ResponseEntity<GroupUserSearchResult> usersByGroup(
       @PathVariable final String groupId,
-      @RequestBody(required = false) final GroupMemberSearchQueryRequest query) {
+      @RequestBody(required = false) final GroupUserSearchQueryRequest query) {
     return SearchQueryRequestMapper.toGroupQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            groupQuery -> searchMembersInGroup(groupId, EntityType.USER, groupQuery));
+            groupQuery -> searchUsersInGroup(groupId, groupQuery));
   }
 
   @CamundaPostMapping(path = "/{groupId}/mapping-rules/search")
@@ -230,14 +230,14 @@ public class GroupController {
                 .assignMember(request));
   }
 
-  private ResponseEntity<GroupMemberSearchResult> searchMembersInGroup(
-      final String groupId, final EntityType memberType, final GroupQuery groupQuery) {
+  private ResponseEntity<GroupUserSearchResult> searchUsersInGroup(
+      final String groupId, final GroupQuery groupQuery) {
     try {
       final var result =
           groupServices
               .withAuthentication(RequestMapper.getAuthentication())
-              .searchMembers(buildGroupMemberQuery(groupId, memberType, groupQuery));
-      return ResponseEntity.ok(SearchQueryResponseMapper.toGroupMemberSearchQueryResponse(result));
+              .searchMembers(buildGroupMemberQuery(groupId, EntityType.USER, groupQuery));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toGroupUserSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
