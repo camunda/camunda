@@ -23,4 +23,7 @@ import org.immutables.value.Value;
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableBatchOperationLifecycleManagementRecordValue.Builder.class)
 public interface BatchOperationLifecycleManagementRecordValue
-    extends BatchOperationRelated, RecordValue {}
+    extends BatchOperationRelated, RecordValue {
+
+  Integer getSourcePartitionId();
+}

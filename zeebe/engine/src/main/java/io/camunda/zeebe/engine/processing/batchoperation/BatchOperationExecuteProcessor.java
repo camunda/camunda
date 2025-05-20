@@ -16,9 +16,14 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.Collections;
 import java.util.Map;
@@ -37,6 +42,7 @@ public final class BatchOperationExecuteProcessor
 
   private final TypedCommandWriter commandWriter;
   private final StateWriter stateWriter;
+  private final InterPartitionCommandSender interPartitionCommandSender;
   private final int partitionId;
   private final BatchOperationState batchOperationState;
 
@@ -45,11 +51,13 @@ public final class BatchOperationExecuteProcessor
   public BatchOperationExecuteProcessor(
       final Writers writers,
       final ProcessingState processingState,
+      final InterPartitionCommandSender interPartitionCommandSender,
       final int partitionId,
       final Map<BatchOperationType, BatchOperationExecutor> handlers) {
     commandWriter = writers.command();
     stateWriter = writers.state();
     batchOperationState = processingState.getBatchOperationState();
+    this.interPartitionCommandSender = interPartitionCommandSender;
     this.partitionId = partitionId;
     this.handlers = handlers;
   }
@@ -129,11 +137,30 @@ public final class BatchOperationExecuteProcessor
 
   private void appendBatchOperationExecutionCompletedEvent(
       final BatchOperationExecutionRecord executionRecord) {
-    final var batchExecute = new BatchOperationExecutionRecord();
-    batchExecute.setBatchOperationKey(executionRecord.getBatchOperationKey());
-    stateWriter.appendFollowUpEvent(
+
+    final int originPartitionId =
+        Protocol.decodePartitionId(executionRecord.getBatchOperationKey());
+    final var batchInternalComplete =
+        new BatchOperationLifecycleManagementRecord()
+            .setBatchOperationKey(executionRecord.getBatchOperationKey())
+            .setSourcePartitionId(partitionId);
+
+    LOGGER.debug(
+        "Send internal complete command for batch operation {} to original partition {}",
         executionRecord.getBatchOperationKey(),
-        BatchOperationExecutionIntent.COMPLETED,
-        batchExecute);
+        originPartitionId);
+
+    if (originPartitionId == partitionId) {
+      commandWriter.appendFollowUpCommand(
+          executionRecord.getBatchOperationKey(),
+          BatchOperationIntent.COMPLETE_PARTITION,
+          batchInternalComplete);
+    } else {
+      interPartitionCommandSender.sendCommand(
+          originPartitionId,
+          ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
+          BatchOperationIntent.COMPLETE_PARTITION,
+          batchInternalComplete);
+    }
   }
 }

@@ -317,8 +317,10 @@ public final class EngineProcessors {
         scheduledTaskStateFactory,
         searchClientsProxy,
         processingState,
+        interPartitionCommandSender,
         config,
-        partitionId);
+        partitionId,
+        routingInfo);
 
     return typedRecordProcessors;
   }
