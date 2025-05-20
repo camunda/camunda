@@ -21,6 +21,7 @@ import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
@@ -44,6 +45,7 @@ import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
@@ -234,5 +236,10 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   @Override
   public Long countDecisionInstances(final UsageMetricsQuery query) {
     return 0L;
+  }
+
+  @Override
+  public SearchQueryResult<JobEntity> searchJobs(final JobQuery query) {
+    return SearchQueryResult.empty();
   }
 }

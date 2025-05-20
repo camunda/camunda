@@ -225,4 +225,12 @@ public final class FilterBuilders {
   public static FormFilter form(final Function<FormFilter.Builder, ObjectBuilder<FormFilter>> fn) {
     return fn.apply(form()).build();
   }
+
+  public static JobFilter.Builder job() {
+    return new JobFilter.Builder();
+  }
+
+  public static JobFilter job(final Function<JobFilter.Builder, ObjectBuilder<JobFilter>> fn) {
+    return fn.apply(job()).build();
+  }
 }

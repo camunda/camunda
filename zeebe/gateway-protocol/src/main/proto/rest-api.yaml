@@ -130,6 +130,34 @@ paths:
           $ref: "#/components/responses/InvalidData"
         "500":
           $ref: "#/components/responses/InternalServerError"
+  /jobs/search:
+    post:
+      tags:
+        - Job
+      operationId: searchJobs
+      summary: Search jobs
+      description: Search for jobs based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobSearchQueryRequest"
+      responses:
+        "200":
+          description: The job search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobSearchQueryResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /jobs/{jobKey}/failure:
     post:
       tags:
@@ -8407,6 +8435,330 @@ components:
           format: int64
           description: The duration of the new timeout in ms, starting from the current moment.
           nullable: true
+    JobSearchQueryRequest:
+      description: Job search request.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/JobSearchQuerySortRequest"
+        filter:
+          description: The job search filters.
+          allOf:
+            - $ref: "#/components/schemas/JobFilter"
+    JobSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - processDefinitionKey
+            - processInstanceKey
+            - elementInstanceKey
+            - elementId
+            - jobKey
+            - type
+            - worker
+            - state
+            - jobKind
+            - listenerEventType
+            - endDate
+            - tenantId
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+          - field
+    JobFilter:
+      description: Job search filter.
+      type: object
+      properties:
+        jobKey:
+          description: The key, a unique identifier for the job.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        type:
+          description: The type of the job.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        worker:
+          description: The name of the worker for this job.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        state:
+          allOf:
+            - $ref: "#/components/schemas/JobStateFilterProperty"
+        kind:
+          allOf:
+            - $ref: "#/components/schemas/JobKindFilterProperty"
+        listenerEventType:
+          allOf:
+            - $ref: "#/components/schemas/JobListenerEventTypeFilterProperty"
+        processDefinitionId:
+          description: The process definition ID associated with the job.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        processDefinitionKey:
+          description: The process definition key associated with the job.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        processInstanceKey:
+          description: The process instance key associated with the job.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        elementId:
+          description: The element ID associated with the job.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        elementInstanceKey:
+          description: The element instance key associated with the job.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        tenantId:
+          description: The tenant ID.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+    JobSearchQueryResult:
+      description: Job search response.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          description: The matching jobs.
+          type: array
+          items:
+            $ref: "#/components/schemas/JobSearchResult"
+    JobSearchResult:
+      type: object
+      properties:
+        jobKey:
+          description: The key, a unique identifier for the job.
+          type: string
+        type:
+          description: The type of the job.
+          type: string
+        worker:
+          description: The name of the worker of this job.
+          type: string
+        state:
+          $ref: "#/components/schemas/JobStateEnum"
+        kind:
+          $ref: "#/components/schemas/JobKindEnum"
+        listenerEventType:
+          $ref: "#/components/schemas/JobListenerEventTypeEnum"
+        retries:
+          description: The amount of retries left to this job (should always be positive).
+          type: integer
+          format: int32
+        isDenied:
+          description: Indicates whether the user task listener denies the work.
+          type: boolean
+          nullable: true
+        deniedReason:
+          description: The reason provided by the user task listener for denying the work.
+          type: string
+          nullable: true
+        hasFailedWithRetriesLeft:
+          description: Indicates whether the job has failed with retries left.
+          type: string
+        errorCode:
+          description: The error code provided for the failed job.
+          type: string
+          nullable: true
+        errorMessage:
+          description: The error message that provides additional context for a failed job.
+          type: string
+          nullable: true
+        customHeaders:
+          description: A set of custom headers defined during modelling; returned as a serialized JSON document.
+          type: object
+          additionalProperties: true
+        deadline:
+          description: When the job can be activated.
+          type: string
+          format: date-time
+        endTime:
+          description: When the job ended.
+          type: string
+          format: date-time
+        processDefinitionId:
+          description: The process definition ID associated with the job.
+          type: string
+        processDefinitionKey:
+          description: The process definition key associated with the job.
+          type: string
+        processInstanceKey:
+          description: The process instance key associated with the job.
+          type: string
+        elementId:
+          description: The element ID associated with the job.
+          type: string
+        elementInstanceKey:
+          description: The element instance key associated with the job.
+          type: string
+        tenantId:
+          description: The tenant ID.
+          type: string
+    JobStateEnum:
+      description: The state of the job.
+      enum:
+        - CREATED
+        - COMPLETED
+        - FAILED
+        - RETRIES_UPDATED
+        - TIMED_OUT
+        - CANCELED
+        - ERROR_THROWN
+        - MIGRATED
+    JobKindEnum:
+      description: The job kind.
+      enum:
+        - BPMN_ELEMENT
+        - EXECUTION_LISTENER
+        - TASK_LISTENER
+    JobListenerEventTypeEnum:
+      description: The listener event type of the job.
+      enum:
+        - UNSPECIFIED
+        - START
+        - END
+        - CREATING
+        - ASSIGNING
+        - UPDATING
+        - COMPLETING
+        - CANCELING
+    JobStateFilterProperty:
+      description: JobStateEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/JobStateEnum"
+        - $ref: "#/components/schemas/AdvancedJobStateFilter"
+    AdvancedJobStateFilter:
+      title: Advanced filter
+      description: Advanced JobStateEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/JobStateEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/JobStateEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/JobStateEnum"
+        $like:
+          description: |
+            Checks if the property matches the provided like value.
+
+            Supported wildcard characters are:
+
+            * `*`: matches zero, one, or multiple characters.
+            * `?`: matches one, single character.
+
+            Wildcard characters can be escaped with backslash, for instance: `\*`.
+          type: string
+    JobKindFilterProperty:
+      description: JobKindEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/JobKindEnum"
+        - $ref: "#/components/schemas/AdvancedJobKindFilter"
+    AdvancedJobKindFilter:
+      title: Advanced filter
+      description: Advanced JobKindEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/JobKindEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/JobKindEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/JobKindEnum"
+        $like:
+          description: |
+            Checks if the property matches the provided like value.
+
+            Supported wildcard characters are:
+
+            * `*`: matches zero, one, or multiple characters.
+            * `?`: matches one, single character.
+
+            Wildcard characters can be escaped with backslash, for instance: `\*`.
+          type: string
+    JobListenerEventTypeFilterProperty:
+      description: JobListenerEventTypeEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/JobListenerEventTypeEnum"
+        - $ref: "#/components/schemas/AdvancedJobListenerEventTypeFilter"
+    AdvancedJobListenerEventTypeFilter:
+      title: Advanced filter
+      description: Advanced JobListenerEventTypeEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/JobListenerEventTypeEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/JobListenerEventTypeEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/JobListenerEventTypeEnum"
+        $like:
+          description: |
+            Checks if the property matches the provided like value.
+
+            Supported wildcard characters are:
+
+            * `*`: matches zero, one, or multiple characters.
+            * `?`: matches one, single character.
+
+            Wildcard characters can be escaped with backslash, for instance: `\*`.
+          type: string
+
     ProblemDetail:
       description: >
         A Problem detail object as described in [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457).

@@ -24,6 +24,11 @@ public class SearchQuerySortRequestMapper {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
+  public static List<SearchQuerySortRequest<JobSearchQuerySortRequest.FieldEnum>>
+      fromJobSearchQuerySortRequest(final List<JobSearchQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
   public static List<SearchQuerySortRequest<RoleSearchQuerySortRequest.FieldEnum>>
       fromRoleSearchQuerySortRequest(final List<RoleSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
