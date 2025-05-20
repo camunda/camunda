@@ -27,9 +27,9 @@ import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.TenantClientSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.TenantClientSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.TenantMemberSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.TenantMemberSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResult;
@@ -230,9 +230,9 @@ public class TenantController {
   }
 
   @CamundaPostMapping(path = "/{tenantId}/clients/search")
-  public ResponseEntity<TenantMemberSearchResult> searchClientsInTenant(
+  public ResponseEntity<TenantClientSearchResult> searchClientsInTenant(
       @PathVariable final String tenantId,
-      @RequestBody(required = false) final TenantMemberSearchQueryRequest query) {
+      @RequestBody(required = false) final TenantClientSearchQueryRequest query) {
     return SearchQueryRequestMapper.toTenantQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
@@ -276,14 +276,14 @@ public class TenantController {
     }
   }
 
-  private ResponseEntity<TenantMemberSearchResult> searchMembersInTenant(
+  private ResponseEntity<TenantClientSearchResult> searchMembersInTenant(
       final String tenantId, final EntityType memberType, final TenantQuery query) {
     try {
       final var result =
           tenantServices
               .withAuthentication(RequestMapper.getAuthentication())
               .searchMembers(buildTenantMemberQuery(tenantId, memberType, query));
-      return ResponseEntity.ok(SearchQueryResponseMapper.toTenantMemberSearchQueryResponse(result));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toTenantClientSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
