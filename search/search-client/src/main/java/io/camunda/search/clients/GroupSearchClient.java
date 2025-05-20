@@ -18,7 +18,7 @@ public interface GroupSearchClient {
 
   SearchQueryResult<GroupEntity> searchGroups(final GroupQuery query);
 
-  SearchQueryResult<GroupMemberEntity> searchGroupMembers(GroupQuery filter);
+  SearchQueryResult<GroupMemberEntity> searchGroupMembers(GroupQuery query);
 
   List<GroupEntity> findAllGroups(final GroupQuery query);
 

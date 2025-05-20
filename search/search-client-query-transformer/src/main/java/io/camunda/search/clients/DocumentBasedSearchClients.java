@@ -346,9 +346,9 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   }
 
   @Override
-  public SearchQueryResult<GroupMemberEntity> searchGroupMembers(final GroupQuery filter) {
+  public SearchQueryResult<GroupMemberEntity> searchGroupMembers(final GroupQuery query) {
     return getSearchExecutor()
-        .search(filter, io.camunda.webapps.schema.entities.usermanagement.GroupMemberEntity.class);
+        .search(query, io.camunda.webapps.schema.entities.usermanagement.GroupMemberEntity.class);
   }
 
   @Override
