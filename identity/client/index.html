@@ -18,5 +18,10 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script th:inline="javascript" type="text/javascript" th:nonce="${clientConfigNonce}">
+      window.clientConfig = {
+        "VITE_IS_OIDC": "[[${isOidc}]]"
+      }
+    </script>
   </body>
 </html>
