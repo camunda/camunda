@@ -2768,6 +2768,48 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+  /roles/{roleId}/clients/search:
+    post:
+      tags:
+        - Role
+      operationId: searchClientsForRole
+      summary: Search role clients
+      description: |
+        Search clients assigned to a role.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          description: The role ID.
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleClientSearchQueryRequest"
+      responses:
+        "200":
+          description: The clients assigned to the role.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleClientSearchResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The role with the given ID was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /roles/{roleId}/users/{username}:
     put:
       tags:
@@ -7198,7 +7240,44 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RoleResult"
-
+    RoleClientResult:
+      type: object
+      properties:
+        clientId:
+          description: The ID of the client.
+          type: string
+    RoleClientSearchResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          description: The matching clients.
+          type: array
+          items:
+            $ref: "#/components/schemas/RoleClientResult"
+    RoleClientSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/RoleClientSearchQuerySortRequest"
+    RoleClientSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - clientId
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
     GroupCreateRequest:
       type: "object"
       properties:

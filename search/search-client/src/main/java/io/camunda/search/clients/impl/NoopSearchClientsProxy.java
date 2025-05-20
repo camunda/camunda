@@ -26,6 +26,7 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserEntity;
@@ -166,6 +167,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
 
   @Override
   public SearchQueryResult<RoleEntity> searchRoles(final RoleQuery filter) {
+    return SearchQueryResult.empty();
+  }
+
+  @Override
+  public SearchQueryResult<RoleMemberEntity> searchRoleMembers(final RoleQuery filter) {
     return SearchQueryResult.empty();
   }
 

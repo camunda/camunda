@@ -318,6 +318,12 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   }
 
   @Override
+  public SearchQueryResult<RoleMemberEntity> searchRoleMembers(final RoleQuery filter) {
+    return getSearchExecutor()
+        .search(filter, io.camunda.webapps.schema.entities.usermanagement.RoleMemberEntity.class);
+  }
+
+  @Override
   public List<RoleEntity> findAllRoles(final RoleQuery filter) {
     return getSearchExecutor()
         .findAll(filter, io.camunda.webapps.schema.entities.usermanagement.RoleEntity.class);

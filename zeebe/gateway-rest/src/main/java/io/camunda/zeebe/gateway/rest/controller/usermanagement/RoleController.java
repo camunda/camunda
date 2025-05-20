@@ -20,6 +20,8 @@ import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.RoleClientSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.RoleClientSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
@@ -161,6 +163,36 @@ public class RoleController {
         .build();
   }
 
+  @CamundaPostMapping(path = "/{roleId}/clients/search")
+  public ResponseEntity<RoleClientSearchResult> searchClientsByRole(
+      @PathVariable final String roleId,
+      @RequestBody(required = false) final RoleClientSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toRoleQuery(query)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            roleQuery -> searchClientsInRole(roleId, roleQuery));
+  }
+
+  private ResponseEntity<RoleClientSearchResult> searchClientsInRole(
+      final String tenantId, final RoleQuery query) {
+    try {
+      final var result =
+          roleServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .searchMembers(buildRoleMemberQuery(tenantId, EntityType.CLIENT, query));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toRoleClientSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private RoleQuery buildRoleMemberQuery(
+      final String roleId, final EntityType memberType, final RoleQuery query) {
+    return query.toBuilder()
+        .filter(query.filter().toBuilder().joinParentId(roleId).memberType(memberType).build())
+        .build();
+  }
+
   @CamundaPostMapping(path = "/{roleId}/mapping-rules/search")
   public ResponseEntity<MappingSearchQueryResult> searchMappingRulesByRole(
       @PathVariable final String roleId,
@@ -203,7 +235,7 @@ public class RoleController {
   @CamundaPutMapping(
       path = "/{roleId}/clients/{clientId}",
       consumes = {})
-  public CompletableFuture<ResponseEntity<Object>> addApplicationToRole(
+  public CompletableFuture<ResponseEntity<Object>> addClientToRole(
       @PathVariable final String roleId, @PathVariable final String clientId) {
     return RequestMapper.toRoleMemberRequest(roleId, clientId, EntityType.CLIENT)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::addMemberToRole);
@@ -249,9 +281,9 @@ public class RoleController {
   }
 
   @CamundaDeleteMapping(path = "/{roleId}/clients/{clientId}")
-  public CompletableFuture<ResponseEntity<Object>> removeApplicationFromRole(
+  public CompletableFuture<ResponseEntity<Object>> removeClientFromRole(
       @PathVariable final String roleId, @PathVariable final String clientId) {
-    return RequestMapper.toRoleMemberRequest(roleId, clientId, EntityType.USER)
+    return RequestMapper.toRoleMemberRequest(roleId, clientId, EntityType.CLIENT)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::removeMemberFromRole);
   }
 

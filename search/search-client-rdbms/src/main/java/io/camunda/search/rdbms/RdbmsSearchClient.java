@@ -25,6 +25,7 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserEntity;
@@ -255,6 +256,11 @@ public class RdbmsSearchClient implements SearchClientsProxy {
     LOG.debug("[RDBMS Search Client] Search for roles: {}", query);
 
     return rdbmsService.getRoleReader().search(query);
+  }
+
+  @Override
+  public SearchQueryResult<RoleMemberEntity> searchRoleMembers(final RoleQuery filter) {
+    throw new UnsupportedOperationException("Role member search not implemented on RDBMS");
   }
 
   @Override
