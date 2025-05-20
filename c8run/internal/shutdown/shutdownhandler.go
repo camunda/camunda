@@ -77,7 +77,7 @@ func stopProcess(c8 types.C8Run, pidfile string) error {
 		}
 
 		for _, process := range c8.ProcessTree(int(commandPid)) {
-			fmt.Printf("Stopping process %d\n", process.Pid())
+			fmt.Printf("Stopping process %d\n", process.Pid)
 			err = process.Kill()
 			if err != nil {
 				return fmt.Errorf("stopProcess: could not kill process %d, %w", commandPid, err)

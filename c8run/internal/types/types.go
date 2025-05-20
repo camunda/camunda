@@ -32,3 +32,13 @@ func (c C8RunSettings) HasKeyStore() bool {
 	return c.Keystore != "" && c.KeystorePassword != ""
 }
 
+type Processes struct {
+	Camunda       Process
+	Connectors    Process
+	Elasticsearch Process
+}
+
+type Process struct {
+	Version string
+	Pid     string
+}

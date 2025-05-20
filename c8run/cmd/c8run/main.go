@@ -12,36 +12,12 @@ import (
 
 	"github.com/camunda/camunda/c8run/internal/health"
 	"github.com/camunda/camunda/c8run/internal/overrides"
-<<<<<<< HEAD
-=======
 	"github.com/camunda/camunda/c8run/internal/shutdown"
->>>>>>> 7054ed09d55 (fix: moved package commands out to their out package leaving only the start/stop cmd in the distributed binary (#31694))
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/camunda/camunda/c8run/internal/unix"
 	"github.com/camunda/camunda/c8run/internal/windows"
 	"github.com/joho/godotenv"
 )
-
-func stopProcess(c8 types.C8Run, pidfile string) error {
-	if _, err := os.Stat(pidfile); err == nil {
-		commandPidText, _ := os.ReadFile(pidfile)
-		commandPidStripped := strings.TrimSpace(string(commandPidText))
-		commandPid, err := strconv.Atoi(string(commandPidStripped))
-		if err != nil {
-			return fmt.Errorf("stopProcess: could not stop process %d, %w", commandPid, err)
-		}
-
-		for _, process := range c8.ProcessTree(int(commandPid)) {
-			err = process.Kill()
-			if err != nil {
-				return fmt.Errorf("stopProcess: could not kill process %d, %w", commandPid, err)
-			}
-		}
-		os.Remove(pidfile)
-
-	}
-	return nil
-}
 
 func getC8RunPlatform() types.C8Run {
 	if runtime.GOOS == "windows" {
@@ -334,18 +310,18 @@ func main() {
 		fmt.Println("Failed to set envVars:", err)
 	}
 
-	processInfo := processes{
-		camunda: process{
-			version: camundaVersion,
-			pid:     camundaPidPath,
+	processInfo := types.Processes{
+		Camunda: types.Process{
+			Version: camundaVersion,
+			Pid:     camundaPidPath,
 		},
-		connectors: process{
-			version: connectorsVersion,
-			pid:     connectorsPidPath,
+		Connectors: types.Process{
+			Version: connectorsVersion,
+			Pid:     connectorsPidPath,
 		},
-		elasticsearch: process{
-			version: elasticsearchVersion,
-			pid:     elasticsearchPidPath,
+		Elasticsearch: types.Process{
+			Version: elasticsearchVersion,
+			Pid:     elasticsearchPidPath,
 		},
 	}
 
@@ -353,11 +329,7 @@ func main() {
 	case "start":
 		startCommand(c8, settings, processInfo, parentDir, javaBinary, expectedJavaVersion)
 	case "stop":
-<<<<<<< HEAD
-		stopCommand(c8, settings, processInfo)
-=======
 		shutdown.ShutdownProcesses(c8, settings, processInfo)
->>>>>>> 7054ed09d55 (fix: moved package commands out to their out package leaving only the start/stop cmd in the distributed binary (#31694))
 	}
 }
 
@@ -373,7 +345,7 @@ func printSystemInformation(javaVersion string) {
 	fmt.Println("")
 }
 
-func startCommand(c8 types.C8Run, settings types.C8RunSettings, processInfo processes, parentDir, javaBinary string, expectedJavaVersion int) {
+func startCommand(c8 types.C8Run, settings types.C8RunSettings, processInfo types.Processes, parentDir, javaBinary string, expectedJavaVersion int) {
 	javaVersion := os.Getenv("JAVA_VERSION")
 	var err error
 	if javaVersion == "" {
@@ -405,18 +377,18 @@ func startCommand(c8 types.C8Run, settings types.C8RunSettings, processInfo proc
 	javaOpts = overrides.AdjustJavaOpts(javaOpts, settings)
 
 	if !settings.DisableElasticsearch {
-		fmt.Print("Starting Elasticsearch " + processInfo.elasticsearch.version + "...\n")
+		fmt.Print("Starting Elasticsearch " + processInfo.Elasticsearch.Version + "...\n")
 		fmt.Print("(Hint: you can find the log output in the 'elasticsearch.log' file in the 'log' folder of your distribution.)\n")
 
-		elasticsearchCmd := c8.ElasticsearchCmd(processInfo.elasticsearch.version, parentDir)
+		elasticsearchCmd := c8.ElasticsearchCmd(processInfo.Elasticsearch.Version, parentDir)
 		elasticsearchLogFilePath := filepath.Join(parentDir, "log", "elasticsearch.log")
-		startApplication(elasticsearchCmd, processInfo.elasticsearch.pid, elasticsearchLogFilePath)
+		startApplication(elasticsearchCmd, processInfo.Elasticsearch.Pid, elasticsearchLogFilePath)
 		health.QueryElasticsearch("Elasticsearch", "http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s")
 	}
 
-	connectorsCmd := c8.ConnectorsCmd(javaBinary, parentDir, processInfo.camunda.version)
+	connectorsCmd := c8.ConnectorsCmd(javaBinary, parentDir, processInfo.Camunda.Version)
 	connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
-	startApplication(connectorsCmd, processInfo.connectors.pid, connectorsLogPath)
+	startApplication(connectorsCmd, processInfo.Connectors.Pid, connectorsLogPath)
 
 	var extraArgs string
 	if settings.Config != "" {
@@ -440,48 +412,14 @@ func startCommand(c8 types.C8Run, settings types.C8RunSettings, processInfo proc
 		}
 	}
 
-	camundaCmd := c8.CamundaCmd(processInfo.camunda.version, parentDir, extraArgs, javaOpts)
+	camundaCmd := c8.CamundaCmd(processInfo.Camunda.Version, parentDir, extraArgs, javaOpts)
 	camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
-	startApplication(camundaCmd, processInfo.camunda.pid, camundaLogPath)
+	startApplication(camundaCmd, processInfo.Camunda.Pid, camundaLogPath)
 	err = health.QueryCamunda(c8, "Camunda", settings)
 	if err != nil {
 		fmt.Printf("%+v", err)
 		os.Exit(1)
 	}
-}
-
-type processes struct {
-	camunda       process
-	connectors    process
-	elasticsearch process
-}
-
-type process struct {
-	version string
-	pid     string
-<<<<<<< HEAD
-}
-
-func stopCommand(c8 types.C8Run, settings types.C8RunSettings, processes processes) {
-	if !settings.DisableElasticsearch {
-		err := stopProcess(c8, processes.elasticsearch.pid)
-		if err != nil {
-			fmt.Printf("%+v", err)
-		}
-		fmt.Println("Elasticsearch is stopped.")
-	}
-	err := stopProcess(c8, processes.connectors.pid)
-	if err != nil {
-		fmt.Printf("%+v", err)
-	}
-	fmt.Println("Connectors is stopped.")
-	err = stopProcess(c8, processes.camunda.pid)
-	if err != nil {
-		fmt.Printf("%+v", err)
-	}
-	fmt.Println("Camunda is stopped.")
-=======
->>>>>>> 7054ed09d55 (fix: moved package commands out to their out package leaving only the start/stop cmd in the distributed binary (#31694))
 }
 
 func startApplication(cmd *exec.Cmd, pid string, logPath string) {
