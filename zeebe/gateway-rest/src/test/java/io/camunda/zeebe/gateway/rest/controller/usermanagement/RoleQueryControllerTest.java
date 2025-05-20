@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.page.SearchQueryPage;
@@ -27,22 +28,23 @@ import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(value = RoleController.class)
 public class RoleQueryControllerTest extends RestControllerTest {
   private static final String ROLE_BASE_URL = "/v2/roles";
 
-  @MockBean private RoleServices roleServices;
-  @MockBean private UserServices userServices;
-  @MockBean private MappingServices mappingsServices;
+  @MockitoBean private RoleServices roleServices;
+  @MockitoBean private UserServices userServices;
+  @MockitoBean private MappingServices mappingsServices;
 
   @BeforeEach
   void setup() {
@@ -333,5 +335,61 @@ public class RoleQueryControllerTest extends RestControllerTest {
     verify(mappingsServices)
         .search(
             new MappingQuery.Builder().filter(f -> f.roleId(roleId).claimNames(List.of())).build());
+  }
+
+  @Test
+  public void shouldSearchClientsByRole() {
+    // given
+    final var roleId = "roleId";
+    when(roleServices.searchMembers(any(RoleQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<RoleMemberEntity>()
+                .total(3)
+                .items(
+                    List.of(
+                        new RoleMemberEntity("client1", EntityType.CLIENT),
+                        new RoleMemberEntity("client2", EntityType.CLIENT),
+                        new RoleMemberEntity("client3", EntityType.CLIENT)))
+                .build());
+
+    // when /then
+    webClient
+        .post()
+        .uri("%s/%s/clients/search".formatted(ROLE_BASE_URL, roleId))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {
+             "items": [
+               {
+                 "clientId": "client1"
+               },
+               {
+                 "clientId": "client2"
+               },
+               {
+                 "clientId": "client3"
+               }
+             ],
+             "page": {
+               "totalItems": 3,
+               "firstSortValues": [],
+               "lastSortValues": []
+             }
+           }""");
+
+    verify(roleServices)
+        .searchMembers(
+            new RoleQuery.Builder()
+                .filter(f -> f.joinParentId(roleId).memberType(EntityType.CLIENT))
+                .build());
   }
 }
