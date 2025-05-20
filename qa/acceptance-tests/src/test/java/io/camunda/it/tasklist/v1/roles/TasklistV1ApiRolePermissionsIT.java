@@ -141,41 +141,65 @@ public class TasklistV1ApiRolePermissionsIT {
   }
 
   @Test
-  void shouldBePermittedToGetProcess(@Authenticated(AUTHORIZED_USERNAME) final CamundaClient client)
-      throws Exception {
-    final var statusCode =
-        getRunningProcessInstance(client, AUTHORIZED_USERNAME, processDefinitionKey);
-    assertThat(statusCode)
-        .describedAs("Is authorized to get the process")
-        .isEqualTo(HttpStatus.OK.value());
+  void shouldBePermittedToGetProcess(
+      @Authenticated(AUTHORIZED_USERNAME) final CamundaClient client) {
+    await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var statusCode =
+                  getRunningProcessInstance(client, AUTHORIZED_USERNAME, processDefinitionKey);
+              assertThat(statusCode)
+                  .describedAs("Is authorized to get the process")
+                  .isEqualTo(HttpStatus.OK.value());
+            });
   }
 
   @Test
   void shouldBeUnauthorizedToGetProcess(
-      @Authenticated(UNAUTHORIZED_USERNAME) final CamundaClient client) throws Exception {
-    final var statusCode =
-        getRunningProcessInstance(client, UNAUTHORIZED_USERNAME, processDefinitionKey);
-    assertThat(statusCode)
-        .describedAs("Is unauthorized to get the process")
-        .isEqualTo(HttpStatus.FORBIDDEN.value());
+      @Authenticated(UNAUTHORIZED_USERNAME) final CamundaClient client) {
+    await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var statusCode =
+                  getRunningProcessInstance(client, UNAUTHORIZED_USERNAME, processDefinitionKey);
+              assertThat(statusCode)
+                  .describedAs("Is unauthorized to get the process")
+                  .isEqualTo(HttpStatus.FORBIDDEN.value());
+            });
   }
 
   @Test
-  void shouldBePermittedToAssignTask(@Authenticated(AUTHORIZED_USERNAME) final CamundaClient client)
-      throws Exception {
-    final var statusCode = assignTask(client, AUTHORIZED_USERNAME, taskKey);
-    assertThat(statusCode)
-        .describedAs("Is authorized to assign the task")
-        .isEqualTo(HttpStatus.OK.value());
+  void shouldBePermittedToAssignTask(
+      @Authenticated(AUTHORIZED_USERNAME) final CamundaClient client) {
+    await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var statusCode = assignTask(client, AUTHORIZED_USERNAME, taskKey);
+              assertThat(statusCode)
+                  .describedAs("Is authorized to assign the task")
+                  .isEqualTo(HttpStatus.OK.value());
+            });
   }
 
   @Test
   void shouldBeUnauthorizedToAssignTask(
-      @Authenticated(UNAUTHORIZED_USERNAME) final CamundaClient client) throws Exception {
-    final var statusCode = assignTask(client, UNAUTHORIZED_USERNAME, taskKey);
-    assertThat(statusCode)
-        .describedAs("Is unauthorized to assign the task")
-        .isEqualTo(HttpStatus.FORBIDDEN.value());
+      @Authenticated(UNAUTHORIZED_USERNAME) final CamundaClient client) {
+    await()
+        .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var statusCode = assignTask(client, UNAUTHORIZED_USERNAME, taskKey);
+              assertThat(statusCode)
+                  .describedAs("Is unauthorized to assign the task")
+                  .isEqualTo(HttpStatus.FORBIDDEN.value());
+            });
   }
 
   private static void addUserToRole(final URI url, final String roleId, final String username)
