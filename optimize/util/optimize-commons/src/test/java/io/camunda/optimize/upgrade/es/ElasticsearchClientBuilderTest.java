@@ -28,12 +28,15 @@ import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.protocol.BasicHttpContext;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 
 class ElasticsearchClientBuilderTest {
 
-  @Test
-  void buildExtendedClient_HappyPath() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void buildExtendedClientHappyPath(final boolean sslEnabled) {
     // given
     final BasicHttpContext context = new BasicHttpContext();
     final ConfigurationService config = Mockito.mock(ConfigurationService.class);
@@ -53,6 +56,7 @@ class ElasticsearchClientBuilderTest {
     Mockito.when(connection.getAwsEnabled()).thenReturn(false);
     Mockito.when(esConfig.getConnectionNodes()).thenReturn(List.of(host));
     Mockito.when(esConfig.getConnection()).thenReturn(connection);
+    Mockito.when(esConfig.getSecuritySSLEnabled()).thenReturn(sslEnabled);
 
     final ElasticsearchClient extendedClient =
         ElasticsearchClientBuilder.build(config, new ObjectMapper(), new PluginRepository());
