@@ -93,6 +93,7 @@ import io.camunda.client.api.fetch.ProcessInstanceGetCallHierarchyRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
 import io.camunda.client.api.fetch.RoleGetRequest;
 import io.camunda.client.api.fetch.RolesByGroupSearchRequest;
+import io.camunda.client.api.fetch.RolesSearchRequest;
 import io.camunda.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.UsersByGroupSearchRequest;
@@ -1178,6 +1179,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the request to get a role
    */
   RoleGetRequest newRoleGetRequest(String roleId);
+
+  /**
+   * Executes a search request to query roles.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newRolesSearchRequest()
+   *  .filter((f) -> f.name("roleName"))
+   *  .sort((s) -> s.name().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the roles search request
+   */
+  RolesSearchRequest newRolesSearchRequest();
 
   /**
    * Command to update a role.

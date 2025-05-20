@@ -104,6 +104,7 @@ import io.camunda.client.api.fetch.ProcessInstanceGetCallHierarchyRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
 import io.camunda.client.api.fetch.RoleGetRequest;
 import io.camunda.client.api.fetch.RolesByGroupSearchRequest;
+import io.camunda.client.api.fetch.RolesSearchRequest;
 import io.camunda.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.UsersByGroupSearchRequest;
@@ -224,6 +225,7 @@ import io.camunda.client.impl.search.request.ProcessInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.ProcessInstanceSequenceFlowsRequestImpl;
 import io.camunda.client.impl.search.request.RolesByGroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.RolesByTenantSearchRequestImpl;
+import io.camunda.client.impl.search.request.RolesSearchRequestImpl;
 import io.camunda.client.impl.search.request.UserTaskSearchRequestImpl;
 import io.camunda.client.impl.search.request.UserTaskVariableSearchRequestImpl;
 import io.camunda.client.impl.search.request.UsersByGroupSearchRequestImpl;
@@ -824,6 +826,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public RoleGetRequest newRoleGetRequest(final String roleId) {
     return new RoleGetRequestImpl(httpClient, roleId);
+  }
+
+  @Override
+  public RolesSearchRequest newRolesSearchRequest() {
+    return new RolesSearchRequestImpl(httpClient, jsonMapper);
   }
 
   @Override

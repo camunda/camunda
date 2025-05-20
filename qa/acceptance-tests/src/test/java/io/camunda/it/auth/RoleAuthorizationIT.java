@@ -65,7 +65,6 @@ class RoleAuthorizationIT {
   private static final String RESTRICTED = "restrictedUser";
   private static final String RESTRICTED_WITH_READ = "restrictedUser2";
   private static final String DEFAULT_PASSWORD = "password";
-  private static final String ROLE_SEARCH_ENDPOINT = "v2/roles/search";
   private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(15);
 
   @UserDefinition
@@ -98,8 +97,16 @@ class RoleAuthorizationIT {
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
     createRole(adminClient, ROLE_ID_1, ROLE_NAME_1);
     createRole(adminClient, ROLE_ID_2, ROLE_NAME_2);
-    waitForRolesToBeCreated(
-        adminClient.getConfiguration().getRestAddress().toString(), ADMIN, ROLE_ID_1, ROLE_ID_2);
+
+    Awaitility.await("should create roles and import in ES")
+        .atMost(AWAIT_TIMEOUT)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var roleSearchResponse = adminClient.newRolesSearchRequest().send().join();
+              assertThat(roleSearchResponse.items().stream().map(Role::getRoleId).toList())
+                  .containsAll(Arrays.asList(ADMIN, ROLE_ID_1, ROLE_ID_2));
+            });
   }
 
   @Test
@@ -122,8 +129,15 @@ class RoleAuthorizationIT {
     assertThat(createdRole.getName()).isEqualTo(name);
     assertThat(createdRole.getDescription()).isEqualTo(description);
 
-    waitForRolesToBeCreated(
-        adminClient.getConfiguration().getRestAddress().toString(), ADMIN, roleId);
+    Awaitility.await("should create role and import in ES")
+        .atMost(AWAIT_TIMEOUT)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var roleSearchResponse = adminClient.newRolesSearchRequest().send().join();
+              assertThat(roleSearchResponse.items().stream().map(Role::getRoleId).toList())
+                  .contains(roleId);
+            });
 
     final Role role = adminClient.newRoleGetRequest(roleId).send().join();
 
@@ -206,6 +220,37 @@ class RoleAuthorizationIT {
   }
 
   @Test
+  void searchRolesShouldReturnRoleByIdIfAuthorized(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    final var roleSearchResponse =
+        camundaClient.newRolesSearchRequest().filter(fn -> fn.roleId(ROLE_ID_1)).send().join();
+
+    assertThat(roleSearchResponse.items())
+        .hasSize(1)
+        .map(Role::getRoleId)
+        .containsExactly(ROLE_ID_1);
+  }
+
+  @Test
+  void searchRolesShouldReturnRoleByNameIfAuthorized(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    final var roleSearchResponse =
+        camundaClient.newRolesSearchRequest().filter(fn -> fn.name(ROLE_NAME_1)).send().join();
+
+    assertThat(roleSearchResponse.items())
+        .hasSize(1)
+        .map(Role::getName)
+        .containsExactly(ROLE_NAME_1);
+  }
+
+  @Test
+  void searchRolesShouldReturnEmptyListIfUnauthorized(
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
+    final var roleSearchResponse = camundaClient.newRolesSearchRequest().send().join();
+    assertThat(roleSearchResponse.items()).hasSize(0).map(Role::getName).isEmpty();
+  }
+
+  @Test
   void shouldAssignRoleToMappingIfAuthorized(
       @Authenticated(ADMIN) final CamundaClient adminClient) {
     final String roleId = Strings.newRandomValidIdentityId();
@@ -257,22 +302,11 @@ class RoleAuthorizationIT {
   @Test
   void searchShouldReturnAuthorizedRoles(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) throws Exception {
-    final var roleSearchResponse =
-        searchRoles(
-            camundaClient.getConfiguration().getRestAddress().toString(), RESTRICTED_WITH_READ);
+    final var roleSearchResponse = camundaClient.newRolesSearchRequest().send().join();
 
     assertThat(roleSearchResponse.items())
-        .map(RoleResult::getName)
+        .map(Role::getName)
         .containsExactlyInAnyOrder("Admin", "RPA", "Connectors", ROLE_NAME_1, ROLE_NAME_2);
-  }
-
-  @Test
-  void searchShouldReturnEmptyListWhenUnauthorized(
-      @Authenticated(RESTRICTED) final CamundaClient camundaClient) throws Exception {
-    final var roleSearchResponse =
-        searchRoles(camundaClient.getConfiguration().getRestAddress().toString(), RESTRICTED);
-
-    assertThat(roleSearchResponse.items()).hasSize(0).map(RoleResult::getName).isEmpty();
   }
 
   @Test
@@ -460,38 +494,6 @@ class RoleAuthorizationIT {
         .description(description)
         .send()
         .join();
-  }
-
-  private static void waitForRolesToBeCreated(
-      final String restAddress, final String name, final String... roleIds) {
-    Awaitility.await("should create roles and import in ES")
-        .atMost(AWAIT_TIMEOUT)
-        .ignoreExceptions()
-        .untilAsserted(
-            () -> {
-              final var roleSearchResponse = searchRoles(restAddress, name);
-              assertThat(roleSearchResponse.items().stream().map(RoleResult::getRoleId).toList())
-                  .containsAll(Arrays.asList(roleIds));
-            });
-  }
-
-  // TODO replace with role search when implemented in Camunda Client #31716
-  private static RoleSearchResponse searchRoles(final String restAddress, final String username)
-      throws URISyntaxException, IOException, InterruptedException {
-    final var encodedCredentials =
-        Base64.getEncoder()
-            .encodeToString("%s:%s".formatted(username, DEFAULT_PASSWORD).getBytes());
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(new URI("%s%s".formatted(restAddress, ROLE_SEARCH_ENDPOINT)))
-            .POST(HttpRequest.BodyPublishers.ofString(""))
-            .header("Authorization", "Basic %s".formatted(encodedCredentials))
-            .build();
-
-    final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-
-    return OBJECT_MAPPER.readValue(response.body(), RoleSearchResponse.class);
   }
 
   // TODO once available, this test should use the client to make the request

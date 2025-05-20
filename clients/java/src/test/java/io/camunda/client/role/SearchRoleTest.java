@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.sort.RoleSort;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,23 @@ public class SearchRoleTest extends ClientRestTest {
     final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getUrl()).isEqualTo("/v2/roles/" + ROLE_ID);
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
+  }
+
+  @Test
+  public void shouldSearchRoles() {
+    // when
+    client
+        .newRolesSearchRequest()
+        .filter(fn -> fn.name("roleName"))
+        .sort(RoleSort::name)
+        .page(fn -> fn.limit(5))
+        .send()
+        .join();
+
+    // then
+    final LoggedRequest request = gatewayService.getLastRequest();
+    assertThat(request.getUrl()).isEqualTo("/v2/roles/search");
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
   }
 
   @Test
