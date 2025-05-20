@@ -181,4 +181,12 @@ public final class SortOptionBuilders {
       final Function<AuthorizationSort.Builder, ObjectBuilder<AuthorizationSort>> fn) {
     return fn.apply(authorization()).build();
   }
+
+  public static JobSort.Builder job() {
+    return new JobSort.Builder();
+  }
+
+  public static JobSort job(final Function<JobSort.Builder, ObjectBuilder<JobSort>> fn) {
+    return fn.apply(job()).build();
+  }
 }
