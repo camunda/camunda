@@ -123,7 +123,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     // given
     when(entityKeyProvider.fetchProcessInstanceItems(
-            eq(PARTITION_ID), queryCaptor.capture(), any()))
+            eq(PARTITION_ID), queryCaptor.capture(), any(), any()))
         .thenReturn(createItems(1L, 2L, 3L));
 
     // when our scheduler fires
@@ -147,7 +147,8 @@ public class BatchOperationExecutionSchedulerTest {
     when(batchOperation.getBatchOperationType()).thenReturn(RESOLVE_INCIDENT);
 
     // given
-    when(entityKeyProvider.fetchIncidentItems(eq(PARTITION_ID), queryCaptor.capture(), any()))
+    when(entityKeyProvider.fetchIncidentItems(
+            eq(PARTITION_ID), queryCaptor.capture(), any(), any()))
         .thenReturn(createItems(1L, 2L, 3L));
 
     // when our scheduler fires
@@ -172,7 +173,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     // given
     when(entityKeyProvider.fetchProcessInstanceItems(
-            eq(PARTITION_ID), queryCaptor.capture(), any()))
+            eq(PARTITION_ID), queryCaptor.capture(), any(), any()))
         .thenReturn(createItems(1L, 2L, 3L));
 
     // when our scheduler fires
@@ -197,7 +198,7 @@ public class BatchOperationExecutionSchedulerTest {
     // given
     final var queryItems = createItems(LongStream.range(0, CHUNK_SIZE * 2).toArray());
     when(entityKeyProvider.fetchProcessInstanceItems(
-            eq(PARTITION_ID), queryCaptor.capture(), any()))
+            eq(PARTITION_ID), queryCaptor.capture(), any(), any()))
         .thenReturn(new HashSet<>(queryItems));
 
     // when our scheduler fires
@@ -229,7 +230,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     // given
     when(entityKeyProvider.fetchProcessInstanceItems(
-            eq(PARTITION_ID), queryCaptor.capture(), any()))
+            eq(PARTITION_ID), queryCaptor.capture(), any(), any()))
         .thenReturn(new HashSet<>(createItems(1L)));
 
     // when our scheduler fires
