@@ -73,6 +73,9 @@
             "variables": {
               "enabled": false
             },
+            "variableUpdateSemantics": {
+              "type": "keyword"
+            },
             "customHeaders": {
               "enabled": false
             },
