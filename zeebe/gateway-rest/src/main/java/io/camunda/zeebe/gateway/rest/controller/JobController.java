@@ -140,6 +140,8 @@ public class JobController {
         () ->
             jobServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .updateJob(updateJobRequest.jobKey(), updateJobRequest.changeset()));
+                // TODO: provide operation reference:
+                // https://github.com/camunda/camunda/issues/32270
+                .updateJob(updateJobRequest.jobKey(), updateJobRequest.changeset(), null));
   }
 }
