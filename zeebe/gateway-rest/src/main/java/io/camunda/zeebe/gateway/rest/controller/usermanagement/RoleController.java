@@ -11,7 +11,6 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.RoleQuery;
-import io.camunda.search.query.UserQuery;
 import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.CreateRoleRequest;
@@ -26,8 +25,8 @@ import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
+import io.camunda.zeebe.gateway.protocol.rest.RoleUserSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.RoleUserSearchResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -134,33 +133,26 @@ public class RoleController {
   }
 
   @CamundaPostMapping(path = "/{roleId}/users/search")
-  public ResponseEntity<UserSearchResult> searchUsersByRole(
+  public ResponseEntity<RoleUserSearchResult> searchUsersByRole(
       @PathVariable final String roleId,
-      @RequestBody(required = false) final UserSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toUserQuery(query)
+      @RequestBody(required = false) final RoleUserSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toRoleQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             userQuery -> searchUsersInRole(roleId, userQuery));
   }
 
-  private ResponseEntity<UserSearchResult> searchUsersInRole(
-      final String roleId, final UserQuery userQuery) {
+  private ResponseEntity<RoleUserSearchResult> searchUsersInRole(
+      final String roleId, final RoleQuery query) {
     try {
-      final var composedUserQuery = buildUserQuery(roleId, userQuery);
       final var result =
-          userServices
+          roleServices
               .withAuthentication(RequestMapper.getAuthentication())
-              .search(composedUserQuery);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
+              .searchMembers(buildRoleMemberQuery(roleId, EntityType.USER, query));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toRoleUserSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
-  }
-
-  private UserQuery buildUserQuery(final String roleId, final UserQuery userQuery) {
-    return userQuery.toBuilder()
-        .filter(userQuery.filter().toBuilder().roleId(roleId).build())
-        .build();
   }
 
   @CamundaPostMapping(path = "/{roleId}/clients/search")

@@ -90,6 +90,8 @@ import io.camunda.zeebe.gateway.protocol.rest.RoleClientResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleClientSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.RoleUserResult;
+import io.camunda.zeebe.gateway.protocol.rest.RoleUserSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
 import io.camunda.zeebe.gateway.protocol.rest.TenantResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResult;
@@ -199,6 +201,16 @@ public final class SearchQueryResponseMapper {
         .page(page)
         .items(
             ofNullable(result.items()).map(SearchQueryResponseMapper::toRoles).orElseGet(List::of));
+  }
+
+  public static RoleUserSearchResult toRoleUserSearchQueryResponse(
+      final SearchQueryResult<RoleMemberEntity> result) {
+    return new RoleUserSearchResult()
+        .page(toSearchQueryPageResponse(result))
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toRoleUsers)
+                .orElseGet(List::of));
   }
 
   public static RoleClientSearchResult toRoleClientSearchQueryResponse(
@@ -491,8 +503,16 @@ public final class SearchQueryResponseMapper {
         .tenantId(tenantEntity.tenantId());
   }
 
+  private static List<RoleUserResult> toRoleUsers(final List<RoleMemberEntity> members) {
+    return members.stream().map(SearchQueryResponseMapper::toRoleUser).toList();
+  }
+
   private static List<RoleClientResult> toRoleClients(final List<RoleMemberEntity> members) {
     return members.stream().map(SearchQueryResponseMapper::toRoleClient).toList();
+  }
+
+  private static RoleUserResult toRoleUser(final RoleMemberEntity roleMember) {
+    return new RoleUserResult().username(roleMember.id());
   }
 
   private static RoleClientResult toRoleClient(final RoleMemberEntity roleMember) {

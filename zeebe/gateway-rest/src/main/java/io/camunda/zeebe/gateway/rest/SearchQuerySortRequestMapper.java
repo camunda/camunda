@@ -29,6 +29,11 @@ public class SearchQuerySortRequestMapper {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
+  public static List<SearchQuerySortRequest<RoleUserSearchQuerySortRequest.FieldEnum>>
+      fromRoleUserSearchQuerySortRequest(final List<RoleUserSearchQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
   public static List<SearchQuerySortRequest<RoleClientSearchQuerySortRequest.FieldEnum>>
       fromRoleClientSearchQuerySortRequest(final List<RoleClientSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
