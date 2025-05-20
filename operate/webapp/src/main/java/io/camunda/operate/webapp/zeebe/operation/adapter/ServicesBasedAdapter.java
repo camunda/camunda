@@ -84,8 +84,10 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
         (authentication) ->
             withOperationReference(
                 operationReference ->
-                    resourceServices.deleteResource(
-                        new ResourceDeletionRequest(resourceKey, operationReference)),
+                    resourceServices
+                        .withAuthentication(authentication)
+                        .deleteResource(
+                            new ResourceDeletionRequest(resourceKey, operationReference)),
                 operationId));
   }
 
@@ -96,18 +98,22 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
         (authentication) ->
             withOperationReference(
                 operationReference ->
-                    processInstanceServices.migrateProcessInstance(
-                        new ProcessInstanceMigrateRequest(
-                            processInstanceKey,
-                            migrationPlan.getTargetProcessDefinitionKey(),
-                            migrationPlan.getMappingInstructions().stream()
-                                .map(
-                                    instruction ->
-                                        new ProcessInstanceMigrationMappingInstruction()
-                                            .setSourceElementId(instruction.getSourceElementId())
-                                            .setTargetElementId(instruction.getTargetElementId()))
-                                .toList(),
-                            operationReference)),
+                    processInstanceServices
+                        .withAuthentication(authentication)
+                        .migrateProcessInstance(
+                            new ProcessInstanceMigrateRequest(
+                                processInstanceKey,
+                                migrationPlan.getTargetProcessDefinitionKey(),
+                                migrationPlan.getMappingInstructions().stream()
+                                    .map(
+                                        instruction ->
+                                            new ProcessInstanceMigrationMappingInstruction()
+                                                .setSourceElementId(
+                                                    instruction.getSourceElementId())
+                                                .setTargetElementId(
+                                                    instruction.getTargetElementId()))
+                                    .toList(),
+                                operationReference)),
                 operationId));
   }
 
@@ -120,8 +126,11 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
         (authentication) ->
             withOperationReference(
                 operationReference ->
-                    processInstanceServices.modifyProcessInstance(
-                        createModifyRequest(processInstanceKey, modifications, operationReference)),
+                    processInstanceServices
+                        .withAuthentication(authentication)
+                        .modifyProcessInstance(
+                            createModifyRequest(
+                                processInstanceKey, modifications, operationReference)),
                 operationId));
   }
 
@@ -131,8 +140,11 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
         (authentication) ->
             withOperationReference(
                 operationReference ->
-                    processInstanceServices.cancelProcessInstance(
-                        new ProcessInstanceCancelRequest(processInstanceKey, operationReference)),
+                    processInstanceServices
+                        .withAuthentication(authentication)
+                        .cancelProcessInstance(
+                            new ProcessInstanceCancelRequest(
+                                processInstanceKey, operationReference)),
                 operationId));
   }
 
@@ -142,8 +154,10 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
         (authentication) ->
             withOperationReference(
                 operationReference ->
-                    jobServices.updateJob(
-                        jobKey, new UpdateJobChangeset(retries, null), operationReference),
+                    jobServices
+                        .withAuthentication(authentication)
+                        .updateJob(
+                            jobKey, new UpdateJobChangeset(retries, null), operationReference),
                 operationId));
   }
 
@@ -153,7 +167,9 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
         (authentication) ->
             withOperationReference(
                 operationReference ->
-                    incidentServices.resolveIncident(incidentKey, operationReference),
+                    incidentServices
+                        .withAuthentication(authentication)
+                        .resolveIncident(incidentKey, operationReference),
                 operationId));
   }
 
@@ -168,9 +184,11 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
             (authentication) ->
                 withOperationReference(
                     operationReference ->
-                        elementInstanceServices.setVariables(
-                            new SetVariablesRequest(
-                                scopeKey, variables, local, operationReference)),
+                        elementInstanceServices
+                            .withAuthentication(authentication)
+                            .setVariables(
+                                new SetVariablesRequest(
+                                    scopeKey, variables, local, operationReference)),
                     operationId));
     return variableDocumentRecord.getScopeKey();
   }
