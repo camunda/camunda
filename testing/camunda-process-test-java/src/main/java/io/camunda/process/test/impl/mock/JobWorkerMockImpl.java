@@ -50,8 +50,12 @@ public class JobWorkerMockImpl implements JobWorkerMock {
   public void thenComplete(final Map<String, Object> variables) {
     withHandler(
         (jobClient, job) -> {
+          LOGGER.debug(
+              "Mock: Complete job with variables {} [job-type: '{}', job-key: '{}']",
+              variables,
+              jobType,
+              job.getKey());
           jobClient.newCompleteCommand(job).variables(variables).send().join();
-          LOGGER.debug("Completed mocked job {} with variables {}", job.getKey(), variables);
         });
   }
 
@@ -64,23 +68,34 @@ public class JobWorkerMockImpl implements JobWorkerMock {
   public void thenThrowBpmnError(final String errorCode, final Map<String, Object> variables) {
     withHandler(
         (jobClient, job) -> {
+          LOGGER.debug(
+              "Mock: Throw BPMN error with error code {} and variables {} [job-type: '{}', job-key: '{}']",
+              errorCode,
+              variables,
+              jobType,
+              job.getKey());
           jobClient
               .newThrowErrorCommand(job)
               .errorCode(errorCode)
               .variables(variables)
               .send()
               .join();
-          LOGGER.debug(
-              "Mocked job {} with variables {} threw a BPMN error with error code {}",
-              job.getKey(),
-              variables,
-              errorCode);
         });
   }
 
   @Override
   public void withHandler(final JobHandler jobHandler) {
-    client.newWorker().jobType(jobType).handler(jobHandler).open();
-    LOGGER.debug("Completed job with custom handler");
+    client
+        .newWorker()
+        .jobType(jobType)
+        .handler(
+            (jobClient, job) -> {
+              LOGGER.debug(
+                  "Mock: Pass job to custom handler [job-type: '{}', job-key: '{}']",
+                  jobType,
+                  job.getKey());
+              jobHandler.handle(jobClient, job);
+            })
+        .open();
   }
 }
