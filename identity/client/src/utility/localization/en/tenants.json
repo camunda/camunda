@@ -72,7 +72,7 @@
   "removeUserFromTenant": "Are you sure you want to remove <strong>{{username}}</strong> from this tenant?",
   "removeGroupFromTenant": "Are you sure you want to remove <strong>{{groupId}}</strong> from this tenant?",
   "removeMappingFromTenant": "Are you sure you want to remove <strong>{{mappingId}}</strong> from this tenant?",
-  "removeRoleFromTenant": "Are you sure you want to remove <strong>{{roleKey}}</strong> from this tenant?",
+  "removeRoleFromTenant": "Are you sure you want to remove <strong>{{roleId}}</strong> from this tenant?",
   "searchAndAssignGroupToTenant": "Search and assign group to tenant",
   "assignClient": "Assign client",
   "assigningClient": "Assigning client",

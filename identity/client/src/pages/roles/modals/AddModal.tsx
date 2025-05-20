@@ -29,8 +29,8 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const handleSubmit = async () => {
     const { success } = await callAddRole({
       name: roleName,
-      description: description,
-      roleId: roleId,
+      description,
+      roleId,
     });
 
     if (success) {

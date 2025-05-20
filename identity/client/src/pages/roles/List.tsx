@@ -29,7 +29,7 @@ const List: FC = () => {
   const [addRole, addRoleModal] = useModal(AddModal, reload);
   const [deleteRole, deleteRoleModal] = useEntityModal(DeleteModal, reload);
 
-  const showDetails = ({ roleKey }: Role) => navigate(roleKey);
+  const showDetails = ({ roleId }: Role) => navigate(roleId);
 
   const pageHeader = (
     <PageHeader
@@ -66,7 +66,7 @@ const List: FC = () => {
       <EntityList
         data={roles?.items ?? []}
         headers={[
-          { header: t("roleId"), key: "roleKey" },
+          { header: t("roleId"), key: "roleId" },
           { header: t("roleName"), key: "name" },
         ]}
         sortProperty="name"

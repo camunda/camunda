@@ -20,7 +20,6 @@ export const ROLES_ENDPOINT = "/roles";
 
 export type Role = {
   roleId: string;
-  roleKey: string;
   name: string;
   description: string;
 };
@@ -29,23 +28,22 @@ export const searchRoles: ApiDefinition<SearchResponse<Role>> = () =>
   apiPost(`${ROLES_ENDPOINT}/search`);
 
 type GetRoleParams = {
-  roleKey: string;
+  roleId: string;
 };
 export const getRoleDetails: ApiDefinition<Role, GetRoleParams> = ({
-  roleKey,
-}) => apiGet(`${ROLES_ENDPOINT}/${roleKey}`);
+  roleId,
+}) => apiGet(`${ROLES_ENDPOINT}/${roleId}`);
 
-type CreateRoleParams = Omit<Role, "roleKey">;
-export const createRole: ApiDefinition<Role, CreateRoleParams> = (role) =>
+export const createRole: ApiDefinition<undefined, Role> = (role) =>
   apiPost(ROLES_ENDPOINT, role);
 
 export type DeleteRoleParams = {
-  roleKey: string;
+  roleId: string;
   name: string;
 };
-export const deleteRole: ApiDefinition<undefined, { roleKey: string }> = ({
-  roleKey,
-}) => apiDelete(`${ROLES_ENDPOINT}/${roleKey}`);
+export const deleteRole: ApiDefinition<undefined, { roleId: string }> = ({
+  roleId,
+}) => apiDelete(`${ROLES_ENDPOINT}/${roleId}`);
 
 // ----------------- Mappings within a Role -----------------
 

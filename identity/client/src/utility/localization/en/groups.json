@@ -46,7 +46,7 @@
   "assignRolesToGroup": "Assign roles to this Group",
   "roleId": "Role ID",
   "roleName": "Role name",
-  "removeRoleConfirmation": "Are you sure you want to remove <strong>{{roleKey}}</strong> from this group?",
+  "removeRoleConfirmation": "Are you sure you want to remove <strong>{{roleId}}</strong> from this group?",
   "searchAndAssignRoleToGroup": "Search and assign role to group",
   "assignMapping": "Assign mapping",
   "assigningMapping": "Assigning mapping",

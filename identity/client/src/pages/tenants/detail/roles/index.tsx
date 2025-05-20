@@ -84,10 +84,10 @@ const Roles: FC<RolesProps> = ({ tenantId }) => {
       <EntityList
         data={roles?.items}
         headers={[
-          { header: t("roleId"), key: "roleKey" },
+          { header: t("roleId"), key: "roleId" },
           { header: t("roleName"), key: "name" },
         ]}
-        sortProperty="roleKey"
+        sortProperty="roleId"
         loading={loading}
         addEntityLabel={t("assignRole")}
         onAddEntity={openAssignModal}

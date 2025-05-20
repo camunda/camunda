@@ -25,7 +25,7 @@ type RemoveTenantRoleModalProps = UseEntityModalCustomProps<
 >;
 
 const DeleteModal: FC<RemoveTenantRoleModalProps> = ({
-  entity: role,
+  entity: { roleId },
   open,
   onClose,
   onSuccess,
@@ -37,10 +37,10 @@ const DeleteModal: FC<RemoveTenantRoleModalProps> = ({
   const [callUnassignRole, { loading }] = useApiCall(unassignTenantRole);
 
   const handleSubmit = async () => {
-    if (tenant && role) {
+    if (tenant && roleId) {
       const { success } = await callUnassignRole({
         tenantId: tenant,
-        roleKey: role.roleKey,
+        roleId,
       });
 
       if (success) {
@@ -64,12 +64,9 @@ const DeleteModal: FC<RemoveTenantRoleModalProps> = ({
       confirmLabel={t("removeRole")}
     >
       <p>
-        <Translate
-          i18nKey="removeRoleFromTenant"
-          values={{ roleKey: role.roleKey }}
-        >
-          Are you sure you want to remove <strong>{role.roleKey}</strong> from
-          this tenant?
+        <Translate i18nKey="removeRoleFromTenant" values={{ roleId }}>
+          Are you sure you want to remove <strong>{roleId}</strong> from this
+          tenant?
         </Translate>
       </p>
     </Modal>
