@@ -45,7 +45,8 @@ const C3Provider: React.FC<Props> = ({children}) => {
     async function init() {
       const {organizationId} = getClientConfig();
 
-      if (organizationId !== null && getClientConfig().clientMode === 'v1') {
+      // We'll temporarily use the V1 endpoint even on V2. This should be fixed on #32255
+      if (organizationId !== null) {
         setToken(await fetchToken());
       }
     }
