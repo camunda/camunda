@@ -15,6 +15,7 @@ import { searchMembersByGroup } from "src/utility/api/membership";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import AssignMembersModal from "src/pages/groups/detail/members/AssignMembersModal";
+import AssignMemberModal from "src/pages/groups/detail/members/AssignMemberModal";
 import DeleteModal from "src/pages/groups/detail/members/DeleteModal";
 import { isOIDC } from "src/configuration";
 import { UserKeys } from "src/utility/api/users";
@@ -32,18 +33,18 @@ const Members: FC<MembersProps> = ({ groupId }) => {
     success,
     reload,
   } = useApi(searchMembersByGroup, {
-    groupId: groupId,
+    groupId,
   });
 
   const isUsersListEmpty = !users || users.items?.length === 0;
   const [assignUsers, assignUsersModal] = useEntityModal(
-    AssignMembersModal,
+    isOIDC ? AssignMemberModal : AssignMembersModal,
     reload,
     {
       assignedUsers: users?.items || [],
     },
   );
-  const openAssignModal = () => assignUsers({ id: groupId });
+  const openAssignModal = () => assignUsers({ groupId });
   const [unassignMember, unassignMemberModal] = useEntityModal(
     DeleteModal,
     reload,

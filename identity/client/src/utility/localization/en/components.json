@@ -48,5 +48,6 @@
   "enterClientId": "Enter client ID",
   "clientsCouldNotLoad": "Clients could not load",
   "unableToLoadClients": "Unable to load clients",
-  "searchByClientId": "Search by client ID"
+  "searchByClientId": "Search by client ID",
+  "typeUsername": "Type a username"
 }

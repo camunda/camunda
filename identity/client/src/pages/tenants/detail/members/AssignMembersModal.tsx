@@ -25,10 +25,10 @@ const SelectedUsers = styled.div`
 
 const AssignMembersModal: FC<
   UseEntityModalCustomProps<
-    { id: Tenant["tenantKey"] },
+    { tenantId: Tenant["tenantId"] },
     { assignedUsers: User[] }
   >
-> = ({ entity: tenant, assignedUsers, onSuccess, open, onClose }) => {
+> = ({ entity: { tenantId }, assignedUsers, onSuccess, open, onClose }) => {
   const { t } = useTranslate("tenants");
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
   const [loadingAssignUser, setLoadingAssignUser] = useState(false);
@@ -61,7 +61,7 @@ const AssignMembersModal: FC<
       );
     };
 
-  const canSubmit = tenant && selectedUsers.length;
+  const canSubmit = tenantId && selectedUsers.length;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -70,7 +70,7 @@ const AssignMembersModal: FC<
 
     const results = await Promise.all(
       selectedUsers.map(({ username }) =>
-        callAssignUser({ username: username, tenantId: tenant.id }),
+        callAssignUser({ username: username, tenantId }),
       ),
     );
 

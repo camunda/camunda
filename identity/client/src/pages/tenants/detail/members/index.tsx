@@ -16,6 +16,7 @@ import { useEntityModal } from "src/components/modal";
 import { TrashCan } from "@carbon/react/icons";
 import DeleteModal from "src/pages/tenants/detail/members/DeleteModal";
 import AssignMembersModal from "src/pages/tenants/detail/members/AssignMembersModal";
+import AssignMemberModal from "src/pages/tenants/detail/members/AssignMemberModal";
 import { isOIDC } from "src/configuration";
 import { UserKeys } from "src/utility/api/users";
 
@@ -32,18 +33,18 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
     success,
     reload,
   } = useApi(getMembersByTenantId, {
-    tenantId: tenantId,
+    tenantId,
   });
 
   const isAssignedUsersListEmpty = !users || users.items?.length === 0;
   const [assignUsers, assignUsersModal] = useEntityModal(
-    AssignMembersModal,
+    isOIDC ? AssignMemberModal : AssignMembersModal,
     reload,
     {
       assignedUsers: users?.items || [],
     },
   );
-  const openAssignModal = () => assignUsers({ id: tenantId });
+  const openAssignModal = () => assignUsers({ tenantId });
   const [unassignMember, unassignMemberModal] = useEntityModal(
     DeleteModal,
     reload,

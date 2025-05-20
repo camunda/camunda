@@ -15,6 +15,7 @@ import { getMembersByRole } from "src/utility/api/membership";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import AssignMembersModal from "src/pages/roles/detail/members/AssignMembersModal";
+import AssignMemberModal from "src/pages/roles/detail/members/AssignMemberModal";
 import DeleteModal from "src/pages/roles/detail/members/DeleteModal";
 import { isOIDC } from "src/configuration";
 import { UserKeys } from "src/utility/api/users";
@@ -37,13 +38,13 @@ const Members: FC<MembersProps> = ({ roleId }) => {
 
   const isUsersListEmpty = !users || users.items?.length === 0;
   const [assignUsers, assignUsersModal] = useEntityModal(
-    AssignMembersModal,
+    isOIDC ? AssignMemberModal : AssignMembersModal,
     reload,
     {
       assignedUsers: users?.items || [],
     },
   );
-  const openAssignModal = () => assignUsers({ id: roleId });
+  const openAssignModal = () => assignUsers({ roleId });
   const [unassignMember, unassignMemberModal] = useEntityModal(
     DeleteModal,
     reload,
