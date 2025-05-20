@@ -14,15 +14,23 @@ import static org.awaitility.Awaitility.await;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
+import io.camunda.client.api.search.enums.UserTaskState;
+import io.camunda.client.api.search.filter.ElementInstanceFilter;
+import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import org.awaitility.Awaitility;
 
@@ -54,6 +62,8 @@ import org.awaitility.Awaitility;
  */
 public final class TestHelper {
 
+  public static final String VAR_TEST_SCOPE_ID = "testScopeId";
+
   public static DeploymentEvent deployResource(
       final CamundaClient camundaClient, final String resourceName) {
     return camundaClient
@@ -61,6 +71,24 @@ public final class TestHelper {
         .addResourceFromClasspath(resourceName)
         .send()
         .join();
+  }
+
+  /**
+   * Deploys a process and waits for it to be available in the secondary database.
+   *
+   * @param client ... CamundaClient
+   * @param classpath ... e.g. process/migration-process_v1.bpmn
+   * @return
+   */
+  public static Process deployProcessAndWaitForIt(
+      final CamundaClient client, final String classpath) {
+    final var event = deployResource(client, classpath).getProcesses().getFirst();
+
+    // sync with secondary database
+    waitForProcessesToBeDeployed(
+        client, f -> f.processDefinitionKey(event.getProcessDefinitionKey()), 1);
+
+    return event;
   }
 
   public static DeploymentEvent deployResource(
@@ -86,7 +114,12 @@ public final class TestHelper {
 
   public static ProcessInstanceEvent startProcessInstance(
       final CamundaClient camundaClient, final String bpmnProcessId) {
-    return startProcessInstance(camundaClient, bpmnProcessId, null);
+    return camundaClient
+        .newCreateInstanceCommand()
+        .bpmnProcessId(bpmnProcessId)
+        .latestVersion()
+        .send()
+        .join();
   }
 
   public static ProcessInstanceEvent startProcessInstance(
@@ -109,6 +142,195 @@ public final class TestHelper {
             () -> {
               final var result = camundaClient.newProcessInstanceSearchRequest().send().join();
               assertThat(result.page().totalItems()).isEqualTo(expectedProcessInstances);
+            });
+  }
+
+  /**
+   * Starts a process instance with a process variable {@link #VAR_TEST_SCOPE_ID} for scope.
+   *
+   * @param camundaClient
+   * @param scopeId ... some unique id for the test case
+   */
+  public static ProcessInstanceEvent startScopedProcessInstance(
+      final CamundaClient camundaClient, final String bpmnProcessId, final String scopeId) {
+    return startScopedProcessInstance(
+        camundaClient, bpmnProcessId, scopeId, Map.of(VAR_TEST_SCOPE_ID, scopeId));
+  }
+
+  /**
+   * Starts a process instance with a process variable {@link #VAR_TEST_SCOPE_ID} for scope and
+   * additional variables.
+   *
+   * @param camundaClient
+   * @param processDefinitionKey ... the process definition key
+   * @param scopeId ... some unique id for the test case
+   * @param variables ... additional variables
+   */
+  public static ProcessInstanceEvent startScopedProcessInstance(
+      final CamundaClient camundaClient,
+      final long processDefinitionKey,
+      final String scopeId,
+      final Map<String, Object> variables) {
+
+    final Map<String, Object> variablesCopy = new HashMap<>(variables);
+    variablesCopy.put(VAR_TEST_SCOPE_ID, scopeId);
+
+    return camundaClient
+        .newCreateInstanceCommand()
+        .processDefinitionKey(processDefinitionKey)
+        .variables(variablesCopy)
+        .send()
+        .join();
+  }
+
+  /**
+   * Starts a process instance with a process variable {@link #VAR_TEST_SCOPE_ID} for scope and
+   * additional variables.
+   *
+   * @param camundaClient
+   * @param bpmnProcessId
+   * @param scopeId ... some unique id for the test case
+   * @param variables ... additional variables
+   */
+  public static ProcessInstanceEvent startScopedProcessInstance(
+      final CamundaClient camundaClient,
+      final String bpmnProcessId,
+      final String scopeId,
+      final Map<String, Object> variables) {
+
+    final Map<String, Object> variablesCopy = new HashMap<>(variables);
+    variablesCopy.put(VAR_TEST_SCOPE_ID, scopeId);
+
+    return camundaClient
+        .newCreateInstanceCommand()
+        .bpmnProcessId(bpmnProcessId)
+        .latestVersion()
+        .variables(variablesCopy)
+        .send()
+        .join();
+  }
+
+  /**
+   * Waits for process instances to start which are having a process variable {@link
+   * #VAR_TEST_SCOPE_ID}.
+   *
+   * @param camundaClient ... CamundaClient
+   * @param scopeId ... some unique id for the test case
+   */
+  public static void waitForScopedProcessInstancesToStart(
+      final CamundaClient camundaClient, final String scopeId, final int expectedProcessInstances) {
+    Awaitility.await("should start process instances and import in Operate")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newProcessInstanceSearchRequest()
+                      .filter(f -> f.variables(getScopedVariables(scopeId)))
+                      .send()
+                      .join();
+              assertThat(result.page().totalItems()).isEqualTo(expectedProcessInstances);
+            });
+  }
+
+  /**
+   * Waits for process instances to start which are having a process variable {@link *
+   * #VAR_TEST_SCOPE_ID}.
+   *
+   * @param camundaClient ... CamundaClient
+   * @param expectedIncidents
+   */
+  public static void waitUntilScopedProcessInstanceHasIncidents(
+      final CamundaClient camundaClient, final String scopeId, final int expectedIncidents) {
+    Awaitility.await("should wait until scoped incidents are exists")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newProcessInstanceSearchRequest()
+                      .filter(f -> f.variables(getScopedVariables(scopeId)).hasIncident(true))
+                      .send()
+                      .join();
+              assertThat(result.page().totalItems()).isEqualTo(expectedIncidents);
+            });
+  }
+
+  /**
+   * Waits for user tasks to be created which are having a process variable {@link
+   * #VAR_TEST_SCOPE_ID}.
+   *
+   * @param client ... CamundaClient
+   * @param testScopeId ... some unique id for the test case
+   * @param expectedCount ... expected number of user tasks
+   */
+  public static void waitForActiveScopedUserTasks(
+      final CamundaClient client, final String testScopeId, final int expectedCount) {
+    await("should have items with state")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var userTasks =
+                  client
+                      .newUserTaskSearchRequest()
+                      .filter(
+                          f ->
+                              f.state(UserTaskState.CREATED)
+                                  .processInstanceVariables(getScopedVariables(testScopeId)))
+                      .send()
+                      .join()
+                      .items();
+              assertThat(userTasks).hasSize(expectedCount);
+            });
+  }
+
+  /**
+   * Returns a map with the process variable {@link #VAR_TEST_SCOPE_ID} and the given scopeId. Where
+   * the scopeId already has the additional necessary double quotes for the query. (Needed until
+   * this is solved: https://github.com/camunda/camunda/issues/23724)
+   *
+   * @param scopeId
+   * @return a map with the process variable {@link #VAR_TEST_SCOPE_ID} and the given scopeId
+   */
+  public static Map<String, Object> getScopedVariables(final String scopeId) {
+    return Map.of(VAR_TEST_SCOPE_ID, "\"" + scopeId + "\"");
+  }
+
+  public static void waitForBatchOperationWithCorrectTotalCount(
+      final CamundaClient camundaClient, final long batchOperationKey, final int expectedItems) {
+    Awaitility.await("should start batch operation with correct total count")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              // and
+              final var batch =
+                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
+              assertThat(batch).isNotNull();
+              assertThat(batch.getOperationsTotalCount()).isEqualTo(expectedItems);
+            });
+  }
+
+  public static void waitForBatchOperationCompleted(
+      final CamundaClient camundaClient,
+      final long batchOperationKey,
+      final int expectedCompletedItems,
+      final int expectedFailedItems) {
+    Awaitility.await("should complete batch operation with correct completed/failed count")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              // and
+              final var batch =
+                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
+              assertThat(batch).isNotNull();
+              assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
+              assertThat(batch.getOperationsCompletedCount()).isEqualTo(expectedCompletedItems);
+              assertThat(batch.getOperationsFailedCount()).isEqualTo(expectedFailedItems);
             });
   }
 
@@ -137,6 +359,21 @@ public final class TestHelper {
             });
   }
 
+  public static void waitForElementInstances(
+      final CamundaClient camundaClient,
+      final Consumer<ElementInstanceFilter> filter,
+      final int expectedElementInstances) {
+    Awaitility.await("should wait until element instances are available")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient.newElementInstanceSearchRequest().filter(filter).send().join();
+              assertThat(result.page().totalItems()).isEqualTo(expectedElementInstances);
+            });
+  }
+
   public static void waitForProcessesToBeDeployed(
       final CamundaClient camundaClient, final int expectedProcessDefinitions) {
     Awaitility.await("should deploy processes and import in Operate")
@@ -145,6 +382,21 @@ public final class TestHelper {
         .untilAsserted(
             () -> {
               final var result = camundaClient.newProcessDefinitionSearchRequest().send().join();
+              assertThat(result.page().totalItems()).isEqualTo(expectedProcessDefinitions);
+            });
+  }
+
+  public static void waitForProcessesToBeDeployed(
+      final CamundaClient camundaClient,
+      final Consumer<ProcessDefinitionFilter> filter,
+      final int expectedProcessDefinitions) {
+    Awaitility.await("should deploy processes and import in secondary database")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient.newProcessDefinitionSearchRequest().filter(filter).send().join();
               assertThat(result.page().totalItems()).isEqualTo(expectedProcessDefinitions);
             });
   }
