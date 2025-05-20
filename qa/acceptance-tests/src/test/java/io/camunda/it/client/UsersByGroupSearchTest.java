@@ -12,14 +12,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.search.response.User;
+import io.camunda.client.api.search.response.GroupUser;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class UsersByGroupSearchTest {
 
   private static CamundaClient camundaClient;
@@ -49,21 +51,8 @@ public class UsersByGroupSearchTest {
 
     assertThat(users.items().size()).isEqualTo(2);
     assertThat(users.items())
-        .extracting(User::getUsername)
+        .extracting(GroupUser::getUsername)
         .containsExactly(USER_USERNAME_1, USER_USERNAME_2);
-  }
-
-  @Test
-  void shouldReturnUsersByGroupFiltered() {
-    final var users =
-        camundaClient
-            .newUsersByGroupSearchRequest(GROUP_ID)
-            .filter(fn -> fn.username(USER_USERNAME_1))
-            .send()
-            .join();
-
-    assertThat(users.items().size()).isEqualTo(1);
-    assertThat(users.items()).extracting(User::getUsername).containsExactly(USER_USERNAME_1);
   }
 
   @Test

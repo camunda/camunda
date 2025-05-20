@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers.sort;
 
 import static io.camunda.webapps.schema.descriptors.index.GroupIndex.GROUP_ID;
 import static io.camunda.webapps.schema.descriptors.index.GroupIndex.KEY;
+import static io.camunda.webapps.schema.descriptors.index.GroupIndex.MEMBER_ID;
 import static io.camunda.webapps.schema.descriptors.index.GroupIndex.NAME;
 
 public class GroupFieldSortingTransformer implements FieldSortingTransformer {
@@ -19,6 +20,7 @@ public class GroupFieldSortingTransformer implements FieldSortingTransformer {
       case "groupKey" -> KEY;
       case "groupId" -> GROUP_ID;
       case "name" -> NAME;
+      case "memberId" -> MEMBER_ID;
       default -> throw new IllegalArgumentException("Unknown field: " + domainField);
     };
   }

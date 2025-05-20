@@ -15,35 +15,34 @@
  */
 package io.camunda.client.impl.search.request;
 
+import static io.camunda.client.api.search.request.SearchRequestBuilders.groupUserSort;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
-import static io.camunda.client.api.search.request.SearchRequestBuilders.userFilter;
-import static io.camunda.client.api.search.request.SearchRequestBuilders.userSort;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.fetch.UsersByGroupSearchRequest;
-import io.camunda.client.api.search.filter.UserFilter;
+import io.camunda.client.api.search.filter.GroupUserFilter;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.SearchRequestPage;
+import io.camunda.client.api.search.response.GroupUser;
 import io.camunda.client.api.search.response.SearchResponse;
-import io.camunda.client.api.search.response.User;
-import io.camunda.client.api.search.sort.UserSort;
+import io.camunda.client.api.search.sort.GroupUserSort;
 import io.camunda.client.impl.command.ArgumentUtil;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
-import io.camunda.client.protocol.rest.UserSearchQueryRequest;
-import io.camunda.client.protocol.rest.UserSearchResult;
+import io.camunda.client.protocol.rest.GroupUserSearchQueryRequest;
+import io.camunda.client.protocol.rest.GroupUserSearchResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class UsersByGroupSearchRequestImpl
-    extends TypedSearchRequestPropertyProvider<UserSearchQueryRequest>
+    extends TypedSearchRequestPropertyProvider<GroupUserSearchQueryRequest>
     implements UsersByGroupSearchRequest {
 
-  private final UserSearchQueryRequest request;
+  private final GroupUserSearchQueryRequest request;
   private final String groupId;
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
@@ -55,50 +54,52 @@ public class UsersByGroupSearchRequestImpl
     this.jsonMapper = jsonMapper;
     this.groupId = groupId;
     httpRequestConfig = httpClient.newRequestConfig();
-    request = new UserSearchQueryRequest();
+    request = new GroupUserSearchQueryRequest();
   }
 
   @Override
-  public FinalSearchRequestStep<User> requestTimeout(final Duration requestTimeout) {
+  public FinalSearchRequestStep<GroupUser> requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public CamundaFuture<SearchResponse<User>> send() {
+  public CamundaFuture<SearchResponse<GroupUser>> send() {
     ArgumentUtil.ensureNotNullNorEmpty("groupId", groupId);
-    final HttpCamundaFuture<SearchResponse<User>> result = new HttpCamundaFuture<>();
+    final HttpCamundaFuture<SearchResponse<GroupUser>> result = new HttpCamundaFuture<>();
     httpClient.post(
         String.format("/groups/%s/users/search", groupId),
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        UserSearchResult.class,
-        SearchResponseMapper::toUsersResponse,
+        GroupUserSearchResult.class,
+        SearchResponseMapper::toGroupUsersResponse,
         result);
     return result;
   }
 
   @Override
-  public UsersByGroupSearchRequest filter(final UserFilter value) {
-    request.setFilter(provideSearchRequestProperty(value));
+  public UsersByGroupSearchRequest filter(final GroupUserFilter value) {
+    // This command doesn't support filtering
     return this;
   }
 
   @Override
-  public UsersByGroupSearchRequest filter(final Consumer<UserFilter> fn) {
-    return filter(userFilter(fn));
+  public UsersByGroupSearchRequest filter(final Consumer<GroupUserFilter> fn) {
+    // This command doesn't support filtering
+    return this;
   }
 
   @Override
-  public UsersByGroupSearchRequest sort(final UserSort value) {
+  public UsersByGroupSearchRequest sort(final GroupUserSort value) {
     request.setSort(
-        SearchRequestSortMapper.toUserSearchQuerySortRequest(provideSearchRequestProperty(value)));
+        SearchRequestSortMapper.toGroupUserSearchQuerySortRequest(
+            provideSearchRequestProperty(value)));
     return this;
   }
 
   @Override
-  public UsersByGroupSearchRequest sort(final Consumer<UserSort> fn) {
-    return sort(userSort(fn));
+  public UsersByGroupSearchRequest sort(final Consumer<GroupUserSort> fn) {
+    return sort(groupUserSort((fn)));
   }
 
   @Override
@@ -113,7 +114,7 @@ public class UsersByGroupSearchRequestImpl
   }
 
   @Override
-  protected UserSearchQueryRequest getSearchRequestProperty() {
+  protected GroupUserSearchQueryRequest getSearchRequestProperty() {
     return request;
   }
 }

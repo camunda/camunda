@@ -13,23 +13,21 @@ import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.RoleQuery;
-import io.camunda.search.query.UserQuery;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
-import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.GroupUserSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.GroupUserSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -52,17 +50,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class GroupController {
 
   private final GroupServices groupServices;
-  private final UserServices userServices;
   private final MappingServices mappingServices;
   private final RoleServices roleServices;
 
   public GroupController(
       final GroupServices groupServices,
-      final UserServices userServices,
       final MappingServices mappingServices,
       final RoleServices roleServices) {
     this.groupServices = groupServices;
-    this.userServices = userServices;
     this.mappingServices = mappingServices;
     this.roleServices = roleServices;
   }
@@ -142,13 +137,13 @@ public class GroupController {
   }
 
   @CamundaPostMapping(path = "/{groupId}/users/search")
-  public ResponseEntity<UserSearchResult> usersByGroup(
+  public ResponseEntity<GroupUserSearchResult> usersByGroup(
       @PathVariable final String groupId,
-      @RequestBody(required = false) final UserSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toUserQuery(query)
+      @RequestBody(required = false) final GroupUserSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toGroupQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            userQuery -> searchUsersInGroup(groupId, userQuery));
+            groupQuery -> searchUsersInGroup(groupId, groupQuery));
   }
 
   @CamundaPostMapping(path = "/{groupId}/mapping-rules/search")
@@ -231,15 +226,14 @@ public class GroupController {
                 .assignMember(request));
   }
 
-  private ResponseEntity<UserSearchResult> searchUsersInGroup(
-      final String groupId, final UserQuery userQuery) {
+  private ResponseEntity<GroupUserSearchResult> searchUsersInGroup(
+      final String groupId, final GroupQuery groupQuery) {
     try {
-      final var composedUserQuery = buildUserQuery(groupId, userQuery);
       final var result =
-          userServices
+          groupServices
               .withAuthentication(RequestMapper.getAuthentication())
-              .search(composedUserQuery);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
+              .searchMembers(buildGroupMemberQuery(groupId, EntityType.USER, groupQuery));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toGroupUserSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -273,9 +267,11 @@ public class GroupController {
     }
   }
 
-  private UserQuery buildUserQuery(final String groupId, final UserQuery userQuery) {
-    return userQuery.toBuilder()
-        .filter(userQuery.filter().toBuilder().groupId(groupId).build())
+  private GroupQuery buildGroupMemberQuery(
+      final String groupId, final EntityType memberType, final GroupQuery groupQuery) {
+    return groupQuery.toBuilder()
+        .filter(
+            groupQuery.filter().toBuilder().joinParentId(groupId).memberType(memberType).build())
         .build();
   }
 

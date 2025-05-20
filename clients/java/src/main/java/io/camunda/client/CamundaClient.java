@@ -2132,7 +2132,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * camundaClient
    *  .newUsersByGroupSearchRequest(groupId)
-   *  .filter((f) -> f.username(username))
    *  .sort((s) -> s.username().asc())
    *  .page((p) -> p.limit(100))
    *  .send();

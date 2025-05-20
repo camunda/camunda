@@ -289,6 +289,21 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::groupSearchQuery);
   }
 
+  public static Either<ProblemDetail, GroupQuery> toGroupQuery(
+      final GroupUserSearchQueryRequest request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.groupSearchQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromGroupUserSearchQuerySortRequest(request.getSort()),
+            SortOptionBuilders::group,
+            SearchQueryRequestMapper::applyGroupUserSortField);
+    final var filter = FilterBuilders.group().build();
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::groupSearchQuery);
+  }
+
   public static Either<ProblemDetail, TenantQuery> toTenantQuery(
       final TenantSearchQueryRequest request) {
     if (request == null) {
@@ -1094,6 +1109,17 @@ public final class SearchQueryRequestMapper {
       }
     }
     return validationErrors;
+  }
+
+  private static List<String> applyGroupUserSortField(
+      final GroupUserSearchQuerySortRequest.FieldEnum field, final GroupSort.Builder builder) {
+    return switch (field) {
+      case null -> List.of(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+      case USERNAME -> {
+        builder.memberId();
+        yield List.of();
+      }
+    };
   }
 
   private static List<String> applyTenantSortField(

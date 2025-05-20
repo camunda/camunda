@@ -13,14 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.fetch;
+package io.camunda.client.api.search.filter;
 
-import io.camunda.client.api.search.filter.GroupUserFilter;
-import io.camunda.client.api.search.request.FinalSearchRequestStep;
-import io.camunda.client.api.search.request.TypedSearchRequest;
-import io.camunda.client.api.search.response.GroupUser;
-import io.camunda.client.api.search.sort.GroupUserSort;
+import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestFilter;
 
-public interface UsersByGroupSearchRequest
-    extends TypedSearchRequest<GroupUserFilter, GroupUserSort, UsersByGroupSearchRequest>,
-        FinalSearchRequestStep<GroupUser> {}
+public interface GroupUserFilter extends SearchRequestFilter {}
