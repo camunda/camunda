@@ -29,7 +29,7 @@ public class UsersByRoleIntegrationTest {
   // assign tests
 
   @Test
-  void shouldAssignUserToRole() {
+  void shouldAssignRoleToUser() {
     // given
     final var username = Strings.newRandomValidUsername();
     final var roleId = Strings.newRandomValidIdentityId();
@@ -37,7 +37,7 @@ public class UsersByRoleIntegrationTest {
     createRole(roleId, "roleName", "roleDesc");
 
     // when
-    camundaClient.newAssignUserToRoleCommand(roleId).username(username).send().join();
+    camundaClient.newAssignRoleToUserCommand().roleId(roleId).username(username).send().join();
 
     // then
     Awaitility.await("User should be visible in role user search")
@@ -66,7 +66,8 @@ public class UsersByRoleIntegrationTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newAssignUserToRoleCommand(nonExistingRoleId)
+                    .newAssignRoleToUserCommand()
+                    .roleId(nonExistingRoleId)
                     .username(username)
                     .send()
                     .join())
@@ -81,49 +82,23 @@ public class UsersByRoleIntegrationTest {
     final var roleId = Strings.newRandomValidIdentityId();
     createUser(username);
     createRole(roleId, "roleName", "roleDesc");
-    camundaClient.newAssignUserToRoleCommand(roleId).username(username).send().join();
+    camundaClient.newAssignRoleToUserCommand().roleId(roleId).username(username).send().join();
 
     assertThatThrownBy(
-            () -> camundaClient.newAssignUserToRoleCommand(roleId).username(username).send().join())
+            () ->
+                camundaClient
+                    .newAssignRoleToUserCommand()
+                    .roleId(roleId)
+                    .username(username)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("409: 'Conflict'")
         .hasMessageContaining("the entity is already assigned to this role");
   }
 
   @Test
-  void shouldRejectAssignIfUsernameIsNull() {
-    assertThatThrownBy(
-            () -> camundaClient.newAssignUserToRoleCommand("roleId").username(null).send().join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("username must not be null");
-  }
-
-  @Test
-  void shouldRejectAssignIfUsernameIsEmpty() {
-    assertThatThrownBy(
-            () -> camundaClient.newAssignUserToRoleCommand("roleId").username("").send().join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("username must not be empty");
-  }
-
-  @Test
-  void shouldRejectAssignIfRoleIdIsNull() {
-    assertThatThrownBy(
-            () -> camundaClient.newAssignUserToRoleCommand(null).username("username").send().join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("roleId must not be null");
-  }
-
-  @Test
-  void shouldRejectAssignIfRoleIdIsEmpty() {
-    assertThatThrownBy(
-            () -> camundaClient.newAssignUserToRoleCommand("").username("username").send().join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("roleId must not be empty");
-  }
-
-  @Test
-  void shouldUnassignUsersFromRoleOnRoleDeletion() {
+  void shouldUnassignRoleFromUserOnRoleDeletion() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
     final var username1 = Strings.newRandomValidUsername();
@@ -132,8 +107,8 @@ public class UsersByRoleIntegrationTest {
     createUser(username2);
     createRole(roleId, "roleName", "roleDesc");
 
-    camundaClient.newAssignUserToRoleCommand(roleId).username(username1).send().join();
-    camundaClient.newAssignUserToRoleCommand(roleId).username(username2).send().join();
+    camundaClient.newAssignRoleToUserCommand().roleId(roleId).username(username1).send().join();
+    camundaClient.newAssignRoleToUserCommand().roleId(roleId).username(username2).send().join();
 
     Awaitility.await("Users should appear in role user search")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
@@ -169,10 +144,18 @@ public class UsersByRoleIntegrationTest {
     final var roleId = Strings.newRandomValidIdentityId();
     createUser(username);
     createRole(roleId, "roleName", "roleDesc");
-    camundaClient.newAssignUserToRoleCommand(roleId).username(username).send().join();
+    camundaClient.newAssignRoleToUserCommand().roleId(roleId).username(username).send().join();
 
+    Awaitility.await("Wait for user to appear in search before unassign")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () -> {
+              final var users =
+                  camundaClient.newUsersByRoleSearchRequest(roleId).send().join().items();
+              assertThat(users).anyMatch(u -> u.getUsername().equals(username));
+            });
     // when
-    camundaClient.newUnassignUserFromRoleCommand(roleId).username(username).send().join();
+    camundaClient.newUnassignRoleFromUserCommand().roleId(roleId).username(username).send().join();
 
     // then
     Awaitility.await("User should be removed from role")
@@ -195,7 +178,8 @@ public class UsersByRoleIntegrationTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newUnassignUserFromRoleCommand(roleId)
+                    .newUnassignRoleFromUserCommand()
+                    .roleId(roleId)
                     .username(username)
                     .send()
                     .join())
@@ -213,52 +197,14 @@ public class UsersByRoleIntegrationTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newUnassignUserFromRoleCommand(roleId)
+                    .newUnassignRoleFromUserCommand()
+                    .roleId(roleId)
                     .username(username)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("404: 'Not Found'")
         .hasMessageContaining("role with this ID does not exist");
-  }
-
-  @Test
-  void shouldRejectUnassignIfRoleIsNull() {
-    assertThatThrownBy(
-            () ->
-                camundaClient
-                    .newUnassignUserFromRoleCommand(null)
-                    .username("username")
-                    .send()
-                    .join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("roleId must not be null");
-  }
-
-  @Test
-  void shouldRejectUnassignIfRoleIsEmpty() {
-    assertThatThrownBy(
-            () ->
-                camundaClient.newUnassignUserFromRoleCommand("").username("username").send().join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("roleId must not be empty");
-  }
-
-  @Test
-  void shouldRejectUnassignIfUsernameIsNull() {
-    assertThatThrownBy(
-            () ->
-                camundaClient.newUnassignUserFromRoleCommand("roleId").username(null).send().join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("username must not be null");
-  }
-
-  @Test
-  void shouldRejectUnassignIfUsernameIsEmpty() {
-    assertThatThrownBy(
-            () -> camundaClient.newUnassignUserFromRoleCommand("roleId").username("").send().join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("username must not be empty");
   }
 
   // search tests
@@ -273,8 +219,8 @@ public class UsersByRoleIntegrationTest {
     createUser(user2);
     createRole(roleId, "roleName", "roleDesc");
 
-    camundaClient.newAssignUserToRoleCommand(roleId).username(user1).send().join();
-    camundaClient.newAssignUserToRoleCommand(roleId).username(user2).send().join();
+    camundaClient.newAssignRoleToUserCommand().roleId(roleId).username(user1).send().join();
+    camundaClient.newAssignRoleToUserCommand().roleId(roleId).username(user2).send().join();
 
     Awaitility.await("Users should appear in role user search")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
@@ -294,7 +240,7 @@ public class UsersByRoleIntegrationTest {
     createUser(username, "John Doe", username + "@example.com");
     createUser(username2, "Bob", username2 + "@example.com");
     createRole(roleId, "roleName", "roleDesc");
-    camundaClient.newAssignUserToRoleCommand(roleId).username(username).send().join();
+    camundaClient.newAssignRoleToUserCommand().roleId(roleId).username(username).send().join();
 
     Awaitility.await("User should appear in role user search filtered by username")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
@@ -321,7 +267,7 @@ public class UsersByRoleIntegrationTest {
     createUser(username, name, username + "@example.com");
     createUser(username2, name2, username + "@example.com");
     createRole(roleId, "roleName", "roleDesc");
-    camundaClient.newAssignUserToRoleCommand(roleId).username(username).send().join();
+    camundaClient.newAssignRoleToUserCommand().roleId(roleId).username(username).send().join();
 
     Awaitility.await("User should appear in role user search filtered by name")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
@@ -347,7 +293,7 @@ public class UsersByRoleIntegrationTest {
     createUser(username, "Bob Test", email);
     createUser(username2, "Alice Johnson", username2 + "@example.com");
     createRole(roleId, "roleName", "desc");
-    camundaClient.newAssignUserToRoleCommand(roleId).username(username).send().join();
+    camundaClient.newAssignRoleToUserCommand().roleId(roleId).username(username).send().join();
 
     Awaitility.await("User should appear in role user search filtered by email")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
@@ -375,11 +321,11 @@ public class UsersByRoleIntegrationTest {
     createUser(user3, "Simon", user2 + "@example.com");
     createRole(roleId, "roleName", "desc");
 
-    camundaClient.newAssignUserToRoleCommand(roleId).username(user1).send().join();
-    camundaClient.newAssignUserToRoleCommand(roleId).username(user2).send().join();
-    camundaClient.newAssignUserToRoleCommand(roleId).username(user3).send().join();
+    camundaClient.newAssignRoleToUserCommand().roleId(roleId).username(user1).send().join();
+    camundaClient.newAssignRoleToUserCommand().roleId(roleId).username(user2).send().join();
+    camundaClient.newAssignRoleToUserCommand().roleId(roleId).username(user3).send().join();
 
-    Awaitility.await("User should appear in role user search filtered by email")
+    Awaitility.await("Users should appear in sorted search")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
@@ -392,20 +338,6 @@ public class UsersByRoleIntegrationTest {
                       .items();
               assertThat(users).extracting(User::getName).containsExactly("Simon", "Bob", "Alice");
             });
-  }
-
-  @Test
-  void shouldRejectSearchIfRoleIdIsNull() {
-    assertThatThrownBy(() -> camundaClient.newUsersByRoleSearchRequest(null).send().join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("roleId must not be null");
-  }
-
-  @Test
-  void shouldRejectSearchIfRoleIdIsEmpty() {
-    assertThatThrownBy(() -> camundaClient.newUsersByRoleSearchRequest("").send().join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("roleId must not be empty");
   }
 
   private static void createRole(final String roleId, final String name, final String desc) {

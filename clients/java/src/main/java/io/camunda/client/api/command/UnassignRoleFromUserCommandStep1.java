@@ -17,15 +17,26 @@ package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.UnassignUserFromRoleResponse;
 
-public interface UnassignUserFromRoleCommandStep1
-    extends FinalCommandStep<UnassignUserFromRoleResponse> {
+public interface UnassignRoleFromUserCommandStep1 {
 
   /**
-   * Sets the username for the unassignment.
+   * Sets the role ID for the unassignment.
    *
-   * @param username the username of the user
-   * @return the builder for this command. Call {@link #send()} to complete the command and send it
-   *     to the broker.
+   * @param roleId the roleId of the role
+   * @return the next step of the command builder.
    */
-  UnassignUserFromRoleCommandStep1 username(String username);
+  UnassignRoleFromUserCommandStep2 roleId(String roleId);
+
+  interface UnassignRoleFromUserCommandStep2
+      extends FinalCommandStep<UnassignUserFromRoleResponse> {
+
+    /**
+     * Sets the username for the unassignment.
+     *
+     * @param username the username of the user
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    UnassignRoleFromUserCommandStep2 username(String username);
+  }
 }

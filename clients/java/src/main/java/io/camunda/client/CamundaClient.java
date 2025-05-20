@@ -24,9 +24,9 @@ import io.camunda.client.api.command.AssignRoleToClientCommandStep1;
 import io.camunda.client.api.command.AssignRoleToGroupCommandStep1;
 import io.camunda.client.api.command.AssignRoleToMappingCommandStep1;
 import io.camunda.client.api.command.AssignRoleToTenantCommandStep1;
+import io.camunda.client.api.command.AssignRoleToUserCommandStep1;
 import io.camunda.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.client.api.command.AssignUserToGroupCommandStep1;
-import io.camunda.client.api.command.AssignUserToRoleCommandStep1;
 import io.camunda.client.api.command.AssignUserToTenantCommandStep1;
 import io.camunda.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
@@ -67,8 +67,8 @@ import io.camunda.client.api.command.UnassignRoleFromClientCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromMappingCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromTenantCommandStep1;
+import io.camunda.client.api.command.UnassignRoleFromUserCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
-import io.camunda.client.api.command.UnassignUserFromRoleCommandStep1;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
@@ -1398,38 +1398,38 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   UnassignRoleFromClientCommandStep1 newUnassignRoleFromClientCommand();
 
   /**
-   * Command to assign a user to a role.
+   * Command to assign a role to a user.
+   *
+   * <p>Example usage:
    *
    * <pre>
    * camundaClient
-   *   .newAssignUserToRoleCommand("roleId")
+   *   .newAssignRoleToUserCommand()
+   *   .roleId("roleId")
    *   .username("username")
    *   .send();
    * </pre>
    *
-   * <p>This command is only sent via REST over HTTP, not via gRPC.
-   *
-   * @param roleId the ID of the role
-   * @return a builder for the assign user to role command
+   * @return a builder for the assign role to user command
    */
-  AssignUserToRoleCommandStep1 newAssignUserToRoleCommand(String roleId);
+  AssignRoleToUserCommandStep1 newAssignRoleToUserCommand();
 
   /**
-   * Command to unassign a user from a role.
+   * Command to unassign a role from a user.
    *
    * <pre>
    * camundaClient
-   *   .newUnassignUserFromRoleCommand("roleId")
+   *   .newUnassignRoleFromUserCommand()
+   *   .roleId("roleId")
    *   .username("username")
    *   .send();
    * </pre>
    *
    * <p>This command is only sent via REST over HTTP, not via gRPC.
    *
-   * @param roleId the ID of the role
-   * @return a builder for the unassign user from role command
+   * @return a builder for the unassign role from user command
    */
-  UnassignUserFromRoleCommandStep1 newUnassignUserFromRoleCommand(String roleId);
+  UnassignRoleFromUserCommandStep1 newUnassignRoleFromUserCommand();
 
   /**
    * Executes a search request to query users by role.

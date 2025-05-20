@@ -17,7 +17,8 @@ package io.camunda.client.impl.command;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.command.UnassignUserFromRoleCommandStep1;
+import io.camunda.client.api.command.UnassignRoleFromUserCommandStep1;
+import io.camunda.client.api.command.UnassignRoleFromUserCommandStep1.UnassignRoleFromUserCommandStep2;
 import io.camunda.client.api.response.UnassignUserFromRoleResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
@@ -25,21 +26,27 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class UnassignUserFromRoleCommandImpl implements UnassignUserFromRoleCommandStep1 {
+public class UnassignRoleFromUserCommandImpl
+    implements UnassignRoleFromUserCommandStep1, UnassignRoleFromUserCommandStep2 {
 
-  private final String roleId;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
+  private String roleId;
   private String username;
 
-  public UnassignUserFromRoleCommandImpl(final String roleId, final HttpClient httpClient) {
-    this.roleId = roleId;
+  public UnassignRoleFromUserCommandImpl(final HttpClient httpClient) {
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
   }
 
   @Override
-  public UnassignUserFromRoleCommandStep1 username(final String username) {
+  public UnassignRoleFromUserCommandStep2 roleId(final String roleId) {
+    this.roleId = roleId;
+    return this;
+  }
+
+  @Override
+  public UnassignRoleFromUserCommandStep2 username(final String username) {
     this.username = username;
     return this;
   }
