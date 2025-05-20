@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.engine.metrics.DistributionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
@@ -53,6 +54,7 @@ import org.junit.jupiter.api.Test;
 class CommandDistributionBehaviorTest {
 
   private DistributionState mockDistributionState;
+  private DistributionMetrics mockDistributionMetrics;
   private FakeProcessingResultBuilder<CommandDistributionRecord> fakeProcessingResultBuilder;
   private InterPartitionCommandSender mockInterpartitionCommandSender;
   private Writers writers;
@@ -64,6 +66,7 @@ class CommandDistributionBehaviorTest {
 
   @BeforeEach
   void setUp() {
+    mockDistributionMetrics = mock(DistributionMetrics.class);
     mockDistributionState = mock(DistributionState.class);
     fakeProcessingResultBuilder = new FakeProcessingResultBuilder<>();
     mockInterpartitionCommandSender = mock(InterPartitionCommandSender.class);
@@ -86,7 +89,8 @@ class CommandDistributionBehaviorTest {
             writers,
             1,
             RoutingInfo.forStaticPartitions(1),
-            mockInterpartitionCommandSender);
+            mockInterpartitionCommandSender,
+            mockDistributionMetrics);
 
     // when distributing to all partitions
     behavior.withKey(key).unordered().distribute(command);
@@ -108,7 +112,8 @@ class CommandDistributionBehaviorTest {
             writers,
             1,
             RoutingInfo.forStaticPartitions(3),
-            mockInterpartitionCommandSender);
+            mockInterpartitionCommandSender,
+            mockDistributionMetrics);
 
     // when distributing to all partitions
     behavior.withKey(key).unordered().distribute(command);
@@ -144,7 +149,8 @@ class CommandDistributionBehaviorTest {
             writers,
             2,
             RoutingInfo.forStaticPartitions(4),
-            mockInterpartitionCommandSender);
+            mockInterpartitionCommandSender,
+            mockDistributionMetrics);
 
     // when distributing to partitions 1 and 3
     behavior.withKey(key).unordered().forPartitions(Set.of(1, 3)).distribute(command);
@@ -180,7 +186,8 @@ class CommandDistributionBehaviorTest {
             writers,
             1,
             RoutingInfo.forStaticPartitions(3),
-            mockInterpartitionCommandSender);
+            mockInterpartitionCommandSender,
+            mockDistributionMetrics);
 
     // when distributing first command in queue to all partitions
     behavior.withKey(key).inQueue("test-queue").distribute(command);
@@ -214,7 +221,8 @@ class CommandDistributionBehaviorTest {
             writers,
             1,
             RoutingInfo.forStaticPartitions(3),
-            mockInterpartitionCommandSender);
+            mockInterpartitionCommandSender,
+            mockDistributionMetrics);
 
     final var firstKey = Protocol.encodePartitionId(1, 100);
     final var secondKey = Protocol.encodePartitionId(1, 101);

@@ -17,7 +17,6 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.collection.Tuple;
-import io.micrometer.core.instrument.MeterRegistry;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
@@ -223,21 +222,13 @@ public class CommandDistributionMetricsTest {
   }
 
   private double getCounterValue(final int partition, final String metricName) {
-    final var counter = getMeterRegistry(partition).find(metricName).counter();
+    final var counter = engine.getMeterRegistry(partition).find(metricName).counter();
     return counter != null ? counter.count() : 0.0;
   }
 
   private double getGaugeValue(final int partition, final String metricName) {
-    final var gauge = getMeterRegistry(partition).find(metricName).gauge();
+    final var gauge = engine.getMeterRegistry(partition).find(metricName).gauge();
     return gauge != null ? gauge.value() : 0.0;
-  }
-
-  private MeterRegistry getMeterRegistry(final int partition) {
-    return engine
-        .getProcessingState(partition)
-        .getDistributionState()
-        .getMetrics()
-        .getMeterRegistry();
   }
 
   record MetricSnapshot(

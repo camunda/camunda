@@ -22,6 +22,8 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.Objects;
 import java.util.Optional;
@@ -39,7 +41,7 @@ import java.util.Set;
  *     href="https://github.com/camunda/camunda/blob/main/zeebe/docs/generalized_distribution.md">
  *     generalized_distribution.md</a>
  */
-public final class CommandDistributionBehavior {
+public final class CommandDistributionBehavior implements StreamProcessorLifecycleAware {
 
   private final DistributionState distributionState;
   private final TypedCommandWriter commandWriter;
@@ -60,12 +62,15 @@ public final class CommandDistributionBehavior {
   private final CommandDistributionRecord commandDistributionContinuation =
       new CommandDistributionRecord();
 
+  private final DistributionMetrics distributionMetrics;
+
   public CommandDistributionBehavior(
       final DistributionState distributionState,
       final Writers writers,
       final int currentPartition,
       final RoutingInfo routingInfo,
-      final InterPartitionCommandSender partitionCommandSender) {
+      final InterPartitionCommandSender partitionCommandSender,
+      final DistributionMetrics distributionMetrics) {
     this.distributionState = distributionState;
     commandWriter = writers.command();
     stateWriter = writers.state();
@@ -73,6 +78,33 @@ public final class CommandDistributionBehavior {
     this.routingInfo = routingInfo;
     interPartitionCommandSender = partitionCommandSender;
     currentPartitionId = currentPartition;
+    this.distributionMetrics = distributionMetrics;
+  }
+
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext context) {
+    getMetrics().reset();
+
+    getDistributionState()
+        .foreachCommandDistribution(
+            (distributionKey, record) -> {
+              getMetrics().addActiveDistribution();
+              return true;
+            });
+
+    getDistributionState()
+        .foreachPendingDistribution(
+            (distributionKey, record) -> {
+              getMetrics().addPendingDistribution(record.getPartitionId());
+              return true;
+            });
+
+    getDistributionState()
+        .foreachRetriableDistribution(
+            (distributionKey, record) -> {
+              getMetrics().addInflightDistribution(record.getPartitionId());
+              return true;
+            });
   }
 
   /**
@@ -182,7 +214,7 @@ public final class CommandDistributionBehavior {
   /**
    * If the given distribution was part of a queue, the next distribution from the queue is started.
    */
-  void distributeNextInQueue(final String queue, final int partition) {
+  private void distributeNextInQueue(final String queue, final int partition) {
     distributionState
         .getNextQueuedDistributionKey(queue, partition)
         .ifPresent(
@@ -193,7 +225,7 @@ public final class CommandDistributionBehavior {
                     nextDistributionKey));
   }
 
-  void continueAfterQueue(final String queue) {
+  private void continueAfterQueue(final String queue) {
     if (distributionState.hasQueuedDistributions(queue)) {
       return;
     }
@@ -230,6 +262,8 @@ public final class CommandDistributionBehavior {
             .setQueueId(queueId)
             .setIntent(intent));
 
+    getMetrics().addInflightDistribution(partition);
+
     // This getter makes a hard copy of the command value, which we need to send the command to the
     // other partition in a side effect. It does not appear to be possible to reuse a single
     // instance for distributing to all partitions in the form of a method parameter, but it's not
@@ -244,8 +278,6 @@ public final class CommandDistributionBehavior {
               partition, valueType, intent, distributionKey, commandValue);
           return true;
         });
-
-    getMetrics().addInflightDistribution(partition);
   }
 
   /**
@@ -303,7 +335,54 @@ public final class CommandDistributionBehavior {
   }
 
   public DistributionMetrics getMetrics() {
-    return distributionState.getMetrics();
+    return distributionMetrics;
+  }
+
+  public DistributionState getDistributionState() {
+    return distributionState;
+  }
+
+  public InterPartitionCommandSender getCommandSender() {
+    return interPartitionCommandSender;
+  }
+
+  public void onAcknowledgeDistribution(
+      final long distributionKey, final CommandDistributionRecord recordValue) {
+    final var partitionId = recordValue.getPartitionId();
+
+    // finish the distribution for the partition that acknowledged the distribution
+    stateWriter.appendFollowUpEvent(
+        distributionKey, CommandDistributionIntent.ACKNOWLEDGED, recordValue);
+
+    getMetrics().removeInflightDistribution(partitionId);
+    getMetrics().removePendingDistribution(partitionId);
+
+    // Distribute next in queue if the distribution was part of a queue
+    final var queueId = distributionState.getQueueIdForDistribution(distributionKey);
+    queueId.ifPresent(queue -> distributeNextInQueue(queue, partitionId));
+
+    // Finish the distribution if there are no more pending distributions
+    if (!distributionState.hasPendingDistribution(distributionKey)) {
+      final var finishRecord =
+          new CommandDistributionRecord()
+              .setPartitionId(partitionId)
+              .setValueType(recordValue.getValueType())
+              .setIntent(recordValue.getIntent());
+      queueId.ifPresent(finishRecord::setQueueId);
+
+      commandWriter.appendFollowUpCommand(
+          distributionKey, CommandDistributionIntent.FINISH, finishRecord);
+    }
+  }
+
+  public void onFinish(
+      final long distributionKey, final CommandDistributionRecord distributionRecord) {
+    Optional.ofNullable(distributionRecord.getQueueId()).ifPresent(this::continueAfterQueue);
+
+    stateWriter.appendFollowUpEvent(
+        distributionKey, CommandDistributionIntent.FINISHED, distributionRecord);
+
+    getMetrics().removeActiveDistribution();
   }
 
   public interface RequestBuilder {

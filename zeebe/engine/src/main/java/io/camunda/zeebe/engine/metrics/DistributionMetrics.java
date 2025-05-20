@@ -114,11 +114,6 @@ public final class DistributionMetrics {
         targetPartitionId, id -> new PartitionDistributionMetrics(id, meterRegistry));
   }
 
-  public void timedRedistribution(final Runnable redistribution) {
-    // TODO: wrap with a long task timer
-    redistribution.run();
-  }
-
   private static class PartitionDistributionMetrics {
 
     private final MeterRegistry meterRegistry;
