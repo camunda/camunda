@@ -151,7 +151,7 @@ public class PermissionsServiceTest {
         .user(username)
         .tenants(tenants)
         .roleIds(roleIds)
-        .groupIds(List.of())
+        .groupIds(groupIds)
         .build();
   }
 }
