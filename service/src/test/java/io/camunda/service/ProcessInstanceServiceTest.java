@@ -30,6 +30,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.security.SecurityContextProvider;
@@ -39,6 +40,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRe
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationMoveInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -185,7 +187,6 @@ public final class ProcessInstanceServiceTest {
     record.setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
 
     final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
-    when(authentication.claims()).thenReturn(emptyMap());
     when(brokerClient.sendRequest(captor.capture()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
@@ -197,8 +198,15 @@ public final class ProcessInstanceServiceTest {
     assertThat(result.getBatchOperationType())
         .isEqualTo(BatchOperationType.CANCEL_PROCESS_INSTANCE);
 
-    // and our filter got enriched
-    final var filterBuffer = captor.getValue().getRequestWriter().getEntityFilterBuffer();
+    // and our request got enriched
+    final var enrichedRecord = captor.getValue().getRequestWriter();
+
+    assertThat(
+            MsgPackConverter.convertToObject(
+                enrichedRecord.getAuthenticationBuffer(), Authentication.class))
+        .isEqualTo(authentication);
+
+    final var filterBuffer = enrichedRecord.getEntityFilterBuffer();
     final var enhancedFilter =
         MsgPackConverter.convertToObject(filterBuffer, ProcessInstanceFilter.class);
     assertThat(enhancedFilter.parentProcessInstanceKeyOperations())
@@ -272,6 +280,86 @@ public final class ProcessInstanceServiceTest {
   }
 
   @Test
+  void shouldResolveIncidentBatchOperationWithResult() {
+    // given
+    final var filter =
+        FilterBuilders.processInstance(b -> b.processDefinitionIds("test-process-definition-id"));
+
+    final long batchOperationKey = 123L;
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(batchOperationKey);
+    record.setBatchOperationType(BatchOperationType.RESOLVE_INCIDENT);
+
+    final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
+    when(brokerClient.sendRequest(captor.capture()))
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
+
+    // when
+    final var result = services.resolveIncidentsBatchOperationWithResult(filter).join();
+
+    // then
+    assertThat(result.getBatchOperationKey()).isEqualTo(batchOperationKey);
+    assertThat(result.getBatchOperationType()).isEqualTo(BatchOperationType.RESOLVE_INCIDENT);
+
+    // and our request got enriched
+    final var enrichedRecord = captor.getValue().getRequestWriter();
+
+    assertThat(
+            MsgPackConverter.convertToObject(
+                enrichedRecord.getAuthenticationBuffer(), Authentication.class))
+        .isEqualTo(authentication);
+  }
+
+  @Test
+  void shouldMigrateProcessInstanceBatchOperationWithResult() {
+    // given
+    final var filter =
+        FilterBuilders.processInstance(b -> b.processDefinitionIds("test-process-definition-id"));
+
+    final long batchOperationKey = 123L;
+    final var record = new BatchOperationCreationRecord();
+    record.setBatchOperationKey(batchOperationKey);
+    record.setBatchOperationType(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
+
+    final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
+    when(authentication.claims()).thenReturn(emptyMap());
+    when(brokerClient.sendRequest(captor.capture()))
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
+
+    final var request =
+        new ProcessInstanceMigrationBatchOperationRequest(
+            filter,
+            42L,
+            List.of(
+                new ProcessInstanceMigrationMappingInstruction()
+                    .setSourceElementId("source1")
+                    .setTargetElementId("target1")));
+
+    // when
+    final var result = services.migrateProcessInstancesBatchOperation(request).join();
+
+    // then
+    assertThat(result.getBatchOperationKey()).isEqualTo(batchOperationKey);
+    assertThat(result.getBatchOperationType())
+        .isEqualTo(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
+
+    // and our request got enriched
+    final var enrichedRecord = captor.getValue().getRequestWriter();
+
+    assertThat(
+            MsgPackConverter.convertToObject(
+                enrichedRecord.getAuthenticationBuffer(), Authentication.class))
+        .isEqualTo(authentication);
+
+    final var modificationPlan = enrichedRecord.getMigrationPlan();
+    assertThat(modificationPlan.getTargetProcessDefinitionKey()).isEqualTo(42L);
+    assertThat(modificationPlan.getMappingInstructions().getFirst().getSourceElementId())
+        .isEqualTo("source1");
+    assertThat(modificationPlan.getMappingInstructions().getFirst().getTargetElementId())
+        .isEqualTo("target1");
+  }
+
+  @Test
   void shouldModifyProcessInstanceBatchOperationWithResult() {
     // given
     final var filter =
@@ -303,8 +391,15 @@ public final class ProcessInstanceServiceTest {
     assertThat(result.getBatchOperationType())
         .isEqualTo(BatchOperationType.MODIFY_PROCESS_INSTANCE);
 
-    // and our filter got enriched
-    final var filterBuffer = captor.getValue().getRequestWriter().getEntityFilterBuffer();
+    // and our request got enriched
+    final var enrichedRecord = captor.getValue().getRequestWriter();
+
+    assertThat(
+            MsgPackConverter.convertToObject(
+                enrichedRecord.getAuthenticationBuffer(), Authentication.class))
+        .isEqualTo(authentication);
+
+    final var filterBuffer = enrichedRecord.getEntityFilterBuffer();
     final var enhancedFilter =
         MsgPackConverter.convertToObject(filterBuffer, ProcessInstanceFilter.class);
     assertThat(enhancedFilter.stateOperations())
