@@ -17,6 +17,7 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingQuery;
@@ -31,6 +32,7 @@ import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,8 +41,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(value = TenantController.class)
 public class TenantQueryControllerTest extends RestControllerTest {
@@ -217,11 +219,11 @@ public class TenantQueryControllerTest extends RestControllerTest {
           ROLE_ENTITIES.get(1).roleId(),
           ROLE_ENTITIES.size());
 
-  @MockBean private TenantServices tenantServices;
-  @MockBean private UserServices userServices;
-  @MockBean private MappingServices mappingServices;
-  @MockBean private GroupServices groupServices;
-  @MockBean private RoleServices roleServices;
+  @MockitoBean private TenantServices tenantServices;
+  @MockitoBean private UserServices userServices;
+  @MockitoBean private MappingServices mappingServices;
+  @MockitoBean private GroupServices groupServices;
+  @MockitoBean private RoleServices roleServices;
 
   @BeforeEach
   void setup() {
@@ -583,6 +585,39 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .json(expectedResponse);
 
     verify(tenantServices, never()).search(any(TenantQuery.class));
+  }
+
+  @Test
+  void shouldListMembersOfTypeClient() {
+    // given
+    when(tenantServices.searchMembers(any(TenantQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<TenantMemberEntity>()
+                .total(3)
+                .items(
+                    List.of(
+                        new TenantMemberEntity("client1", EntityType.CLIENT),
+                        new TenantMemberEntity("client2", EntityType.CLIENT),
+                        new TenantMemberEntity("client3", EntityType.CLIENT)))
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/%s/clients/search".formatted(TENANT_BASE_URL, "tenantId"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            // language=json
+            """
+                {"items":[{"clientId":"client1"},{"clientId":"client2"},{"clientId":"client3"}],"page":{"totalItems":3,"firstSortValues":[],"lastSortValues":[]}}
+            """);
   }
 
   public static Stream<Arguments> invalidTenantSearchQueries() {
