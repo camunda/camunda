@@ -1343,6 +1343,9 @@ public final class SearchQueryRequestMapper {
     if (searchAfter != null && searchBefore != null) {
       return Either.left(List.of(ERROR_SEARCH_BEFORE_AND_AFTER));
     }
+    if (requestedPage.getFrom() != null && (searchAfter != null || searchBefore != null)) {
+      return Either.left(List.of(ERROR_SEARCH_BEFORE_AND_AFTER_AND_FROM));
+    }
 
     return Either.right(
         SearchQueryPage.of(
