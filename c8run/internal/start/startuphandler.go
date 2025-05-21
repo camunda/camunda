@@ -13,6 +13,7 @@ import (
 
 	"github.com/camunda/camunda/c8run/internal/health"
 	"github.com/camunda/camunda/c8run/internal/overrides"
+	"github.com/camunda/camunda/c8run/internal/processmanagement"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/rs/zerolog/log"
 )
@@ -55,7 +56,11 @@ func getJavaVersion(javaBinary string) (string, error) {
 	return javaVersionOutput, nil
 }
 
-func startApplication(cmd *exec.Cmd, pid string, logPath string) error {
+type StartupHandler struct {
+	ProcessHandler *processmanagement.ProcessHandler
+}
+
+func (s *StartupHandler) startApplication(cmd *exec.Cmd, pid string, logPath string, stop context.CancelFunc) error {
 	logFile, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		log.Err(err).Msg("Failed to open file: " + logPath)
@@ -69,16 +74,11 @@ func startApplication(cmd *exec.Cmd, pid string, logPath string) error {
 		return err
 	}
 
-	log.Info().Int("pid", cmd.Process.Pid).Msg("Started process: " + cmd.String())
-	pidFile, err := os.OpenFile(pid, os.O_RDWR|os.O_CREATE, 0644)
+	err = s.ProcessHandler.WritePIDToFile(pid, cmd.Process.Pid)
 	if err != nil {
-		log.Err(err).Msg("Failed to open Pid file: " + pid)
-		return err
-	}
-
-	_, err = pidFile.Write([]byte(strconv.Itoa(cmd.Process.Pid)))
-	if err != nil {
-		log.Err(err).Msg("Failed to write to Pid file: " + pid)
+		log.Err(err).Msg("Failed to write PID to file: " + pid)
+		log.Info().Msg("To avoid zombie processes, we will now kill all processes that have the same PID as the process we just started and quit the application")
+		stop()
 		return err
 	}
 
@@ -154,11 +154,13 @@ func resolveJavaHomeAndBinary() (string, string, error) {
 	return javaHome, javaBinary, nil
 }
 
-func StartCommand(wg *sync.WaitGroup, ctx context.Context, stop context.CancelFunc, state *types.State, parentDir string) {
+func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, stop context.CancelFunc, state *types.State, parentDir string) {
 	defer wg.Done()
+
 	c8 := state.C8
 	settings := state.Settings
 	processInfo := state.ProcessInfo
+
 	// Rresolve JAVA_HOME and javaBinary
 	javaHome, javaBinary, err := resolveJavaHomeAndBinary()
 	if err != nil {
@@ -200,30 +202,20 @@ func StartCommand(wg *sync.WaitGroup, ctx context.Context, stop context.CancelFu
 	javaOpts = overrides.AdjustJavaOpts(javaOpts, settings)
 
 	printSystemInformation(javaVersion, javaHome, javaOpts)
-
+	elasticHealthEndpoint := "http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s"
 	if !settings.DisableElasticsearch {
-		elasticHealthEndpoint := "http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s"
-		err = health.QueryElasticsearch(ctx, "Elasticsearch", 0, elasticHealthEndpoint)
-		if err == nil {
-			log.Info().Msg("Elasticsearch is already running, skipping...")
-		} else {
-			log.Info().Str("version", processInfo.Elasticsearch.Version).Msg("Starting Elasticsearch...")
-
+		s.ProcessHandler.AttemptToStartProcess(processInfo.Elasticsearch.PidPath, "Elasticsearch", func() {
 			elasticsearchCmd := c8.ElasticsearchCmd(ctx, processInfo.Elasticsearch.Version, parentDir)
 			elasticsearchLogFilePath := filepath.Join(parentDir, "log", "elasticsearch.log")
-			err := startApplication(elasticsearchCmd, processInfo.Elasticsearch.Pid, elasticsearchLogFilePath)
+			err := s.startApplication(elasticsearchCmd, processInfo.Elasticsearch.PidPath, elasticsearchLogFilePath, stop)
 			if err != nil {
-				log.Info().Err(err)
+				log.Err(err).Msg("Failed to start Elasticsearch")
 				stop()
 				return
 			}
-			err = health.QueryElasticsearch(ctx, "Elasticsearch", 12, elasticHealthEndpoint)
-			if err != nil {
-				log.Err(err).Msg("Elasticsearch is not healthy")
-				stop()
-				return
-			}
-		}
+		}, func() error {
+			return health.QueryElasticsearch(ctx, "Elasticsearch", 12, elasticHealthEndpoint)
+		}, stop)
 	}
 
 	var extraArgs string
@@ -249,32 +241,30 @@ func StartCommand(wg *sync.WaitGroup, ctx context.Context, stop context.CancelFu
 		}
 	}
 
-	err = health.QueryCamunda(ctx, c8, "Camunda", settings, 0)
-	if err == nil {
-		log.Info().Msg("Camunda is already running, skipping")
-		return
-	}
-	// TODO do a health check on the connectors process
-	connectorsCmd := c8.ConnectorsCmd(ctx, javaBinary, parentDir, processInfo.Camunda.Version)
-	connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
-	err = startApplication(connectorsCmd, processInfo.Connectors.Pid, connectorsLogPath)
-	if err != nil {
-		log.Err(err).Msg("Failed to start Connectors process")
-		stop()
-		return
-	}
+	s.ProcessHandler.AttemptToStartProcess(processInfo.Connectors.PidPath, "Connectors", func() {
+		connectorsCmd := c8.ConnectorsCmd(ctx, javaBinary, parentDir, processInfo.Camunda.Version)
+		connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
+		err := s.startApplication(connectorsCmd, processInfo.Connectors.PidPath, connectorsLogPath, stop)
+		if err != nil {
+			log.Err(err).Msg("Failed to start Connectors process")
+			stop()
+			return
+		}
+	}, func() error {
+		// TODO do a health check on the connectors process
+		return nil
+	}, stop)
 
-	camundaCmd := c8.CamundaCmd(ctx, processInfo.Camunda.Version, parentDir, extraArgs, javaOpts)
-	camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
-	err = startApplication(camundaCmd, processInfo.Camunda.Pid, camundaLogPath)
-	if err != nil {
-		log.Err(err).Msg("Failed to start Camunda process")
-		stop()
-		return
-	}
-	err = health.QueryCamunda(ctx, c8, "Camunda", settings, 24)
-	if err != nil {
-		log.Err(err).Msg("Camunda is not healthy")
-		stop()
-	}
+	s.ProcessHandler.AttemptToStartProcess(processInfo.Camunda.PidPath, "Camunda", func() {
+		camundaCmd := c8.CamundaCmd(ctx, processInfo.Camunda.Version, parentDir, extraArgs, javaOpts)
+		camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
+		err := s.startApplication(camundaCmd, processInfo.Camunda.PidPath, camundaLogPath, stop)
+		if err != nil {
+			log.Err(err).Msg("Failed to start Camunda process")
+			stop()
+			return
+		}
+	}, func() error {
+		return health.QueryCamunda(ctx, c8, "Camunda", settings, 24)
+	}, stop)
 }
