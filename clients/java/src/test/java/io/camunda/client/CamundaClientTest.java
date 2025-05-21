@@ -44,6 +44,7 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.REST_ADDR
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.USE_DEFAULT_RETRY_POLICY_VAR;
 import static io.camunda.client.impl.util.DataSizeUtil.ONE_KB;
 import static io.camunda.client.impl.util.DataSizeUtil.ONE_MB;
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_MESSAGE_TTL;
 import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.ZEEBE_CLIENT_WORKER_STREAM_ENABLED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -104,7 +105,7 @@ public final class CamundaClientTest {
       assertThat(configuration.getDefaultJobWorkerName()).isEqualTo("default");
       assertThat(configuration.getDefaultJobTimeout()).isEqualTo(Duration.ofMinutes(5));
       assertThat(configuration.getDefaultJobPollInterval()).isEqualTo(Duration.ofMillis(100));
-      assertThat(configuration.getDefaultMessageTimeToLive()).isEqualTo(Duration.ofHours(1));
+      assertThat(configuration.getDefaultMessageTimeToLive()).isEqualTo(DEFAULT_MESSAGE_TTL);
       assertThat(configuration.getDefaultRequestTimeout()).isEqualTo(Duration.ofSeconds(10));
       assertThat(configuration.getDefaultRequestTimeoutOffset()).isEqualTo(Duration.ofSeconds(1));
       assertThat(configuration.getMaxMessageSize()).isEqualTo(5 * 1024 * 1024);

@@ -15,6 +15,7 @@
  */
 package io.camunda.client.process;
 
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_MESSAGE_TTL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
@@ -61,6 +62,22 @@ public final class PublishMessageTest extends ClientTest {
     assertThat(response.getMessageKey()).isEqualTo(messageKey);
 
     rule.verifyDefaultRequestTimeout();
+  }
+
+  @Test
+  public void shouldPublishMessageWithDefaultTtl() {
+    // given
+    final long messageKey = 123L;
+    gatewayService.onPublishMessageRequest(messageKey);
+
+    // when
+    final PublishMessageResponse response =
+        client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
+
+    // then
+    final PublishMessageRequest request = gatewayService.getLastRequest();
+    assertThat(request.getTimeToLive()).isEqualTo(DEFAULT_MESSAGE_TTL.toMillis());
+    assertThat(response.getMessageKey()).isEqualTo(messageKey);
   }
 
   @Test
