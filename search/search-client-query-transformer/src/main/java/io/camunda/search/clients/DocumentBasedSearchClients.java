@@ -336,6 +336,12 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   }
 
   @Override
+  public SearchQueryResult<TenantMemberEntity> searchTenantMembers(final TenantQuery filter) {
+    return getSearchExecutor()
+        .search(filter, io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity.class);
+  }
+
+  @Override
   public List<TenantEntity> findAllTenants(final TenantQuery query) {
     return getSearchExecutor()
         .findAll(query, io.camunda.webapps.schema.entities.usermanagement.TenantEntity.class);

@@ -27,6 +27,8 @@ import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.TenantClientSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.TenantClientSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryRequest;
@@ -227,6 +229,16 @@ public class TenantController {
             roleQuery -> searchRolesInTenant(tenantId, roleQuery));
   }
 
+  @CamundaPostMapping(path = "/{tenantId}/clients/search")
+  public ResponseEntity<TenantClientSearchResult> searchClientsInTenant(
+      @PathVariable final String tenantId,
+      @RequestBody(required = false) final TenantClientSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toTenantQuery(query)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            tenantQuery -> searchMembersInTenant(tenantId, EntityType.CLIENT, tenantQuery));
+  }
+
   private CompletableFuture<ResponseEntity<Object>> createTenant(final TenantDTO tenantDTO) {
     return RequestMapper.executeServiceMethod(
         () ->
@@ -259,6 +271,19 @@ public class TenantController {
       final var result =
           tenantServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toTenantSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private ResponseEntity<TenantClientSearchResult> searchMembersInTenant(
+      final String tenantId, final EntityType memberType, final TenantQuery query) {
+    try {
+      final var result =
+          tenantServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .searchMembers(buildTenantMemberQuery(tenantId, memberType, query));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toTenantClientSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -318,6 +343,13 @@ public class TenantController {
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
+  }
+
+  private TenantQuery buildTenantMemberQuery(
+      final String tenantId, final EntityType memberType, final TenantQuery query) {
+    return query.toBuilder()
+        .filter(query.filter().toBuilder().joinParentId(tenantId).memberType(memberType).build())
+        .build();
   }
 
   private MappingQuery buildMappingQuery(final String tenantId, final MappingQuery mappingQuery) {

@@ -29,6 +29,7 @@ import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
@@ -182,6 +183,11 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
 
   @Override
   public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery filter) {
+    return SearchQueryResult.empty();
+  }
+
+  @Override
+  public SearchQueryResult<TenantMemberEntity> searchTenantMembers(final TenantQuery filter) {
     return SearchQueryResult.empty();
   }
 

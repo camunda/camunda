@@ -35,6 +35,7 @@ import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.entities.UsageMetricsCount;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
@@ -93,6 +94,8 @@ import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUserResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUserSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
+import io.camunda.zeebe.gateway.protocol.rest.TenantClientResult;
+import io.camunda.zeebe.gateway.protocol.rest.TenantClientSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.UsageMetricsResponse;
@@ -253,6 +256,16 @@ public final class SearchQueryResponseMapper {
         .items(
             ofNullable(result.items())
                 .map(SearchQueryResponseMapper::toTenants)
+                .orElseGet(List::of));
+  }
+
+  public static TenantClientSearchResult toTenantClientSearchQueryResponse(
+      final SearchQueryResult<TenantMemberEntity> result) {
+    return new TenantClientSearchResult()
+        .page(toSearchQueryPageResponse(result))
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toTenantClients)
                 .orElseGet(List::of));
   }
 
@@ -501,6 +514,14 @@ public final class SearchQueryResponseMapper {
         .name(tenantEntity.name())
         .description(tenantEntity.description())
         .tenantId(tenantEntity.tenantId());
+  }
+
+  public static List<TenantClientResult> toTenantClients(final List<TenantMemberEntity> members) {
+    return members.stream().map(SearchQueryResponseMapper::toTenantClient).toList();
+  }
+
+  public static TenantClientResult toTenantClient(final TenantMemberEntity tenantMember) {
+    return new TenantClientResult().clientId(tenantMember.id());
   }
 
   private static List<RoleUserResult> toRoleUsers(final List<RoleMemberEntity> members) {
