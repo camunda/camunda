@@ -15,10 +15,6 @@ import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.operate.webapp.zeebe.operation.adapter.OperateServicesAdapter;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
-import java.util.Arrays;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,11 +23,6 @@ import org.springframework.util.StringUtils;
 public abstract class AbstractOperationHandler implements OperationHandler {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractOperationHandler.class);
-  private static final List<Status.Code> RETRY_STATUSES =
-      Arrays.asList(
-          Status.UNAVAILABLE.getCode(),
-          Status.RESOURCE_EXHAUSTED.getCode(),
-          Status.DEADLINE_EXCEEDED.getCode());
 
   @Autowired protected OperateServicesAdapter operationServicesAdapter;
   @Autowired protected BatchOperationWriter batchOperationWriter;
@@ -44,7 +35,7 @@ public abstract class AbstractOperationHandler implements OperationHandler {
     try {
       handleWithException(operation);
     } catch (final Exception ex) {
-      if (isExceptionRetriable(ex)) {
+      if (operationServicesAdapter.isExceptionRetriable(ex)) {
         // leave the operation locked -> when it expires, operation will be retried
         LOGGER.error(
             String.format(
@@ -71,22 +62,6 @@ public abstract class AbstractOperationHandler implements OperationHandler {
   @Override
   public void setOperateAdapter(final OperateServicesAdapter operateAdapter) {
     operationServicesAdapter = operateAdapter;
-  }
-
-  private boolean isExceptionRetriable(final Exception ex) {
-    final StatusRuntimeException cause = extractStatusRuntimeException(ex);
-    return cause != null && RETRY_STATUSES.contains(cause.getStatus().getCode());
-  }
-
-  private StatusRuntimeException extractStatusRuntimeException(final Throwable ex) {
-    if (ex.getCause() != null) {
-      if (ex.getCause() instanceof StatusRuntimeException) {
-        return (StatusRuntimeException) ex.getCause();
-      } else {
-        return extractStatusRuntimeException(ex.getCause());
-      }
-    }
-    return null;
   }
 
   protected void recordCommandMetric(final OperationEntity operation) {
