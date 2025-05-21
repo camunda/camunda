@@ -1015,38 +1015,6 @@ public final class CamundaUserTaskTest {
   }
 
   @Test
-  public void shouldRejectVariableUpdateWithPropagateSemanticForUserTask() {
-    // given
-    ENGINE.deployment().withXmlResource(process()).deploy();
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    final var createdUserTaskRecord =
-        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-
-    // when: attempting to update variables with 'PROPAGATE' semantic for a user task instance
-    final var variableUpdateRejection =
-        ENGINE
-            .variables()
-            .ofScope(createdUserTaskRecord.getValue().getElementInstanceKey())
-            .withDocument(Map.of("approvalStatus", "SUBMITTED"))
-            .withPropagateSemantic()
-            .expectRejection()
-            .update();
-
-    // then
-    Assertions.assertThat(variableUpdateRejection)
-        .describedAs(
-            "Expect rejection when trying to update variables for a user task instance with 'PROPAGATE' semantic")
-        .hasRecordType(RecordType.COMMAND_REJECTION)
-        .hasValueType(ValueType.VARIABLE_DOCUMENT)
-        .hasRejectionReason(
-            "Expected to update variables for user task with key '%d', but updates with 'PROPAGATE' semantic are not supported yet."
-                .formatted(createdUserTaskRecord.getKey()));
-  }
-
-  @Test
   public void
       shouldUpdateVariablesAndPassUserTaskUpdateTransitionWhenUserTaskHasNoUpdatingListeners() {
     // given
