@@ -15,12 +15,12 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func QueryElasticsearch(ctx context.Context, name string, url string) error {
-	if isRunning(ctx, name, url, 12, 10*time.Second) {
+func QueryElasticsearch(ctx context.Context, name string, retries int, url string) error {
+	if isRunning(ctx, name, url, retries, 10*time.Second) {
 		log.Info().Str("name", name).Msg("Started successfully")
 	} else {
 		log.Error().Str("name", name).Msg("Not Started")
-		return errors.New("elasticsearch did not start")
+		return errors.New("Elasticsearch did not start")
 	}
 	return nil
 }
