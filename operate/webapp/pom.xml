@@ -42,6 +42,10 @@
       <artifactId>agrona</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-transport</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-broker-client</artifactId>
     </dependency>
