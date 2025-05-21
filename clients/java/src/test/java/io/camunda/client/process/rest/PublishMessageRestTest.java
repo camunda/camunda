@@ -15,6 +15,7 @@
  */
 package io.camunda.client.process.rest;
 
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_MESSAGE_TTL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
@@ -54,6 +55,17 @@ public class PublishMessageRestTest extends ClientRestTest {
     assertThat(request.getMessageId()).isEqualTo("theId");
     assertThat(request.getTimeToLive()).isEqualTo(Duration.ofDays(1).toMillis());
     assertThat(request.getTenantId()).isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldPublishMessageWithDefaultTtl() {
+    // when
+    client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
+
+    // then
+    final MessagePublicationRequest request =
+        gatewayService.getLastRequest(MessagePublicationRequest.class);
+    assertThat(request.getTimeToLive()).isEqualTo(DEFAULT_MESSAGE_TTL.toMillis());
   }
 
   @Test

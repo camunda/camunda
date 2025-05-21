@@ -60,14 +60,14 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
       final boolean preferRestOverGrpc) {
     super(jsonMapper);
     this.asyncStub = asyncStub;
+    this.httpClient = httpClient;
     this.retryPredicate = retryPredicate;
     grpcRequestObjectBuilder = PublishMessageRequest.newBuilder();
-    requestTimeout = configuration.getDefaultRequestTimeout();
-    grpcRequestObjectBuilder.setTimeToLive(configuration.getDefaultMessageTimeToLive().toMillis());
-    tenantId(configuration.getDefaultTenantId());
-    this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
+    requestTimeout = configuration.getDefaultRequestTimeout();
     useRest = preferRestOverGrpc;
+    tenantId(configuration.getDefaultTenantId());
+    timeToLive(configuration.getDefaultMessageTimeToLive());
   }
 
   @Override
