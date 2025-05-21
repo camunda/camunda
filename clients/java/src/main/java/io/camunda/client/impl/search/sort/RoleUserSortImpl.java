@@ -13,12 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.request;
+package io.camunda.client.impl.search.sort;
 
-import io.camunda.client.api.search.filter.RoleUserFilter;
-import io.camunda.client.api.search.response.RoleUser;
 import io.camunda.client.api.search.sort.RoleUserSort;
+import io.camunda.client.impl.search.request.SearchRequestSortBase;
 
-public interface UsersByRoleSearchRequest
-    extends TypedSearchRequest<RoleUserFilter, RoleUserSort, UsersByRoleSearchRequest>,
-        FinalSearchRequestStep<RoleUser> {}
+public class RoleUserSortImpl extends SearchRequestSortBase<RoleUserSort> implements RoleUserSort {
+
+  @Override
+  public RoleUserSort username() {
+    return field("username");
+  }
+
+  @Override
+  protected RoleUserSort self() {
+    return this;
+  }
+}

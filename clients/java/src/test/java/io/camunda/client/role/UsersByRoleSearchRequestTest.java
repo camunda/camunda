@@ -19,12 +19,9 @@ import static io.camunda.client.impl.http.HttpClientFactory.REST_API_PATH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.util.ClientRestTest;
-import java.io.IOException;
 import org.junit.jupiter.api.Test;
 
 public class UsersByRoleSearchRequestTest extends ClientRestTest {
@@ -41,17 +38,14 @@ public class UsersByRoleSearchRequestTest extends ClientRestTest {
   }
 
   @Test
-  void shouldSendRequestWithUsernameFilter() throws IOException {
-    final String username = "john.doe";
-    client.newUsersByRoleSearchRequest(ROLE_ID).filter(f -> f.username(username)).send().join();
+  void shouldSendRequestWithUsernameSort() {
+    client.newUsersByRoleSearchRequest(ROLE_ID).sort(s -> s.username().asc()).send().join();
 
     final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getUrl()).startsWith(REST_API_PATH + "/roles/" + ROLE_ID + "/users/search");
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
-
-    final String body = request.getBodyAsString();
-    final JsonNode json = new ObjectMapper().readTree(body);
-    assertThat(json.get("filter").get("username").asText()).isEqualTo(username);
+    assertThat(request.getBodyAsString())
+        .contains("\"sort\":[{\"field\":\"username\",\"order\":\"ASC\"}]");
   }
 
   @Test

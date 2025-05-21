@@ -15,35 +15,34 @@
  */
 package io.camunda.client.impl.search.request;
 
+import static io.camunda.client.api.search.request.SearchRequestBuilders.roleUserSort;
 import static io.camunda.client.api.search.request.SearchRequestBuilders.searchRequestPage;
-import static io.camunda.client.api.search.request.SearchRequestBuilders.userFilter;
-import static io.camunda.client.api.search.request.SearchRequestBuilders.userSort;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.search.filter.UserFilter;
+import io.camunda.client.api.search.filter.RoleUserFilter;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.request.UsersByRoleSearchRequest;
+import io.camunda.client.api.search.response.RoleUser;
 import io.camunda.client.api.search.response.SearchResponse;
-import io.camunda.client.api.search.response.User;
-import io.camunda.client.api.search.sort.UserSort;
+import io.camunda.client.api.search.sort.RoleUserSort;
 import io.camunda.client.impl.command.ArgumentUtil;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
-import io.camunda.client.protocol.rest.UserSearchQueryRequest;
-import io.camunda.client.protocol.rest.UserSearchResult;
+import io.camunda.client.protocol.rest.RoleUserSearchQueryRequest;
+import io.camunda.client.protocol.rest.RoleUserSearchResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class UsersByRoleSearchRequestImpl
-    extends TypedSearchRequestPropertyProvider<UserSearchQueryRequest>
+    extends TypedSearchRequestPropertyProvider<RoleUserSearchQueryRequest>
     implements UsersByRoleSearchRequest {
 
-  private final UserSearchQueryRequest request;
+  private final RoleUserSearchQueryRequest request;
   private final String roleId;
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
@@ -55,50 +54,52 @@ public class UsersByRoleSearchRequestImpl
     this.jsonMapper = jsonMapper;
     this.roleId = roleId;
     httpRequestConfig = httpClient.newRequestConfig();
-    request = new UserSearchQueryRequest();
+    request = new RoleUserSearchQueryRequest();
   }
 
   @Override
-  public FinalSearchRequestStep<User> requestTimeout(final Duration requestTimeout) {
+  public FinalSearchRequestStep<RoleUser> requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public CamundaFuture<SearchResponse<User>> send() {
+  public CamundaFuture<SearchResponse<RoleUser>> send() {
     ArgumentUtil.ensureNotNullNorEmpty("roleId", roleId);
-    final HttpCamundaFuture<SearchResponse<User>> result = new HttpCamundaFuture<>();
+    final HttpCamundaFuture<SearchResponse<RoleUser>> result = new HttpCamundaFuture<>();
     httpClient.post(
         String.format("/roles/%s/users/search", roleId),
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        UserSearchResult.class,
-        SearchResponseMapper::toUsersResponse,
+        RoleUserSearchResult.class,
+        SearchResponseMapper::toRoleUsersResponse,
         result);
     return result;
   }
 
   @Override
-  public UsersByRoleSearchRequest filter(final UserFilter value) {
-    request.setFilter(provideSearchRequestProperty(value));
+  public UsersByRoleSearchRequest filter(final RoleUserFilter value) {
+    // This command doesn't support filtering
     return this;
   }
 
   @Override
-  public UsersByRoleSearchRequest filter(final Consumer<UserFilter> fn) {
-    return filter(userFilter(fn));
+  public UsersByRoleSearchRequest filter(final Consumer<RoleUserFilter> fn) {
+    // This command doesn't support filtering
+    return this;
   }
 
   @Override
-  public UsersByRoleSearchRequest sort(final UserSort value) {
+  public UsersByRoleSearchRequest sort(final RoleUserSort value) {
     request.setSort(
-        SearchRequestSortMapper.toUserSearchQuerySortRequest(provideSearchRequestProperty(value)));
+        SearchRequestSortMapper.toRoleUserSearchQuerySortRequest(
+            provideSearchRequestProperty(value)));
     return this;
   }
 
   @Override
-  public UsersByRoleSearchRequest sort(final Consumer<UserSort> fn) {
-    return sort(userSort(fn));
+  public UsersByRoleSearchRequest sort(final Consumer<RoleUserSort> fn) {
+    return sort(roleUserSort(fn));
   }
 
   @Override
@@ -113,7 +114,7 @@ public class UsersByRoleSearchRequestImpl
   }
 
   @Override
-  protected UserSearchQueryRequest getSearchRequestProperty() {
+  protected RoleUserSearchQueryRequest getSearchRequestProperty() {
     return request;
   }
 }
