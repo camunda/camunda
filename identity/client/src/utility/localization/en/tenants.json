@@ -70,7 +70,7 @@
   "searchAndAssignMappingToTenant": "Search and assign mapping to tenant",
   "deleteTenantConfirmation": "Are you sure you want to delete <strong>{{tenantId}}</strong>? This action cannot be undone.",
   "removeUserFromTenant": "Are you sure you want to remove <strong>{{username}}</strong> from this tenant?",
-  "removeGroupFromTenant": "Are you sure you want to remove <strong>{{groupKey}}</strong> from this tenant?",
+  "removeGroupFromTenant": "Are you sure you want to remove <strong>{{groupId}}</strong> from this tenant?",
   "removeMappingFromTenant": "Are you sure you want to remove <strong>{{mappingId}}</strong> from this tenant?",
   "removeRoleFromTenant": "Are you sure you want to remove <strong>{{roleKey}}</strong> from this tenant?",
   "searchAndAssignGroupToTenant": "Search and assign group to tenant",

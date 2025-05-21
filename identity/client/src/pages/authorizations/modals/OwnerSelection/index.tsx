@@ -42,8 +42,8 @@ const Selection: FC<SelectionProps> = ({ type, ownerId, onChange }) => {
           id="groupSelection"
           onChange={onChange}
           searchFn={searchGroups}
-          getId={(group) => group.groupKey}
-          itemToString={(group) => group.name || group.groupKey}
+          getId={(group) => group.groupId}
+          itemToString={(group) => group.name || group.groupId}
         />
       );
     case OwnerType.MAPPING:

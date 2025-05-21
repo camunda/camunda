@@ -33,18 +33,17 @@ export class GroupsPage {
   readonly closeDeleteGroupModal: Locator;
   readonly deleteGroupModalCancelButton: Locator;
   readonly deleteGroupModalDeleteButton: Locator;
+  readonly emptyState: Locator;
 
   constructor(page: Page) {
     this.page = page;
     // List page
     this.groupsList = page.getByRole("table");
     this.createGroupButton = page.getByRole("button", {
-      name: /create group/i,
+      name: /create( a)? group/i,
     });
     this.editGroupButton = (rowName) =>
-      this.groupsList
-        .getByRole("row", { name: rowName })
-        .getByLabel(/edit group/i);
+      this.groupsList.getByRole("row", { name: rowName }).getByLabel(/edit/i);
     this.deleteGroupButton = (rowName) =>
       this.groupsList.getByRole("row", { name: rowName }).getByLabel("Delete");
 
@@ -83,8 +82,7 @@ export class GroupsPage {
       name: "Close",
     });
     this.editNameField = this.editGroupModal.getByRole("textbox", {
-      name: "Name",
-      exact: true,
+      name: /group name/i,
     });
     this.editDescriptionField = this.editGroupModal.getByRole("textbox", {
       name: "Description",
@@ -93,7 +91,7 @@ export class GroupsPage {
       name: "Cancel",
     });
     this.editGroupModalUpdateButton = this.editGroupModal.getByRole("button", {
-      name: /update group/i,
+      name: /edit group/i,
     });
 
     // Delete group modal
@@ -113,6 +111,7 @@ export class GroupsPage {
         name: /delete group/i,
       },
     );
+    this.emptyState = page.getByText("No groups created yet");
   }
 
   async navigateToGroups() {

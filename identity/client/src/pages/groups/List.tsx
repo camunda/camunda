@@ -35,7 +35,7 @@ const List: FC = () => {
   const [addGroup, addModal] = useModal(AddModal, reload);
   const [updateGroup, editModal] = useEntityModal(EditModal, reload);
   const [deleteGroup, deleteModal] = useEntityModal(DeleteModal, reload);
-  const showDetails = ({ groupKey }: Group) => navigate(`${groupKey}`);
+  const showDetails = ({ groupId }: Group) => navigate(groupId);
 
   const pageHeader = (
     <PageHeader title="Groups" linkText="groups" linkUrl="/concepts/groups/" />
@@ -68,7 +68,7 @@ const List: FC = () => {
       <EntityList
         data={groupSearchResults == null ? [] : groupSearchResults.items}
         headers={[
-          { header: t("groupId"), key: "groupKey" },
+          { header: t("groupId"), key: "groupId" },
           { header: t("groupName"), key: "name" },
         ]}
         sortProperty="name"

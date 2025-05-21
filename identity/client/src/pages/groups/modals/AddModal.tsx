@@ -28,7 +28,9 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
 
   const handleSubmit = async () => {
     const { success } = await callAddGroup({
-      name: groupName.trim(),
+      name: groupName,
+      groupId: groupId,
+      description: description,
     });
 
     if (success) {

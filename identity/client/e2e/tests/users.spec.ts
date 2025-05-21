@@ -55,7 +55,9 @@ test.describe.serial("users CRUD", () => {
       name: NEW_USER.email,
     });
 
-    await waitForItemInList(page, item);
+    await waitForItemInList(page, item, {
+      emptyStateLocator: usersPage.emptyState,
+    });
   });
 
   test("edits a user", async ({ page, usersPage }) => {
@@ -91,6 +93,9 @@ test.describe.serial("users CRUD", () => {
       name: EDITED_USER.email,
     });
 
-    await waitForItemInList(page, item, { shouldBeVisible: false });
+    await waitForItemInList(page, item, {
+      shouldBeVisible: false,
+      emptyStateLocator: usersPage.emptyState,
+    });
   });
 });
