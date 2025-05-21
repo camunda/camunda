@@ -40,6 +40,7 @@ export enum OwnerType {
   "ROLE" = "ROLE",
   "GROUP" = "GROUP",
   "MAPPING" = "MAPPING",
+  "CLIENT" = "CLIENT",
 }
 
 export enum ResourceType {
