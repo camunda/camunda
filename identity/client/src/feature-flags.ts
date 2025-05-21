@@ -19,3 +19,6 @@ export const IS_ROLES_BASE_PAGE_INTEGRATED = false;
 
 // Clients details page - Remove when clients search endpoint is available https://github.com/camunda/camunda/issues/31873
 export const IS_TENANT_CLIENTS_SUPPORTED = false;
+
+// Clients details page - Remove when clients search endpoint is available https://github.com/camunda/camunda/issues/31874
+export const IS_GROUP_CLIENTS_SUPPORTED = false;
