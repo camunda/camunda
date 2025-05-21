@@ -71,7 +71,7 @@ public class UserTaskAssertj extends AbstractAssert<UserTaskAssertj, UserTaskSel
         userTask ->
             assertThat(userTask.getAssignee())
                 .withFailMessage(
-                    "Expected [%s] to have assignee %s, but was %s",
+                    "Expected [%s] to have assignee '%s', but was '%s'",
                     actual.describe(), assignee, userTask.getAssignee())
                 .isEqualTo(assignee));
 
@@ -84,7 +84,7 @@ public class UserTaskAssertj extends AbstractAssert<UserTaskAssertj, UserTaskSel
         userTask ->
             assertThat(userTask.getPriority())
                 .withFailMessage(
-                    "Expected [%s] to have priority %d, but was %d",
+                    "Expected [%s] to have priority '%d', but was '%d'",
                     actual.describe(), priority, userTask.getPriority())
                 .isEqualTo(priority));
 
@@ -97,7 +97,7 @@ public class UserTaskAssertj extends AbstractAssert<UserTaskAssertj, UserTaskSel
         userTask ->
             assertThat(userTask.getElementId().trim())
                 .withFailMessage(
-                    "Expected [%s] to have elementId %s, but was %s",
+                    "Expected [%s] to have element ID '%s', but was '%s'",
                     actual.describe(), elementId, userTask.getElementId())
                 .isEqualTo(elementId));
 
@@ -110,7 +110,7 @@ public class UserTaskAssertj extends AbstractAssert<UserTaskAssertj, UserTaskSel
         userTask ->
             assertThat(userTask.getName().trim())
                 .withFailMessage(
-                    "Expected [%s] to have name %s, but was %s",
+                    "Expected [%s] to have name '%s', but was '%s'",
                     actual.describe(), name, userTask.getName())
                 .isEqualTo(name));
 
@@ -123,7 +123,7 @@ public class UserTaskAssertj extends AbstractAssert<UserTaskAssertj, UserTaskSel
         userTask ->
             assertThat(userTask.getProcessInstanceKey())
                 .withFailMessage(
-                    "Expected [%s] to have processInstanceKey %d, but was %d",
+                    "Expected [%s] to have processInstanceKey '%d', but was '%d'",
                     actual.describe(), processInstanceKey, userTask.getProcessInstanceKey())
                 .isEqualTo(processInstanceKey));
 
@@ -136,7 +136,7 @@ public class UserTaskAssertj extends AbstractAssert<UserTaskAssertj, UserTaskSel
         userTask ->
             assertThat(userTask.getDueDate())
                 .withFailMessage(
-                    "Expected [%s] to have due date %s, but was %s",
+                    "Expected [%s] to have due date '%s', but was '%s'",
                     actual.describe(), dueDate, userTask.getDueDate())
                 .isEqualTo(dueDate));
 
@@ -149,7 +149,7 @@ public class UserTaskAssertj extends AbstractAssert<UserTaskAssertj, UserTaskSel
         userTask ->
             assertThat(userTask.getCompletionDate())
                 .withFailMessage(
-                    "Expected [%s] to have completion date %s, but was %s",
+                    "Expected [%s] to have completion date '%s', but was '%s'",
                     actual.describe(), completionDate, userTask.getCompletionDate())
                 .isEqualTo(completionDate));
 
@@ -162,7 +162,7 @@ public class UserTaskAssertj extends AbstractAssert<UserTaskAssertj, UserTaskSel
         userTask ->
             assertThat(userTask.getFollowUpDate())
                 .withFailMessage(
-                    "Expected [%s] to have follow-up date %s, but was %s",
+                    "Expected [%s] to have follow-up date '%s', but was '%s'",
                     actual.describe(), followUpDate, userTask.getFollowUpDate())
                 .isEqualTo(followUpDate));
 
@@ -175,7 +175,7 @@ public class UserTaskAssertj extends AbstractAssert<UserTaskAssertj, UserTaskSel
         userTask ->
             assertThat(userTask.getCreationDate())
                 .withFailMessage(
-                    "Expected [%s] to have creation date %s, but was %s",
+                    "Expected [%s] to have creation date '%s', but was '%s'",
                     actual.describe(), creationDate, userTask.getCreationDate())
                 .isEqualTo(creationDate));
 

@@ -272,7 +272,7 @@ public class UserTaskAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () -> assertThat(UserTaskSelectors.byTaskName("a")).hasPriority(PRIORITY))
-          .hasMessage("Expected [a] to have priority 60, but was 40");
+          .hasMessage("Expected [a] to have priority '60', but was '40'");
     }
   }
 
@@ -341,7 +341,7 @@ public class UserTaskAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () -> assertThat(UserTaskSelectors.byTaskName("a")).hasElementId(ELEMENT_ID))
-          .hasMessage("Expected [a] to have elementId element_id, but was other_element_id");
+          .hasMessage("Expected [a] to have element ID 'element_id', but was 'other_element_id'");
     }
   }
 
@@ -407,7 +407,7 @@ public class UserTaskAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () -> assertThat(UserTaskSelectors.byTaskName(NAME)).hasName("other_name"))
-          .hasMessage("Expected [name] to have name other_name, but was name");
+          .hasMessage("Expected [name] to have name 'other_name', but was 'name'");
     }
   }
 
@@ -476,7 +476,7 @@ public class UserTaskAssertTest {
       // then
       Assertions.assertThatThrownBy(
               () -> assertThat(UserTaskSelectors.byTaskName("a")).hasAssignee(ASSIGNEE))
-          .hasMessage("Expected [a] to have assignee tester, but was other");
+          .hasMessage("Expected [a] to have assignee 'tester', but was 'other'");
     }
   }
 
@@ -546,7 +546,7 @@ public class UserTaskAssertTest {
       Assertions.assertThatThrownBy(
               () -> assertThat(UserTaskSelectors.byTaskName("a")).hasDueDate(DUE_DATE))
           .hasMessage(
-              "Expected [a] to have due date 2025-05-01T10:00:00.000Z, but was 2025-04-30T10:00:00.000Z");
+              "Expected [a] to have due date '2025-05-01T10:00:00.000Z', but was '2025-04-30T10:00:00.000Z'");
     }
   }
 
@@ -617,7 +617,7 @@ public class UserTaskAssertTest {
               () ->
                   assertThat(UserTaskSelectors.byTaskName("a")).hasCompletionDate(COMPLETION_DATE))
           .hasMessage(
-              "Expected [a] to have completion date 2025-05-01T10:00:00.000Z, but was 2025-04-30T10:00:00.000Z");
+              "Expected [a] to have completion date '2025-05-01T10:00:00.000Z', but was '2025-04-30T10:00:00.000Z'");
     }
   }
 
@@ -687,7 +687,7 @@ public class UserTaskAssertTest {
       Assertions.assertThatThrownBy(
               () -> assertThat(UserTaskSelectors.byTaskName("a")).hasFollowUpDate(FOLLOW_UP_DATE))
           .hasMessage(
-              "Expected [a] to have follow-up date 2025-05-01T10:00:00.000Z, but was 2025-04-30T10:00:00.000Z");
+              "Expected [a] to have follow-up date '2025-05-01T10:00:00.000Z', but was '2025-04-30T10:00:00.000Z'");
     }
   }
 
@@ -757,7 +757,7 @@ public class UserTaskAssertTest {
       Assertions.assertThatThrownBy(
               () -> assertThat(UserTaskSelectors.byTaskName("a")).hasCreationDate(CREATION_DATE))
           .hasMessage(
-              "Expected [a] to have creation date 2025-05-01T10:00:00.000Z, but was 2025-04-30T10:00:00.000Z");
+              "Expected [a] to have creation date '2025-05-01T10:00:00.000Z', but was '2025-04-30T10:00:00.000Z'");
     }
   }
 
