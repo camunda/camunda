@@ -11,7 +11,7 @@ import static io.camunda.security.auth.Authentication.none;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -56,37 +56,6 @@ class BatchOperationItemProviderTest {
   }
 
   @Test
-  public void shouldFetchProcessInstanceKeys() {
-    final var queryCaptor = ArgumentCaptor.forClass(ProcessInstanceQuery.class);
-
-    // given
-    final var result =
-        new SearchQueryResult.Builder<ProcessInstanceEntity>()
-            .items(
-                List.of(
-                    mockProcessInstanceEntity(1L),
-                    mockProcessInstanceEntity(2L),
-                    mockProcessInstanceEntity(3L)))
-            .total(3)
-            .build();
-    when(searchClientsProxy.searchProcessInstances(queryCaptor.capture())).thenReturn(result);
-
-    // when
-    final var filter = new ProcessInstanceFilter.Builder().build();
-    final var resultKeys =
-        provider.fetchProcessInstanceItems(PARTITION_ID, filter, null, () -> false);
-
-    // then
-    assertThat(resultKeys).containsExactly(new Item(1L, 1L), new Item(2L, 2L), new Item(3L, 3L));
-
-    // and partitionId is set in filter
-    final var query = queryCaptor.getValue();
-    assertThat(query.filter().partitionId()).isEqualTo(PARTITION_ID);
-
-    verify(searchClientsProxy, never()).withSecurityContext(any());
-  }
-
-  @Test
   public void shouldFetchProcessInstanceKeysWithAuth() {
     final var queryCaptor = ArgumentCaptor.forClass(ProcessInstanceQuery.class);
 
@@ -114,6 +83,8 @@ class BatchOperationItemProviderTest {
     // and partitionId is set in filter
     final var query = queryCaptor.getValue();
     assertThat(query.filter().partitionId()).isEqualTo(PARTITION_ID);
+
+    // and auth is set
     final var argumentSecurityContextCaptor = ArgumentCaptor.forClass(SecurityContext.class);
     verify(searchClientsProxy).withSecurityContext(argumentSecurityContextCaptor.capture());
     final SecurityContext securityContext = argumentSecurityContextCaptor.getValue();
@@ -250,7 +221,60 @@ class BatchOperationItemProviderTest {
   }
 
   @Test
-  public void shouldFetchIncidentItems() {
+  public void shouldFetchIncidentItemsWithAuth() {
+    final var queryCaptor = ArgumentCaptor.forClass(ProcessInstanceQuery.class);
+
+    // given
+    final var auth = mock(Authentication.class);
+    final var processInstanceResult =
+        new SearchQueryResult.Builder<ProcessInstanceEntity>()
+            .items(
+                List.of(
+                    mockProcessInstanceEntity(1L),
+                    mockProcessInstanceEntity(2L),
+                    mockProcessInstanceEntity(3L)))
+            .total(3)
+            .build();
+    when(searchClientsProxy.searchProcessInstances(queryCaptor.capture()))
+        .thenReturn(processInstanceResult);
+
+    // given
+    final var incidentResult =
+        new SearchQueryResult.Builder<IncidentEntity>()
+            .items(
+                List.of(
+                    mockIncidentEntity(11L, 1L),
+                    mockIncidentEntity(12L, 2L),
+                    mockIncidentEntity(13L, 3L)))
+            .total(3)
+            .build();
+    when(searchClientsProxy.searchIncidents(any())).thenReturn(incidentResult);
+
+    // when
+    final var filter = new ProcessInstanceFilter.Builder().build();
+    final var resultKeys = provider.fetchIncidentItems(PARTITION_ID, filter, auth, () -> false);
+
+    // then
+    assertThat(resultKeys).containsExactly(new Item(11L, 1L), new Item(12L, 2L), new Item(13L, 3L));
+
+    // and partitionId is set in process instance filter
+    final var query = queryCaptor.getValue();
+    assertThat(query.filter().partitionId()).isEqualTo(PARTITION_ID);
+
+    // and auth is set
+    final var argumentSecurityContextCaptor = ArgumentCaptor.forClass(SecurityContext.class);
+    verify(searchClientsProxy, times(2))
+        .withSecurityContext(argumentSecurityContextCaptor.capture());
+    final SecurityContext securityContext = argumentSecurityContextCaptor.getValue();
+    assertThat(securityContext.authentication()).isEqualTo(auth);
+    final Authorization authorization = securityContext.authorization();
+    assertThat(authorization.resourceType())
+        .isEqualTo(AuthorizationResourceType.PROCESS_DEFINITION);
+    assertThat(authorization.permissionType()).isEqualTo(PermissionType.READ_PROCESS_INSTANCE);
+  }
+
+  @Test
+  public void shouldFetchIncidentsWithAuthItems() {
     final var queryCaptor = ArgumentCaptor.forClass(ProcessInstanceQuery.class);
 
     // given

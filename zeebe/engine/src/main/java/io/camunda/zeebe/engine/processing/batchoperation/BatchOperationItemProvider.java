@@ -199,6 +199,20 @@ public class BatchOperationItemProvider {
      * @return the fetched items and pagination information
      */
     ItemPage fetchItems(F filter, Object[] sortValues, Authentication authentication);
+
+    /**
+     * Creates a security context for the given authentication and authorization.
+     *
+     * @param authentication the authentication of the user which started the batch operation
+     * @param authorization the same authorization is needed, that is normally used in
+     *     ProcessInstanceServices / IncidentServices
+     * @return the security context
+     */
+    default SecurityContext createSecurityContext(
+        final Authentication authentication, final Authorization authorization) {
+      return SecurityContext.of(
+          b -> b.withAuthentication(authentication).withAuthorization(authorization));
+    }
   }
 
   private final class ProcessInstancePageFetcher implements ItemPageFetcher<ProcessInstanceFilter> {
@@ -207,6 +221,9 @@ public class BatchOperationItemProvider {
         final ProcessInstanceFilter filter,
         final Object[] sortValues,
         final Authentication authentication) {
+      final var securityContext =
+          createSecurityContext(
+              authentication, Authorization.of(a -> a.processDefinition().readProcessInstance()));
       final var page =
           SearchQueryPageBuilders.page().size(queryPageSize).searchAfter(sortValues).build();
       final var query =
@@ -216,22 +233,8 @@ public class BatchOperationItemProvider {
               .resultConfig(c -> c.onlyKey(true))
               .build();
 
-      final SearchQueryResult<ProcessInstanceEntity> result;
-      if (authentication != null) {
-        final var securityContext =
-            SecurityContext.of(
-                b ->
-                    b.withAuthentication(authentication)
-                        // Since we are not using the ProcessInstanceServices, we need to also
-                        // define the necessary authorizations
-                        .withAuthorization(
-                            Authorization.of(a -> a.processDefinition().readProcessInstance())));
-
-        result =
-            searchClientsProxy.withSecurityContext(securityContext).searchProcessInstances(query);
-      } else {
-        result = searchClientsProxy.searchProcessInstances(query);
-      }
+      final SearchQueryResult<ProcessInstanceEntity> result =
+          searchClientsProxy.withSecurityContext(securityContext).searchProcessInstances(query);
 
       return new ItemPage(
           result.items().stream()
@@ -248,12 +251,16 @@ public class BatchOperationItemProvider {
         final IncidentFilter filter,
         final Object[] sortValues,
         final Authentication authentication) {
-      final var securityContext = SecurityContext.of(b -> b.withAuthentication(authentication));
+      final var securityContext =
+          createSecurityContext(
+              authentication, Authorization.of(a -> a.processDefinition().readProcessInstance()));
       final var page =
           SearchQueryPageBuilders.page().size(queryPageSize).searchAfter(sortValues).build();
       final var query = SearchQueryBuilders.incidentSearchQuery().filter(filter).page(page).build();
+
       final var result =
           searchClientsProxy.withSecurityContext(securityContext).searchIncidents(query);
+
       return new ItemPage(
           result.items().stream()
               .map(pi -> new Item(pi.incidentKey(), pi.processInstanceKey()))

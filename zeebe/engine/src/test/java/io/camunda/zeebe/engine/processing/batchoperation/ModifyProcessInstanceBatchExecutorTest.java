@@ -19,7 +19,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
 import java.util.Set;
 import org.junit.Test;
-import org.junit.jupiter.api.BeforeEach;
 
 public final class ModifyProcessInstanceBatchExecutorTest extends AbstractBatchOperationTest {
 
