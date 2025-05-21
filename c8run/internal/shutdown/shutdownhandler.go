@@ -38,7 +38,6 @@ func ShutdownProcesses(state *types.State) {
 		}
 	}()
 
-	// fmt.Println("Shutting down processesgor...")
 	log.Debug().Msg("stopCommand goroutine initiated")
 	go func() {
 		stopCommand(c8, settings, processInfo)

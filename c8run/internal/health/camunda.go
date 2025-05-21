@@ -105,7 +105,7 @@ func PrintStatus(settings types.C8RunSettings) error {
 	endpoints, _ := os.ReadFile("endpoints.txt")
 	t, err := template.New("endpoints").Parse(string(endpoints))
 	if err != nil {
-		return fmt.Errorf("Error: failed to parse endpoints template: %s", err.Error())
+		return fmt.Errorf("failed to parse endpoints template: %s", err.Error())
 	}
 
 	data := Ports{
@@ -117,7 +117,7 @@ func PrintStatus(settings types.C8RunSettings) error {
 
 	err = t.Execute(os.Stdout, data)
 	if err != nil {
-		return fmt.Errorf("Error: failed to fill endpoints template %s", err.Error())
+		return fmt.Errorf("failed to fill endpoints template %s", err.Error())
 	}
 	return nil
 }

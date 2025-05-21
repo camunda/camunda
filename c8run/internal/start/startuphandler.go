@@ -116,7 +116,7 @@ func resolveJavaHomeAndBinary() (string, string, error) {
 	if javaHome == "" {
 		javaHome, err = getJavaHome(javaBinary)
 		if err != nil {
-			return "", "", fmt.Errorf("Failed to get JAVA_HOME")
+			return "", "", fmt.Errorf("failed to get JAVA_HOME")
 		}
 	}
 
@@ -143,7 +143,7 @@ func resolveJavaHomeAndBinary() (string, string, error) {
 	} else {
 		path, err := exec.LookPath("java")
 		if err != nil {
-			return "", "", fmt.Errorf("Failed to find JAVA_HOME or java program.")
+			return "", "", fmt.Errorf("failed to find JAVA_HOME or java program")
 		}
 
 		// go up 2 directories since it's not guaranteed that java is in a bin folder
@@ -230,9 +230,10 @@ func StartCommand(wg *sync.WaitGroup, ctx context.Context, stop context.CancelFu
 	if settings.Config != "" {
 		path := filepath.Join(parentDir, settings.Config)
 		var slash string
-		if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
+		switch runtime.GOOS {
+		case "linux", "darwin":
 			slash = "/"
-		} else if runtime.GOOS == "windows" {
+		case "windows":
 			slash = "\\"
 		}
 

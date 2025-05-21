@@ -117,7 +117,7 @@ func handleDockerCommand(settings types.C8RunSettings, baseCommand string, compo
 	case "stop":
 		err = runDockerCommand(composeExtractedFolder, "down")
 	default:
-		err = fmt.Errorf("No valid command. Only start and stop supported.")
+		err = fmt.Errorf("command invalid, only start and stop supported")
 	}
 
 	if err != nil {
@@ -248,7 +248,7 @@ func main() {
 	baseDir, _ := os.Getwd()
 	state := initialize(baseCommand, baseDir)
 
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGKILL, syscall.SIGTERM)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGKILL, syscall.SIGINT, syscall.SIGTERM)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
