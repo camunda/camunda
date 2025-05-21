@@ -282,6 +282,66 @@ public class RolesByClientIntegrationTest {
   }
 
   @Test
+  void shouldRejectAssigningRoleToClientIfRoleIdIsEmpty() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newAssignRoleToClientCommand()
+                    .roleId("")
+                    .clientId(Strings.newRandomValidIdentityId())
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("roleId must not be empty");
+  }
+
+  @Test
+  void shouldRejectAssigningRoleToClientIfClientIdIsEmpty() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newAssignRoleToClientCommand()
+                    .roleId(EXISTING_ROLE_ID)
+                    .clientId("")
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("clientId must not be empty");
+  }
+
+  @Test
+  void shouldRejectUnassigningRoleFromClientIfClientIdIsEmpty() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUnassignRoleFromClientCommand()
+                    .roleId(EXISTING_ROLE_ID)
+                    .clientId("")
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("clientId must not be empty");
+  }
+
+  @Test
+  void shouldRejectUnassigningRoleFromClientIfRoleIdIsEmpty() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUnassignRoleFromClientCommand()
+                    .roleId("")
+                    .clientId(Strings.newRandomValidIdentityId())
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("roleId must not be empty");
+  }
+
+  @Test
   void shouldRejectUnassigningRoleFromClientIfMissingRoleId() {
     // when / then
     assertThatThrownBy(
