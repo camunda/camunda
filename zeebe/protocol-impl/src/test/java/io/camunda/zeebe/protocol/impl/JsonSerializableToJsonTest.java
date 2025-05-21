@@ -23,6 +23,14 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationItem;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationMoveInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
@@ -77,6 +85,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -3233,6 +3242,198 @@ final class JsonSerializableToJsonTest {
           "authorizations": []
       }
       """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////// Empty BatchOperationCreationRecord ///////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "BatchOperationCreationRecord",
+        (Supplier<BatchOperationCreationRecord>)
+            () ->
+                new BatchOperationCreationRecord()
+                    .setBatchOperationKey(12345L)
+                    .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE),
+        """
+  {
+    "batchOperationKey": 12345,
+    "batchOperationType": "CANCEL_PROCESS_INSTANCE",
+    "entityFilterBuffer": {"expandable":false},
+    "entityFilter": null,
+    "migrationPlan":{"targetProcessDefinitionKey":-1,"mappingInstructions":[],"empty":false,"encodedLength":50},
+    "modificationPlan":{"moveInstructions":[],"empty":false,"encodedLength":19},
+    "authenticationBuffer": {"expandable":false}
+    }
+  }
+  """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////// Full BatchOperationCreationRecord ////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "BatchOperationCreationRecord",
+        (Supplier<BatchOperationCreationRecord>)
+            () ->
+                new BatchOperationCreationRecord()
+                    .setBatchOperationKey(12345L)
+                    .setBatchOperationType(BatchOperationType.MIGRATE_PROCESS_INSTANCE)
+                    .setEntityFilter(
+                        toMessagePack("{'processDefinitionKey': 67890, 'state': 'ACTIVE'}"))
+                    .setMigrationPlan(
+                        new BatchOperationProcessInstanceMigrationPlan()
+                            .setTargetProcessDefinitionKey(98765L)
+                            .addMappingInstruction(
+                                new ProcessInstanceMigrationMappingInstruction()
+                                    .setSourceElementId("sourceTask")
+                                    .setTargetElementId("targetTask")))
+                    .setModificationPlan(
+                        new BatchOperationProcessInstanceModificationPlan()
+                            .addMoveInstruction(
+                                new BatchOperationProcessInstanceModificationMoveInstruction()
+                                    .setSourceElementId("sourceTask")
+                                    .setTargetElementId("targetTask")))
+                    .setAuthentication(
+                        toMessagePack(
+                            """
+                  {
+                    'authenticated_username': 'bud spencer',
+                    'authenticated_client_id': 'client-123',
+                    'authenticated_group_ids': ['groupA', 'groupB'],
+                    'authenticated_role_ids': ['roleX', 'roleY'],
+                    'authenticated_tenant_ids': ['tenant1', 'tenant2'],
+                    'authenticated_mapping_ids': ['mapping1', 'mapping2'],
+                    'claims': {
+                      'email': 'budspencer@example.com',
+                      'department': 'engineering'
+                    }
+                  }
+                  """)),
+        """
+  {
+     "batchOperationKey": 12345,
+     "batchOperationType": "MIGRATE_PROCESS_INSTANCE",
+     "entityFilterBuffer": {
+       "expandable": false
+     },
+     "entityFilter": "{\\"processDefinitionKey\\":67890,\\"state\\":\\"ACTIVE\\"}",
+     "migrationPlan": {
+       "mappingInstructions": [
+         {
+           "targetElementId": "targetTask",
+           "sourceElementId": "sourceTask"
+         }
+       ],
+       "targetProcessDefinitionKey": 98765,
+       "empty": false,
+       "encodedLength": 109
+     },
+     "modificationPlan": {
+       "moveInstructions": [
+         {
+           "targetElementId": "targetTask",
+           "sourceElementId": "sourceTask",
+           "empty": false,
+           "encodedLength": 55
+         }
+       ],
+       "empty": false,
+       "encodedLength": 74
+     },
+     "authenticationBuffer": {
+       "expandable": false
+     }
+   }
+  """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////// Empty BatchOperationChunkRecord //////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty BatchOperationChunkRecord",
+        (Supplier<BatchOperationChunkRecord>)
+            () -> new BatchOperationChunkRecord().setBatchOperationKey(12345L),
+        """
+  {
+    "batchOperationKey": 12345,
+    "items": []
+  }
+  """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////// BatchOperationChunkRecord ////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "BatchOperationChunkRecord",
+        (Supplier<BatchOperationChunkRecord>)
+            () ->
+                new BatchOperationChunkRecord()
+                    .setBatchOperationKey(12345L)
+                    .setItems(
+                        List.of(
+                            new BatchOperationItem().setItemKey(1L).setProcessInstanceKey(2L),
+                            new BatchOperationItem().setItemKey(2L).setProcessInstanceKey(2L))),
+        """
+  {
+    "items": [
+      {
+        "itemKey": 1,
+        "processInstanceKey": 2,
+        "empty": false,
+        "encodedLength": 30
+      },
+      {
+        "itemKey": 2,
+        "processInstanceKey": 2,
+        "empty": false,
+        "encodedLength": 30
+      }
+    ],
+    "batchOperationKey": 12345
+  }
+  """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////// BatchOperationExecutionRecord ////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "BatchOperationExecutionRecord",
+        (Supplier<BatchOperationExecutionRecord>)
+            () ->
+                new BatchOperationExecutionRecord()
+                    .setBatchOperationKey(12345L)
+                    .setItemKeys(Set.of(1L, 2L)),
+        """
+  {
+    "batchOperationKey": 12345,
+    "itemKeys": [1, 2]
+  }
+  """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      //////////////////////// Empty BatchOperationExecutionRecord ////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty BatchOperationExecutionRecord",
+        (Supplier<BatchOperationExecutionRecord>)
+            () -> new BatchOperationExecutionRecord().setBatchOperationKey(12345L),
+        """
+  {
+    "batchOperationKey": 12345,
+    "itemKeys": []
+  }
+  """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////// BatchOperationLifecycleManagementRecord ///////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "BatchOperationLifecycleManagementRecord",
+        (Supplier<BatchOperationLifecycleManagementRecord>)
+            () -> new BatchOperationLifecycleManagementRecord().setBatchOperationKey(12345L),
+        """
+  {
+    "batchOperationKey": 12345
+  }
+  """
       },
     };
   }
