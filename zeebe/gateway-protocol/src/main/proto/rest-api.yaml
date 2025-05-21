@@ -9064,6 +9064,15 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProcessInstanceCreationStartInstruction"
+        runtimeInstructions:
+          description: |
+            List of instructions that affect the runtime behavior of the process instance.
+            By default, the process instance will run until it terminates normally. If provided,
+            the process instance may finish earlier. Refer to specific instruction types for more
+            details.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessInstanceCreationRuntimeInstruction"
         awaitCompletion:
           description: |
             Wait for the process instance to complete. If the process instance completion does
@@ -9100,6 +9109,38 @@ components:
 
             For now, however, the start instruction is implicitly a "startBeforeElement" instruction
           type: string
+    RuntimeInstructionType:
+      type: string
+      description: |
+        The type of the runtime instruction. For now, only CANCEL_PROCESS_INSTANCE is supported.
+      enum:
+        - CANCEL_PROCESS_INSTANCE
+    ProcessInstanceCreationRuntimeInstruction:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/RuntimeInstructionType"
+      discriminator:
+        propertyName: type
+        mapping:
+          CANCEL_PROCESS_INSTANCE: "#/components/schemas/ProcessInstanceCreationCancellationInstruction"
+      description: |
+        Base type for all runtime instructions.
+    ProcessInstanceCreationCancellationInstruction:
+      allOf:
+        - $ref: "#/components/schemas/ProcessInstanceCreationRuntimeInstruction"
+        - type: object
+          required:
+            - afterElementId
+          properties:
+            afterElementId:
+              description: |
+                The ID of the element that, once completed, will cause the process to terminate.
+              type: string
+          description: |
+            Cancels the process instance after a specific BPMN element is completed.
     CreateProcessInstanceResult:
       type: object
       properties:
