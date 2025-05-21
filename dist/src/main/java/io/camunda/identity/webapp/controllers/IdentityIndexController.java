@@ -16,6 +16,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.Map;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,9 +46,15 @@ public class IdentityIndexController {
     final var envJsNonce = generateNonce();
     model.addAttribute("contextPath", context.getContextPath() + "/identity/");
     model.addAttribute("clientConfigNonce", envJsNonce);
-    model.addAttribute(
-        "isOidc",
-        securityConfiguration.getAuthentication().getMethod() == AuthenticationMethod.OIDC);
+
+    final var clientConfigMap =
+        Map.of(
+            "VITE_IS_OIDC",
+            String.valueOf(
+                AuthenticationMethod.OIDC.equals(
+                    securityConfiguration.getAuthentication().getMethod())));
+
+    model.addAttribute("clientConfig", clientConfigMap);
     setContentSecurePolicyHeader(response, envJsNonce);
     return "identity/index";
   }
