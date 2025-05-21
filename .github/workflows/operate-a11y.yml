@@ -26,6 +26,7 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions: {}  # GITHUB_TOKEN unused in this job
     container:
       image: mcr.microsoft.com/playwright:v1.51.1
       options: --user 1001:1000
