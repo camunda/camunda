@@ -402,16 +402,16 @@ public class CamundaProcessTestExtension
   }
 
   public CamundaProcessTestExtension withRemoteCamundaMonitoringApiAddress(
-      final String restApiAddress) {
-    containerRuntimeBuilder.withRemoteCamundaMonitoringApiAddress(restApiAddress);
+      final String camundaMonitoringApiAddress) {
+    containerRuntimeBuilder.withRemoteCamundaMonitoringApiAddress(camundaMonitoringApiAddress);
     return this;
   }
 
   public CamundaProcessTestExtension withRemoteConnectorsRestApiAddress(
-      final String restApiAddress) {
+      final String connectorsRestApiAddress) {
     containerRuntimeBuilder
         .withConnectorsEnabled(true)
-        .withRemoteConnectorsRestApiAddress(restApiAddress);
+        .withRemoteConnectorsRestApiAddress(connectorsRestApiAddress);
     return this;
   }
 
