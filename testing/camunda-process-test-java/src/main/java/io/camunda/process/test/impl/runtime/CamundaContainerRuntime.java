@@ -54,6 +54,14 @@ public class CamundaContainerRuntime implements AutoCloseable, CamundaRuntime {
   private static final String CAMUNDA_REST_API =
       "http://" + NETWORK_ALIAS_CAMUNDA + ":" + ContainerRuntimePorts.CAMUNDA_REST_API;
 
+  private static final URI DISABLED_CONNECTORS_ADDRESS =
+      URI.create(
+          "http://"
+              + NETWORK_ALIAS_CONNECTORS
+              + ":"
+              + ContainerRuntimePorts.CONNECTORS_REST_API
+              + "/disabled");
+
   private final ContainerFactory containerFactory;
 
   private final Network network;
@@ -176,7 +184,7 @@ public class CamundaContainerRuntime implements AutoCloseable, CamundaRuntime {
     if (connectorsEnabled) {
       return getConnectorsContainer().getRestApiAddress();
     } else {
-      return URI.create("http://localhost:8080/connectors-disabled");
+      return DISABLED_CONNECTORS_ADDRESS;
     }
   }
 
