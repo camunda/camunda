@@ -223,7 +223,7 @@ public class CamundaContainerRuntimeBuilder {
         return new RemoteRuntimeConnection(
             camundaClientBuilderSupplier,
             remoteCamundaMonitoringApiAddress,
-            connectorsEnabled ? remoteConnectorsRestApiAddress : null);
+            remoteConnectorsRestApiAddress);
       default:
         throw new IllegalStateException("Unknown runtime mode: " + runtimeMode);
     }
