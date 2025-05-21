@@ -10,21 +10,17 @@ package io.camunda.process.test.impl.extension;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.CamundaClientConfiguration;
-import io.camunda.process.test.impl.client.HttpClientUtil;
-import java.io.IOException;
+import io.camunda.client.api.response.PartitionBrokerHealth;
+import io.camunda.client.api.response.PartitionInfo;
+import io.camunda.client.api.response.Topology;
 import java.net.URI;
 import java.util.function.Supplier;
-import org.apache.hc.client5.http.classic.methods.HttpGet;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
-import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RemoteRuntimeConnection implements CamundaRuntimeConnection {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RemoteRuntimeConnection.class);
-
-  private final CloseableHttpClient httpClient = HttpClients.createDefault();
 
   private final URI camundaRestApiAddress;
   private final URI camundaGrpcApiAddress;
@@ -56,21 +52,7 @@ public class RemoteRuntimeConnection implements CamundaRuntimeConnection {
         connectorsRestApiAddress);
 
     // check connection to remote runtime
-    try {
-      checkConnection(camundaMonitoringApiAddress.resolve("/actuator/health"));
-      LOGGER.info("Connected to remote Camunda runtime successfully.");
-    } catch (final IOException e) {
-      throw new RuntimeException("Failed to connect to remote Camunda runtime.");
-    }
-
-    if (connectorsRestApiAddress != null) {
-      try {
-        checkConnection(connectorsRestApiAddress.resolve("/actuator/health"));
-        LOGGER.info("Connected to remote Connectors runtime successfully.");
-      } catch (final IOException e) {
-        LOGGER.warn("Failed to connect to remote Connectors runtime.");
-      }
-    }
+    checkConnectionToRemoteRuntime();
   }
 
   @Override
@@ -98,31 +80,34 @@ public class RemoteRuntimeConnection implements CamundaRuntimeConnection {
     return camundaClientBuilderSupplier;
   }
 
+  private void checkConnectionToRemoteRuntime() {
+    try (final CamundaClient camundaClient = createClientBuilder().get().build()) {
+      final Topology topology = camundaClient.newTopologyRequest().send().join();
+
+      final boolean isHealthy =
+          topology.getBrokers().stream()
+              .flatMap(brokerInfo -> brokerInfo.getPartitions().stream())
+              .map(PartitionInfo::getHealth)
+              .allMatch(PartitionBrokerHealth.HEALTHY::equals);
+
+      if (isHealthy) {
+        LOGGER.info(
+            "Remote Camunda runtime connected. [version: {}]", topology.getGatewayVersion());
+      } else {
+        LOGGER.warn("Remote Camunda runtime is unhealthy. [topology: {}]", topology);
+      }
+
+    } catch (final Exception e) {
+      throw new RuntimeException("Failed to connect to remote Camunda runtime.", e);
+    }
+  }
+
   private CamundaClientConfiguration getClientConfiguration(
       final Supplier<CamundaClientBuilder> camundaClientBuilderSupplier) {
     final CamundaClientBuilder clientBuilder = camundaClientBuilderSupplier.get();
     try (final CamundaClient camundaClient = clientBuilder.build()) {
       return camundaClient.getConfiguration();
     }
-  }
-
-  private void checkConnection(final URI readyEndpoint) throws IOException {
-    final HttpGet request = new HttpGet(readyEndpoint);
-
-    httpClient.execute(
-        request,
-        response -> {
-          final int statusCode = response.getCode();
-          if (statusCode >= 200 && statusCode < 300) {
-            // connection is ready
-            return null;
-          } else {
-            throw new RuntimeException(
-                String.format(
-                    "Request failed. [code: %d, message: %s]",
-                    response.getCode(), HttpClientUtil.getReponseAsString(response)));
-          }
-        });
   }
 
   @Override
