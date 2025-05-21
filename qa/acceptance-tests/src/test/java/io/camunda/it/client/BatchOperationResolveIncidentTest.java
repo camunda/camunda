@@ -8,28 +8,29 @@
 package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.deployResource;
-import static io.camunda.it.util.TestHelper.startProcessInstance;
-import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
+import static io.camunda.it.util.TestHelper.getScopedVariables;
+import static io.camunda.it.util.TestHelper.startScopedProcessInstance;
+import static io.camunda.it.util.TestHelper.waitForBatchOperationCompleted;
+import static io.camunda.it.util.TestHelper.waitForBatchOperationWithCorrectTotalCount;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
+import static io.camunda.it.util.TestHelper.waitForScopedProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitUntilIncidentsAreActive;
 import static io.camunda.it.util.TestHelper.waitUntilIncidentsAreResolved;
-import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents;
+import static io.camunda.it.util.TestHelper.waitUntilScopedProcessInstanceHasIncidents;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
-import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import io.camunda.client.api.search.response.Incident;
-import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.qa.util.multidb.MultiDbTest;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import java.util.Map;
+import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -37,45 +38,59 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class BatchOperationResolveIncidentTest {
 
-  static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
-  static final List<Long> ACTIVE_INCIDENTS = new ArrayList<>();
-  private static final int AMOUNT_OF_INCIDENTS = 3;
+  static final int AMOUNT_OF_INCIDENTS = 3;
 
   private static CamundaClient camundaClient;
+  String testScopeId;
+  final List<Process> deployedProcesses = new ArrayList<>();
+  final List<Long> activeIncidents = new ArrayList<>();
 
-  @BeforeAll
-  public static void beforeAll() {
+  @BeforeEach
+  public void beforeEach() {
+    testScopeId = UUID.randomUUID().toString();
 
     final var processes =
         List.of("service_tasks_v1.bpmn", "service_tasks_v2.bpmn", "incident_process_v1.bpmn");
     processes.forEach(
         process ->
-            DEPLOYED_PROCESSES.addAll(
+            deployedProcesses.addAll(
                 deployResource(camundaClient, String.format("process/%s", process))
                     .getProcesses()));
 
     waitForProcessesToBeDeployed(camundaClient, 3);
 
-    startProcessInstance(camundaClient, "service_tasks_v1");
-    startProcessInstance(camundaClient, "service_tasks_v2", "{\"path\":222}");
-    startProcessInstance(camundaClient, "incident_process_v1");
-    startProcessInstance(camundaClient, "incident_process_v1");
-    startProcessInstance(camundaClient, "incident_process_v1");
+    final var processInstances = new ArrayList<Long>();
+    processInstances.add(
+        startScopedProcessInstance(camundaClient, "service_tasks_v1", testScopeId)
+            .getProcessInstanceKey());
+    processInstances.add(
+        startScopedProcessInstance(
+                camundaClient, "service_tasks_v2", testScopeId, Map.of("path", 222))
+            .getProcessInstanceKey());
+    processInstances.add(
+        startScopedProcessInstance(camundaClient, "incident_process_v1", testScopeId)
+            .getProcessInstanceKey());
+    processInstances.add(
+        startScopedProcessInstance(camundaClient, "incident_process_v1", testScopeId)
+            .getProcessInstanceKey());
+    processInstances.add(
+        startScopedProcessInstance(camundaClient, "incident_process_v1", testScopeId)
+            .getProcessInstanceKey());
 
-    waitForProcessInstancesToStart(camundaClient, 5);
-    waitUntilProcessInstanceHasIncidents(camundaClient, AMOUNT_OF_INCIDENTS);
+    waitForScopedProcessInstancesToStart(camundaClient, testScopeId, 5);
+    waitUntilScopedProcessInstanceHasIncidents(camundaClient, testScopeId, AMOUNT_OF_INCIDENTS);
     waitUntilIncidentsAreActive(camundaClient, AMOUNT_OF_INCIDENTS);
 
-    ACTIVE_INCIDENTS.addAll(
+    activeIncidents.addAll(
         camundaClient.newIncidentSearchRequest().send().join().items().stream()
             .map(Incident::getIncidentKey)
             .toList());
   }
 
-  @AfterAll
-  static void afterAll() {
-    DEPLOYED_PROCESSES.clear();
-    ACTIVE_INCIDENTS.clear();
+  @AfterEach
+  void afterEach() {
+    deployedProcesses.clear();
+    activeIncidents.clear();
   }
 
   @Test
@@ -85,42 +100,22 @@ public class BatchOperationResolveIncidentTest {
         camundaClient
             .newCreateBatchOperationCommand()
             .resolveIncident()
-            .filter(new ProcessInstanceFilterImpl())
+            .filter(f -> f.variables(getScopedVariables(testScopeId)))
             .send()
             .join();
     final var batchOperationKey = result.getBatchOperationKey();
 
     // then
     assertThat(result).isNotNull();
-    //    assertThat(result.getBatchOperationKey()).isNotNull();
+
+    // and wait if batch has correct amount of items. (To fail fast if not)
+    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationKey, 3);
 
     // and
-    Awaitility.await("should complete batch operation")
-        .atMost(Duration.ofSeconds(15))
-        .pollInterval(Duration.ofMillis(100))
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () -> {
-              // and
-              final var batch =
-                  camundaClient
-                      .newBatchOperationGetRequest(result.getBatchOperationKey())
-                      .send()
-                      .join();
-              assertThat(batch).isNotNull();
-              assertThat(batch.getEndDate()).isNotNull();
-              assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
-            });
+    waitForBatchOperationCompleted(camundaClient, batchOperationKey, 3, 0);
 
-    waitUntilIncidentsAreResolved(camundaClient, ACTIVE_INCIDENTS.size());
-
-    final var batch =
-        camundaClient.newBatchOperationGetRequest(result.getBatchOperationKey()).send().join();
-    assertThat(batch).isNotNull();
-    assertThat(batch.getEndDate()).isNotNull();
-    assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
-    assertThat(batch.getOperationsCompletedCount()).isEqualTo(3);
-    assertThat(batch.getOperationsFailedCount()).isEqualTo(0);
+    // and
+    waitUntilIncidentsAreResolved(camundaClient, activeIncidents.size());
 
     // and
     final var itemsObj =
@@ -134,6 +129,6 @@ public class BatchOperationResolveIncidentTest {
     assertThat(itemsObj.items()).hasSize(3);
     assertThat(itemsObj.items().stream().map(BatchOperationItem::getStatus).distinct().toList())
         .containsExactly(BatchOperationItemState.COMPLETED);
-    assertThat(itemKeys).containsExactlyInAnyOrder(ACTIVE_INCIDENTS.toArray(Long[]::new));
+    assertThat(itemKeys).containsExactlyInAnyOrder(activeIncidents.toArray(Long[]::new));
   }
 }
