@@ -32,13 +32,13 @@ type Ports struct {
 	CamundaPort  int
 }
 
-func QueryCamunda(ctx context.Context, c8 opener, name string, settings types.C8RunSettings) error {
+func QueryCamunda(ctx context.Context, c8 opener, name string, settings types.C8RunSettings, retries int) error {
 	protocol := "http"
 	if settings.HasKeyStore() {
 		protocol = "https"
 	}
 	healthEndpoint := fmt.Sprintf("%s://localhost:9600/actuator/health", protocol)
-	if isRunning(ctx, name, healthEndpoint, 24, 14*time.Second) {
+	if isRunning(ctx, name, healthEndpoint, retries, 14*time.Second) {
 		log.Info().Str("name", name).Msg("has successfully been started.")
 		if err := c8.OpenBrowser(ctx, protocol, settings.Port); err != nil {
 			log.Err(err).Msg("Failed to open browser")
@@ -57,7 +57,7 @@ func isRunning(ctx context.Context, name, url string, retries int, delay time.Du
 	transport := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 	client := &http.Client{Transport: transport, Timeout: 5 * time.Second}
 
-	for i := retries; i > 0; i-- {
+	for i := retries; i >= 0; i-- {
 		log.Info().Str("name", name).Int("retries_left", i).Msg("Waiting for service to start")
 
 		// Build request with context so that we can cancel early when the caller terminates.
@@ -74,6 +74,11 @@ func isRunning(ctx context.Context, name, url string, retries int, delay time.Du
 					return true
 				}
 			}
+		}
+
+		if i == 0 {
+			log.Warn().Msg("Retry attempts expired")
+			return false
 		}
 
 		select {

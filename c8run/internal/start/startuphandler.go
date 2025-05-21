@@ -202,32 +202,30 @@ func StartCommand(wg *sync.WaitGroup, ctx context.Context, stop context.CancelFu
 	printSystemInformation(javaVersion, javaHome, javaOpts)
 
 	if !settings.DisableElasticsearch {
-		log.Info().Str("version", processInfo.Elasticsearch.Version).Msg("Starting Elasticsearch...")
+		elasticHealthEndpoint := "http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s"
+		err = health.QueryElasticsearch(ctx, "Elasticsearch", 0, elasticHealthEndpoint)
+		if err == nil {
+			log.Info().Msg("Elasticsearch is already running, skipping...")
+		} else {
+			log.Info().Str("version", processInfo.Elasticsearch.Version).Msg("Starting Elasticsearch...")
 
-		elasticsearchCmd := c8.ElasticsearchCmd(ctx, processInfo.Elasticsearch.Version, parentDir)
-		elasticsearchLogFilePath := filepath.Join(parentDir, "log", "elasticsearch.log")
-		err := startApplication(elasticsearchCmd, processInfo.Elasticsearch.Pid, elasticsearchLogFilePath)
-		if err != nil {
-			log.Info().Err(err)
-			stop()
-			return
-		}
-		err = health.QueryElasticsearch(ctx, "Elasticsearch", "http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s")
-		if err != nil {
-			log.Err(err).Msg("Elasticsearch is not healthy")
-			stop()
-			return
+			elasticsearchCmd := c8.ElasticsearchCmd(ctx, processInfo.Elasticsearch.Version, parentDir)
+			elasticsearchLogFilePath := filepath.Join(parentDir, "log", "elasticsearch.log")
+			err := startApplication(elasticsearchCmd, processInfo.Elasticsearch.Pid, elasticsearchLogFilePath)
+			if err != nil {
+				log.Info().Err(err)
+				stop()
+				return
+			}
+			err = health.QueryElasticsearch(ctx, "Elasticsearch", 12, elasticHealthEndpoint)
+			if err != nil {
+				log.Err(err).Msg("Elasticsearch is not healthy")
+				stop()
+				return
+			}
 		}
 	}
 
-	connectorsCmd := c8.ConnectorsCmd(ctx, javaBinary, parentDir, processInfo.Camunda.Version)
-	connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
-	err = startApplication(connectorsCmd, processInfo.Connectors.Pid, connectorsLogPath)
-	if err != nil {
-		log.Err(err).Msg("Failed to start Connectors process")
-		stop()
-		return
-	}
 	var extraArgs string
 	if settings.Config != "" {
 		path := filepath.Join(parentDir, settings.Config)
@@ -250,6 +248,20 @@ func StartCommand(wg *sync.WaitGroup, ctx context.Context, stop context.CancelFu
 		}
 	}
 
+	err = health.QueryCamunda(ctx, c8, "Camunda", settings, 0)
+	if err == nil {
+		log.Info().Msg("Camunda is already running, skipping")
+		return
+	}
+	connectorsCmd := c8.ConnectorsCmd(ctx, javaBinary, parentDir, processInfo.Camunda.Version)
+	connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
+	err = startApplication(connectorsCmd, processInfo.Connectors.Pid, connectorsLogPath)
+	if err != nil {
+		log.Err(err).Msg("Failed to start Connectors process")
+		stop()
+		return
+	}
+
 	camundaCmd := c8.CamundaCmd(ctx, processInfo.Camunda.Version, parentDir, extraArgs, javaOpts)
 	camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
 	err = startApplication(camundaCmd, processInfo.Camunda.Pid, camundaLogPath)
@@ -258,7 +270,7 @@ func StartCommand(wg *sync.WaitGroup, ctx context.Context, stop context.CancelFu
 		stop()
 		return
 	}
-	err = health.QueryCamunda(ctx, c8, "Camunda", settings)
+	err = health.QueryCamunda(ctx, c8, "Camunda", settings, 24)
 	if err != nil {
 		log.Err(err).Msg("Camunda is not healthy")
 		stop()

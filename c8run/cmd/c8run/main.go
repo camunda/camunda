@@ -252,7 +252,6 @@ func main() {
 	state := initialize(baseCommand, baseDir)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
 
 	var wg sync.WaitGroup
 	wg.Add(1)
