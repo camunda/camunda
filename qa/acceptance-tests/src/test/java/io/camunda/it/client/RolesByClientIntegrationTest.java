@@ -10,11 +10,21 @@ package io.camunda.it.client;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.zeebe.gateway.protocol.rest.RoleClientSearchResult;
 import io.camunda.zeebe.test.util.Strings;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -23,6 +33,11 @@ public class RolesByClientIntegrationTest {
   private static CamundaClient camundaClient;
 
   private static final String EXISTING_ROLE_ID = Strings.newRandomValidIdentityId();
+
+  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
+
+  private static final ObjectMapper OBJECT_MAPPER =
+      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
   @BeforeAll
   static void setup() {
@@ -42,17 +57,98 @@ public class RolesByClientIntegrationTest {
 
   @Test
   void shouldAssignRoleToClient() {
-    // TODO: client search is currently in implementation
+    // given
+    final var clientId = Strings.newRandomValidIdentityId();
+
+    // when
+    camundaClient
+        .newAssignRoleToClientCommand()
+        .roleId(EXISTING_ROLE_ID)
+        .clientId(clientId)
+        .send()
+        .join();
+
+    // then
+    Awaitility.await("Role is assigned to the client")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        searchClientsByRoleId(
+                                camundaClient.getConfiguration().getRestAddress().toString(),
+                                EXISTING_ROLE_ID)
+                            .getItems())
+                    .anyMatch(r -> clientId.equals(r.getClientId())));
   }
 
   @Test
   void shouldUnassignRoleFromClient() {
-    // TODO: client search is currently in implementation
+    // given
+    final var clientId = Strings.newRandomValidIdentityId();
+
+    camundaClient
+        .newAssignRoleToClientCommand()
+        .roleId(EXISTING_ROLE_ID)
+        .clientId(clientId)
+        .send()
+        .join();
+
+    Awaitility.await("Role is assigned to the client")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        searchClientsByRoleId(
+                                camundaClient.getConfiguration().getRestAddress().toString(),
+                                EXISTING_ROLE_ID)
+                            .getItems())
+                    .anyMatch(r -> clientId.equals(r.getClientId())));
+
+    // when
+    camundaClient
+        .newUnassignRoleFromClientCommand()
+        .roleId(EXISTING_ROLE_ID)
+        .clientId(clientId)
+        .send()
+        .join();
+
+    // then
+    Awaitility.await("Role is unassigned from the client")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        searchClientsByRoleId(
+                                camundaClient.getConfiguration().getRestAddress().toString(),
+                                EXISTING_ROLE_ID)
+                            .getItems())
+                    .isEmpty());
   }
 
   @Test
   void shouldUnassignRoleFromClientOnRoleDeletion() {
-    // TODO: client search is currently in implementation
+    // given
+    final var clientId = Strings.newRandomValidIdentityId();
+    final var roleId = Strings.newRandomValidIdentityId();
+
+    createRole(roleId, "someRoleName", "description");
+
+    camundaClient.newAssignRoleToClientCommand().roleId(roleId).clientId(clientId).send().join();
+
+    // when
+    camundaClient.newDeleteRoleCommand(roleId).send().join();
+
+    // then
+    Awaitility.await("Role is unassigned from the client")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        searchClientsByRoleId(
+                                camundaClient.getConfiguration().getRestAddress().toString(),
+                                EXISTING_ROLE_ID)
+                            .getItems())
+                    .isEmpty());
   }
 
   @Test
@@ -186,7 +282,7 @@ public class RolesByClientIntegrationTest {
   }
 
   @Test
-  void shouldRejectUnassigningRolefromClientIfMissingRoleId() {
+  void shouldRejectUnassigningRoleFromClientIfMissingRoleId() {
     // when / then
     assertThatThrownBy(
             () ->
@@ -209,5 +305,20 @@ public class RolesByClientIntegrationTest {
         .description(description)
         .send()
         .join();
+  }
+
+  // TODO: will be removed in the next PR for client search
+  private static RoleClientSearchResult searchClientsByRoleId(
+      final String restAddress, final String roleId)
+      throws URISyntaxException, IOException, InterruptedException {
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(new URI("%s%s".formatted(restAddress, "v2/roles/" + roleId + "/clients/search")))
+            .POST(HttpRequest.BodyPublishers.ofString(""))
+            .build();
+
+    final HttpResponse<String> response =
+        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    return OBJECT_MAPPER.readValue(response.body(), RoleClientSearchResult.class);
   }
 }
