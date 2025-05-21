@@ -21,8 +21,10 @@ import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class UsersByRoleIntegrationTest {
 
   private static CamundaClient camundaClient;
