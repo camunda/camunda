@@ -108,10 +108,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   @Override
   public CamundaClient createClient(final Consumer<CamundaClientBuilder> modifier) {
     final CamundaClientBuilder builder = camundaClientBuilderSupplier.get();
-    builder
-        .usePlaintext()
-        .grpcAddress(getCamundaGrpcAddress())
-        .restAddress(getCamundaRestAddress());
 
     modifier.accept(builder);
 

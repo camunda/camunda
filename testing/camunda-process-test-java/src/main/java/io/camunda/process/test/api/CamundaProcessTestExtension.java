@@ -133,7 +133,7 @@ public class CamundaProcessTestExtension
 
     camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
-            containerRuntimeBuilder.getCamundaClientBuilderSupplier(),
+            runtimeConnection.createClientBuilder(),
             runtimeConnection.getConnectorsRestApiAddress(),
             createdClients::add,
             camundaManagementClient);

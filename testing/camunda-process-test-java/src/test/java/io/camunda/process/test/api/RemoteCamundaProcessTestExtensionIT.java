@@ -42,7 +42,7 @@ public class RemoteCamundaProcessTestExtensionIT {
   void shouldCreateProcessInstance() {
     // given
     final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
+        Bpmn.createExecutableProcess("test-process")
             .startEvent()
             .name("start")
             .zeebeOutputExpression("\"active\"", "status")
@@ -53,11 +53,16 @@ public class RemoteCamundaProcessTestExtensionIT {
             .zeebeOutputExpression("\"ok\"", "result")
             .done();
 
-    client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+    client.newDeployResourceCommand().addProcessModel(process, "test-process.bpmn").send().join();
 
     // when
     final ProcessInstanceEvent processInstance =
-        client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId("test-process")
+            .latestVersion()
+            .send()
+            .join();
 
     // then
     CamundaAssert.assertThat(processInstance)
