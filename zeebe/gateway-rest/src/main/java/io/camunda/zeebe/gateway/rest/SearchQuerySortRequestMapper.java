@@ -54,6 +54,11 @@ public class SearchQuerySortRequestMapper {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
+  public static List<SearchQuerySortRequest<TenantUserSearchQuerySortRequest.FieldEnum>>
+      fromTenantUserSearchQuerySortRequest(final List<TenantUserSearchQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
   public static List<SearchQuerySortRequest<TenantClientSearchQuerySortRequest.FieldEnum>>
       fromTenantClientSearchQuerySortRequest(
           final List<TenantClientSearchQuerySortRequest> requests) {

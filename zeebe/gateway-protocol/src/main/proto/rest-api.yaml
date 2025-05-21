@@ -555,14 +555,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UserSearchQueryRequest"
+              $ref: "#/components/schemas/TenantUserSearchQueryRequest"
       responses:
         "200":
           description: The search result of users for the tenant.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserSearchResult"
+                $ref: "#/components/schemas/TenantUserSearchResult"
   /tenants/{tenantId}/clients/search:
     post:
       tags:
@@ -644,13 +644,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RoleSearchQueryResult"
-  /tenants/{tenantId}/applications/{clientId}:
+  /tenants/{tenantId}/clients/{clientId}:
     put:
       tags:
         - Tenant
-      operationId: assignApplicationToTenant
-      summary: Assign an application to a tenant
-      description: Assign an application to a specified tenant.
+      operationId: assignClientToTenant
+      summary: Assign a client to a tenant
+      description: Assign a client to a specified tenant.
       parameters:
         - name: tenantId
           in: path
@@ -682,7 +682,7 @@ paths:
     delete:
       tags:
         - Tenant
-      operationId: removeApplicationFromTenant
+      operationId: removeClientFromTenant
       summary: Remove a client from a tenant
       description: Removes a single client from a specified tenant.
       parameters:
@@ -7188,6 +7188,44 @@ components:
           type: string
           enum:
             - clientId
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
+    TenantUserResult:
+      type: object
+      properties:
+        username:
+          description: The username of the user.
+          type: string
+    TenantUserSearchResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          description: The matching users.
+          type: array
+          items:
+            $ref: "#/components/schemas/TenantUserResult"
+    TenantUserSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/TenantUserSearchQuerySortRequest"
+    TenantUserSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - username
         order:
           $ref: "#/components/schemas/SortOrderEnum"
       required:

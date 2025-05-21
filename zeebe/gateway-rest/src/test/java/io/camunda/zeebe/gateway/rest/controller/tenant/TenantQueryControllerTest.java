@@ -620,6 +620,39 @@ public class TenantQueryControllerTest extends RestControllerTest {
             """);
   }
 
+  @Test
+  void shouldListMembersOfTypeUser() {
+    // given
+    when(tenantServices.searchMembers(any(TenantQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<TenantMemberEntity>()
+                .total(3)
+                .items(
+                    List.of(
+                        new TenantMemberEntity("user1", EntityType.USER),
+                        new TenantMemberEntity("user2", EntityType.USER),
+                        new TenantMemberEntity("user3", EntityType.USER)))
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/%s/users/search".formatted(TENANT_BASE_URL, "tenantId"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            // language=json
+            """
+                {"items":[{"username":"user1"},{"username":"user2"},{"username":"user3"}],"page":{"totalItems":3,"firstSortValues":[],"lastSortValues":[]}}
+            """);
+  }
+
   public static Stream<Arguments> invalidTenantSearchQueries() {
     return Stream.of(
         Arguments.of(
