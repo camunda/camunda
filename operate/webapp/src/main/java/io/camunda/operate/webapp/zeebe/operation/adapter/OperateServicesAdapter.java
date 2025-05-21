@@ -35,4 +35,6 @@ public interface OperateServicesAdapter {
       final Map<String, Object> variables,
       final boolean local,
       final String operationId);
+
+  boolean isExceptionRetriable(final Throwable ex);
 }

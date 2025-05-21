@@ -14,6 +14,9 @@ import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.operate.util.ConditionalOnOperateCompatibility;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
 import io.camunda.operate.webapp.zeebe.operation.process.modify.ModifyProcessZeebeWrapper;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -25,6 +28,11 @@ import org.springframework.stereotype.Component;
 public class ClientBasedAdapter implements OperateServicesAdapter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ClientBasedAdapter.class);
+  private static final List<Status.Code> RETRY_STATUSES =
+      Arrays.asList(
+          Status.UNAVAILABLE.getCode(),
+          Status.RESOURCE_EXHAUSTED.getCode(),
+          Status.DEADLINE_EXCEEDED.getCode());
 
   private CamundaClient camundaClient;
   private final ModifyProcessZeebeWrapper modifyProcessZeebeWrapper;
@@ -103,6 +111,23 @@ public class ClientBasedAdapter implements OperateServicesAdapter {
 
     final var response = setVariablesCommand.send().join();
     return response.getKey();
+  }
+
+  @Override
+  public boolean isExceptionRetriable(final Throwable ex) {
+    final StatusRuntimeException cause = extractStatusRuntimeException(ex);
+    return cause != null && RETRY_STATUSES.contains(cause.getStatus().getCode());
+  }
+
+  private StatusRuntimeException extractStatusRuntimeException(final Throwable ex) {
+    if (ex.getCause() != null) {
+      if (ex.getCause() instanceof StatusRuntimeException) {
+        return (StatusRuntimeException) ex.getCause();
+      } else {
+        return extractStatusRuntimeException(ex.getCause());
+      }
+    }
+    return null;
   }
 
   public void setCamundaClient(final CamundaClient camundaClient) {

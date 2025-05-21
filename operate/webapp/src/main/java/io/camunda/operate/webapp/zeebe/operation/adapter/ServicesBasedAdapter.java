@@ -12,8 +12,6 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.ConditionalOnOperateCompatibility;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
-import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
-import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
@@ -29,20 +27,26 @@ import io.camunda.service.ResourceServices.ResourceDeletionRequest;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
-import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
+import io.camunda.zeebe.broker.client.api.PartitionInactiveException;
+import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
+import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
-import io.camunda.zeebe.protocol.record.ErrorCode;
-import io.camunda.zeebe.protocol.record.RejectionType;
+import io.netty.channel.ConnectTimeoutException;
+import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
@@ -193,6 +197,51 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
     return variableDocumentRecord.getScopeKey();
   }
 
+  /*
+   * Code is based on the error mapping code in io.camunda.zeebe.gateway.rest.RestErrorMapper.
+   */
+  @Override
+  public boolean isExceptionRetriable(final Throwable error) {
+    if (error == null) {
+      return false;
+    }
+    return switch (error) {
+      case final CamundaBrokerException cse -> isBrokerExceptionRetriable(cse);
+      case final BrokerErrorException bee -> isBrokerErrorRetriable(bee.getError());
+      case final ExecutionException ee -> isExceptionRetriable(ee.getCause());
+      case final CompletionException ce -> isExceptionRetriable(ce.getCause());
+      case final TimeoutException te -> true;
+      case final RequestRetriesExhaustedException rree -> true;
+      case final ConnectTimeoutException cte -> true;
+      case final ConnectException ce -> true;
+      case final PartitionNotFoundException pnfe -> true;
+      case final PartitionInactiveException pie -> true;
+      case final NoTopologyAvailableException ntae -> true;
+      default -> false;
+    };
+  }
+
+  private boolean isBrokerExceptionRetriable(final CamundaBrokerException error) {
+    if (error == null) {
+      return false;
+    }
+    final var brokerError = error.getBrokerError();
+    if (brokerError.isPresent()) {
+      return isBrokerErrorRetriable(brokerError.get());
+    }
+    return error.getCause() != null ? isExceptionRetriable(error.getCause()) : false;
+  }
+
+  private boolean isBrokerErrorRetriable(final BrokerError error) {
+    if (error == null) {
+      return false;
+    }
+    return switch (error.getCode()) {
+      case RESOURCE_EXHAUSTED, PARTITION_LEADER_MISMATCH, PARTITION_UNAVAILABLE -> true;
+      default -> false;
+    };
+  }
+
   protected static <T> CompletableFuture<T> withOperationReference(
       final Function<Long, CompletableFuture<T>> command, final String id) {
     try {
@@ -214,41 +263,7 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
   private <T> T executeCamundaService(
       final Function<Authentication, CompletableFuture<T>> method,
       final Authentication authentication) {
-    try {
-      return method.apply(authentication).join();
-    } catch (final Exception e) {
-      throw handleException(e);
-    }
-  }
-
-  private RuntimeException handleException(final Throwable error) {
-    return switch (error) {
-      case final CompletionException ce -> handleException(ce.getCause());
-      case final CamundaBrokerException cbe -> mapCamundaBrokerException(cbe);
-      default -> new RuntimeException("Failed to execute request: " + error.getMessage(), error);
-    };
-  }
-
-  private RuntimeException mapCamundaBrokerException(final CamundaBrokerException exception) {
-    if (exception.getCause() instanceof final BrokerRejectionException brokerRejection) {
-      final var rejection = brokerRejection.getRejection();
-      final String message =
-          String.format(
-              "Request '%s' rejected with code '%s': %s",
-              rejection.intent(), rejection.type(), rejection.reason());
-      final var type = rejection.type();
-      if (type.equals(RejectionType.NOT_FOUND)) {
-        return new NotFoundException(message, exception);
-      }
-    }
-    if (exception.getCause() instanceof final BrokerErrorException brokerError) {
-      final var errorCode = brokerError.getError().getCode();
-      if (errorCode.equals(ErrorCode.PROCESS_NOT_FOUND)) {
-        return new NotAuthorizedException("Process not found", exception);
-      }
-    }
-    return new OperateRuntimeException(
-        String.format("Failed to execute request with %s", exception.getMessage()), exception);
+    return method.apply(authentication).join();
   }
 
   private ProcessInstanceModifyRequest createModifyRequest(
