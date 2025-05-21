@@ -253,6 +253,7 @@ func StartCommand(wg *sync.WaitGroup, ctx context.Context, stop context.CancelFu
 		log.Info().Msg("Camunda is already running, skipping")
 		return
 	}
+	// TODO do a health check on the connectors process
 	connectorsCmd := c8.ConnectorsCmd(ctx, javaBinary, parentDir, processInfo.Camunda.Version)
 	connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
 	err = startApplication(connectorsCmd, processInfo.Connectors.Pid, connectorsLogPath)

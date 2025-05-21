@@ -172,10 +172,6 @@ func createStopFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	return stopFlagSet
 }
 
-func work(ctx context.Context, wg *sync.WaitGroup, state *types.State, baseDir string) {
-	defer wg.Done()
-}
-
 func initialize(baseCommand string, baseDir string) *types.State {
 	err := godotenv.Load()
 	if err != nil {
@@ -245,13 +241,14 @@ func main() {
 
 	baseCommand, err := getBaseCommand()
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Err(err).Msg("There is an issue with getting the base command")
+		os.Exit(1)
 	}
 
 	baseDir, _ := os.Getwd()
 	state := initialize(baseCommand, baseDir)
 
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGKILL, syscall.SIGTERM)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -259,6 +256,7 @@ func main() {
 	switch baseCommand {
 	case "start":
 		go func() {
+			// TODO make a lock file to prevent zombie processes if start is called with &
 			start.StartCommand(&wg, ctx, stop, state, baseDir)
 			close(workDone)
 		}()
