@@ -59,10 +59,10 @@ public class CamundaContainerRuntimeBuilder {
   private boolean connectorsEnabled = false;
   private final Map<String, String> connectorsSecrets = new HashMap<>();
 
-  private CamundaRuntimeMode runtimeMode = CamundaRuntimeMode.MANAGED;
-
   private Supplier<CamundaClientBuilder> camundaClientBuilderSupplier =
       () -> CamundaClient.newClientBuilder().usePlaintext();
+
+  private CamundaRuntimeMode runtimeMode = CamundaRuntimeMode.MANAGED;
 
   private URI remoteCamundaMonitoringApiAddress =
       URI.create(ContainerRuntimeDefaults.LOCAL_CAMUNDA_MONITORING_API_ADDRESS);
@@ -220,10 +220,7 @@ public class CamundaContainerRuntimeBuilder {
       case MANAGED:
         return new CamundaContainerRuntime(this, containerFactory);
       case REMOTE:
-        return new RemoteRuntimeConnection(
-            camundaClientBuilderSupplier,
-            remoteCamundaMonitoringApiAddress,
-            remoteConnectorsRestApiAddress);
+        return new RemoteRuntimeConnection(this);
       default:
         throw new IllegalStateException("Unknown runtime mode: " + runtimeMode);
     }

@@ -409,9 +409,7 @@ public class CamundaProcessTestExtension
 
   public CamundaProcessTestExtension withRemoteConnectorsRestApiAddress(
       final String connectorsRestApiAddress) {
-    containerRuntimeBuilder
-        .withConnectorsEnabled(true)
-        .withRemoteConnectorsRestApiAddress(connectorsRestApiAddress);
+    containerRuntimeBuilder.withRemoteConnectorsRestApiAddress(connectorsRestApiAddress);
     return this;
   }
 

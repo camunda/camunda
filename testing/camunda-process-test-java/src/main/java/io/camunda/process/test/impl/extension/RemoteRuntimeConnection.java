@@ -13,6 +13,7 @@ import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.response.PartitionBrokerHealth;
 import io.camunda.client.api.response.PartitionInfo;
 import io.camunda.client.api.response.Topology;
+import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
 import java.net.URI;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -28,17 +29,15 @@ public class RemoteRuntimeConnection implements CamundaRuntimeConnection {
   private final URI connectorsRestApiAddress;
   private final Supplier<CamundaClientBuilder> camundaClientBuilderSupplier;
 
-  public RemoteRuntimeConnection(
-      final Supplier<CamundaClientBuilder> camundaClientBuilderSupplier,
-      final URI camundaMonitoringApiAddress,
-      final URI connectorsRestApiAddress) {
-    this.camundaClientBuilderSupplier = camundaClientBuilderSupplier;
+  public RemoteRuntimeConnection(final CamundaContainerRuntimeBuilder runtimeBuilder) {
+    camundaClientBuilderSupplier = runtimeBuilder.getCamundaClientBuilderSupplier();
+    camundaMonitoringApiAddress = runtimeBuilder.getRemoteCamundaMonitoringApiAddress();
+    connectorsRestApiAddress = runtimeBuilder.getRemoteConnectorsRestApiAddress();
+
     final CamundaClientConfiguration clientConfiguration =
         getClientConfiguration(camundaClientBuilderSupplier);
     camundaRestApiAddress = clientConfiguration.getRestAddress();
     camundaGrpcApiAddress = clientConfiguration.getGrpcAddress();
-    this.camundaMonitoringApiAddress = camundaMonitoringApiAddress;
-    this.connectorsRestApiAddress = connectorsRestApiAddress;
   }
 
   @Override
