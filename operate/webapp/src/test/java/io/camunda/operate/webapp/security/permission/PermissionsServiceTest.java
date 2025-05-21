@@ -43,6 +43,7 @@ public class PermissionsServiceTest {
   private final String tenantId = "default";
   private final long roleKey = 456L;
   private final String roleId = "roleId";
+  private final String groupId = "groupId";
 
   @BeforeEach
   public void setUp() {
@@ -63,6 +64,7 @@ public class PermissionsServiceTest {
                 .withUsername("test")
                 .withRoles(List.of(new RoleEntity(roleKey, roleId, "roleName", "description")))
                 .withTenants(List.of(new TenantDTO(123L, tenantId, "tenantName", "")))
+                .withGroups(List.of(groupId))
                 .build());
     when(mockAuthentication.getPrincipal()).thenReturn(camundaUser);
     final SecurityContext securityContext = mock(SecurityContext.class);
@@ -90,7 +92,7 @@ public class PermissionsServiceTest {
   public void testGetProcessDefinitionPermission() {
 
     final io.camunda.security.auth.Authentication authentication =
-        createCamundaAuthentication(username, List.of(tenantId), List.of(roleId));
+        createCamundaAuthentication(username, List.of(tenantId), List.of(roleId), List.of(groupId));
 
     when(mockAuthorizationChecker.collectPermissionTypes(
             "bpmnProcessId", AuthorizationResourceType.PROCESS_DEFINITION, authentication))
@@ -112,7 +114,7 @@ public class PermissionsServiceTest {
   public void testGetDecisionDefinitionPermission() {
 
     final io.camunda.security.auth.Authentication authentication =
-        createCamundaAuthentication(username, List.of(tenantId), List.of(roleId));
+        createCamundaAuthentication(username, List.of(tenantId), List.of(roleId), List.of(groupId));
 
     when(mockAuthorizationChecker.collectPermissionTypes(
             "decisionId", AuthorizationResourceType.DECISION_DEFINITION, authentication))
@@ -141,11 +143,15 @@ public class PermissionsServiceTest {
   }
 
   private io.camunda.security.auth.Authentication createCamundaAuthentication(
-      final String username, final List<String> tenants, final List<String> roleIds) {
+      final String username,
+      final List<String> tenants,
+      final List<String> roleIds,
+      final List<String> groupIds) {
     return new io.camunda.security.auth.Authentication.Builder()
         .user(username)
         .tenants(tenants)
         .roleIds(roleIds)
+        .groupIds(groupIds)
         .build();
   }
 }
