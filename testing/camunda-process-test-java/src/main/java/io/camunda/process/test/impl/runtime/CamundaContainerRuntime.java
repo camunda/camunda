@@ -20,7 +20,6 @@ import io.camunda.client.CamundaClientBuilder;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.ContainerFactory;
-import io.camunda.process.test.impl.extension.CamundaRuntimeConnection;
 import io.camunda.process.test.impl.runtime.logging.CamundaLogEntry;
 import io.camunda.process.test.impl.runtime.logging.ConnectorsLogEntry;
 import io.camunda.process.test.impl.runtime.logging.LogEntry;
@@ -39,7 +38,7 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
-public class CamundaContainerRuntime implements AutoCloseable, CamundaRuntimeConnection {
+public class CamundaContainerRuntime implements AutoCloseable, CamundaRuntime {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaContainerRuntime.class);
 
@@ -158,11 +157,6 @@ public class CamundaContainerRuntime implements AutoCloseable, CamundaRuntimeCon
   }
 
   @Override
-  public URI getCamundaMonitoringApiAddress() {
-    return getCamundaContainer().getMonitoringApiAddress();
-  }
-
-  @Override
   public URI getCamundaRestApiAddress() {
     return getCamundaContainer().getRestApiAddress();
   }
@@ -170,6 +164,11 @@ public class CamundaContainerRuntime implements AutoCloseable, CamundaRuntimeCon
   @Override
   public URI getCamundaGrpcApiAddress() {
     return getCamundaContainer().getGrpcApiAddress();
+  }
+
+  @Override
+  public URI getCamundaMonitoringApiAddress() {
+    return getCamundaContainer().getMonitoringApiAddress();
   }
 
   @Override
@@ -182,7 +181,7 @@ public class CamundaContainerRuntime implements AutoCloseable, CamundaRuntimeCon
   }
 
   @Override
-  public Supplier<CamundaClientBuilder> createClientBuilder() {
+  public Supplier<CamundaClientBuilder> getClientBuilderSupplier() {
     return () ->
         CamundaClient.newClientBuilder()
             .restAddress(getCamundaRestApiAddress())
@@ -230,7 +229,7 @@ public class CamundaContainerRuntime implements AutoCloseable, CamundaRuntimeCon
     return new CamundaContainerRuntimeBuilder();
   }
 
-  public static CamundaRuntimeConnection newDefaultRuntime() {
+  public static CamundaRuntime newDefaultRuntime() {
     return newBuilder().build();
   }
 }

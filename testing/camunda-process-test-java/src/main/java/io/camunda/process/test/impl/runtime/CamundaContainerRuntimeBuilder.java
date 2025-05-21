@@ -19,8 +19,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.process.test.api.CamundaRuntimeMode;
 import io.camunda.process.test.impl.containers.ContainerFactory;
-import io.camunda.process.test.impl.extension.CamundaRuntimeConnection;
-import io.camunda.process.test.impl.extension.RemoteRuntimeConnection;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -215,12 +213,12 @@ public class CamundaContainerRuntimeBuilder {
 
   // ============ Build =================
 
-  public CamundaRuntimeConnection build() {
+  public CamundaRuntime build() {
     switch (runtimeMode) {
       case MANAGED:
         return new CamundaContainerRuntime(this, containerFactory);
       case REMOTE:
-        return new RemoteRuntimeConnection(this);
+        return new RemoteRuntime(this);
       default:
         throw new IllegalStateException("Unknown runtime mode: " + runtimeMode);
     }

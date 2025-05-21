@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.process.test.impl.extension;
+package io.camunda.process.test.impl.runtime;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
@@ -13,15 +13,14 @@ import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.response.PartitionBrokerHealth;
 import io.camunda.client.api.response.PartitionInfo;
 import io.camunda.client.api.response.Topology;
-import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
 import java.net.URI;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RemoteRuntimeConnection implements CamundaRuntimeConnection {
+public class RemoteRuntime implements CamundaRuntime {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(RemoteRuntimeConnection.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(RemoteRuntime.class);
 
   private final URI camundaRestApiAddress;
   private final URI camundaGrpcApiAddress;
@@ -29,7 +28,7 @@ public class RemoteRuntimeConnection implements CamundaRuntimeConnection {
   private final URI connectorsRestApiAddress;
   private final Supplier<CamundaClientBuilder> camundaClientBuilderSupplier;
 
-  public RemoteRuntimeConnection(final CamundaContainerRuntimeBuilder runtimeBuilder) {
+  public RemoteRuntime(final CamundaContainerRuntimeBuilder runtimeBuilder) {
     camundaClientBuilderSupplier = runtimeBuilder.getCamundaClientBuilderSupplier();
     camundaMonitoringApiAddress = runtimeBuilder.getRemoteCamundaMonitoringApiAddress();
     connectorsRestApiAddress = runtimeBuilder.getRemoteConnectorsRestApiAddress();
@@ -55,11 +54,6 @@ public class RemoteRuntimeConnection implements CamundaRuntimeConnection {
   }
 
   @Override
-  public URI getCamundaMonitoringApiAddress() {
-    return camundaMonitoringApiAddress;
-  }
-
-  @Override
   public URI getCamundaRestApiAddress() {
     return camundaRestApiAddress;
   }
@@ -70,17 +64,22 @@ public class RemoteRuntimeConnection implements CamundaRuntimeConnection {
   }
 
   @Override
+  public URI getCamundaMonitoringApiAddress() {
+    return camundaMonitoringApiAddress;
+  }
+
+  @Override
   public URI getConnectorsRestApiAddress() {
     return connectorsRestApiAddress;
   }
 
   @Override
-  public Supplier<CamundaClientBuilder> createClientBuilder() {
+  public Supplier<CamundaClientBuilder> getClientBuilderSupplier() {
     return camundaClientBuilderSupplier;
   }
 
   private void checkConnectionToRemoteRuntime() {
-    try (final CamundaClient camundaClient = createClientBuilder().get().build()) {
+    try (final CamundaClient camundaClient = getClientBuilderSupplier().get().build()) {
       final Topology topology = camundaClient.newTopologyRequest().send().join();
 
       final boolean isHealthy =
