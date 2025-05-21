@@ -146,13 +146,28 @@ public final class VariableDocumentUpdateProcessor
         return;
       }
 
-      variableBehavior.mergeLocalDocument(
-          userTaskRecord.getElementInstanceKey(),
-          userTaskRecord.getProcessDefinitionKey(),
-          userTaskRecord.getProcessInstanceKey(),
-          userTaskRecord.getBpmnProcessIdBuffer(),
-          userTaskRecord.getTenantId(),
-          value.getVariablesBuffer());
+      switch (value.getUpdateSemantics()) {
+        case LOCAL ->
+            variableBehavior.mergeLocalDocument(
+                userTaskRecord.getElementInstanceKey(),
+                userTaskRecord.getProcessDefinitionKey(),
+                userTaskRecord.getProcessInstanceKey(),
+                userTaskRecord.getBpmnProcessIdBuffer(),
+                userTaskRecord.getTenantId(),
+                value.getVariablesBuffer());
+        case PROPAGATE ->
+            variableBehavior.mergeDocument(
+                userTaskRecord.getElementInstanceKey(),
+                userTaskRecord.getProcessDefinitionKey(),
+                userTaskRecord.getProcessInstanceKey(),
+                userTaskRecord.getBpmnProcessIdBuffer(),
+                userTaskRecord.getTenantId(),
+                value.getVariablesBuffer());
+        default ->
+            throw new IllegalStateException(
+                "Unexpected variable update semantic: '%s'. Expected either 'LOCAL' or 'PROPAGATE'."
+                    .formatted(value.getUpdateSemantics()));
+      }
 
       writers
           .state()
