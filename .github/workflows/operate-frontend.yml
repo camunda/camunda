@@ -27,6 +27,7 @@ jobs:
   linting-and-testing:
     name: Linting & Testing
     runs-on: ubuntu-latest
+    permissions: {}  # GITHUB_TOKEN unused in this job
     defaults:
       run:
         working-directory: operate/client
