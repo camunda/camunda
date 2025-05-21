@@ -125,7 +125,10 @@ public final class VariableDocumentUpdateProcessor
 
       final var userTaskRecord = userTaskState.getUserTask(userTaskKey);
       if (hasVariables(value)) {
-        userTaskRecord.setVariables(value.getVariablesBuffer()).setVariablesChanged();
+        userTaskRecord
+            .setVariables(value.getVariablesBuffer())
+            .setVariablesChanged()
+            .setVariableUpdateSemantics(value.getUpdateSemantics());
       }
       writers.state().appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATING, userTaskRecord);
 
