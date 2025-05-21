@@ -85,6 +85,17 @@ public class JobWorkerMockImpl implements JobWorkerMock {
 
   @Override
   public void withHandler(final JobHandler jobHandler) {
+    final JobHandler loggingJobHandler = (client, job) -> {
+      LOGGER.debug(
+          "Mock: Pass job to custom handler [job-type: '{}', job-key: '{}']",
+          jobType,
+          job.getKey());
+
+      jobHandler.handle(client, job);
+    };
+
+    client.newWorker().jobType(jobType).handler(loggingJobHandler).open();
+  }
     client
         .newWorker()
         .jobType(jobType)
