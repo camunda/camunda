@@ -51,7 +51,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -276,6 +275,23 @@ public class TaskStoreElasticSearch implements TaskStore {
     updateTask(
         task.getId(),
         asMap(TaskTemplate.FORM_ID, formBpmnId, TaskTemplate.FORM_VERSION, formVersion));
+  }
+
+  private List<TaskEntity> getActiveTasksByProcessInstanceIds(
+      final List<String> processInstanceIds) {
+    final SearchRequest searchRequest =
+        ElasticsearchUtil.createSearchRequest(taskTemplate)
+            .source(
+                SearchSourceBuilder.searchSource()
+                    .query(
+                        boolQuery()
+                            .must(termsQuery(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceIds))
+                            .must(termQuery(TaskTemplate.STATE, TaskState.CREATED))));
+    try {
+      return ElasticsearchUtil.scroll(searchRequest, TaskEntity.class, objectMapper, esClient);
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
+    }
   }
 
   private SearchHit[] getTasksRawResponse(final List<String> ids) throws IOException {
@@ -800,30 +816,18 @@ public class TaskStoreElasticSearch implements TaskStore {
 
   private List<String> retrieveTaskIdByProcessInstanceId(
       final List<String> processIds, final TaskByVariables[] taskVariablesFilter) {
-    final List<String> taskIdsCreated = new ArrayList<>();
-    final Map<String, String> variablesMap =
-        IntStream.range(0, taskVariablesFilter.length)
-            .boxed()
-            .collect(
-                Collectors.toMap(
-                    i -> taskVariablesFilter[i].getName(), i -> taskVariablesFilter[i].getValue()));
-
-    for (final String processId : processIds) {
-      final List<String> taskIds = getTaskIdsByProcessInstanceId(processId);
-      for (final String taskId : taskIds) {
-        final TaskEntity taskEntity = getTask(taskId);
-        if (taskEntity.getState() == TaskState.CREATED) {
-          final List<VariableStore.GetVariablesRequest> request =
-              Collections.singletonList(
-                  VariableStore.GetVariablesRequest.createFrom(taskEntity)
-                      .setVarNames(variablesMap.keySet().stream().toList()));
-          if (taskVariableSearchUtil.checkIfVariablesExistInTask(request, variablesMap)) {
-            taskIdsCreated.add(taskId);
-          }
-        }
-      }
-    }
-    return taskIdsCreated;
+    final var variablesMap =
+        Arrays.stream(taskVariablesFilter)
+            .collect(Collectors.toMap(TaskByVariables::getName, TaskByVariables::getValue));
+    final var tasks = getActiveTasksByProcessInstanceIds(processIds);
+    final var request =
+        tasks.stream()
+            .map(
+                task ->
+                    VariableStore.GetVariablesRequest.createFrom(task)
+                        .setVarNames(variablesMap.keySet().stream().toList()))
+            .toList();
+    return taskVariableSearchUtil.getTaskIdsContainingVariables(request, variablesMap);
   }
 
   private QueryBuilder buildPriorityQuery(final TaskQuery query) {

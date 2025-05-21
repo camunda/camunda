@@ -13,7 +13,6 @@ import static io.camunda.tasklist.schema.indices.VariableIndex.PROCESS_INSTANCE_
 import static io.camunda.tasklist.schema.indices.VariableIndex.SCOPE_FLOW_NODE_ID;
 import static io.camunda.tasklist.schema.indices.VariableIndex.VALUE;
 import static io.camunda.tasklist.util.CollectionUtil.isNotEmpty;
-import static io.camunda.tasklist.util.ElasticsearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static io.camunda.tasklist.util.ElasticsearchUtil.createSearchRequest;
 import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
@@ -47,7 +46,6 @@ import io.camunda.tasklist.util.ElasticsearchUtil;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -59,20 +57,16 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.apache.commons.collections4.ListUtils;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
@@ -356,7 +350,7 @@ public class VariableStoreElasticSearch implements VariableStore {
   public List<String> getProcessInstanceIdsWithMatchingVars(
       final List<String> varNames, final List<String> varValues) {
 
-    final List<Set<String>> listProcessIdsMatchingVars = new ArrayList<>();
+    Set<String> processInstanceIds = null;
 
     for (int i = 0; i < varNames.size(); i++) {
       final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
@@ -368,40 +362,12 @@ public class VariableStoreElasticSearch implements VariableStore {
 
       final SearchRequest searchRequest =
           new SearchRequest(variableIndex.getAlias()).source(searchSourceBuilder);
-      searchRequest.scroll(new TimeValue(SCROLL_KEEP_ALIVE_MS));
 
-      final Set<String> processInstanceIds = new HashSet<>();
-
+      final Set<String> currentIds;
       try {
-        SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-        String scrollId = searchResponse.getScrollId();
-
-        List<String> scrollProcessIds =
-            Arrays.stream(searchResponse.getHits().getHits())
-                .map(hit -> (String) hit.getSourceAsMap().get(PROCESS_INSTANCE_ID))
-                .collect(Collectors.toList());
-
-        processInstanceIds.addAll(scrollProcessIds);
-
-        while (scrollProcessIds.size() > 0) {
-          final SearchScrollRequest scrollRequest =
-              new SearchScrollRequest(scrollId).scroll(new TimeValue(SCROLL_KEEP_ALIVE_MS));
-
-          searchResponse = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
-          scrollId = searchResponse.getScrollId();
-          scrollProcessIds =
-              Arrays.stream(searchResponse.getHits().getHits())
-                  .map(hit -> (String) hit.getSourceAsMap().get(PROCESS_INSTANCE_ID))
-                  .toList();
-          processInstanceIds.addAll(scrollProcessIds);
-        }
-
-        final ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
-        clearScrollRequest.addScrollId(scrollId);
-        esClient.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
-
-        listProcessIdsMatchingVars.add(processInstanceIds);
-
+        currentIds =
+            new HashSet<>(
+                ElasticsearchUtil.scrollFieldToList(searchRequest, PROCESS_INSTANCE_ID, esClient));
       } catch (final IOException e) {
         final String message =
             String.format(
@@ -409,17 +375,23 @@ public class VariableStoreElasticSearch implements VariableStore {
                 varNames.get(i), e.getMessage());
         throw new TasklistRuntimeException(message, e);
       }
+      // Early exit if empty result
+      if (currentIds.isEmpty()) {
+        return Collections.emptyList();
+      }
+      if (processInstanceIds == null) {
+        processInstanceIds = currentIds;
+      } else {
+        processInstanceIds.retainAll(currentIds);
+        if (processInstanceIds.isEmpty()) {
+          // Early exit if intersection is empty
+          return Collections.emptyList();
+        }
+      }
     }
-
-    // Find intersection of all sets
-    return new ArrayList<>(
-        listProcessIdsMatchingVars.stream()
-            .reduce(
-                (set1, set2) -> {
-                  set1.retainAll(set2);
-                  return set1;
-                })
-            .orElse(Collections.emptySet()));
+    return processInstanceIds == null
+        ? Collections.emptyList()
+        : new ArrayList<>(processInstanceIds);
   }
 
   private UpdateRequest createUpsertRequest(final TaskVariableEntity variableEntity) {
