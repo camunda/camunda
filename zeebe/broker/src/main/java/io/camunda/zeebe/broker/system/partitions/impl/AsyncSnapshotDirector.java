@@ -344,20 +344,19 @@ public final class AsyncSnapshotDirector extends Actor
   }
 
   private ActorFuture<Void> getLastWrittenPosition(final InProgressSnapshot inProgressSnapshot) {
-    final ActorFuture<Void> lastWrittenPositionReceived = new CompletableActorFuture<>();
-    streamProcessor
+    return streamProcessor
         .getLastWrittenPositionAsync()
-        .onComplete(
+        .andThen(
             (position, error) -> {
               if (error != null) {
                 LOG.error(ERROR_MSG_ON_RESOLVE_WRITTEN_POS, error);
-                lastWrittenPositionReceived.completeExceptionally(error);
+                return CompletableActorFuture.completedExceptionally(error);
               } else {
                 inProgressSnapshot.lastWrittenPosition = position;
-                lastWrittenPositionReceived.complete(null);
+                return CompletableActorFuture.completed(null);
               }
-            });
-    return lastWrittenPositionReceived;
+            },
+            actor);
   }
 
   private ActorFuture<Void> waitUntilLastWrittenPositionIsCommitted(
@@ -374,21 +373,20 @@ public final class AsyncSnapshotDirector extends Actor
   }
 
   private ActorFuture<Void> takeTransientSnapshot(final InProgressSnapshot inProgressSnapshot) {
-    final ActorFuture<Void> snapshotTaken = new CompletableActorFuture<>();
-    stateController
+    return stateController
         .takeTransientSnapshot(inProgressSnapshot.lowerBoundSnapshotPosition)
-        .onComplete(
+        .andThen(
             (snapshot, error) -> {
               if (error != null) {
                 logSnapshotTakenError(error);
-                snapshotTaken.completeExceptionally(error);
+                return CompletableActorFuture.completedExceptionally(error);
               } else {
                 inProgressSnapshot.pendingSnapshot = snapshot;
-                snapshotTaken.complete(null);
                 onRecovered();
+                return CompletableActorFuture.completed(null);
               }
-            });
-    return snapshotTaken;
+            },
+            actor);
   }
 
   void logSnapshotTakenError(final Throwable snapshotTakenError) {
