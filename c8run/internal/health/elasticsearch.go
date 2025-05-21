@@ -20,7 +20,7 @@ func QueryElasticsearch(ctx context.Context, name string, retries int, url strin
 		log.Info().Str("name", name).Msg("Started successfully")
 	} else {
 		log.Error().Str("name", name).Msg("Not Started")
-		return errors.New("Elasticsearch did not start")
+		return errors.New("elasticsearch did not start")
 	}
 	return nil
 }
