@@ -8,18 +8,21 @@
 package health
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"text/template"
 	"time"
 
 	"github.com/camunda/camunda/c8run/internal/types"
+	"github.com/rs/zerolog/log"
 )
 
 type opener interface {
-	OpenBrowser(protocol string, port int) error
+	OpenBrowser(ctx context.Context, protocol string, port int) error
 }
 
 type Ports struct {
@@ -29,39 +32,56 @@ type Ports struct {
 	CamundaPort  int
 }
 
-func QueryCamunda(c8 opener, name string, settings types.C8RunSettings) error {
+func QueryCamunda(ctx context.Context, c8 opener, name string, settings types.C8RunSettings) error {
 	protocol := "http"
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	if settings.HasKeyStore() {
 		protocol = "https"
 	}
-	healthEndpoint := protocol + "://localhost:9600/actuator/health"
-	if isRunning(name, healthEndpoint, 24, 14*time.Second) {
-		fmt.Println(name + " has successfully been started.")
-		err := c8.OpenBrowser(protocol, settings.Port)
-		if err != nil {
-			fmt.Println("Failed to open browser")
+	healthEndpoint := fmt.Sprintf("%s://localhost:9600/actuator/health", protocol)
+	if isRunning(ctx, name, healthEndpoint, 24, 14*time.Second) {
+		log.Info().Str("name", name).Msg("has successfully been started.")
+		if err := c8.OpenBrowser(ctx, protocol, settings.Port); err != nil {
+			log.Err(err).Msg("Failed to open browser")
 			return nil
 		}
 		if err := PrintStatus(settings); err != nil {
-			fmt.Println("Failed to print status:", err)
+			log.Err(err).Msg("Failed to print status")
 			return err
 		}
 		return nil
-	} else {
-		return fmt.Errorf("queryCamunda: %s did not start", name)
 	}
+	return fmt.Errorf("queryCamunda: %s did not start", name)
 }
 
-func isRunning(name, url string, retries int, delay time.Duration) bool {
-	for retries >= 0 {
-		fmt.Printf("Waiting for %s to start. %d retries left\n", name, retries)
-		time.Sleep(delay)
-		resp, err := http.Get(url)
-		if err == nil && resp.StatusCode >= 200 && resp.StatusCode <= 400 {
-			return true
+func isRunning(ctx context.Context, name, url string, retries int, delay time.Duration) bool {
+	transport := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+	client := &http.Client{Transport: transport, Timeout: 5 * time.Second}
+
+	for i := retries; i > 0; i-- {
+		log.Info().Str("name", name).Int("retries_left", i).Msg("Waiting for service to start")
+
+		// Build request with context so that we can cancel early when the caller terminates.
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+		if err == nil {
+			resp, err := client.Do(req)
+			if err == nil {
+				if resp.Body != nil {
+					io.Copy(io.Discard, resp.Body)
+					resp.Body.Close()
+				}
+
+				if resp.StatusCode >= 200 && resp.StatusCode < 400 {
+					return true
+				}
+			}
 		}
-		retries--
+
+		select {
+		case <-ctx.Done():
+			log.Info().Msg("Gracefully stopping our retries...")
+			return false
+		case <-time.After(delay):
+		}
 	}
 	return false
 }
