@@ -62,6 +62,7 @@ export default function ConfigureProcessModal({
                 ),
               })}
               className="emailWarning"
+              role="div"
             />
           )}
           <UserTypeahead
