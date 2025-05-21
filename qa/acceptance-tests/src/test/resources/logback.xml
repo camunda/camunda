@@ -32,8 +32,11 @@
 
   <Logger name="org.apache.ibatis" level="debug"/>
   <Logger name="io.camunda.db.rdbms" level="info"/>
-  <Logger name="io.camunda.exporter.rdbms" level="debug"/>
+  <Logger name="io.camunda.exporter.rdbms" level="info"/>
   <Logger name="io.camunda.zeebe.engine.processing.batchoperation" level="debug"/>
+  <Logger name="io.camunda.exporter.tasks.batchoperations" level="trace"/>
+  <Logger name="io.camunda.exporter.handlers.batchoperation" level="trace"/>
+  <Logger name="io.camunda.zeebe.broker.exporter" level="trace"/>
   <Logger name="io.camunda.zeebe.gateway.rest" level="debug"/>
 
   <root level="${root.logging.level:-INFO}">
