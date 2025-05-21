@@ -10,7 +10,6 @@ package io.camunda.optimize.dto.zeebe.usertask;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.service.util.DateFormatterUtil;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
-import io.camunda.zeebe.protocol.record.value.UserTaskVariablesUpdateSemantic;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +32,6 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
   private String tenantId;
   private List<String> changedAttributes;
   private Map<String, Object> variables;
-  private UserTaskVariablesUpdateSemantic variablesUpdateSemantic;
   private String followUpDate;
   private long formKey;
   private String action;
@@ -240,16 +238,6 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
     this.variables = variables;
   }
 
-  @Override
-  public UserTaskVariablesUpdateSemantic getVariableUpdateSemantics() {
-    return variablesUpdateSemantic;
-  }
-
-  public void setVariablesUpdateSemantic(
-      final UserTaskVariablesUpdateSemantic variablesUpdateSemantic) {
-    this.variablesUpdateSemantic = variablesUpdateSemantic;
-  }
-
   protected boolean canEqual(final Object other) {
     return other instanceof ZeebeUserTaskDataDto;
   }
@@ -326,7 +314,6 @@ public class ZeebeUserTaskDataDto implements UserTaskRecordValue {
     public static final String tenantId = "tenantId";
     public static final String changedAttributes = "changedAttributes";
     public static final String variables = "variables";
-    public static final String variablesUpdateSemantic = "variablesUpdateSemantic";
     public static final String followUpDate = "followUpDate";
     public static final String formKey = "formKey";
     public static final String action = "action";
