@@ -41,7 +41,7 @@ type Processes struct {
 
 type Process struct {
 	Version string
-	Pid     string
+	PidPath string
 }
 
 type State struct {

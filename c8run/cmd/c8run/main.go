@@ -14,6 +14,7 @@ import (
 	"syscall"
 
 	"github.com/camunda/camunda/c8run/internal/health"
+	"github.com/camunda/camunda/c8run/internal/processmanagement"
 	"github.com/camunda/camunda/c8run/internal/shutdown"
 	"github.com/camunda/camunda/c8run/internal/start"
 	"github.com/camunda/camunda/c8run/internal/types"
@@ -212,15 +213,15 @@ func initialize(baseCommand string, baseDir string) *types.State {
 	processInfo := types.Processes{
 		Camunda: types.Process{
 			Version: camundaVersion,
-			Pid:     camundaPidPath,
+			PidPath: camundaPidPath,
 		},
 		Connectors: types.Process{
 			Version: connectorsVersion,
-			Pid:     connectorsPidPath,
+			PidPath: connectorsPidPath,
 		},
 		Elasticsearch: types.Process{
 			Version: elasticsearchVersion,
-			Pid:     elasticsearchPidPath,
+			PidPath: elasticsearchPidPath,
 		},
 	}
 
@@ -253,26 +254,36 @@ func main() {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	workDone := make(chan struct{})
+	sh := &shutdown.ShutdownHandler{
+		ProcessHandler: &processmanagement.ProcessHandler{
+			C8: state.C8,
+		},
+	}
+	startupHandler := &start.StartupHandler{
+		ProcessHandler: &processmanagement.ProcessHandler{
+			C8: state.C8,
+		},
+	}
 	switch baseCommand {
 	case "start":
 		go func() {
 			// TODO make a lock file to prevent zombie processes if start is called with &
-			start.StartCommand(&wg, ctx, stop, state, baseDir)
+			startupHandler.StartCommand(&wg, ctx, stop, state, baseDir)
 			close(workDone)
 		}()
 	case "stop":
 		go func() {
-			shutdown.ShutdownProcesses(state)
+			sh.ShutdownProcesses(state)
 			close(workDone)
 		}()
 	}
 
 	select {
 	case <-workDone:
-		log.Info().Msg("Work done, exiting...")
+		log.Info().Msg("All processes are running and healthy, exiting...")
 	case <-ctx.Done():
 		log.Info().Msg("Received shutdown signal, stopping all workers...")
-		shutdown.ShutdownProcesses(state)
+		sh.ShutdownProcesses(state)
 		wg.Wait()
 		log.Info().Msg("All workers have stopped. Application has been gracefully shut down.")
 	}
