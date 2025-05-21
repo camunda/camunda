@@ -19,6 +19,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.response.BatchOperation;
 import io.camunda.client.api.search.response.BatchOperationItems;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
+import io.camunda.client.api.search.response.Client;
 import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.DecisionRequirements;
@@ -169,6 +170,17 @@ public final class SearchResponseMapper {
   public static BatchOperationItems toBatchOperationItemsGetResponse(
       final BatchOperationItemSearchQueryResult response) {
     return new BatchOperationItemsImpl(response);
+  }
+
+  public static Client toClientResponse(final RoleClientResult response) {
+    return new ClientImpl(response.getClientId());
+  }
+
+  public static SearchResponse<Client> toClientsResponse(final RoleClientSearchResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<Client> instances =
+        toSearchResponseInstances(response.getItems(), SearchResponseMapper::toClientResponse);
+    return new SearchResponseImpl<>(instances, page);
   }
 
   public static Role toRoleResponse(final RoleResult response) {

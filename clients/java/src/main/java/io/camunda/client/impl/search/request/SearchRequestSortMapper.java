@@ -189,6 +189,20 @@ public class SearchRequestSortMapper {
         .collect(Collectors.toList());
   }
 
+  public static List<RoleClientSearchQuerySortRequest> toRoleClientSearchQuerySortRequest(
+      final List<SearchRequestSort> requests) {
+    return requests.stream()
+        .map(
+            r -> {
+              final RoleClientSearchQuerySortRequest request =
+                  new RoleClientSearchQuerySortRequest();
+              request.setField(RoleClientSearchQuerySortRequest.FieldEnum.fromValue(r.getField()));
+              request.setOrder(r.getOrder());
+              return request;
+            })
+        .collect(Collectors.toList());
+  }
+
   public static List<GroupSearchQuerySortRequest> toGroupSearchQuerySortRequest(
       final List<SearchRequestSort> requests) {
     return requests.stream()
