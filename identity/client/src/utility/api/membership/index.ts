@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { ApiDefinition, apiDelete, apiGet, apiPost, apiPut } from "../request";
+import { ApiDefinition, apiDelete, apiPost, apiPut } from "../request";
 import { User } from "src/utility/api/users";
 import { GROUPS_ENDPOINT } from "src/utility/api/groups";
 import { SearchResponse } from "src/utility/api";
@@ -16,10 +16,10 @@ import { ROLES_ENDPOINT } from "src/utility/api/roles";
 export type GetGroupMembersParams = {
   groupId: string;
 };
-export const getMembersByGroup: ApiDefinition<
+export const searchMembersByGroup: ApiDefinition<
   SearchResponse<User>,
   GetGroupMembersParams
-> = ({ groupId }) => apiGet(`${GROUPS_ENDPOINT}/${groupId}/users`);
+> = ({ groupId }) => apiPost(`${GROUPS_ENDPOINT}/${groupId}/users/search`);
 
 export type GetTenantMembersParams = {
   tenantId: string;
@@ -42,7 +42,7 @@ export const assignGroupMember: ApiDefinition<
   undefined,
   AssignGroupMemberParams
 > = ({ groupId, username }) =>
-  apiPost(`${GROUPS_ENDPOINT}/${groupId}/users/${username}`);
+  apiPut(`${GROUPS_ENDPOINT}/${groupId}/users/${username}`);
 
 type UnassignGroupMemberParams = AssignGroupMemberParams;
 export const unassignGroupMember: ApiDefinition<

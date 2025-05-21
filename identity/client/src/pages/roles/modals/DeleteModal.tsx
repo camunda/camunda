@@ -20,14 +20,14 @@ const DeleteModal: FC<UseEntityModalProps<DeleteRoleParams>> = ({
   open,
   onClose,
   onSuccess,
-  entity: { roleKey, name },
+  entity: { roleId, name },
 }) => {
   const { t, Translate } = useTranslate("roles");
   const { enqueueNotification } = useNotifications();
   const [apiCall, { loading }] = useApiCall(deleteRole);
 
   const handleSubmit = async () => {
-    const { success } = await apiCall({ roleKey });
+    const { success } = await apiCall({ roleId });
 
     if (success) {
       enqueueNotification({
@@ -52,11 +52,8 @@ const DeleteModal: FC<UseEntityModalProps<DeleteRoleParams>> = ({
       confirmLabel={t("deleteRole")}
     >
       <p>
-        <Translate
-          i18nKey="deleteRoleConfirmation"
-          values={{ roleKey: roleKey }}
-        >
-          Are you sure you want to delete <strong>{roleKey}</strong>?
+        <Translate i18nKey="deleteRoleConfirmation" values={{ roleId }}>
+          Are you sure you want to delete <strong>{roleId}</strong>?
         </Translate>
       </p>
     </Modal>

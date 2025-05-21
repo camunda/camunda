@@ -100,20 +100,20 @@ export const getRolesByTenantId: ApiDefinition<
   GetTenantRolesParams
 > = ({ tenantId }) => apiPost(`${TENANTS_ENDPOINT}/${tenantId}/roles/search`);
 
-type AssignTenantRoleParams = GetTenantRolesParams & { roleKey: string };
+type AssignTenantRoleParams = GetTenantRolesParams & { roleId: string };
 export const assignTenantRole: ApiDefinition<
   undefined,
   AssignTenantRoleParams
-> = ({ tenantId, roleKey }) => {
-  return apiPut(`${TENANTS_ENDPOINT}/${tenantId}/roles/${roleKey}`);
+> = ({ tenantId, roleId }) => {
+  return apiPut(`${TENANTS_ENDPOINT}/${tenantId}/roles/${roleId}`);
 };
 
 type UnassignTenantRoleParams = AssignTenantRoleParams;
 export const unassignTenantRole: ApiDefinition<
   undefined,
   UnassignTenantRoleParams
-> = ({ tenantId, roleKey }) =>
-  apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/roles/${roleKey}`);
+> = ({ tenantId, roleId }) =>
+  apiDelete(`${TENANTS_ENDPOINT}/${tenantId}/roles/${roleId}`);
 
 // ----------------- Mappings within a Tenant -----------------
 

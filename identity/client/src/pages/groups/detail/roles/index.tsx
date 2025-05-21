@@ -11,7 +11,7 @@ import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
-import { getRolesByGroupId } from "src/utility/api/groups";
+import { searchRolesByGroupId } from "src/utility/api/groups";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/groups/detail/roles/DeleteModal";
@@ -29,7 +29,7 @@ const Roles: FC<RolesProps> = ({ groupId }) => {
     loading,
     success,
     reload,
-  } = useApi(getRolesByGroupId, {
+  } = useApi(searchRolesByGroupId, {
     groupId: groupId,
   });
 
@@ -65,7 +65,7 @@ const Roles: FC<RolesProps> = ({ groupId }) => {
       <>
         <C3EmptyState
           heading={t("assignRolesToGroup")}
-          description={t("groupMemberAccessDisclaimer")}
+          description={t("roleAccessDisclaimer")}
           button={{
             label: t("assignRole"),
             onClick: openAssignModal,
@@ -84,10 +84,10 @@ const Roles: FC<RolesProps> = ({ groupId }) => {
       <EntityList
         data={roles?.items}
         headers={[
-          { header: t("roleId"), key: "roleKey" },
+          { header: t("roleId"), key: "roleId" },
           { header: t("roleName"), key: "name" },
         ]}
-        sortProperty="roleKey"
+        sortProperty="roleId"
         loading={loading}
         addEntityLabel={t("assignRole")}
         onAddEntity={openAssignModal}

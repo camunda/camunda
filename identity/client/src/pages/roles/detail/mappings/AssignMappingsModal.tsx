@@ -24,7 +24,7 @@ const SelectedMappings = styled.div`
 
 const AssignMappingsModal: FC<
   UseEntityModalCustomProps<
-    { id: Role["roleKey"] },
+    { id: Role["roleId"] },
     { assignedMappings: Mapping[] }
   >
 > = ({ entity: role, assignedMappings, onSuccess, open, onClose }) => {

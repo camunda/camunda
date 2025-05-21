@@ -8,7 +8,7 @@
 
 import { ApiDefinition, apiDelete, apiGet, apiPost, apiPut } from "../request";
 import { SearchResponse } from "src/utility/api";
-import { Role } from "src/utility/api/roles";
+import { Role, ROLES_ENDPOINT } from "src/utility/api/roles";
 import { Mapping } from "src/utility/api/mappings";
 
 export const GROUPS_ENDPOINT = "/groups";
@@ -52,25 +52,25 @@ export const deleteGroup: ApiDefinition<undefined, DeleteGroupParams> = ({
 export type GetGroupRolesParams = {
   groupId: string;
 };
-export const getRolesByGroupId: ApiDefinition<
+export const searchRolesByGroupId: ApiDefinition<
   SearchResponse<Role>,
   GetGroupRolesParams
 > = ({ groupId }) => apiPost(`${GROUPS_ENDPOINT}/${groupId}/roles/search`);
 
-type AssignGroupRoleParams = GetGroupRolesParams & { roleKey: string };
+type AssignGroupRoleParams = GetGroupRolesParams & { roleId: string };
 export const assignGroupRole: ApiDefinition<
   undefined,
   AssignGroupRoleParams
-> = ({ groupId, roleKey }) => {
-  return apiPut(`${GROUPS_ENDPOINT}/${groupId}/roles/${roleKey}`);
+> = ({ groupId, roleId }) => {
+  return apiPut(`${ROLES_ENDPOINT}/${roleId}/groups/${groupId}`);
 };
 
 type UnassignGroupRoleParams = AssignGroupRoleParams;
 export const unassignGroupRole: ApiDefinition<
   undefined,
   UnassignGroupRoleParams
-> = ({ groupId, roleKey }) =>
-  apiDelete(`${GROUPS_ENDPOINT}/${groupId}/roles/${roleKey}`);
+> = ({ groupId, roleId }) =>
+  apiDelete(`${ROLES_ENDPOINT}/${roleId}/groups/${groupId}`);
 
 // ----------------- Mappings within a Group -----------------
 

@@ -62,8 +62,8 @@ const Selection: FC<SelectionProps> = ({ type, ownerId, onChange }) => {
           id="roleSelection"
           onChange={onChange}
           searchFn={searchRoles}
-          getId={(role) => role.roleKey}
-          itemToString={(role) => role.name || role.roleKey}
+          getId={(role) => role.roleId}
+          itemToString={(role) => role.name || role.roleId}
         />
       );
 

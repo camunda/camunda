@@ -25,7 +25,7 @@ type RemoveGroupRoleModalProps = UseEntityModalCustomProps<
 >;
 
 const DeleteModal: FC<RemoveGroupRoleModalProps> = ({
-  entity: role,
+  entity: { roleId },
   open,
   onClose,
   onSuccess,
@@ -37,10 +37,10 @@ const DeleteModal: FC<RemoveGroupRoleModalProps> = ({
   const [callUnassignRole, { loading }] = useApiCall(unassignGroupRole);
 
   const handleSubmit = async () => {
-    if (groupId && role) {
+    if (groupId && roleId) {
       const { success } = await callUnassignRole({
         groupId,
-        roleKey: role.roleKey,
+        roleId,
       });
 
       if (success) {
@@ -64,12 +64,9 @@ const DeleteModal: FC<RemoveGroupRoleModalProps> = ({
       confirmLabel={t("removeRole")}
     >
       <p>
-        <Translate
-          i18nKey="removeRoleConfirmation"
-          values={{ roleKey: role.roleKey }}
-        >
-          Are you sure you want to remove <strong>{role.roleKey}</strong> from
-          this group?
+        <Translate i18nKey="removeRoleConfirmation" values={{ roleId }}>
+          Are you sure you want to remove <strong>{roleId}</strong> from this
+          group?
         </Translate>
       </p>
     </Modal>
