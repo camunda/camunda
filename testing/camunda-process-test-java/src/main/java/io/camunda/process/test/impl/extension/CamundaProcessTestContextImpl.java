@@ -19,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
-import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.UserTask;
@@ -29,6 +28,7 @@ import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.process.test.api.mock.JobWorkerMock;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.mock.JobWorkerMockImpl;
+import io.camunda.process.test.impl.runtime.CamundaRuntime;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -85,27 +85,15 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   public CamundaProcessTestContextImpl(
-      final Supplier<CamundaClientBuilder> camundaClientBuilderSupplier,
-      final URI connectorsRestApiAddress,
+      final CamundaRuntime camundaRuntime,
       final Consumer<AutoCloseable> clientCreationCallback,
       final CamundaManagementClient camundaManagementClient) {
-
-    this.camundaClientBuilderSupplier = camundaClientBuilderSupplier;
-    final CamundaClientConfiguration configuration =
-        getClientConfiguration(camundaClientBuilderSupplier);
-    camundaRestApiAddress = configuration.getRestAddress();
-    camundaGrpcApiAddress = configuration.getGrpcAddress();
-    this.connectorsRestApiAddress = connectorsRestApiAddress;
+    camundaClientBuilderSupplier = camundaRuntime.getClientBuilderSupplier();
+    camundaRestApiAddress = camundaRuntime.getCamundaRestApiAddress();
+    camundaGrpcApiAddress = camundaRuntime.getCamundaGrpcApiAddress();
+    connectorsRestApiAddress = camundaRuntime.getConnectorsRestApiAddress();
     this.clientCreationCallback = clientCreationCallback;
     this.camundaManagementClient = camundaManagementClient;
-  }
-
-  private CamundaClientConfiguration getClientConfiguration(
-      final Supplier<CamundaClientBuilder> camundaClientBuilderSupplier) {
-    final CamundaClientBuilder clientBuilder = camundaClientBuilderSupplier.get();
-    try (final CamundaClient camundaClient = clientBuilder.build()) {
-      return camundaClient.getConfiguration();
-    }
   }
 
   @Override

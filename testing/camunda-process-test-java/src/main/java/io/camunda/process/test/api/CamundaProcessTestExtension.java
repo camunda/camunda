@@ -131,11 +131,7 @@ public class CamundaProcessTestExtension
             runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
 
     camundaProcessTestContext =
-        new CamundaProcessTestContextImpl(
-            runtime.getClientBuilderSupplier(),
-            runtime.getConnectorsRestApiAddress(),
-            createdClients::add,
-            camundaManagementClient);
+        new CamundaProcessTestContextImpl(runtime, createdClients::add, camundaManagementClient);
 
     // put in store
     final Store store = context.getStore(NAMESPACE);
