@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
+import io.camunda.zeebe.protocol.record.value.UserTaskVariablesUpdateSemantic;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -513,6 +514,8 @@ public class TaskListenerBlockedTransitionTest {
             Assertions.assertThat(userTask)
                 .hasVariables(Map.of("status", "APPROVED"))
                 .hasOnlyChangedAttributes(UserTaskRecord.VARIABLES)
+                .hasVariableUpdateSemantics(
+                    UserTaskVariablesUpdateSemantic.valueOf(semantic.name()))
                 .hasAction(""));
   }
 

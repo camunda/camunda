@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskVariablesUpdateSemantic;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -1061,12 +1062,21 @@ public final class CamundaUserTaskTest {
             RecordingExporter.userTaskRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(r -> r.getIntent() == UserTaskIntent.UPDATED))
-        .extracting(Record::getIntent, r -> r.getValue().getChangedAttributes())
+        .extracting(
+            Record::getIntent,
+            r -> r.getValue().getChangedAttributes(),
+            r -> r.getValue().getVariableUpdateSemantics())
         .describedAs(
-            "Expect the user task to pass the update transition with variables as a changed attribute")
+            "Expect the user task to pass the update transition with variables as a changed attribute and LOCAL semantic")
         .containsSequence(
-            Tuple.tuple(UserTaskIntent.UPDATING, List.of(UserTaskRecord.VARIABLES)),
-            Tuple.tuple(UserTaskIntent.UPDATED, List.of(UserTaskRecord.VARIABLES)));
+            Tuple.tuple(
+                UserTaskIntent.UPDATING,
+                List.of(UserTaskRecord.VARIABLES),
+                UserTaskVariablesUpdateSemantic.LOCAL),
+            Tuple.tuple(
+                UserTaskIntent.UPDATED,
+                List.of(UserTaskRecord.VARIABLES),
+                UserTaskVariablesUpdateSemantic.LOCAL));
   }
 
   @Test
@@ -1115,11 +1125,20 @@ public final class CamundaUserTaskTest {
             RecordingExporter.userTaskRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(r -> r.getIntent() == UserTaskIntent.UPDATED))
-        .extracting(Record::getIntent, r -> r.getValue().getChangedAttributes())
+        .extracting(
+            Record::getIntent,
+            r -> r.getValue().getChangedAttributes(),
+            r -> r.getValue().getVariableUpdateSemantics())
         .describedAs(
-            "Expect the user task to pass the update transition with variables as a changed attribute")
+            "Expect the user task to pass the update transition with variables as a changed attribute and PROPAGATE semantic")
         .containsSequence(
-            Tuple.tuple(UserTaskIntent.UPDATING, List.of(UserTaskRecord.VARIABLES)),
-            Tuple.tuple(UserTaskIntent.UPDATED, List.of(UserTaskRecord.VARIABLES)));
+            Tuple.tuple(
+                UserTaskIntent.UPDATING,
+                List.of(UserTaskRecord.VARIABLES),
+                UserTaskVariablesUpdateSemantic.PROPAGATE),
+            Tuple.tuple(
+                UserTaskIntent.UPDATED,
+                List.of(UserTaskRecord.VARIABLES),
+                UserTaskVariablesUpdateSemantic.PROPAGATE));
   }
 }
