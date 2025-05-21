@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.sort.ClientSort;
 import io.camunda.client.api.search.sort.RoleSort;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import io.camunda.client.util.ClientRestTest;
@@ -40,6 +41,38 @@ public class SearchRoleTest extends ClientRestTest {
     final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getUrl()).isEqualTo("/v2/roles/" + ROLE_ID);
     assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
+  }
+
+  @Test
+  public void shouldSearchClientsByRoleId() {
+    // when
+    client
+        .newClientsByRoleSearchRequest(ROLE_ID)
+        .sort(ClientSort::clientId)
+        .page(fn -> fn.limit(5))
+        .send()
+        .join();
+
+    // then
+    final LoggedRequest request = gatewayService.getLastRequest();
+    assertThat(request.getUrl()).isEqualTo("/v2/roles/" + ROLE_ID + "/clients/search");
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
+  }
+
+  @Test
+  void shouldRaiseExceptionOnNullRoleIdWhenSearchingClientsByRoleId() {
+    // when / then
+    assertThatThrownBy(() -> client.newClientsByRoleSearchRequest(null).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("roleId must not be null");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnEmptyRoleIdWhenSearchingClientsByRoleId() {
+    // when / then
+    assertThatThrownBy(() -> client.newClientsByRoleSearchRequest("").send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("roleId must not be empty");
   }
 
   @Test
