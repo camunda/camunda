@@ -57,6 +57,17 @@ public class PublishMessageRestTest extends ClientRestTest {
   }
 
   @Test
+  public void shouldPublishMessageWithDefaultTtl() {
+    // when
+    client.newPublishMessageCommand().messageName("name").correlationKey("key").send().join();
+
+    // then
+    final MessagePublicationRequest request =
+        gatewayService.getLastRequest(MessagePublicationRequest.class);
+    assertThat(request.getTimeToLive()).isEqualTo(Duration.ofHours(1).toMillis());
+  }
+
+  @Test
   public void shouldPublishMessageWithStringVariables() {
     // when
     client
