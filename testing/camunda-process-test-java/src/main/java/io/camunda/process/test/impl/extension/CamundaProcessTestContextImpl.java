@@ -92,12 +92,20 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
     this.camundaClientBuilderSupplier = camundaClientBuilderSupplier;
     final CamundaClientConfiguration configuration =
-        camundaClientBuilderSupplier.get().build().getConfiguration();
+        getClientConfiguration(camundaClientBuilderSupplier);
     camundaRestApiAddress = configuration.getRestAddress();
     camundaGrpcApiAddress = configuration.getGrpcAddress();
     this.connectorsRestApiAddress = connectorsRestApiAddress;
     this.clientCreationCallback = clientCreationCallback;
     this.camundaManagementClient = camundaManagementClient;
+  }
+
+  private CamundaClientConfiguration getClientConfiguration(
+      final Supplier<CamundaClientBuilder> camundaClientBuilderSupplier) {
+    final CamundaClientBuilder clientBuilder = camundaClientBuilderSupplier.get();
+    try (final CamundaClient camundaClient = clientBuilder.build()) {
+      return camundaClient.getConfiguration();
+    }
   }
 
   @Override

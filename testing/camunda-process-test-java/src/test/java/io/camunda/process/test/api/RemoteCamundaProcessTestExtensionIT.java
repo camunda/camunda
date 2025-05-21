@@ -29,6 +29,7 @@ public class RemoteCamundaProcessTestExtensionIT {
           .withCamundaClient(
               () ->
                   CamundaClient.newClientBuilder()
+                      .usePlaintext()
                       .restAddress(URI.create("http://localhost:8080"))
                       .grpcAddress(URI.create("http://localhost:26500")))
       // .withRemoteCamundaMonitoringApiAddress("http://localhost:9600")
