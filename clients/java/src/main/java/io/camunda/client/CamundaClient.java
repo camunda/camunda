@@ -20,6 +20,7 @@ import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandSte
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingToGroupStep1;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
+import io.camunda.client.api.command.AssignRoleToClientCommandStep1;
 import io.camunda.client.api.command.AssignRoleToGroupCommandStep1;
 import io.camunda.client.api.command.AssignRoleToMappingCommandStep1;
 import io.camunda.client.api.command.AssignRoleToTenantCommandStep1;
@@ -61,6 +62,7 @@ import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignMappingFromGroupStep1;
+import io.camunda.client.api.command.UnassignRoleFromClientCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromMappingCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromTenantCommandStep1;
@@ -1267,6 +1269,24 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   AssignRoleToGroupCommandStep1 newAssignRoleToGroupCommand();
 
   /**
+   * Command to assign a role to a client.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newAssignRoleToClientCommand()
+   *  .roleId("roleId")
+   *  .clientId("clientId")
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder to configure and send the assign role to client command
+   */
+  AssignRoleToClientCommandStep1 newAssignRoleToClientCommand();
+
+  /**
    * Command to assign a role to a tenant.
    *
    * <pre>
@@ -1354,6 +1374,25 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the unassign role from mapping command
    */
   UnassignRoleFromMappingCommandStep1 newUnassignRoleFromMappingCommand();
+
+  /**
+   * Command to unassign a role from a client.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * camundaClient
+   *   .newUnassignRoleFromClientCommand()
+   *   .roleId("roleId")
+   *   .clientId("clientId")
+   *   .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the unassign role from client command
+   */
+  UnassignRoleFromClientCommandStep1 newUnassignRoleFromClientCommand();
 
   /**
    * Command to create a group.
