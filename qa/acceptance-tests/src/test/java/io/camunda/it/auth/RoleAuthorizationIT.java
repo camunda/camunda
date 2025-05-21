@@ -27,6 +27,7 @@ import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.zeebe.gateway.protocol.rest.RoleClientSearchResult;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
 import java.io.IOException;
@@ -346,6 +347,36 @@ class RoleAuthorizationIT {
   }
 
   @Test
+  void shouldUnassignRoleFromClientIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    // given
+    final String clientId = Strings.newRandomValidIdentityId();
+    final String roleId = Strings.newRandomValidIdentityId();
+
+    adminClient.newCreateRoleCommand().roleId(roleId).name("roleName").send().join();
+    adminClient.newAssignRoleToClientCommand().roleId(roleId).clientId(clientId).send().join();
+
+    // when
+    adminClient.newUnassignRoleFromClientCommand().roleId(roleId).clientId(clientId).send().join();
+
+    // then
+    Awaitility.await("Role is unassigned from the client")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        searchClientsByRoleId(
+                                adminClient.getConfiguration().getRestAddress().toString(),
+                                ADMIN,
+                                roleId)
+                            .getItems())
+                    .isEmpty());
+
+    // clean up
+    adminClient.newDeleteRoleCommand(roleId).send().join();
+  }
+
+  @Test
   void unassignRoleFromClientShouldReturnForbiddenIfUnauthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
     assertThatThrownBy(
@@ -493,6 +524,33 @@ class RoleAuthorizationIT {
   }
 
   @Test
+  void shouldAssignRoleToClientIfAuthorized(@Authenticated(ADMIN) final CamundaClient adminClient) {
+    // given
+    final String clientId = Strings.newRandomValidIdentityId();
+    final String roleId = Strings.newRandomValidIdentityId();
+    adminClient.newCreateRoleCommand().roleId(roleId).name("roleName").send().join();
+
+    // when
+    adminClient.newAssignRoleToClientCommand().roleId(roleId).clientId(clientId).send().join();
+
+    // then
+    Awaitility.await("Role is assigned to the client")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        searchClientsByRoleId(
+                                adminClient.getConfiguration().getRestAddress().toString(),
+                                ADMIN,
+                                roleId)
+                            .getItems())
+                    .anyMatch(c -> clientId.equals(c.getClientId())));
+
+    // clean up
+    adminClient.newDeleteRoleCommand(roleId).send().join();
+  }
+
+  @Test
   void assignRoleToClientShouldReturnForbiddenIfUnauthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
     assertThatThrownBy(
@@ -564,6 +622,25 @@ class RoleAuthorizationIT {
     final HttpResponse<String> response =
         HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
     return OBJECT_MAPPER.readValue(response.body(), MappingSearchQueryResult.class);
+  }
+
+  // TODO: will be removed in the next PR for client search
+  private static RoleClientSearchResult searchClientsByRoleId(
+      final String restAddress, final String username, final String roleId)
+      throws URISyntaxException, IOException, InterruptedException {
+    final var encodedCredentials =
+        Base64.getEncoder()
+            .encodeToString("%s:%s".formatted(username, DEFAULT_PASSWORD).getBytes());
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(new URI("%s%s".formatted(restAddress, "v2/roles/" + roleId + "/clients/search")))
+            .POST(HttpRequest.BodyPublishers.ofString(""))
+            .header("Authorization", "Basic %s".formatted(encodedCredentials))
+            .build();
+
+    final HttpResponse<String> response =
+        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    return OBJECT_MAPPER.readValue(response.body(), RoleClientSearchResult.class);
   }
 
   private record RoleSearchResponse(List<RoleResult> items) {}
