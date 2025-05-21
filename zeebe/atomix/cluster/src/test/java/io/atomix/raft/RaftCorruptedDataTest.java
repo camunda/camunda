@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.*;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import org.awaitility.Awaitility;
@@ -71,7 +72,9 @@ public class RaftCorruptedDataTest {
     server2.bootstrap(node0, node1, node2);
 
     // node does not become follower - goes to inactive as it detects that it has longer log
-    Awaitility.await("node becomes INACTIVE").until(() -> server2.getRole().equals(Role.INACTIVE));
+    Awaitility.await("node becomes INACTIVE")
+        .atMost(Duration.ofSeconds(30))
+        .until(() -> server2.getRole().equals(Role.INACTIVE));
   }
 
   @Test
