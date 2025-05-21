@@ -118,6 +118,7 @@ import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.api.search.request.AdHocSubProcessActivitySearchRequest;
 import io.camunda.client.api.search.request.BatchOperationItemSearchRequest;
 import io.camunda.client.api.search.request.BatchOperationSearchRequest;
+import io.camunda.client.api.search.request.ClientsByRoleSearchRequest;
 import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
@@ -222,6 +223,7 @@ import io.camunda.client.impl.http.HttpClientFactory;
 import io.camunda.client.impl.search.request.AdHocSubProcessActivitySearchRequestImpl;
 import io.camunda.client.impl.search.request.BatchOperationItemSearchRequestImpl;
 import io.camunda.client.impl.search.request.BatchOperationSearchRequestImpl;
+import io.camunda.client.impl.search.request.ClientsByRoleSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionDefinitionSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionRequirementsSearchRequestImpl;
@@ -866,6 +868,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public AssignRoleToClientCommandStep1 newAssignRoleToClientCommand() {
     return new AssignRoleToClientCommandImpl(httpClient);
+  }
+
+  @Override
+  public ClientsByRoleSearchRequest newClientsByRoleSearchRequest(final String roleId) {
+    return new ClientsByRoleSearchRequestImpl(httpClient, jsonMapper, roleId);
   }
 
   @Override

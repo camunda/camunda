@@ -107,6 +107,7 @@ import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.api.search.request.AdHocSubProcessActivitySearchRequest;
 import io.camunda.client.api.search.request.BatchOperationItemSearchRequest;
 import io.camunda.client.api.search.request.BatchOperationSearchRequest;
+import io.camunda.client.api.search.request.ClientsByRoleSearchRequest;
 import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
@@ -1288,6 +1289,22 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder to configure and send the assign role to client command
    */
   AssignRoleToClientCommandStep1 newAssignRoleToClientCommand();
+
+  /**
+   * Executes a search request to query clients by role.
+   *
+   * <pre>
+   * camundaClient
+   *   .newClientsByRoleSearchRequest("roleId")
+   *   .sort((s) -> s.clientId().asc())
+   *   .page((p) -> p.limit(100))
+   *   .send();
+   * </pre>
+   *
+   * @param roleId the ID of the role
+   * @return a builder for the clients by role search request
+   */
+  ClientsByRoleSearchRequest newClientsByRoleSearchRequest(String roleId);
 
   /**
    * Command to assign a role to a tenant.
