@@ -62,7 +62,7 @@ public class CamundaContainerRuntimeBuilder {
   private CamundaRuntimeMode runtimeMode = CamundaRuntimeMode.MANAGED;
 
   private Supplier<CamundaClientBuilder> camundaClientBuilderSupplier =
-      CamundaClient::newClientBuilder;
+      () -> CamundaClient.newClientBuilder().usePlaintext();
 
   private URI remoteCamundaMonitoringApiAddress =
       URI.create(ContainerRuntimeDefaults.LOCAL_CAMUNDA_MONITORING_API_ADDRESS);
