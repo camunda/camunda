@@ -104,7 +104,7 @@ const AssignMembersModal: FC<
         <SelectedUsers>
           {selectedUsers.map((user) => (
             <Tag
-              key={user.id}
+              key={user.username}
               onClose={onUnselectUser(user)}
               size="md"
               type="blue"

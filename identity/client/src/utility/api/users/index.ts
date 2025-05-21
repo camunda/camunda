@@ -8,17 +8,14 @@
 
 import { ApiDefinition, apiDelete, apiPost, apiPut } from "../request";
 import { SearchResponse } from "src/utility/api";
-import { EntityData } from "src/components/entityList/EntityList";
 
 export const USERS_ENDPOINT = "/users";
 
-export type UserKeys = "key" | "name" | "username" | "password" | "email";
+export type UserKeys = "name" | "username" | "email";
 
-export type User = EntityData & {
-  key: number;
+export type User = {
   name: string;
   username: string;
-  password: string;
   email: string;
 };
 
@@ -35,12 +32,16 @@ export const getUserDetails: ApiDefinition<
 > = ({ username }) =>
   apiPost(`${USERS_ENDPOINT}/search`, { filter: { username } });
 
-type CreateUserParams = Omit<User, "key">;
+type CreateUserParams = { password: string } & User;
 
 export const createUser: ApiDefinition<undefined, CreateUserParams> = (user) =>
   apiPost(USERS_ENDPOINT, { ...user, enabled: true });
 
-export const updateUser: ApiDefinition<undefined, User> = (user) => {
+type UpdateUserParams = { password?: string } & User;
+
+export const updateUser: ApiDefinition<undefined, UpdateUserParams> = (
+  user,
+) => {
   const { name, email, username, password } = user;
   return apiPut(`${USERS_ENDPOINT}/${username}`, {
     name,
