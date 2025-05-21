@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -426,7 +427,7 @@ public class TaskListenerBlockedTransitionTest {
 
   @Test
   public void
-      shouldUpdateUserTaskAfterAllUpdatingTaskListenersAreExecutedTriggeredByVariableUpdate() {
+      shouldUpdateUserTaskAfterAllUpdatingTaskListenersAreExecutedTriggeredByVariableUpdateWithLocalSemantic() {
     // given
     final long processInstanceKey =
         helper.createProcessInstance(
@@ -486,25 +487,28 @@ public class TaskListenerBlockedTransitionTest {
             tuple(ValueType.USER_TASK, UserTaskIntent.UPDATED),
             tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATED));
 
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasScopeKey(userTaskElementInstanceKey)
+        .hasName("status")
+        .hasValue("\"APPROVED\"");
+
     helper.assertUserTaskRecordWithIntent(
         processInstanceKey,
         UserTaskIntent.UPDATED,
         userTask ->
             Assertions.assertThat(userTask)
-                .hasAssignee(createdUserTask.getAssignee())
-                .hasCandidateGroupsList(createdUserTask.getCandidateGroupsList())
-                .hasCandidateUsersList(createdUserTask.getCandidateUsersList())
-                .hasDueDate(createdUserTask.getDueDate())
-                .hasFollowUpDate(createdUserTask.getFollowUpDate())
-                .hasPriority(createdUserTask.getPriority())
                 .hasVariables(Map.of("status", "APPROVED"))
-                .hasAction("")
-                .hasOnlyChangedAttributes(UserTaskRecord.VARIABLES));
+                .hasOnlyChangedAttributes(UserTaskRecord.VARIABLES)
+                .hasAction(""));
   }
 
   @Test
   public void
-      shouldUpdateUserTaskAfterAllUpdatingTaskListenersAreExecutedTriggeredByVariableUpdateWithEmptyDocument() {
+      shouldUpdateUserTaskAfterAllUpdatingTaskListenersAreExecutedTriggeredByVariableUpdateWithLocalSemanticAndEmptyDocument() {
     // given
     final long processInstanceKey =
         helper.createProcessInstance(
