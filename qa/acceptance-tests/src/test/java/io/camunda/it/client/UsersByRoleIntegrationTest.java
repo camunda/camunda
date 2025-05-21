@@ -7,7 +7,6 @@
  */
 package io.camunda.it.client;
 
-import static io.camunda.client.api.search.request.SearchRequestBuilders.roleUserSort;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -256,7 +255,8 @@ public class UsersByRoleIntegrationTest {
               final var roleUsers =
                   camundaClient
                       .newUsersByRoleSearchRequest(roleId)
-                      .sort(roleUserSort(s -> s.username().desc()).username().desc())
+                      .sort(s -> s.username().desc())
+                      .page((p) -> p.limit(100))
                       .send()
                       .join()
                       .items();
