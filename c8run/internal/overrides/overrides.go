@@ -5,14 +5,15 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
- package overrides
+package overrides
 
- import (
-         "fmt"
-         "os"
-         "strconv"
-        "github.com/camunda/camunda/c8run/internal/types"
- )
+import (
+	"fmt"
+	"os"
+	"strconv"
+
+	"github.com/camunda/camunda/c8run/internal/types"
+)
 
 func SetEnvVars(javaHome string) error {
 	envVars := map[string]string{
@@ -65,7 +66,5 @@ func AdjustJavaOpts(javaOpts string, settings types.C8RunSettings) string {
 	}
 	javaOpts = javaOpts + " -Dspring.profiles.active=operate,tasklist,broker,identity,consolidated-auth"
 	os.Setenv("CAMUNDA_OPERATE_ZEEBE_RESTADDRESS", protocol+"://localhost:"+strconv.Itoa(settings.Port))
-	fmt.Println("Java opts: " + javaOpts)
 	return javaOpts
 }
-
