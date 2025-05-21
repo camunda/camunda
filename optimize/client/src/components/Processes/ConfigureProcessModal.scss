@@ -5,4 +5,10 @@
     display: flex;
     gap: spacing.$spacing-02;
   }
+
+  .cds--actionable-notification {
+    .cds--visually-hidden {
+      display: none;
+    }
+  }
 }
