@@ -7,11 +7,11 @@
  */
 package io.camunda.tasklist.store.opensearch;
 
+import static io.camunda.tasklist.schema.indices.ProcessInstanceDependant.PROCESS_INSTANCE_ID;
 import static io.camunda.tasklist.schema.indices.VariableIndex.ID;
 import static io.camunda.tasklist.schema.indices.VariableIndex.NAME;
 import static io.camunda.tasklist.schema.indices.VariableIndex.SCOPE_FLOW_NODE_ID;
 import static io.camunda.tasklist.util.CollectionUtil.isNotEmpty;
-import static io.camunda.tasklist.util.OpenSearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.OpenSearchUtil.createSearchRequest;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
@@ -55,7 +55,6 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.SortOrder;
-import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.ConstantScoreQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -386,8 +385,7 @@ public class VariableStoreOpenSearch implements VariableStore {
   @Override
   public List<String> getProcessInstanceIdsWithMatchingVars(
       final List<String> varNames, final List<String> varValues) {
-    final List<Set<String>> listProcessIdsMatchingVars = new ArrayList<>();
-
+    Set<String> processInstanceIds = null;
     for (int i = 0; i < varNames.size(); i++) {
       final Query.Builder nameQ = new Query.Builder();
       final int finalI = i;
@@ -412,61 +410,37 @@ public class VariableStoreOpenSearch implements VariableStore {
       final SearchRequest.Builder searchRequestBuilder = new SearchRequest.Builder();
       searchRequestBuilder
           .index(variableIndex.getAlias())
-          .query(q -> q.constantScore(cs -> cs.filter(boolQuery)))
-          .scroll(timeBuilder -> timeBuilder.time(SCROLL_KEEP_ALIVE_MS));
-
-      final Set<String> processInstanceIds = new HashSet<>();
-
+          .query(q -> q.constantScore(cs -> cs.filter(boolQuery)));
+      final Set<String> currentIds;
       try {
-        SearchResponse<VariableEntity> response =
-            osClient.search(searchRequestBuilder.build(), VariableEntity.class);
-
-        List<String> scrollProcessIds =
-            response.hits().hits().stream()
-                .map(hit -> hit.source().getProcessInstanceId())
-                .collect(Collectors.toList());
-
-        processInstanceIds.addAll(scrollProcessIds);
-
-        final String scrollId = response.scrollId();
-
-        while (!scrollProcessIds.isEmpty()) {
-          final ScrollRequest scrollRequest =
-              ScrollRequest.of(
-                  builder ->
-                      builder
-                          .scrollId(scrollId)
-                          .scroll(new Time.Builder().time(SCROLL_KEEP_ALIVE_MS).build()));
-
-          response = osClient.scroll(scrollRequest, VariableEntity.class);
-          scrollProcessIds =
-              response.hits().hits().stream()
-                  .map(hit -> hit.source().getProcessInstanceId())
-                  .collect(Collectors.toList());
-
-          processInstanceIds.addAll(scrollProcessIds);
-        }
-
-        OpenSearchUtil.clearScroll(scrollId, osClient);
-
-        listProcessIdsMatchingVars.add(processInstanceIds);
-
+        currentIds =
+            new HashSet<>(
+                OpenSearchUtil.scrollFieldToList(
+                    searchRequestBuilder, PROCESS_INSTANCE_ID, osClient));
       } catch (final IOException e) {
         final String message =
-            String.format("Exception occurred while obtaining flowInstanceIds: %s", e.getMessage());
+            String.format(
+                "Exception occurred while obtaining flowNodeInstanceIds for variable %s: %s",
+                varNames.get(i), e.getMessage());
         throw new TasklistRuntimeException(message, e);
       }
+      // Early exit if empty result
+      if (currentIds.isEmpty()) {
+        return Collections.emptyList();
+      }
+      if (processInstanceIds == null) {
+        processInstanceIds = currentIds;
+      } else {
+        processInstanceIds.retainAll(currentIds);
+        if (processInstanceIds.isEmpty()) {
+          // Early exit if intersection is empty
+          return Collections.emptyList();
+        }
+      }
     }
-
-    // now find the intersection of all sets
-    return new ArrayList<>(
-        listProcessIdsMatchingVars.stream()
-            .reduce(
-                (set1, set2) -> {
-                  set1.retainAll(set2);
-                  return set1;
-                })
-            .orElse(Collections.emptySet()));
+    return processInstanceIds == null
+        ? Collections.emptyList()
+        : new ArrayList<>(processInstanceIds);
   }
 
   private BulkOperation createUpsertRequest(final TaskVariableEntity variableEntity) {
