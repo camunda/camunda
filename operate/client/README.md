@@ -87,7 +87,7 @@ Defines the public interface of the directory. Usually re-exports the default co
 
 Some components are used throughout the whole application. To avoid long parent chains when importing, like (`import Input from '../../../component/Input'`), please use `import Input from 'modules/components/Input'`.
 
-> For readability, any global module in the `src/modules` directory should be imported relatively to `modules`.
+> For readability, any global module in the `src/modules` directory should be imported relatively to `modules`.  
 > e.g. "`import {post} from 'modules/request'`
 
 ### Styling normal React components

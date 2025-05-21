@@ -1,7 +1,8 @@
-## description: Runs the CI tests owned by Core Features. Runs a test to make sure that Operate can build, runs java checks (ie spotbugs), unit tests, and integration tests
-## test location: operate/qa/integration-tests
-## owner: Core Features
-name: "[Legacy] Operate"
+# description: Runs the CI tests owned by Core Features. Runs a test to make sure that Operate can build, runs java checks (ie spotbugs), unit tests, and integration tests
+# test location: operate/common, operate/qa/integration-tests, operate/schema, operate/webapp
+# owner: Core Features
+---
+name: Operate Core Features CI
 on:
   workflow_dispatch:
   push:
@@ -40,9 +41,34 @@ concurrency:
   group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
 jobs:
-  # over 10min run time
+  run-core-features-build:
+    name: Operate Build
+    uses: ./.github/workflows/operate-ci-build-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `main` or `stable/**`
+
+  java-checks:
+    name: Operate Java Checks
+    uses: ./.github/workflows/operate-ci-build-observe-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.head_ref || github.ref_name }}
+      command: ./mvnw -pl operate -am verify -T1C -B -P spotbugs,skipFrontendBuild -DskipTests -DskipDockerProfile -DskipQaBuild
+      runner-type: gcp-core-4-default
+
+  run-core-features-unit-tests:
+    name: Operate Backend Unit Tests - Core Features
+    uses: ./.github/workflows/operate-ci-test-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.head_ref || github.ref_name }}
+      command: ./mvnw -f operate verify -T1C -B -P skipFrontendBuild -DskipITs -DskipDataLayerUTs -DskipIdentityUTs -DskipDockerProfile -DskipChecks
+      test-type: Unit Tests
+      runner-type: gcp-core-4-default
+
   run-core-features-integration-tests:
-    name: "[IT] Core Features"
+    name: Operate Backend Integration Tests - Core Features
     uses: ./.github/workflows/operate-ci-test-reusable.yml
     secrets: inherit
     with:

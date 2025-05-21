@@ -1,8 +1,8 @@
-# description: Workflow for Front-End end visual regression tests
-# test location: operate/client/e2e-playwright/visual
+# description: This workflow runs a11y accessibility tests on Operate
+# test location: operate/client/e2e-playwright/a11y
 # owner:
 ---
-name: Operate Visual regression tests
+name: Operate a11y tests
 on:
   push:
     branches:
@@ -10,11 +10,11 @@ on:
       - "stable/**"
       - "release/**"
     paths:
-      - '.github/workflows/operate-playwright.yml'
+      - '.github/workflows/operate-a11y.yml'
       - 'operate/client/**'
   pull_request:
     paths:
-      - '.github/workflows/operate-playwright.yml'
+      - '.github/workflows/operate-a11y.yml'
       - 'operate/client/**'
 
 # Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
@@ -25,35 +25,38 @@ concurrency:
 
 jobs:
   test:
-    runs-on: gcp-core-2-default
+    runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.51.1
+      options: --user 1001:1000
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
-      - name: Setup Node
+      - name: Setup NodeJS
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        with:
+          directory: operate/client
       - name: Install node dependencies
         working-directory: ./operate/client
         run: yarn
       - name: Build frontend
         working-directory: ./operate/client
-        run: yarn build:visual-regression
+        run: yarn build
       - name: Start server
         working-directory: ./operate/client
         run: yarn start:visual-regression &
-      - name: Run Playwright tests
+      - name: Run A11y tests
         working-directory: ./operate/client
-        run: yarn playwright e2e-playwright/visual
+        run: yarn playwright e2e-playwright/a11y
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: Playwright report
           path: operate/client/playwright-report/
           retention-days: 30
-
       - name: Observe build status
         if: always()
         continue-on-error: true
