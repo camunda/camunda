@@ -93,6 +93,8 @@ final class JobBatchCollector {
             ? List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             : value.getTenantIds();
     final Map<JobKind, Integer> jobCountPerJobKind = new EnumMap<>(JobKind.class);
+    // the tenant check is performed earlier in the JobBatchActivateProcessor, so we can skip it
+    // here and only check if the requester has the correct permissions to access the jobs
     final var authorizedProcessIds =
         authCheckBehavior.getAllAuthorizedResourceIdentifiers(
             new AuthorizationRequest(
