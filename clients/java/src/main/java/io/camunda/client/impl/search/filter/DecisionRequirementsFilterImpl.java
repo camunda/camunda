@@ -61,6 +61,12 @@ public class DecisionRequirementsFilterImpl
   }
 
   @Override
+  public DecisionRequirementsFilter resourceName(final String resourceName) {
+    filter.setResourceName(resourceName);
+    return this;
+  }
+
+  @Override
   protected io.camunda.client.protocol.rest.DecisionRequirementsFilter getSearchRequestProperty() {
     return filter;
   }

@@ -59,4 +59,12 @@ public interface DecisionRequirementsFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   DecisionRequirementsFilter tenantId(final String tenantId);
+
+  /**
+   * Filters Decision Requirements by the specified resource name.
+   *
+   * @param resourceName the name of the resource from which the decision requirements were parsed
+   * @return the updated filter
+   */
+  DecisionRequirementsFilter resourceName(final String resourceName);
 }
