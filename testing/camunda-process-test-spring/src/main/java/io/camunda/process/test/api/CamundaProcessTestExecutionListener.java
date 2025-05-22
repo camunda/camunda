@@ -245,9 +245,13 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     containerRuntimeBuilder
         .withRuntimeMode(runtimeConfiguration.getRuntimeMode())
         .withRemoteCamundaMonitoringApiAddress(
-            runtimeConfiguration.getRemoteCamundaMonitoringApiAddress())
+            runtimeConfiguration.getRemote().getCamundaMonitoringApiAddress())
         .withRemoteConnectorsRestApiAddress(
-            runtimeConfiguration.getRemoteConnectorsRestApiAddress());
+            runtimeConfiguration.getRemote().getConnectorsRestApiAddress());
+
+    final CamundaClientBuilderFactory camundaClientBuilderFactory =
+        testContext.getApplicationContext().getBean(CamundaClientBuilderFactory.class);
+    containerRuntimeBuilder.withCamundaClientBuilder(camundaClientBuilderFactory);
 
     return containerRuntimeBuilder.build();
   }

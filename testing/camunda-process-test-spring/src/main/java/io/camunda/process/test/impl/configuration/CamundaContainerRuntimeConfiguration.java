@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.configuration;
 
 import io.camunda.process.test.api.CamundaRuntimeMode;
 import io.camunda.process.test.impl.runtime.ContainerRuntimeDefaults;
+import io.camunda.spring.client.properties.CamundaClientProperties;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -39,12 +40,9 @@ public class CamundaContainerRuntimeConfiguration {
   private Map<String, String> connectorsEnvVars = Collections.emptyMap();
   private Map<String, String> connectorsSecrets = Collections.emptyMap();
 
-  private final CamundaRuntimeMode runtimeMode = CamundaRuntimeMode.MANAGED;
+  private CamundaRuntimeMode runtimeMode = CamundaRuntimeMode.MANAGED;
 
-  private final String remoteCamundaMonitoringApiAddress =
-      ContainerRuntimeDefaults.LOCAL_CAMUNDA_MONITORING_API_ADDRESS;
-  private final String remoteConnectorsRestApiAddress =
-      ContainerRuntimeDefaults.LOCAL_CONNECTORS_REST_API_ADDRESS;
+  private RemoteConfiguration remote = new RemoteConfiguration();
 
   public String getCamundaVersion() {
     return camundaVersion;
@@ -122,11 +120,48 @@ public class CamundaContainerRuntimeConfiguration {
     return runtimeMode;
   }
 
-  public String getRemoteCamundaMonitoringApiAddress() {
-    return remoteCamundaMonitoringApiAddress;
+  public void setRuntimeMode(final CamundaRuntimeMode runtimeMode) {
+    this.runtimeMode = runtimeMode;
   }
 
-  public String getRemoteConnectorsRestApiAddress() {
-    return remoteConnectorsRestApiAddress;
+  public RemoteConfiguration getRemote() {
+    return remote;
+  }
+
+  public void setRemote(final RemoteConfiguration remote) {
+    this.remote = remote;
+  }
+
+  public static class RemoteConfiguration {
+    private CamundaClientProperties client;
+
+    private String camundaMonitoringApiAddress =
+        ContainerRuntimeDefaults.LOCAL_CAMUNDA_MONITORING_API_ADDRESS;
+    private String connectorsRestApiAddress =
+        ContainerRuntimeDefaults.LOCAL_CONNECTORS_REST_API_ADDRESS;
+
+    public CamundaClientProperties getClient() {
+      return client;
+    }
+
+    public void setClient(final CamundaClientProperties client) {
+      this.client = client;
+    }
+
+    public String getCamundaMonitoringApiAddress() {
+      return camundaMonitoringApiAddress;
+    }
+
+    public void setCamundaMonitoringApiAddress(final String camundaMonitoringApiAddress) {
+      this.camundaMonitoringApiAddress = camundaMonitoringApiAddress;
+    }
+
+    public String getConnectorsRestApiAddress() {
+      return connectorsRestApiAddress;
+    }
+
+    public void setConnectorsRestApiAddress(final String connectorsRestApiAddress) {
+      this.connectorsRestApiAddress = connectorsRestApiAddress;
+    }
   }
 }
