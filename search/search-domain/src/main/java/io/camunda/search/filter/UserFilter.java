@@ -7,13 +7,21 @@
  */
 package io.camunda.search.filter;
 
+import static io.camunda.util.CollectionUtil.addValuesToList;
+import static io.camunda.util.CollectionUtil.collectValues;
+
+import io.camunda.search.filter.UserTaskFilter.Builder;
+import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public record UserFilter(
     Long key,
-    String username,
-    Set<String> usernames,
+    List<Operation<String>> usernameOperations,
     String name,
     String email,
     String tenantId,
@@ -23,8 +31,7 @@ public record UserFilter(
 
   public Builder toBuilder() {
     return new Builder()
-        .username(username)
-        .usernames(usernames)
+        .usernameOperations(usernameOperations)
         .name(name)
         .email(email)
         .tenantId(tenantId)
@@ -34,8 +41,7 @@ public record UserFilter(
 
   public static final class Builder implements ObjectBuilder<UserFilter> {
     private Long key;
-    private String username;
-    private Set<String> usernames;
+    private List<Operation<String>> usernameOperations;
     private String name;
     private String email;
     private String tenantId;
@@ -47,14 +53,23 @@ public record UserFilter(
       return this;
     }
 
-    public Builder username(final String value) {
-      username = value;
+    public Builder usernameOperations(final List<Operation<String>> operations) {
+      usernameOperations = addValuesToList(usernameOperations, operations);
       return this;
     }
 
     public Builder usernames(final Set<String> value) {
-      usernames = value == null ? Set.of() : value;
-      return this;
+      return usernameOperations(FilterUtil.mapDefaultToOperation(new ArrayList<>(value)));
+    }
+
+    public Builder usernames(final String value, final String... values) {
+      return usernameOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder usernameOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return usernameOperations(collectValues(operation, operations));
     }
 
     public Builder name(final String value) {
@@ -84,7 +99,14 @@ public record UserFilter(
 
     @Override
     public UserFilter build() {
-      return new UserFilter(key, username, usernames, name, email, tenantId, groupId, roleId);
+      return new UserFilter(
+          key,
+          Objects.requireNonNullElse(usernameOperations, Collections.emptyList()),
+          name,
+          email,
+          tenantId,
+          groupId,
+          roleId);
     }
   }
 }

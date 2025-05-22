@@ -61,7 +61,12 @@
     WHERE 1 = 1
     <!-- basic filters -->
     <if test="filter.key != null">AND t.USER_KEY = #{filter.key}</if>
-    <if test="filter.username != null">AND t.USERNAME = #{filter.username}</if>
+    <if test="filter.usernameOperations != null and !filter.usernameOperations.isEmpty()">
+      <foreach collection="filter.usernameOperations" item="operation">
+        AND t.USERNAME
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
     <if test="filter.name != null">AND t.NAME = #{filter.name}</if>
     <if test="filter.email != null">AND t.EMAIL = #{filter.email}</if>
     <if test="filter.tenantId != null">AND tm.TENANT_ID = #{filter.tenantId}</if>

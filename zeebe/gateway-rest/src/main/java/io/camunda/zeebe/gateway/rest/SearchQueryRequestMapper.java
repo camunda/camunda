@@ -1052,15 +1052,16 @@ public final class SearchQueryRequestMapper {
   }
 
   private static UserFilter toUserFilter(final UserFilterRequest filter) {
-    return Optional.ofNullable(filter)
-        .map(
-            f ->
-                FilterBuilders.user()
-                    .username(f.getUsername())
-                    .name(f.getName())
-                    .email(f.getEmail())
-                    .build())
-        .orElse(null);
+
+    final var builder = FilterBuilders.user();
+    if (filter != null) {
+      Optional.ofNullable(filter.getUsername())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::usernameOperations);
+      Optional.ofNullable(filter.getName()).ifPresent(builder::name);
+      Optional.ofNullable(filter.getEmail()).ifPresent(builder::email);
+    }
+    return builder.build();
   }
 
   private static IncidentFilter toIncidentFilter(

@@ -7034,7 +7034,8 @@ components:
       properties:
         username:
           description: The username of the user.
-          type: "string"
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         name:
           description: The name of the user.
           type: "string"

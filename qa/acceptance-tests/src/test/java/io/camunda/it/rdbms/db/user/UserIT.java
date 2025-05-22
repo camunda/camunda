@@ -98,7 +98,7 @@ public class UserIT {
     final var searchResult =
         userReader.search(
             new UserQuery(
-                new UserFilter.Builder().username(user.username()).build(),
+                new UserFilter.Builder().usernames(user.username()).build(),
                 UserSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(10))));
 
@@ -151,7 +151,7 @@ public class UserIT {
             new UserQuery(
                 new UserFilter.Builder()
                     .key(user.userKey())
-                    .username(user.username())
+                    .usernames(user.username())
                     .name(user.name())
                     .email(user.email())
                     .build(),

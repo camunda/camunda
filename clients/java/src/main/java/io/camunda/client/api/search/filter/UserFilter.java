@@ -15,7 +15,9 @@
  */
 package io.camunda.client.api.search.filter;
 
+import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestFilter;
+import java.util.function.Consumer;
 
 public interface UserFilter extends SearchRequestFilter {
 
@@ -26,6 +28,14 @@ public interface UserFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   UserFilter username(final String username);
+
+  /**
+   * Filters users by the specified username using {@link StringProperty} consumer.
+   *
+   * @param fn the userbane {@link StringProperty} consumer of the user
+   * @return the updated filter
+   */
+  UserFilter username(final Consumer<StringProperty> fn);
 
   /**
    * Filter users by the specified name.

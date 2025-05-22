@@ -164,7 +164,7 @@ public sealed interface AuthenticationHandler {
     private Optional<UserEntity> loadUserByUsername(final String username) {
       final var userQuery =
           SearchQueryBuilders.userSearchQuery(
-              fn -> fn.filter(f -> f.username(username)).page(p -> p.size(1)));
+              fn -> fn.filter(f -> f.usernames(username)).page(p -> p.size(1)));
       return userServices.search(userQuery).items().stream().filter(Objects::nonNull).findFirst();
     }
 
