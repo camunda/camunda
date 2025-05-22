@@ -152,7 +152,7 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   void setPartitionTransitionMeterRegistry(MeterRegistry transitionMeterRegistry);
 
-  void setMigrationsPerformed(boolean migrationsPerformed);
+  void markMigrationsDone();
 
   boolean areMigrationsPerformed();
 
