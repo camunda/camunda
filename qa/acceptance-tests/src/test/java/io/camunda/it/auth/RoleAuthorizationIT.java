@@ -562,7 +562,8 @@ class RoleAuthorizationIT {
   }
 
   @Test
-  void shouldSearchRoleByClientIfAuthorized(@Authenticated(ADMIN) final CamundaClient adminClient) {
+  void shouldSearchClientsByRoleIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
     // given
     final String clientId = Strings.newRandomValidIdentityId();
     final String roleId = Strings.newRandomValidIdentityId();
@@ -586,7 +587,7 @@ class RoleAuthorizationIT {
   }
 
   @Test
-  void searchRoleByClientShouldReturnEmptyListIfUnauthorized(
+  void searchClientsByRoleShouldReturnEmptyListIfUnauthorized(
       @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
     final SearchResponse<Client> response =
         camundaClient.newClientsByRoleSearchRequest(ROLE_ID_1).send().join();
