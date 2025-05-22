@@ -73,14 +73,15 @@ public class BatchOperationReader extends AbstractEntityReader<BatchOperationEnt
             Function.identity(),
             (a, b) -> new BatchOperationDbModel(
                 a.batchOperationKey(),
-                a.state(), // adjust merge logic as needed
+                a.state(),
                 a.operationType(),
                 a.startDate(),
                 a.endDate(),
                 a.operationsTotalCount() + b.operationsTotalCount(),
                 a.operationsFailedCount() + b.operationsFailedCount(),
                 a.operationsCompletedCount() + b.operationsCompletedCount(),
-                a.partitionId()
+                a.partitionId(),
+                true
             )
         ))
         .values();

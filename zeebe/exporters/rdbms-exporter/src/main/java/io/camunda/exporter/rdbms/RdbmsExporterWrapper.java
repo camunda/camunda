@@ -99,7 +99,7 @@ public class RdbmsExporterWrapper implements Exporter {
             new CaffeineCacheStatsCounter(NAMESPACE, "process", context.getMeterRegistry()));
 
     createHandlers(partitionId, rdbmsWriter, builder);
-    createBatchOperationHandlers(rdbmsWriter, builder);
+    createBatchOperationHandlers(partitionId, rdbmsWriter, builder);
 
     exporter = new RdbmsExporter(builder.build());
   }
@@ -253,10 +253,12 @@ public class RdbmsExporterWrapper implements Exporter {
   }
 
   private static void createBatchOperationHandlers(
-      final RdbmsWriter rdbmsWriter, final RdbmsExporterConfig.Builder builder) {
+      final long partitionId,
+      final RdbmsWriter rdbmsWriter,
+      final RdbmsExporterConfig.Builder builder) {
     builder.withHandler(
         ValueType.BATCH_OPERATION_CREATION,
-        new BatchOperationCreatedExportHandler(rdbmsWriter.getBatchOperationWriter()));
+        new BatchOperationCreatedExportHandler(rdbmsWriter.getBatchOperationWriter(), partitionId));
     builder.withHandler(
         ValueType.BATCH_OPERATION_CHUNK,
         new BatchOperationChunkExportHandler(rdbmsWriter.getBatchOperationWriter()));
