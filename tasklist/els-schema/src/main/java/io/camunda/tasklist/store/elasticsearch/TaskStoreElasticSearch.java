@@ -10,15 +10,19 @@ package io.camunda.tasklist.store.elasticsearch;
 import static io.camunda.tasklist.schema.indices.ProcessInstanceDependant.PROCESS_INSTANCE_ID;
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
+import static io.camunda.tasklist.util.ElasticsearchUtil.DEFAULT_MAX_TERMS_COUNT;
 import static io.camunda.tasklist.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.tasklist.util.ElasticsearchUtil.SCROLL_KEEP_ALIVE_MS;
+import static io.camunda.tasklist.util.ElasticsearchUtil.createSearchRequest;
 import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.tasklist.util.ElasticsearchUtil.getRawResponseWithTenantCheck;
 import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.tasklist.util.ElasticsearchUtil.mapSearchHits;
+import static io.camunda.tasklist.util.ElasticsearchUtil.scrollInChunks;
 import static java.util.stream.Collectors.toList;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.WAIT_UNTIL;
 import static org.elasticsearch.index.query.QueryBuilders.*;
+import static org.elasticsearch.search.builder.SearchSourceBuilder.searchSource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
@@ -122,9 +126,9 @@ public class TaskStoreElasticSearch implements TaskStore {
   @Override
   public List<String> getTaskIdsByProcessInstanceId(final String processInstanceId) {
     final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(taskTemplate)
+        createSearchRequest(taskTemplate)
             .source(
-                SearchSourceBuilder.searchSource()
+                searchSource()
                     .query(termQuery(PROCESS_INSTANCE_ID, processInstanceId))
                     .fetchField(TaskTemplate.ID));
     try {
@@ -138,9 +142,9 @@ public class TaskStoreElasticSearch implements TaskStore {
   public Map<String, String> getTaskIdsWithIndexByProcessDefinitionId(
       final String processDefinitionId) {
     final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(taskTemplate)
+        createSearchRequest(taskTemplate)
             .source(
-                SearchSourceBuilder.searchSource()
+                searchSource()
                     .query(termQuery(TaskTemplate.PROCESS_DEFINITION_ID, processDefinitionId))
                     .fetchField(TaskTemplate.ID));
     try {
@@ -279,16 +283,23 @@ public class TaskStoreElasticSearch implements TaskStore {
 
   private List<TaskEntity> getActiveTasksByProcessInstanceIds(
       final List<String> processInstanceIds) {
-    final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(taskTemplate)
-            .source(
-                SearchSourceBuilder.searchSource()
-                    .query(
-                        boolQuery()
-                            .must(termsQuery(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceIds))
-                            .must(termQuery(TaskTemplate.STATE, TaskState.CREATED))));
     try {
-      return ElasticsearchUtil.scroll(searchRequest, TaskEntity.class, objectMapper, esClient);
+      // the number of process instance ids may be large and exceed #DEFAULT_MAX_TERMS_COUNT, so
+      // we need to chunk them
+      return scrollInChunks(
+          processInstanceIds,
+          DEFAULT_MAX_TERMS_COUNT,
+          chunk ->
+              createSearchRequest(taskTemplate)
+                  .source(
+                      searchSource()
+                          .query(
+                              boolQuery()
+                                  .must(termsQuery(TaskTemplate.PROCESS_INSTANCE_ID, chunk))
+                                  .must(termQuery(TaskTemplate.STATE, TaskState.CREATED)))),
+          TaskEntity.class,
+          objectMapper,
+          esClient);
     } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
@@ -299,7 +310,7 @@ public class TaskStoreElasticSearch implements TaskStore {
     final QueryBuilder query = idsQuery().addIds(Arrays.toString(ids.toArray()));
 
     final SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(taskTemplate)
+        createSearchRequest(taskTemplate)
             .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
 
     final SearchResponse response = tenantAwareClient.search(request);
@@ -397,8 +408,7 @@ public class TaskStoreElasticSearch implements TaskStore {
     applySorting(sourceBuilder, query);
 
     final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(
-                taskTemplate, getQueryTypeByTaskState(query.getState()))
+        createSearchRequest(taskTemplate, getQueryTypeByTaskState(query.getState()))
             .source(sourceBuilder);
     try {
       final SearchResponse response =

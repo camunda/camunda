@@ -14,6 +14,7 @@ import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
 import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.util.CollectionUtil;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,10 @@ public class TaskVariableSearchUtil {
   public List<String> getTaskIdsContainingVariables(
       final List<VariableStore.GetVariablesRequest> requests,
       final Map<String, String> variableNameAndVar) {
+
+    if (requests.isEmpty() || variableNameAndVar.isEmpty()) {
+      return Collections.emptyList();
+    }
 
     // build flow node trees (for each process instance)
     final Map<String, VariableStore.FlowNodeTree> flowNodeTrees = buildFlowNodeTrees(requests);

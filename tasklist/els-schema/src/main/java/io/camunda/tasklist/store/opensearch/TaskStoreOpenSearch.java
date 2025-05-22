@@ -11,12 +11,14 @@ import static io.camunda.tasklist.schema.indices.ProcessInstanceDependant.PROCES
 import static io.camunda.tasklist.schema.templates.TaskTemplate.STATE;
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
+import static io.camunda.tasklist.util.OpenSearchUtil.DEFAULT_MAX_TERMS_COUNT;
 import static io.camunda.tasklist.util.OpenSearchUtil.QueryType.ALL;
 import static io.camunda.tasklist.util.OpenSearchUtil.SCROLL_KEEP_ALIVE_MS;
+import static io.camunda.tasklist.util.OpenSearchUtil.createSearchRequest;
 import static io.camunda.tasklist.util.OpenSearchUtil.getRawResponseWithTenantCheck;
 import static io.camunda.tasklist.util.OpenSearchUtil.joinQueryBuilderWithAnd;
+import static io.camunda.tasklist.util.OpenSearchUtil.scrollInChunks;
 import static java.util.stream.Collectors.toList;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
@@ -117,7 +119,7 @@ public class TaskStoreOpenSearch implements TaskStore {
   @Override
   public List<String> getTaskIdsByProcessInstanceId(final String processInstanceId) {
     final SearchRequest.Builder searchRequest =
-        OpenSearchUtil.createSearchRequest(taskTemplate)
+        createSearchRequest(taskTemplate)
             .query(
                 q ->
                     q.term(
@@ -137,7 +139,7 @@ public class TaskStoreOpenSearch implements TaskStore {
   public Map<String, String> getTaskIdsWithIndexByProcessDefinitionId(
       final String processDefinitionId) {
     final SearchRequest.Builder searchRequest =
-        OpenSearchUtil.createSearchRequest(taskTemplate)
+        createSearchRequest(taskTemplate)
             .query(
                 q ->
                     q.term(
@@ -281,34 +283,41 @@ public class TaskStoreOpenSearch implements TaskStore {
 
   private List<TaskEntity> getActiveTasksByProcessInstanceIds(
       final List<String> processInstanceIds) {
-    final var searchRequest =
-        OpenSearchUtil.createSearchRequest(taskTemplate)
-            .query(
-                q ->
-                    q.bool(
-                        b ->
-                            b.must(
-                                    m ->
-                                        m.terms(
-                                            t ->
-                                                t.field(PROCESS_INSTANCE_ID)
-                                                    .terms(
-                                                        terms ->
-                                                            terms.value(
-                                                                processInstanceIds.stream()
-                                                                    .map(FieldValue::of)
-                                                                    .collect(
-                                                                        Collectors.toList())))))
-                                .must(
-                                    m ->
-                                        m.term(
-                                            t ->
-                                                t.field(STATE)
-                                                    .value(
-                                                        FieldValue.of(
-                                                            TaskState.CREATED.name()))))));
     try {
-      return OpenSearchUtil.scroll(searchRequest, TaskEntity.class, osClient);
+      // the number of process instance ids may be large and exceed #DEFAULT_MAX_TERMS_COUNT, so
+      // we need to chunk them
+      return scrollInChunks(
+          processInstanceIds,
+          DEFAULT_MAX_TERMS_COUNT,
+          chunk ->
+              createSearchRequest(taskTemplate)
+                  .query(
+                      q ->
+                          q.bool(
+                              b ->
+                                  b.must(
+                                          m ->
+                                              m.terms(
+                                                  t ->
+                                                      t.field(PROCESS_INSTANCE_ID)
+                                                          .terms(
+                                                              terms ->
+                                                                  terms.value(
+                                                                      processInstanceIds.stream()
+                                                                          .map(FieldValue::of)
+                                                                          .collect(
+                                                                              Collectors
+                                                                                  .toList())))))
+                                      .must(
+                                          m ->
+                                              m.term(
+                                                  t ->
+                                                      t.field(STATE)
+                                                          .value(
+                                                              FieldValue.of(
+                                                                  TaskState.CREATED.name())))))),
+          TaskEntity.class,
+          osClient);
     } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
@@ -388,7 +397,7 @@ public class TaskStoreOpenSearch implements TaskStore {
     // TODO we can play around with query type here (2nd parameter), e.g. when we select for only
     // active tasks
     final SearchRequest.Builder sourceBuilder =
-        OpenSearchUtil.createSearchRequest(taskTemplate, getQueryTypeByTaskState(query.getState()));
+        createSearchRequest(taskTemplate, getQueryTypeByTaskState(query.getState()));
     sourceBuilder.query(esQuery.build());
     applySorting(sourceBuilder, query);
 
@@ -442,7 +451,9 @@ public class TaskStoreOpenSearch implements TaskStore {
         variableStoreOpensearch.getProcessInstanceIdsWithMatchingVars(varNames, varValues);
 
     final List<String> tasksIdsCreatedFiltered =
-        retrieveTaskIdByProcessInstanceId(processIdsCreatedFiltered, taskVariablesFilter);
+        processIdsCreatedFiltered.isEmpty()
+            ? Collections.emptyList()
+            : retrieveTaskIdByProcessInstanceId(processIdsCreatedFiltered, taskVariablesFilter);
 
     final List<String> taskIdsCompletedFiltered =
         getTasksIdsCompletedWithMatchingVars(varNames, varValues);
@@ -862,7 +873,7 @@ public class TaskStoreOpenSearch implements TaskStore {
 
   private Hit getTaskRawResponse(final String id) throws IOException {
     final SearchRequest.Builder request =
-        OpenSearchUtil.createSearchRequest(taskTemplate).query(q -> q.ids(ids -> ids.values(id)));
+        createSearchRequest(taskTemplate).query(q -> q.ids(ids -> ids.values(id)));
 
     final SearchResponse<TaskEntity> response = osClient.search(request.build(), TaskEntity.class);
 
@@ -877,8 +888,7 @@ public class TaskStoreOpenSearch implements TaskStore {
 
   private List<Hit<TaskEntity>> getTasksRawResponse(final List<String> ids) throws IOException {
     final SearchRequest.Builder request =
-        OpenSearchUtil.createSearchRequest(taskTemplate)
-            .source(s -> s.filter(f -> f.includes(ids)));
+        createSearchRequest(taskTemplate).source(s -> s.filter(f -> f.includes(ids)));
 
     final SearchResponse<TaskEntity> response = tenantAwareClient.search(request, TaskEntity.class);
     if (response.hits().total().value() > 0L) {
