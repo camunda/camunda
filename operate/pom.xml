@@ -40,9 +40,6 @@
     <includeITNames>**/*IT.java</includeITNames>
     <excludeITNames>**/OpenSearch*IT.java, **/Opensearch*IT.java</excludeITNames>
     <excludeUnitTestNames>**/*IT.java</excludeUnitTestNames>
-    <excludeCoreFeaturesTestNames></excludeCoreFeaturesTestNames>
-    <excludeDataLayerTestNames></excludeDataLayerTestNames>
-    <excludeIdentityTestNames></excludeIdentityTestNames>
     <itDatabase>elasticsearch</itDatabase>
     <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
@@ -81,9 +78,6 @@
             <systemPropertyVariables>
               <testForkNumber>$${surefire.forkNumber}</testForkNumber>
             </systemPropertyVariables>
-            <excludes>
-              <exclude>${excludeCoreFeaturesTestNames}${excludeDataLayerTestNames}${excludeIdentityTestNames}</exclude>
-            </excludes>
           </configuration>
         </plugin>
 
@@ -134,6 +128,7 @@
                   <dep>org.bouncycastle:bcprov-jdk18on</dep>
                   <dep>org.junit.jupiter:junit-jupiter-engine</dep>
                   <dep>org.junit.vintage:junit-vintage-engine</dep>
+                  <dep>org.junit.platform:junit-platform-suite</dep>
                   <dep>com.tngtech.archunit:archunit-junit5-engine</dep>
                   <dep>org.openjdk.jmh:jmh-generator-annprocess</dep>
                   <dep>org.postgresql:postgresql</dep>
@@ -173,42 +168,6 @@
         <includeITNames>**/api/v1/**/*IT.java, **/OpenSearch*IT.java, **/Opensearch*IT.java</includeITNames>
         <excludeITNames>none</excludeITNames>
         <skipSurefire>true</skipSurefire>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>skipOperateCoreFeaturesUnitTests</id>
-      <activation>
-        <property>
-          <name>skipCoreFeaturesUTs</name>
-        </property>
-      </activation>
-      <properties>
-        <excludeCoreFeaturesTestNames>**/util/**/*.java,**/entities/**/*.java,**/schema/**/*.java,**/rest/**/*.java,**/webapp/**/*.java,</excludeCoreFeaturesTestNames>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>skipOperateDataLayerUnitTests</id>
-      <activation>
-        <property>
-          <name>skipDataLayerUTs</name>
-        </property>
-      </activation>
-      <properties>
-        <excludeDataLayerTestNames>**/elasticsearch/**/*.java,**/opensearch/**/*.java,**/zeebeimport/**/*.java,**/connect/**/*.java,*Elasticsearch*.java,*Opensearch*.java,*ElasticSearch*.java,*OpenSearch*.java,</excludeDataLayerTestNames>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>skipOperateIdentityUnitTests</id>
-      <activation>
-        <property>
-          <name>skipIdentityUTs</name>
-        </property>
-      </activation>
-      <properties>
-        <excludeIdentityTestNames>**/identity/**/*.java,</excludeIdentityTestNames>
       </properties>
     </profile>
 

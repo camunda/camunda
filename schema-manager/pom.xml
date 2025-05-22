@@ -18,6 +18,12 @@
   <artifactId>camunda-schema-manager</artifactId>
 
   <name>Camunda Schema manager</name>
+
+  <properties>
+    <skipITs>false</skipITs>
+    <excludeITNames></excludeITNames>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
@@ -167,14 +173,43 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
+          <skipITs>${skipITs}</skipITs>
           <includes>
             <include>**/IT*.java</include>
             <include>**/*IT.java</include>
             <include>**/*ITCase.java</include>
           </includes>
+          <excludes>
+            <exclude>${excludeITNames}</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <excludes>
+            <exclude>${excludeITNames}</exclude>
+          </excludes>
+          <skipTests>${skipITs}</skipTests>
         </configuration>
       </plugin>
 
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>skipITs</id>
+      <activation>
+        <property>
+          <name>skipITs</name>
+        </property>
+      </activation>
+      <properties>
+        <excludeITNames>**/**/*IT.java</excludeITNames>
+      </properties>
+    </profile>
+  </profiles>
 </project>
