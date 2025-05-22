@@ -36,6 +36,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -255,5 +256,72 @@ class CommandDistributionBehaviorTest {
     verify(mockInterpartitionCommandSender)
         .sendCommand(eq(3), eq(valueType), eq(intent), eq(firstKey), any());
     verifyNoMoreInteractions(mockInterpartitionCommandSender);
+  }
+
+  @Nested
+  class OnAcknowledge {
+    CommandDistributionBehavior behavior;
+
+    @BeforeEach
+    void setUp() {
+      behavior =
+          new CommandDistributionBehavior(
+              mockDistributionState,
+              writers,
+              1,
+              RoutingInfo.forStaticPartitions(2),
+              mockInterpartitionCommandSender,
+              mockDistributionMetrics);
+    }
+
+    @Test
+    public void shouldAcknowledgeCommandAndFinishDistribution() {
+      final CommandDistributionRecord record = new CommandDistributionRecord().setPartitionId(2);
+
+      when(mockDistributionState.hasPendingDistribution(123L)).thenReturn(false);
+
+      behavior.onAcknowledgeDistribution(123L, record);
+
+      Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords())
+          .extracting(Record::getKey, Record::getIntent, r -> r.getValue().getPartitionId())
+          .containsExactly(
+              tuple(123L, CommandDistributionIntent.ACKNOWLEDGED, 2),
+              tuple(123L, CommandDistributionIntent.FINISH, 1));
+    }
+
+    @Test
+    public void shouldAcknowledgeCommandAndNotFinishDistribution() {
+      final CommandDistributionRecord record = new CommandDistributionRecord().setPartitionId(2);
+
+      when(mockDistributionState.hasPendingDistribution(123L)).thenReturn(true);
+
+      behavior.onAcknowledgeDistribution(123L, record);
+
+      Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords())
+          .extracting(Record::getKey, Record::getIntent, r -> r.getValue().getPartitionId())
+          .containsExactly(tuple(123L, CommandDistributionIntent.ACKNOWLEDGED, 2));
+    }
+
+    @Test
+    public void shouldAcknowledgeCommandAndContinueQueue() {
+      final CommandDistributionRecord record = new CommandDistributionRecord().setPartitionId(2);
+      final CommandDistributionRecord otherRecord =
+          new CommandDistributionRecord().setPartitionId(2);
+
+      when(mockDistributionState.getQueueIdForDistribution(123L)).thenReturn(Optional.of("queue"));
+      when(mockDistributionState.getNextQueuedDistributionKey("queue", 2))
+          .thenReturn(Optional.of(124L));
+      when(mockDistributionState.getCommandDistributionRecord(124L, 2)).thenReturn(otherRecord);
+      when(mockDistributionState.hasPendingDistribution(123L)).thenReturn(false);
+
+      behavior.onAcknowledgeDistribution(123L, record);
+
+      Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords())
+          .extracting(Record::getKey, Record::getIntent, r -> r.getValue().getPartitionId())
+          .containsExactly(
+              tuple(123L, CommandDistributionIntent.ACKNOWLEDGED, 2),
+              tuple(124L, CommandDistributionIntent.DISTRIBUTING, 2),
+              tuple(123L, CommandDistributionIntent.FINISH, 1));
+    }
   }
 }
