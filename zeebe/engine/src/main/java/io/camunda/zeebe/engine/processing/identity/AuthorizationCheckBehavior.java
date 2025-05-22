@@ -21,7 +21,6 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.Collection;
@@ -124,7 +123,7 @@ public final class AuthorizationCheckBehavior {
       final AuthorizationRequest request,
       final EntityType entityType,
       final Collection<String> entityIds) {
-    if (multiTenancyEnabled) {
+    if (multiTenancyEnabled && request.isTenantOwnedResource()) {
       final var isAssignedToTenant =
           entityIds.stream()
               .noneMatch(
@@ -413,13 +412,15 @@ public final class AuthorizationCheckBehavior {
     private final Set<String> resourceIds;
     private final String tenantId;
     private final boolean isNewResource;
+    private final boolean isTenantOwnedResource;
 
     public AuthorizationRequest(
         final TypedRecord<?> command,
         final AuthorizationResourceType resourceType,
         final PermissionType permissionType,
         final String tenantId,
-        final boolean isNewResource) {
+        final boolean isNewResource,
+        final boolean isTenantOwnedResource) {
       this.command = command;
       this.resourceType = resourceType;
       this.permissionType = permissionType;
@@ -427,6 +428,16 @@ public final class AuthorizationCheckBehavior {
       resourceIds.add(WILDCARD_PERMISSION);
       this.tenantId = tenantId;
       this.isNewResource = isNewResource;
+      this.isTenantOwnedResource = isTenantOwnedResource;
+    }
+
+    public AuthorizationRequest(
+        final TypedRecord<?> command,
+        final AuthorizationResourceType resourceType,
+        final PermissionType permissionType,
+        final String tenantId,
+        final boolean isNewResource) {
+      this(command, resourceType, permissionType, tenantId, isNewResource, true);
     }
 
     public AuthorizationRequest(
@@ -434,14 +445,14 @@ public final class AuthorizationCheckBehavior {
         final AuthorizationResourceType resourceType,
         final PermissionType permissionType,
         final String tenantId) {
-      this(command, resourceType, permissionType, tenantId, false);
+      this(command, resourceType, permissionType, tenantId, false, true);
     }
 
     public AuthorizationRequest(
         final TypedRecord<?> command,
         final AuthorizationResourceType resourceType,
         final PermissionType permissionType) {
-      this(command, resourceType, permissionType, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+      this(command, resourceType, permissionType, null, false, false);
     }
 
     public TypedRecord<?> getCommand() {
@@ -458,6 +469,10 @@ public final class AuthorizationCheckBehavior {
 
     public boolean isNewResource() {
       return isNewResource;
+    }
+
+    public boolean isTenantOwnedResource() {
+      return isTenantOwnedResource;
     }
 
     public AuthorizationRequest addResourceId(final String resourceId) {
