@@ -9,8 +9,14 @@
     }
   }
 
-  .cds--actionable-notification__content {
-    display: inline;
+  .cds--actionable-notification {
+    .cds--visually-hidden {
+      display: none;
+    }
+
+    &__content {
+      display: inline;
+    }
   }
 
   .labelHidden {
