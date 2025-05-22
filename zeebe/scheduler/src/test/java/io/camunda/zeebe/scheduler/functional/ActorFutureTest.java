@@ -821,7 +821,7 @@ final class ActorFutureTest {
     // given
     final var chained =
         CompletableActorFuture.completed("expected")
-            .andThen(CompletableActorFuture::completed, Runnable::run);
+            .andThen(v -> CompletableActorFuture.completed(v), Runnable::run);
 
     // then
     assertThat(chained).succeedsWithin(Duration.ofSeconds(1)).isEqualTo("expected");
