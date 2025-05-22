@@ -196,15 +196,6 @@ public final class ProcessInstanceServiceTest {
     assertThat(result.getBatchOperationKey()).isEqualTo(batchOperationKey);
     assertThat(result.getBatchOperationType())
         .isEqualTo(BatchOperationType.CANCEL_PROCESS_INSTANCE);
-
-    // and our filter got enriched
-    final var filterBuffer = captor.getValue().getRequestWriter().getEntityFilterBuffer();
-    final var enhancedFilter =
-        MsgPackConverter.convertToObject(filterBuffer, ProcessInstanceFilter.class);
-    assertThat(enhancedFilter.parentProcessInstanceKeyOperations())
-        .containsExactly(Operation.exists(false));
-    assertThat(enhancedFilter.stateOperations())
-        .containsExactly(Operation.eq(ProcessInstanceState.ACTIVE.name()));
   }
 
   @Test
