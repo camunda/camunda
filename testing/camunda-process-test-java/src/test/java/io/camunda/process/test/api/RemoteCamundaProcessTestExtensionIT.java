@@ -11,17 +11,32 @@ import static io.camunda.process.test.api.assertions.ElementSelectors.byName;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.process.test.impl.containers.CamundaContainer;
+import io.camunda.process.test.impl.containers.ContainerFactory;
+import io.camunda.process.test.impl.runtime.ContainerRuntimeDefaults;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import java.net.URI;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
+@Testcontainers
 public class RemoteCamundaProcessTestExtensionIT {
 
   // start Camunda in Testcontainer
 
+  @Order(0)
+  @Container
+  private static final CamundaContainer camundaContainer =
+      new ContainerFactory()
+          .createCamundaContainer(
+              ContainerRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME,
+              ContainerRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_VERSION);
+
   // bind extension to "remote" Camunda
+  @Order(1)
   @RegisterExtension
   private static CamundaProcessTestExtension EXTENSION =
       new CamundaProcessTestExtension()
@@ -30,9 +45,18 @@ public class RemoteCamundaProcessTestExtensionIT {
               () ->
                   CamundaClient.newClientBuilder()
                       .usePlaintext()
-                      .restAddress(URI.create("http://localhost:8080"))
-                      .grpcAddress(URI.create("http://localhost:26500")))
-          .withRemoteCamundaMonitoringApiAddress("http://localhost:9600");
+                      .restAddress(camundaContainer.getRestApiAddress())
+                      .grpcAddress(camundaContainer.getGrpcApiAddress()))
+      //          .withRemoteCamundaMonitoringApiAddress(
+      //              camundaContainer.getMonitoringApiAddress().toString())
+      //          .withCamundaClient(
+      //              () ->
+      //                  CamundaClient.newClientBuilder()
+      //                      .usePlaintext()
+      //                      .restAddress(URI.create("http://localhost:8080"))
+      //                      .grpcAddress(URI.create("http://localhost:26500")))
+      //          .withRemoteCamundaMonitoringApiAddress("http://localhost:9600")
+      ;
 
   // to be injected
   private CamundaClient client;
