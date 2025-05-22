@@ -389,5 +389,4 @@ public class DbDistributionState implements MutableDistributionState {
         .setIntent(persistedCommandDistribution.getIntent())
         .setCommandValue(persistedCommandDistribution.getCommandValue());
   }
-
 }

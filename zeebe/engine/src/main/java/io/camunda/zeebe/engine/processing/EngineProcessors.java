@@ -239,7 +239,11 @@ public final class EngineProcessors {
         commandDistributionBehavior,
         authCheckBehavior);
     addCommandDistributionProcessors(
-        commandDistributionBehavior, typedRecordProcessors, writers, processingState);
+        commandDistributionBehavior,
+        scheduledTaskStateFactory,
+        typedRecordProcessors,
+        writers,
+        processingState);
 
     UserProcessors.addUserProcessors(
         keyGenerator,
@@ -579,12 +583,16 @@ public final class EngineProcessors {
 
   private static void addCommandDistributionProcessors(
       final CommandDistributionBehavior commandDistributionBehavior,
+      final Supplier<ScheduledTaskState> scheduledTaskStateSupplier,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final ProcessingState processingState) {
 
     // periodically retries command distribution
-    typedRecordProcessors.withListener(new CommandRedistributor(commandDistributionBehavior));
+    typedRecordProcessors.withListener(
+        new CommandRedistributor(
+            commandDistributionBehavior.withScheduledState(
+                scheduledTaskStateSupplier.get().getDistributionState())));
 
     final var distributionState = processingState.getDistributionState();
     typedRecordProcessors.onCommand(

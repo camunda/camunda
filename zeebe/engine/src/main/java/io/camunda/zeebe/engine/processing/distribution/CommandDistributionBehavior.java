@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
+import io.camunda.zeebe.engine.state.immutable.DistributionState.PendingDistributionVisitor;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -63,6 +64,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
       new CommandDistributionRecord();
 
   private final DistributionMetrics distributionMetrics;
+  private final Writers writers;
 
   public CommandDistributionBehavior(
       final DistributionState distributionState,
@@ -72,6 +74,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
       final InterPartitionCommandSender partitionCommandSender,
       final DistributionMetrics distributionMetrics) {
     this.distributionState = distributionState;
+    this.writers = writers;
     commandWriter = writers.command();
     stateWriter = writers.state();
     sideEffectWriter = writers.sideEffect();
@@ -79,6 +82,16 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
     interPartitionCommandSender = partitionCommandSender;
     currentPartitionId = currentPartition;
     this.distributionMetrics = distributionMetrics;
+  }
+
+  public CommandDistributionBehavior withScheduledState(final DistributionState state) {
+    return new CommandDistributionBehavior(
+        state,
+        writers,
+        currentPartitionId,
+        routingInfo,
+        interPartitionCommandSender,
+        distributionMetrics);
   }
 
   @Override
@@ -365,7 +378,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
     if (!distributionState.hasPendingDistribution(distributionKey)) {
       final var finishRecord =
           new CommandDistributionRecord()
-              .setPartitionId(partitionId)
+              .setPartitionId(currentPartitionId)
               .setValueType(recordValue.getValueType())
               .setIntent(recordValue.getIntent());
       queueId.ifPresent(finishRecord::setQueueId);
@@ -377,12 +390,31 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
 
   public void onFinish(
       final long distributionKey, final CommandDistributionRecord distributionRecord) {
+
     Optional.ofNullable(distributionRecord.getQueueId()).ifPresent(this::continueAfterQueue);
 
     stateWriter.appendFollowUpEvent(
         distributionKey, CommandDistributionIntent.FINISHED, distributionRecord);
 
     getMetrics().removeActiveDistribution();
+  }
+
+  public void onScheduledRetry(
+      final long distributionKey, final CommandDistributionRecord distributionRecord) {
+
+    getMetrics().retryInflightDistribution(distributionRecord.getPartitionId());
+
+    getCommandSender()
+        .sendCommand(
+            distributionRecord.getPartitionId(),
+            distributionRecord.getValueType(),
+            distributionRecord.getIntent(),
+            distributionKey,
+            distributionRecord.getCommandValue());
+  }
+
+  public void foreachRetriableDistribution(final PendingDistributionVisitor consumer) {
+    distributionState.foreachRetriableDistribution(consumer);
   }
 
   public interface RequestBuilder {
