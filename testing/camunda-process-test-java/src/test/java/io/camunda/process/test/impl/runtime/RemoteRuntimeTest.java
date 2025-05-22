@@ -8,12 +8,18 @@
 package io.camunda.process.test.impl.runtime;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.command.TopologyRequestStep1;
+import io.camunda.client.api.response.Topology;
 import io.camunda.process.test.api.CamundaRuntimeMode;
 import java.net.URI;
+import java.util.Collections;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,6 +34,8 @@ public class RemoteRuntimeTest {
 
   @Mock(answer = Answers.RETURNS_MOCKS)
   private CamundaClient camundaClient;
+
+  @Mock private Topology topology;
 
   @Test
   void shouldCreateRuntime() {
@@ -114,6 +122,17 @@ public class RemoteRuntimeTest {
     // given
     when(camundaClientBuilder.build()).thenReturn(camundaClient);
 
+    final TopologyRequestStep1 topologyRequestStep1 = mock(TopologyRequestStep1.class);
+    when(camundaClient.newTopologyRequest()).thenReturn(topologyRequestStep1);
+
+    final CamundaFuture<Topology> camundaFuture = mock(CamundaFuture.class);
+    when(topologyRequestStep1.send()).thenReturn(camundaFuture);
+
+    when(camundaFuture.join()).thenReturn(topology);
+
+    when(topology.getBrokers()).thenReturn(Collections.emptyList());
+    when(topology.getGatewayVersion()).thenReturn("testing");
+
     final CamundaRuntime camundaRuntime =
         CamundaContainerRuntime.newBuilder()
             .withRuntimeMode(CamundaRuntimeMode.REMOTE)
@@ -124,6 +143,6 @@ public class RemoteRuntimeTest {
     camundaRuntime.start();
 
     // then
-
+    verify(camundaClient).newTopologyRequest();
   }
 }
