@@ -166,7 +166,7 @@ public class CriticalComponentsHealthMonitorTest {
     monitor.registerComponent(component);
     Awaitility.await().until(() -> monitor.getHealthReport().getStatus() == HealthStatus.HEALTHY);
     verify(graphListener).registerNode(monitor, Optional.of(parentComponent));
-    verify(graphListener).registerNode(component, Optional.of(monitor.componentName()));
+    verify(graphListener).registerNode(component, monitor);
 
     // when
     monitor.removeComponent(component);
@@ -214,7 +214,8 @@ public class CriticalComponentsHealthMonitorTest {
 
     setupComponentTree(parentComponents, components);
     waitUntilAllDone();
-    verify(graphListener, atLeast(levels * children)).registerNode(any(), any());
+    verify(graphListener, atLeast(levels * children))
+        .registerNode(any(), any(HealthMonitorable.class));
     final var root = parentComponents[0];
 
     // when
