@@ -26,6 +26,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -51,7 +52,7 @@ public class RestoreManager {
   public CompletableFuture<Void> restore(final long backupId, final boolean validateConfig) {
     final Path dataDirectory = Path.of(configuration.getData().getDirectory());
     try {
-      if (!FileUtil.isEmpty(dataDirectory)) {
+      if (!dataFolderIsEmpty(dataDirectory)) {
         LOG.error(
             "Brokers's data directory {} is not empty. Aborting restore to avoid overwriting data. Please restart with a clean directory.",
             dataDirectory);
@@ -143,6 +144,20 @@ public class RestoreManager {
 
     return new InstrumentedRaftPartition(
         factory.createRaftPartition(metadata, partitionRegistry), partitionRegistry);
+  }
+
+  private static boolean dataFolderIsEmpty(final Path dir) throws IOException {
+    if (!Files.exists(dir)) {
+      return true;
+    }
+
+    try (final var entries = Files.list(dir)) {
+      return entries
+          // ignore the well-known lost+found directory, we don't care that it's there.
+          .filter(path -> !path.endsWith("lost+found"))
+          .findFirst()
+          .isEmpty();
+    }
   }
 
   static final class ValidatePartitionCount implements BackupValidator {
