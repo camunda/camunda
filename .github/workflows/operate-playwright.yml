@@ -1,4 +1,4 @@
-name: "[Legacy] Operate - Visual Regression Tests"
+name: "[Legacy] Operate / Visual Regression Tests"
 on:
   push:
     branches:
