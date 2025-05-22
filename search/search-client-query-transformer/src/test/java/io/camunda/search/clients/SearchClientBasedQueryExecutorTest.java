@@ -188,7 +188,7 @@ class SearchClientBasedQueryExecutorTest {
                         Authentication.of(a -> a.user("foo").tenants(tenantIds)))));
 
     final var query =
-        new UserQuery.Builder().filter(new UserFilter.Builder().name("x").build()).build();
+        new UserQuery.Builder().filter(new UserFilter.Builder().usernames("x").build()).build();
 
     // when
     final SearchQueryRequest searchQueryRequest =

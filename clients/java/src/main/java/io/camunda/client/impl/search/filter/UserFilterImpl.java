@@ -16,8 +16,11 @@
 package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.UserFilter;
+import io.camunda.client.api.search.filter.builder.StringProperty;
+import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.UserFilterRequest;
+import java.util.function.Consumer;
 
 public class UserFilterImpl extends TypedSearchRequestPropertyProvider<UserFilterRequest>
     implements UserFilter {
@@ -30,19 +33,36 @@ public class UserFilterImpl extends TypedSearchRequestPropertyProvider<UserFilte
 
   @Override
   public UserFilter username(final String username) {
-    filter.setUsername(username);
+    return username(b -> b.eq(username));
+  }
+
+  @Override
+  public UserFilter username(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setUsername(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
   public UserFilter name(final String name) {
-    filter.setName(name);
-    return this;
+    return name(b -> b.eq(name));
   }
 
   @Override
   public UserFilter email(final String email) {
-    filter.setEmail(email);
+    return email(b -> b.eq(email));
+  }
+
+  @Override
+  public UserFilter name(final Consumer<StringProperty> fn) {
+    filter.setName(provideSearchRequestProperty(fn));
+    return this;
+  }
+
+  @Override
+  public UserFilter email(final Consumer<StringProperty> fn) {
+    filter.setEmail(provideSearchRequestProperty(fn));
     return this;
   }
 

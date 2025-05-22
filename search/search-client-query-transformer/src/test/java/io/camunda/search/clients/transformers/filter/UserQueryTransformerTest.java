@@ -11,9 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.search.filter.UserFilter.Builder;
 import io.camunda.util.ObjectBuilder;
+import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,13 +51,14 @@ public class UserQueryTransformerTest extends AbstractTransformerTest {
     return Stream.of(
         Arguments.of((Function<Builder, ObjectBuilder<UserFilter>>) f -> f.key(1L), "key", 1L),
         Arguments.of(
-            (Function<Builder, ObjectBuilder<UserFilter>>) f -> f.username("username1"),
+            (Function<Builder, ObjectBuilder<UserFilter>>)
+                f -> f.usernameOperations(List.of(Operation.eq("username1"))),
             "username",
             "username1"),
         Arguments.of(
-            (Function<Builder, ObjectBuilder<UserFilter>>) f -> f.name("name1"), "name", "name1"),
+            (Function<Builder, ObjectBuilder<UserFilter>>) f -> f.names("name1"), "name", "name1"),
         Arguments.of(
-            (Function<Builder, ObjectBuilder<UserFilter>>) f -> f.email("email1"),
+            (Function<Builder, ObjectBuilder<UserFilter>>) f -> f.emails("email1"),
             "email",
             "email1"));
   }
