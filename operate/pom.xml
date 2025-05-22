@@ -43,6 +43,7 @@
     <excludeCoreFeaturesTestNames></excludeCoreFeaturesTestNames>
     <excludeDataLayerTestNames></excludeDataLayerTestNames>
     <excludeIdentityTestNames></excludeIdentityTestNames>
+    <excludeOperate></excludeOperate>
     <itDatabase>elasticsearch</itDatabase>
     <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
@@ -82,7 +83,7 @@
               <testForkNumber>$${surefire.forkNumber}</testForkNumber>
             </systemPropertyVariables>
             <excludes>
-              <exclude>${excludeCoreFeaturesTestNames}${excludeDataLayerTestNames}${excludeIdentityTestNames}</exclude>
+              <exclude>${excludeCoreFeaturesTestNames}${excludeDataLayerTestNames}${excludeIdentityTestNames}${excludeOperate}</exclude>
             </excludes>
           </configuration>
         </plugin>
@@ -209,6 +210,30 @@
       </activation>
       <properties>
         <excludeIdentityTestNames>**/identity/**/*.java,</excludeIdentityTestNames>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>skipConsolidatedTests</id>
+      <activation>
+        <property>
+          <name>skipConsolidatedTests</name>
+        </property>
+      </activation>
+      <properties>
+        <excludeOperate>**/operate/**/*.java,</excludeOperate>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>skipLegacyTests</id>
+      <activation>
+        <property>
+          <name>skipLegacyTests</name>
+        </property>
+      </activation>
+      <properties>
+        <excludeOperate></excludeOperate>
       </properties>
     </profile>
 

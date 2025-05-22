@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.webapp;
+package io.camunda.operate.webapp.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.rest.exception.Error;
 import io.camunda.operate.webapp.rest.exception.InternalAPIException;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;

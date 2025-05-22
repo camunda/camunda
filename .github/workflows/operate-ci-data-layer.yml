@@ -2,7 +2,7 @@
 # test location: operate/common, operate/importer, operate/importer-8_7, operate/importer-common, operate/qa/integration-tests, operate/schema, operate/webapp
 # owner: Data Layer
 ---
-name: "[Legacy] Operate - Data Layer"
+name: "[Legacy] Operate / [IT] Data Layers"
 on:
   workflow_dispatch:
   push:
@@ -42,7 +42,7 @@ concurrency:
 
 jobs:
   run-data-layer-opensearch-tests:
-    name: "[IT] Opensearch"
+    name: "Opensearch"
     uses: ./.github/workflows/operate-ci-test-reusable.yml
     secrets: inherit
     with:
