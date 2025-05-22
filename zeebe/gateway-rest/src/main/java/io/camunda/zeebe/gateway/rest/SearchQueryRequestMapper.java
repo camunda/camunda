@@ -1058,8 +1058,12 @@ public final class SearchQueryRequestMapper {
       Optional.ofNullable(filter.getUsername())
           .map(mapToOperations(String.class))
           .ifPresent(builder::usernameOperations);
-      Optional.ofNullable(filter.getName()).ifPresent(builder::name);
-      Optional.ofNullable(filter.getEmail()).ifPresent(builder::email);
+      Optional.ofNullable(filter.getName())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::nameOperations);
+      Optional.ofNullable(filter.getEmail())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::emailOperations);
     }
     return builder.build();
   }

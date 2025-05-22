@@ -34,12 +34,8 @@ public class UserFilterTransformer extends IndexFilterTransformer<UserFilter> {
       queries.add(term(KEY, filter.key()));
     }
     ofNullable(stringOperations(USERNAME, filter.usernameOperations())).ifPresent(queries::addAll);
-    if (filter.email() != null) {
-      queries.add(term(EMAIL, filter.email()));
-    }
-    if (filter.name() != null) {
-      queries.add(term(NAME, filter.name()));
-    }
+    ofNullable(stringOperations(NAME, filter.nameOperations())).ifPresent(queries::addAll);
+    ofNullable(stringOperations(EMAIL, filter.emailOperations())).ifPresent(queries::addAll);
     return and(queries);
   }
 }

@@ -7038,10 +7038,12 @@ components:
             - $ref: "#/components/schemas/StringFilterProperty"
         name:
           description: The name of the user.
-          type: "string"
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         email:
           description: The email of the user.
-          type: "string"
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
     MappingFilterRequest:
       description: Mapping search filter.
       type: object

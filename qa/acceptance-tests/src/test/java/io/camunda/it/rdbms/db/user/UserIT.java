@@ -127,7 +127,7 @@ public class UserIT {
     final var searchResult =
         userReader.search(
             new UserQuery(
-                new UserFilter.Builder().name("John Doe").build(),
+                new UserFilter.Builder().names("John Doe").build(),
                 UserSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));
 
@@ -152,8 +152,8 @@ public class UserIT {
                 new UserFilter.Builder()
                     .key(user.userKey())
                     .usernames(user.username())
-                    .name(user.name())
-                    .email(user.email())
+                    .names(user.name())
+                    .emails(user.email())
                     .build(),
                 UserSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));
@@ -174,14 +174,14 @@ public class UserIT {
     final var searchResult =
         userReader.search(
             UserQuery.of(
-                b -> b.filter(f -> f.name("Alice Doe")).sort(sort).page(p -> p.from(0).size(20))));
+                b -> b.filter(f -> f.names("Alice Doe")).sort(sort).page(p -> p.from(0).size(20))));
 
     final var instanceAfter = searchResult.items().get(9);
     final var nextPage =
         userReader.search(
             UserQuery.of(
                 b ->
-                    b.filter(f -> f.name("Alice Doe"))
+                    b.filter(f -> f.names("Alice Doe"))
                         .sort(sort)
                         .page(
                             p ->

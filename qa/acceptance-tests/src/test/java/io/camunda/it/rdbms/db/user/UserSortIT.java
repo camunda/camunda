@@ -89,7 +89,7 @@ public class UserSortIT {
         reader
             .search(
                 new UserQuery(
-                    new UserFilter.Builder().email(email).build(),
+                    new UserFilter.Builder().emails(email).build(),
                     UserSort.of(sortBuilder),
                     SearchQueryPage.of(b -> b)))
             .items();

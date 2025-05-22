@@ -183,8 +183,8 @@ public class UserSpecificFilterIT {
     return List.of(
         new UserFilter.Builder().key(1337L).build(),
         new UserFilter.Builder().usernames("user-1337").build(),
-        new UserFilter.Builder().name("User 1337").build(),
-        new UserFilter.Builder().email("user-1337@camunda-test.com").build());
+        new UserFilter.Builder().names("User 1337").build(),
+        new UserFilter.Builder().emails("user-1337@camunda-test.com").build());
   }
 
   private void addUserToTenant(final String tenantId, final String entityId) {

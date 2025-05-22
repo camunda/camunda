@@ -67,8 +67,18 @@
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
-    <if test="filter.name != null">AND t.NAME = #{filter.name}</if>
-    <if test="filter.email != null">AND t.EMAIL = #{filter.email}</if>
+    <if test="filter.nameOperations != null and !filter.nameOperations.isEmpty()">
+      <foreach collection="filter.nameOperations" item="operation">
+        AND t.NAME
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.emailOperations != null and !filter.emailOperations.isEmpty()">
+      <foreach collection="filter.emailOperations" item="operation">
+        AND t.EMAIL
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
     <if test="filter.tenantId != null">AND tm.TENANT_ID = #{filter.tenantId}</if>
     <if test="filter.groupId != null">AND gm.GROUP_ID = #{filter.groupId}</if>
     <if test="filter.roleId != null">AND rm.ROLE_ID = #{filter.roleId}</if>

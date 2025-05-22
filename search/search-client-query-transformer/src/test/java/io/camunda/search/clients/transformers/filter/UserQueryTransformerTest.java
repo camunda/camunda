@@ -56,9 +56,9 @@ public class UserQueryTransformerTest extends AbstractTransformerTest {
             "username",
             "username1"),
         Arguments.of(
-            (Function<Builder, ObjectBuilder<UserFilter>>) f -> f.name("name1"), "name", "name1"),
+            (Function<Builder, ObjectBuilder<UserFilter>>) f -> f.names("name1"), "name", "name1"),
         Arguments.of(
-            (Function<Builder, ObjectBuilder<UserFilter>>) f -> f.email("email1"),
+            (Function<Builder, ObjectBuilder<UserFilter>>) f -> f.emails("email1"),
             "email",
             "email1"));
   }

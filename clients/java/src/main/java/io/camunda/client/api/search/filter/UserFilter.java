@@ -32,7 +32,7 @@ public interface UserFilter extends SearchRequestFilter {
   /**
    * Filters users by the specified username using {@link StringProperty} consumer.
    *
-   * @param fn the userbane {@link StringProperty} consumer of the user
+   * @param fn the username {@link StringProperty} consumer of the user
    * @return the updated filter
    */
   UserFilter username(final Consumer<StringProperty> fn);
@@ -46,10 +46,26 @@ public interface UserFilter extends SearchRequestFilter {
   UserFilter name(final String name);
 
   /**
+   * Filters users by the specified name using {@link StringProperty} consumer.
+   *
+   * @param fn the name {@link StringProperty} consumer of the user
+   * @return the updated filter
+   */
+  UserFilter name(final Consumer<StringProperty> fn);
+
+  /**
    * Filter users by the specified email.
    *
    * @param email the email of the user
    * @return the updated filter
    */
   UserFilter email(final String email);
+
+  /**
+   * Filters users by the specified email using {@link StringProperty} consumer.
+   *
+   * @param fn the email {@link StringProperty} consumer of the user
+   * @return the updated filter
+   */
+  UserFilter email(final Consumer<StringProperty> fn);
 }
