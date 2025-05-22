@@ -15,7 +15,6 @@
  */
 package io.camunda.process.test.impl.runtime;
 
-import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
@@ -63,6 +62,7 @@ public class CamundaContainerRuntime implements AutoCloseable, CamundaRuntime {
               + "/disabled");
 
   private final ContainerFactory containerFactory;
+  private final Supplier<CamundaClientBuilder> camundaClientBuilderSupplier;
 
   private final Network network;
   private final CamundaContainer camundaContainer;
@@ -78,6 +78,8 @@ public class CamundaContainerRuntime implements AutoCloseable, CamundaRuntime {
 
     camundaContainer = createCamundaContainer(network, builder);
     connectorsContainer = createConnectorsContainer(network, builder);
+
+    camundaClientBuilderSupplier = builder.getCamundaClientBuilderSupplier();
   }
 
   /*
@@ -191,7 +193,8 @@ public class CamundaContainerRuntime implements AutoCloseable, CamundaRuntime {
   @Override
   public Supplier<CamundaClientBuilder> getClientBuilderSupplier() {
     return () ->
-        CamundaClient.newClientBuilder()
+        camundaClientBuilderSupplier
+            .get()
             .restAddress(getCamundaRestApiAddress())
             .grpcAddress(getCamundaGrpcApiAddress())
             .usePlaintext();
