@@ -19,7 +19,8 @@ public record BatchOperationDbModel(
     OffsetDateTime endDate,
     Integer operationsTotalCount,
     Integer operationsFailedCount,
-    Integer operationsCompletedCount) {
+    Integer operationsCompletedCount,
+    Integer partitionId) {
 
   // Builder class
   public static class Builder implements ObjectBuilder<BatchOperationDbModel> {
@@ -32,6 +33,7 @@ public record BatchOperationDbModel(
     private Integer operationsTotalCount = 0;
     private Integer operationsFailedCount = 0;
     private Integer operationsCompletedCount = 0;
+    private Integer partitionId = 0;
 
     public Builder() {}
 
@@ -75,6 +77,11 @@ public record BatchOperationDbModel(
       return this;
     }
 
+    public Builder partitionId(final Integer partitionId) {
+      this.partitionId = partitionId;
+      return this;
+    }
+
     @Override
     public BatchOperationDbModel build() {
       return new BatchOperationDbModel(
@@ -85,7 +92,8 @@ public record BatchOperationDbModel(
           endDate,
           operationsTotalCount,
           operationsFailedCount,
-          operationsCompletedCount);
+          operationsCompletedCount,
+          partitionId);
     }
   }
 }

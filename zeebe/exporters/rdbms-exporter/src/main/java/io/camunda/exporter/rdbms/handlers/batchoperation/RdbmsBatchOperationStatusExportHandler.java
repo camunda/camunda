@@ -37,6 +37,7 @@ public abstract class RdbmsBatchOperationStatusExportHandler<T extends RecordVal
     if (isCompleted(record)) {
       batchOperationWriter.updateItem(
           String.valueOf(record.getOperationReference()),
+          record.getPartitionId(),
           getItemKey(record),
           BatchOperationItemState.COMPLETED,
           DateUtil.toOffsetDateTime(record.getTimestamp()),
@@ -44,6 +45,7 @@ public abstract class RdbmsBatchOperationStatusExportHandler<T extends RecordVal
     } else if (isFailed(record)) {
       batchOperationWriter.updateItem(
           String.valueOf(record.getOperationReference()),
+          record.getPartitionId(),
           getItemKey(record),
           BatchOperationItemState.FAILED,
           DateUtil.toOffsetDateTime(record.getTimestamp()),

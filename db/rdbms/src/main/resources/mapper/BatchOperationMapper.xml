@@ -17,6 +17,7 @@
       <arg column="OPERATIONS_TOTAL_COUNT" javaType="int"/>
       <arg column="OPERATIONS_FAILED_COUNT" javaType="int"/>
       <arg column="OPERATIONS_COMPLETED_COUNT" javaType="int"/>
+      <arg column="PARTITION_ID" javaType="java.lang.String"/>
     </constructor>
   </resultMap>
 
@@ -41,7 +42,8 @@
                                  END_DATE,
                                  OPERATIONS_TOTAL_COUNT,
                                  OPERATIONS_FAILED_COUNT,
-                                 OPERATIONS_COMPLETED_COUNT)
+                                          OPERATIONS_COMPLETED_COUNT,
+                                          PARTITION_ID)
     VALUES (#{batchOperationKey},
             #{state},
             #{operationType},
@@ -49,15 +51,17 @@
             #{endDate},
             #{operationsTotalCount},
             #{operationsFailedCount},
-            #{operationsCompletedCount})
+            #{operationsCompletedCount},
+            #{partitionId})
   </insert>
 
   <insert id="insertItems"
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemsDto">
-    INSERT INTO ${prefix}BATCH_OPERATION_ITEM (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY)
+    INSERT INTO ${prefix}BATCH_OPERATION_ITEM (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY,
+    PARTITION_ID)
     VALUES
     <foreach collection="items" item="item" separator=",">
-      (#{batchOperationKey}, #{item.itemKey}, #{item.processInstanceKey})
+      (#{batchOperationKey}, #{item.itemKey}, #{item.processInstanceKey}, #{partitionId})
     </foreach>
   </insert>
 
@@ -67,6 +71,7 @@
     SET STATE = #{state},
         END_DATE = #{endDate}
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+      AND PARTITION_ID = #{partitionId}
   </update>
 
   <update id="updateItem"
@@ -84,6 +89,7 @@
     UPDATE ${prefix}BATCH_OPERATION_ITEM
     SET STATE = #{newState}
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+      AND PARTITION_ID = #{partitionId}
       AND STATE = #{oldState}
   </update>
 
@@ -92,6 +98,7 @@
     UPDATE ${prefix}BATCH_OPERATION
     SET OPERATIONS_TOTAL_COUNT = OPERATIONS_TOTAL_COUNT + #{operationsTotalCount}
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+      AND PARTITION_ID = #{partitionId}
   </update>
 
   <update id="incrementFailedOperationsCount"
@@ -99,6 +106,7 @@
     UPDATE ${prefix}BATCH_OPERATION t
     SET OPERATIONS_FAILED_COUNT = OPERATIONS_FAILED_COUNT + 1
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+      AND PARTITION_ID = #{partitionId}
     AND EXISTS(
       SELECT 1
       FROM ${prefix}BATCH_OPERATION_ITEM i
@@ -112,6 +120,7 @@
     UPDATE ${prefix}BATCH_OPERATION t
     SET OPERATIONS_COMPLETED_COUNT = OPERATIONS_COMPLETED_COUNT + 1
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+      AND PARTITION_ID = #{partitionId}
       AND EXISTS(
       SELECT 1
       FROM ${prefix}BATCH_OPERATION_ITEM i
@@ -121,9 +130,10 @@
   </update>
 
   <select id="count" resultType="java.lang.Long">
-    SELECT COUNT(*)
+    SELECT COUNT(batch_operation_key)
     FROM ${prefix}BATCH_OPERATION
     <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.searchFilter"/>
+    group by batch_operation_key
   </select>
 
   <select id="search"
@@ -141,9 +151,17 @@
     bo.OPERATIONS_TOTAL_COUNT,
     bo.OPERATIONS_FAILED_COUNT,
     bo.OPERATIONS_COMPLETED_COUNT
+    bo.partition_id
     FROM ${prefix}BATCH_OPERATION bo
     <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.searchFilter"/>
     ) filtered
+    INNER JOIN (
+    SELECT batch_operation_key
+    FROM batch_operation
+    GROUP BY batch_operation_key
+    LIMIT 1
+    ) AS batch_grouped
+    ON filtered.batch_operation_key = batch_grouped.batch_operation_key;
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>

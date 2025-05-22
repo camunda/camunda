@@ -130,6 +130,7 @@ public class BatchOperationIT {
         .getBatchOperationWriter()
         .updateItem(
             batchOperation.batchOperationKey(),
+            batchOperation.partitionId(),
             items.getFirst(),
             BatchOperationItemState.COMPLETED,
             NOW,
@@ -192,6 +193,7 @@ public class BatchOperationIT {
         .getBatchOperationWriter()
         .updateItem(
             batchOperation.batchOperationKey(),
+            batchOperation.partitionId(),
             items.getFirst(),
             BatchOperationItemState.FAILED,
             NOW,
@@ -248,6 +250,7 @@ public class BatchOperationIT {
         .getBatchOperationWriter()
         .updateItem(
             batchOperation.batchOperationKey(),
+            batchOperation.partitionId(),
             items.getFirst(),
             BatchOperationItemState.COMPLETED,
             NOW,
@@ -255,7 +258,7 @@ public class BatchOperationIT {
 
     // when
     final OffsetDateTime endDate = OffsetDateTime.now();
-    writer.getBatchOperationWriter().cancel(batchOperation.batchOperationKey(), endDate);
+    writer.getBatchOperationWriter().cancel(batchOperation.batchOperationKey(), batchOperation.partitionId(), endDate);
     writer.flush();
 
     // then
@@ -281,7 +284,7 @@ public class BatchOperationIT {
     createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
 
     // when
-    writer.getBatchOperationWriter().pause(batchOperation.batchOperationKey());
+    writer.getBatchOperationWriter().pause(batchOperation.batchOperationKey(), batchOperation.partitionId());
     writer.flush();
 
     // then
@@ -304,11 +307,11 @@ public class BatchOperationIT {
 
     createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 2);
 
-    writer.getBatchOperationWriter().pause(batchOperation.batchOperationKey());
+    writer.getBatchOperationWriter().pause(batchOperation.batchOperationKey(), batchOperation.partitionId());
     writer.flush();
 
     // when
-    writer.getBatchOperationWriter().resume(batchOperation.batchOperationKey());
+    writer.getBatchOperationWriter().resume(batchOperation.batchOperationKey(), batchOperation.partitionId());
     writer.flush();
 
     // then
@@ -333,7 +336,7 @@ public class BatchOperationIT {
 
     // when
     final OffsetDateTime endDate = OffsetDateTime.now();
-    writer.getBatchOperationWriter().finish(batchOperation.batchOperationKey(), endDate);
+    writer.getBatchOperationWriter().finish(batchOperation.batchOperationKey(), batchOperation.partitionId(), endDate);
     writer.flush();
 
     // then

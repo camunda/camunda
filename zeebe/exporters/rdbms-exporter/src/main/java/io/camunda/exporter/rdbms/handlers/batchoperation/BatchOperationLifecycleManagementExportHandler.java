@@ -43,11 +43,11 @@ public class BatchOperationLifecycleManagementExportHandler
     final var batchOperationKey = String.valueOf(value.getBatchOperationKey());
     if (record.getIntent().equals(BatchOperationIntent.CANCELED)) {
       batchOperationWriter.cancel(
-          batchOperationKey, DateUtil.toOffsetDateTime(record.getTimestamp()));
+          batchOperationKey, record.getPartitionId(), DateUtil.toOffsetDateTime(record.getTimestamp()));
     } else if (record.getIntent().equals(BatchOperationIntent.PAUSED)) {
-      batchOperationWriter.pause(batchOperationKey);
+      batchOperationWriter.pause(batchOperationKey, record.getPartitionId());
     } else if (record.getIntent().equals(BatchOperationIntent.RESUMED)) {
-      batchOperationWriter.resume(batchOperationKey);
+      batchOperationWriter.resume(batchOperationKey, record.getPartitionId());
     }
   }
 }
