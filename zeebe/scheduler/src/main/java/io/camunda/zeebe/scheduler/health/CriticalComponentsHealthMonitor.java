@@ -85,7 +85,7 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
           calculateHealth();
           // register graphs
           // it's safe to do it more than once
-          graphListener.registerNode(component, Optional.of(name));
+          graphListener.registerNode(component, this);
           log.info("Registered component {}:{}", componentName, component.componentName());
         });
   }
