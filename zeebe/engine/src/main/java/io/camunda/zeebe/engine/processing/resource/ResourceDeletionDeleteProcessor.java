@@ -197,7 +197,8 @@ public class ResourceDeletionDeleteProcessor
           command,
           AuthorizationResourceType.RESOURCE,
           PermissionType.DELETE_PROCESS,
-          bufferAsString(process.getBpmnProcessId()));
+          bufferAsString(process.getBpmnProcessId()),
+          process.getTenantId());
       setTenantId(command, tenantId);
       deleteProcess(process);
       return true;
@@ -211,7 +212,8 @@ public class ResourceDeletionDeleteProcessor
           command,
           AuthorizationResourceType.RESOURCE,
           PermissionType.DELETE_DRD,
-          bufferAsString(drg.getDecisionRequirementsId()));
+          bufferAsString(drg.getDecisionRequirementsId()),
+          drg.getTenantId());
       setTenantId(command, tenantId);
       deleteDecisionRequirements(drg);
       return true;
@@ -224,7 +226,8 @@ public class ResourceDeletionDeleteProcessor
           command,
           AuthorizationResourceType.RESOURCE,
           PermissionType.DELETE_FORM,
-          bufferAsString(form.getFormId()));
+          bufferAsString(form.getFormId()),
+          form.getTenantId());
       setTenantId(command, tenantId);
       deleteForm(form);
       return true;
@@ -237,7 +240,8 @@ public class ResourceDeletionDeleteProcessor
           command,
           AuthorizationResourceType.RESOURCE,
           PermissionType.DELETE_RESOURCE,
-          bufferAsString(resource.getResourceId()));
+          bufferAsString(resource.getResourceId()),
+          resource.getTenantId());
       setTenantId(command, tenantId);
       deleteResource(resource);
       return true;
@@ -465,9 +469,11 @@ public class ResourceDeletionDeleteProcessor
       final TypedRecord<ResourceDeletionRecord> command,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType,
-      final String resourceId) {
+      final String resourceId,
+      final String tenantId) {
     final var authRequest =
-        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+        new AuthorizationRequest(command, resourceType, permissionType, tenantId)
+            .addResourceId(resourceId);
 
     if (authCheckBehavior.isAuthorized(authRequest).isLeft()) {
       throw new ForbiddenException(authRequest);

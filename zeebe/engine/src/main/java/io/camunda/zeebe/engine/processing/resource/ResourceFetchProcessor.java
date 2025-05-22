@@ -58,7 +58,7 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
     findResource(command, resourceKey)
         .ifPresentOrElse(
             resource -> {
-              checkAuthorization(command, BufferUtil.bufferAsString(resource.getResourceId()));
+              checkAuthorization(command, resource);
               final var record = asResourceRecord(resource);
               stateWriter.appendFollowUpEvent(resourceKey, ResourceIntent.FETCHED, record);
               responseWriter.writeEventOnCommand(
@@ -135,10 +135,14 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
   }
 
   private void checkAuthorization(
-      final TypedRecord<ResourceRecord> command, final String resourceId) {
+      final TypedRecord<ResourceRecord> command, final PersistedResource resource) {
     final var authRequest =
-        new AuthorizationRequest(command, AuthorizationResourceType.RESOURCE, PermissionType.READ)
-            .addResourceId(resourceId);
+        new AuthorizationRequest(
+                command,
+                AuthorizationResourceType.RESOURCE,
+                PermissionType.READ,
+                resource.getTenantId())
+            .addResourceId(BufferUtil.bufferAsString(resource.getResourceId()));
     if (authorizationCheckBehavior.isAuthorized(authRequest).isLeft()) {
       throw new ForbiddenException(authRequest);
     }
