@@ -61,6 +61,11 @@ public record FlowNodeInstanceSort(List<FieldSorting> orderings) implements Sort
       return this;
     }
 
+    public Builder flowNodeName() {
+      currentOrdering = new FieldSorting("flowNodeName", null);
+      return this;
+    }
+
     public Builder type() {
       currentOrdering = new FieldSorting("type", null);
       return this;

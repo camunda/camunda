@@ -13,16 +13,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperatio
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
-import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.BPMN_PROCESS_ID;
-import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.FLOW_NODE_ID;
-import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.INCIDENT;
-import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.INCIDENT_KEY;
-import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.KEY;
-import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY;
-import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY;
-import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.STATE;
-import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.TREE_PATH;
-import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.TYPE;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.*;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -51,6 +42,7 @@ public class FlownodeInstanceFilterTransformer
     ofNullable(getTypeQuery(filter.types())).ifPresent(queries::add);
     ofNullable(stringOperations(STATE, filter.stateOperations())).ifPresent(queries::addAll);
     ofNullable(stringTerms(FLOW_NODE_ID, filter.flowNodeIds())).ifPresent(queries::add);
+    ofNullable(stringTerms(FLOW_NODE_NAME, filter.flowNodeNames())).ifPresent(queries::add);
     ofNullable(longTerms(INCIDENT_KEY, filter.incidentKeys())).ifPresent(queries::add);
     ofNullable(stringTerms(TREE_PATH, filter.treePaths())).ifPresent(queries::add);
     ofNullable(filter.hasIncident()).ifPresent(f -> queries.add(term(INCIDENT, f)));
