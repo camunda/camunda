@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect} from 'react';
+import React, {useEffect} from 'react';
 import {observer} from 'mobx-react';
 
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -22,7 +22,13 @@ import {init, startPolling} from 'modules/utils/variables';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 
-const VariablePanel = observer(function VariablePanel() {
+type Props = {
+  setListenerTabVisibility: React.Dispatch<React.SetStateAction<boolean>>;
+};
+
+const VariablePanel: React.FC<Props> = observer(function VariablePanel({
+  setListenerTabVisibility,
+}) {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const {data: processInstance} = useProcessInstance();
   const isRootNodeSelected = useIsRootNodeSelected();
@@ -31,13 +37,8 @@ const VariablePanel = observer(function VariablePanel() {
   const flowNodeInstanceId =
     flowNodeSelectionStore.state.selection?.flowNodeInstanceId;
 
-  const {
-    listenersFailureCount,
-    state,
-    fetchListeners,
-    reset,
-    setListenerTabVisibility,
-  } = processInstanceListenersStore;
+  const {listenersFailureCount, state, fetchListeners, reset} =
+    processInstanceListenersStore;
   const {listenerTypeFilter} = state;
 
   const shouldUseFlowNodeId = !flowNodeInstanceId && flowNodeId;

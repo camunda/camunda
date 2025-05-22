@@ -175,7 +175,9 @@ describe('VariablePanel', () => {
   it('should render variables', async () => {
     mockFetchVariables().withSuccess([createVariable()]);
 
-    render(<VariablePanel />, {wrapper: getWrapper()});
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      wrapper: getWrapper(),
+    });
 
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
@@ -186,7 +188,10 @@ describe('VariablePanel', () => {
   it('should add new variable', async () => {
     jest.useFakeTimers();
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -306,7 +311,10 @@ describe('VariablePanel', () => {
       instanceCount: 1,
     });
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -400,7 +408,10 @@ describe('VariablePanel', () => {
   it('should display validation error if backend validation fails while adding variable', async () => {
     mockFetchVariables().withSuccess([createVariable()]);
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -497,7 +508,10 @@ describe('VariablePanel', () => {
   it('should not fail if new variable is returned from next polling before add variable operation completes', async () => {
     jest.useFakeTimers();
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -596,7 +610,10 @@ describe('VariablePanel', () => {
     });
     mockFetchVariables().withSuccess([createVariable()]);
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
