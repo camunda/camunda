@@ -639,5 +639,9 @@ public interface RaftServer {
     public boolean active() {
       return active;
     }
+
+    public boolean isLeader() {
+      return this == LEADER;
+    }
   }
 }
