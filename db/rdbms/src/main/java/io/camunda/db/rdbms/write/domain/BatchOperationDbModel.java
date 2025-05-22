@@ -20,7 +20,8 @@ public record BatchOperationDbModel(
     Integer operationsTotalCount,
     Integer operationsFailedCount,
     Integer operationsCompletedCount,
-    Integer partitionId) {
+    Integer partitionId,
+    Boolean isLead) {
 
   // Builder class
   public static class Builder implements ObjectBuilder<BatchOperationDbModel> {
@@ -34,6 +35,7 @@ public record BatchOperationDbModel(
     private Integer operationsFailedCount = 0;
     private Integer operationsCompletedCount = 0;
     private Integer partitionId = 0;
+    private Boolean isLead = false;
 
     public Builder() {}
 
@@ -82,6 +84,11 @@ public record BatchOperationDbModel(
       return this;
     }
 
+    public Builder isLead(final Boolean isLead) {
+      this.isLead = isLead;
+      return this;
+    }
+
     @Override
     public BatchOperationDbModel build() {
       return new BatchOperationDbModel(
@@ -93,7 +100,8 @@ public record BatchOperationDbModel(
           operationsTotalCount,
           operationsFailedCount,
           operationsCompletedCount,
-          partitionId);
+          partitionId,
+          isLead);
     }
   }
 }

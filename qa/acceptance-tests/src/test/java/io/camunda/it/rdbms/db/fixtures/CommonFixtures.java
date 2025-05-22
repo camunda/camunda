@@ -7,6 +7,7 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
+import io.camunda.zeebe.protocol.Protocol;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.List;

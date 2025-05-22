@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -25,9 +26,12 @@ public class BatchOperationCreatedExportHandler
     implements RdbmsExportHandler<BatchOperationCreationRecordValue> {
 
   private final BatchOperationWriter batchOperationWriter;
+  private final int partitionId;
 
-  public BatchOperationCreatedExportHandler(final BatchOperationWriter batchOperationWriter) {
+  public BatchOperationCreatedExportHandler(final BatchOperationWriter batchOperationWriter,
+      final long partitionId) {
     this.batchOperationWriter = batchOperationWriter;
+    this.partitionId = (int) partitionId;
   }
 
   @Override
@@ -50,6 +54,7 @@ public class BatchOperationCreatedExportHandler
         .operationType(value.getBatchOperationType().name())
         .startDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
         .partitionId(record.getPartitionId())
+        .isLead(Protocol.decodePartitionId(record.getKey()) == partitionId)
         .build();
   }
 }

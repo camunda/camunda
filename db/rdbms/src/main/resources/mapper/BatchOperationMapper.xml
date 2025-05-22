@@ -17,7 +17,8 @@
       <arg column="OPERATIONS_TOTAL_COUNT" javaType="int"/>
       <arg column="OPERATIONS_FAILED_COUNT" javaType="int"/>
       <arg column="OPERATIONS_COMPLETED_COUNT" javaType="int"/>
-      <arg column="PARTITION_ID" javaType="java.lang.String"/>
+      <arg column="PARTITION_ID" javaType="int"/>
+      <arg column="IS_LEAD" javaType="java.lang.Boolean"/>
     </constructor>
   </resultMap>
 
@@ -43,7 +44,8 @@
                                  OPERATIONS_TOTAL_COUNT,
                                  OPERATIONS_FAILED_COUNT,
                                           OPERATIONS_COMPLETED_COUNT,
-                                          PARTITION_ID)
+                                          PARTITION_ID,
+                                          IS_LEAD)
     VALUES (#{batchOperationKey},
             #{state},
             #{operationType},
@@ -52,7 +54,8 @@
             #{operationsTotalCount},
             #{operationsFailedCount},
             #{operationsCompletedCount},
-            #{partitionId})
+            #{partitionId},
+            #{isLead})
   </insert>
 
   <insert id="insertItems"
@@ -130,45 +133,38 @@
   </update>
 
   <select id="count" resultType="java.lang.Long">
-    SELECT COUNT(batch_operation_key)
+    SELECT COUNT(*)
     FROM ${prefix}BATCH_OPERATION
     <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.searchFilter"/>
-    group by batch_operation_key
   </select>
 
   <select id="search"
     parameterType="io.camunda.db.rdbms.read.domain.BatchOperationDbQuery"
     resultMap="BatchOperationResultMap"
     statementType="PREPARED">
-
-  SELECT * FROM (
+    SELECT * FROM (
+    SELECT BATCH_OPERATION_KEY FROM (
     SELECT
     bo.BATCH_OPERATION_KEY,
     bo.STATE,
     bo.OPERATION_TYPE,
     bo.START_DATE,
-    bo.END_DATE,
-    bo.OPERATIONS_TOTAL_COUNT,
-    bo.OPERATIONS_FAILED_COUNT,
-    bo.OPERATIONS_COMPLETED_COUNT
-    bo.partition_id
+    bo.END_DATE
     FROM ${prefix}BATCH_OPERATION bo
     <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.searchFilter"/>
     ) filtered
-    INNER JOIN (
-    SELECT batch_operation_key
-    FROM batch_operation
-    GROUP BY batch_operation_key
-    LIMIT 1
-    ) AS batch_grouped
-    ON filtered.batch_operation_key = batch_grouped.batch_operation_key;
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+    ) sorted
+    LEFT JOIN ${prefix}BATCH_OPERATION boFull ON boFull.BATCH_OPERATION_KEY =
+    sorted.BATCH_OPERATION_KEY
   </select>
 
   <sql id="searchFilter">
-    WHERE 1 = 1
+    WHERE
+    <!-- all filters should just go against lead entry -->
+    IS_LEAD = true
     <!-- basic filters -->
     <if test="filter.batchOperationIds != null and !filter.batchOperationIds.isEmpty()">
       AND BATCH_OPERATION_KEY IN

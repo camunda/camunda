@@ -42,11 +42,6 @@ public class BatchOperationWriter {
   }
 
   public void create(final BatchOperationDbModel batchOperation) {
-    if (reader.exists(batchOperation.batchOperationKey())) {
-      LOGGER.trace("Batch operation already exists: {}", batchOperation);
-      return;
-    }
-
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.BATCH_OPERATION,

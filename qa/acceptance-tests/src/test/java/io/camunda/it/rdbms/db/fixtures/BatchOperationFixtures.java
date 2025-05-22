@@ -33,14 +33,15 @@ public final class BatchOperationFixtures {
     final var builder =
         new Builder()
             .batchOperationKey(key)
-            .partitionId(1)
+            .partitionId(0)
             .state(randomEnum(BatchOperationState.class))
             .operationType("some-operation" + RANDOM.nextInt(1000))
             .startDate(OffsetDateTime.now())
             .endDate(OffsetDateTime.now().plusSeconds(1))
             .operationsTotalCount(RANDOM.nextInt(1000))
             .operationsFailedCount(RANDOM.nextInt(1000))
-            .operationsCompletedCount(RANDOM.nextInt(1000));
+            .operationsCompletedCount(RANDOM.nextInt(1000))
+            .isLead(true);
     return builderFunction.apply(builder).build();
   }
 
@@ -86,7 +87,7 @@ public final class BatchOperationFixtures {
         .getBatchOperationWriter()
         .updateBatchAndInsertItems(
             batchOperationKey,
-            1,
+            0,
             items.stream()
                 .map(
                     itemKey ->
