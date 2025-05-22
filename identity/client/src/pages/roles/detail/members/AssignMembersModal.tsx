@@ -24,8 +24,11 @@ const SelectedUsers = styled.div`
 `;
 
 const AssignMembersModal: FC<
-  UseEntityModalCustomProps<{ id: Role["roleId"] }, { assignedUsers: User[] }>
-> = ({ entity: role, assignedUsers, onSuccess, open, onClose }) => {
+  UseEntityModalCustomProps<
+    { roleId: Role["roleId"] },
+    { assignedUsers: User[] }
+  >
+> = ({ entity: { roleId }, assignedUsers, onSuccess, open, onClose }) => {
   const { t } = useTranslate("roles");
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
   const [loadingAssignUser, setLoadingAssignUser] = useState(false);
@@ -58,7 +61,7 @@ const AssignMembersModal: FC<
       );
     };
 
-  const canSubmit = role && selectedUsers.length;
+  const canSubmit = roleId && selectedUsers.length;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -66,9 +69,7 @@ const AssignMembersModal: FC<
     setLoadingAssignUser(true);
 
     const results = await Promise.all(
-      selectedUsers.map(({ username }) =>
-        callAssignUser({ username, roleId: role.id }),
-      ),
+      selectedUsers.map(({ username }) => callAssignUser({ username, roleId })),
     );
 
     setLoadingAssignUser(false);
