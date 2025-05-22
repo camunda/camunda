@@ -30,7 +30,6 @@ import Clients from "src/pages/tenants/detail/clients";
 import {
   IS_TENANT_GROUPS_SUPPORTED,
   IS_TENANT_ROLES_SUPPORTED,
-  IS_TENANT_CLIENTS_SUPPORTED,
 } from "src/feature-flags";
 import { isOIDC } from "src/configuration";
 
@@ -119,10 +118,6 @@ const Details: FC = () => {
                         label: t("mappings"),
                         content: <Mappings tenantId={tenant.tenantId} />,
                       },
-                    ]
-                  : []),
-                ...(IS_TENANT_CLIENTS_SUPPORTED && isOIDC
-                  ? [
                       {
                         key: "clients",
                         label: t("clients"),

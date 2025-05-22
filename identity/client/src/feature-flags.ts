@@ -16,9 +16,3 @@ export const IS_ROLES_MAPPINGS_SUPPORTED = false;
 
 // Roles base page (and e2e tests) - Remove when Roles page is integrated https://github.com/camunda/camunda/issues/29768
 export const IS_ROLES_BASE_PAGE_INTEGRATED = false;
-
-// Clients details page - Remove when clients search endpoint is available https://github.com/camunda/camunda/issues/31873
-export const IS_TENANT_CLIENTS_SUPPORTED = false;
-
-// Clients details page - Remove when clients search endpoint is available https://github.com/camunda/camunda/issues/31874
-export const IS_GROUP_CLIENTS_SUPPORTED = false;

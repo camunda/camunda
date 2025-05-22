@@ -28,6 +28,7 @@ import {
 } from "src/feature-flags";
 import Members from "src/pages/roles/detail/members";
 import Mappings from "src/pages/roles/detail/mappings";
+import Clients from "src/pages/roles/detail/clients";
 import { isOIDC } from "src/configuration";
 
 const Details: FC = () => {
@@ -106,6 +107,11 @@ const Details: FC = () => {
                           key: "mappings",
                           label: t("mappings"),
                           content: <Mappings roleId={role.roleId} />,
+                        },
+                        {
+                          key: "clients",
+                          label: t("clients"),
+                          content: <Clients roleId={role.roleId} />,
                         },
                       ]
                     : []),

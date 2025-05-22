@@ -11,34 +11,40 @@ import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
-import { getClientsByGroupId, Group } from "src/utility/api/groups";
+import { getClientsByRoleId, Role } from "src/utility/api/roles";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
-import DeleteModal from "src/pages/groups/detail/clients/DeleteModal";
-import AssignClientsModal from "src/pages/groups/detail/clients/AssignClientsModal";
+import DeleteModal from "src/pages/roles/detail/clients/DeleteModal";
+import AssignClientsModal from "src/pages/roles/detail/clients/AssignClientsModal";
 
 type ClientsProps = {
-  groupId: Group["groupId"];
+  roleId: Role["roleId"];
 };
 
-const Clients: FC<ClientsProps> = ({ groupId }) => {
-  const { t } = useTranslate("groups");
+const Clients: FC<ClientsProps> = ({ roleId }) => {
+  const { t } = useTranslate("roles");
 
-  const { data, loading, success, reload } = useApi(getClientsByGroupId, {
-    groupId,
+  const {
+    data: clients,
+    loading,
+    success,
+    reload,
+  } = useApi(getClientsByRoleId, {
+    roleId,
   });
 
-  const assignedClients = data && Array.isArray(data.items) ? data.items : [];
+  const assignedClients =
+    clients && Array.isArray(clients.items) ? clients.items : [];
 
   const [assignClient, assignClientModal] = useEntityModal(
     AssignClientsModal,
     reload,
   );
-  const openAssignModal = () => assignClient({ groupId });
+  const openAssignModal = () => assignClient(roleId);
   const [unassignClient, unassignClientModal] = useEntityModal(
     DeleteModal,
     reload,
-    { groupId },
+    { roleId },
   );
 
   if (!loading && !success)
@@ -54,15 +60,15 @@ const Clients: FC<ClientsProps> = ({ groupId }) => {
     return (
       <>
         <C3EmptyState
-          heading={t("assignClientsToGroup")}
-          description={t("membersAccessDisclaimer")}
+          heading={t("assignClientsToRole")}
+          description={t("accessDisclaimer")}
           button={{
             label: t("assignClient"),
             onClick: openAssignModal,
           }}
           link={{
-            label: t("learnMoreAboutGroups"),
-            href: `/identity/concepts/access-control/groups`,
+            label: t("learnMoreAboutRoles"),
+            href: `/identity/concepts/access-control/roles`,
           }}
         />
         {assignClientModal}
@@ -72,7 +78,7 @@ const Clients: FC<ClientsProps> = ({ groupId }) => {
   return (
     <>
       <EntityList
-        data={assignedClients}
+        data={clients?.items}
         headers={[{ header: t("clientId"), key: "clientId" }]}
         sortProperty="clientId"
         loading={loading}
