@@ -127,14 +127,14 @@ public class RolesByClientIntegrationTest {
   @Test
   void shouldSearchClientsByRole() {
     // given
-    final var clientId_1 = Strings.newRandomValidIdentityId();
-    final var clientId_2 = Strings.newRandomValidIdentityId();
+    final var clientId1 = Strings.newRandomValidIdentityId();
+    final var clientId2 = Strings.newRandomValidIdentityId();
 
     final var roleId = Strings.newRandomValidIdentityId();
     createRole(roleId, "someRoleName", "description");
 
-    camundaClient.newAssignRoleToClientCommand().roleId(roleId).clientId(clientId_1).send().join();
-    camundaClient.newAssignRoleToClientCommand().roleId(roleId).clientId(clientId_2).send().join();
+    camundaClient.newAssignRoleToClientCommand().roleId(roleId).clientId(clientId1).send().join();
+    camundaClient.newAssignRoleToClientCommand().roleId(roleId).clientId(clientId2).send().join();
 
     // when/then
     Awaitility.await("Both client IDs are returned")
@@ -144,7 +144,7 @@ public class RolesByClientIntegrationTest {
               final SearchResponse<Client> response =
                   camundaClient.newClientsByRoleSearchRequest(roleId).send().join();
               assertThat(response.items().stream().map(Client::getClientId).toList())
-                  .containsExactly(clientId_1, clientId_2);
+                  .containsExactly(clientId1, clientId2);
             });
   }
 
