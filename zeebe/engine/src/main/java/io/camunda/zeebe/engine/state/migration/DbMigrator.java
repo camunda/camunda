@@ -9,5 +9,8 @@ package io.camunda.zeebe.engine.state.migration;
 
 public interface DbMigrator {
 
-  void runMigrations();
+  /**
+   * @return if at least one migration has been performed.
+   */
+  boolean runMigrations();
 }
