@@ -11,8 +11,10 @@ import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -22,6 +24,7 @@ import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkRequest.Builder;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
+import org.opensearch.client.opensearch.core.bulk.OperationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -189,13 +192,27 @@ public class OpensearchBatchRequest implements BatchRequest {
       return;
     }
 
-    final String errorMessages =
+    final Map<ErrorKey, List<String>> groupedErrors =
         errorItems.stream()
+            .collect(
+                Collectors.groupingBy(
+                    item -> new ErrorKey(item.operationType(), item.index(), item.error().reason()),
+                    LinkedHashMap::new,
+                    Collectors.mapping(BulkResponseItem::id, Collectors.toList())));
+
+    final String errorMessages =
+        groupedErrors.entrySet().stream()
+            // these error groups can sometimes be too large and even
+            // overflow the logger buffer.
+            .limit(100)
             .map(
-                item ->
+                entry ->
                     String.format(
-                        "%s failed for type [%s] and id [%s]: %s",
-                        item.operationType(), item.index(), item.id(), item.error().reason()))
+                        "%s failed for type %s with ids: %s: %s",
+                        entry.getKey().operationType,
+                        entry.getKey().index,
+                        entry.getValue(),
+                        entry.getKey().errorReason))
             .collect(Collectors.joining(", \n"));
     LOGGER.debug("Bulk request execution failed: \n[{}]", errorMessages);
 
@@ -212,5 +229,25 @@ public class OpensearchBatchRequest implements BatchRequest {
             throw new PersistenceException(message);
           }
         });
+  }
+
+  private record ErrorKey(OperationType operationType, String index, String errorReason) {
+    @Override
+    public boolean equals(final Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof final ErrorKey errorKey)) {
+        return false;
+      }
+      return Objects.equals(operationType, errorKey.operationType)
+          && Objects.equals(index, errorKey.index)
+          && Objects.equals(errorReason, errorKey.errorReason);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(operationType, index, errorReason);
+    }
   }
 }
