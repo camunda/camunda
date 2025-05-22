@@ -78,7 +78,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private final CamundaProcessTestResultPrinter processTestResultPrinter;
   private final List<AutoCloseable> createdClients = new ArrayList<>();
 
-  private CamundaRuntime runtimeConnection;
+  private CamundaRuntime runtime;
   private CamundaProcessTestResultCollector processTestResultCollector;
   private CamundaProcessTestContext camundaProcessTestContext;
   private CamundaManagementClient camundaManagementClient;
@@ -99,19 +99,18 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   @Override
   public void beforeTestClass(final TestContext testContext) {
     // create runtime
-    runtimeConnection = buildRuntime(testContext);
-    runtimeConnection.start();
+    runtime = buildRuntime(testContext);
+    runtime.start();
 
     camundaManagementClient =
         new CamundaManagementClient(
-            runtimeConnection.getCamundaMonitoringApiAddress(),
-            runtimeConnection.getCamundaRestApiAddress());
+            runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
 
     camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
-            runtimeConnection.getCamundaRestApiAddress(),
-            runtimeConnection.getCamundaGrpcApiAddress(),
-            runtimeConnection.getConnectorsRestApiAddress(),
+            runtime.getCamundaRestApiAddress(),
+            runtime.getCamundaGrpcApiAddress(),
+            runtime.getConnectorsRestApiAddress(),
             createdClients::add,
             camundaManagementClient);
   }
@@ -145,7 +144,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   @Override
   public void afterTestMethod(final TestContext testContext) throws Exception {
-    if (runtimeConnection == null) {
+    if (runtime == null) {
       // Skip if the runtime is not created.
       return;
     }
@@ -177,11 +176,11 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   @Override
   public void afterTestClass(final TestContext testContext) throws Exception {
-    if (runtimeConnection == null) {
+    if (runtime == null) {
       // Skip if the runtime is not created.
       return;
     }
-    runtimeConnection.close();
+    runtime.close();
   }
 
   private void printTestResults() {
@@ -242,6 +241,13 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         .withConnectorsDockerImageVersion(runtimeConfiguration.getConnectorsDockerImageVersion())
         .withConnectorsEnv(runtimeConfiguration.getConnectorsEnvVars())
         .withConnectorsSecrets(runtimeConfiguration.getConnectorsSecrets());
+
+    containerRuntimeBuilder
+        .withRuntimeMode(runtimeConfiguration.getRuntimeMode())
+        .withRemoteCamundaMonitoringApiAddress(
+            runtimeConfiguration.getRemoteCamundaMonitoringApiAddress())
+        .withRemoteConnectorsRestApiAddress(
+            runtimeConfiguration.getRemoteConnectorsRestApiAddress());
 
     return containerRuntimeBuilder.build();
   }

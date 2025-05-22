@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.impl.configuration;
 
+import io.camunda.process.test.api.CamundaRuntimeMode;
 import io.camunda.process.test.impl.runtime.ContainerRuntimeDefaults;
 import java.util.Collections;
 import java.util.List;
@@ -37,6 +38,13 @@ public class CamundaContainerRuntimeConfiguration {
       ContainerRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_VERSION;
   private Map<String, String> connectorsEnvVars = Collections.emptyMap();
   private Map<String, String> connectorsSecrets = Collections.emptyMap();
+
+  private final CamundaRuntimeMode runtimeMode = CamundaRuntimeMode.MANAGED;
+
+  private final String remoteCamundaMonitoringApiAddress =
+      ContainerRuntimeDefaults.LOCAL_CAMUNDA_MONITORING_API_ADDRESS;
+  private final String remoteConnectorsRestApiAddress =
+      ContainerRuntimeDefaults.LOCAL_CONNECTORS_REST_API_ADDRESS;
 
   public String getCamundaVersion() {
     return camundaVersion;
@@ -108,5 +116,17 @@ public class CamundaContainerRuntimeConfiguration {
 
   public void setConnectorsSecrets(final Map<String, String> connectorsSecrets) {
     this.connectorsSecrets = connectorsSecrets;
+  }
+
+  public CamundaRuntimeMode getRuntimeMode() {
+    return runtimeMode;
+  }
+
+  public String getRemoteCamundaMonitoringApiAddress() {
+    return remoteCamundaMonitoringApiAddress;
+  }
+
+  public String getRemoteConnectorsRestApiAddress() {
+    return remoteConnectorsRestApiAddress;
   }
 }
