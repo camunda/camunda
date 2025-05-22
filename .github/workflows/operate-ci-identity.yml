@@ -1,8 +1,8 @@
-# description: Runs the CI tests owned by Data Layer. Runs unit tests, and integration tests
-# test location: operate/common, operate/importer, operate/importer-8_7, operate/importer-common, operate/qa/integration-tests, operate/schema, operate/webapp
-# owner: Data Layer
+# description: Runs the CI tests owned by Identity. Runs unit tests
+# test location: operate/webapp
+# owner: Identity
 ---
-name: Operate Data Layer CI
+name: Operate Identity CI
 on:
   workflow_dispatch:
   push:
@@ -41,22 +41,12 @@ concurrency:
   group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
 jobs:
-  run-data-layer-unit-tests:
-    name: Operate Backend Unit Tests - Data Layers
+  run-identity-unit-tests:
+    name: Operate Backend Unit Tests - Identity
     uses: ./.github/workflows/operate-ci-test-reusable.yml
     secrets: inherit
     with:
       branch: ${{ github.head_ref || github.ref_name }}
-      command: ./mvnw -f operate verify -T1C -B -P skipFrontendBuild -DskipITs -DskipCoreFeaturesUTs -DskipIdentityUTs -DskipDockerProfile -DskipChecks
+      command: ./mvnw -f operate verify -T1C -B -P skipFrontendBuild -DskipITs -DskipCoreFeaturesUTs -DskipDataLayerUTs -DskipDockerProfile -DskipChecks
       test-type: Unit Tests
       runner-type: gcp-core-4-default
-
-  run-data-layer-opensearch-tests:
-    name: Operate Backend Opensearch ITs
-    uses: ./.github/workflows/operate-ci-test-reusable.yml
-    secrets: inherit
-    with:
-      branch: ${{ github.head_ref || github.ref_name }}
-      command: ./mvnw -f operate/qa/integration-tests verify -P operateItOpensearch,docker-opensearch -B -DskipChecks -Dfailsafe.rerunFailingTestsCount=2
-      test-type: Opensearch ITs
-      runner-type: gcp-core-32-default

@@ -1,7 +1,8 @@
-## description:  Workflow for tests for running Integration tests on a docker image
-## test location: operate/qa/integration-tests
-## owner: Core Features
-name: "[Legacy] Operate - Docker Tests"
+# description:  Workflow for tests for running Integration tests on a docker image
+# test location: operate/qa/integration-tests
+# owner:
+---
+name: Operate Tests
 on:
   push:
     branches:
