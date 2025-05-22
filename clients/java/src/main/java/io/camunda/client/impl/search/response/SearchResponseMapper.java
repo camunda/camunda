@@ -32,6 +32,7 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.ProcessInstanceCallHierarchyEntryResponse;
 import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.client.api.search.response.Role;
+import io.camunda.client.api.search.response.RoleUser;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.SearchResponsePage;
 import io.camunda.client.api.search.response.User;
@@ -179,6 +180,17 @@ public final class SearchResponseMapper {
     final List<Role> instances =
         toSearchResponseInstances(response.getItems(), SearchResponseMapper::toRoleResponse);
     return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static SearchResponse<RoleUser> toRoleUsersResponse(final RoleUserSearchResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<RoleUser> instances =
+        toSearchResponseInstances(response.getItems(), SearchResponseMapper::toRoleUser);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
+  private static RoleUser toRoleUser(final RoleUserResult response) {
+    return new RoleUserImpl(response.getUsername());
   }
 
   public static Group toGroupResponse(final GroupResult response) {

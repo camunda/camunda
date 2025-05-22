@@ -24,6 +24,7 @@ import io.camunda.client.api.command.AssignRoleToClientCommandStep1;
 import io.camunda.client.api.command.AssignRoleToGroupCommandStep1;
 import io.camunda.client.api.command.AssignRoleToMappingCommandStep1;
 import io.camunda.client.api.command.AssignRoleToTenantCommandStep1;
+import io.camunda.client.api.command.AssignRoleToUserCommandStep1;
 import io.camunda.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.client.api.command.AssignUserToGroupCommandStep1;
 import io.camunda.client.api.command.AssignUserToTenantCommandStep1;
@@ -66,6 +67,7 @@ import io.camunda.client.api.command.UnassignRoleFromClientCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromMappingCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromTenantCommandStep1;
+import io.camunda.client.api.command.UnassignRoleFromUserCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
@@ -116,6 +118,7 @@ import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
 import io.camunda.client.api.search.request.RolesByTenantSearchRequest;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
 import io.camunda.client.api.search.request.UserTaskVariableSearchRequest;
+import io.camunda.client.api.search.request.UsersByRoleSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessInstanceElementStatisticsRequest;
@@ -1393,6 +1396,56 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the unassign role from client command
    */
   UnassignRoleFromClientCommandStep1 newUnassignRoleFromClientCommand();
+
+  /**
+   * Command to assign a role to a user.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * camundaClient
+   *   .newAssignRoleToUserCommand()
+   *   .roleId("roleId")
+   *   .username("username")
+   *   .send();
+   * </pre>
+   *
+   * @return a builder for the assign role to user command
+   */
+  AssignRoleToUserCommandStep1 newAssignRoleToUserCommand();
+
+  /**
+   * Command to unassign a role from a user.
+   *
+   * <pre>
+   * camundaClient
+   *   .newUnassignRoleFromUserCommand()
+   *   .roleId("roleId")
+   *   .username("username")
+   *   .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC.
+   *
+   * @return a builder for the unassign role from user command
+   */
+  UnassignRoleFromUserCommandStep1 newUnassignRoleFromUserCommand();
+
+  /**
+   * Executes a search request to query users by role.
+   *
+   * <pre>
+   * camundaClient
+   *  .newUsersByRoleSearchRequest("roleId")
+   *  .sort((s) -> s.username().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @param roleId the ID of the role
+   * @return a builder for the users by role search request
+   */
+  UsersByRoleSearchRequest newUsersByRoleSearchRequest(String roleId);
 
   /**
    * Command to create a group.
