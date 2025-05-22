@@ -382,13 +382,18 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public void setMigrationsPerformed(final boolean migrationsPerformed) {
-    this.migrationsPerformed = migrationsPerformed;
+  public void markMigrationsDone() {
+    migrationsPerformed = true;
   }
 
   @Override
   public boolean areMigrationsPerformed() {
     return migrationsPerformed;
+  }
+
+  @Override
+  public ComponentTreeListener getComponentTreeListener() {
+    return healthGraphMetrics;
   }
 
   @Override
@@ -459,11 +464,6 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setCurrentRole(final Role currentRole) {
     this.currentRole = currentRole;
-  }
-
-  @Override
-  public ComponentTreeListener getComponentTreeListener() {
-    return healthGraphMetrics;
   }
 
   @Override
