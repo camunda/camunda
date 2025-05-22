@@ -8,14 +8,19 @@
 package io.camunda.process.test.impl.runtime;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
-import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.TopologyRequestStep1;
+import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.response.BrokerInfo;
+import io.camunda.client.api.response.PartitionBrokerHealth;
+import io.camunda.client.api.response.PartitionInfo;
 import io.camunda.client.api.response.Topology;
 import io.camunda.process.test.api.CamundaRuntimeMode;
 import java.net.URI;
@@ -32,7 +37,7 @@ public class RemoteRuntimeTest {
 
   @Mock private CamundaClientBuilder camundaClientBuilder;
 
-  @Mock(answer = Answers.RETURNS_MOCKS)
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private CamundaClient camundaClient;
 
   @Mock private Topology topology;
@@ -122,15 +127,14 @@ public class RemoteRuntimeTest {
     // given
     when(camundaClientBuilder.build()).thenReturn(camundaClient);
 
-    final TopologyRequestStep1 topologyRequestStep1 = mock(TopologyRequestStep1.class);
-    when(camundaClient.newTopologyRequest()).thenReturn(topologyRequestStep1);
+    when(camundaClient.newTopologyRequest().send().join()).thenReturn(topology);
 
-    final CamundaFuture<Topology> camundaFuture = mock(CamundaFuture.class);
-    when(topologyRequestStep1.send()).thenReturn(camundaFuture);
+    final BrokerInfo brokerInfo = mock(BrokerInfo.class);
+    final PartitionInfo partitionInfo = mock(PartitionInfo.class);
+    when(brokerInfo.getPartitions()).thenReturn(Collections.singletonList(partitionInfo));
+    when(partitionInfo.getHealth()).thenReturn(PartitionBrokerHealth.HEALTHY);
 
-    when(camundaFuture.join()).thenReturn(topology);
-
-    when(topology.getBrokers()).thenReturn(Collections.emptyList());
+    when(topology.getBrokers()).thenReturn(Collections.singletonList(brokerInfo));
     when(topology.getGatewayVersion()).thenReturn("testing");
 
     final CamundaRuntime camundaRuntime =
@@ -139,10 +143,29 @@ public class RemoteRuntimeTest {
             .withCamundaClientBuilder(() -> camundaClientBuilder)
             .build();
 
-    // when
-    camundaRuntime.start();
+    // when/then
+    assertThatNoException().isThrownBy(camundaRuntime::start);
 
-    // then
-    verify(camundaClient).newTopologyRequest();
+    // note: 2 times = 1 for stubbing + 1 for the remote runtime
+    verify(camundaClient, times(2)).newTopologyRequest();
+  }
+
+  @Test
+  void shouldFailOnStartIfConnectionFails() {
+    // given
+    when(camundaClientBuilder.build()).thenReturn(camundaClient);
+
+    when(camundaClient.newTopologyRequest().send().join())
+        .thenThrow(new ClientException("expected"));
+
+    final CamundaRuntime camundaRuntime =
+        CamundaContainerRuntime.newBuilder()
+            .withRuntimeMode(CamundaRuntimeMode.REMOTE)
+            .withCamundaClientBuilder(() -> camundaClientBuilder)
+            .build();
+
+    // when/then
+    assertThatThrownBy(camundaRuntime::start)
+        .hasMessage("Failed to connect to remote Camunda runtime.");
   }
 }
