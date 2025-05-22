@@ -81,6 +81,7 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     final var batchOperation = get(batchOperationKey);
     if (batchOperation.isPresent()) {
       batchOperation.get().setStatus(BatchOperationStatus.STARTED);
+      batchOperation.get().markAsInitialized();
       batchOperationColumnFamily.update(batchKey, batchOperation.get());
       pendingBatchOperationColumnFamily.deleteIfExists(batchKey);
     } else {
@@ -174,12 +175,13 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   @Override
   public void resume(final long batchOperationKey) {
     LOGGER.trace("Resume batch operation with key {}", batchOperationKey);
-    this.batchKey.wrapLong(batchOperationKey);
+    batchKey.wrapLong(batchOperationKey);
 
     // Set status to STARTED
-    final var batch = batchOperationColumnFamily.get(this.batchKey);
-    batch.setStatus(BatchOperationStatus.STARTED);
-    batchOperationColumnFamily.update(this.batchKey, batch);
+    final var batch = batchOperationColumnFamily.get(batchKey);
+    batch.setStatus(
+        batch.isInitialized() ? BatchOperationStatus.STARTED : BatchOperationStatus.CREATED);
+    batchOperationColumnFamily.update(batchKey, batch);
   }
 
   @Override
