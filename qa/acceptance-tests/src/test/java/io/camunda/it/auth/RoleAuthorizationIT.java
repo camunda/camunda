@@ -561,6 +561,38 @@ class RoleAuthorizationIT {
         .hasMessageContaining("403: 'Forbidden'");
   }
 
+  @Test
+  void shouldSearchRoleByClientIfAuthorized(@Authenticated(ADMIN) final CamundaClient adminClient) {
+    // given
+    final String clientId = Strings.newRandomValidIdentityId();
+    final String roleId = Strings.newRandomValidIdentityId();
+    createRole(adminClient, roleId, "roleName");
+
+    adminClient.newAssignRoleToClientCommand().roleId(roleId).clientId(clientId).send().join();
+
+    // when/then
+    Awaitility.await("Search returns correct client ID")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final SearchResponse<Client> response =
+                  adminClient.newClientsByRoleSearchRequest(roleId).send().join();
+              assertThat(response.items().stream().map(Client::getClientId).toList())
+                  .contains(clientId);
+            });
+
+    // clean up
+    adminClient.newDeleteRoleCommand(roleId).send().join();
+  }
+
+  @Test
+  void searchRoleByClientShouldReturnEmptyListIfUnauthorized(
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
+    final SearchResponse<Client> response =
+        camundaClient.newClientsByRoleSearchRequest(ROLE_ID_1).send().join();
+    assertThat(response.items()).isEmpty();
+  }
+
   private static void createRole(
       final CamundaClient adminClient, final String roleId, final String roleName) {
     createRole(adminClient, roleId, roleName, null);
