@@ -67,6 +67,12 @@
         #{value}
       </foreach>
     </if>
+    <if test="filter.resourceNames != null and !filter.resourceNames.isEmpty()">
+      AND RESOURCE_NAME IN
+      <foreach collection="filter.resourceNames" item="value" open="(" separator=", " close=")">
+        #{value}
+      </foreach>
+    </if>
   </sql>
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.DecisionRequirementsEntity">
