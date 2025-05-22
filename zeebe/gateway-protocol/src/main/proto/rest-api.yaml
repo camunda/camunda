@@ -6433,6 +6433,7 @@ components:
             - startDate
             - endDate
             - elementId
+            - elementName
             - type
             - state
             - incidentKey

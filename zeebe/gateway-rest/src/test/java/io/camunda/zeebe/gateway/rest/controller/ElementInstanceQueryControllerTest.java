@@ -239,6 +239,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                         .states(FlowNodeState.ACTIVE.name())
                         .types(FlowNodeType.SERVICE_TASK)
                         .flowNodeIds("StartEvent_1")
+                        .flowNodeNames("name")
                         .hasIncident(true)
                         .incidentKeys(2251799813685320L)
                         .tenantIds("default")
