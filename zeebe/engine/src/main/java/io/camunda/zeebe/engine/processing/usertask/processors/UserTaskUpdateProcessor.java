@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
@@ -73,61 +74,88 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
 
-    final long userTaskElementInstanceKey = userTaskRecord.getElementInstanceKey();
-    if (userTaskRecord.getChangedAttributes().contains(UserTaskRecord.VARIABLES)) {
-      variableBehavior.mergeLocalDocument(
-          userTaskElementInstanceKey,
-          userTaskRecord.getProcessDefinitionKey(),
-          userTaskRecord.getProcessInstanceKey(),
-          userTaskRecord.getBpmnProcessIdBuffer(),
-          userTaskRecord.getTenantId(),
-          command.getValue().getVariablesBuffer());
-    }
-
     if (command.hasRequestMetadata()) {
       stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
       responseWriter.writeEventOnCommand(
           userTaskKey, UserTaskIntent.UPDATED, userTaskRecord, command);
     } else {
-      final var recordRequestMetadata = userTaskState.findRecordRequestMetadata(userTaskKey);
-      stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
-      recordRequestMetadata.ifPresent(
-          metadata -> {
-            switch (metadata.getTriggerType()) {
-              case USER_TASK ->
-                  responseWriter.writeResponse(
-                      userTaskKey,
-                      UserTaskIntent.UPDATED,
-                      userTaskRecord,
-                      ValueType.USER_TASK,
-                      metadata.getRequestId(),
-                      metadata.getRequestStreamId());
-              case VARIABLE_DOCUMENT ->
-                  variableState
-                      .findVariableDocumentState(userTaskElementInstanceKey)
-                      .ifPresent(
-                          variableDocumentState -> {
-                            final long variableDocumentKey = variableDocumentState.getKey();
-                            final var variableDocumentRecord = variableDocumentState.getRecord();
-                            stateWriter.appendFollowUpEvent(
-                                variableDocumentKey,
-                                VariableDocumentIntent.UPDATED,
-                                variableDocumentRecord);
+      userTaskState
+          .findRecordRequestMetadata(userTaskKey)
+          .ifPresent(
+              metadata -> {
+                switch (metadata.getTriggerType()) {
+                  case USER_TASK -> {
+                    stateWriter.appendFollowUpEvent(
+                        userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
+                    responseWriter.writeResponse(
+                        userTaskKey,
+                        UserTaskIntent.UPDATED,
+                        userTaskRecord,
+                        ValueType.USER_TASK,
+                        metadata.getRequestId(),
+                        metadata.getRequestStreamId());
+                  }
+                  case VARIABLE_DOCUMENT ->
+                      // Update triggered by a VariableDocument command.
+                      // Retrieve the original VariableDocumentRecord to apply correct variable
+                      // merge logic and write follow-up event.
+                      variableState
+                          .findVariableDocumentState(userTaskRecord.getElementInstanceKey())
+                          .ifPresent(
+                              variableDocumentState -> {
+                                final var variableDocumentRecord =
+                                    variableDocumentState.getRecord();
+                                mergeVariables(userTaskRecord, variableDocumentRecord);
 
-                            responseWriter.writeResponse(
-                                variableDocumentKey,
-                                VariableDocumentIntent.UPDATED,
-                                variableDocumentRecord,
-                                ValueType.VARIABLE_DOCUMENT,
-                                metadata.getRequestId(),
-                                metadata.getRequestStreamId());
-                          });
-              default ->
-                  throw new IllegalArgumentException(
-                      "Unexpected user task transition trigger type: '%s'"
-                          .formatted(metadata.getTriggerType()));
-            }
-          });
+                                // Write follow-up events
+                                stateWriter.appendFollowUpEvent(
+                                    userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
+                                final long variableDocumentKey = variableDocumentState.getKey();
+                                stateWriter.appendFollowUpEvent(
+                                    variableDocumentKey,
+                                    VariableDocumentIntent.UPDATED,
+                                    variableDocumentRecord);
+
+                                responseWriter.writeResponse(
+                                    variableDocumentKey,
+                                    VariableDocumentIntent.UPDATED,
+                                    variableDocumentRecord,
+                                    ValueType.VARIABLE_DOCUMENT,
+                                    metadata.getRequestId(),
+                                    metadata.getRequestStreamId());
+                              });
+                  default ->
+                      throw new IllegalArgumentException(
+                          "Unexpected user task transition trigger type: '%s'"
+                              .formatted(metadata.getTriggerType()));
+                }
+              });
+    }
+  }
+
+  private void mergeVariables(
+      final UserTaskRecord userTaskRecord, final VariableDocumentRecord variableRecord) {
+    switch (variableRecord.getUpdateSemantics()) {
+      case LOCAL ->
+          variableBehavior.mergeLocalDocument(
+              userTaskRecord.getElementInstanceKey(),
+              userTaskRecord.getProcessDefinitionKey(),
+              userTaskRecord.getProcessInstanceKey(),
+              userTaskRecord.getBpmnProcessIdBuffer(),
+              userTaskRecord.getTenantId(),
+              variableRecord.getVariablesBuffer());
+      case PROPAGATE ->
+          variableBehavior.mergeDocument(
+              userTaskRecord.getElementInstanceKey(),
+              userTaskRecord.getProcessDefinitionKey(),
+              userTaskRecord.getProcessInstanceKey(),
+              userTaskRecord.getBpmnProcessIdBuffer(),
+              userTaskRecord.getTenantId(),
+              variableRecord.getVariablesBuffer());
+      default ->
+          throw new IllegalStateException(
+              "Unexpected variable update semantic: '%s'. Expected either 'LOCAL' or 'PROPAGATE'."
+                  .formatted(variableRecord.getUpdateSemantics()));
     }
   }
 }
