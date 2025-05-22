@@ -74,6 +74,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -131,6 +132,7 @@ public class CompactRecordLogger {
           entry(RecordType.COMMAND_REJECTION, 'R'));
 
   private final Map<ValueType, Function<Record<?>, String>> valueLoggers = new HashMap<>();
+
   private final int keyDigits;
   private final int valueTypeChars;
   private final int intentChars;
@@ -188,7 +190,7 @@ public class CompactRecordLogger {
     multiPartition = isMultiPartition();
     hasTimerEvents = records.stream().anyMatch(r -> r.getValueType() == ValueType.TIMER);
 
-    final var highestPosition = this.records.getLast().getPosition();
+    final var highestPosition = this.records.isEmpty() ? 0 : this.records.getLast().getPosition();
 
     int digits = 0;
     long num = highestPosition;
@@ -217,6 +219,10 @@ public class CompactRecordLogger {
             .mapToInt(String::length)
             .max()
             .orElse(0);
+  }
+
+  public Set<ValueType> getSupportedValueTypes() {
+    return valueLoggers.keySet();
   }
 
   public void log() {
