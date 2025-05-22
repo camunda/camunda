@@ -15,6 +15,12 @@ func (p *ProcessHandler) IsPidRunning(pid int) bool {
 		if errors.Is(err, windows.ERROR_INVALID_PARAMETER) {
 			return false // PID doesn't exist
 		}
+		// If we got access denied, the process may still be running but
+		// we don't have sufficient rights to query it (e.g. on locked-down
+		// CI runners). Treat that as the process existing.
+		if errors.Is(err, windows.ERROR_ACCESS_DENIED) {
+			return true
+		}
 		return false
 	}
 	defer windows.CloseHandle(h)
@@ -23,5 +29,5 @@ func (p *ProcessHandler) IsPidRunning(pid int) bool {
 	if err = windows.GetExitCodeProcess(h, &code); err != nil {
 		return false
 	}
-	return code == uint32(259)
+	return code == 259
 }
