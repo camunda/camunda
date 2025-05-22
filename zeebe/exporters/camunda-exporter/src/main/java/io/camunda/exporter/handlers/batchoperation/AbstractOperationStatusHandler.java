@@ -22,11 +22,15 @@ import io.camunda.zeebe.util.DateUtil;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class AbstractOperationStatusHandler<R extends RecordValue>
     extends AbstractOperationHandler implements ExportHandler<OperationEntity, R> {
-  public static final String ERROR_MSG = "%s: %s";
 
+  public static final String ERROR_MSG = "%s: %s";
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(AbstractOperationStatusHandler.class);
   protected final ValueType handledValueType;
 
   public AbstractOperationStatusHandler(final String indexName, final ValueType handledValueType) {
@@ -71,6 +75,7 @@ public abstract class AbstractOperationStatusHandler<R extends RecordValue>
     updateFields.put(OperationTemplate.ERROR_MSG, entity.getErrorMessage());
 
     batchRequest.update(indexName, entity.getId(), updateFields);
+    LOGGER.trace("Updated operation {} with fields {}", entity.getId(), updateFields);
   }
 
   @Override

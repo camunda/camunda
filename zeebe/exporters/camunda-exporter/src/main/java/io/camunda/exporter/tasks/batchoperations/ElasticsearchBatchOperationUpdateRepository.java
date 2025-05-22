@@ -169,6 +169,8 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
             update.totalOperationsCount(),
             END_DATE,
             OffsetDateTime.now());
+
+    logger.trace("ElasticsearchBatchOperationUpdateRepository -> Update params: {}", params);
     return new UpdateOperation.Builder<>()
         .index(batchOperationIndex)
         .id(update.id())

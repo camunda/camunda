@@ -7,7 +7,14 @@
  */
 package io.camunda.it.client;
 
-import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
+import static io.camunda.it.util.TestHelper.VAR_TEST_SCOPE_ID;
+import static io.camunda.it.util.TestHelper.deployProcessAndWaitForIt;
+import static io.camunda.it.util.TestHelper.getScopedVariables;
+import static io.camunda.it.util.TestHelper.startScopedProcessInstance;
+import static io.camunda.it.util.TestHelper.waitForActiveScopedUserTasks;
+import static io.camunda.it.util.TestHelper.waitForBatchOperationCompleted;
+import static io.camunda.it.util.TestHelper.waitForBatchOperationWithCorrectTotalCount;
+import static io.camunda.it.util.TestHelper.waitForScopedProcessInstancesToStart;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -16,68 +23,67 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.response.CreateBatchOperationResponse;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
-import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
-import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import io.camunda.client.api.search.response.ElementInstance;
-import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.qa.util.multidb.MultiDbTest;
-import java.time.Duration;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import org.assertj.core.api.ThrowingConsumer;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class BatchOperationMigrateProcessInstanceTest {
 
-  static final List<Long> PROCESS_INSTANCES = new ArrayList<>();
-
   private static CamundaClient client;
 
-  @AfterAll
-  static void afterAll() {
-    PROCESS_INSTANCES.clear();
-  }
-
   @Test
-  void shouldMigrateProcessInstancesWithBatch() {
+  void shouldMigrateProcessInstancesWithBatch(final TestInfo testInfo) {
     // given
+    final String testScopeId =
+        testInfo.getTestMethod().map(Method::toString).orElse(UUID.randomUUID().toString());
+
     final long sourceProcessDefinitionKey =
-        deployProcessFromClasspath(client, "process/migration-process_v1.bpmn");
+        deployProcessAndWaitForIt(client, "process/migration-process_v1.bpmn")
+            .getProcessDefinitionKey();
     final var targetProcessDefinitionKey =
-        deployProcessFromClasspath(client, "process/migration-process_v2.bpmn");
+        deployProcessAndWaitForIt(client, "process/migration-process_v2.bpmn")
+            .getProcessDefinitionKey();
 
-    IntStream.range(0, 20)
+    final List<Long> processInstances = new ArrayList<>();
+    IntStream.range(0, 10)
         .forEach(
-            i -> {
-              final var processInstanceKey =
-                  startProcessInstance(client, sourceProcessDefinitionKey, Map.of("foo", "bar"));
-              PROCESS_INSTANCES.add(processInstanceKey);
-            });
+            i ->
+                processInstances.add(
+                    startScopedProcessInstance(
+                            client, sourceProcessDefinitionKey, testScopeId, Map.of("foo", "bar"))
+                        .getProcessInstanceKey()));
 
-    waitForProcessInstancesToStart(client, PROCESS_INSTANCES.size());
+    waitForScopedProcessInstancesToStart(client, testScopeId, processInstances.size());
+    waitForActiveScopedUserTasks(client, testScopeId, processInstances.size());
 
     // when
     final var batchCreated =
         batchMigrateProcessInstance(
             client,
+            testScopeId,
             sourceProcessDefinitionKey,
             MigrationPlan.newBuilder()
                 .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
@@ -86,30 +92,16 @@ public class BatchOperationMigrateProcessInstanceTest {
                 .addMappingInstruction("taskC", "taskC2")
                 .build());
 
-    // then
-    Awaitility.await("should complete batch operation")
-        .atMost(TIMEOUT_DATA_AVAILABILITY)
-        .pollInterval(Duration.ofMillis(100))
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () -> {
-              // and
-              final var batch =
-                  client
-                      .newBatchOperationGetRequest(batchCreated.getBatchOperationKey())
-                      .send()
-                      .join();
-              assertThat(batch).isNotNull();
-              assertThat(batch.getEndDate()).isNotNull();
-              assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
-              assertThat(batch.getOperationsTotalCount()).isEqualTo(PROCESS_INSTANCES.size());
-              assertThat(batch.getOperationsCompletedCount()).isEqualTo(PROCESS_INSTANCES.size());
-              assertThat(batch.getOperationsFailedCount()).isEqualTo(0);
-            });
+    // then wait if batch has correct amount of items. (To fail fast if not)
+    waitForBatchOperationWithCorrectTotalCount(
+        client, batchCreated.getBatchOperationKey(), processInstances.size());
+
+    // and wait for the batch operation to complete
+    waitForBatchOperationCompleted(
+        client, batchCreated.getBatchOperationKey(), processInstances.size(), 0);
 
     Awaitility.await("should update batch operation items")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
-        .pollInterval(Duration.ofMillis(100))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
@@ -125,13 +117,13 @@ public class BatchOperationMigrateProcessInstanceTest {
                       .join()
                       .items();
               assertThat(batchItems).isNotEmpty();
-              assertThat(batchItems).hasSize(PROCESS_INSTANCES.size());
+              assertThat(batchItems).hasSize(processInstances.size());
               assertThat(batchItems.stream().map(BatchOperationItem::getStatus).distinct().toList())
                   .containsExactly(BatchOperationItemState.COMPLETED);
             });
 
     // and
-    for (final var processInstanceKey : PROCESS_INSTANCES) {
+    for (final var processInstanceKey : processInstances) {
       processInstanceExistAndMatches(
           client,
           f -> f.processInstanceKey(processInstanceKey).processDefinitionId("migration-process_v2"),
@@ -159,30 +151,19 @@ public class BatchOperationMigrateProcessInstanceTest {
 
   public CreateBatchOperationResponse batchMigrateProcessInstance(
       final CamundaClient client,
+      final String scopeId,
       final long sourceProcessDefinitionKey,
       final MigrationPlan migrationPlan) {
     return client
         .newCreateBatchOperationCommand()
         .migrateProcessInstance()
         .migrationPlan(migrationPlan)
-        .filter(new ProcessInstanceFilterImpl().processDefinitionKey(sourceProcessDefinitionKey))
+        .filter(
+            new ProcessInstanceFilterImpl()
+                .processDefinitionKey(sourceProcessDefinitionKey)
+                .variables(getScopedVariables(scopeId)))
         .send()
         .join();
-  }
-
-  public static Long deployProcessFromClasspath(
-      final CamundaClient client, final String classpath) {
-    final var deployment =
-        client.newDeployResourceCommand().addResourceFromClasspath(classpath).send().join();
-    final var event = deployment.getProcesses().getFirst();
-
-    // sync with exported database
-    processDefinitionExistAndMatches(
-        client,
-        f -> f.processDefinitionKey(event.getProcessDefinitionKey()),
-        f -> assertThat(f).hasSize(1));
-
-    return event.getProcessDefinitionKey();
   }
 
   //
@@ -223,8 +204,10 @@ public class BatchOperationMigrateProcessInstanceTest {
         client,
         f -> f.processInstanceKey(processInstanceKey),
         list -> {
-          assertThat(list).hasSize(assertions.size());
-          list.forEach(v -> assertThat(assertions.get(v.getName()).test(v)).isTrue());
+          assertThat(list).hasSize(assertions.size() + 1); // +1 for scope variable
+          list.stream()
+              .filter(v -> !v.getName().equals(VAR_TEST_SCOPE_ID))
+              .forEach(v -> assertThat(assertions.get(v.getName()).test(v)).isTrue());
         });
   }
 
@@ -252,21 +235,6 @@ public class BatchOperationMigrateProcessInstanceTest {
             () -> {
               final var result =
                   client.newVariableSearchRequest().filter(filter).send().join().items();
-              asserter.accept(result);
-            });
-  }
-
-  public static void processDefinitionExistAndMatches(
-      final CamundaClient client,
-      final Consumer<ProcessDefinitionFilter> filter,
-      final Consumer<List<ProcessDefinition>> asserter) {
-    await()
-        .atMost(TIMEOUT_DATA_AVAILABILITY)
-        .ignoreExceptions()
-        .untilAsserted(
-            () -> {
-              final var result =
-                  client.newProcessDefinitionSearchRequest().filter(filter).send().join().items();
               asserter.accept(result);
             });
   }
@@ -299,18 +267,5 @@ public class BatchOperationMigrateProcessInstanceTest {
                   client.newUserTaskSearchRequest().filter(filter).send().join().items();
               asserter.accept(result);
             });
-  }
-
-  public static long startProcessInstance(
-      final CamundaClient client,
-      final long processDefinitionKey,
-      final Map<String, Object> variables) {
-    return client
-        .newCreateInstanceCommand()
-        .processDefinitionKey(processDefinitionKey)
-        .variables(variables)
-        .send()
-        .join()
-        .getProcessInstanceKey();
   }
 }
