@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.util.health;
 
+import java.util.function.Consumer;
+
 /** Failure Listener invoked by a {@link HealthMonitorable} component. */
 public interface FailureListener {
 
@@ -33,5 +35,24 @@ public interface FailureListener {
       case DEAD -> onUnrecoverableFailure(healthReport);
       default -> {}
     }
+  }
+
+  static FailureListener ofConsumer(final Consumer<HealthReport> consumer) {
+    return new FailureListener() {
+      @Override
+      public void onFailure(final HealthReport report) {
+        consumer.accept(report);
+      }
+
+      @Override
+      public void onRecovered(final HealthReport report) {
+        consumer.accept(report);
+      }
+
+      @Override
+      public void onUnrecoverableFailure(final HealthReport report) {
+        consumer.accept(report);
+      }
+    };
   }
 }
