@@ -17,13 +17,40 @@ type ProcessHandler struct {
 	C8 types.C8Run
 }
 
-func (p *ProcessHandler) cleanUp(pidPath string) {
-	fileLock := flock.New(pidPath + ".lock")
+// acquireLock tries to acquire a lock and returns the lock or an error.
+func acquireLock(lockPath string) (*flock.Flock, error) {
+	fileLock := flock.New(lockPath)
 	if err := fileLock.Lock(); err != nil {
-		log.Err(err).Msgf("Failed to acquire lock for pid file: %s", pidPath)
+		log.Err(err).Msgf("Failed to acquire lock for file: %s", lockPath)
+		return nil, err
+	}
+	return fileLock, nil
+}
+
+// acquireRLock tries to acquire a read lock and returns the lock or an error.
+func acquireRLock(lockPath string) (*flock.Flock, error) {
+	fileLock := flock.New(lockPath)
+	if err := fileLock.RLock(); err != nil {
+		log.Err(err).Msgf("Failed to acquire read lock for file: %s", lockPath)
+		return nil, err
+	}
+	return fileLock, nil
+}
+
+// releaseLock unlocks the lock and logs any error.
+func releaseLock(fileLock *flock.Flock, lockPath string) {
+	if err := fileLock.Unlock(); err != nil {
+		log.Err(err).Msgf("Failed to unlock file: %s", lockPath)
+	}
+}
+
+func (p *ProcessHandler) cleanUp(pidPath string) {
+	lockPath := pidPath + ".lock"
+	fileLock, err := acquireLock(lockPath)
+	if err != nil {
 		return
 	}
-	defer fileLock.Unlock()
+	defer releaseLock(fileLock, lockPath)
 
 	if err := os.Remove(pidPath); err != nil {
 		log.Err(err).Msgf("Failed to remove pid file: %s", pidPath)
@@ -31,11 +58,12 @@ func (p *ProcessHandler) cleanUp(pidPath string) {
 }
 
 func (p *ProcessHandler) ReadPIDFromFile(pidfile string) (int, error) {
-	fileLock := flock.New(pidfile + ".lock")
-	if err := fileLock.RLock(); err != nil {
+	lockPath := pidfile + ".lock"
+	fileLock, err := acquireRLock(lockPath)
+	if err != nil {
 		return 0, fmt.Errorf("failed to acquire read lock for pid file: %s: %w", pidfile, err)
 	}
-	defer fileLock.Unlock()
+	defer releaseLock(fileLock, lockPath)
 
 	data, err := os.ReadFile(pidfile)
 	if err != nil {
@@ -59,6 +87,18 @@ func (p *ProcessHandler) GetProcessFromPid(pid int) []*os.Process {
 	return p.C8.ProcessTree(pid)
 }
 
+// AttemptToStartProcess checks if a process is running and healthy, and starts or restarts it as needed.
+// It uses the provided startProcess and healthCheck functions, and calls stop if the process is unhealthy or cannot be started.
+//
+// | Process Running | Process Healthy | Action Taken                                   |
+// |-----------------|----------------|------------------------------------------------|
+// | No              | N/A            | Start process                                  |
+// | Yes             | Yes            | Do nothing (process is healthy and running)    |
+// | Yes             | No             | Kill and restart process                       |
+// | No (stale PID)  | N/A            | Clean up, start process                        |
+//
+// If the process is not running or not healthy, it will be killed (if needed), cleaned up, and restarted.
+// If the process is running and healthy, nothing is done.
 func (p *ProcessHandler) AttemptToStartProcess(pidPath string, processName string, startProcess func(), healthCheck func() error, stop context.CancelFunc) {
 	pid, err := p.ReadPIDFromFile(pidPath)
 	if err != nil {
@@ -76,14 +116,12 @@ func (p *ProcessHandler) AttemptToStartProcess(pidPath string, processName strin
 		return
 	}
 
-	anyRunning := false
 	for _, proc := range procs {
 		if proc == nil {
 			log.Warn().Msgf("Encountered nil process in process list for %s; skipping entry.", processName)
 			continue
 		}
 		if p.IsPidRunning(proc.Pid) {
-			anyRunning = true
 			log.Debug().Int("pid", proc.Pid).Msgf("%s is running", processName)
 			if err := healthCheck(); err == nil {
 				log.Info().Msgf("%s is healthy, skipping...", processName)
@@ -102,12 +140,9 @@ func (p *ProcessHandler) AttemptToStartProcess(pidPath string, processName strin
 		}
 	}
 
-	// If we reach here, no running and healthy process was found
-	if !anyRunning {
-		log.Info().Msgf("No running process found for %s, cleaning up and starting...", processName)
-		p.cleanUp(pidPath)
-		p.startAndCheck(processName, startProcess, healthCheck, stop)
-	}
+	log.Info().Msgf("No running process found for %s, cleaning up and starting...", processName)
+	p.cleanUp(pidPath)
+	p.startAndCheck(processName, startProcess, healthCheck, stop)
 }
 
 // Helper to start and health check, stopping if unhealthy
@@ -120,12 +155,12 @@ func (p *ProcessHandler) startAndCheck(processName string, startProcess func(), 
 }
 
 func (p *ProcessHandler) WritePIDToFile(pidPath string, pid int) error {
-	fileLock := flock.New(pidPath + ".lock")
-	if err := fileLock.Lock(); err != nil {
-		log.Err(err).Msgf("Failed to acquire lock for pid file: %s", pidPath)
+	lockPath := pidPath + ".lock"
+	fileLock, err := acquireLock(lockPath)
+	if err != nil {
 		return err
 	}
-	defer fileLock.Unlock()
+	defer releaseLock(fileLock, lockPath)
 
 	log.Info().Int("pid", pid).Msg("Started process: " + pidPath)
 	pidFile, err := os.OpenFile(pidPath, os.O_RDWR|os.O_CREATE, 0644)
