@@ -10,7 +10,6 @@ import { FC } from "react";
 import { TrashCan } from "@carbon/react/icons";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
 import useTranslate from "src/utility/localization";
-import { useApi } from "src/utility/api/hooks";
 import { searchMembersByGroup } from "src/utility/api/membership";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
@@ -18,6 +17,7 @@ import AssignMembersModal from "src/pages/groups/detail/members/AssignMembersMod
 import AssignMemberModal from "src/pages/groups/detail/members/AssignMemberModal";
 import DeleteModal from "src/pages/groups/detail/members/DeleteModal";
 import { isOIDC } from "src/configuration";
+import { useEnrichedUsers } from "src/components/global/useEnrichUsers";
 import { UserKeys } from "src/utility/api/users";
 
 type MembersProps = {
@@ -26,23 +26,18 @@ type MembersProps = {
 
 const Members: FC<MembersProps> = ({ groupId }) => {
   const { t } = useTranslate("groups");
+  const { users, loading, success, reload } = useEnrichedUsers(
+    searchMembersByGroup,
+    {
+      groupId,
+    },
+  );
 
-  const {
-    data: users,
-    loading,
-    success,
-    reload,
-  } = useApi(searchMembersByGroup, {
-    groupId,
-  });
-
-  const isUsersListEmpty = !users || users.items?.length === 0;
+  const isUsersListEmpty = !users || users.length === 0;
   const [assignUsers, assignUsersModal] = useEntityModal(
     isOIDC ? AssignMemberModal : AssignMembersModal,
     reload,
-    {
-      assignedUsers: users?.items || [],
-    },
+    { assignedUsers: users },
   );
   const openAssignModal = () => assignUsers({ groupId });
   const [unassignMember, unassignMemberModal] = useEntityModal(
@@ -96,7 +91,7 @@ const Members: FC<MembersProps> = ({ groupId }) => {
   return (
     <>
       <EntityList
-        data={users?.items}
+        data={users}
         headers={membersListHeaders}
         sortProperty="username"
         loading={loading}

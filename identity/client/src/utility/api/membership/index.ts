@@ -13,11 +13,13 @@ import { SearchResponse } from "src/utility/api";
 import { TENANTS_ENDPOINT } from "src/utility/api/tenants";
 import { ROLES_ENDPOINT } from "src/utility/api/roles";
 
+export type MemberUser = Pick<User, "username">;
+
 export type GetGroupMembersParams = {
   groupId: string;
 };
 export const searchMembersByGroup: ApiDefinition<
-  SearchResponse<User>,
+  SearchResponse<MemberUser>,
   GetGroupMembersParams
 > = ({ groupId }) => apiPost(`${GROUPS_ENDPOINT}/${groupId}/users/search`);
 
@@ -25,7 +27,7 @@ export type GetTenantMembersParams = {
   tenantId: string;
 };
 export const getMembersByTenantId: ApiDefinition<
-  SearchResponse<User>,
+  SearchResponse<MemberUser>,
   GetTenantMembersParams
 > = ({ tenantId }) => apiPost(`${TENANTS_ENDPOINT}/${tenantId}/users/search`);
 
@@ -33,7 +35,7 @@ export type GetRoleMembersParams = {
   roleId: string;
 };
 export const getMembersByRole: ApiDefinition<
-  SearchResponse<User>,
+  SearchResponse<MemberUser>,
   GetRoleMembersParams
 > = ({ roleId }) => apiPost(`${ROLES_ENDPOINT}/${roleId}/users/search`);
 

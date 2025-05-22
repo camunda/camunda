@@ -19,8 +19,19 @@ export type User = {
   email: string;
 };
 
-export const searchUser: ApiDefinition<SearchResponse<User>> = () =>
-  apiPost(`${USERS_ENDPOINT}/search`);
+type SearchUserParams = {
+  usernames: string[];
+};
+
+export const searchUser: ApiDefinition<
+  SearchResponse<User>,
+  SearchUserParams | undefined
+> = (filterParams) => {
+  const params = filterParams?.usernames
+    ? { filter: { $in: filterParams.usernames } }
+    : undefined;
+  return apiPost(`${USERS_ENDPOINT}/search`, params);
+};
 
 type GetUserParams = {
   username: string;
