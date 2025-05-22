@@ -45,7 +45,9 @@ public class IncidentController {
         () ->
             incidentServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .resolveIncident(incidentKey));
+                // TODO: provide operation reference:
+                // https://github.com/camunda/camunda/issues/32270
+                .resolveIncident(incidentKey, null));
   }
 
   @CamundaPostMapping(path = "/search")

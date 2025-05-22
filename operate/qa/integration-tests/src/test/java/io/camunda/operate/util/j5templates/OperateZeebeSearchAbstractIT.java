@@ -17,10 +17,17 @@ import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
+import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.UserService;
 import io.camunda.operate.webapp.security.tenant.TenantService;
+import io.camunda.operate.webapp.zeebe.operation.adapter.ClientBasedAdapter;
+import io.camunda.operate.webapp.zeebe.operation.adapter.OperateServicesAdapter;
+import io.camunda.operate.webapp.zeebe.operation.process.modify.AddTokenHandler;
+import io.camunda.operate.webapp.zeebe.operation.process.modify.CancelTokenHandler;
+import io.camunda.operate.webapp.zeebe.operation.process.modify.ModifyProcessZeebeWrapper;
+import io.camunda.operate.webapp.zeebe.operation.process.modify.MoveTokenHandler;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
 import io.camunda.webapps.zeebe.StandalonePartitionSupplier;
@@ -45,6 +52,7 @@ import org.springframework.test.context.web.WebAppConfiguration;
     classes = {TestApplication.class},
     properties = {
       OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
+      OperateProperties.PREFIX + ".zeebe.compatibility.enabled = true",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
       OperateProperties.PREFIX + ".multiTenancy.enabled = false"
     })
@@ -77,7 +85,9 @@ public class OperateZeebeSearchAbstractIT {
   @Autowired protected BeanFactory beanFactory;
 
   @Autowired protected ObjectMapper objectMapper;
+  @Autowired protected FlowNodeInstanceReader flowNodeInstanceReader;
   protected OperateJ5Tester operateTester;
+  protected OperateServicesAdapter operateServicesAdapter;
 
   @BeforeAll
   public void beforeAllSetup() {
@@ -131,6 +141,16 @@ public class OperateZeebeSearchAbstractIT {
     doReturn(TenantService.AuthenticatedTenants.allTenants())
         .when(tenantService)
         .getAuthenticatedTenants();
+
+    final var camundaClient = zeebeContainerManager.getClient();
+    operateServicesAdapter =
+        new ClientBasedAdapter(
+            camundaClient,
+            new ModifyProcessZeebeWrapper(
+                camundaClient,
+                new AddTokenHandler(),
+                new CancelTokenHandler(flowNodeInstanceReader),
+                new MoveTokenHandler(flowNodeInstanceReader)));
 
     // Implementing tests can add any additional setup needed to run before each test
     runAdditionalBeforeEachSetup();

@@ -12,6 +12,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
+import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
+import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
+import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 import java.net.CookieManager;
@@ -58,10 +62,112 @@ public class TestRestOperateClient implements AutoCloseable {
   private HttpRequest loginRequest() {
     try {
       return createBuilder(
-              String.format("%sapi/login?username=%s&password=%s", endpoint, "demo", "demo"))
+              String.format("%sapi/login?username=%s&password=%s", endpoint, username, password))
           .POST(HttpRequest.BodyPublishers.ofString("{}"))
           .build();
     } catch (final URISyntaxException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public Either<Exception, HttpResponse<String>> deleteDecisionDefinition(
+      final long decisionDefinitionKey) {
+    try {
+      final var path = String.format("%sapi/decisions/%s", endpoint, decisionDefinitionKey);
+      final var request = createBuilder(path).DELETE().build();
+      return sendRequest(request);
+    } catch (final URISyntaxException e) {
+      return Either.left(e);
+    }
+  }
+
+  public Either<Exception, HttpResponse<String>> deleteProcessDefinition(
+      final long processDefinitionKey) {
+    try {
+      final var path = String.format("%sapi/processes/%s", endpoint, processDefinitionKey);
+      final var request = createBuilder(path).DELETE().build();
+      return sendRequest(request);
+    } catch (final URISyntaxException e) {
+      return Either.left(e);
+    }
+  }
+
+  public Either<Exception, HttpResponse<String>> cancelProcessInstance(
+      final long processInstanceKey) {
+    return createProcessInstanceOperationRequest(
+        processInstanceKey, new CreateOperationRequestDto(OperationType.CANCEL_PROCESS_INSTANCE));
+  }
+
+  public Either<Exception, HttpResponse<String>> migrateProcessInstance(
+      final CreateBatchOperationRequestDto requestBody) {
+    try {
+      final var path = String.format("%sapi/process-instances/batch-operation", endpoint);
+      final var request =
+          createBuilder(path)
+              .POST(
+                  HttpRequest.BodyPublishers.ofString(
+                      OBJECT_MAPPER.writeValueAsString(requestBody)))
+              .build();
+      return sendRequest(request);
+    } catch (final URISyntaxException e) {
+      return Either.left(e);
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public Either<Exception, HttpResponse<String>> modifyProcessInstance(
+      final long processInstanceKey, final ModifyProcessInstanceRequestDto modificationsBody) {
+    try {
+      final var path =
+          String.format("%sapi/process-instances/%s/modify", endpoint, processInstanceKey);
+      final var request =
+          createBuilder(path)
+              .POST(
+                  HttpRequest.BodyPublishers.ofString(
+                      OBJECT_MAPPER.writeValueAsString(modificationsBody)))
+              .build();
+      return sendRequest(request);
+    } catch (final URISyntaxException e) {
+      return Either.left(e);
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public Either<Exception, HttpResponse<String>> updateVariable(
+      final long processInstanceKey,
+      final String scopeId,
+      final String variableName,
+      final String variableValue) {
+    final var operationRequestBody = new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
+    operationRequestBody.setVariableScopeId(scopeId);
+    operationRequestBody.setVariableName(variableName);
+    operationRequestBody.setVariableValue(variableValue);
+    return createProcessInstanceOperationRequest(processInstanceKey, operationRequestBody);
+  }
+
+  public Either<Exception, HttpResponse<String>> resolveIncident(final long processInstanceKey) {
+    // Currently, incidents in Operate only require the process instance key to be resolved.
+    return createProcessInstanceOperationRequest(
+        processInstanceKey, new CreateOperationRequestDto(OperationType.RESOLVE_INCIDENT));
+  }
+
+  private Either<Exception, HttpResponse<String>> createProcessInstanceOperationRequest(
+      final long processInstanceKey, final CreateOperationRequestDto operationRequestDto) {
+    try {
+      final var path =
+          String.format("%sapi/process-instances/%s/operation", endpoint, processInstanceKey);
+      final var request =
+          createBuilder(path)
+              .POST(
+                  HttpRequest.BodyPublishers.ofString(
+                      OBJECT_MAPPER.writeValueAsString(operationRequestDto)))
+              .build();
+      return sendRequest(request);
+    } catch (final URISyntaxException e) {
+      return Either.left(e);
+    } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
     }
   }

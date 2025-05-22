@@ -39,6 +39,7 @@ class ProbesTestIT {
     static void setProperties(final DynamicPropertyRegistry registry) {
       registry.add("camunda.database.indexPrefix", () -> TestUtil.createRandomString(10));
       registry.add("camunda.database.schema-manager.createSchema", () -> true);
+      registry.add("camunda.operate.zeebe.compatibility.enabled", () -> true);
     }
 
     @Test
@@ -64,6 +65,7 @@ class ProbesTestIT {
     static void setProperties(final DynamicPropertyRegistry registry) {
       registry.add("camunda.database.indexPrefix", () -> TestUtil.createRandomString(10));
       registry.add("camunda.database.schema-manager.createSchema", () -> false);
+      registry.add("camunda.operate.zeebe.compatibility.enabled", () -> true);
     }
 
     @Test

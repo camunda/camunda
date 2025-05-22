@@ -7,19 +7,14 @@
  */
 package io.camunda.operate.webapp.zeebe.operation;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.CommandWithOperationReferenceStep;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
+import io.camunda.operate.webapp.zeebe.operation.adapter.OperateServicesAdapter;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
-import java.util.Arrays;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,13 +23,8 @@ import org.springframework.util.StringUtils;
 public abstract class AbstractOperationHandler implements OperationHandler {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractOperationHandler.class);
-  private static final List<Status.Code> RETRY_STATUSES =
-      Arrays.asList(
-          Status.UNAVAILABLE.getCode(),
-          Status.RESOURCE_EXHAUSTED.getCode(),
-          Status.DEADLINE_EXCEEDED.getCode());
 
-  @Autowired protected CamundaClient camundaClient;
+  @Autowired protected OperateServicesAdapter operationServicesAdapter;
   @Autowired protected BatchOperationWriter batchOperationWriter;
   @Autowired protected OperateProperties operateProperties;
   @Autowired protected Metrics metrics;
@@ -45,7 +35,7 @@ public abstract class AbstractOperationHandler implements OperationHandler {
     try {
       handleWithException(operation);
     } catch (final Exception ex) {
-      if (isExceptionRetriable(ex)) {
+      if (operationServicesAdapter.isExceptionRetriable(ex)) {
         // leave the operation locked -> when it expires, operation will be retried
         LOGGER.error(
             String.format(
@@ -70,24 +60,8 @@ public abstract class AbstractOperationHandler implements OperationHandler {
 
   // Needed for tests
   @Override
-  public void setCamundaClient(final CamundaClient camundaClient) {
-    this.camundaClient = camundaClient;
-  }
-
-  private boolean isExceptionRetriable(final Exception ex) {
-    final StatusRuntimeException cause = extractStatusRuntimeException(ex);
-    return cause != null && RETRY_STATUSES.contains(cause.getStatus().getCode());
-  }
-
-  private StatusRuntimeException extractStatusRuntimeException(final Throwable ex) {
-    if (ex.getCause() != null) {
-      if (ex.getCause() instanceof StatusRuntimeException) {
-        return (StatusRuntimeException) ex.getCause();
-      } else {
-        return extractStatusRuntimeException(ex.getCause());
-      }
-    }
-    return null;
+  public void setOperateAdapter(final OperateServicesAdapter operateAdapter) {
+    operationServicesAdapter = operateAdapter;
   }
 
   protected void recordCommandMetric(final OperationEntity operation) {
@@ -142,18 +116,5 @@ public abstract class AbstractOperationHandler implements OperationHandler {
       LOGGER.debug("Operation {} was sent to Zeebe", operation.getId());
     }
     recordCommandMetric(operation);
-  }
-
-  protected static <T extends CommandWithOperationReferenceStep<T>> T withOperationReference(
-      final T command, final String id) {
-    try {
-      final long operationReference = Long.parseLong(id);
-      command.operationReference(operationReference);
-    } catch (final NumberFormatException e) {
-      LOGGER.debug(
-          "The operation reference provided is not a number: {}. Ignoring propagating it to zeebe commands.",
-          id);
-    }
-    return command;
   }
 }

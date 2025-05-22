@@ -661,7 +661,7 @@ public class JobControllerTest extends RestControllerTest {
   @Test
   void shouldUpdateJob() {
     // given
-    when(jobServices.updateJob(anyLong(), any()))
+    when(jobServices.updateJob(anyLong(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -684,13 +684,14 @@ public class JobControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(jobServices).updateJob(1L, new UpdateJobChangeset(5, 1000L));
+    // TODO: provide operation reference: https://github.com/camunda/camunda/issues/32270
+    Mockito.verify(jobServices).updateJob(1L, new UpdateJobChangeset(5, 1000L), null);
   }
 
   @Test
   void shouldUpdateJobWithOnlyRetries() {
     // given
-    when(jobServices.updateJob(anyLong(), any()))
+    when(jobServices.updateJob(anyLong(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -712,13 +713,14 @@ public class JobControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(jobServices).updateJob(1L, new UpdateJobChangeset(5, null));
+    // TODO: provide operation reference: https://github.com/camunda/camunda/issues/32270
+    Mockito.verify(jobServices).updateJob(1L, new UpdateJobChangeset(5, null), null);
   }
 
   @Test
   void shouldUpdateJobWithOnlyTimeout() {
     // given
-    when(jobServices.updateJob(anyLong(), any()))
+    when(jobServices.updateJob(anyLong(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
@@ -739,7 +741,8 @@ public class JobControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(jobServices).updateJob(1L, new UpdateJobChangeset(null, 1000L));
+    // TODO: provide operation reference: https://github.com/camunda/camunda/issues/32270
+    Mockito.verify(jobServices).updateJob(1L, new UpdateJobChangeset(null, 1000L), null);
   }
 
   @Test

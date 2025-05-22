@@ -22,6 +22,7 @@ import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
+import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.DecisionRestService;
 import io.camunda.operate.webapp.rest.ProcessRestService;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
@@ -29,6 +30,12 @@ import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
+import io.camunda.operate.webapp.zeebe.operation.adapter.ClientBasedAdapter;
+import io.camunda.operate.webapp.zeebe.operation.adapter.OperateServicesAdapter;
+import io.camunda.operate.webapp.zeebe.operation.process.modify.AddTokenHandler;
+import io.camunda.operate.webapp.zeebe.operation.process.modify.CancelTokenHandler;
+import io.camunda.operate.webapp.zeebe.operation.process.modify.ModifyProcessZeebeWrapper;
+import io.camunda.operate.webapp.zeebe.operation.process.modify.MoveTokenHandler;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
@@ -57,7 +64,6 @@ import org.junit.Rule;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
@@ -71,10 +77,9 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   @Autowired public BeanFactory beanFactory;
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
 
-  // we don't want to create CamundaClient, we will rather use the one from
-  @MockBean protected CamundaClient mockedCamundaClient;
-
   protected CamundaClient camundaClient;
+  protected OperateServicesAdapter operateServicesAdapter;
+  @Autowired protected FlowNodeInstanceReader flowNodeInstanceReader;
   @Autowired protected PartitionHolder partitionHolder;
   @Autowired protected ImportPositionHolder importPositionHolder;
   @Autowired protected ProcessCache processCache;
@@ -211,6 +216,14 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     assertThat(zeebeContainer).as("zeebeContainer is not null").isNotNull();
 
     camundaClient = getClient();
+    operateServicesAdapter =
+        new ClientBasedAdapter(
+            camundaClient,
+            new ModifyProcessZeebeWrapper(
+                camundaClient,
+                new AddTokenHandler(),
+                new CancelTokenHandler(flowNodeInstanceReader),
+                new MoveTokenHandler(flowNodeInstanceReader)));
     workerName = TestUtil.createRandomString(10);
 
     tester =

@@ -101,11 +101,11 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   @Before
   public void before() {
     super.before();
-    cancelProcessInstanceHandler.setCamundaClient(super.getClient());
-    updateRetriesHandler.setCamundaClient(super.getClient());
-    updateVariableHandler.setCamundaClient(super.getClient());
-    deleteProcessDefinitionHandler.setCamundaClient(super.getClient());
-    deleteDecisionDefinitionHandler.setCamundaClient(super.getClient());
+    cancelProcessInstanceHandler.setOperateAdapter(operateServicesAdapter);
+    updateRetriesHandler.setOperateAdapter(operateServicesAdapter);
+    updateVariableHandler.setOperateAdapter(operateServicesAdapter);
+    deleteProcessDefinitionHandler.setOperateAdapter(operateServicesAdapter);
+    deleteDecisionDefinitionHandler.setOperateAdapter(operateServicesAdapter);
 
     mockMvc = mockMvcTestRule.getMockMvc();
     initialBatchOperationMaxSize = operateProperties.getBatchOperationMaxSize();
