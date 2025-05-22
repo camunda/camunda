@@ -20,7 +20,8 @@ public record DecisionRequirementsFilter(
     List<String> names,
     List<Integer> versions,
     List<String> decisionRequirementsIds,
-    List<String> tenantIds)
+    List<String> tenantIds,
+    List<String> resourceNames)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<DecisionRequirementsFilter> {
@@ -30,6 +31,7 @@ public record DecisionRequirementsFilter(
     private List<Integer> versions;
     private List<String> decisionRequirementsIds;
     private List<String> tenantIds;
+    private List<String> resourceNames;
 
     public Builder decisionRequirementsKeys(final List<Long> values) {
       decisionRequirementsKeys = addValuesToList(decisionRequirementsKeys, values);
@@ -76,6 +78,15 @@ public record DecisionRequirementsFilter(
       return tenantIds(collectValuesAsList(values));
     }
 
+    public Builder resourceNames(final List<String> values) {
+      resourceNames = addValuesToList(resourceNames, values);
+      return this;
+    }
+
+    public Builder resourceNames(final String... values) {
+      return resourceNames(collectValuesAsList(values));
+    }
+
     @Override
     public DecisionRequirementsFilter build() {
       return new DecisionRequirementsFilter(
@@ -83,7 +94,8 @@ public record DecisionRequirementsFilter(
           Objects.requireNonNullElse(names, Collections.emptyList()),
           Objects.requireNonNullElse(versions, Collections.emptyList()),
           Objects.requireNonNullElse(decisionRequirementsIds, Collections.emptyList()),
-          Objects.requireNonNullElse(tenantIds, Collections.emptyList()));
+          Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
+          Objects.requireNonNullElse(resourceNames, Collections.emptyList()));
     }
   }
 }

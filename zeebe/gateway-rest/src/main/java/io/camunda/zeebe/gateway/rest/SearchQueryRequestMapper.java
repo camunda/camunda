@@ -956,6 +956,7 @@ public final class SearchQueryRequestMapper {
               Optional.ofNullable(f.getDecisionRequirementsId())
                   .ifPresent(builder::decisionRequirementsIds);
               Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
+              Optional.ofNullable(f.getResourceName()).ifPresent(builder::resourceNames);
             });
 
     return builder.build();
