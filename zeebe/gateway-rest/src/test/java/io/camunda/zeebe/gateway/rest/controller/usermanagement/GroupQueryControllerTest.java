@@ -75,7 +75,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
   private static final String GROUP_BASE_URL = "/v2/groups";
   private static final String GROUP_SEARCH_URL = GROUP_BASE_URL + "/search";
 
-  private static final List<GroupMemberEntity> GROUP_MEMBER_ENTITIES =
+  private static final List<GroupMemberEntity> GROUP_USER_ENTITIES =
       List.of(
           new GroupMemberEntity(Strings.newRandomValidIdentityId(), EntityType.USER),
           new GroupMemberEntity(Strings.newRandomValidIdentityId(), EntityType.USER),
@@ -93,6 +93,34 @@ public class GroupQueryControllerTest extends RestControllerTest {
           },
           {
             "username":"%s"
+          }
+        ],
+        "page":{
+          "totalItems":3,
+          "firstSortValues":["f"],
+          "lastSortValues":["v"]
+        }
+      }
+      """;
+
+  private static final List<GroupMemberEntity> GROUP_CLIENT_ENTITIES =
+      List.of(
+          new GroupMemberEntity(Strings.newRandomValidIdentityId(), EntityType.CLIENT),
+          new GroupMemberEntity(Strings.newRandomValidIdentityId(), EntityType.CLIENT),
+          new GroupMemberEntity(Strings.newRandomValidIdentityId(), EntityType.CLIENT));
+
+  private static final String CLIENT_RESPONSE =
+      """
+      {
+        "items":[
+          {
+            "clientId":"%s"
+          },
+          {
+            "clientId":"%s"
+          },
+          {
+            "clientId":"%s"
           }
         ],
         "page":{
@@ -145,9 +173,15 @@ public class GroupQueryControllerTest extends RestControllerTest {
 
   private static final String EXPECTED_USER_RESPONSE =
       USER_RESPONSE.formatted(
-          GROUP_MEMBER_ENTITIES.get(0).id(),
-          GROUP_MEMBER_ENTITIES.get(1).id(),
-          GROUP_MEMBER_ENTITIES.get(2).id());
+          GROUP_USER_ENTITIES.get(0).id(),
+          GROUP_USER_ENTITIES.get(1).id(),
+          GROUP_USER_ENTITIES.get(2).id());
+
+  private static final String EXPECTED_CLIENT_RESPONSE =
+      CLIENT_RESPONSE.formatted(
+          GROUP_CLIENT_ENTITIES.get(0).id(),
+          GROUP_CLIENT_ENTITIES.get(1).id(),
+          GROUP_CLIENT_ENTITIES.get(2).id());
 
   private static final List<MappingEntity> MAPPNING_ENTITIES =
       List.of(
@@ -403,8 +437,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
     when(groupServices.searchMembers(any(GroupQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<GroupMemberEntity>()
-                .total(GROUP_MEMBER_ENTITIES.size())
-                .items(GROUP_MEMBER_ENTITIES)
+                .total(GROUP_USER_ENTITIES.size())
+                .items(GROUP_USER_ENTITIES)
                 .firstSortValues(new Object[] {"f"})
                 .lastSortValues(new Object[] {"v"})
                 .build());
@@ -436,8 +470,8 @@ public class GroupQueryControllerTest extends RestControllerTest {
     when(groupServices.searchMembers(any(GroupQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<GroupMemberEntity>()
-                .total(GROUP_MEMBER_ENTITIES.size())
-                .items(GROUP_MEMBER_ENTITIES)
+                .total(GROUP_USER_ENTITIES.size())
+                .items(GROUP_USER_ENTITIES)
                 .firstSortValues(new Object[] {"f"})
                 .lastSortValues(new Object[] {"v"})
                 .build());
@@ -590,6 +624,71 @@ public class GroupQueryControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
         .json(EXPECTED_ROLE_RESPONSE);
+  }
+
+  @Test
+  void shouldSearchGroupClientsWithSorting() {
+    // given
+    when(groupServices.searchMembers(any(GroupQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<GroupMemberEntity>()
+                .total(GROUP_CLIENT_ENTITIES.size())
+                .items(GROUP_CLIENT_ENTITIES)
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/%s/clients/search".formatted(GROUP_BASE_URL, "groupId"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "sort": [{"field": "clientId", "order": "ASC"}]
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_CLIENT_RESPONSE);
+  }
+
+  @Test
+  void shouldSearchGroupClientsWithEmptyQuery() {
+    // given
+    when(groupServices.searchMembers(any(GroupQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<GroupMemberEntity>()
+                .total(GROUP_CLIENT_ENTITIES.size())
+                .items(GROUP_CLIENT_ENTITIES)
+                .firstSortValues(new Object[] {"f"})
+                .lastSortValues(new Object[] {"v"})
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/%s/clients/search".formatted(GROUP_BASE_URL, "groupId"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_CLIENT_RESPONSE);
   }
 
   @ParameterizedTest
