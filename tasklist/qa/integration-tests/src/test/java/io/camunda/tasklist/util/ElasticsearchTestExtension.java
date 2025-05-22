@@ -16,11 +16,13 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.tasklist.entities.TasklistEntity;
 import io.camunda.tasklist.property.TasklistElasticsearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.schema.IndexMapping;
 import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
+import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.RecordsReader;
@@ -40,6 +42,9 @@ import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
@@ -52,6 +57,7 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.ReindexRequest;
+import org.elasticsearch.xcontent.XContentType;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -351,6 +357,20 @@ public class ElasticsearchTestExtension
     } catch (final ElasticsearchException | IOException e) {
       LOGGER.error("Could not delete index {}", indexName, e);
     }
+  }
+
+  @Override
+  public <T extends TasklistEntity<T>> void bulkIndex(
+      final IndexDescriptor index, final List<T> documents) throws IOException {
+    final var bulkRequest = new BulkRequest().setRefreshPolicy(RefreshPolicy.IMMEDIATE);
+    for (final var document : documents) {
+      bulkRequest.add(
+          new IndexRequest()
+              .index(index.getFullQualifiedName())
+              .id(document.getId())
+              .source(objectMapper.writeValueAsString(document), XContentType.JSON));
+    }
+    esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
   }
 
   private boolean areIndicesAreCreated(final String indexPrefix, final int minCountOfIndices)

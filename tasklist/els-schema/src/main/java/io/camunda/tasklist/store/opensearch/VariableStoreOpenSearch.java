@@ -248,13 +248,13 @@ public class VariableStoreOpenSearch implements VariableStore {
       return scrollInChunks(
           processInstanceIds,
           maxTermsCount,
-          chumk -> {
+          chunk -> {
             final TermsQuery processInstanceKeyQuery =
                 TermsQuery.of(
                     t ->
                         t.field(FlowNodeInstanceIndex.PROCESS_INSTANCE_ID)
                             .terms(
-                                terms -> terms.value(chumk.stream().map(FieldValue::of).toList())));
+                                terms -> terms.value(chunk.stream().map(FieldValue::of).toList())));
 
             final TermQuery stateActiveQuery =
                 TermQuery.of(
