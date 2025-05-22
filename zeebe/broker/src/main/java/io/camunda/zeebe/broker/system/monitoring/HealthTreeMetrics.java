@@ -44,7 +44,7 @@ public final class HealthTreeMetrics implements ComponentTreeListener {
    * @param status to be mapped
    * @return a numerical value mapped from status that can be reported by the gauge
    */
-  private static int statusValue(final HealthStatus status) {
+  public static int statusValue(final HealthStatus status) {
     return switch (status) {
       case HEALTHY -> 1;
       case UNHEALTHY -> -1;
