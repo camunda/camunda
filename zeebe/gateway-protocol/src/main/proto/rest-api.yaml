@@ -1834,6 +1834,8 @@ paths:
       summary: Create a batch operation to cancel process instances
       description: |
         Cancels multiple running process instances.
+        Since only ACTIVE root instances can be cancelled, any given filters for state and
+        parentProcessInstanceKey are ignored and overridden during this batch operation.
       requestBody:
         required: false
         content:
@@ -1870,6 +1872,8 @@ paths:
       summary: Create a batch operation to resolve incidents of process instances
       description: |
         Resolves multiple instances of process instances.
+        Since only process instances with ACTIVE state can have unresolved incidents, any given
+        filters for state are ignored and overridden during this batch operation.
       requestBody:
         required: false
         content:
@@ -1906,6 +1910,8 @@ paths:
       summary: Create a batch operation to migrate process instances
       description: |
         Migrate multiple instances of process instances.
+        Since only process instances with ACTIVE state can be migrated, any given
+        filters for state are ignored and overridden during this batch operation.
       requestBody:
         required: true
         content:
@@ -1942,6 +1948,8 @@ paths:
       summary: Create a batch operation to modify process instances
       description: |
         Modify multiple process instances.
+        Since only process instances with ACTIVE state can be modified, any given
+        filters for state are ignored and overridden during this batch operation.
       requestBody:
         required: true
         content:
