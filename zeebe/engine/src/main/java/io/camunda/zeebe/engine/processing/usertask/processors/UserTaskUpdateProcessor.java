@@ -25,9 +25,12 @@ import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(UserTaskUpdateProcessor.class);
   private static final String DEFAULT_ACTION = "update";
 
   private final StateWriter stateWriter;
@@ -81,7 +84,7 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
     } else {
       userTaskState
           .findRecordRequestMetadata(userTaskKey)
-          .ifPresent(
+          .ifPresentOrElse(
               metadata -> {
                 switch (metadata.getTriggerType()) {
                   case USER_TASK -> {
@@ -101,7 +104,7 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
                       // merge logic and write follow-up event.
                       variableState
                           .findVariableDocumentState(userTaskRecord.getElementInstanceKey())
-                          .ifPresent(
+                          .ifPresentOrElse(
                               variableDocumentState -> {
                                 final var variableDocumentRecord =
                                     variableDocumentState.getRecord();
@@ -123,12 +126,28 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
                                     ValueType.VARIABLE_DOCUMENT,
                                     metadata.getRequestId(),
                                     metadata.getRequestStreamId());
+                              },
+                              () -> {
+                                LOGGER.warn(
+                                    "No VariableDocumentState found for elementInstanceKey={} during task update. "
+                                        + "Skipping variable merge, only writing 'USER_TASK.UPDATED'.",
+                                    userTaskRecord.getElementInstanceKey());
+
+                                stateWriter.appendFollowUpEvent(
+                                    userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
                               });
                   default ->
                       throw new IllegalArgumentException(
                           "Unexpected user task transition trigger type: '%s'"
                               .formatted(metadata.getTriggerType()));
                 }
+              },
+              () -> {
+                LOGGER.warn(
+                    "No request metadata found for userTaskKey={}, writing 'USER_TASK.UPDATED' without response.",
+                    userTaskKey);
+                stateWriter.appendFollowUpEvent(
+                    userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
               });
     }
   }
