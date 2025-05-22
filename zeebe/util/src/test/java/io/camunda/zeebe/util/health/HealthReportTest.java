@@ -10,8 +10,12 @@ package io.camunda.zeebe.util.health;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class HealthReportTest {
 
@@ -38,5 +42,24 @@ public class HealthReportTest {
 
     assertThat(root).isPresent();
     assertThat(root.get()).isEqualTo(expected);
+  }
+
+  @ParameterizedTest
+  @MethodSource("twoEnums")
+  public void shouldReportWorstHealthWhenOneChildIsAdded(
+      final HealthStatus parentStatus, final HealthStatus childStatus) {
+    final var report = new HealthReport("root", parentStatus, null, Map.of());
+    final var withChild = report.withChild(new HealthReport("child", childStatus, null, Map.of()));
+    assertThat(withChild.status()).isEqualTo(parentStatus.combine(childStatus));
+  }
+
+  public static Stream<Object[]> twoEnums() {
+    final var list = new ArrayList<Object[]>();
+    for (final var parent : HealthStatus.values()) {
+      for (final var child : HealthStatus.values()) {
+        list.add(new Object[] {parent, child});
+      }
+    }
+    return list.stream();
   }
 }
