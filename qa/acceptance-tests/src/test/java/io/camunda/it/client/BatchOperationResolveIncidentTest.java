@@ -25,13 +25,16 @@ import io.camunda.client.api.search.enums.BatchOperationItemState;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
@@ -46,8 +49,10 @@ public class BatchOperationResolveIncidentTest {
   final List<Long> activeIncidents = new ArrayList<>();
 
   @BeforeEach
-  public void beforeEach() {
-    testScopeId = UUID.randomUUID().toString();
+  public void beforeEach(final TestInfo testInfo) {
+    Objects.requireNonNull(camundaClient);
+    testScopeId =
+        testInfo.getTestMethod().map(Method::toString).orElse(UUID.randomUUID().toString());
 
     final var processes =
         List.of("service_tasks_v1.bpmn", "service_tasks_v2.bpmn", "incident_process_v1.bpmn");

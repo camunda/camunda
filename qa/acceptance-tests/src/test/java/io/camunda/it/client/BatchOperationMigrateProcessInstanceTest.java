@@ -34,6 +34,7 @@ import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +45,7 @@ import java.util.stream.IntStream;
 import org.assertj.core.api.ThrowingConsumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
@@ -53,9 +55,10 @@ public class BatchOperationMigrateProcessInstanceTest {
   private static CamundaClient client;
 
   @Test
-  void shouldMigrateProcessInstancesWithBatch() {
+  void shouldMigrateProcessInstancesWithBatch(final TestInfo testInfo) {
     // given
-    final String testScopeId = UUID.randomUUID().toString();
+    final String testScopeId =
+        testInfo.getTestMethod().map(Method::toString).orElse(UUID.randomUUID().toString());
 
     final long sourceProcessDefinitionKey =
         deployProcessAndWaitForIt(client, "process/migration-process_v1.bpmn")

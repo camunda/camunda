@@ -31,6 +31,7 @@ import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +46,7 @@ import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
@@ -59,8 +61,10 @@ public class BatchOperationModifyProcessInstanceTest {
   final List<Long> processInstancesPath2 = new ArrayList<>();
 
   @BeforeEach
-  public void beforeEach() {
-    testScopeId = UUID.randomUUID().toString();
+  public void beforeEach(final TestInfo testInfo) {
+    Objects.requireNonNull(camundaClient);
+    testScopeId =
+        testInfo.getTestMethod().map(Method::toString).orElse(UUID.randomUUID().toString());
 
     Objects.requireNonNull(camundaClient);
     final List<String> processes =
