@@ -181,7 +181,9 @@ describe.skip('VariablePanel', () => {
 
     modificationsStore.enableModificationMode();
 
-    render(<VariablePanel />, {wrapper: getWrapper()});
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      wrapper: getWrapper(),
+    });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
@@ -362,7 +364,10 @@ describe.skip('VariablePanel', () => {
   it('should display correct state for a flow node that has no running or finished tokens on it', async () => {
     modificationsStore.enableModificationMode();
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
@@ -539,7 +544,10 @@ describe.skip('VariablePanel', () => {
 
     modificationsStore.enableModificationMode();
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(

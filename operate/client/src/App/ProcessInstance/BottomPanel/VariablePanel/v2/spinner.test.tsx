@@ -163,7 +163,10 @@ describe.skip('VariablePanel spinner', () => {
   });
 
   it('should display spinner for variables tab when switching between tabs', async () => {
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
@@ -190,7 +193,9 @@ describe.skip('VariablePanel spinner', () => {
   });
 
   it('should display spinner on second variable fetch', async () => {
-    render(<VariablePanel />, {wrapper: getWrapper()});
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      wrapper: getWrapper(),
+    });
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     mockFetchVariables().withDelay([createVariable()]);
@@ -213,7 +218,10 @@ describe.skip('VariablePanel spinner', () => {
   it('should not display spinner for variables tab when switching between tabs if scope does not exist', async () => {
     modificationsStore.enableModificationMode();
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     expect(screen.getByText('testVariableName')).toBeInTheDocument();

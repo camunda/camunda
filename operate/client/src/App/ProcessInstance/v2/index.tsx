@@ -11,7 +11,7 @@ import {InstanceDetail} from '../../Layout/InstanceDetail';
 import {Breadcrumb} from '../Breadcrumb/v2';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
-import {useEffect, useRef} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {reaction, when} from 'mobx';
 import {variablesStore} from 'modules/stores/variables';
@@ -33,7 +33,6 @@ import {LastModification} from '../LastModification';
 import {VariablePanel} from '../BottomPanel/VariablePanel/v2';
 import {Forbidden} from 'modules/components/Forbidden';
 import {Frame} from 'modules/components/Frame';
-import {processInstanceListenersStore} from 'modules/stores/processInstanceListeners';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useProcessTitle} from 'modules/queries/processInstance/useProcessTitle';
@@ -145,6 +144,9 @@ const ProcessInstance: React.FC = observer(() => {
     };
   });
 
+  const [isListenerTabSelected, setListenerTabVisibility] =
+    useState<boolean>(false);
+
   const {
     isModificationModeEnabled,
     state: {modifications, status: modificationStatus},
@@ -153,10 +155,6 @@ const ProcessInstance: React.FC = observer(() => {
   const isBreadcrumbVisible = callHierarchy && callHierarchy.items.length > 0;
 
   const hasPendingModifications = modifications.length > 0;
-
-  const {
-    state: {isListenerTabSelected},
-  } = processInstanceListenersStore;
 
   if (error?.response?.status === HTTP_STATUS_FORBIDDEN) {
     return <Forbidden />;
@@ -193,7 +191,9 @@ const ProcessInstance: React.FC = observer(() => {
             bottomPanel={
               <BottomPanel $shouldExpandPanel={isListenerTabSelected}>
                 <FlowNodeInstanceLog />
-                <VariablePanel />
+                <VariablePanel
+                  setListenerTabVisibility={setListenerTabVisibility}
+                />
               </BottomPanel>
             }
             footer={
