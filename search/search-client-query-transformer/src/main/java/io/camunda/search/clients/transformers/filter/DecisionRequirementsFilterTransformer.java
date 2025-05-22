@@ -15,6 +15,7 @@ import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex.DECISION_REQUIREMENTS_ID;
 import static io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex.KEY;
 import static io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex.NAME;
+import static io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex.RESOURCE_NAME;
 import static io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex.VERSION;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -37,8 +38,15 @@ public final class DecisionRequirementsFilterTransformer
     final var decisionRequirementsIdsQuery =
         getDecisionRequirementsIdsQuery(filter.decisionRequirementsIds());
     final var tenantIdsQuery = getTenantIdsQuery(filter.tenantIds());
+    final var resourceNamesQuery = getResourceNamesQuery(filter.resourceNames());
 
-    return and(keysQuery, namesQuery, versionsQuery, decisionRequirementsIdsQuery, tenantIdsQuery);
+    return and(
+        keysQuery,
+        namesQuery,
+        versionsQuery,
+        decisionRequirementsIdsQuery,
+        tenantIdsQuery,
+        resourceNamesQuery);
   }
 
   private SearchQuery getKeysQuery(final List<Long> keys) {
@@ -59,5 +67,9 @@ public final class DecisionRequirementsFilterTransformer
 
   private SearchQuery getTenantIdsQuery(final List<String> tenantIds) {
     return stringTerms(TENANT_ID, tenantIds);
+  }
+
+  private SearchQuery getResourceNamesQuery(final List<String> resourceNames) {
+    return stringTerms(RESOURCE_NAME, resourceNames);
   }
 }
