@@ -137,7 +137,10 @@ describe.skip('New Variable Modifications', () => {
     jest.useFakeTimers();
     modificationsStore.enableModificationMode();
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitForElementToBeRemoved(() =>
       screen.getByTestId('variables-skeleton'),
     );
@@ -165,7 +168,10 @@ describe.skip('New Variable Modifications', () => {
 
       modificationsStore.enableModificationMode();
 
-      const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+      const {user} = render(
+        <VariablePanel setListenerTabVisibility={jest.fn()} />,
+        {wrapper: getWrapper()},
+      );
       await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
       await waitFor(() => {
@@ -200,7 +206,10 @@ describe.skip('New Variable Modifications', () => {
       jest.useFakeTimers();
       modificationsStore.enableModificationMode();
 
-      const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+      const {user} = render(
+        <VariablePanel setListenerTabVisibility={jest.fn()} />,
+        {wrapper: getWrapper()},
+      );
       await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
       await waitFor(() => {
@@ -269,7 +278,10 @@ describe.skip('New Variable Modifications', () => {
     jest.useFakeTimers();
     modificationsStore.enableModificationMode();
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     await waitFor(() => {
@@ -306,7 +318,7 @@ describe.skip('New Variable Modifications', () => {
 
       const {user} = render(
         <>
-          <VariablePanel />
+          <VariablePanel setListenerTabVisibility={jest.fn()} />
           <LastModification />
         </>,
         {wrapper: getWrapper()},
@@ -493,7 +505,10 @@ describe.skip('New Variable Modifications', () => {
       jest.useFakeTimers();
       modificationsStore.enableModificationMode();
 
-      const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+      const {user} = render(
+        <VariablePanel setListenerTabVisibility={jest.fn()} />,
+        {wrapper: getWrapper()},
+      );
       await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
       await waitFor(() => {
@@ -551,7 +566,10 @@ describe.skip('New Variable Modifications', () => {
     jest.useFakeTimers();
     modificationsStore.enableModificationMode();
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     await waitFor(() => {
@@ -650,7 +668,10 @@ describe.skip('New Variable Modifications', () => {
       },
     );
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     expect(
       await screen.findByText('The Flow Node has no Variables'),
     ).toBeInTheDocument();
