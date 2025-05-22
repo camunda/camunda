@@ -1,18 +1,38 @@
 #!/bin/bash
 
-set -euo pipefail
+set -uo pipefail
 
-# Ensure these environment variables are set before running the script:
-# export GITHUB_TOKEN="your_github_token"
-
-# Check if required environment variables are set
-if [ -z "${GITHUB_TOKEN:-}" ]; then
-    echo "Error: GITHUB_TOKEN environment variable is not set."
-    exit 1
+# Ensure Github CLI is installed before running this script
+if ! command -v gh >/dev/null 2>&1; then
+  echo "Error: GitHub CLI (gh) is not installed. Please install it before running this script: https://cli.github.com/"
+  exit 1
 fi
 
-LOCAL_RENOVATE_CONFIG="../.././.github/renovate.json"
-REPO_NAME="camunda/camunda"
+# Login to GitHub CLI if not already authenticated
+if [ ! "$(gh auth status)" ]; then
+  gh auth login -p https -h github.com -w
+fi
+
+# Autodetect a local Renovate config file if not provided
+if [ -z "${LOCAL_RENOVATE_CONFIG:-}" ] || [ ! -f "$LOCAL_RENOVATE_CONFIG" ]; then
+  found_config=$(find "$(pwd)" -type f -name 'renovate.json*' | grep -E -o "$(pwd)/(.github/)?renovate\.json[^/]*" | head -n 1)
+  if [ -n "$found_config" ]; then
+    LOCAL_RENOVATE_CONFIG="$found_config"
+    echo "Found alternative Renovate config: $LOCAL_RENOVATE_CONFIG"
+  else
+    echo "Error: No Renovate config file found (searched for 'renovate.json*')."
+    exit 1
+  fi
+fi
+
+# detect the repository name from the git remote URL if not provided
+if [ -z "${REPO_NAME:-}" ]; then
+  REPO_NAME=$(gh repo view --json name,owner -q '.owner.login + "/" + .name' )
+fi
+
+set -e
+
+GITHUB_TOKEN=$(gh auth token)
 LOCAL_CACHE_DIR="$(pwd)/renovate_cache"
 LOCAL_BASE_DIR="$(pwd)/renovate"
 
@@ -24,7 +44,7 @@ mkdir -p "${LOCAL_CACHE_DIR}"
 mkdir -p "${LOCAL_BASE_DIR}"
 
 echo "Processing repository: ${REPO_NAME}"
-echo "Using Renovate configuration from: ${LOCAL_RENOVATE_CONFIG}"
+echo "Using local renovate configuration from: ${LOCAL_RENOVATE_CONFIG}"
 echo "Using local Renovate cache at: ${LOCAL_CACHE_DIR}"
 
 start_time=$(date +%s)
@@ -41,7 +61,7 @@ docker run --rm \
   -e RENOVATE_REPOSITORIES="${REPO_NAME}" \
   -e RENOVATE_REQUIRE_CONFIG="ignored" \
   -e RENOVATE_CONFIG_FILE="/usr/src/app/mounted-renovate-config.json" \
-  -v "$(pwd)/${LOCAL_RENOVATE_CONFIG}:/usr/src/app/mounted-renovate-config.json:ro" \
+  -v "${LOCAL_RENOVATE_CONFIG}:/usr/src/app/mounted-renovate-config.json:ro" \
   -e RENOVATE_BASE_DIR="/tmp/renovate" \
   -v "${LOCAL_BASE_DIR}:/tmp/renovate" \
   -e RENOVATE_CACHE_DIR="/cache/renovate" \
