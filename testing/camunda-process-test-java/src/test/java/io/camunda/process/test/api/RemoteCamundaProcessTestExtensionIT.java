@@ -7,8 +7,6 @@
  */
 package io.camunda.process.test.api;
 
-import static io.camunda.process.test.api.assertions.ElementSelectors.byName;
-
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.process.test.impl.containers.CamundaContainer;
@@ -18,45 +16,37 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+// We use Testcontainers to start a "remote" Camunda container that is not managed by the Camunda
+// process test extension.
 @Testcontainers
 public class RemoteCamundaProcessTestExtensionIT {
 
-  // start Camunda in Testcontainer
-
+  // 1: Start the Camunda container
   @Order(0)
   @Container
-  private static final CamundaContainer camundaContainer =
+  private static final CamundaContainer REMOTE_CAMUNDA_CONTAINER =
       new ContainerFactory()
           .createCamundaContainer(
               ContainerRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME,
               ContainerRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_VERSION);
 
-  // bind extension to "remote" Camunda
+  // 2: Bind the extension to the Camunda container
   @Order(1)
   @RegisterExtension
+  private static final BindCamundaProcessTestExtension BIND_EXTENSION_TO_REMOTE =
+      new BindCamundaProcessTestExtension();
+
+  // 3: Start the extension and connect to the Camunda container
+  @Order(2)
+  @RegisterExtension
   private static CamundaProcessTestExtension EXTENSION =
-      new CamundaProcessTestExtension()
-          .withRuntimeMode(CamundaRuntimeMode.REMOTE)
-          .withCamundaClient(
-              () ->
-                  CamundaClient.newClientBuilder()
-                      .usePlaintext()
-                      .restAddress(camundaContainer.getRestApiAddress())
-                      .grpcAddress(camundaContainer.getGrpcApiAddress()))
-      //          .withRemoteCamundaMonitoringApiAddress(
-      //              camundaContainer.getMonitoringApiAddress().toString())
-      //          .withCamundaClient(
-      //              () ->
-      //                  CamundaClient.newClientBuilder()
-      //                      .usePlaintext()
-      //                      .restAddress(URI.create("http://localhost:8080"))
-      //                      .grpcAddress(URI.create("http://localhost:26500")))
-      //          .withRemoteCamundaMonitoringApiAddress("http://localhost:9600")
-      ;
+      new CamundaProcessTestExtension().withRuntimeMode(CamundaRuntimeMode.REMOTE);
 
   // to be injected
   private CamundaClient client;
@@ -66,32 +56,39 @@ public class RemoteCamundaProcessTestExtensionIT {
   void shouldCreateProcessInstance() {
     // given
     final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("test-process")
-            .startEvent()
-            .name("start")
-            .zeebeOutputExpression("\"active\"", "status")
-            .userTask()
-            .name("task")
-            .endEvent()
-            .name("end")
-            .zeebeOutputExpression("\"ok\"", "result")
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .serviceTask("task", t -> t.name("Task").zeebeJobType("task"))
+            .endEvent("end")
             .done();
 
-    client.newDeployResourceCommand().addProcessModel(process, "test-process.bpmn").send().join();
+    client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+
+    processTestContext.mockJobWorker("task").thenComplete();
 
     // when
     final ProcessInstanceEvent processInstance =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId("test-process")
-            .latestVersion()
-            .send()
-            .join();
+        client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
 
     // then
     CamundaAssert.assertThat(processInstance)
-        .isActive()
-        .hasActiveElements(byName("task"))
-        .hasVariable("status", "active");
+        .isCompleted()
+        .hasCompletedElementsInOrder("start", "task", "end");
+  }
+
+  private static class BindCamundaProcessTestExtension implements BeforeAllCallback {
+
+    @Override
+    public void beforeAll(final ExtensionContext context) {
+      EXTENSION
+          .withCamundaClient(
+              () ->
+                  CamundaClient.newClientBuilder()
+                      .usePlaintext()
+                      .restAddress(REMOTE_CAMUNDA_CONTAINER.getRestApiAddress())
+                      .grpcAddress(REMOTE_CAMUNDA_CONTAINER.getGrpcApiAddress()))
+          .withRemoteCamundaMonitoringApiAddress(
+              REMOTE_CAMUNDA_CONTAINER.getMonitoringApiAddress().toString());
+    }
   }
 }
