@@ -12,6 +12,7 @@ import static java.util.Objects.requireNonNull;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -128,5 +129,17 @@ public record HealthReport(
 
   public HealthReport withName(final String name) {
     return new HealthReport(name, status, issue, children);
+  }
+
+  public HealthReport withChild(final HealthReport child) {
+    final var newChildren = new HashMap<>(children);
+    newChildren.put(child.componentName(), child);
+    final var map = Collections.unmodifiableMap(newChildren);
+    if (COMPARATOR.compare(child, this) > 0) {
+      return new HealthReport(
+          componentName, child.status(), child.issue != null ? child.issue : issue, map);
+    } else {
+      return new HealthReport(componentName, status, issue, map);
+    }
   }
 }
