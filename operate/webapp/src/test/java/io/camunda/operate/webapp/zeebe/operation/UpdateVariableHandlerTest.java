@@ -108,6 +108,7 @@ public class UpdateVariableHandlerTest {
     doThrow(clientException)
         .when(operateServicesAdapter)
         .setVariables(scopeKey, Map.of(variableName, variableValue), true, operationId);
+    when(operateServicesAdapter.isExceptionRetriable(clientException)).thenReturn(Boolean.TRUE);
 
     // when
     handler.handle(operation);
