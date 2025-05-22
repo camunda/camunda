@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -52,26 +53,16 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
       final Callable<CompletableFuture<Void>> flushLog = server::flushLog;
 
       final Duration snapshotPeriod = context.getBrokerCfg().getData().getSnapshotPeriod();
-      final AsyncSnapshotDirector director;
-      if (targetRole == Role.LEADER) {
-        director =
-            AsyncSnapshotDirector.ofProcessingMode(
-                context.getNodeId(),
-                context.getPartitionId(),
-                context.getStreamProcessor(),
-                context.getStateController(),
-                snapshotPeriod,
-                flushLog);
-      } else {
-        director =
-            AsyncSnapshotDirector.ofReplayMode(
-                context.getNodeId(),
-                context.getPartitionId(),
-                context.getStreamProcessor(),
-                context.getStateController(),
-                snapshotPeriod,
-                flushLog);
-      }
+
+      final var processingMode = StreamProcessorMode.fromRole(targetRole.isLeader());
+      final var director =
+          AsyncSnapshotDirector.of(
+              context.getPartitionId(),
+              context.getStreamProcessor(),
+              context.getStateController(),
+              processingMode,
+              snapshotPeriod,
+              flushLog);
 
       final var future =
           context.getActorSchedulingService().submitActor(director, SchedulingHints.cpuBound());
