@@ -38,7 +38,7 @@ public class BatchOperationCreatedExportHandler
 
   @Override
   public void export(final Record<BatchOperationCreationRecordValue> record) {
-    batchOperationWriter.createIfNotAlreadyExists(map(record));
+    batchOperationWriter.create(map(record));
   }
 
   private BatchOperationDbModel map(final Record<BatchOperationCreationRecordValue> record) {
@@ -49,6 +49,7 @@ public class BatchOperationCreatedExportHandler
         .state(BatchOperationState.ACTIVE)
         .operationType(value.getBatchOperationType().name())
         .startDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
+        .partitionId(record.getPartitionId())
         .build();
   }
 }

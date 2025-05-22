@@ -40,6 +40,7 @@ public class BatchOperationChunkExportHandler
     final var value = record.getValue();
     batchOperationWriter.updateBatchAndInsertItems(
         String.valueOf(value.getBatchOperationKey()),
+        record.getPartitionId(),
         mapItems(value.getItems(), record.getValue().getBatchOperationKey()));
   }
 

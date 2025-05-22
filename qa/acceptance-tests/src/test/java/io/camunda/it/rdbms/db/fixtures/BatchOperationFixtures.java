@@ -33,6 +33,7 @@ public final class BatchOperationFixtures {
     final var builder =
         new Builder()
             .batchOperationKey(key)
+            .partitionId(1)
             .state(randomEnum(BatchOperationState.class))
             .operationType("some-operation" + RANDOM.nextInt(1000))
             .startDate(OffsetDateTime.now())
@@ -48,7 +49,7 @@ public final class BatchOperationFixtures {
     final List<BatchOperationDbModel> models =
         IntStream.range(0, 20)
             .mapToObj(i -> createRandomized(builderFunction))
-            .peek(rdbmsWriter.getBatchOperationWriter()::createIfNotAlreadyExists)
+            .peek(rdbmsWriter.getBatchOperationWriter()::create)
             .collect(Collectors.toList());
     rdbmsWriter.flush();
     return models;
@@ -74,7 +75,7 @@ public final class BatchOperationFixtures {
   public static void createAndSaveBatchOperations(
       final RdbmsWriter rdbmsWriter, final List<BatchOperationDbModel> batchOperationList) {
     for (final BatchOperationDbModel batchOperation : batchOperationList) {
-      rdbmsWriter.getBatchOperationWriter().createIfNotAlreadyExists(batchOperation);
+      rdbmsWriter.getBatchOperationWriter().create(batchOperation);
     }
     rdbmsWriter.flush();
   }
@@ -85,6 +86,7 @@ public final class BatchOperationFixtures {
         .getBatchOperationWriter()
         .updateBatchAndInsertItems(
             batchOperationKey,
+            1,
             items.stream()
                 .map(
                     itemKey ->

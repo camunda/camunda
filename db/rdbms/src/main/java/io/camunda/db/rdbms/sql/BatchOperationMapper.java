@@ -42,13 +42,13 @@ public interface BatchOperationMapper {
   List<BatchOperationItemEntity> searchItems(BatchOperationItemDbQuery query);
 
   record BatchOperationUpdateDto(
-      String batchOperationKey, BatchOperationState state, OffsetDateTime endDate) {}
+      String batchOperationKey, int partitionId, BatchOperationState state, OffsetDateTime endDate) {}
 
-  record BatchOperationUpdateTotalCountDto(String batchOperationKey, int operationsTotalCount) {}
+  record BatchOperationUpdateTotalCountDto(String batchOperationKey, int partitionId, int operationsTotalCount) {}
 
-  record BatchOperationUpdateCountsDto(String batchOperationKey, long itemKey) {}
+  record BatchOperationUpdateCountsDto(String batchOperationKey, int partitionId, long itemKey) {}
 
-  record BatchOperationItemsDto(String batchOperationKey, List<BatchOperationItemDbModel> items) {}
+  record BatchOperationItemsDto(String batchOperationKey, int partitionId, List<BatchOperationItemDbModel> items) {}
 
   record BatchOperationItemDto(
       String batchOperationKey,
@@ -59,6 +59,7 @@ public interface BatchOperationMapper {
 
   record BatchOperationItemStatusUpdateDto(
       String batchOperationKey,
+      int partitionId,
       BatchOperationEntity.BatchOperationItemState oldState,
       BatchOperationEntity.BatchOperationItemState newState) {}
 }

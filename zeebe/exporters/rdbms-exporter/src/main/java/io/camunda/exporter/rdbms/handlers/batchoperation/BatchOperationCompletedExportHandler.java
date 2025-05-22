@@ -35,6 +35,6 @@ public class BatchOperationCompletedExportHandler
     final var value = record.getValue();
     final var batchOperationKey = String.valueOf(value.getBatchOperationKey());
     batchOperationWriter.finish(
-        batchOperationKey, DateUtil.toOffsetDateTime(record.getTimestamp()));
+        batchOperationKey, record.getPartitionId(), DateUtil.toOffsetDateTime(record.getTimestamp()));
   }
 }
