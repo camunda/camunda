@@ -61,7 +61,9 @@ func TestWriteAndReadPIDFromFile(t *testing.T) {
 func TestReadPIDFromFile_InvalidPID(t *testing.T) {
 	dir := t.TempDir()
 	pidPath := filepath.Join(dir, "bad.pid")
-	os.WriteFile(pidPath, []byte("notanumber"), 0644)
+	if err := os.WriteFile(pidPath, []byte("notanumber"), 0644); err != nil {
+		t.Fatalf("Failed to write invalid PID file: %v", err)
+	}
 	h := &ProcessHandler{}
 	_, err := h.ReadPIDFromFile(pidPath)
 	if err == nil {
@@ -72,7 +74,9 @@ func TestReadPIDFromFile_InvalidPID(t *testing.T) {
 func TestCleanUp_RemovesPIDFile(t *testing.T) {
 	dir := t.TempDir()
 	pidPath := filepath.Join(dir, "cleanup.pid")
-	os.WriteFile(pidPath, []byte("123"), 0644)
+	if err := os.WriteFile(pidPath, []byte("123"), 0644); err != nil {
+		t.Fatalf("Failed to write PID file: %v", err)
+	}
 	h := &ProcessHandler{}
 	h.cleanUp(pidPath)
 	if _, err := os.Stat(pidPath); !os.IsNotExist(err) {
@@ -102,15 +106,18 @@ func TestAttemptToStartProcess_KillsUnhealthyProcess(t *testing.T) {
 	dir := t.TempDir()
 	pidPath := filepath.Join(dir, "unhealthy.pid")
 
-	// Start a real, simple process (sleep 10)
-	cmd := exec.Command("sleep", "100")
+	cmd := exec.Command("sleep", "10")
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("Failed to start test process: %v", err)
 	}
 	proc := cmd.Process
-	defer cmd.Wait() // Ensure process is reaped
+	defer func() {
+		_ = cmd.Wait()
+	}()
 
-	os.WriteFile(pidPath, []byte(strconv.Itoa(proc.Pid)), 0644)
+	if err := os.WriteFile(pidPath, []byte(strconv.Itoa(proc.Pid)), 0644); err != nil {
+		t.Fatalf("Failed to write PID file: %v", err)
+	}
 
 	killed := false
 	started := false
@@ -141,5 +148,33 @@ func TestAttemptToStartProcess_KillsUnhealthyProcess(t *testing.T) {
 	}
 	if stopped {
 		t.Error("Stop was called. This should only be called when everything fails. Its like a panic but allows for the shutdown logic to run")
+	}
+}
+
+func TestAttemptToStartProcess_CleansUpStalePIDAndStarts(t *testing.T) {
+	dir := t.TempDir()
+	pidPath := filepath.Join(dir, "stale.pid")
+
+	if err := os.WriteFile(pidPath, []byte("123"), 0644); err != nil {
+		t.Fatalf("Failed to write PID file: %v", err)
+	}
+
+	started := false
+	stopped := false
+
+	h := &testHandler{
+		ProcessHandler: ProcessHandler{C8: &mockC8{ProcessTreeFunc: func(pid int) []*os.Process { return []*os.Process{{Pid: 123}} }}},
+	}
+
+	startProcess := func() { started = true }
+	healthCheck := func() error { return nil }
+	stop := func() { stopped = true }
+
+	h.AttemptToStartProcess(pidPath, "testproc", startProcess, healthCheck, stop)
+	if !started {
+		t.Error("Process was not started when no PID file present")
+	}
+	if stopped {
+		t.Error("Stop should not be called. This should only be called when everything fails. Its like a panic but allows for the shutdown logic to run")
 	}
 }
