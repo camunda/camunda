@@ -21,9 +21,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSilently {
   public static final String COMPONENT_NAME = "MigrationSnapshotDirector";
+  private static final Logger LOG = LoggerFactory.getLogger(MigrationSnapshotDirector.class);
 
   private volatile boolean snapshotTaken = false;
   private ScheduledTimer runningSnapshot = null;
@@ -70,6 +73,7 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
   }
 
   public void scheduleSnapshot() {
+    LOG.debug("Scheduling snapshot for migration: {} , {}", areMigrationsPerformed, snapshotTaken);
     if (areMigrationsPerformed && !snapshotTaken) {
       forceSnapshotUntilSuccessful();
     }
@@ -128,8 +132,11 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
                 if (snapshot != null) {
                   // reset the flag
                   snapshotTaken = true;
+                  LOG.debug("Snapshot taken after migrations");
                   healthReport = HealthReport.healthy(this);
                   notifyListeners();
+                } else {
+                  LOG.debug("Snapshot not taken after migrations");
                 }
                 runningSnapshot = null;
                 return null;

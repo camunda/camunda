@@ -355,8 +355,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
-  public void setMigrationsPerformed(final boolean migrationsPerformed) {
-    this.migrationsPerformed = migrationsPerformed;
+  public void markMigrationsDone() {
+    migrationsPerformed = true;
   }
 
   @Override
