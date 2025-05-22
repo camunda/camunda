@@ -8340,6 +8340,9 @@ components:
         decisionRequirementsKey:
           type: string
           description: The assigned key, which acts as a unique identifier for this decision requirements.
+        resourceName:
+          type: string
+          description: The name of the resource from which the decision requirements were parsed.
     DecisionRequirementsSearchQueryResult:
       type: object
       allOf:
