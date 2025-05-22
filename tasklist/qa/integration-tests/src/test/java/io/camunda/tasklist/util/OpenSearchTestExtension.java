@@ -13,9 +13,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.tasklist.CommonUtils;
+import io.camunda.tasklist.entities.TasklistEntity;
 import io.camunda.tasklist.property.TasklistOpenSearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
+import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.RecordsReader;
@@ -36,8 +39,11 @@ import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
+import org.opensearch.client.opensearch.core.bulk.IndexOperation;
 import org.opensearch.client.opensearch.core.reindex.Source;
 import org.opensearch.client.opensearch.indices.GetIndexResponse;
 import org.opensearch.client.opensearch.indices.GetIndicesSettingsRequest;
@@ -370,6 +376,29 @@ public class OpenSearchTestExtension
     } catch (final OpenSearchException | IOException e) {
       LOGGER.warn("Could not delete index {}", indexName, e);
     }
+  }
+
+  @Override
+  public <T extends TasklistEntity<T>> void bulkIndex(
+      final IndexDescriptor index, final List<T> documents) throws IOException {
+    osClient.bulk(
+        b ->
+            b.refresh(Refresh.True)
+                .operations(
+                    documents.stream()
+                        .map(
+                            document ->
+                                new BulkOperation.Builder()
+                                    .index(
+                                        IndexOperation.of(
+                                            i ->
+                                                i.index(index.getFullQualifiedName())
+                                                    .id((document.getId()))
+                                                    .document(
+                                                        CommonUtils.getJsonObjectFromEntity(
+                                                            document))))
+                                    .build())
+                        .toList()));
   }
 
   public TypeMapping getIndexTemplateMapping(final String templateName) throws IOException {
