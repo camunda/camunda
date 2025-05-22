@@ -21,7 +21,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
+import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.zeebe.config.AppCfg;
+import io.camunda.zeebe.config.AuthenticationMode;
 import io.camunda.zeebe.config.StarterCfg;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.time.Duration;
@@ -226,6 +228,15 @@ public class Starter extends App {
 
     if (!appCfg.isTls()) {
       builder.usePlaintext();
+    }
+
+    if (appCfg.getAuthenticationMode().equals(AuthenticationMode.basic)) {
+      final var basicAuthCfg = appCfg.getBasicAuth();
+      builder.credentialsProvider(
+          new BasicAuthCredentialsProviderBuilder()
+              .username(basicAuthCfg.getUsername())
+              .password(basicAuthCfg.getPassword())
+              .build());
     }
 
     return builder.build();
