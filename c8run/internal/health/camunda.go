@@ -11,7 +11,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"text/template"
@@ -66,7 +65,6 @@ func isRunning(ctx context.Context, name, url string, retries int, delay time.Du
 			resp, err := client.Do(req)
 			if err == nil {
 				if resp.Body != nil {
-					io.Copy(io.Discard, resp.Body)
 					resp.Body.Close()
 				}
 
