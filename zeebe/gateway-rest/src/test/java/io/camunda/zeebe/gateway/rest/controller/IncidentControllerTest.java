@@ -43,7 +43,7 @@ public class IncidentControllerTest extends RestControllerTest {
   @Test
   void shouldResolveIncident() {
     // given
-    when(incidentServices.resolveIncident(anyLong()))
+    when(incidentServices.resolveIncident(anyLong(), any()))
         .thenReturn(CompletableFuture.completedFuture(new IncidentRecord()));
 
     // when/then
@@ -56,13 +56,13 @@ public class IncidentControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(incidentServices).resolveIncident(1L);
+    Mockito.verify(incidentServices).resolveIncident(1L, null);
   }
 
   @Test
   void shouldReturnNotFoundIfIncidentNotFound() {
     // given
-    Mockito.when(incidentServices.resolveIncident(anyLong()))
+    Mockito.when(incidentServices.resolveIncident(anyLong(), any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new CamundaBrokerException(
@@ -97,6 +97,6 @@ public class IncidentControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody);
 
-    Mockito.verify(incidentServices).resolveIncident(1L);
+    Mockito.verify(incidentServices).resolveIncident(1L, null);
   }
 }

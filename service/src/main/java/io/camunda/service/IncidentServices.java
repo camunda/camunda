@@ -73,7 +73,13 @@ public class IncidentServices
     return incidentEntity;
   }
 
-  public CompletableFuture<IncidentRecord> resolveIncident(final long incidentKey) {
-    return sendBrokerRequest(new BrokerResolveIncidentRequest(incidentKey));
+  public CompletableFuture<IncidentRecord> resolveIncident(
+      final long incidentKey, final Long operationReference) {
+    final BrokerResolveIncidentRequest brokerRequest =
+        new BrokerResolveIncidentRequest(incidentKey);
+    if (operationReference != null) {
+      brokerRequest.setOperationReference(operationReference);
+    }
+    return sendBrokerRequest(brokerRequest);
   }
 }
