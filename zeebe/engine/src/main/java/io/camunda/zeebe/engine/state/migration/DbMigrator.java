@@ -7,10 +7,31 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
+import java.util.List;
+
 public interface DbMigrator {
 
   /**
-   * @return if at least one migration has been performed.
+   * @return the number of migrations performed by type
    */
-  boolean runMigrations();
+  MigrationsPerformed runMigrations();
+
+  record MigrationsPerformed(int initializations, int migrations) {
+    public static MigrationsPerformed zero() {
+      return new MigrationsPerformed(0, 0);
+    }
+
+    public static MigrationsPerformed fromList(final List<MigrationTask> executedMigrations) {
+      var initializations = 0;
+      var migrations = 0;
+      for (final var migration : executedMigrations) {
+        if (migration.isInitialization()) {
+          initializations++;
+        } else {
+          migrations++;
+        }
+      }
+      return new MigrationsPerformed(initializations, migrations);
+    }
+  }
 }
