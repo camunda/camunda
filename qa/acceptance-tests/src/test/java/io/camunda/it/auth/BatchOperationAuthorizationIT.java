@@ -113,7 +113,7 @@ class BatchOperationAuthorizationIT {
       @Authenticated(ADMIN) final CamundaClient camundaClient) {
     // given
     final var batchOperationKey =
-        createProcessInstanceCancelBatchOperation(camundaClient).getBatchOperationKey();
+        createProcessInstanceCancelBatchOperation(camundaClient).getBatchOperationId();
 
     // when
     waitForBatchOperation(camundaClient, batchOperationKey);
@@ -130,7 +130,7 @@ class BatchOperationAuthorizationIT {
   void adminShouldQueryBatchOperation(@Authenticated(ADMIN) final CamundaClient camundaClient) {
     // given
     final var batchOperationKey =
-        createProcessInstanceCancelBatchOperation(camundaClient).getBatchOperationKey();
+        createProcessInstanceCancelBatchOperation(camundaClient).getBatchOperationId();
 
     // when
     waitForBatchOperation(camundaClient, batchOperationKey);
@@ -162,7 +162,7 @@ class BatchOperationAuthorizationIT {
       @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
     // given
     final var batchOperationKey =
-        createProcessInstanceCancelBatchOperation(camundaClient).getBatchOperationKey();
+        createProcessInstanceCancelBatchOperation(camundaClient).getBatchOperationId();
 
     // when
     waitForBatchOperation(camundaClient, batchOperationKey);
@@ -180,7 +180,7 @@ class BatchOperationAuthorizationIT {
       @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
     // given
     final var batchOperationKey =
-        createProcessInstanceCancelBatchOperation(camundaClient).getBatchOperationKey();
+        createProcessInstanceCancelBatchOperation(camundaClient).getBatchOperationId();
 
     // when
     waitForBatchOperation(camundaClient, batchOperationKey);
@@ -224,7 +224,7 @@ class BatchOperationAuthorizationIT {
       @Authenticated(RESTRICTED_READ) final CamundaClient camundaRestictedClient) {
     // given
     final var batchOperationKey =
-        createProcessInstanceCancelBatchOperation(camundaRestictedClient).getBatchOperationKey();
+        createProcessInstanceCancelBatchOperation(camundaRestictedClient).getBatchOperationId();
 
     // when our admin finds something
     waitForBatchOperation(camundaAdminClient, batchOperationKey);
@@ -249,7 +249,7 @@ class BatchOperationAuthorizationIT {
       @Authenticated(RESTRICTED_READ) final CamundaClient camundaRestictedClient) {
     // given
     final var batchOperationKey =
-        createProcessInstanceCancelBatchOperation(camundaRestictedClient).getBatchOperationKey();
+        createProcessInstanceCancelBatchOperation(camundaRestictedClient).getBatchOperationId();
 
     // when our admin finds something
     waitForBatchOperation(camundaAdminClient, batchOperationKey);
@@ -290,7 +290,7 @@ class BatchOperationAuthorizationIT {
   }
 
   public static void waitForBatchOperation(
-      final CamundaClient camundaClient, final long batchOperationKey) {
+      final CamundaClient camundaClient, final String batchOperationKey) {
     Awaitility.await("should wait for started batch operation")
         .atMost(Duration.ofSeconds(15))
         .pollInterval(Duration.ofMillis(100))

@@ -31,12 +31,12 @@ public class BatchOperationGetRequestImpl implements BatchOperationGetRequest {
 
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private final long batchOperationKey;
+  private final String batchOperationId;
 
-  public BatchOperationGetRequestImpl(final HttpClient httpClient, final long batchOperationKey) {
+  public BatchOperationGetRequestImpl(final HttpClient httpClient, final String batchOperationId) {
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
-    this.batchOperationKey = batchOperationKey;
+    this.batchOperationId = batchOperationId;
   }
 
   @Override
@@ -49,7 +49,7 @@ public class BatchOperationGetRequestImpl implements BatchOperationGetRequest {
   public CamundaFuture<BatchOperation> send() {
     final HttpCamundaFuture<BatchOperation> result = new HttpCamundaFuture<>();
     httpClient.get(
-        String.format("/batch-operations/%d", batchOperationKey),
+        String.format("/batch-operations/%s", batchOperationId),
         httpRequestConfig.build(),
         BatchOperationResponse.class,
         SearchResponseMapper::toBatchOperationGetResponse,
