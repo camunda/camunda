@@ -15,6 +15,8 @@ import { FormModal, UseEntityModalProps } from "src/components/modal";
 import { updateUser, User } from "src/utility/api/users";
 import { isValidEmail } from "./isValidEmail";
 
+type UserWithPassword = User & { password: string };
+
 const EditModal: FC<UseEntityModalProps<User>> = ({
   open,
   onClose,
@@ -23,7 +25,10 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
 }) => {
   const { t } = useTranslate("users");
   const [callUpdateUser, { loading }] = useApiCall(updateUser);
-  const [user, setUser] = useState<User>(entity);
+  const [user, setUser] = useState<UserWithPassword>({
+    ...entity,
+    password: "",
+  });
   const [emailValid, setEmailValid] = useState(true);
   const [repeatedPassword, setRepeatedPassword] = useState("");
   const [passwordValid, setPasswordValid] = useState(true);
