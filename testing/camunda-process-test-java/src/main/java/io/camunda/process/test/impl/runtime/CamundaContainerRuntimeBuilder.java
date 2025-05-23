@@ -62,6 +62,9 @@ public class CamundaContainerRuntimeBuilder {
 
   private CamundaRuntimeMode runtimeMode = CamundaRuntimeMode.MANAGED;
 
+  private CamundaClient remoteCamundaClient =
+      CamundaClient.newClientBuilder().usePlaintext().build();
+
   private URI remoteCamundaMonitoringApiAddress =
       URI.create(ContainerRuntimeDefaults.LOCAL_CAMUNDA_MONITORING_API_ADDRESS);
   private URI remoteConnectorsRestApiAddress =
@@ -211,6 +214,12 @@ public class CamundaContainerRuntimeBuilder {
     return this;
   }
 
+  public CamundaContainerRuntimeBuilder withRemoteCamundaClient(
+      final CamundaClient remoteCamundaClient) {
+    this.remoteCamundaClient = remoteCamundaClient;
+    return this;
+  }
+
   // ============ Build =================
 
   public CamundaRuntime build() {
@@ -308,5 +317,9 @@ public class CamundaContainerRuntimeBuilder {
 
   public URI getRemoteConnectorsRestApiAddress() {
     return remoteConnectorsRestApiAddress;
+  }
+
+  public CamundaClient getRemoteCamundaClient() {
+    return remoteCamundaClient;
   }
 }

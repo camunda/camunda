@@ -14,7 +14,6 @@ import io.camunda.process.test.impl.containers.ContainerFactory;
 import io.camunda.process.test.impl.runtime.ContainerRuntimeDefaults;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,14 +22,17 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+// We use Testcontainers to start a "remote" Camunda container that is not managed by the Camunda
+// process test execution listener.
 @Testcontainers
 @SpringBootTest(
     classes = {RemoteCamundaSpringProcessTestIT.class},
     properties = {"io.camunda.process.test.runtime-mode=remote"})
+// 3: Start the execution listener and connect to the Camunda container
 @CamundaSpringProcessTest
 public class RemoteCamundaSpringProcessTestIT {
 
-  @Order(0)
+  // 1: Start the Camunda container
   @Container
   private static final CamundaContainer REMOTE_CAMUNDA_CONTAINER =
       new ContainerFactory()
@@ -41,8 +43,9 @@ public class RemoteCamundaSpringProcessTestIT {
   @Autowired private CamundaClient client;
   @Autowired private CamundaProcessTestContext processTestContext;
 
+  // 2: Bind the execution listener to the Camunda container
   @DynamicPropertySource
-  static void registerTestProperties(final DynamicPropertyRegistry registry) {
+  static void bindToCamundaContainer(final DynamicPropertyRegistry registry) {
     registry.add(
         "io.camunda.process.test.remote.client.restAddress",
         REMOTE_CAMUNDA_CONTAINER::getRestApiAddress);
