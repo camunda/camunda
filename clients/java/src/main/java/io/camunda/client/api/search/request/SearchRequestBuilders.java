@@ -35,6 +35,7 @@ import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.filter.VariableValueFilter;
 import io.camunda.client.api.search.sort.BatchOperationItemSort;
 import io.camunda.client.api.search.sort.BatchOperationSort;
+import io.camunda.client.api.search.sort.ClientSort;
 import io.camunda.client.api.search.sort.DecisionDefinitionSort;
 import io.camunda.client.api.search.sort.DecisionInstanceSort;
 import io.camunda.client.api.search.sort.DecisionRequirementsSort;
@@ -72,6 +73,7 @@ import io.camunda.client.impl.search.filter.VariableValueFilterImpl;
 import io.camunda.client.impl.search.request.SearchRequestPageImpl;
 import io.camunda.client.impl.search.sort.BatchOperationItemSortImpl;
 import io.camunda.client.impl.search.sort.BatchOperationSortImpl;
+import io.camunda.client.impl.search.sort.ClientSortImpl;
 import io.camunda.client.impl.search.sort.DecisionDefinitionSortImpl;
 import io.camunda.client.impl.search.sort.DecisionInstanceSortImpl;
 import io.camunda.client.impl.search.sort.DecisionRequirementsSortImpl;
@@ -326,6 +328,12 @@ public final class SearchRequestBuilders {
 
   public static RoleUserSort roleUserSort(final Consumer<RoleUserSort> fn) {
     final RoleUserSort sort = new RoleUserSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static ClientSort clientSort(final Consumer<ClientSort> fn) {
+    final ClientSort sort = new ClientSortImpl();
     fn.accept(sort);
     return sort;
   }

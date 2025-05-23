@@ -18,7 +18,9 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.CreateRoleResponse;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
+import io.camunda.client.api.search.response.Client;
 import io.camunda.client.api.search.response.Role;
+import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.protocol.rest.MappingSearchQueryResult;
 import io.camunda.client.protocol.rest.RoleResult;
 import io.camunda.qa.util.auth.Authenticated;
@@ -27,7 +29,6 @@ import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.zeebe.gateway.protocol.rest.RoleClientSearchResult;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
 import java.io.IOException;
@@ -363,14 +364,11 @@ class RoleAuthorizationIT {
     Awaitility.await("Role is unassigned from the client")
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
-            () ->
-                assertThat(
-                        searchClientsByRoleId(
-                                adminClient.getConfiguration().getRestAddress().toString(),
-                                ADMIN,
-                                roleId)
-                            .getItems())
-                    .isEmpty());
+            () -> {
+              final SearchResponse<Client> response =
+                  adminClient.newClientsByRoleSearchRequest(roleId).send().join();
+              assertThat(response.items()).isEmpty();
+            });
 
     // clean up
     adminClient.newDeleteRoleCommand(roleId).send().join();
@@ -537,14 +535,12 @@ class RoleAuthorizationIT {
     Awaitility.await("Role is assigned to the client")
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
-            () ->
-                assertThat(
-                        searchClientsByRoleId(
-                                adminClient.getConfiguration().getRestAddress().toString(),
-                                ADMIN,
-                                roleId)
-                            .getItems())
-                    .anyMatch(c -> clientId.equals(c.getClientId())));
+            () -> {
+              final SearchResponse<Client> response =
+                  adminClient.newClientsByRoleSearchRequest(roleId).send().join();
+              assertThat(response.items().stream().map(Client::getClientId).toList())
+                  .contains(clientId);
+            });
 
     // clean up
     adminClient.newDeleteRoleCommand(roleId).send().join();
@@ -563,6 +559,39 @@ class RoleAuthorizationIT {
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("403: 'Forbidden'");
+  }
+
+  @Test
+  void shouldSearchClientsByRoleIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    // given
+    final String clientId = Strings.newRandomValidIdentityId();
+    final String roleId = Strings.newRandomValidIdentityId();
+    createRole(adminClient, roleId, "roleName");
+
+    adminClient.newAssignRoleToClientCommand().roleId(roleId).clientId(clientId).send().join();
+
+    // when/then
+    Awaitility.await("Search returns correct client ID")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final SearchResponse<Client> response =
+                  adminClient.newClientsByRoleSearchRequest(roleId).send().join();
+              assertThat(response.items().stream().map(Client::getClientId).toList())
+                  .contains(clientId);
+            });
+
+    // clean up
+    adminClient.newDeleteRoleCommand(roleId).send().join();
+  }
+
+  @Test
+  void searchClientsByRoleShouldReturnEmptyListIfUnauthorized(
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
+    final SearchResponse<Client> response =
+        camundaClient.newClientsByRoleSearchRequest(ROLE_ID_1).send().join();
+    assertThat(response.items()).isEmpty();
   }
 
   private static void createRole(
@@ -622,25 +651,6 @@ class RoleAuthorizationIT {
     final HttpResponse<String> response =
         HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
     return OBJECT_MAPPER.readValue(response.body(), MappingSearchQueryResult.class);
-  }
-
-  // TODO: will be removed in the next PR for client search
-  private static RoleClientSearchResult searchClientsByRoleId(
-      final String restAddress, final String username, final String roleId)
-      throws URISyntaxException, IOException, InterruptedException {
-    final var encodedCredentials =
-        Base64.getEncoder()
-            .encodeToString("%s:%s".formatted(username, DEFAULT_PASSWORD).getBytes());
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(new URI("%s%s".formatted(restAddress, "v2/roles/" + roleId + "/clients/search")))
-            .POST(HttpRequest.BodyPublishers.ofString(""))
-            .header("Authorization", "Basic %s".formatted(encodedCredentials))
-            .build();
-
-    final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-    return OBJECT_MAPPER.readValue(response.body(), RoleClientSearchResult.class);
   }
 
   private record RoleSearchResponse(List<RoleResult> items) {}
