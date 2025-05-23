@@ -27,6 +27,9 @@ public interface RoutingInfo {
   /** Returns the current set of partitions. */
   Set<Integer> partitions();
 
+  /** Returns the desired set of partitions. */
+  Set<Integer> desiredPartitions();
+
   /** Returns the current partition id for the given correlation key. */
   int partitionForCorrelationKey(final DirectBuffer correlationKey);
 
@@ -61,6 +64,11 @@ public interface RoutingInfo {
     }
 
     @Override
+    public Set<Integer> desiredPartitions() {
+      return partitions();
+    }
+
+    @Override
     public int partitionForCorrelationKey(final DirectBuffer correlationKey) {
       return SubscriptionUtil.getSubscriptionPartitionId(correlationKey, partitionCount);
     }
@@ -85,6 +93,14 @@ public interface RoutingInfo {
         return fallback.partitions();
       }
       return routingState.currentPartitions();
+    }
+
+    @Override
+    public Set<Integer> desiredPartitions() {
+      if (!routingState.isInitialized()) {
+        return fallback.partitions();
+      }
+      return routingState.desiredPartitions();
     }
 
     @Override
