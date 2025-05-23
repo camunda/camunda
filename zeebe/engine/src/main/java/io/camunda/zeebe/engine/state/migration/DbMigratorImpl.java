@@ -102,7 +102,7 @@ public class DbMigratorImpl implements DbMigrator {
   }
 
   @Override
-  public void runMigrations() {
+  public MigrationsPerformed runMigrations() {
     var initializationOnly = false;
     switch (checkVersionCompatibility()) {
       case final Indeterminate.PreviousVersionUnknown unknown:
@@ -111,7 +111,7 @@ public class DbMigratorImpl implements DbMigrator {
         break;
       case final Compatible.SameVersion compatible:
         LOGGER.debug("No migrations to run, snapshot is the same as current version");
-        return;
+        return MigrationsPerformed.zero();
       default:
         break;
     }
@@ -121,6 +121,8 @@ public class DbMigratorImpl implements DbMigrator {
 
     markMigrationsAsCompleted();
     logSummary(executedMigrations);
+
+    return MigrationsPerformed.fromList(executedMigrations);
   }
 
   private List<MigrationTask> runMigrations(final boolean initializationOnly) {
