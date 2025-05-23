@@ -46,12 +46,8 @@ public class RemoteCamundaSpringProcessTestIT {
   // 2: Bind the execution listener to the Camunda container
   @DynamicPropertySource
   static void bindToCamundaContainer(final DynamicPropertyRegistry registry) {
-    registry.add(
-        "io.camunda.process.test.remote.client.restAddress",
-        REMOTE_CAMUNDA_CONTAINER::getRestApiAddress);
-    registry.add(
-        "io.camunda.process.test.remote.client.grpcAddress",
-        REMOTE_CAMUNDA_CONTAINER::getGrpcApiAddress);
+    registry.add("camunda.client.restAddress", REMOTE_CAMUNDA_CONTAINER::getRestApiAddress);
+    registry.add("camunda.client.grpcAddress", REMOTE_CAMUNDA_CONTAINER::getGrpcApiAddress);
     registry.add(
         "io.camunda.process.test.remote.camunda-monitoring-api-address",
         REMOTE_CAMUNDA_CONTAINER::getMonitoringApiAddress);

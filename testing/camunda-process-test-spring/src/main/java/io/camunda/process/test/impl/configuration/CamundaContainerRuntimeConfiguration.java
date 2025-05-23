@@ -132,20 +132,11 @@ public class CamundaContainerRuntimeConfiguration {
   }
 
   public static class RemoteConfiguration {
-    //    private CamundaClientProperties client = new CamundaClientProperties();
 
     private String camundaMonitoringApiAddress =
         ContainerRuntimeDefaults.LOCAL_CAMUNDA_MONITORING_API_ADDRESS;
     private String connectorsRestApiAddress =
         ContainerRuntimeDefaults.LOCAL_CONNECTORS_REST_API_ADDRESS;
-
-    //    public CamundaClientProperties getClient() {
-    //      return client;
-    //    }
-    //
-    //    public void setClient(final CamundaClientProperties client) {
-    //      this.client = client;
-    //    }
 
     public String getCamundaMonitoringApiAddress() {
       return camundaMonitoringApiAddress;
