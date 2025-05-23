@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.engine.metrics.AuthorizationCheckMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
@@ -50,14 +51,18 @@ public final class AuthorizationCheckBehavior {
 
   private final boolean authorizationsEnabled;
   private final boolean multiTenancyEnabled;
+  private final AuthorizationCheckMetrics metrics;
 
   public AuthorizationCheckBehavior(
-      final ProcessingState processingState, final SecurityConfiguration securityConfig) {
+      final ProcessingState processingState,
+      final SecurityConfiguration securityConfig,
+      final AuthorizationCheckMetrics metrics) {
     authorizationState = processingState.getAuthorizationState();
     mappingState = processingState.getMappingState();
     membershipState = processingState.getMembershipState();
     authorizationsEnabled = securityConfig.getAuthorizations().isEnabled();
     multiTenancyEnabled = securityConfig.getMultiTenancy().isEnabled();
+    this.metrics = metrics;
   }
 
   /**
@@ -73,6 +78,7 @@ public final class AuthorizationCheckBehavior {
    *     {@link Void} if the user is authorized
    */
   public Either<Rejection, Void> isAuthorized(final AuthorizationRequest request) {
+
     if (!authorizationsEnabled && !multiTenancyEnabled) {
       return Either.right(null);
     }
@@ -85,6 +91,8 @@ public final class AuthorizationCheckBehavior {
     if (isAuthorizedAnonymousUser(request.getCommand())) {
       return Either.right(null);
     }
+    metrics.startAuthorizationCheck(
+        request.getCommand().getKey(), request.getResourceType(), request.getPermissionType());
 
     final var username = getUsername(request);
     final var clientId = getClientId(request);
@@ -103,12 +111,17 @@ public final class AuthorizationCheckBehavior {
       }
     }
 
-    return isEntityAuthorized(
-        request,
-        EntityType.MAPPING,
-        getPersistedMappings(request)
-            .map(PersistedMapping::getMappingId)
-            .collect(Collectors.toSet()));
+    final var entityAuthorized =
+        isEntityAuthorized(
+            request,
+            EntityType.MAPPING,
+            getPersistedMappings(request)
+                .map(PersistedMapping::getMappingId)
+                .collect(Collectors.toSet()));
+
+    metrics.stopAuthorizationCheck(
+        request.getCommand().getKey(), request.getResourceType(), request.getPermissionType());
+    return entityAuthorized;
   }
 
   /**
@@ -226,6 +239,8 @@ public final class AuthorizationCheckBehavior {
     if (!authorizationsEnabled || isAuthorizedAnonymousUser(request.getCommand())) {
       return Set.of(WILDCARD_PERMISSION);
     }
+    metrics.startGettingResourceIdentifiers(
+        request.getCommand().getKey(), request.getResourceType(), request.getPermissionType());
 
     final var authorizedResourceIds = new HashSet<String>();
 
@@ -262,6 +277,8 @@ public final class AuthorizationCheckBehavior {
                     request.getPermissionType()))
         .forEach(authorizedResourceIds::add);
 
+    metrics.stopGettingResourceIdentifiers(
+        request.getCommand().getKey(), request.getResourceType(), request.getPermissionType());
     return authorizedResourceIds;
   }
 

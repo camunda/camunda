@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.AuthorizationCheckMetrics;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSetupProcessors;
@@ -122,7 +123,11 @@ public final class EngineProcessors {
     final var decisionBehavior =
         new DecisionBehavior(
             DecisionEngineFactory.createDecisionEngine(), processingState, processEngineMetrics);
-    final var authCheckBehavior = new AuthorizationCheckBehavior(processingState, securityConfig);
+
+    final var authCheckMetrics =
+        new AuthorizationCheckMetrics(typedRecordProcessorContext.getMeterRegistry());
+    final var authCheckBehavior =
+        new AuthorizationCheckBehavior(processingState, securityConfig, authCheckMetrics);
     final var transientProcessMessageSubscriptionState =
         typedRecordProcessorContext.getTransientProcessMessageSubscriptionState();
     final BpmnBehaviorsImpl bpmnBehaviors =
