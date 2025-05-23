@@ -115,5 +115,8 @@ public interface MutableProcessingState extends ProcessingState {
   @Override
   MutableUsageMetricState getUsageMetricState();
 
+  @Override
+  MutableTriggeringRecordMetadataState getTriggeringRecordMetadataState();
+
   KeyGenerator getKeyGenerator();
 }

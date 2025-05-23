@@ -10,10 +10,12 @@ package io.camunda.zeebe.engine.state.appliers;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.immutable.TriggeringRecordMetadataState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.util.List;
 import org.assertj.core.api.Assertions;
@@ -32,6 +34,8 @@ public class UserTaskCanceledApplierTest {
   /** Used for state assertions. */
   private MutableUserTaskState userTaskState;
 
+  private TriggeringRecordMetadataState recordMetadataState;
+
   /** For setting up the state before testing the applier. */
   private AppliersTestSetupHelper testSetup;
 
@@ -39,6 +43,7 @@ public class UserTaskCanceledApplierTest {
   public void setup() {
     userTaskCanceledApplier = new UserTaskCanceledApplier(processingState);
     userTaskState = processingState.getUserTaskState();
+    recordMetadataState = processingState.getTriggeringRecordMetadataState();
     testSetup = new AppliersTestSetupHelper(processingState);
   }
 
@@ -83,8 +88,8 @@ public class UserTaskCanceledApplierTest {
             "Expect that intermediate state is cleared after cancellation of the User Task")
         .isNull();
 
-    assertThat(userTaskState.findRecordRequestMetadata(userTaskKey))
-        .describedAs("Expect that request metadata is cleared after cancellation of the User Task")
+    assertThat(recordMetadataState.findOnly(userTaskKey, ValueType.USER_TASK))
+        .describedAs("Expect that record metadata is cleared after cancellation of the User Task")
         .isEmpty();
 
     Assertions.assertThat(userTaskState.getUserTask(userTaskKey))
@@ -112,8 +117,8 @@ public class UserTaskCanceledApplierTest {
         .describedAs("Expect there is no intermediate state for the User Task")
         .isNull();
 
-    assertThat(userTaskState.findRecordRequestMetadata(userTaskKey))
-        .describedAs("Expect there is no request metadata for the User Task")
+    assertThat(recordMetadataState.findOnly(userTaskKey, ValueType.USER_TASK))
+        .describedAs("Expect there is no record metadata for the User Task")
         .isEmpty();
 
     Assertions.assertThat(userTaskState.getUserTask(userTaskKey))

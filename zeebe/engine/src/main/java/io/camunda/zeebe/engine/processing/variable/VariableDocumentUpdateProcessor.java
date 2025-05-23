@@ -21,14 +21,12 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.engine.state.instance.UserTaskTransitionTriggerRequestMetadata;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.spec.MsgpackReaderException;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -133,7 +131,9 @@ public final class VariableDocumentUpdateProcessor
       }
 
       final long key = keyGenerator.nextKey();
-      writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATING, value);
+      writers
+          .state()
+          .appendFollowUpEventOnCommand(key, VariableDocumentIntent.UPDATING, value, record);
 
       final var userTaskRecord = userTaskState.getUserTask(userTaskKey);
       if (hasVariables(value)) {
@@ -149,8 +149,6 @@ public final class VariableDocumentUpdateProcessor
               ExecutableUserTask.class);
 
       if (userTaskElement.hasTaskListeners(ZeebeTaskListenerEventType.updating)) {
-        storeRecordRequestMetadata(userTaskKey, record);
-
         final var listener =
             userTaskElement.getTaskListeners(ZeebeTaskListenerEventType.updating).getFirst();
         jobBehavior.createNewTaskListenerJob(
@@ -170,7 +168,9 @@ public final class VariableDocumentUpdateProcessor
           .state()
           .appendFollowUpEvent(scope.getUserTaskKey(), UserTaskIntent.UPDATED, userTaskRecord);
 
-      writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATED, value);
+      writers
+          .state()
+          .appendFollowUpEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
       writers.response().writeEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
       return;
     }
@@ -225,20 +225,5 @@ public final class VariableDocumentUpdateProcessor
     final var context = new BpmnElementContextImpl();
     context.init(elementInstance.getKey(), elementInstance.getValue(), elementInstance.getState());
     return context;
-  }
-
-  void storeRecordRequestMetadata(
-      final long userTaskKey, final TypedRecord<VariableDocumentRecord> command) {
-    if (!command.hasRequestMetadata()) {
-      return;
-    }
-
-    final var metadata =
-        new UserTaskTransitionTriggerRequestMetadata()
-            .setIntent(command.getIntent())
-            .setTriggerType(ValueType.VARIABLE_DOCUMENT)
-            .setRequestId(command.getRequestId())
-            .setRequestStreamId(command.getRequestStreamId());
-    userTaskState.storeRecordRequestMetadata(userTaskKey, metadata);
   }
 }

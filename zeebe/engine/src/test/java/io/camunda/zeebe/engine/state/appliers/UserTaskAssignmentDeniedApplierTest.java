@@ -7,11 +7,13 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
+import io.camunda.zeebe.engine.state.immutable.TriggeringRecordMetadataState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.util.Optional;
 import java.util.Random;
@@ -32,6 +34,8 @@ public class UserTaskAssignmentDeniedApplierTest {
   /** Used for state assertions. */
   private MutableUserTaskState userTaskState;
 
+  private TriggeringRecordMetadataState recordMetadataState;
+
   /** For setting up the state before testing the applier. */
   private AppliersTestSetupHelper testSetup;
 
@@ -39,6 +43,7 @@ public class UserTaskAssignmentDeniedApplierTest {
   public void setup() {
     userTaskAssignmentDeniedApplierApplier = new UserTaskAssignmentDeniedApplier(processingState);
     userTaskState = processingState.getUserTaskState();
+    recordMetadataState = processingState.getTriggeringRecordMetadataState();
     testSetup = new AppliersTestSetupHelper(processingState);
   }
 
@@ -74,7 +79,7 @@ public class UserTaskAssignmentDeniedApplierTest {
     Assertions.assertThat(userTaskState.getIntermediateState(userTaskKey))
         .describedAs("Expect that intermediate state is not present anymore")
         .isNull();
-    Assertions.assertThat(userTaskState.findRecordRequestMetadata(userTaskKey))
+    Assertions.assertThat(recordMetadataState.findOnly(userTaskKey, ValueType.USER_TASK))
         .describedAs("Expect that record request metadata is not present anymore")
         .isEmpty();
     Assertions.assertThat(userTaskState.getUserTask(userTaskKey).getAssignee())

@@ -13,7 +13,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.UserTaskState;
+import io.camunda.zeebe.engine.state.immutable.TriggeringRecordMetadataState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -26,7 +26,7 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
 
   private static final String DEFAULT_ACTION = "assign";
 
-  private final UserTaskState userTaskState;
+  private final TriggeringRecordMetadataState recordMetadataState;
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final UserTaskCommandPreconditionChecker preconditionChecker;
@@ -35,7 +35,7 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
       final ProcessingState state,
       final Writers writers,
       final AuthorizationCheckBehavior authCheckBehavior) {
-    userTaskState = state.getUserTaskState();
+    recordMetadataState = state.getTriggeringRecordMetadataState();
     stateWriter = writers.state();
     responseWriter = writers.response();
     preconditionChecker =
@@ -61,7 +61,8 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
     }
     userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
 
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
+    stateWriter.appendFollowUpEventOnCommand(
+        userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord, command);
   }
 
   @Override
@@ -70,22 +71,25 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
     final long userTaskKey = command.getKey();
 
     if (command.hasRequestMetadata()) {
-      stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
+      stateWriter.appendFollowUpEventOnCommand(
+          userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord, command);
       responseWriter.writeEventOnCommand(
           userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord, command);
     } else {
-      final var recordRequestMetadata = userTaskState.findRecordRequestMetadata(userTaskKey);
-      stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
-
-      recordRequestMetadata.ifPresent(
-          metadata ->
-              responseWriter.writeResponse(
-                  userTaskKey,
-                  UserTaskIntent.ASSIGNED,
-                  userTaskRecord,
-                  ValueType.USER_TASK,
-                  metadata.getRequestId(),
-                  metadata.getRequestStreamId()));
+      // this flow is active if "assigning" listeners were involved
+      recordMetadataState
+          .findExact(userTaskKey, ValueType.USER_TASK, UserTaskIntent.ASSIGN)
+          .ifPresentOrElse(
+              // present if transition was triggered by `USER_TASK:ASSIGN` command
+              metadata -> {
+                stateWriter.appendFollowUpEvent(
+                    userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord, metadata);
+                responseWriter.writeResponse(
+                    userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord, metadata);
+              },
+              () ->
+                  stateWriter.appendFollowUpEvent(
+                      userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord));
     }
   }
 }

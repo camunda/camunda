@@ -15,6 +15,8 @@ import io.camunda.zeebe.engine.scaling.redistribution.RedistributionStartedAppli
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier.NoApplierForIntent;
 import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier.NoApplierForVersion;
+import io.camunda.zeebe.engine.state.MetadataAwareTypedEventApplier;
+import io.camunda.zeebe.engine.state.TriggeringRecordMetadata;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -189,11 +191,9 @@ public final class EventAppliers implements EventApplier {
     register(VariableIntent.CREATED, variableApplier);
     register(VariableIntent.UPDATED, variableApplier);
     register(VariableIntent.MIGRATED, new VariableMigratedApplier());
-    register(VariableDocumentIntent.UPDATING, new VariableDocumentUpdatingApplier(variableState));
-    register(VariableDocumentIntent.UPDATED, new VariableDocumentUpdatedApplier(variableState));
-    register(
-        VariableDocumentIntent.UPDATE_DENIED,
-        new VariableDocumentUpdateDeniedApplier(variableState));
+    register(VariableDocumentIntent.UPDATING, new VariableDocumentUpdatingApplier(state));
+    register(VariableDocumentIntent.UPDATED, new VariableDocumentUpdatedApplier(state));
+    register(VariableDocumentIntent.UPDATE_DENIED, new VariableDocumentUpdateDeniedApplier(state));
   }
 
   private void registerProcessInstanceEventAppliers(final MutableProcessingState state) {
@@ -667,6 +667,16 @@ public final class EventAppliers implements EventApplier {
   public void applyState(
       final long key, final Intent intent, final RecordValue value, final int recordVersion)
       throws NoSuchEventApplier {
+    applyState(key, intent, value, recordVersion, TriggeringRecordMetadata.empty());
+  }
+
+  @Override
+  public void applyState(
+      final long key,
+      final Intent intent,
+      final RecordValue value,
+      final int recordVersion,
+      final TriggeringRecordMetadata metadata) {
     final var applierForIntent = mapping.get(intent);
     if (applierForIntent == null) {
       throw new NoApplierForIntent(intent);
@@ -676,6 +686,12 @@ public final class EventAppliers implements EventApplier {
       throw new NoApplierForVersion(intent, recordVersion, getLatestVersion(intent));
     }
 
-    applierForVersion.applyState(key, value);
+    if (metadata.isEmpty()) {
+      applierForVersion.applyState(key, value);
+    } else if (applierForVersion instanceof MetadataAwareTypedEventApplier metadataAwareApplier) {
+      metadataAwareApplier.applyState(key, value, metadata);
+    } else {
+      applierForVersion.applyState(key, value);
+    }
   }
 }

@@ -987,4 +987,46 @@ public class UserTaskListenersTest {
         .describedAs("Verify the expected sequence of User Task intents")
         .containsSequence(intents);
   }
+
+  @Test
+  void shouldUpdateUserTaskAfterUpdatingListenersWhenTriggeredByTaskVariableUpdate() {
+    // given
+    final int operationReference = 111;
+    final var listenerType = "updating_listener";
+    final var userTaskKey =
+        resourcesHelper.createSingleUserTask(
+            t -> t.zeebeTaskListener(l -> l.updating().type(listenerType)));
+    final var userTaskInstanceKey =
+        RecordingExporter.userTaskRecords()
+            .withRecordKey(userTaskKey)
+            .getFirst()
+            .getValue()
+            .getElementInstanceKey();
+
+    final JobHandler completeJob =
+        (jobClient, job) -> client.newCompleteCommand(job).withResult().send().join();
+    client.newWorker().jobType(listenerType).handler(completeJob).open();
+
+    // when: updating variables to trigger an update transition
+    final var updateVariablesFuture =
+        client
+            .newSetVariablesCommand(userTaskInstanceKey)
+            .useRest()
+            .variables(Map.of("approvalStatus", "APPROVED"))
+            .local(true)
+            .operationReference(operationReference)
+            .send();
+
+    ZeebeAssertHelper.assertJobCompleted(listenerType);
+    assertThatCode(updateVariablesFuture::join).doesNotThrowAnyException();
+
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.UPDATING, UserTaskIntent.COMPLETE_TASK_LISTENER, UserTaskIntent.UPDATED);
+
+    assertThat(
+            RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATED)
+                .withScopeKey(userTaskInstanceKey)
+                .getFirst())
+        .hasOperationReference(operationReference);
+  }
 }

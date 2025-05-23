@@ -35,6 +35,7 @@ import io.camunda.zeebe.engine.state.instance.DbEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.instance.DbIncidentState;
 import io.camunda.zeebe.engine.state.instance.DbJobState;
 import io.camunda.zeebe.engine.state.instance.DbTimerInstanceState;
+import io.camunda.zeebe.engine.state.instance.DbTriggeringRecordMetadataState;
 import io.camunda.zeebe.engine.state.instance.DbUserTaskState;
 import io.camunda.zeebe.engine.state.message.DbMessageCorrelationState;
 import io.camunda.zeebe.engine.state.message.DbMessageStartEventSubscriptionState;
@@ -74,6 +75,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
 import io.camunda.zeebe.engine.state.mutable.MutableSignalSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableTriggeringRecordMetadataState;
 import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
@@ -128,6 +130,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableBatchOperationState batchOperationState;
   private final MutableMembershipState membershipState;
   private final MutableUsageMetricState usageMetricState;
+  private final MutableTriggeringRecordMetadataState triggeringRecordMetadataState;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
   private final int partitionId;
 
@@ -185,6 +188,8 @@ public class ProcessingDbState implements MutableProcessingState {
     batchOperationState = new DbBatchOperationState(zeebeDb, transactionContext);
     membershipState = new DbMembershipState(zeebeDb, transactionContext);
     usageMetricState = new DbUsageMetricState(zeebeDb, transactionContext);
+    triggeringRecordMetadataState =
+        new DbTriggeringRecordMetadataState(zeebeDb, transactionContext);
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
   }
 
@@ -364,6 +369,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableUsageMetricState getUsageMetricState() {
     return usageMetricState;
+  }
+
+  @Override
+  public MutableTriggeringRecordMetadataState getTriggeringRecordMetadataState() {
+    return triggeringRecordMetadataState;
   }
 
   @Override
