@@ -16,28 +16,32 @@ import io.camunda.spring.client.properties.CamundaClientAuthProperties;
 import io.camunda.spring.client.properties.CamundaClientCloudProperties;
 import io.camunda.spring.client.properties.CamundaClientProperties;
 import io.camunda.spring.client.properties.CamundaClientProperties.ClientMode;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 
 @Configuration
+@ConfigurationProperties(prefix = "io.camunda.process.test.remote")
 public class RemoteClientConfiguration {
 
-  @Bean
-  @Primary
-  @ConfigurationProperties(prefix = "io.camunda.process.test.remote.client")
-  CamundaClientProperties remoteClientProperties() {
-    return new CamundaClientProperties();
+  @NestedConfigurationProperty
+  private CamundaClientProperties client = new CamundaClientProperties();
+
+  public CamundaClientProperties getClient() {
+    return client;
+  }
+
+  public void setClient(final CamundaClientProperties client) {
+    this.client = client;
   }
 
   @Bean
-  public CamundaClientBuilderFactory remoteClientBuilderFactory(
-      @Qualifier("remoteClientProperties") final CamundaClientProperties remoteClientProperties) {
+  public CamundaClientBuilderFactory remoteClientBuilderFactory() {
+    final CamundaClientProperties remoteClientProperties = client;
 
     final CamundaClientBuilder remoteClientBuilder =
-        createRemoteClientBuilder(remoteClientProperties);
+        createCamundaClientBuilder(remoteClientProperties);
 
     if (remoteClientProperties.getRestAddress() != null) {
       remoteClientBuilder.restAddress(remoteClientProperties.getRestAddress());
@@ -49,25 +53,35 @@ public class RemoteClientConfiguration {
     return () -> remoteClientBuilder;
   }
 
-  private CamundaClientBuilder createRemoteClientBuilder(
-      final CamundaClientProperties camundaClientProperties) {
-    if (camundaClientProperties.getMode() == ClientMode.saas) {
-      final CamundaClientCloudProperties cloudProperties = camundaClientProperties.getCloud();
-      final CamundaClientAuthProperties authProperties = camundaClientProperties.getAuth();
+  private static CamundaClientBuilder createCamundaClientBuilder(
+      final CamundaClientProperties clientProperties) {
 
-      final CredentialsProvider credentialsProvider =
-          new CredentialsProviderConfiguration()
-              .camundaClientCredentialsProvider(camundaClientProperties);
-
-      return CamundaClient.newCloudClientBuilder()
-          .withClusterId(cloudProperties.getClusterId())
-          .withClientId(authProperties.getClientId())
-          .withClientSecret(authProperties.getClientSecret())
-          .withRegion(cloudProperties.getRegion())
-          .credentialsProvider(credentialsProvider);
+    if (clientProperties.getMode() == ClientMode.saas) {
+      return createCloudClientBuilder(clientProperties);
 
     } else {
       return CamundaClient.newClientBuilder().usePlaintext();
     }
+  }
+
+  private static CamundaClientBuilder createCloudClientBuilder(
+      final CamundaClientProperties clientProperties) {
+    final CamundaClientCloudProperties cloudProperties = clientProperties.getCloud();
+    final CamundaClientAuthProperties authProperties = clientProperties.getAuth();
+
+    final CredentialsProvider credentialsProvider = createCredentialsProvider(clientProperties);
+
+    return CamundaClient.newCloudClientBuilder()
+        .withClusterId(cloudProperties.getClusterId())
+        .withClientId(authProperties.getClientId())
+        .withClientSecret(authProperties.getClientSecret())
+        .withRegion(cloudProperties.getRegion())
+        .credentialsProvider(credentialsProvider);
+  }
+
+  private static CredentialsProvider createCredentialsProvider(
+      final CamundaClientProperties clientProperties) {
+    return new CredentialsProviderConfiguration()
+        .camundaClientCredentialsProvider(clientProperties);
   }
 }
