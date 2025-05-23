@@ -20,6 +20,11 @@ public class RoutingInfoMigration implements MigrationTask {
   }
 
   @Override
+  public boolean isInitialization() {
+    return true;
+  }
+
+  @Override
   public void runMigration(final MutableMigrationTaskContext context) {
     final var routingState = context.processingState().getRoutingState();
     final var partitionCount = context.clusterContext().partitionCount();
