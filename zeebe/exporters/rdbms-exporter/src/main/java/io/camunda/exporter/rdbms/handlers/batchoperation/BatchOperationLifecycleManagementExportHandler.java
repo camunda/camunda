@@ -40,14 +40,14 @@ public class BatchOperationLifecycleManagementExportHandler
   @Override
   public void export(final Record<BatchOperationLifecycleManagementRecordValue> record) {
     final var value = record.getValue();
-    final var batchOperationKey = String.valueOf(value.getBatchOperationKey());
+    final var batchOperationId = String.valueOf(value.getBatchOperationKey());
     if (record.getIntent().equals(BatchOperationIntent.CANCELED)) {
       batchOperationWriter.cancel(
-          batchOperationKey, DateUtil.toOffsetDateTime(record.getTimestamp()));
+          batchOperationId, DateUtil.toOffsetDateTime(record.getTimestamp()));
     } else if (record.getIntent().equals(BatchOperationIntent.PAUSED)) {
-      batchOperationWriter.pause(batchOperationKey);
+      batchOperationWriter.pause(batchOperationId);
     } else if (record.getIntent().equals(BatchOperationIntent.RESUMED)) {
-      batchOperationWriter.resume(batchOperationKey);
+      batchOperationWriter.resume(batchOperationId);
     }
   }
 }
