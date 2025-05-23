@@ -20,6 +20,7 @@ import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.indices.AbstractIndexDescriptor;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
+import io.camunda.zeebe.util.VisibleForTesting;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
@@ -234,7 +235,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
         new CreateIndexRequest.Builder()
             .mappings(TypeMapping._DESERIALIZER.deserialize(parser, mapper))
             .aliases(indexDescriptor.getAlias(), new Alias.Builder().isWriteIndex(false).build())
-            .settings(getIndexSettings())
+            .settings(getIndexSettings(indexDescriptor.getIndexName()))
             .index(indexDescriptor.getFullQualifiedName())
             .build();
 
@@ -348,21 +349,30 @@ public class OpenSearchSchemaManager implements SchemaManager {
         elsConfig.getNumberOfShards(),
         elsConfig.getNumberOfReplicas());
 
-    final IndexSettings settings = getIndexSettings();
+    final IndexSettings settings = getDefaultIndexSettings();
     retryOpenSearchClient.createComponentTemplate(
-        new PutComponentTemplateRequest.Builder()
-            .name(settingsTemplateName)
-            // .settings(settings)
-            .template(t -> t.settings(settings))
-            .build());
+        PutComponentTemplateRequest.of(
+            b -> b.name(settingsTemplateName).template(t -> t.settings(settings))));
   }
 
-  private IndexSettings getIndexSettings() {
-    final TasklistOpenSearchProperties osConfig = tasklistProperties.getOpenSearch();
-    return new IndexSettings.Builder()
-        .numberOfShards(String.valueOf(osConfig.getNumberOfShards()))
-        .numberOfReplicas(String.valueOf(osConfig.getNumberOfReplicas()))
-        .build();
+  private IndexSettings getIndexSettings(final String indexName) {
+    final var osConfig = tasklistProperties.getOpenSearch();
+    final var shards =
+        osConfig.getNumberOfShardsPerIndex().getOrDefault(indexName, osConfig.getNumberOfShards());
+    final var replicas =
+        osConfig
+            .getNumberOfReplicasPerIndex()
+            .getOrDefault(indexName, osConfig.getNumberOfReplicas());
+    return IndexSettings.of(
+        b -> b.numberOfShards(String.valueOf(shards)).numberOfReplicas(String.valueOf(replicas)));
+  }
+
+  private IndexSettings getDefaultIndexSettings() {
+    final var osConfig = tasklistProperties.getOpenSearch();
+    return IndexSettings.of(
+        b ->
+            b.numberOfShards(String.valueOf(osConfig.getNumberOfShards()))
+                .numberOfReplicas(String.valueOf(osConfig.getNumberOfReplicas())));
   }
 
   private String settingsTemplateName() {
@@ -374,7 +384,8 @@ public class OpenSearchSchemaManager implements SchemaManager {
     templateDescriptors.forEach(this::createTemplate);
   }
 
-  private void createTemplate(final TemplateDescriptor templateDescriptor) {
+  @VisibleForTesting
+  void createTemplate(final TemplateDescriptor templateDescriptor) {
     createTemplate(templateDescriptor, false);
   }
 
@@ -392,8 +403,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
         overwrite);
 
     // This is necessary, otherwise tasklist won't find indexes at startup
-    final String indexName = templateDescriptor.getFullQualifiedName();
-    createIndex(new CreateIndexRequest.Builder().index(indexName).build(), indexName);
+    createIndex(templateDescriptor);
   }
 
   private void putIndexTemplate(final PutIndexTemplateRequest request, final boolean overwrite) {
