@@ -19,6 +19,7 @@ import {useVariableFormFields} from './useVariableFormFields';
 import {createModification} from './createModification';
 import {Layer} from '@carbon/react';
 import {useEffect, useRef} from 'react';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 
 type Props = {
   variableName: string;
@@ -72,6 +73,7 @@ const Name: React.FC<Props> = ({variableName, scopeId}) => {
                 id: currentId,
                 name: currentName,
                 value: currentValue,
+                isRootNodeSelected: flowNodeSelectionStore.isRootNodeSelected,
               });
             }}
           />

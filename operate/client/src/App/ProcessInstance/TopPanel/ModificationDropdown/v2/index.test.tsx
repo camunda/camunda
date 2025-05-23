@@ -18,6 +18,8 @@ import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownod
 import {fetchMetaData, init} from 'modules/utils/flowNodeMetadata';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
 
 describe('Modification Dropdown', () => {
   const statisticsData = [
@@ -80,12 +82,25 @@ describe('Modification Dropdown', () => {
   ];
 
   beforeEach(() => {
+    const mockProcessInstance: ProcessInstance = {
+      processInstanceKey: 'instance_id',
+      state: 'ACTIVE',
+      startDate: '2018-06-21',
+      processDefinitionKey: '2',
+      processDefinitionVersion: 1,
+      processDefinitionId: 'someKey',
+      tenantId: '<default>',
+      processDefinitionName: 'someProcessName',
+      hasIncident: false,
+    };
+
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: statisticsData,
     });
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: statisticsData,
     });
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
     mockFetchProcessDefinitionXml().withSuccess(
       open('diagramForModifications.bpmn'),

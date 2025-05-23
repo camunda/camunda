@@ -45,14 +45,17 @@ const callHierarchy: CallHierarchy[] = [
   {
     processInstanceKey: '546546543276',
     processDefinitionName: 'Parent Process Name',
+    processDefinitionKey: '',
   },
   {
     processInstanceKey: '968765314354',
     processDefinitionName: '1st level Child Process Name',
+    processDefinitionKey: '',
   },
   {
     processInstanceKey: '2251799813685447',
     processDefinitionName: '2nd level Child Process Name',
+    processDefinitionKey: '',
   },
 ];
 

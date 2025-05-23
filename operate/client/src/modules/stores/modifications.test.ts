@@ -463,6 +463,7 @@ describe('stores/modifications', () => {
         parentScopeIds: generateParentScopeIds(
           mockNestedSubProcessBusinessObjects,
           'user_task',
+          'nested_sub_process',
         ),
       },
     });
@@ -477,6 +478,7 @@ describe('stores/modifications', () => {
         parentScopeIds: generateParentScopeIds(
           mockNestedSubProcessBusinessObjects,
           'user_task',
+          'nested_sub_process',
         ),
       },
     });
@@ -901,6 +903,7 @@ describe('stores/modifications', () => {
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
       businessObjects: {},
+      bpmnProcessId: 'inner_sub_process',
     });
 
     modificationsStore.addModification({

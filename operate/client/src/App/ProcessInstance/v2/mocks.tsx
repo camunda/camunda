@@ -112,7 +112,7 @@ const mockRequests = (contextPath: string = '') => {
   );
   mockFetchProcessInstance(contextPath).withSuccess(mockProcessInstance);
   mockFetchProcessInstance(contextPath).withSuccess(mockProcessInstance);
-  mockFetchCallHierarchy(contextPath).withSuccess({items: []});
+  mockFetchCallHierarchy(contextPath).withSuccess([]);
   mockFetchProcessDefinitionXml({contextPath}).withSuccess('');
   mockFetchProcessSequenceFlows().withSuccess({items: mockSequenceFlowsV2});
   mockFetchFlowNodeInstances(contextPath).withSuccess(

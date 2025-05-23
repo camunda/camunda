@@ -7,7 +7,6 @@
  */
 
 import {BusinessObject, BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 
 const hasMultipleScopes = (
   parentFlowNode?: BusinessObject,
@@ -63,10 +62,8 @@ const getFlowNodesInBetween = (
 const getFlowNodeParents = (
   businessObjects: BusinessObjects,
   flowNodeId: string,
+  bpmnProcessId?: string,
 ): string[] => {
-  const bpmnProcessId =
-    processInstanceDetailsStore.state.processInstance?.bpmnProcessId;
-
   if (bpmnProcessId === undefined) {
     return [];
   }

@@ -8,6 +8,7 @@
 
 import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {modificationsStore} from 'modules/stores/modifications';
+import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {getSelectedFlowNodeName} from 'modules/utils/flowNodeSelection';
 
 const createModification = ({
@@ -17,6 +18,7 @@ const createModification = ({
   name,
   value,
   businessObjects,
+  isRootNodeSelected,
 }: {
   scopeId: string | null;
   areFormFieldsValid: boolean;
@@ -24,6 +26,7 @@ const createModification = ({
   name: string;
   value: string;
   businessObjects?: BusinessObjects;
+  isRootNodeSelected?: boolean;
 }) => {
   if (scopeId === null || !areFormFieldsValid || name === '' || value === '') {
     return;
@@ -46,7 +49,11 @@ const createModification = ({
         operation: 'ADD_VARIABLE',
         scopeId,
         id,
-        flowNodeName: getSelectedFlowNodeName(businessObjects),
+        flowNodeName: getSelectedFlowNodeName(
+          businessObjects,
+          processInstanceDetailsStore.state.processInstance?.processName,
+          isRootNodeSelected,
+        ),
         name,
         newValue: value,
       },
