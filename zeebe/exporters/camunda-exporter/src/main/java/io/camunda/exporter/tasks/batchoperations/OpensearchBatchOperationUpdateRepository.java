@@ -170,7 +170,8 @@ public class OpensearchBatchOperationUpdateRepository extends OpensearchReposito
         .inline(
             s ->
                 s.source(
-                        "if (ctx._source.operationsTotalCount <= params.operationsFinishedCount) { "
+                        "if ((ctx._source.state == null || ctx._source.state == 'COMPLETED') "
+                            + " && params.operationsTotalCount <= params.operationsFinishedCount) { "
                             + "   ctx._source.endDate = params.endDate; "
                             + "} "
                             + "ctx._source.operationsFinishedCount = params.operationsFinishedCount;"
