@@ -10,20 +10,16 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>io.camunda</groupId>
-    <artifactId>zeebe-parent</artifactId>
+    <artifactId>camunda-security</artifactId>
     <version>8.8.0-SNAPSHOT</version>
-    <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
-  <artifactId>camunda-security</artifactId>
-  <packaging>pom</packaging>
+  <artifactId>camunda-security-protocol</artifactId>
+  <name>Camunda Security Protocol</name>
 
-  <name>Camunda Security Parent</name>
-
-  <modules>
-    <module>security-core</module>
-    <module>security-services</module>
-    <module>security-protocol</module>
-  </modules>
+  <properties>
+    <!-- must match the zeebe-protocol lowest support JDK version -->
+    <version.java>8</version.java>
+  </properties>
 
 </project>
