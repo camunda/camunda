@@ -28,7 +28,7 @@ import org.springframework.context.annotation.Bean;
   CamundaProcessTestDefaultConfiguration.class,
   CamundaAutoConfiguration.class,
   CamundaContainerRuntimeConfiguration.class,
-  RemoteClientConfiguration.class
+  RemoteCamundaClientConfiguration.class
 })
 @AutoConfigureBefore(CamundaAutoConfiguration.class)
 public class CamundaProcessTestAutoConfiguration {

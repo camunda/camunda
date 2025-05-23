@@ -21,7 +21,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class RemoteClientConfiguration {
+public class RemoteCamundaClientConfiguration {
 
   @Bean
   public CamundaClientBuilderFactory remoteClientBuilderFactory(

@@ -22,6 +22,7 @@ import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.UserTask;
+import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
@@ -43,7 +44,6 @@ import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
@@ -61,34 +61,15 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private final URI camundaRestApiAddress;
   private final URI camundaGrpcApiAddress;
   private final URI connectorsRestApiAddress;
+  private final CamundaClientBuilderFactory camundaClientBuilderFactory;
   private final Consumer<AutoCloseable> clientCreationCallback;
   private final CamundaManagementClient camundaManagementClient;
-
-  private Supplier<CamundaClientBuilder> camundaClientBuilderSupplier =
-      () ->
-          CamundaClient.newClientBuilder()
-              .usePlaintext()
-              .grpcAddress(getCamundaGrpcAddress())
-              .restAddress(getCamundaRestAddress());
-
-  public CamundaProcessTestContextImpl(
-      final URI camundaRestApiAddress,
-      final URI camundaGrpcApiAddress,
-      final URI connectorsRestApiAddress,
-      final Consumer<AutoCloseable> clientCreationCallback,
-      final CamundaManagementClient camundaManagementClient) {
-    this.camundaRestApiAddress = camundaRestApiAddress;
-    this.camundaGrpcApiAddress = camundaGrpcApiAddress;
-    this.connectorsRestApiAddress = connectorsRestApiAddress;
-    this.clientCreationCallback = clientCreationCallback;
-    this.camundaManagementClient = camundaManagementClient;
-  }
 
   public CamundaProcessTestContextImpl(
       final CamundaRuntime camundaRuntime,
       final Consumer<AutoCloseable> clientCreationCallback,
       final CamundaManagementClient camundaManagementClient) {
-    camundaClientBuilderSupplier = camundaRuntime.getCamundaClientBuilderFactory();
+    camundaClientBuilderFactory = camundaRuntime.getCamundaClientBuilderFactory();
     camundaRestApiAddress = camundaRuntime.getCamundaRestApiAddress();
     camundaGrpcApiAddress = camundaRuntime.getCamundaGrpcApiAddress();
     connectorsRestApiAddress = camundaRuntime.getConnectorsRestApiAddress();
@@ -103,7 +84,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   @Override
   public CamundaClient createClient(final Consumer<CamundaClientBuilder> modifier) {
-    final CamundaClientBuilder builder = camundaClientBuilderSupplier.get();
+    final CamundaClientBuilder builder = camundaClientBuilderFactory.get();
 
     modifier.accept(builder);
 
