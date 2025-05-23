@@ -77,6 +77,7 @@ public class BatchOperationStateTest {
     assertThat(recordFilter).isEqualTo(filter);
     assertThat(batchOperation.getStatus()).isEqualTo(BatchOperationStatus.CREATED);
     assertThat(batchOperation.getAuthentication()).isEqualTo(authentication);
+    assertThat(batchOperation.isInitialized()).isFalse();
   }
 
   @Test
@@ -201,6 +202,24 @@ public class BatchOperationStateTest {
     // and should have status STARTED
     final var persistedBatchOperation = state.get(batchOperationKey).get();
     assertThat(persistedBatchOperation.getStatus()).isEqualTo(BatchOperationStatus.STARTED);
+  }
+
+  @Test
+  void startedBatchShouldBeInitialized() {
+    // given
+    final var batchOperationKey = 1L;
+    final var batchRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+    state.create(batchOperationKey, batchRecord);
+
+    // when
+    state.start(batchOperationKey);
+
+    // then
+    final var pendingKeys = new ArrayList<>();
+    assertThat(state.get(batchOperationKey).get().isInitialized()).isTrue();
   }
 
   @Test
@@ -495,7 +514,7 @@ public class BatchOperationStateTest {
   }
 
   @Test
-  void shouldResumeBatch() {
+  void shouldResumeCreatedBatch() {
     // given
     final var batchOperationKey = 1L;
     final var batchRecord =
@@ -503,6 +522,27 @@ public class BatchOperationStateTest {
             .setBatchOperationKey(batchOperationKey)
             .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
     state.create(batchOperationKey, batchRecord);
+    state.pause(batchOperationKey);
+
+    // when
+    state.resume(batchOperationKey);
+
+    // then
+    final var persistedBatchOperation = state.get(batchOperationKey);
+    assertThat(persistedBatchOperation).isNotEmpty();
+    assertThat(persistedBatchOperation.get().getStatus()).isEqualTo(BatchOperationStatus.CREATED);
+  }
+
+  @Test
+  void shouldResumeInitializedBatch() {
+    // given
+    final var batchOperationKey = 1L;
+    final var batchRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+    state.create(batchOperationKey, batchRecord);
+    state.start(batchOperationKey);
     state.pause(batchOperationKey);
 
     // when

@@ -12,6 +12,7 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
@@ -40,13 +41,14 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
       new ObjectProperty<>("migrationPlan", new BatchOperationProcessInstanceMigrationPlan());
   private final ObjectProperty<BatchOperationProcessInstanceModificationPlan> modificationPlanProp =
       new ObjectProperty<>("modificationPlan", new BatchOperationProcessInstanceModificationPlan());
+  private final BooleanProperty initializedProp = new BooleanProperty("initialized", false);
   private final ArrayProperty<LongValue> chunkKeysProp =
       new ArrayProperty<>("chunkKeys", LongValue::new);
   // Authentication claims, needed for query + command auth
   private final DocumentProperty authenticationProp = new DocumentProperty("authentication");
 
   public PersistedBatchOperation() {
-    super(8);
+    super(9);
     declareProperty(keyProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(statusProp)
@@ -54,6 +56,7 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
         .declareProperty(migrationPlanProp)
         .declareProperty(modificationPlanProp)
         .declareProperty(chunkKeysProp)
+        .declareProperty(initializedProp)
         .declareProperty(authenticationProp);
   }
 
@@ -65,6 +68,21 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
     setModificationPlan(record.getModificationPlan());
     setAuthentication(record.getAuthenticationBuffer());
     return this;
+  }
+
+  /** Marks this batch operation as initialized. */
+  public void markAsInitialized() {
+    initializedProp.setValue(true);
+  }
+
+  /**
+   * Returns true if the batch operation is initialized and ready for execution. A batch operation
+   * is considered initialized if it has been started once.
+   *
+   * @return true if the batch operation is initialized, false otherwise
+   */
+  public boolean isInitialized() {
+    return initializedProp.getValue();
   }
 
   public boolean canCancel() {
