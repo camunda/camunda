@@ -6,6 +6,7 @@ package processmanagement
 import (
 	"errors"
 
+	"github.com/rs/zerolog/log"
 	"golang.org/x/sys/windows"
 )
 
@@ -13,14 +14,10 @@ func (p *ProcessHandler) IsPidRunning(pid int) bool {
 	h, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, uint32(pid))
 	if err != nil {
 		if errors.Is(err, windows.ERROR_INVALID_PARAMETER) {
+			log.Debug().Msg("PID doesn't exist")
 			return false // PID doesn't exist
 		}
-		// If we got access denied, the process may still be running but
-		// we don't have sufficient rights to query it (e.g. on locked-down
-		// CI runners). Treat that as the process existing.
-		if errors.Is(err, windows.ERROR_ACCESS_DENIED) {
-			return true
-		}
+		log.Debug().Msg("Process not running")
 		return false
 	}
 	defer windows.CloseHandle(h)
