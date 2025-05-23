@@ -42,23 +42,23 @@ public interface BatchOperationMapper {
   List<BatchOperationItemEntity> searchItems(BatchOperationItemDbQuery query);
 
   record BatchOperationUpdateDto(
-      String batchOperationKey, BatchOperationState state, OffsetDateTime endDate) {}
+      String batchOperationId, BatchOperationState state, OffsetDateTime endDate) {}
 
-  record BatchOperationUpdateTotalCountDto(String batchOperationKey, int operationsTotalCount) {}
+  record BatchOperationUpdateTotalCountDto(String batchOperationId, int operationsTotalCount) {}
 
-  record BatchOperationUpdateCountsDto(String batchOperationKey, long itemKey) {}
+  record BatchOperationUpdateCountsDto(String batchOperationId, long itemKey) {}
 
-  record BatchOperationItemsDto(String batchOperationKey, List<BatchOperationItemDbModel> items) {}
+  record BatchOperationItemsDto(String batchOperationId, List<BatchOperationItemDbModel> items) {}
 
   record BatchOperationItemDto(
-      String batchOperationKey,
+      String batchOperationId,
       Long itemKey,
       BatchOperationEntity.BatchOperationItemState state,
       OffsetDateTime processedDate,
       String errorMessage) {}
 
   record BatchOperationItemStatusUpdateDto(
-      String batchOperationKey,
+      String batchOperationId,
       BatchOperationEntity.BatchOperationItemState oldState,
       BatchOperationEntity.BatchOperationItemState newState) {}
 }

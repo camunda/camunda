@@ -42,7 +42,7 @@ public class BatchOperationWriter {
   }
 
   public void createIfNotAlreadyExists(final BatchOperationDbModel batchOperation) {
-    if (reader.exists(batchOperation.batchOperationKey())) {
+    if (reader.exists(batchOperation.batchOperationId())) {
       LOGGER.trace("Batch operation already exists: {}", batchOperation);
       return;
     }
@@ -51,7 +51,7 @@ public class BatchOperationWriter {
         new QueueItem(
             ContextType.BATCH_OPERATION,
             WriteStatementType.INSERT,
-            batchOperation.batchOperationKey(),
+            batchOperation.batchOperationId(),
             "io.camunda.db.rdbms.sql.BatchOperationMapper.insert",
             batchOperation));
     LOGGER.trace("Force flush to directly create batch operation: {}", batchOperation);
@@ -59,21 +59,21 @@ public class BatchOperationWriter {
   }
 
   public void updateBatchAndInsertItems(
-      final String batchOperationKey, final List<BatchOperationItemDbModel> items) {
+      final String batchOperationId, final List<BatchOperationItemDbModel> items) {
     if (items != null && !items.isEmpty()) {
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.BATCH_OPERATION,
               WriteStatementType.UPDATE,
-              batchOperationKey,
+              batchOperationId,
               "io.camunda.db.rdbms.sql.BatchOperationMapper.incrementOperationsTotalCount",
-              new BatchOperationUpdateTotalCountDto(batchOperationKey, items.size())));
-      insertItems(new BatchOperationItemsDto(batchOperationKey, items));
+              new BatchOperationUpdateTotalCountDto(batchOperationId, items.size())));
+      insertItems(new BatchOperationItemsDto(batchOperationId, items));
     }
   }
 
   public void updateItem(
-      final String batchOperationKey,
+      final String batchOperationId,
       final long itemKey,
       final BatchOperationItemState state,
       final OffsetDateTime endDate,
@@ -84,77 +84,77 @@ public class BatchOperationWriter {
         new QueueItem(
             ContextType.BATCH_OPERATION,
             WriteStatementType.UPDATE,
-            batchOperationKey,
+            batchOperationId,
             "io.camunda.db.rdbms.sql.BatchOperationMapper.updateItem",
-            new BatchOperationItemDto(batchOperationKey, itemKey, state, endDate, errorMessage)));
+            new BatchOperationItemDto(batchOperationId, itemKey, state, endDate, errorMessage)));
 
     if (state == BatchOperationItemState.FAILED) {
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.BATCH_OPERATION,
               WriteStatementType.UPDATE,
-              batchOperationKey,
+              batchOperationId,
               "io.camunda.db.rdbms.sql.BatchOperationMapper.incrementFailedOperationsCount",
-              new BatchOperationUpdateCountsDto(batchOperationKey, itemKey)));
+              new BatchOperationUpdateCountsDto(batchOperationId, itemKey)));
     } else if (state == BatchOperationItemState.COMPLETED) {
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.BATCH_OPERATION,
               WriteStatementType.UPDATE,
-              batchOperationKey,
+              batchOperationId,
               "io.camunda.db.rdbms.sql.BatchOperationMapper.incrementCompletedOperationsCount",
-              new BatchOperationUpdateCountsDto(batchOperationKey, itemKey)));
+              new BatchOperationUpdateCountsDto(batchOperationId, itemKey)));
     }
   }
 
-  public void finish(final String batchOperationKey, final OffsetDateTime endDate) {
+  public void finish(final String batchOperationId, final OffsetDateTime endDate) {
     updateCompleted(
-        batchOperationKey,
-        new BatchOperationUpdateDto(batchOperationKey, BatchOperationState.COMPLETED, endDate));
+        batchOperationId,
+        new BatchOperationUpdateDto(batchOperationId, BatchOperationState.COMPLETED, endDate));
   }
 
-  public void cancel(final String batchOperationKey, final OffsetDateTime endDate) {
+  public void cancel(final String batchOperationId, final OffsetDateTime endDate) {
     updateCompleted(
-        batchOperationKey,
-        new BatchOperationUpdateDto(batchOperationKey, BatchOperationState.CANCELED, endDate));
+        batchOperationId,
+        new BatchOperationUpdateDto(batchOperationId, BatchOperationState.CANCELED, endDate));
 
     updateItemsWithState(
-        batchOperationKey, BatchOperationItemState.ACTIVE, BatchOperationItemState.CANCELED);
+        batchOperationId, BatchOperationItemState.ACTIVE, BatchOperationItemState.CANCELED);
   }
 
-  public void pause(final String batchOperationKey) {
+  public void pause(final String batchOperationId) {
     updateCompleted(
-        batchOperationKey,
-        new BatchOperationUpdateDto(batchOperationKey, BatchOperationState.PAUSED, null));
+        batchOperationId,
+        new BatchOperationUpdateDto(batchOperationId, BatchOperationState.PAUSED, null));
   }
 
-  public void resume(final String batchOperationKey) {
+  public void resume(final String batchOperationId) {
     updateCompleted(
-        batchOperationKey,
-        new BatchOperationUpdateDto(batchOperationKey, BatchOperationState.ACTIVE, null));
+        batchOperationId,
+        new BatchOperationUpdateDto(batchOperationId, BatchOperationState.ACTIVE, null));
   }
 
-  private void updateCompleted(final String batchOperationKey, final BatchOperationUpdateDto dto) {
+  private void updateCompleted(final String batchOperationId, final BatchOperationUpdateDto dto) {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.BATCH_OPERATION,
             WriteStatementType.UPDATE,
-            batchOperationKey,
+            batchOperationId,
             "io.camunda.db.rdbms.sql.BatchOperationMapper.updateCompleted",
             dto));
   }
 
   private void updateItemsWithState(
-      final String batchOperationKey,
+      final String batchOperationId,
       final BatchOperationItemState oldState,
       final BatchOperationItemState newState) {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.BATCH_OPERATION,
             WriteStatementType.UPDATE,
-            batchOperationKey,
+            batchOperationId,
             "io.camunda.db.rdbms.sql.BatchOperationMapper.updateItemsWithState",
-            new BatchOperationItemStatusUpdateDto(batchOperationKey, oldState, newState)));
+            new BatchOperationItemStatusUpdateDto(batchOperationId, oldState, newState)));
   }
 
   private void insertItems(final BatchOperationItemsDto items) {
@@ -162,7 +162,7 @@ public class BatchOperationWriter {
         new QueueItem(
             ContextType.BATCH_OPERATION,
             WriteStatementType.INSERT,
-            items.batchOperationKey(),
+            items.batchOperationId(),
             "io.camunda.db.rdbms.sql.BatchOperationMapper.insertItems",
             items));
   }
