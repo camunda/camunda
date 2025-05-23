@@ -211,7 +211,27 @@ public class DbMigratorImplTest {
     sut.runMigrations();
 
     // then
+    verify(migration).isInitialization();
     verify(migration, never()).runMigration(any());
+    verify(mockProcessingState.getMigrationState()).setMigratedByVersion(eq(CURRENT_VERSION));
+  }
+
+  @Test
+  void shouldOnlyRunInitializationMigrationsWhenDbIsEmpty() {
+    // given
+    when(mockProcessingState.getMigrationState().getMigratedByVersion()).thenReturn(null);
+
+    final var migration = mock(MigrationTask.class);
+    when(migration.needsToRun(any())).thenReturn(true);
+    when(migration.isInitialization()).thenReturn(true);
+    migrations.add(migration);
+
+    // when
+    sut.runMigrations();
+
+    // then
+    verify(migration).isInitialization();
+    verify(migration).runMigration(any());
     verify(mockProcessingState.getMigrationState()).setMigratedByVersion(eq(CURRENT_VERSION));
   }
 }
