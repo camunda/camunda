@@ -7,6 +7,8 @@
  */
 package io.camunda.tasklist.util;
 
+import io.camunda.tasklist.entities.TasklistEntity;
+import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.RecordsReader;
 import java.io.IOException;
@@ -58,4 +60,7 @@ public interface DatabaseTestExtension extends Extension {
   void createIndex(String indexName) throws IOException;
 
   void deleteIndex(String indexName);
+
+  <T extends TasklistEntity<T>> void bulkIndex(IndexDescriptor index, List<T> documents)
+      throws IOException;
 }

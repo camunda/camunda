@@ -29,6 +29,7 @@ import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.commons.collections4.ListUtils;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
@@ -55,11 +56,12 @@ public abstract class OpenSearchUtil {
       "30000ms"; // this scroll timeout value is used for reindex and delete q
   public static final int QUERY_MAX_SIZE = 10000;
   public static final int UPDATE_RETRY_COUNT = 3;
+  public static final int DEFAULT_MAX_TERMS_COUNT = 65536;
   public static final Function<Hit, Long> SEARCH_HIT_ID_TO_LONG = (hit) -> Long.valueOf(hit.id());
   public static final Function<Hit, String> SEARCH_HIT_ID_TO_STRING = Hit::id;
   private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchUtil.class);
 
-  public static void clearScroll(String scrollId, OpenSearchClient osClient) {
+  public static void clearScroll(final String scrollId, final OpenSearchClient osClient) {
     if (scrollId != null) {
       // clear the scroll
       final ClearScrollRequest clearScrollRequest =
@@ -67,24 +69,24 @@ public abstract class OpenSearchUtil {
 
       try {
         osClient.clearScroll(clearScrollRequest);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         LOGGER.warn("Error occurred when clearing the scroll with id [{}]", scrollId, e);
       }
     }
   }
 
-  public static Query joinWithAnd(ObjectBuilder... queries) {
+  public static Query joinWithAnd(final ObjectBuilder... queries) {
     final List<ObjectBuilder> notNullQueries = throwAwayNullElements(queries);
     if (notNullQueries.size() == 0) {
       return new Query.Builder().build();
     }
     final BoolQuery.Builder boolQ = boolQuery();
-    for (ObjectBuilder queryBuilder : notNullQueries) {
+    for (final ObjectBuilder queryBuilder : notNullQueries) {
       final var query = queryBuilder.build();
 
-      if (query instanceof QueryVariant qv) {
+      if (query instanceof final QueryVariant qv) {
         boolQ.must(qv._toQuery());
-      } else if (query instanceof Query q) {
+      } else if (query instanceof final Query q) {
         boolQ.must(q);
       } else {
         throw new TasklistRuntimeException("Queries should be of type [Query] or [QueryVariant]");
@@ -101,16 +103,16 @@ public abstract class OpenSearchUtil {
     return boolQuery._toQuery();
   }
 
-  public static Query joinWithAnd(Query... queries) {
+  public static Query joinWithAnd(final Query... queries) {
     final List<Query> notNullQueries = throwAwayNullElements(queries);
     if (notNullQueries.size() == 0) {
       return new Query.Builder().build();
     }
     final BoolQuery.Builder boolQ = boolQuery();
-    for (Query queryBuilder : notNullQueries) {
+    for (final Query queryBuilder : notNullQueries) {
       final var query = queryBuilder;
 
-      if (query instanceof QueryVariant qv) {
+      if (query instanceof final QueryVariant qv) {
         boolQ.must(qv._toQuery());
       } else {
         boolQ.must(query);
@@ -119,7 +121,7 @@ public abstract class OpenSearchUtil {
     return new Query.Builder().bool(boolQ.build()).build();
   }
 
-  public static Query.Builder joinQueryBuilderWithAnd(ObjectBuilder... queries) {
+  public static Query.Builder joinQueryBuilderWithAnd(final ObjectBuilder... queries) {
     final List<ObjectBuilder> notNullQueries = throwAwayNullElements(queries);
     final Query.Builder queryBuilder = new Query.Builder();
     switch (notNullQueries.size()) {
@@ -127,7 +129,7 @@ public abstract class OpenSearchUtil {
         return null;
       default:
         final BoolQuery.Builder boolQ = boolQuery();
-        for (ObjectBuilder query : notNullQueries) {
+        for (final ObjectBuilder query : notNullQueries) {
           boolQ.must((Query) query.build());
         }
         queryBuilder.bool(boolQ.build());
@@ -135,7 +137,7 @@ public abstract class OpenSearchUtil {
     }
   }
 
-  public static Query.Builder joinQueryBuilderWithOr(ObjectBuilder... queries) {
+  public static Query.Builder joinQueryBuilderWithOr(final ObjectBuilder... queries) {
     final List<ObjectBuilder> notNullQueries = throwAwayNullElements(queries);
     final Query.Builder queryBuilder = new Query.Builder();
     switch (notNullQueries.size()) {
@@ -143,7 +145,7 @@ public abstract class OpenSearchUtil {
         return null;
       default:
         final BoolQuery.Builder boolQ = boolQuery();
-        for (ObjectBuilder query : notNullQueries) {
+        for (final ObjectBuilder query : notNullQueries) {
           boolQ.should((Query) query.build());
         }
         queryBuilder.bool(boolQ.build());
@@ -152,11 +154,11 @@ public abstract class OpenSearchUtil {
   }
 
   public static <T> T fromSearchHit(
-      String searchHitString, ObjectMapper objectMapper, Class<T> clazz) {
+      final String searchHitString, final ObjectMapper objectMapper, final Class<T> clazz) {
     final T entity;
     try {
       entity = objectMapper.readValue(searchHitString, clazz);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(
           String.format(
               "Error while reading entity of type %s from Elasticsearch!", clazz.getName()),
@@ -174,7 +176,7 @@ public abstract class OpenSearchUtil {
       final CompletableFuture<ScrollResponse<Object>> response =
           osClient.scroll(scrollRequest, Object.class);
       return response;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e);
     }
   }
@@ -189,7 +191,7 @@ public abstract class OpenSearchUtil {
       final OpenSearchAsyncClient osClient) {
     try {
       return osClient.deleteByQuery(deleteRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e);
     }
   }
@@ -200,20 +202,20 @@ public abstract class OpenSearchUtil {
       final OpenSearchAsyncClient osClient) {
     try {
       return osClient.reindex(reindexRequest);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e);
     }
   }
 
-  public static void processBulkRequest(OpenSearchClient osClient, BulkRequest bulkRequest)
-      throws PersistenceException {
+  public static void processBulkRequest(
+      final OpenSearchClient osClient, final BulkRequest bulkRequest) throws PersistenceException {
 
     if (bulkRequest.operations().size() > 0) {
       try {
         LOGGER.debug("************* FLUSH BULK START *************");
         final BulkResponse bulkItemResponses = osClient.bulk(bulkRequest);
         final List<BulkResponseItem> items = bulkItemResponses.items();
-        for (BulkResponseItem responseItem : items) {
+        for (final BulkResponseItem responseItem : items) {
           if (responseItem.error() != null) {
             LOGGER.error(
                 String.format(
@@ -230,7 +232,7 @@ public abstract class OpenSearchUtil {
           }
         }
         LOGGER.debug("************* FLUSH BULK FINISH *************");
-      } catch (IOException ex) {
+      } catch (final IOException ex) {
         throw new PersistenceException(
             "Error when processing bulk request against OpenSearch: " + ex.getMessage(), ex);
       }
@@ -244,13 +246,13 @@ public abstract class OpenSearchUtil {
       if (refresh.shards().failures().size() > 0) {
         LOGGER.warn("Unable to refresh indices: {}", indexPattern);
       }
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       LOGGER.warn(String.format("Unable to refresh indices: %s", indexPattern), ex);
     }
   }
 
   public static <T> List<T> mapSearchHits(
-      List<Hit> searchHits, ObjectMapper objectMapper, JavaType valueType) {
+      final List<Hit> searchHits, final ObjectMapper objectMapper, final JavaType valueType) {
     return map(searchHits, (searchHit) -> objectMapper.convertValue(searchHit.source(), valueType));
   }
 
@@ -262,17 +264,17 @@ public abstract class OpenSearchUtil {
 
     try {
       return osClient.search(searchRequest, Object.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e);
     }
   }
 
   public static void scrollWith(
-      SearchRequest.Builder searchRequest,
-      OpenSearchClient osClient,
-      Consumer<List<Hit>> searchHitsProcessor,
-      Consumer<Map> aggsProcessor,
-      Consumer<HitsMetadata> firstResponseConsumer)
+      final SearchRequest.Builder searchRequest,
+      final OpenSearchClient osClient,
+      final Consumer<List<Hit>> searchHitsProcessor,
+      final Consumer<Map> aggsProcessor,
+      final Consumer<HitsMetadata> firstResponseConsumer)
       throws IOException {
 
     searchRequest.scroll(Time.of(t -> t.time(OpenSearchUtil.INTERNAL_SCROLL_KEEP_ALIVE_MS)));
@@ -302,7 +304,7 @@ public abstract class OpenSearchUtil {
         scrollId = response.scrollId();
         hits = response.hits();
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new TasklistRuntimeException(e.getMessage());
     } finally {
       clearScroll(scrollId, osClient);
@@ -310,12 +312,12 @@ public abstract class OpenSearchUtil {
   }
 
   public static <T> void scrollWith(
-      SearchRequest.Builder searchRequest,
-      OpenSearchClient osClient,
-      Consumer<List<Hit<T>>> searchHitsProcessor,
-      Consumer<Map> aggsProcessor,
-      Class<T> clazz,
-      Consumer<HitsMetadata<T>> firstResponseConsumer)
+      final SearchRequest.Builder searchRequest,
+      final OpenSearchClient osClient,
+      final Consumer<List<Hit<T>>> searchHitsProcessor,
+      final Consumer<Map> aggsProcessor,
+      final Class<T> clazz,
+      final Consumer<HitsMetadata<T>> firstResponseConsumer)
       throws IOException {
 
     searchRequest.scroll(Time.of(t -> t.time(OpenSearchUtil.INTERNAL_SCROLL_KEEP_ALIVE_MS)));
@@ -345,7 +347,7 @@ public abstract class OpenSearchUtil {
         scrollId = response.scrollId();
         hits = response.hits();
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new TasklistRuntimeException(e.getMessage());
     } finally {
       clearScroll(scrollId, osClient);
@@ -353,7 +355,7 @@ public abstract class OpenSearchUtil {
   }
 
   public static String whereToSearch(
-      IndexDescriptor descriptor, OpenSearchUtil.QueryType queryType) {
+      final IndexDescriptor descriptor, final OpenSearchUtil.QueryType queryType) {
     switch (queryType) {
       case ONLY_RUNTIME:
         return descriptor.getFullQualifiedName();
@@ -363,20 +365,17 @@ public abstract class OpenSearchUtil {
     }
   }
 
-  public enum QueryType {
-    ONLY_RUNTIME,
-    ALL
-  }
-
   public static <T> List<T> mapSearchHits(
-      List<? extends Hit<?>> searchHits, ObjectMapper objectMapper, Class<T> clazz) {
+      final List<? extends Hit<?>> searchHits,
+      final ObjectMapper objectMapper,
+      final Class<T> clazz) {
     return map(
         searchHits,
         (searchHit) -> fromSearchHit(searchHit.source().toString(), objectMapper, clazz));
   }
 
   public static <T> List<T> scrollFieldToList(
-      SearchRequest.Builder request, String fieldName, OpenSearchClient esClient)
+      final SearchRequest.Builder request, final String fieldName, final OpenSearchClient esClient)
       throws IOException {
     final List<T> result = new ArrayList<>();
 
@@ -393,16 +392,16 @@ public abstract class OpenSearchUtil {
     return result;
   }
 
-  public static SearchRequest.Builder createSearchRequest(TemplateDescriptor template) {
+  public static SearchRequest.Builder createSearchRequest(final TemplateDescriptor template) {
     return createSearchRequest(template, OpenSearchUtil.QueryType.ALL);
   }
 
   public static <T> T getRawResponseWithTenantCheck(
       final String id,
-      IndexDescriptor descriptor,
-      OpenSearchUtil.QueryType queryType,
-      TenantAwareOpenSearchClient tenantAwareClient,
-      Class<T> objectClass)
+      final IndexDescriptor descriptor,
+      final OpenSearchUtil.QueryType queryType,
+      final TenantAwareOpenSearchClient tenantAwareClient,
+      final Class<T> objectClass)
       throws IOException {
 
     final SearchRequest.Builder request =
@@ -423,23 +422,44 @@ public abstract class OpenSearchUtil {
   }
 
   public static SearchRequest.Builder createSearchRequest(
-      IndexDescriptor descriptor, OpenSearchUtil.QueryType queryType) {
+      final IndexDescriptor descriptor, final OpenSearchUtil.QueryType queryType) {
     final SearchRequest.Builder builder = new SearchRequest.Builder();
     builder.index(whereToSearch(descriptor, queryType));
     return builder;
   }
 
+  /**
+   * Helper method to scroll in chunks. This is useful when you have a large number of ids and want
+   * to avoid sending them all at once to OpenSearch to not hit the max allowed terms limit {@link
+   * #DEFAULT_MAX_TERMS_COUNT}
+   */
+  public static <T extends TasklistEntity> List<T> scrollInChunks(
+      final List<String> ids,
+      final int chunkSize,
+      final Function<List<String>, SearchRequest.Builder> chunkToSearchRequestBuilder,
+      final Class<T> clazz,
+      final OpenSearchClient osClient)
+      throws IOException {
+    final var result = new ArrayList<T>();
+    for (final var chunk : ListUtils.partition(ids, chunkSize)) {
+      result.addAll(scroll(chunkToSearchRequestBuilder.apply(chunk), clazz, osClient));
+    }
+    return result;
+  }
+
   public static <T extends TasklistEntity> List<T> scroll(
-      SearchRequest.Builder searchRequest, Class<T> clazz, OpenSearchClient osClient)
+      final SearchRequest.Builder searchRequest,
+      final Class<T> clazz,
+      final OpenSearchClient osClient)
       throws IOException {
     return scroll(searchRequest, clazz, osClient, null);
   }
 
   public static <T extends TasklistEntity> List<T> scroll(
-      SearchRequest.Builder searchRequest,
-      Class<T> clazz,
-      OpenSearchClient osClient,
-      Consumer<HitsMetadata> searchHitsProcessor)
+      final SearchRequest.Builder searchRequest,
+      final Class<T> clazz,
+      final OpenSearchClient osClient,
+      final Consumer<HitsMetadata> searchHitsProcessor)
       throws IOException {
 
     searchRequest.scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS)));
@@ -469,7 +489,7 @@ public abstract class OpenSearchUtil {
   }
 
   public static List<String> scrollIdsToList(
-      SearchRequest.Builder request, OpenSearchClient osClient) throws IOException {
+      final SearchRequest.Builder request, final OpenSearchClient osClient) throws IOException {
     final List<String> result = new ArrayList<>();
 
     final Consumer<List<Hit>> collectIds =
@@ -480,7 +500,7 @@ public abstract class OpenSearchUtil {
   }
 
   public static Map<String, String> scrollIdsWithIndexToMap(
-      SearchRequest.Builder request, OpenSearchClient osClient) throws IOException {
+      final SearchRequest.Builder request, final OpenSearchClient osClient) throws IOException {
     final Map<String, String> result = new LinkedHashMap<>();
 
     final Consumer<List<Hit>> collectIds =
@@ -490,18 +510,24 @@ public abstract class OpenSearchUtil {
     return result;
   }
 
-  public static void executeUpdate(OpenSearchClient osClient, UpdateRequest updateRequest)
+  public static void executeUpdate(
+      final OpenSearchClient osClient, final UpdateRequest updateRequest)
       throws PersistenceException {
     try {
 
       osClient.update(updateRequest, Object.class);
 
-    } catch (OpenSearchException | IOException e) {
+    } catch (final OpenSearchException | IOException e) {
       final String errorMessage =
           String.format(
               "Update request failed for [%s] and id [%s] with the message [%s].",
               updateRequest.index(), updateRequest.id(), e.getMessage());
       throw new PersistenceException(errorMessage, e);
     }
+  }
+
+  public enum QueryType {
+    ONLY_RUNTIME,
+    ALL
   }
 }
