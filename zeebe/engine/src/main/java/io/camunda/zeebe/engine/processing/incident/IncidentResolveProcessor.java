@@ -97,7 +97,8 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
         new AuthorizationRequest(
                 command,
                 AuthorizationResourceType.PROCESS_DEFINITION,
-                PermissionType.UPDATE_PROCESS_INSTANCE)
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                incident.getTenantId())
             .addResourceId(incident.getBpmnProcessId());
     final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
     if (isAuthorized.isLeft()) {
@@ -152,7 +153,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
             });
   }
 
-  private void processFailedCommand(TypedRecord<? extends UnifiedRecordValue> failedCommand) {
+  private void processFailedCommand(final TypedRecord<? extends UnifiedRecordValue> failedCommand) {
     if (failedCommand.getValue() instanceof ProcessInstanceRecord) {
       bpmnStreamProcessor.processRecord((TypedRecord<ProcessInstanceRecord>) failedCommand);
     } else if (failedCommand.getValue() instanceof UserTaskRecord) {
