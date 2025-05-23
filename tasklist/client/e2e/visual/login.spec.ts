@@ -7,7 +7,7 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from '@/visual-fixtures';
+import {test} from '@/fixtures/v1-visual';
 
 test.describe('login page', () => {
   test('empty page', async ({page}) => {

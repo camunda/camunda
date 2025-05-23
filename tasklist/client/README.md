@@ -72,9 +72,10 @@ We use playwright to automate taking snapshots of our application. This utilizes
 playwright environment to take snapshots. These are currently 1280x720 pixel images (unless overridden).
 
 To run the snapshot tests:
+
 ```
 yarn start-visual-regression-docker
 # in the docker environment
 yarn start:visual-regression &
-yarn playwright docs --update-snapshots
+yarn test:docs --update-snapshots
 ```

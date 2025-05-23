@@ -39,7 +39,7 @@ jobs:
         run: yarn start:visual-regression &
       - name: Update snapshots
         working-directory: ./tasklist/client
-        run: yarn playwright e2e/visual --update-snapshots
+        run: yarn test:visual --update-snapshots
       - name: Commit screenshots
         uses: stefanzweifel/git-auto-commit-action@v5
         with:

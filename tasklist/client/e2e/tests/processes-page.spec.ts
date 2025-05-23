@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '@/test-fixtures';
+import {test} from '@/fixtures/test';
 import {expect} from '@playwright/test';
 import {deploy} from '@/utils/zeebeClient';
 import {sleep} from '@/utils/sleep';

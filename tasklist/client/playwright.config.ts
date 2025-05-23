@@ -40,7 +40,29 @@ const config: PlaywrightTestConfig = {
     : 'html',
   projects: [
     {
-      name: 'chromium',
+      name: 'visual',
+      testMatch: 'visual/**/*.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
+    {
+      name: 'e2e',
+      testMatch: 'e2e/tests/**/*.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
+    {
+      name: 'a11y',
+      testMatch: 'a11y.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
+    {
+      name: 'docs',
+      testMatch: 'docs/**/*.spec.ts',
       use: {
         ...devices['Desktop Chrome'],
       },

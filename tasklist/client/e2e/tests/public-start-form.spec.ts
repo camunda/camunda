@@ -7,7 +7,7 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from '@/test-fixtures';
+import {test} from '@/fixtures/test';
 import {deploy} from '@/utils/zeebeClient';
 
 test.describe('public start process', () => {
