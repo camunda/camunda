@@ -301,21 +301,19 @@ public final class ProcessInstanceServices
     return sendBrokerRequest(brokerRequest);
   }
 
-  public List<IncidentEntity> incidents(final Long processInstanceKey) {
+  public List<IncidentEntity> incidents(final long processInstanceKey) {
     final var processInstance = getByKey(processInstanceKey);
     final var treePath = processInstance.treePath();
 
-    if (treePath == null || treePath.isBlank()) {
-      return List.of();
-    }
-
-    final var result =
-        incidentSearchClient.searchIncidents(
+    return incidentSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
+        .searchIncidents(
             new IncidentQuery.Builder()
                 .filter(new IncidentFilter.Builder().treePaths(treePath).build())
-                .build());
-
-    return result.items();
+                .build())
+        .items();
   }
 
   public record ProcessInstanceCreateRequest(
