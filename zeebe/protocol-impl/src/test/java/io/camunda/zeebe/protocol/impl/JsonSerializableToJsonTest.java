@@ -92,6 +92,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.UserTaskVariablesUpdateSemantic;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -2407,6 +2408,7 @@ final class JsonSerializableToJsonTest {
                     .setFormKey(456)
                     .setExternalFormReference("myReference")
                     .setVariables(VARIABLES_MSGPACK)
+                    .setVariableUpdateSemantics(UserTaskVariablesUpdateSemantic.PROPAGATE)
                     .setCustomHeaders(
                         wrapArray(MsgPackConverter.convertToMsgPack(Map.of("foo", "bar"))))
                     .setChangedAttributes(List.of("foo", "bar"))
@@ -2438,6 +2440,7 @@ final class JsonSerializableToJsonTest {
         "variables": {
           "foo": "bar"
         },
+        "variableUpdateSemantics": "PROPAGATE",
         "customHeaders": {
           "foo": "bar"
         },
@@ -2474,6 +2477,7 @@ final class JsonSerializableToJsonTest {
         "changedAttributes": [],
         "externalFormReference": "",
         "variables": {},
+        "variableUpdateSemantics": "NULL",
         "customHeaders": {},
         "action": "",
         "formKey": -1,
@@ -2493,7 +2497,8 @@ final class JsonSerializableToJsonTest {
             () ->
                 new UserTaskRecord()
                     .setVariables(
-                        new UnsafeBuffer(MsgPackConverter.convertToMsgPack("{'foo':null}"))),
+                        new UnsafeBuffer(MsgPackConverter.convertToMsgPack("{'foo':null}")))
+                    .setVariableUpdateSemantics(VariableDocumentUpdateSemantic.LOCAL),
         """
       {
         "bpmnProcessId": "",
@@ -2513,6 +2518,7 @@ final class JsonSerializableToJsonTest {
         "variables": {
           "foo": null
         },
+        "variableUpdateSemantics": "LOCAL",
         "customHeaders": {},
         "action": "",
         "formKey": -1,

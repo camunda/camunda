@@ -75,13 +75,30 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
 
     final long userTaskElementInstanceKey = userTaskRecord.getElementInstanceKey();
     if (userTaskRecord.getChangedAttributes().contains(UserTaskRecord.VARIABLES)) {
-      variableBehavior.mergeLocalDocument(
-          userTaskElementInstanceKey,
-          userTaskRecord.getProcessDefinitionKey(),
-          userTaskRecord.getProcessInstanceKey(),
-          userTaskRecord.getBpmnProcessIdBuffer(),
-          userTaskRecord.getTenantId(),
-          command.getValue().getVariablesBuffer());
+      switch (userTaskRecord.getVariableUpdateSemantics()) {
+        case LOCAL ->
+            variableBehavior.mergeLocalDocument(
+                userTaskElementInstanceKey,
+                userTaskRecord.getProcessDefinitionKey(),
+                userTaskRecord.getProcessInstanceKey(),
+                userTaskRecord.getBpmnProcessIdBuffer(),
+                userTaskRecord.getTenantId(),
+                command.getValue().getVariablesBuffer());
+        case PROPAGATE ->
+            variableBehavior.mergeDocument(
+                userTaskElementInstanceKey,
+                userTaskRecord.getProcessDefinitionKey(),
+                userTaskRecord.getProcessInstanceKey(),
+                userTaskRecord.getBpmnProcessIdBuffer(),
+                userTaskRecord.getTenantId(),
+                command.getValue().getVariablesBuffer());
+        default ->
+            throw new IllegalStateException(
+                String.format(
+                    "Unexpected variable update semantic: '%s'. A user task update requires either 'LOCAL' or "
+                        + "'PROPAGATE'. This value is either uninitialized or not supported.",
+                    userTaskRecord.getVariableUpdateSemantics()));
+      }
     }
 
     if (command.hasRequestMetadata()) {

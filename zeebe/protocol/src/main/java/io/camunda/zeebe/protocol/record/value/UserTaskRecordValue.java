@@ -82,4 +82,16 @@ public interface UserTaskRecordValue
   long getProcessDefinitionKey();
 
   int getPriority();
+
+  /**
+   * Note:Temporary default implementation is provided to avoid breaking builds in Optimize module
+   * that compile in parallel and rely on this interface. This will be replaced with an abstract
+   * method, and a real implementation will be added in {@code optimize/ZeebeUserTaskDataDto} in a
+   * subsequent PR.
+   *
+   * @return the variable update semantics used when updating variables on the user task
+   */
+  default UserTaskVariablesUpdateSemantic getVariableUpdateSemantics() {
+    return UserTaskVariablesUpdateSemantic.NULL;
+  }
 }
