@@ -40,7 +40,6 @@ jobs:
         id: parse-args
         run: |
           ARG1=${{ github.event.client_payload.slash_command.args.unnamed.arg1 }}
-          REVIEWER="${ARG2//@/}"
           {
             echo "arg1=${ARG1}"
           } >> "$GITHUB_OUTPUT"
@@ -80,7 +79,7 @@ jobs:
           # Validate if the command is valid
           if [ "${{ steps.parse-args.outputs.arg1 }}" != 'approve' ] &&
              [ "${{ steps.parse-args.outputs.arg1 }}" != 'reject' ]; then
-            echo "Invalid command. See `/help` for more information"
+            echo "Invalid command. See '/help' for more information"
             exit 1
           fi
 
@@ -95,15 +94,16 @@ jobs:
             fi
           fi
 
-      - name: Get new assignee
-        id: assignee
-        run: |
-          new_assignee=""
-          remove_assignee=true
-
-          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'approve' ]; then
-            new_assignee="${{ steps.get-engineering-dri.outputs.engineering_dri }}"
-          fi
+      #TODO: check if this step gets any use
+      # - name: Get new assignee
+      #   id: assignee
+      #   run: |
+      #     new_assignee=""
+      #     remove_assignee=true
+      #
+      #     if [ "${{ steps.parse-args.outputs.arg1 }}" == 'approve' ]; then
+      #       new_assignee="${{ steps.get-engineering-dri.outputs.engineering_dri }}"
+      #     fi
 
       - name: Assign engineering DRI
         if: steps.parse-args.outputs.arg1 == 'approve' || steps.parse-args.outputs.arg1 == 'reject'
@@ -123,6 +123,7 @@ jobs:
           elif [ "${{ steps.parse-args.outputs.arg1 }}" == 'reject' ]; then
             new_status="In Progress"
           fi
+          echo "new_status=$new_status" >> "$GITHUB_OUTPUT"
 
       - name: Update Status
         uses: github/update-project-action@main

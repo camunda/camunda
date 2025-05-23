@@ -135,13 +135,13 @@ jobs:
         id: get_release_tag
         run: |
           if [ "${{ github.event_name }}" == "release" ]; then
-            echo "RELEASE_TAG=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+            echo "RELEASE_TAG=${{ github.event.release.tag_name }}" >> "$GITHUB_ENV"
           elif [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.release_tag }}" ]; then
-            echo "RELEASE_TAG=${{ github.event.inputs.release_tag }}" >> $GITHUB_ENV
+            echo "RELEASE_TAG=${{ github.event.inputs.release_tag }}" >> "$GITHUB_ENV"
           else
             latest_release=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
               "https://api.github.com/repos/${{ github.repository }}/releases?per_page=1" | jq -r '.[0].tag_name')
-            echo "RELEASE_TAG=$latest_release" >> $GITHUB_ENV
+            echo "RELEASE_TAG=$latest_release" >> "$GITHUB_ENV"
           fi
 
       - name: Attach SBOMs to Release
@@ -160,12 +160,9 @@ jobs:
 
             # Upload the artifact
             echo "Uploading ./sboms/$unique_name to release $RELEASE_TAG"
-            gh release upload "$RELEASE_TAG" "./sboms/$unique_name" \
-              --repo "camunda/camunda" \
-              --clobber
-
-            # Check the exit code of the upload command
-            if [ $? -eq 0 ]; then
+            if gh release upload "$RELEASE_TAG" "./sboms/$unique_name" \
+               --repo "camunda/camunda" \
+               --clobber; then
               echo "Successfully uploaded: $unique_name"
             else
               echo "Failed to upload: $unique_name"
@@ -176,5 +173,3 @@ jobs:
             mv "./sboms/$unique_name" "$artifact"
             echo "Restored ./sboms/$unique_name back to $artifact"
           done
-
-

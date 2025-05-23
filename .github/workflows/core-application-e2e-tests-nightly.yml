@@ -64,7 +64,7 @@ jobs:
           done
 
           if [ "$ready" == "true" ]; then
-            echo "ready=true" >> $GITHUB_OUTPUT
+            echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "Services failed to start in time."
             exit 1
@@ -140,11 +140,11 @@ jobs:
           BRANCH_NAME: ${{ matrix.branch }}
         run: |
           pip install trcli
-          trcli -y -h $TESTRAIL_HOST \
+          trcli -y -h "$TESTRAIL_HOST" \
             --project 'C8' \
-            --username $TESTRAIL_USERNAME \
-            --key $TESTRAIL_KEY \
+            --username "$TESTRAIL_USERNAME" \
+            --key "$TESTRAIL_KEY" \
             parse_junit --suite-id 17050 \
             --title "Nightly Core Application Run Test Results - $BRANCH_NAME - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
-            -f $JUNIT_RESULTS_FILE
+            -f "$JUNIT_RESULTS_FILE"

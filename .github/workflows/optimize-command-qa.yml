@@ -88,9 +88,9 @@ jobs:
           if [ "${{ steps.parse-args.outputs.arg1 }}" != 'approve' ] &&
              [ "${{ steps.parse-args.outputs.arg1 }}" != 'reject' ] &&
              [ "${{ steps.parse-args.outputs.arg1 }}" != 'verified' ] &&
-             ([ "${{ steps.parse-args.outputs.arg1 }}" != 'not' ] || [ "${{ steps.parse-args.outputs.arg2 }}" != 'verified' ]) &&
+             { [ "${{ steps.parse-args.outputs.arg1 }}" != 'not' ] || [ "${{ steps.parse-args.outputs.arg2 }}" != 'verified' ]; } &&
              [ "${{ steps.parse-args.outputs.arg1 }}" != 'skip' ]; then
-            echo "Invalid command. See `/help` for more information"
+            echo "Invalid command. See '/help' for more information"
             exit 1
           fi
 

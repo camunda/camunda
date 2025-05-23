@@ -209,7 +209,7 @@ jobs:
       - name: MacOS - Replace old artifact with codesigned artifact
         if: startsWith(matrix.os.name, 'MacOS')
         run: |
-          mv ./c8run/tmp/c8run_complete.zip ./c8run/$C8RUN_NAME_ORIGINAL
+          mv ./c8run/tmp/c8run_complete.zip ./c8run/"$C8RUN_NAME_ORIGINAL"
         env:
           C8RUN_NAME_ORIGINAL: "camunda8-run-${{ inputs.camundaAppsRelease }}-${{ matrix.os.artifactFileSuffix }}"
 
@@ -272,7 +272,7 @@ jobs:
         if: inputs.publishToCamundaAppsRelease
         run: |
           app_release_url_gh="https://github.com/camunda/camunda/releases/tag/${{ inputs.camundaAppsRelease }}"
-          cat << EOF >> $GITHUB_STEP_SUMMARY
+          cat << EOF >> "$GITHUB_STEP_SUMMARY"
           ⭐ GitHub - C8Run artifacts in Camunda apps release ⭐
           - Release URL: ${app_release_url_gh}
           EOF
@@ -281,7 +281,7 @@ jobs:
         if: inputs.publishToCamundaDownloadCenter
         run: |
           c8run_release_url_dc="https://downloads.camunda.cloud/release/camunda/c8run/${{ inputs.camundaVersion }}/"
-          cat << EOF >> $GITHUB_STEP_SUMMARY
+          cat << EOF >> "$GITHUB_STEP_SUMMARY"
           ⭐ Camunda Download Center - C8Run artifacts in own release ⭐
           - Release URL: ${c8run_release_url_dc}
           EOF
@@ -290,7 +290,7 @@ jobs:
         if: inputs.publishToCamundaDownloadCenter
         run: |
           c8run_release_url_dc="https://downloads.camunda.cloud/release/camunda/c8run/${{ inputs.camundaAppsRelease }}/"
-          cat << EOF >> $GITHUB_STEP_SUMMARY
+          cat << EOF >> "$GITHUB_STEP_SUMMARY"
           ⭐ Camunda Download Center - C8Run artifacts ⭐
           - Release URL: ${c8run_release_url_dc}
           EOF

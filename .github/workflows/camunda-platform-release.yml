@@ -136,11 +136,11 @@ jobs:
           #   This is the reason why we have to set it at least as empty string.
           ./mvnw release:prepare -B \
             -Dresume=false \
-            -Dtag=${RELEASE_VERSION} \
-            -DreleaseVersion=${RELEASE_VERSION} \
-            -DdevelopmentVersion=${DEVELOPMENT_VERSION} \
-            -DpushChanges=${PUSH_CHANGES} \
-            -DremoteTagging=${PUSH_CHANGES} \
+            -Dtag="${RELEASE_VERSION}" \
+            -DreleaseVersion="${RELEASE_VERSION}" \
+            -DdevelopmentVersion="${DEVELOPMENT_VERSION}" \
+            -DpushChanges="${PUSH_CHANGES}" \
+            -DremoteTagging="${PUSH_CHANGES}" \
             -DcompletionGoals="spotless:apply" \
             -P-autoFormat \
             -DpreparationGoals="" \
@@ -158,9 +158,11 @@ jobs:
           # -DskipQaBuild=true -P-autoFormat
           #   In order to disable QA/IT and the auto formatting during the release.
           #   It is unnecessary to release integration tests, and we don't want to run the auto-formatting unnecessarily.
+
+          # shellcheck disable=SC2016
           ./mvnw release:perform -B \
             -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}" \
-            -DlocalCheckout=${{ inputs.dryRun }} \
+            -DlocalCheckout="${{ inputs.dryRun }}" \
             -DskipQaBuild=true \
             -P-autoFormat \
             -Darguments='-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_REPO_DEPLOY} -Dskip.camunda.release=${SKIP_REPO_DEPLOY} -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"'
@@ -168,16 +170,17 @@ jobs:
           # switch to the directory to which maven checks out the release tag
           # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
           pushd target/checkout
-          export TAG_REVISION=$(git log -n 1 --pretty=format:'%h')
-          echo "tagRevision=${TAG_REVISION}" >> $GITHUB_OUTPUT
+          TAG_REVISION=$(git log -n 1 --pretty=format:'%h')
+          export TAG_REVISION
+          echo "tagRevision=${TAG_REVISION}" >> "$GITHUB_OUTPUT"
           popd
       - name: Collect Release artifacts
         id: release-artifacts
         run: |
           ARTIFACT_DIR=$(mktemp -d)
-          cp target/checkout/dist/target/camunda-zeebe-${RELEASE_VERSION}.tar.gz "${ARTIFACT_DIR}/"
-          cp target/checkout/dist/target/camunda-zeebe-${RELEASE_VERSION}.zip "${ARTIFACT_DIR}/"
-          echo "dir=${ARTIFACT_DIR}" >> $GITHUB_OUTPUT
+          cp target/checkout/dist/target/camunda-zeebe-"${RELEASE_VERSION}".tar.gz "${ARTIFACT_DIR}/"
+          cp target/checkout/dist/target/camunda-zeebe-"${RELEASE_VERSION}".zip "${ARTIFACT_DIR}/"
+          echo "dir=${ARTIFACT_DIR}" >> "$GITHUB_OUTPUT"
       - name: Upload Release Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -197,7 +200,7 @@ jobs:
           git commit -am "build(project): update java compat versions"
       - name: Delete version-specific allowed API breaking changes
         run: |
-          IFS='\n' readarray -t files <<< $(find . -name 'ignored-changes.json')
+          IFS=$'\n' readarray -t files <<< "$(find . -name 'ignored-changes.json')"
           for file in "${files[@]}"; do
             if [ '${{ inputs.dryRun }}' = 'false' ]; then
               echo "[DRY RUN] rm -f ${file}"
@@ -211,7 +214,7 @@ jobs:
       - name: Cleanup Maven Central GPG Key
         # make sure we always remove the imported signing key to avoid it leaking on runners
         if: always()
-        run: rm -rf $HOME/.gnupg
+        run: rm -rf "$HOME/.gnupg"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -262,8 +265,8 @@ jobs:
             # PATCH: the tag for the previous patch version on the same minor branch. e.g. if you're releasing 1.2.3, then ZCL_FROM_REV=1.2.2.
 
             # To find the previous patch version we extract the patch version and subtract by one
-            patchVersion=$(echo ${{ inputs.releaseVersion }} | sed 's/8\.[1-9][0-9]*\.//')
-            majorMinor=$(echo ${{ inputs.releaseVersion }} | sed 's/\.[1-9][0-9]*$//')
+            patchVersion=$(echo "${{ inputs.releaseVersion }}" | sed 's/8\.[1-9][0-9]*\.//')
+            majorMinor=$(echo "${{ inputs.releaseVersion }}" | sed 's/\.[1-9][0-9]*$//')
             ZCL_FROM_REV="$majorMinor".$(( patchVersion - 1 ))
             ZCL_TARGET_REV="${{ inputs.releaseVersion }}"
 
@@ -271,8 +274,8 @@ jobs:
             # You can verify this step by looking at closed issues. They should now be tagged with the release.
             ./zcl add-labels \
             --token=${{ secrets.GITHUB_TOKEN }} \
-            --from=$ZCL_FROM_REV \
-            --target=$ZCL_TARGET_REV \
+            --from="$ZCL_FROM_REV" \
+            --target="$ZCL_TARGET_REV" \
             --label="version:$ZCL_TARGET_REV" \
             --org camunda --repo zeebe
 
@@ -287,12 +290,14 @@ jobs:
           #
           # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#example-of-a-multiline-string
           #
-          echo 'CHANGELOG<<EOF' >> $GITHUB_OUTPUT
-          echo "$changelog" >> $GITHUB_OUTPUT
-          echo 'EOF' >> $GITHUB_OUTPUT
+          {
+            echo 'CHANGELOG<<EOF'
+            echo "$changelog"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
 
           # To show the changelog also as step summary
-          echo "$changelog" >> $GITHUB_STEP_SUMMARY
+          echo "$changelog" >> "$GITHUB_STEP_SUMMARY"
       - name: Download Release Artifacts
         uses: actions/download-artifact@v4
         with:
@@ -320,7 +325,7 @@ jobs:
             PRE_RELEASE=true
           fi
           shopt -u nocasematch # reset it
-          echo "result=${PRE_RELEASE}" >> $GITHUB_OUTPUT
+          echo "result=${PRE_RELEASE}" >> "$GITHUB_OUTPUT"
       - name: Create Github release
         uses: ncipollo/release-action@v1
         if: ${{ inputs.dryRun == false }}
