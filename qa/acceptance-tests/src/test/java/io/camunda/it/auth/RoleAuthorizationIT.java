@@ -81,6 +81,8 @@ class RoleAuthorizationIT {
               new Permissions(ResourceType.ROLE, PermissionType.DELETE, List.of("*")),
               new Permissions(ResourceType.GROUP, PermissionType.CREATE, List.of("*")),
               new Permissions(ResourceType.MAPPING_RULE, PermissionType.CREATE, List.of("*")),
+              new Permissions(ResourceType.TENANT, PermissionType.CREATE, List.of("*")),
+              new Permissions(ResourceType.TENANT, PermissionType.UPDATE, List.of("*")),
               new Permissions(ResourceType.AUTHORIZATION, PermissionType.UPDATE, List.of("*"))));
 
   @UserDefinition
@@ -411,6 +413,43 @@ class RoleAuthorizationIT {
                     .anyMatch(r -> roleId.equals(r.getRoleId())));
 
     adminClient.newDeleteRoleCommand(roleId).send().join();
+  }
+
+  @Test
+  void shouldAssignRoleToTenantIfAuthorized(@Authenticated(ADMIN) final CamundaClient adminClient) {
+    final String tenantId = Strings.newRandomValidIdentityId();
+
+    adminClient
+        .newCreateTenantCommand()
+        .tenantId(tenantId)
+        .name("tenantName")
+        .description("description")
+        .send()
+        .join();
+    adminClient.newAssignRoleToTenantCommand().roleId(ROLE_ID_1).tenantId(tenantId).send().join();
+
+    Awaitility.await("Role is assigned to the tenant")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        adminClient.newRolesByTenantSearchRequest(tenantId).send().join().items())
+                    .anyMatch(r -> ROLE_ID_1.equals(r.getRoleId())));
+  }
+
+  @Test
+  void assignRoleToTenantShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newAssignRoleToTenantCommand()
+                    .roleId(Strings.newRandomValidIdentityId())
+                    .tenantId(Strings.newRandomValidIdentityId())
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
   }
 
   @Test
