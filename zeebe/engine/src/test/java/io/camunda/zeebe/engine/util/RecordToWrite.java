@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -33,6 +35,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
@@ -156,6 +159,30 @@ public final class RecordToWrite implements LogAppendEntry {
     return this;
   }
 
+<<<<<<< HEAD
+=======
+  public RecordToWrite messageBatch(final MessageBatchRecordValue value) {
+    recordMetadata.valueType(ValueType.MESSAGE_BATCH).intent(MessageBatchIntent.EXPIRE);
+    unifiedRecordValue = (MessageBatchRecord) value;
+    return this;
+  }
+
+  public RecordToWrite scale(final ScaleIntent intent, final ScaleRecord value) {
+    recordMetadata.valueType(ValueType.SCALE).intent(intent);
+    unifiedRecordValue = value;
+    return this;
+  }
+
+  public RecordToWrite adHocSubProcessActivityActivation(
+      final AdHocSubProcessActivityActivationRecordValue value) {
+    recordMetadata
+        .valueType(ValueType.AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION)
+        .intent(AdHocSubProcessActivityActivationIntent.ACTIVATE);
+    unifiedRecordValue = (AdHocSubProcessActivityActivationRecord) value;
+    return this;
+  }
+
+>>>>>>> b2a9e061 (test: add more message batch expire tests)
   /**
    * Used to refer to the record that caused this record to be written. For example, when you want
    * to write a Job Created event that was the result of the processing of a Service Task
