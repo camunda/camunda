@@ -55,7 +55,7 @@ public class RolesByTenantIntegrationTest {
     createTenant(tenantId);
     createRole(roleId, roleName, roleDesc);
     // when
-    camundaClient.newAssignRoleToTenantCommand(tenantId).roleId(roleId).send().join();
+    camundaClient.newAssignRoleToTenantCommand().roleId(roleId).tenantId(tenantId).send().join();
     // then
     Awaitility.await("Role should be visible in tenant role search")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
@@ -85,8 +85,9 @@ public class RolesByTenantIntegrationTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newAssignRoleToTenantCommand(nonExistingTenantId)
+                    .newAssignRoleToTenantCommand()
                     .roleId(roleId)
+                    .tenantId(nonExistingTenantId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -100,7 +101,13 @@ public class RolesByTenantIntegrationTest {
     final var roleId = "role-" + Strings.newRandomValidIdentityId();
     createTenant(tenantId);
     assertThatThrownBy(
-            () -> camundaClient.newAssignRoleToTenantCommand(tenantId).roleId(roleId).send().join())
+            () ->
+                camundaClient
+                    .newAssignRoleToTenantCommand()
+                    .roleId(roleId)
+                    .tenantId(tenantId)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("404: 'Not Found'")
         .hasMessageContaining("role doesn't exist");
@@ -115,10 +122,16 @@ public class RolesByTenantIntegrationTest {
     final var roleDesc = "desc-" + Strings.newRandomValidIdentityId();
     createTenant(tenantId);
     createRole(roleId, roleName, roleDesc);
-    camundaClient.newAssignRoleToTenantCommand(tenantId).roleId(roleId).send().join();
+    camundaClient.newAssignRoleToTenantCommand().roleId(roleId).tenantId(tenantId).send().join();
     // when and then
     assertThatThrownBy(
-            () -> camundaClient.newAssignRoleToTenantCommand(tenantId).roleId(roleId).send().join())
+            () ->
+                camundaClient
+                    .newAssignRoleToTenantCommand()
+                    .roleId(roleId)
+                    .tenantId(tenantId)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("409: 'Conflict'")
         .hasMessageContaining("the role is already assigned to the tenant");
@@ -134,8 +147,18 @@ public class RolesByTenantIntegrationTest {
     createRole(firstRoleId, "name1", "desc1");
     createRole(secondRoleId, "name2", "desc2");
 
-    camundaClient.newAssignRoleToTenantCommand(tenantId).roleId(firstRoleId).send().join();
-    camundaClient.newAssignRoleToTenantCommand(tenantId).roleId(secondRoleId).send().join();
+    camundaClient
+        .newAssignRoleToTenantCommand()
+        .roleId(firstRoleId)
+        .tenantId(tenantId)
+        .send()
+        .join();
+    camundaClient
+        .newAssignRoleToTenantCommand()
+        .roleId(secondRoleId)
+        .tenantId(tenantId)
+        .send()
+        .join();
 
     // when and then
     Awaitility.await("Roles should be visible in tenant role search")
@@ -182,7 +205,7 @@ public class RolesByTenantIntegrationTest {
     final var roleId = "role-" + Strings.newRandomValidIdentityId();
     createTenant(tenantId);
     createRole(roleId, "name", "desc");
-    camundaClient.newAssignRoleToTenantCommand(tenantId).roleId(roleId).send().join();
+    camundaClient.newAssignRoleToTenantCommand().roleId(roleId).tenantId(tenantId).send().join();
     // when
     camundaClient.newUnassignRoleFromTenantCommand(tenantId).roleId(roleId).send().join();
     // then

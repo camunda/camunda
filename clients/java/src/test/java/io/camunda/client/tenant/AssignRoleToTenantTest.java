@@ -30,6 +30,17 @@ public class AssignRoleToTenantTest extends ClientRestTest {
   private static final String ROLE_ID = "test-role";
 
   @Test
+  void shouldAssignRoleToTenant() {
+    // when
+    client.newAssignRoleToTenantCommand().roleId(ROLE_ID).tenantId(TENANT_ID).send().join();
+
+    // then
+    final String requestPath = RestGatewayService.getLastRequest().getUrl();
+    assertThat(requestPath)
+        .isEqualTo(REST_API_PATH + "/tenants/" + TENANT_ID + "/roles/" + ROLE_ID);
+  }
+
+  @Test
   void shouldUnassignRoleFromTenant() {
     // when
     client.newUnassignRoleFromTenantCommand(TENANT_ID).roleId(ROLE_ID).send().join();
@@ -43,14 +54,16 @@ public class AssignRoleToTenantTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionOnNullTenantId() {
     assertThatThrownBy(
-            () -> client.newAssignRoleToTenantCommand(null).roleId(ROLE_ID).send().join())
+            () ->
+                client.newAssignRoleToTenantCommand().roleId(ROLE_ID).tenantId(null).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be null");
   }
 
   @Test
   void shouldRaiseExceptionOnEmptyTenantId() {
-    assertThatThrownBy(() -> client.newAssignRoleToTenantCommand("").roleId(ROLE_ID).send().join())
+    assertThatThrownBy(
+            () -> client.newAssignRoleToTenantCommand().roleId(ROLE_ID).tenantId("").send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be empty");
   }
@@ -58,7 +71,13 @@ public class AssignRoleToTenantTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionOnNullRoleId() {
     assertThatThrownBy(
-            () -> client.newAssignRoleToTenantCommand(TENANT_ID).roleId(null).send().join())
+            () ->
+                client
+                    .newAssignRoleToTenantCommand()
+                    .roleId(null)
+                    .tenantId(TENANT_ID)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("roleId must not be null");
   }
@@ -66,7 +85,8 @@ public class AssignRoleToTenantTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionOnEmptyRoleId() {
     assertThatThrownBy(
-            () -> client.newAssignRoleToTenantCommand(TENANT_ID).roleId("").send().join())
+            () ->
+                client.newAssignRoleToTenantCommand().roleId("").tenantId(TENANT_ID).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("roleId must not be empty");
   }
