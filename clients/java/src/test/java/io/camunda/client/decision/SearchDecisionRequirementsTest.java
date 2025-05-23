@@ -94,6 +94,21 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
     assertThat(request.getFilter().getVersion()).isEqualTo(1);
   }
 
+  @Test
+  void shouldSearchDecisionRequirementsByResourceName() {
+    // when
+    client
+        .newDecisionRequirementsSearchRequest()
+        .filter(f -> f.resourceName("resource name"))
+        .send()
+        .join();
+
+    // then
+    final DecisionRequirementsSearchQuery request =
+        gatewayService.getLastRequest(DecisionRequirementsSearchQuery.class);
+    assertThat(request.getFilter().getResourceName()).isEqualTo("resource name");
+  }
+
   // Consolidated sort test
   @Test
   void shouldSortDecisionRequirements() {

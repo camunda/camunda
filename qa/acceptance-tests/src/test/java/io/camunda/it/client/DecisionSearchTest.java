@@ -320,6 +320,24 @@ class DecisionSearchTest {
   }
 
   @Test
+  void shouldRetrieveByResourceName() {
+    // when
+    final var result =
+        camundaClient
+            .newDecisionRequirementsSearchRequest()
+            .filter(f -> f.resourceName("decisions/decision_model_1.dmn"))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
+    result
+        .items()
+        .forEach(
+            item -> assertThat(item.getResourceName()).isEqualTo("decisions/decision_model_1.dmn"));
+  }
+
+  @Test
   void shouldSortByDecisionRequirementsKey() {
     // when
     final var resultAsc =

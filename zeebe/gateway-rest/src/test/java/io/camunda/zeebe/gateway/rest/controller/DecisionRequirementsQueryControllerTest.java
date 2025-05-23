@@ -164,7 +164,8 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                 "decisionRequirementsKey": 0,
                 "decisionRequirementsName": "name",
                 "version": 1,
-                "decisionRequirementsId": "drId"
+                "decisionRequirementsId": "drId",
+                "resourceName": "rN"
               }
             }""";
 
@@ -193,6 +194,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                         .names("name")
                         .versions(1)
                         .decisionRequirementsIds("drId")
+                        .resourceNames("rN")
                         .build())
                 .build());
   }

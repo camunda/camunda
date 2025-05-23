@@ -144,4 +144,20 @@ public final class DecisionRequirementsQueryTransformerTest extends AbstractTran
               assertThat(t.value().intValue()).isEqualTo(1);
             });
   }
+
+  @Test
+  public void shouldQueryByResourceName() {
+    // given
+    final var decisionRequirementFilter =
+        FilterBuilders.decisionRequirements(f -> f.resourceNames("rN"));
+
+    // when
+    final var searchRequest = transformQuery(decisionRequirementFilter);
+
+    // then
+    final var query = (SearchTermQuery) searchRequest.queryOption();
+
+    assertThat(query.field()).isEqualTo("resourceName");
+    assertThat(query.value().stringValue()).isEqualTo("rN");
+  }
 }
