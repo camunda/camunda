@@ -98,7 +98,7 @@ public class DecisionEvaluationZeebeRecordProcessor {
               .setRootDecisionDefinitionId(String.valueOf(decisionEvaluation.getDecisionKey()))
               .setDecisionId(decision.getDecisionId())
               .setDecisionDefinitionId(String.valueOf(decision.getDecisionKey()))
-              .setDecisionType(DecisionType.fromZeebeDecisionType(decision.getDecisionType()))
+              .setDecisionType(DecisionType.fromString(decision.getDecisionType()))
               .setDecisionName(decision.getDecisionName())
               .setDecisionVersion((int) decision.getDecisionVersion())
               .setState(state)
@@ -107,7 +107,7 @@ public class DecisionEvaluationZeebeRecordProcessor {
               .setEvaluatedInputs(createEvaluationInputs(decision.getEvaluatedInputs()))
               .setTenantId(tenantOrDefault(decisionEvaluation.getTenantId()));
       if (state.equals(DecisionInstanceState.FAILED)) {
-        entity.setEvaluationFailure(decisionEvaluation.getEvaluationFailureMessage());
+        entity.setEvaluationFailureMessage(decisionEvaluation.getEvaluationFailureMessage());
       }
       entities.add(entity);
     }

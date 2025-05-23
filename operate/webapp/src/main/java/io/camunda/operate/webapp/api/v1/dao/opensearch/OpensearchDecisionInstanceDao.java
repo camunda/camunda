@@ -14,6 +14,7 @@ import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.DecisionInstanceDao;
 import io.camunda.operate.webapp.api.v1.entities.DecisionInstance;
 import io.camunda.operate.webapp.api.v1.entities.Query;
+import io.camunda.operate.webapp.api.v1.entities.opensearch.OpensearchDecisionInstance;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
@@ -31,7 +32,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpensearchCondition.class)
 @Component
 public class OpensearchDecisionInstanceDao
-    extends OpensearchSearchableDao<DecisionInstance, DecisionInstance>
+    extends OpensearchSearchableDao<DecisionInstance, OpensearchDecisionInstance>
     implements DecisionInstanceDao {
 
   private final DecisionInstanceTemplate decisionInstanceTemplate;
@@ -55,7 +56,7 @@ public class OpensearchDecisionInstanceDao
       throw new ServerException("ID provided cannot be null");
     }
 
-    final List<DecisionInstance> decisionInstances;
+    final List<OpensearchDecisionInstance> decisionInstances;
     try {
       final var request =
           requestDSLWrapper
@@ -95,8 +96,8 @@ public class OpensearchDecisionInstanceDao
   }
 
   @Override
-  protected Class<DecisionInstance> getInternalDocumentModelClass() {
-    return DecisionInstance.class;
+  protected Class<OpensearchDecisionInstance> getInternalDocumentModelClass() {
+    return OpensearchDecisionInstance.class;
   }
 
   @Override
@@ -120,8 +121,12 @@ public class OpensearchDecisionInstanceDao
                       DecisionInstance.EVALUATION_DATE,
                       filter.getEvaluationDate(),
                       dateTimeFormatter.getApiDateTimeFormatString()),
-                  queryDSLWrapper.term(
-                      DecisionInstance.EVALUATION_FAILURE, filter.getEvaluationFailure()),
+                  queryDSLWrapper.or(
+                      queryDSLWrapper.term(
+                          DecisionInstance.EVALUATION_FAILURE_MESSAGE,
+                          filter.getEvaluationFailure()),
+                      queryDSLWrapper.term(
+                          DecisionInstance.EVALUATION_FAILURE, filter.getEvaluationFailure())),
                   queryDSLWrapper.term(
                       DecisionInstance.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()),
                   queryDSLWrapper.term(
@@ -146,12 +151,33 @@ public class OpensearchDecisionInstanceDao
   }
 
   @Override
-  protected DecisionInstance convertInternalToApiResult(final DecisionInstance internalResult) {
-    if (internalResult != null && StringUtils.isNotEmpty(internalResult.getEvaluationDate())) {
-      internalResult.setEvaluationDate(
-          dateTimeFormatter.convertGeneralToApiDateTime(internalResult.getEvaluationDate()));
-    }
+  protected DecisionInstance convertInternalToApiResult(
+      final OpensearchDecisionInstance internalResult) {
+    final DecisionInstance apiResult = new DecisionInstance();
+    if (internalResult != null) {
+      apiResult
+          .setId(internalResult.id())
+          .setKey(internalResult.key())
+          .setState(internalResult.state())
+          .setProcessDefinitionKey(internalResult.processDefinitionKey())
+          .setProcessInstanceKey(internalResult.processInstanceKey())
+          .setDecisionId(internalResult.decisionId())
+          .setTenantId(internalResult.tenantId())
+          .setDecisionDefinitionId(internalResult.decisionDefinitionId())
+          .setDecisionName(internalResult.decisionName())
+          .setDecisionVersion(internalResult.decisionVersion())
+          .setDecisionType(internalResult.decisionType());
 
-    return internalResult;
+      if (StringUtils.isNotEmpty(internalResult.evaluationDate())) {
+        apiResult.setEvaluationDate(
+            dateTimeFormatter.convertGeneralToApiDateTime(internalResult.evaluationDate()));
+      }
+      final String evaluationFailure =
+          internalResult.evaluationFailureMessage() != null
+              ? internalResult.evaluationFailureMessage()
+              : internalResult.evaluationFailure();
+      apiResult.setEvaluationFailure(evaluationFailure);
+    }
+    return apiResult;
   }
 }

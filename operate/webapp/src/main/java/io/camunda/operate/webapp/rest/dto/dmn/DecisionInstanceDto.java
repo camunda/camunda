@@ -91,7 +91,7 @@ public class DecisionInstanceDto
     return tenantId;
   }
 
-  public DecisionInstanceDto setTenantId(String tenantId) {
+  public DecisionInstanceDto setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -180,14 +180,19 @@ public class DecisionInstanceDto
         DtoCreator.create(entity.getEvaluatedOutputs(), DecisionInstanceOutputDto.class);
     Collections.sort(outputs, DECISION_INSTANCE_OUTPUT_DTO_COMPARATOR);
 
-    this.setId(entity.getId())
+    final String evaluationFailureMessage =
+        entity.getEvaluationFailureMessage() != null
+            ? entity.getEvaluationFailureMessage()
+            : entity.getEvaluationFailure();
+
+    setId(entity.getId())
         .setDecisionDefinitionId(entity.getDecisionDefinitionId())
         .setDecisionId(entity.getDecisionId())
         .setTenantId(entity.getTenantId())
         .setDecisionName(entity.getDecisionName())
         .setDecisionType(entity.getDecisionType())
         .setDecisionVersion(entity.getDecisionVersion())
-        .setErrorMessage(entity.getEvaluationFailure())
+        .setErrorMessage(evaluationFailureMessage)
         .setEvaluationDate(entity.getEvaluationDate())
         .setEvaluatedInputs(inputs)
         .setEvaluatedOutputs(outputs)
@@ -217,7 +222,7 @@ public class DecisionInstanceDto
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

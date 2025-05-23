@@ -27,6 +27,10 @@
       "evaluationFailure": {
         "type": "keyword"
       },
+      "evaluationFailureMessage": {
+        "type": "keyword",
+        "ignore_above": 1024
+      },
       "decisionRequirementsKey": {
         "type": "long"
       },

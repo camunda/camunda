@@ -20,13 +20,13 @@ public enum DecisionType {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FlowNodeType.class);
 
-  public static DecisionType fromZeebeDecisionType(String decisionType) {
+  public static DecisionType fromString(final String decisionType) {
     if (decisionType == null) {
       return UNSPECIFIED;
     }
     try {
       return DecisionType.valueOf(decisionType);
-    } catch (IllegalArgumentException ex) {
+    } catch (final IllegalArgumentException ex) {
       LOGGER.error(
           "Decision type not found for value [{}]. UNKNOWN type will be assigned.", decisionType);
       return UNKNOWN;
