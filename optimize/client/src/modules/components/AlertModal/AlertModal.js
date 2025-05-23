@@ -268,6 +268,7 @@ export class AlertModal extends React.Component {
                           'self-managed/optimize-deployment/configuration/system-configuration/#email'
                         ),
                       })}
+                      role="div"
                     />
                   )}
                   {inactive && (
