@@ -32,13 +32,17 @@ import io.atomix.utils.concurrent.Scheduled;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /** Candidate state. */
 public final class CandidateRole extends ActiveRole {
 
   private Scheduled currentTimer;
 
-  private int votingRound = 0;
+  // votingRound is incremented from the RaftContext, so an Atomic should not be necessary,
+  // but it has been addded because spotbugs flagged as a possible race condition.
+  // Considering that the performance implications of using an atomic are zero, it has been added.
+  private final AtomicInteger votingRound = new AtomicInteger(0);
 
   public CandidateRole(final RaftContext context) {
     super(context);
@@ -83,7 +87,7 @@ public final class CandidateRole extends ActiveRole {
 
   /** Resets the election timer. */
   private void sendVoteRequests() {
-    votingRound++;
+    votingRound.incrementAndGet();
     raft.checkThread();
 
     // Because of asynchronous execution, the candidate state could have already been closed. In
@@ -141,14 +145,14 @@ public final class CandidateRole extends ActiveRole {
                     // check and restart the election.
                     quorum.cancel();
 
-                    final var shouldRetry = votingRound <= 1;
+                    final var shouldRetry = votingRound.get() <= 1;
                     if (shouldRetry) {
                       // Attempt one more election to reduce election delay. If transition to
                       // follower, then this member has to wait for another election timeout before
                       // starting the election.
                       log.debug("Election timed out. Restarting election.");
                       sendVoteRequests();
-                      votingRound++;
+                      votingRound.incrementAndGet();
                     } else {
                       // Transition to follower and re-send poll requests to become candidate again.
                       // This delays the election because now this member has to wait for another

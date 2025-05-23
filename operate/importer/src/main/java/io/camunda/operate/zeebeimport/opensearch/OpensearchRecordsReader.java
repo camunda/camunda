@@ -31,6 +31,7 @@ import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient
 import io.camunda.operate.util.BackoffIdleStrategy;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.NumberThrottleable;
+import io.camunda.operate.util.NumberThrottleable.DivideNumberThrottle;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.ImportBatch;
 import io.camunda.operate.zeebeimport.ImportJob;
@@ -52,11 +53,12 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.slf4j.Logger;
@@ -99,7 +101,7 @@ public class OpensearchRecordsReader implements RecordsReader {
 
   private long maxPossibleSequence;
 
-  private int countEmptyRuns;
+  private final AtomicInteger countEmptyRuns = new AtomicInteger();
 
   private BackoffIdleStrategy errorStrategy;
 
@@ -137,11 +139,10 @@ public class OpensearchRecordsReader implements RecordsReader {
   @PostConstruct
   public void postConstruct() {
     batchSizeThrottle =
-        new NumberThrottleable.DivideNumberThrottle(
-            operateProperties.getZeebeOpensearch().getBatchSize());
+        new DivideNumberThrottle(operateProperties.getZeebeOpensearch().getBatchSize());
     // 1st sequence of next partition - 1
     maxPossibleSequence = sequence(partitionId + 1, 0) - 1;
-    countEmptyRuns = 0;
+    countEmptyRuns.set(0);
     errorStrategy =
         new BackoffIdleStrategy(operateProperties.getImporter().getReaderBackoff(), 1.2f, 10_000);
 
@@ -258,9 +259,9 @@ public class OpensearchRecordsReader implements RecordsReader {
           maxNumberOfHits);
     } else {
       maxNumberOfHits = batchSize;
-      if (countEmptyRuns == operateProperties.getImporter().getMaxEmptyRuns()) {
+      if (countEmptyRuns.get() == operateProperties.getImporter().getMaxEmptyRuns()) {
         lessThanEqualsSequence = maxPossibleSequence;
-        countEmptyRuns = 0;
+        countEmptyRuns.set(0);
         LOGGER.debug(
             "Max empty runs reached. Data type {}, partitionId {}, sequence {}, lastSequence {}, maxNumberOfHits {}.",
             importValueType,
@@ -284,9 +285,9 @@ public class OpensearchRecordsReader implements RecordsReader {
     try {
       final HitEntity[] hits = withTimerSearchHits(() -> read(searchRequestBuilder, scrollNeeded));
       if (hits.length == 0) {
-        countEmptyRuns++;
+        countEmptyRuns.incrementAndGet();
       } else {
-        countEmptyRuns = 0;
+        countEmptyRuns.set(0);
       }
       return createImportBatch(hits);
     } catch (final OpenSearchException ex) {
@@ -396,8 +397,7 @@ public class OpensearchRecordsReader implements RecordsReader {
     return readNextBatchBySequence(sequence, null);
   }
 
-  private HitEntity[] read(
-      final SearchRequest.Builder searchRequestBuilder, final boolean scrollNeeded)
+  private HitEntity[] read(final Builder searchRequestBuilder, final boolean scrollNeeded)
       throws IOException {
     final List<Hit<Object>> hits =
         scrollNeeded
@@ -454,9 +454,9 @@ public class OpensearchRecordsReader implements RecordsReader {
     metrics
         .getTimer(
             Metrics.TIMER_NAME_IMPORT_JOB_SCHEDULED_TIME,
-            Metrics.TAG_KEY_TYPE,
+            TAG_KEY_TYPE,
             importValueType.name(),
-            Metrics.TAG_KEY_PARTITION,
+            TAG_KEY_PARTITION,
             String.valueOf(partitionId))
         .record(Duration.between(job.getCreationTime(), OffsetDateTime.now()));
 
@@ -485,9 +485,9 @@ public class OpensearchRecordsReader implements RecordsReader {
     return metrics
         .getTimer(
             Metrics.TIMER_NAME_IMPORT_QUERY,
-            Metrics.TAG_KEY_TYPE,
+            TAG_KEY_TYPE,
             importValueType.name(),
-            Metrics.TAG_KEY_PARTITION,
+            TAG_KEY_PARTITION,
             String.valueOf(partitionId))
         .recordCallable(callable);
   }
@@ -496,9 +496,9 @@ public class OpensearchRecordsReader implements RecordsReader {
     return metrics
         .getTimer(
             Metrics.TIMER_NAME_IMPORT_QUERY,
-            Metrics.TAG_KEY_TYPE,
+            TAG_KEY_TYPE,
             importValueType.name(),
-            Metrics.TAG_KEY_PARTITION,
+            TAG_KEY_PARTITION,
             String.valueOf(partitionId))
         .recordCallable(callable);
   }
