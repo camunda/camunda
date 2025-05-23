@@ -15,7 +15,12 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.spring.client.configuration.CamundaClientConfigurationImpl;
 import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
+import io.camunda.spring.client.properties.CamundaClientAuthProperties;
+import io.camunda.spring.client.properties.CamundaClientCloudProperties;
+import io.camunda.spring.client.properties.CamundaClientProperties;
+import io.camunda.spring.client.properties.CamundaClientProperties.ClientMode;
 import io.grpc.ClientInterceptor;
+import java.net.URI;
 import java.util.List;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.springframework.context.annotation.Bean;
@@ -26,19 +31,56 @@ public class RemoteClientConfiguration {
 
   @Bean
   public CamundaClientBuilderFactory remoteClientBuilderFactory(
+      final CamundaContainerRuntimeConfiguration camundaContainerRuntimeConfiguration,
       final CamundaClientConfiguration remoteClientConfiguration) {
-    final CamundaClientBuilder remoteClientBuilder =
-        CamundaClient.newClientBuilder()
-            .restAddress(remoteClientConfiguration.getRestAddress())
-            .grpcAddress(remoteClientConfiguration.getGrpcAddress());
 
-    if (remoteClientConfiguration.isPlaintextConnectionEnabled()) {
+    final CamundaClientProperties camundaClientProperties =
+        camundaContainerRuntimeConfiguration.getRemote().getClient();
+
+    final CamundaClientBuilder remoteClientBuilder =
+        createRemoteClientBuilder(camundaClientProperties);
+
+    if (camundaClientProperties.getMode() == ClientMode.selfManaged
+        && remoteClientConfiguration.isPlaintextConnectionEnabled()) {
       remoteClientBuilder.usePlaintext();
     }
 
     remoteClientBuilder.credentialsProvider(remoteClientConfiguration.getCredentialsProvider());
 
     return () -> remoteClientBuilder;
+  }
+
+  private CamundaClientBuilder createRemoteClientBuilder(
+      final CamundaClientProperties camundaClientProperties) {
+    if (camundaClientProperties.getMode() == ClientMode.selfManaged) {
+      return CamundaClient.newClientBuilder()
+          .restAddress(camundaClientProperties.getRestAddress())
+          .grpcAddress(camundaClientProperties.getGrpcAddress());
+
+    } else {
+      final CamundaClientCloudProperties cloudProperties = camundaClientProperties.getCloud();
+      final CamundaClientAuthProperties authProperties = camundaClientProperties.getAuth();
+
+      return CamundaClient.newCloudClientBuilder()
+          .withClusterId(cloudProperties.getClusterId())
+          .withClientId(authProperties.getClientId())
+          .withClientSecret(authProperties.getClientSecret())
+          .withRegion(cloudProperties.getRegion())
+          .restAddress(
+              URI.create(
+                  String.format(
+                      "https://%s.%s:443/%s",
+                      cloudProperties.getRegion(),
+                      cloudProperties.getBaseUrl(),
+                      cloudProperties.getClusterId())))
+          .grpcAddress(
+              URI.create(
+                  String.format(
+                      "https://%s.%s.%s:443",
+                      cloudProperties.getClusterId(),
+                      cloudProperties.getRegion(),
+                      cloudProperties.getBaseUrl())));
+    }
   }
 
   @Bean
