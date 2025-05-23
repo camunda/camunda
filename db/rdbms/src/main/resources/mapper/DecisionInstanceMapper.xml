@@ -34,6 +34,7 @@
     di.EVALUATION_DATE,
     di.RESULT,
     di.EVALUATION_FAILURE,
+    di.EVALUATION_FAILURE_MESSAGE,
     di.TENANT_ID,
     NULL AS EVALUATED_INPUTS,
     NULL AS EVALUATED_OUTPUTS,
@@ -152,6 +153,7 @@
         javaType="io.camunda.search.entities.DecisionInstanceEntity$DecisionInstanceState"/>
       <arg column="EVALUATION_DATE" javaType="java.time.OffsetDateTime"/>
       <arg column="EVALUATION_FAILURE" javaType="java.lang.String"/>
+      <arg column="EVALUATION_FAILURE_MESSAGE" javaType="java.lang.String"/>
       <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="TENANT_ID" javaType="java.lang.String"/>
@@ -192,6 +194,7 @@
                                    EVALUATION_DATE,
                                    RESULT,
                                             EVALUATION_FAILURE,
+                                            EVALUATION_FAILURE_MESSAGE,
                                             TENANT_ID,
                                             PARTITION_ID,
                                             HISTORY_CLEANUP_DATE)
@@ -202,7 +205,7 @@
             #{flowNodeInstanceKey}, #{flowNodeId},
             #{rootDecisionDefinitionKey},
             #{decisionType}, #{state},
-            #{evaluationDate, jdbcType=TIMESTAMP}, #{result}, #{evaluationFailure},
+            #{evaluationDate, jdbcType=TIMESTAMP}, #{result}, #{evaluationFailure}, #{evaluationFailureMessage},
             #{tenantId}, #{partitionId},
             #{historyCleanupDate, jdbcType=TIMESTAMP})
   </insert>

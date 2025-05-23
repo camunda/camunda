@@ -186,7 +186,7 @@ public class DecisionEvaluationHandlerTest {
     assertThat(decisionInstanceEntity.getDecisionDefinitionId())
         .isEqualTo(String.valueOf(evaluatedDecision.getDecisionKey()));
     assertThat(decisionInstanceEntity.getDecisionType())
-        .isEqualTo(DecisionType.fromZeebeDecisionType(decisionType.name()));
+        .isEqualTo(DecisionType.fromString(decisionType.name()));
     assertThat(decisionInstanceEntity.getDecisionName())
         .isEqualTo(evaluatedDecision.getDecisionName());
     assertThat(decisionInstanceEntity.getDecisionVersion())

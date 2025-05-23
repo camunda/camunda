@@ -14,15 +14,18 @@ import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.api.v1.dao.DecisionInstanceDao;
 import io.camunda.operate.webapp.api.v1.entities.DecisionInstance;
+import io.camunda.operate.webapp.api.v1.entities.DecisionInstanceState;
 import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.entities.dmn.DecisionType;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -64,7 +67,7 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
 
   private List<DecisionInstance> mapSearchHits(final SearchHit[] searchHitArray) {
     final List<DecisionInstance> decisionInstances =
-        ElasticsearchUtil.mapSearchHits(searchHitArray, objectMapper, DecisionInstance.class);
+        ElasticsearchUtil.mapSearchHits(searchHitArray, this::searchHitToDecisionInstance);
 
     if (decisionInstances != null) {
       for (final DecisionInstance di : decisionInstances) {
@@ -109,6 +112,7 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
   protected void buildFiltering(
       final Query<DecisionInstance> query, final SearchSourceBuilder searchSourceBuilder) {
     final DecisionInstance filter = query.getFilter();
+
     if (filter != null) {
       final List<QueryBuilder> queryBuilders = new ArrayList<>();
       queryBuilders.add(buildTermQuery(DecisionInstance.ID, filter.getId()));
@@ -119,7 +123,10 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
       queryBuilders.add(
           buildMatchDateQuery(DecisionInstance.EVALUATION_DATE, filter.getEvaluationDate()));
       queryBuilders.add(
-          buildTermQuery(DecisionInstance.EVALUATION_FAILURE, filter.getEvaluationFailure()));
+          ElasticsearchUtil.joinWithOr(
+              buildTermQuery(
+                  DecisionInstance.EVALUATION_FAILURE_MESSAGE, filter.getEvaluationFailure()),
+              buildTermQuery(DecisionInstance.EVALUATION_FAILURE, filter.getEvaluationFailure())));
       queryBuilders.add(
           buildTermQuery(
               DecisionInstance.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()));
@@ -162,5 +169,41 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
     }
 
     return decisionInstances;
+  }
+
+  private DecisionInstance searchHitToDecisionInstance(final SearchHit searchHit) {
+    final Map<String, Object> searchHitAsMap = searchHit.getSourceAsMap();
+    final DecisionInstance decisionInstance =
+        new DecisionInstance()
+            .setId((String) searchHitAsMap.get(DecisionInstance.ID))
+            .setKey((Long) searchHitAsMap.get(DecisionInstance.KEY))
+            .setState(
+                DecisionInstanceState.fromString(
+                    (String) searchHitAsMap.get(DecisionInstance.STATE)))
+            .setEvaluationDate((String) searchHitAsMap.get(DecisionInstance.EVALUATION_DATE))
+            .setProcessDefinitionKey(
+                (Long) searchHitAsMap.get(DecisionInstance.PROCESS_DEFINITION_KEY))
+            .setProcessInstanceKey((Long) searchHitAsMap.get(DecisionInstance.PROCESS_INSTANCE_KEY))
+            .setDecisionId((String) searchHitAsMap.get(DecisionInstance.DECISION_ID))
+            .setTenantId((String) searchHitAsMap.get(DecisionInstance.TENANT_ID))
+            .setDecisionDefinitionId(
+                (String) searchHitAsMap.get(DecisionInstance.DECISION_DEFINITION_ID))
+            .setDecisionName((String) searchHitAsMap.get(DecisionInstance.DECISION_NAME))
+            .setDecisionVersion((Integer) searchHitAsMap.get(DecisionInstance.DECISION_VERSION))
+            .setDecisionType(
+                DecisionType.fromString(
+                    (String) searchHitAsMap.get(DecisionInstance.DECISION_TYPE)));
+
+    final String evaluationFailureMessage =
+        (String) searchHitAsMap.get(DecisionInstance.EVALUATION_FAILURE_MESSAGE);
+    if (evaluationFailureMessage == null) {
+      final String evaluationFailure =
+          (String) searchHitAsMap.get(DecisionInstance.EVALUATION_FAILURE);
+      decisionInstance.setEvaluationFailure(evaluationFailure);
+    } else {
+      decisionInstance.setEvaluationFailure(evaluationFailureMessage);
+    }
+
+    return decisionInstance;
   }
 }

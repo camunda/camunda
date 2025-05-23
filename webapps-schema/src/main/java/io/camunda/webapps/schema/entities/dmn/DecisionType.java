@@ -19,7 +19,7 @@ public enum DecisionType {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DecisionType.class);
 
-  public static DecisionType fromZeebeDecisionType(final String decisionType) {
+  public static DecisionType fromString(final String decisionType) {
     if (decisionType == null) {
       return UNSPECIFIED;
     }

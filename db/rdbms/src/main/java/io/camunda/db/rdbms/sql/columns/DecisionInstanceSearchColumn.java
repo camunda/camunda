@@ -28,8 +28,9 @@ public enum DecisionInstanceSearchColumn implements SearchColumn<DecisionInstanc
       "evaluationDate", DecisionInstanceEntity::evaluationDate, DateUtil::fuzzyToOffsetDateTime),
   STATE("state", DecisionInstanceEntity::state),
   RESULT("result", DecisionInstanceEntity::result),
-  EVALUATION_FAILURE("evaluationFailure", DecisionInstanceEntity::evaluationFailure);
-
+  EVALUATION_FAILURE("evaluationFailure", DecisionInstanceEntity::evaluationFailure),
+  EVALUATION_FAILURE_MESSAGE(
+      "evaluationFailureMessage", DecisionInstanceEntity::evaluationFailureMessage);
   private final String property;
   private final Function<DecisionInstanceEntity, Object> propertyReader;
   private final Function<Object, Object> sortOptionConverter;

@@ -294,7 +294,7 @@ public class DecisionDataUtil {
         .setKey(Long.valueOf(decisionInstanceId.split("-")[0]))
         .setExecutionIndex(Integer.valueOf(decisionInstanceId.split("-")[1]))
         .setState(state)
-        .setEvaluationFailure(evaluationFailure)
+        .setEvaluationFailureMessage(evaluationFailure)
         .setDecisionName(decisionName)
         .setDecisionVersion(decisionVersion)
         .setDecisionType(DecisionType.DECISION_TABLE)
