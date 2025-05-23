@@ -16,29 +16,17 @@ import io.camunda.spring.client.properties.CamundaClientAuthProperties;
 import io.camunda.spring.client.properties.CamundaClientCloudProperties;
 import io.camunda.spring.client.properties.CamundaClientProperties;
 import io.camunda.spring.client.properties.CamundaClientProperties.ClientMode;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConfigurationProperties(prefix = "io.camunda.process.test.remote")
 public class RemoteClientConfiguration {
 
-  @NestedConfigurationProperty
-  private CamundaClientProperties client = new CamundaClientProperties();
-
-  public CamundaClientProperties getClient() {
-    return client;
-  }
-
-  public void setClient(final CamundaClientProperties client) {
-    this.client = client;
-  }
-
   @Bean
-  public CamundaClientBuilderFactory remoteClientBuilderFactory() {
-    final CamundaClientProperties remoteClientProperties = client;
+  public CamundaClientBuilderFactory remoteClientBuilderFactory(
+      final CamundaContainerRuntimeConfiguration runtimeConfiguration) {
+    final CamundaClientProperties remoteClientProperties =
+        runtimeConfiguration.getRemote().getClient();
 
     final CamundaClientBuilder remoteClientBuilder =
         createCamundaClientBuilder(remoteClientProperties);
