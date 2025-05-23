@@ -22,7 +22,8 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
   private Integer executionIndex;
   private DecisionInstanceState state;
   private OffsetDateTime evaluationDate;
-  private String evaluationFailure;
+  @Deprecated private String evaluationFailure;
+  private String evaluationFailureMessage;
   private Long position;
   private long decisionRequirementsKey;
   private String decisionRequirementsId;
@@ -49,11 +50,11 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
 
   @JsonIgnore private Object[] sortValues;
 
-  public static Long extractKey(String id) {
+  public static Long extractKey(final String id) {
     return Long.valueOf(id.split("-")[0]);
   }
 
-  public DecisionInstanceEntity setId(Long key, int executionIndex) {
+  public DecisionInstanceEntity setId(final Long key, final int executionIndex) {
     return setId(String.format("%d-%d", key, executionIndex));
   }
 
@@ -84,12 +85,23 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
     return this;
   }
 
+  @Deprecated
   public String getEvaluationFailure() {
     return evaluationFailure;
   }
 
+  @Deprecated
   public DecisionInstanceEntity setEvaluationFailure(final String evaluationFailure) {
     this.evaluationFailure = evaluationFailure;
+    return this;
+  }
+
+  public String getEvaluationFailureMessage() {
+    return evaluationFailureMessage;
+  }
+
+  public DecisionInstanceEntity setEvaluationFailureMessage(final String evaluationFailureMessage) {
+    this.evaluationFailureMessage = evaluationFailureMessage;
     return this;
   }
 
@@ -151,7 +163,7 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
     return bpmnProcessId;
   }
 
-  public DecisionInstanceEntity setBpmnProcessId(String bpmnProcessId) {
+  public DecisionInstanceEntity setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
     return this;
   }
@@ -279,48 +291,9 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
     return tenantId;
   }
 
-  public DecisionInstanceEntity setTenantId(String tenantId) {
+  public DecisionInstanceEntity setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-    final DecisionInstanceEntity that = (DecisionInstanceEntity) o;
-    return decisionRequirementsKey == that.decisionRequirementsKey
-        && processDefinitionKey == that.processDefinitionKey
-        && processInstanceKey == that.processInstanceKey
-        && elementInstanceKey == that.elementInstanceKey
-        && decisionVersion == that.decisionVersion
-        && Objects.equals(executionIndex, that.executionIndex)
-        && state == that.state
-        && Objects.equals(evaluationDate, that.evaluationDate)
-        && Objects.equals(evaluationFailure, that.evaluationFailure)
-        && Objects.equals(position, that.position)
-        && Objects.equals(decisionRequirementsId, that.decisionRequirementsId)
-        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
-        && Objects.equals(elementId, that.elementId)
-        && Objects.equals(decisionId, that.decisionId)
-        && Objects.equals(decisionDefinitionId, that.decisionDefinitionId)
-        && Objects.equals(decisionName, that.decisionName)
-        && Objects.equals(rootDecisionName, that.rootDecisionName)
-        && Objects.equals(rootDecisionId, that.rootDecisionId)
-        && Objects.equals(rootDecisionDefinitionId, that.rootDecisionDefinitionId)
-        && decisionType == that.decisionType
-        && Objects.equals(result, that.result)
-        && Objects.equals(evaluatedInputs, that.evaluatedInputs)
-        && Objects.equals(evaluatedOutputs, that.evaluatedOutputs)
-        && Objects.equals(tenantId, that.tenantId)
-        && Arrays.equals(sortValues, that.sortValues);
   }
 
   @Override
@@ -332,6 +305,7 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
             state,
             evaluationDate,
             evaluationFailure,
+            evaluationFailureMessage,
             position,
             decisionRequirementsKey,
             decisionRequirementsId,
@@ -354,5 +328,45 @@ public class DecisionInstanceEntity extends OperateZeebeEntity<DecisionInstanceE
             tenantId);
     result1 = 31 * result1 + Arrays.hashCode(sortValues);
     return result1;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final DecisionInstanceEntity that = (DecisionInstanceEntity) o;
+    return decisionRequirementsKey == that.decisionRequirementsKey
+        && processDefinitionKey == that.processDefinitionKey
+        && processInstanceKey == that.processInstanceKey
+        && elementInstanceKey == that.elementInstanceKey
+        && decisionVersion == that.decisionVersion
+        && Objects.equals(executionIndex, that.executionIndex)
+        && state == that.state
+        && Objects.equals(evaluationDate, that.evaluationDate)
+        && Objects.equals(evaluationFailure, that.evaluationFailure)
+        && Objects.equals(evaluationFailureMessage, that.evaluationFailureMessage)
+        && Objects.equals(position, that.position)
+        && Objects.equals(decisionRequirementsId, that.decisionRequirementsId)
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(elementId, that.elementId)
+        && Objects.equals(decisionId, that.decisionId)
+        && Objects.equals(decisionDefinitionId, that.decisionDefinitionId)
+        && Objects.equals(decisionName, that.decisionName)
+        && Objects.equals(rootDecisionName, that.rootDecisionName)
+        && Objects.equals(rootDecisionId, that.rootDecisionId)
+        && Objects.equals(rootDecisionDefinitionId, that.rootDecisionDefinitionId)
+        && decisionType == that.decisionType
+        && Objects.equals(result, that.result)
+        && Objects.equals(evaluatedInputs, that.evaluatedInputs)
+        && Objects.equals(evaluatedOutputs, that.evaluatedOutputs)
+        && Objects.equals(tenantId, that.tenantId)
+        && Arrays.equals(sortValues, that.sortValues);
   }
 }
