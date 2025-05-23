@@ -7,9 +7,12 @@
  */
 package io.camunda.operate;
 
+import io.camunda.client.CamundaClient;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
@@ -28,5 +31,11 @@ public class DataGeneratorModuleConfiguration {
   @PostConstruct
   public void logModule() {
     LOGGER.info("Starting module: data generator");
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  public CamundaClient camundaClient() {
+    return CamundaClient.newClientBuilder().usePlaintext().build();
   }
 }
