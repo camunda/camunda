@@ -35,6 +35,10 @@ public interface ComponentTreeListener extends AutoCloseable {
     registerNode(component);
   }
 
+  default void registerNode(final HealthMonitorable component, final HealthMonitorable parent) {
+    registerNode(component, Optional.ofNullable(parent.componentName()));
+  }
+
   void unregisterNode(HealthMonitorable component);
 
   /**
@@ -45,6 +49,11 @@ public interface ComponentTreeListener extends AutoCloseable {
 
   /** Unregister a relationship between a child and its parent */
   void unregisterRelationship(String child, String parent);
+
+  default void unregisterRelationship(
+      final HealthMonitorable child, final HealthMonitorable parent) {
+    unregisterRelationship(child.componentName(), parent.componentName());
+  }
 
   static ComponentTreeListener noop() {
     return new ComponentTreeListener() {

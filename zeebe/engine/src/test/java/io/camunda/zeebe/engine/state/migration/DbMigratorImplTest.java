@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -262,15 +263,16 @@ public class DbMigratorImplTest {
     when(mockProcessingState.getMigrationState().getMigratedByVersion()).thenReturn(null);
 
     final var migration = mock(MigrationTask.class);
-    when(migration.needsToRun(any())).thenReturn(true);
     when(migration.isInitialization()).thenReturn(true);
+    when(migration.needsToRun(any())).thenReturn(true);
     migrations.add(migration);
 
     // when
     sut.runMigrations();
 
     // then
-    verify(migration).isInitialization();
+    verify(migration, atLeastOnce()).isInitialization();
+    verify(migration).needsToRun(any());
     verify(migration).runMigration(any());
     verify(mockProcessingState.getMigrationState()).setMigratedByVersion(eq(CURRENT_VERSION));
   }
