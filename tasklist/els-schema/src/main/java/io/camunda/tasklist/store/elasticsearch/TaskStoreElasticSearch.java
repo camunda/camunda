@@ -289,20 +289,24 @@ public class TaskStoreElasticSearch implements TaskStore {
       return scrollInChunks(
           processInstanceIds,
           DEFAULT_MAX_TERMS_COUNT,
-          chunk ->
-              createSearchRequest(taskTemplate)
-                  .source(
-                      searchSource()
-                          .query(
-                              boolQuery()
-                                  .must(termsQuery(TaskTemplate.PROCESS_INSTANCE_ID, chunk))
-                                  .must(termQuery(TaskTemplate.STATE, TaskState.CREATED)))),
+          this::buildSearchCreatedTasksByProcessInstanceIdsRequest,
           TaskEntity.class,
           objectMapper,
           esClient);
     } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
+  }
+
+  private SearchRequest buildSearchCreatedTasksByProcessInstanceIdsRequest(
+      final List<String> processInstanceIds) {
+    return createSearchRequest(taskTemplate)
+        .source(
+            searchSource()
+                .query(
+                    boolQuery()
+                        .must(termsQuery(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceIds))
+                        .must(termQuery(TaskTemplate.STATE, TaskState.CREATED))));
   }
 
   private SearchHit[] getTasksRawResponse(final List<String> ids) throws IOException {

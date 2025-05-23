@@ -62,6 +62,7 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
 import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
 import org.opensearch.client.opensearch.core.*;
+import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.opensearch.client.opensearch.indices.GetIndicesSettingsRequest;
@@ -105,33 +106,7 @@ public class VariableStoreOpenSearch implements VariableStore {
       return OpenSearchUtil.scrollInChunks(
           flowNodeInstanceIds,
           maxTermsCount,
-          chunk -> {
-            final Query.Builder flowNodeInstanceKeyQ = new Query.Builder();
-            flowNodeInstanceKeyQ.terms(
-                terms ->
-                    terms
-                        .field(SCOPE_FLOW_NODE_ID)
-                        .terms(t -> t.value(chunk.stream().map(FieldValue::of).toList())));
-
-            Query.Builder varNamesQ = null;
-            if (isNotEmpty(varNames)) {
-              varNamesQ = new Query.Builder();
-              varNamesQ.terms(
-                  terms ->
-                      terms
-                          .field(VariableIndex.NAME)
-                          .terms(t -> t.value(varNames.stream().map(FieldValue::of).toList())));
-            }
-            final Query.Builder query = new Query.Builder();
-            query.constantScore(
-                new ConstantScoreQuery.Builder()
-                    .filter(OpenSearchUtil.joinWithAnd(flowNodeInstanceKeyQ, varNamesQ))
-                    .build());
-            final SearchRequest.Builder searchRequest = new SearchRequest.Builder();
-            searchRequest.index(variableIndex.getAlias()).query(query.build());
-            applyFetchSourceForVariableIndex(searchRequest, fieldNames);
-            return searchRequest;
-          },
+          chunk -> buildSearchVariablesByScopeFNIsAndVarNamesRequest(chunk, varNames, fieldNames),
           VariableEntity.class,
           osClient);
     } catch (final IOException e) {
@@ -248,66 +223,7 @@ public class VariableStoreOpenSearch implements VariableStore {
       return scrollInChunks(
           processInstanceIds,
           maxTermsCount,
-          chunk -> {
-            final TermsQuery processInstanceKeyQuery =
-                TermsQuery.of(
-                    t ->
-                        t.field(FlowNodeInstanceIndex.PROCESS_INSTANCE_ID)
-                            .terms(
-                                terms -> terms.value(chunk.stream().map(FieldValue::of).toList())));
-
-            final TermQuery stateActiveQuery =
-                TermQuery.of(
-                    t ->
-                        t.field(FlowNodeInstanceIndex.STATE)
-                            .value(FieldValue.of(FlowNodeState.ACTIVE.name())));
-            final BoolQuery stateMissingQuery =
-                BoolQuery.of(
-                    b -> b.mustNot(q -> q.exists(e -> e.field(FlowNodeInstanceIndex.STATE))));
-            final BoolQuery stateQuery =
-                BoolQuery.of(
-                    b ->
-                        b.should(q -> q.term(stateActiveQuery))
-                            .should(q -> q.bool(stateMissingQuery))
-                            .minimumShouldMatch("1"));
-
-            final TermsQuery typeQuery =
-                TermsQuery.of(
-                    t ->
-                        t.field(FlowNodeInstanceIndex.TYPE)
-                            .terms(
-                                terms ->
-                                    terms.value(
-                                        Arrays.asList(
-                                            FieldValue.of(
-                                                FlowNodeType.AD_HOC_SUB_PROCESS.toString()),
-                                            FieldValue.of(FlowNodeType.USER_TASK.toString()),
-                                            FieldValue.of(FlowNodeType.SUB_PROCESS.toString()),
-                                            FieldValue.of(
-                                                FlowNodeType.EVENT_SUB_PROCESS.toString()),
-                                            FieldValue.of(
-                                                FlowNodeType.MULTI_INSTANCE_BODY.toString()),
-                                            FieldValue.of(FlowNodeType.PROCESS.toString())))));
-
-            final BoolQuery finalQuery =
-                BoolQuery.of(
-                    b ->
-                        b.must(q -> q.terms(processInstanceKeyQuery))
-                            .must(q -> q.terms(typeQuery))
-                            .must(q -> q.bool(stateQuery)));
-
-            final Query.Builder combinedQuery = new Query.Builder();
-            combinedQuery.constantScore(cs -> cs.filter(q -> q.bool(finalQuery)));
-
-            return new SearchRequest.Builder()
-                .index(flowNodeInstanceIndex.getAlias())
-                .query(combinedQuery.build())
-                .sort(
-                    sort ->
-                        sort.field(
-                            f -> f.field(FlowNodeInstanceIndex.POSITION).order(SortOrder.Asc)))
-                .size(tasklistProperties.getOpenSearch().getBatchSize());
-          },
+          this::buildSearchFNIByProcessInstanceIdsRequest,
           FlowNodeInstanceEntity.class,
           osClient);
     } catch (final IOException e) {
@@ -446,6 +362,92 @@ public class VariableStoreOpenSearch implements VariableStore {
     return processInstanceIds == null
         ? Collections.emptyList()
         : new ArrayList<>(processInstanceIds);
+  }
+
+  private Builder buildSearchFNIByProcessInstanceIdsRequest(final List<String> processInstanceIds) {
+    final TermsQuery processInstanceKeyQuery =
+        TermsQuery.of(
+            t ->
+                t.field(FlowNodeInstanceIndex.PROCESS_INSTANCE_ID)
+                    .terms(
+                        terms ->
+                            terms.value(processInstanceIds.stream().map(FieldValue::of).toList())));
+
+    final TermQuery stateActiveQuery =
+        TermQuery.of(
+            t ->
+                t.field(FlowNodeInstanceIndex.STATE)
+                    .value(FieldValue.of(FlowNodeState.ACTIVE.name())));
+    final BoolQuery stateMissingQuery =
+        BoolQuery.of(b -> b.mustNot(q -> q.exists(e -> e.field(FlowNodeInstanceIndex.STATE))));
+    final BoolQuery stateQuery =
+        BoolQuery.of(
+            b ->
+                b.should(q -> q.term(stateActiveQuery))
+                    .should(q -> q.bool(stateMissingQuery))
+                    .minimumShouldMatch("1"));
+
+    final TermsQuery typeQuery =
+        TermsQuery.of(
+            t ->
+                t.field(FlowNodeInstanceIndex.TYPE)
+                    .terms(
+                        terms ->
+                            terms.value(
+                                Arrays.asList(
+                                    FieldValue.of(FlowNodeType.AD_HOC_SUB_PROCESS.toString()),
+                                    FieldValue.of(FlowNodeType.USER_TASK.toString()),
+                                    FieldValue.of(FlowNodeType.SUB_PROCESS.toString()),
+                                    FieldValue.of(FlowNodeType.EVENT_SUB_PROCESS.toString()),
+                                    FieldValue.of(FlowNodeType.MULTI_INSTANCE_BODY.toString()),
+                                    FieldValue.of(FlowNodeType.PROCESS.toString())))));
+
+    final BoolQuery finalQuery =
+        BoolQuery.of(
+            b ->
+                b.must(q -> q.terms(processInstanceKeyQuery))
+                    .must(q -> q.terms(typeQuery))
+                    .must(q -> q.bool(stateQuery)));
+
+    final Query.Builder combinedQuery = new Query.Builder();
+    combinedQuery.constantScore(cs -> cs.filter(q -> q.bool(finalQuery)));
+
+    return new Builder()
+        .index(flowNodeInstanceIndex.getAlias())
+        .query(combinedQuery.build())
+        .sort(sort -> sort.field(f -> f.field(FlowNodeInstanceIndex.POSITION).order(SortOrder.Asc)))
+        .size(tasklistProperties.getOpenSearch().getBatchSize());
+  }
+
+  private Builder buildSearchVariablesByScopeFNIsAndVarNamesRequest(
+      final List<String> scopeFlowNodeIds,
+      final List<String> varNames,
+      final Set<String> fieldNames) {
+    final var flowNodeInstanceKeyQ = new Query.Builder();
+    flowNodeInstanceKeyQ.terms(
+        terms ->
+            terms
+                .field(SCOPE_FLOW_NODE_ID)
+                .terms(t -> t.value(scopeFlowNodeIds.stream().map(FieldValue::of).toList())));
+
+    Query.Builder varNamesQ = null;
+    if (isNotEmpty(varNames)) {
+      varNamesQ = new Query.Builder();
+      varNamesQ.terms(
+          terms ->
+              terms
+                  .field(VariableIndex.NAME)
+                  .terms(t -> t.value(varNames.stream().map(FieldValue::of).toList())));
+    }
+    final Query.Builder query = new Query.Builder();
+    query.constantScore(
+        new ConstantScoreQuery.Builder()
+            .filter(OpenSearchUtil.joinWithAnd(flowNodeInstanceKeyQ, varNamesQ))
+            .build());
+    final Builder searchRequest = new Builder();
+    searchRequest.index(variableIndex.getAlias()).query(query.build());
+    applyFetchSourceForVariableIndex(searchRequest, fieldNames);
+    return searchRequest;
   }
 
   private BulkOperation createUpsertRequest(final TaskVariableEntity variableEntity) {
