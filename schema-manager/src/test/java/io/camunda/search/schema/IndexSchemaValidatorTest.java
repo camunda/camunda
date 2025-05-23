@@ -7,6 +7,8 @@
  */
 package io.camunda.search.schema;
 
+import static io.camunda.search.schema.MappingSource.INDEX;
+import static io.camunda.search.schema.MappingSource.INDEX_TEMPLATE;
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -42,7 +44,7 @@ public class IndexSchemaValidatorTest {
             "qualified_name", "alias", "index_name", "/mappings-added-property.json");
 
     // then
-    final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index));
+    final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index), INDEX);
 
     assertThat(difference)
         .containsExactly(
@@ -71,7 +73,7 @@ public class IndexSchemaValidatorTest {
         SchemaTestUtil.mockIndex(
             "qualified_name", "aliasx", "qualified_name", "/mappings-added-property.json");
 
-    final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index));
+    final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index), INDEX);
 
     // then
     assertThat(difference)
@@ -96,7 +98,7 @@ public class IndexSchemaValidatorTest {
         SchemaTestUtil.mockIndex("qualified_name", "alias", "index_name", "/mappings.json");
 
     // then
-    final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index));
+    final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index), INDEX);
 
     assertThat(difference).isEmpty();
   }
@@ -107,7 +109,7 @@ public class IndexSchemaValidatorTest {
     // given, when, then
     final var index =
         SchemaTestUtil.mockIndex("qualified_name", "alias", "index_name", "/mappings.json");
-    final var difference = VALIDATOR.validateIndexMappings(Map.of(), Set.of(index));
+    final var difference = VALIDATOR.validateIndexMappings(Map.of(), Set.of(index), INDEX);
 
     assertThat(difference).isEmpty();
   }
@@ -128,7 +130,8 @@ public class IndexSchemaValidatorTest {
         SchemaTestUtil.mockIndex("qualified_name", "alias3", "index_name", "/mappings.json");
 
     // then
-    assertThatThrownBy(() -> VALIDATOR.validateIndexMappings(currentIndices, Set.of(currentIndex)))
+    assertThatThrownBy(
+            () -> VALIDATOR.validateIndexMappings(currentIndices, Set.of(currentIndex), INDEX))
         .isInstanceOf(IndexSchemaValidationException.class)
         .hasMessageContaining("Ambiguous schema update.");
   }
@@ -146,7 +149,7 @@ public class IndexSchemaValidatorTest {
         SchemaTestUtil.mockIndex("qualified_name", "alias", "index_name", "/mappings.json");
 
     // then
-    final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index));
+    final var difference = VALIDATOR.validateIndexMappings(currentIndices, Set.of(index), INDEX);
 
     assertThat(difference).isEmpty();
   }
@@ -163,7 +166,7 @@ public class IndexSchemaValidatorTest {
             "qualified_name", "alias", "index_name", "/mappings-changed-property-invalid.json");
 
     // then
-    assertThatThrownBy(() -> VALIDATOR.validateIndexMappings(currentIndices, Set.of(index)))
+    assertThatThrownBy(() -> VALIDATOR.validateIndexMappings(currentIndices, Set.of(index), INDEX))
         .isInstanceOf(IndexSchemaValidationException.class)
         .hasMessageContaining(
             "Not supported index changes are introduced. Data migration is required.");
@@ -186,7 +189,8 @@ public class IndexSchemaValidatorTest {
             "/mappings-added-property.json");
 
     // then
-    final var difference = VALIDATOR.validateIndexMappings(currentMappings, Set.of(indexTemplate));
+    final var difference =
+        VALIDATOR.validateIndexMappings(currentMappings, Set.of(indexTemplate), INDEX_TEMPLATE);
 
     assertThat(difference)
         .containsExactly(
@@ -216,7 +220,8 @@ public class IndexSchemaValidatorTest {
             "/mappings-deleted-property.json");
 
     // then
-    final var difference = VALIDATOR.validateIndexMappings(currentMappings, Set.of(indexTemplate));
+    final var difference =
+        VALIDATOR.validateIndexMappings(currentMappings, Set.of(indexTemplate), INDEX_TEMPLATE);
 
     assertThat(difference).isEmpty();
   }
