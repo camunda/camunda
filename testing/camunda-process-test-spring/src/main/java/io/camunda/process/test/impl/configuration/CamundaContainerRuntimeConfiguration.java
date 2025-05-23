@@ -17,7 +17,6 @@ package io.camunda.process.test.impl.configuration;
 
 import io.camunda.process.test.api.CamundaRuntimeMode;
 import io.camunda.process.test.impl.runtime.ContainerRuntimeDefaults;
-import io.camunda.spring.client.properties.CamundaClientProperties;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -133,20 +132,20 @@ public class CamundaContainerRuntimeConfiguration {
   }
 
   public static class RemoteConfiguration {
-    private CamundaClientProperties client = new CamundaClientProperties();
+    //    private CamundaClientProperties client = new CamundaClientProperties();
 
     private String camundaMonitoringApiAddress =
         ContainerRuntimeDefaults.LOCAL_CAMUNDA_MONITORING_API_ADDRESS;
     private String connectorsRestApiAddress =
         ContainerRuntimeDefaults.LOCAL_CONNECTORS_REST_API_ADDRESS;
 
-    public CamundaClientProperties getClient() {
-      return client;
-    }
-
-    public void setClient(final CamundaClientProperties client) {
-      this.client = client;
-    }
+    //    public CamundaClientProperties getClient() {
+    //      return client;
+    //    }
+    //
+    //    public void setClient(final CamundaClientProperties client) {
+    //      this.client = client;
+    //    }
 
     public String getCamundaMonitoringApiAddress() {
       return camundaMonitoringApiAddress;
