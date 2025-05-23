@@ -11,8 +11,6 @@ import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.JsonPathException;
 import com.jayway.jsonpath.Option;
-import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
-import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,8 +20,8 @@ public final class OidcPrincipalLoader {
       Configuration.builder()
           // Ignore the common case that the last path element is not set
           .options(Option.DEFAULT_PATH_LEAF_TO_NULL)
-          .jsonProvider(new JacksonJsonProvider())
-          .mappingProvider(new JacksonMappingProvider())
+          .jsonProvider(null)
+          .mappingProvider(null)
           .build();
 
   private static final Logger LOG = LoggerFactory.getLogger(OidcPrincipalLoader.class);
