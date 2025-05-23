@@ -74,7 +74,7 @@ public final class MessageEventProcessors {
         .onCommand(
             ValueType.MESSAGE_BATCH,
             MessageBatchIntent.EXPIRE,
-            new MessageBatchExpireProcessor(writers.state()))
+            new MessageBatchExpireProcessor(writers.state(), writers.rejection(), messageState))
         .onCommand(
             ValueType.MESSAGE, MessageIntent.EXPIRE, new MessageExpireProcessor(writers.state()))
         .onCommand(
