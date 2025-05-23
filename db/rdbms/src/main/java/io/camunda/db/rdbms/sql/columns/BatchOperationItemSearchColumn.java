@@ -11,7 +11,7 @@ import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import java.util.function.Function;
 
 public enum BatchOperationItemSearchColumn implements SearchColumn<BatchOperationItemEntity> {
-  BATCH_OPERATION_KEY("batchOperationId", BatchOperationItemEntity::batchOperationId),
+  BATCH_OPERATION_ID("batchOperationId", BatchOperationItemEntity::batchOperationId),
   ITEM_KEY("itemKey", BatchOperationItemEntity::itemKey),
   PROCESS_INSTANCE_KEY("processInstanceKey", BatchOperationItemEntity::processInstanceKey),
   STATE("state", BatchOperationItemEntity::state),

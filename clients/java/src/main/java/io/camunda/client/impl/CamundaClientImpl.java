@@ -1115,8 +1115,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public BatchOperationGetRequest newBatchOperationGetRequest(final Long batchOperationKey) {
-    return new BatchOperationGetRequestImpl(httpClient, batchOperationKey);
+  public BatchOperationGetRequest newBatchOperationGetRequest(final String batchOperationId) {
+    return new BatchOperationGetRequestImpl(httpClient, batchOperationId);
   }
 
   @Override
