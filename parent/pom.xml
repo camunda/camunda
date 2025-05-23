@@ -98,7 +98,11 @@
     <version.dmn-scala>1.10.1</version.dmn-scala>
     <version.rest-assured>5.5.1</version.rest-assured>
     <version.spring>6.2.6</version.spring>
+<<<<<<< HEAD
     <version.spring-security>6.5.0</version.spring-security>
+=======
+    <version.spring-security>6.4.6</version.spring-security>
+>>>>>>> 272860f1 (fix: upgrade Spring security to 6.4.6 to resolve CVE-2025-41232)
     <version.spring-boot>3.4.5</version.spring-boot>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.2</version.kryo>
