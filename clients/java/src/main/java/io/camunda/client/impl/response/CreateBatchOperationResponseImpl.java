@@ -20,15 +20,15 @@ import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 
 public class CreateBatchOperationResponseImpl implements CreateBatchOperationResponse {
 
-  private long batchOperationKey;
+  private String batchOperationId;
 
   @Override
-  public long getBatchOperationKey() {
-    return batchOperationKey;
+  public String getBatchOperationId() {
+    return batchOperationId;
   }
 
   public CreateBatchOperationResponseImpl setResponse(final BatchOperationCreatedResult response) {
-    batchOperationKey = Long.parseLong(response.getBatchOperationKey());
+    batchOperationId = response.getBatchOperationId();
     return this;
   }
 }

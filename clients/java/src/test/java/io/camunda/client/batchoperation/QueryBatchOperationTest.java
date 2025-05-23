@@ -30,7 +30,7 @@ public class QueryBatchOperationTest extends ClientRestTest {
   @Test
   public void shouldGetBatchOperationByKey() {
     // when
-    client.newBatchOperationGetRequest(123L).send().join();
+    client.newBatchOperationGetRequest("123").send().join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();

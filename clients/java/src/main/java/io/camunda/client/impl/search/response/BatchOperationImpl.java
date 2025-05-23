@@ -36,7 +36,7 @@ public class BatchOperationImpl implements BatchOperation {
   private final List<Long> keys = new ArrayList<>();
 
   public BatchOperationImpl(final BatchOperationCreatedResult item) {
-    batchOperationId = item.getBatchOperationKey();
+    batchOperationId = item.getBatchOperationId();
     type =
         item.getBatchOperationType() != null
             ? BatchOperationType.valueOf(item.getBatchOperationType().name())

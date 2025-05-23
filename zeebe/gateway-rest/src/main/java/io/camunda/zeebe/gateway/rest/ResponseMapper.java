@@ -483,7 +483,7 @@ public final class ResponseMapper {
       final BatchOperationCreationRecord brokerResponse) {
     final var response =
         new BatchOperationCreatedResult()
-            .batchOperationKey(KeyUtil.keyToString(brokerResponse.getBatchOperationKey()))
+            .batchOperationId(KeyUtil.keyToString(brokerResponse.getBatchOperationKey()))
             .batchOperationType(
                 BatchOperationTypeEnum.valueOf(brokerResponse.getBatchOperationType().name()));
     return new ResponseEntity<>(response, HttpStatus.ACCEPTED);

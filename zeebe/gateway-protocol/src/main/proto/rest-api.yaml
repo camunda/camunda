@@ -9368,8 +9368,8 @@ components:
     BatchOperationCreatedResult:
       type: object
       properties:
-        batchOperationKey:
-          description: Key of the batch operation.
+        batchOperationId:
+          description: Id of the batch operation.
           type: string
         batchOperationType:
           $ref: "#/components/schemas/BatchOperationTypeEnum"
