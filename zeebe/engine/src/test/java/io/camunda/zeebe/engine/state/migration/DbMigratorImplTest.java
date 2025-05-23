@@ -254,8 +254,8 @@ public class DbMigratorImplTest {
     when(mockProcessingState.getMigrationState().getMigratedByVersion()).thenReturn(null);
 
     final var migration = mock(MigrationTask.class);
-    when(migration.needsToRun(any())).thenReturn(true);
     when(migration.isInitialization()).thenReturn(true);
+    when(migration.needsToRun(any())).thenReturn(true);
     migrations.add(migration);
 
     // when
