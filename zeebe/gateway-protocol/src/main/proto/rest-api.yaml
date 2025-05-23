@@ -9064,6 +9064,15 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProcessInstanceCreationStartInstruction"
+        runtimeInstructions:
+          description: |
+            List of instructions that affect the runtime behavior of the process instance.
+            By default, the process instance will run until it terminates normally. If provided,
+            the process instance may finish earlier. Refer to specific instruction types for more
+            details.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessInstanceCreationRuntimeInstruction"
         awaitCompletion:
           description: |
             Wait for the process instance to complete. If the process instance completion does
@@ -9100,6 +9109,30 @@ components:
 
             For now, however, the start instruction is implicitly a "startBeforeElement" instruction
           type: string
+    ProcessInstanceCreationRuntimeInstruction:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum: [CANCEL_PROCESS_INSTANCE]
+        afterElementId: # optional property, leaking hierarchy is required for codegen to work
+          type: string
+      discriminator:
+        propertyName: type
+        mapping:
+          CANCEL_PROCESS_INSTANCE: "#/components/schemas/ProcessInstanceCreationCancellationInstruction"
+    ProcessInstanceCreationCancellationInstruction:
+      allOf:
+        - $ref: "#/components/schemas/ProcessInstanceCreationRuntimeInstruction"
+        - type: object
+          description: |
+            A runtime instruction that configures the process instance to cancel itself
+            after a specific BPMN element is completed.
+          required:
+            - afterElementId
+          properties: {}
     CreateProcessInstanceResult:
       type: object
       properties:
