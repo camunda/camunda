@@ -129,10 +129,10 @@ public class DbMigratorImpl implements DbMigrator {
 
   private List<MigrationTask> runMigrations(final boolean initializationOnly) {
     final var executedMigrations = new ArrayList<MigrationTask>();
-    var migrationsToRun = migrationTasks; // no copy is needed
-    if (initializationOnly) {
-      migrationsToRun = migrationsToRun.stream().filter(MigrationTask::isInitialization).toList();
-    }
+    final var migrationsToRun =
+        initializationOnly
+            ? migrationTasks.stream().filter(MigrationTask::isInitialization).toList()
+            : migrationTasks;
     for (int index = 1; index <= migrationsToRun.size(); index++) {
       // one based index looks nicer in logs
       final var migration = migrationsToRun.get(index - 1);
