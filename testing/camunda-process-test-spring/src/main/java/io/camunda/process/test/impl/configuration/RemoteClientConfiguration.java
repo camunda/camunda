@@ -13,6 +13,7 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.spring.client.configuration.CredentialsProviderConfiguration;
 import io.camunda.spring.client.properties.CamundaClientAuthProperties;
+import io.camunda.spring.client.properties.CamundaClientAuthProperties.AuthMethod;
 import io.camunda.spring.client.properties.CamundaClientCloudProperties;
 import io.camunda.spring.client.properties.CamundaClientProperties;
 import io.camunda.spring.client.properties.CamundaClientProperties.ClientMode;
@@ -28,34 +29,37 @@ public class RemoteClientConfiguration {
     final CamundaClientProperties remoteClientProperties =
         runtimeConfiguration.getRemote().getClient();
 
-    final CamundaClientBuilder remoteClientBuilder =
-        createCamundaClientBuilder(remoteClientProperties);
+    final CamundaClientBuilder clientBuilder = createCamundaClientBuilder(remoteClientProperties);
 
     if (remoteClientProperties.getRestAddress() != null) {
-      remoteClientBuilder.restAddress(remoteClientProperties.getRestAddress());
+      clientBuilder.restAddress(remoteClientProperties.getRestAddress());
     }
     if (remoteClientProperties.getGrpcAddress() != null) {
-      remoteClientBuilder.grpcAddress(remoteClientProperties.getGrpcAddress());
+      clientBuilder.grpcAddress(remoteClientProperties.getGrpcAddress());
     }
 
-    return () -> remoteClientBuilder;
+    return () -> clientBuilder;
   }
 
   private static CamundaClientBuilder createCamundaClientBuilder(
       final CamundaClientProperties clientProperties) {
 
     if (clientProperties.getMode() == ClientMode.saas) {
-      return createCloudClientBuilder(clientProperties);
+      return createCamundaSaasClientBuilder(clientProperties);
 
     } else {
       return CamundaClient.newClientBuilder().usePlaintext();
     }
   }
 
-  private static CamundaClientBuilder createCloudClientBuilder(
+  private static CamundaClientBuilder createCamundaSaasClientBuilder(
       final CamundaClientProperties clientProperties) {
     final CamundaClientCloudProperties cloudProperties = clientProperties.getCloud();
     final CamundaClientAuthProperties authProperties = clientProperties.getAuth();
+
+    if (authProperties.getMethod() == null) {
+      authProperties.setMethod(AuthMethod.oidc);
+    }
 
     final CredentialsProvider credentialsProvider = createCredentialsProvider(clientProperties);
 
