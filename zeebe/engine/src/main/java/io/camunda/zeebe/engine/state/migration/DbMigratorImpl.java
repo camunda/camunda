@@ -58,7 +58,7 @@ public class DbMigratorImpl implements DbMigrator {
           new ColumnFamilyPrefixCorrectionMigration(),
           new MultiTenancySignalSubscriptionStateMigration(),
           new JobBackoffRestoreMigration(),
-          new RoutingInfoMigration(),
+          new RoutingInfoInitializationMigration(),
           new OrderedCommandDistributionMigration(),
           new IdempotentCommandDistributionMigration());
   private static final Logger LOGGER =
