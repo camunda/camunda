@@ -394,12 +394,25 @@ public class RolesByMappingIntegrationTest {
   void shouldFilterByMappingName() {
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingId = Strings.newRandomValidIdentityId();
+    final var nonMatchingMappingId = Strings.newRandomValidIdentityId();
     final var name = "filter-name-" + Strings.newRandomValidIdentityId();
 
     createRole(roleId, "FilterRole", "desc");
     createMapping(
         mappingId, name, Strings.newRandomValidIdentityId(), Strings.newRandomValidIdentityId());
+    createMapping(
+        nonMatchingMappingId,
+        Strings.newRandomValidIdentityId(),
+        Strings.newRandomValidIdentityId(),
+        Strings.newRandomValidIdentityId());
+
     camundaClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingId).send().join();
+    camundaClient
+        .newAssignRoleToMappingCommand()
+        .roleId(roleId)
+        .mappingId(nonMatchingMappingId)
+        .send()
+        .join();
 
     Awaitility.await("Mapping is filtered by name")
         .ignoreExceptionsInstanceOf(ProblemException.class)
@@ -422,6 +435,7 @@ public class RolesByMappingIntegrationTest {
   void shouldFilterByClaimName() {
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingId = Strings.newRandomValidIdentityId();
+    final var nonMatchingMappingId = Strings.newRandomValidIdentityId();
     final var claimName = "filter-claimName-" + Strings.newRandomValidIdentityId();
 
     createRole(roleId, "FilterRole", "desc");
@@ -430,7 +444,19 @@ public class RolesByMappingIntegrationTest {
         Strings.newRandomValidIdentityId(),
         claimName,
         Strings.newRandomValidIdentityId());
+    createMapping(
+        nonMatchingMappingId,
+        Strings.newRandomValidIdentityId(),
+        Strings.newRandomValidIdentityId(),
+        Strings.newRandomValidIdentityId());
+
     camundaClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingId).send().join();
+    camundaClient
+        .newAssignRoleToMappingCommand()
+        .roleId(roleId)
+        .mappingId(nonMatchingMappingId)
+        .send()
+        .join();
 
     Awaitility.await("Mapping is filtered by claimName")
         .ignoreExceptionsInstanceOf(ProblemException.class)
@@ -453,6 +479,7 @@ public class RolesByMappingIntegrationTest {
   void shouldFilterByClaimValue() {
     final var roleId = Strings.newRandomValidIdentityId();
     final var mappingId = Strings.newRandomValidIdentityId();
+    final var nonMatchingMappingId = Strings.newRandomValidIdentityId();
     final var claimValue = "filter-claimValue-" + Strings.newRandomValidIdentityId();
 
     createRole(roleId, "FilterRole", "desc");
@@ -462,11 +489,17 @@ public class RolesByMappingIntegrationTest {
         Strings.newRandomValidIdentityId(),
         claimValue);
     createMapping(
-        Strings.newRandomValidIdentityId(),
+        nonMatchingMappingId,
         Strings.newRandomValidIdentityId(),
         Strings.newRandomValidIdentityId(),
         Strings.newRandomValidIdentityId());
     camundaClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingId).send().join();
+    camundaClient
+        .newAssignRoleToMappingCommand()
+        .roleId(roleId)
+        .mappingId(nonMatchingMappingId)
+        .send()
+        .join();
 
     Awaitility.await("Mapping is filtered by claimValue")
         .ignoreExceptionsInstanceOf(ProblemException.class)
