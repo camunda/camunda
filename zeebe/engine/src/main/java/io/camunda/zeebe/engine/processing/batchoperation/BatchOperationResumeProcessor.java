@@ -18,6 +18,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
+import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.BatchOperationStatus;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -108,7 +110,7 @@ public final class BatchOperationResumeProcessor
       return;
     }
 
-    resumeBatchOperation(resumeKey, batchOperationKey, command.getValue());
+    resumeBatchOperation(resumeKey, batchOperation.get(), command.getValue());
     commandDistributionBehavior
         .withKey(resumeKey)
         .inQueue(DistributionQueue.BATCH_OPERATION)
@@ -128,7 +130,7 @@ public final class BatchOperationResumeProcessor
           "Processing distributed command to resume with key '{}': {}",
           batchOperationKey,
           recordValue);
-      resumeBatchOperation(command.getKey(), batchOperationKey, recordValue);
+      resumeBatchOperation(command.getKey(), batchOperation.get(), recordValue);
     } else {
       LOGGER.debug(
           "Distributed command to resume a batch operation with key '{}' will be ignored: {}",
@@ -140,14 +142,16 @@ public final class BatchOperationResumeProcessor
 
   private void resumeBatchOperation(
       final Long resumeKey,
-      final Long batchOperationKey,
+      final PersistedBatchOperation batchOperation,
       final BatchOperationLifecycleManagementRecord recordValue) {
     stateWriter.appendFollowUpEvent(resumeKey, BatchOperationIntent.RESUMED, recordValue);
 
-    final var batchExecute = new BatchOperationExecutionRecord();
-    batchExecute.setBatchOperationKey(batchOperationKey);
-    commandWriter.appendFollowUpCommand(
-        batchOperationKey, BatchOperationExecutionIntent.EXECUTE, batchExecute);
+    if (batchOperation.getStatus() == BatchOperationStatus.STARTED) {
+      final var batchExecute = new BatchOperationExecutionRecord();
+      batchExecute.setBatchOperationKey(batchOperation.getKey());
+      commandWriter.appendFollowUpCommand(
+          batchOperation.getKey(), BatchOperationExecutionIntent.EXECUTE, batchExecute);
+    }
   }
 
   private void rejectInvalidState(
