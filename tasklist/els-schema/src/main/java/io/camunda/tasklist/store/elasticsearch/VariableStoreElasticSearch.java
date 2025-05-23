@@ -43,7 +43,6 @@ import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.VariableStore;
-import io.camunda.tasklist.store.VariableStore.GetVariablesRequest;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import jakarta.annotation.PostConstruct;
@@ -120,19 +119,7 @@ public class VariableStoreElasticSearch implements VariableStore {
       return scrollInChunks(
           flowNodeInstanceIds,
           maxTermsCount,
-          chunk -> {
-            final TermsQueryBuilder flowNodeInstanceKeyQ = termsQuery(SCOPE_FLOW_NODE_ID, chunk);
-            TermsQueryBuilder varNamesQ = null;
-            if (isNotEmpty(varNames)) {
-              varNamesQ = termsQuery(VariableIndex.NAME, varNames);
-            }
-            final SearchSourceBuilder searchSourceBuilder =
-                new SearchSourceBuilder()
-                    .query(constantScoreQuery(joinWithAnd(flowNodeInstanceKeyQ, varNamesQ)));
-            applyFetchSourceForVariableIndex(searchSourceBuilder, fieldNames);
-
-            return new SearchRequest(variableIndex.getAlias()).source(searchSourceBuilder);
-          },
+          chunk -> buildSearchVariablesByScopeFNIsAndVarNamesRequest(chunk, varNames, fieldNames),
           VariableEntity.class,
           objectMapper,
           esClient);
@@ -225,43 +212,7 @@ public class VariableStoreElasticSearch implements VariableStore {
       return scrollInChunks(
           processInstanceIds,
           maxTermsCount,
-          chunk -> {
-            final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
-
-            final TermsQueryBuilder processInstanceKeyQuery =
-                termsQuery(FlowNodeInstanceIndex.PROCESS_INSTANCE_ID, chunk);
-
-            final TermQueryBuilder stateActiveQuery =
-                termQuery(FlowNodeInstanceIndex.STATE, FlowNodeState.ACTIVE.name());
-            final BoolQueryBuilder stateMissingQuery =
-                QueryBuilders.boolQuery()
-                    .mustNot(QueryBuilders.existsQuery(FlowNodeInstanceIndex.STATE));
-            final BoolQueryBuilder stateQuery =
-                QueryBuilders.boolQuery()
-                    .should(stateActiveQuery)
-                    .should(stateMissingQuery)
-                    .minimumShouldMatch(1);
-
-            final TermsQueryBuilder typeQuery =
-                QueryBuilders.termsQuery(
-                    FlowNodeInstanceIndex.TYPE,
-                    FlowNodeType.USER_TASK.toString(),
-                    FlowNodeType.SUB_PROCESS.toString(),
-                    FlowNodeType.EVENT_SUB_PROCESS.toString(),
-                    FlowNodeType.MULTI_INSTANCE_BODY.toString(),
-                    FlowNodeType.PROCESS.toString());
-
-            queryBuilder.must(processInstanceKeyQuery);
-            queryBuilder.must(stateQuery);
-            queryBuilder.must(typeQuery);
-
-            return new SearchRequest(flowNodeInstanceIndex.getAlias())
-                .source(
-                    new SearchSourceBuilder()
-                        .query(constantScoreQuery(queryBuilder))
-                        .sort(FlowNodeInstanceIndex.POSITION, SortOrder.ASC)
-                        .size(tasklistProperties.getElasticsearch().getBatchSize()));
-          },
+          this::buildSearchFNIByProcessInstanceIdsRequest,
           FlowNodeInstanceEntity.class,
           objectMapper,
           esClient);
@@ -394,6 +345,61 @@ public class VariableStoreElasticSearch implements VariableStore {
     return processInstanceIds == null
         ? Collections.emptyList()
         : new ArrayList<>(processInstanceIds);
+  }
+
+  private SearchRequest buildSearchFNIByProcessInstanceIdsRequest(
+      final List<String> processInstanceIds) {
+    final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
+
+    final TermsQueryBuilder processInstanceKeyQuery =
+        termsQuery(FlowNodeInstanceIndex.PROCESS_INSTANCE_ID, processInstanceIds);
+
+    final TermQueryBuilder stateActiveQuery =
+        termQuery(FlowNodeInstanceIndex.STATE, FlowNodeState.ACTIVE.name());
+    final BoolQueryBuilder stateMissingQuery =
+        QueryBuilders.boolQuery().mustNot(QueryBuilders.existsQuery(FlowNodeInstanceIndex.STATE));
+    final BoolQueryBuilder stateQuery =
+        QueryBuilders.boolQuery()
+            .should(stateActiveQuery)
+            .should(stateMissingQuery)
+            .minimumShouldMatch(1);
+
+    final TermsQueryBuilder typeQuery =
+        QueryBuilders.termsQuery(
+            FlowNodeInstanceIndex.TYPE,
+            FlowNodeType.USER_TASK.toString(),
+            FlowNodeType.SUB_PROCESS.toString(),
+            FlowNodeType.EVENT_SUB_PROCESS.toString(),
+            FlowNodeType.MULTI_INSTANCE_BODY.toString(),
+            FlowNodeType.PROCESS.toString());
+
+    queryBuilder.must(processInstanceKeyQuery);
+    queryBuilder.must(stateQuery);
+    queryBuilder.must(typeQuery);
+
+    return new SearchRequest(flowNodeInstanceIndex.getAlias())
+        .source(
+            new SearchSourceBuilder()
+                .query(constantScoreQuery(queryBuilder))
+                .sort(FlowNodeInstanceIndex.POSITION, SortOrder.ASC)
+                .size(tasklistProperties.getElasticsearch().getBatchSize()));
+  }
+
+  private SearchRequest buildSearchVariablesByScopeFNIsAndVarNamesRequest(
+      final List<String> scopeFlowNodeIds,
+      final List<String> varNames,
+      final Set<String> fieldNames) {
+    final TermsQueryBuilder flowNodeInstanceKeyQ = termsQuery(SCOPE_FLOW_NODE_ID, scopeFlowNodeIds);
+    TermsQueryBuilder varNamesQ = null;
+    if (isNotEmpty(varNames)) {
+      varNamesQ = termsQuery(VariableIndex.NAME, varNames);
+    }
+    final SearchSourceBuilder searchSourceBuilder =
+        new SearchSourceBuilder()
+            .query(constantScoreQuery(joinWithAnd(flowNodeInstanceKeyQ, varNamesQ)));
+    applyFetchSourceForVariableIndex(searchSourceBuilder, fieldNames);
+
+    return new SearchRequest(variableIndex.getAlias()).source(searchSourceBuilder);
   }
 
   private UpdateRequest createUpsertRequest(final TaskVariableEntity variableEntity) {

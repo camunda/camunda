@@ -67,6 +67,7 @@ import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.ScrollRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -289,38 +290,38 @@ public class TaskStoreOpenSearch implements TaskStore {
       return scrollInChunks(
           processInstanceIds,
           DEFAULT_MAX_TERMS_COUNT,
-          chunk ->
-              createSearchRequest(taskTemplate)
-                  .query(
-                      q ->
-                          q.bool(
-                              b ->
-                                  b.must(
-                                          m ->
-                                              m.terms(
-                                                  t ->
-                                                      t.field(PROCESS_INSTANCE_ID)
-                                                          .terms(
-                                                              terms ->
-                                                                  terms.value(
-                                                                      processInstanceIds.stream()
-                                                                          .map(FieldValue::of)
-                                                                          .collect(
-                                                                              Collectors
-                                                                                  .toList())))))
-                                      .must(
-                                          m ->
-                                              m.term(
-                                                  t ->
-                                                      t.field(STATE)
-                                                          .value(
-                                                              FieldValue.of(
-                                                                  TaskState.CREATED.name())))))),
+          this::buildSearchCreatedTasksByProcessInstanceIdsRequest,
           TaskEntity.class,
           osClient);
     } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
+  }
+
+  private Builder buildSearchCreatedTasksByProcessInstanceIdsRequest(
+      final List<String> processInstanceIds) {
+    return createSearchRequest(taskTemplate)
+        .query(
+            q ->
+                q.bool(
+                    b ->
+                        b.must(
+                                m ->
+                                    m.terms(
+                                        t ->
+                                            t.field(PROCESS_INSTANCE_ID)
+                                                .terms(
+                                                    terms ->
+                                                        terms.value(
+                                                            processInstanceIds.stream()
+                                                                .map(FieldValue::of)
+                                                                .toList()))))
+                            .must(
+                                m ->
+                                    m.term(
+                                        t ->
+                                            t.field(STATE)
+                                                .value(FieldValue.of(TaskState.CREATED.name()))))));
   }
 
   /**
