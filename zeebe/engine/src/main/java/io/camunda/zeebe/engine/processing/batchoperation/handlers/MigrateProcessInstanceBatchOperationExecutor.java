@@ -52,6 +52,7 @@ public class MigrateProcessInstanceBatchOperationExecutor implements BatchOperat
         processInstanceKey,
         ProcessInstanceMigrationIntent.MIGRATE,
         command,
-        batchOperation.getKey());
+        batchOperation.getKey(),
+        batchOperation.getAuthentication().claims());
   }
 }

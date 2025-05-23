@@ -220,7 +220,8 @@ public final class ProcessInstanceServices
     final var brokerRequest =
         new BrokerCreateBatchOperationRequest()
             .setFilter(rootInstanceFilter)
-            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+            .setAuthentication(authentication);
 
     return sendBrokerRequest(brokerRequest);
   }
@@ -230,7 +231,8 @@ public final class ProcessInstanceServices
     final var brokerRequest =
         new BrokerCreateBatchOperationRequest()
             .setFilter(filter)
-            .setBatchOperationType(BatchOperationType.RESOLVE_INCIDENT);
+            .setBatchOperationType(BatchOperationType.RESOLVE_INCIDENT)
+            .setAuthentication(authentication);
 
     return sendBrokerRequest(brokerRequest);
   }
@@ -245,7 +247,8 @@ public final class ProcessInstanceServices
         new BrokerCreateBatchOperationRequest()
             .setFilter(request.filter)
             .setMigrationPlan(migrationPlan)
-            .setBatchOperationType(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
+            .setBatchOperationType(BatchOperationType.MIGRATE_PROCESS_INSTANCE)
+            .setAuthentication(authentication);
 
     return sendBrokerRequest(brokerRequest);
   }
@@ -292,7 +295,8 @@ public final class ProcessInstanceServices
         new BrokerCreateBatchOperationRequest()
             .setModificationPlan(modificationPlan)
             .setFilter(rootInstanceFilter)
-            .setBatchOperationType(BatchOperationType.MODIFY_PROCESS_INSTANCE);
+            .setBatchOperationType(BatchOperationType.MODIFY_PROCESS_INSTANCE)
+            .setAuthentication(authentication);
 
     return sendBrokerRequest(brokerRequest);
   }

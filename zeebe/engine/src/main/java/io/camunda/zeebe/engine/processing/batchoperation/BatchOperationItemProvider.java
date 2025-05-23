@@ -9,11 +9,16 @@ package io.camunda.zeebe.engine.processing.batchoperation;
 
 import com.google.common.collect.Lists;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.page.SearchQueryPageBuilders;
 import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.SecurityContext;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -59,16 +64,19 @@ public class BatchOperationItemProvider {
    * cause multiple queries to the secondary database.
    *
    * @param filter the filter to use
+   * @param authentication the authentication to use
    * @param shouldAbort if the process should be aborted
    * @return a set of all found process instance items
    */
   public Set<Item> fetchProcessInstanceItems(
       final int partitionId,
       final ProcessInstanceFilter filter,
+      final Authentication authentication,
       final Supplier<Boolean> shouldAbort) {
     final var processInstanceFilter = filter.toBuilder().partitionId(partitionId).build();
 
-    return fetchEntityItems(new ProcessInstancePageFetcher(), processInstanceFilter, shouldAbort);
+    return fetchEntityItems(
+        new ProcessInstancePageFetcher(), processInstanceFilter, authentication, shouldAbort);
   }
 
   /**
@@ -77,12 +85,15 @@ public class BatchOperationItemProvider {
    * queries to the secondary database.
    *
    * @param filter the filter to use
+   * @param authentication the authentication to use
    * @param shouldAbort if the process should be aborted
    * @return a set of all found process instance items
    */
   public Set<Item> fetchIncidentItems(
-      final IncidentFilter filter, final Supplier<Boolean> shouldAbort) {
-    return fetchEntityItems(new IncidentPageFetcher(), filter, shouldAbort);
+      final IncidentFilter filter,
+      final Authentication authentication,
+      final Supplier<Boolean> shouldAbort) {
+    return fetchEntityItems(new IncidentPageFetcher(), filter, authentication, shouldAbort);
   }
 
   /**
@@ -92,26 +103,30 @@ public class BatchOperationItemProvider {
    * multiple queries to the secondary database.
    *
    * @param filter the filter to use
+   * @param authentication the authentication to use
    * @param shouldAbort if the process should be aborted
    * @return a set of all found incident items
    */
   public Set<Item> fetchIncidentItems(
       final int partitionId,
       final ProcessInstanceFilter filter,
+      final Authentication authentication,
       final Supplier<Boolean> shouldAbort) {
     // first fetch all matching processInstances
     final var processInstanceKeys =
-        fetchProcessInstanceItems(partitionId, filter, shouldAbort).stream()
+        fetchProcessInstanceItems(partitionId, filter, authentication, shouldAbort).stream()
             .map(Item::processInstanceKey)
             .toList();
 
     // then fetch all incidents of the matching processInstances
-    return getIncidentItemsOfProcessInstanceKeys(new ArrayList<>(processInstanceKeys), shouldAbort);
+    return getIncidentItemsOfProcessInstanceKeys(
+        new ArrayList<>(processInstanceKeys), authentication, shouldAbort);
   }
 
   private <F extends FilterBase> Set<Item> fetchEntityItems(
       final ItemPageFetcher<F> itemPageFetcher,
       final F filter,
+      final Authentication authentication,
       final Supplier<Boolean> shouldAbort) {
     final var items = new LinkedHashSet<Item>();
 
@@ -123,7 +138,7 @@ public class BatchOperationItemProvider {
         return Set.of();
       }
 
-      final var result = itemPageFetcher.fetchItems(filter, searchValues);
+      final var result = itemPageFetcher.fetchItems(filter, searchValues, authentication);
       items.addAll(result.items);
       searchValues = result.lastSortValues();
 
@@ -136,7 +151,9 @@ public class BatchOperationItemProvider {
   }
 
   private Set<Item> getIncidentItemsOfProcessInstanceKeys(
-      final List<Long> processInstanceKeys, final Supplier<Boolean> shouldAbort) {
+      final List<Long> processInstanceKeys,
+      final Authentication authentication,
+      final Supplier<Boolean> shouldAbort) {
     final Set<Item> incidents = new LinkedHashSet<>();
 
     final List<List<Long>> processInstanceKeysBatches =
@@ -148,7 +165,7 @@ public class BatchOperationItemProvider {
       }
       final var filter =
           new IncidentFilter.Builder().processInstanceKeys(processInstanceKeysBatch).build();
-      incidents.addAll(fetchIncidentItems(filter, shouldAbort));
+      incidents.addAll(fetchIncidentItems(filter, authentication, shouldAbort));
     }
 
     return incidents;
@@ -181,12 +198,32 @@ public class BatchOperationItemProvider {
      * @param sortValues the current sortValues
      * @return the fetched items and pagination information
      */
-    ItemPage fetchItems(F filter, Object[] sortValues);
+    ItemPage fetchItems(F filter, Object[] sortValues, Authentication authentication);
+
+    /**
+     * Creates a security context for the given authentication and authorization.
+     *
+     * @param authentication the authentication of the user which started the batch operation
+     * @param authorization the same authorization is needed, that is normally used in
+     *     ProcessInstanceServices / IncidentServices
+     * @return the security context
+     */
+    default SecurityContext createSecurityContext(
+        final Authentication authentication, final Authorization authorization) {
+      return SecurityContext.of(
+          b -> b.withAuthentication(authentication).withAuthorization(authorization));
+    }
   }
 
   private final class ProcessInstancePageFetcher implements ItemPageFetcher<ProcessInstanceFilter> {
     @Override
-    public ItemPage fetchItems(final ProcessInstanceFilter filter, final Object[] sortValues) {
+    public ItemPage fetchItems(
+        final ProcessInstanceFilter filter,
+        final Object[] sortValues,
+        final Authentication authentication) {
+      final var securityContext =
+          createSecurityContext(
+              authentication, Authorization.of(a -> a.processDefinition().readProcessInstance()));
       final var page =
           SearchQueryPageBuilders.page().size(queryPageSize).searchAfter(sortValues).build();
       final var query =
@@ -195,7 +232,10 @@ public class BatchOperationItemProvider {
               .page(page)
               .resultConfig(c -> c.onlyKey(true))
               .build();
-      final var result = searchClientsProxy.searchProcessInstances(query);
+
+      final SearchQueryResult<ProcessInstanceEntity> result =
+          searchClientsProxy.withSecurityContext(securityContext).searchProcessInstances(query);
+
       return new ItemPage(
           result.items().stream()
               .map(pi -> new Item(pi.processInstanceKey(), pi.processInstanceKey()))
@@ -207,11 +247,20 @@ public class BatchOperationItemProvider {
 
   private final class IncidentPageFetcher implements ItemPageFetcher<IncidentFilter> {
     @Override
-    public ItemPage fetchItems(final IncidentFilter filter, final Object[] sortValues) {
+    public ItemPage fetchItems(
+        final IncidentFilter filter,
+        final Object[] sortValues,
+        final Authentication authentication) {
+      final var securityContext =
+          createSecurityContext(
+              authentication, Authorization.of(a -> a.processDefinition().readProcessInstance()));
       final var page =
           SearchQueryPageBuilders.page().size(queryPageSize).searchAfter(sortValues).build();
       final var query = SearchQueryBuilders.incidentSearchQuery().filter(filter).page(page).build();
-      final var result = searchClientsProxy.searchIncidents(query);
+
+      final var result =
+          searchClientsProxy.withSecurityContext(securityContext).searchIncidents(query);
+
       return new ItemPage(
           result.items().stream()
               .map(pi -> new Item(pi.incidentKey(), pi.processInstanceKey()))

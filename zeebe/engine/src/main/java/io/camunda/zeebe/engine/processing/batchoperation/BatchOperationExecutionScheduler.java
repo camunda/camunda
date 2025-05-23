@@ -182,11 +182,13 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
           entityKeyProvider.fetchProcessInstanceItems(
               partitionId,
               batchOperation.getEntityFilter(ProcessInstanceFilter.class),
+              batchOperation.getAuthentication(),
               abortCondition);
       case RESOLVE_INCIDENT ->
           entityKeyProvider.fetchIncidentItems(
               partitionId,
               batchOperation.getEntityFilter(ProcessInstanceFilter.class),
+              batchOperation.getAuthentication(),
               abortCondition);
       default ->
           throw new IllegalArgumentException(

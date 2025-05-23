@@ -31,6 +31,10 @@ public class CancelProcessInstanceBatchOperationExecutor implements BatchOperati
     final var command = new ProcessInstanceRecord();
     command.setProcessInstanceKey(itemKey);
     commandWriter.appendFollowUpCommand(
-        itemKey, ProcessInstanceIntent.CANCEL, command, batchOperation.getKey());
+        itemKey,
+        ProcessInstanceIntent.CANCEL,
+        command,
+        batchOperation.getKey(),
+        batchOperation.getAuthentication().claims());
   }
 }

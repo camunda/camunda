@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -17,6 +18,7 @@ import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.Authentication;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -36,7 +38,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.Before;
 import org.junit.Rule;
 import org.mockito.Mockito;
 
@@ -69,38 +73,59 @@ abstract class AbstractBatchOperationTest {
                       .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername()))))
           .withSearchClientsProxy(searchClientsProxy);
 
+  @Before
+  public void setUp() {
+    when(searchClientsProxy.withSecurityContext(any())).thenReturn(searchClientsProxy);
+  }
+
   protected long createNewCancelProcessInstanceBatchOperation(final Set<Long> itemKeys) {
+    return createNewCancelProcessInstanceBatchOperation(itemKeys, null);
+  }
+
+  protected long createNewCancelProcessInstanceBatchOperation(
+      final Set<Long> itemKeys, final Map<String, Object> claims) {
     final var result =
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(
                 itemKeys.stream().map(this::mockProcessInstanceEntity).collect(Collectors.toList()))
             .total(itemKeys.size())
             .build();
-    Mockito.when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
+
+    when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
         .thenReturn(result);
 
     final var filterBuffer =
         convertToBuffer(
             new ProcessInstanceFilter.Builder().processInstanceKeys(1L, 3L, 8L).build());
 
+    DirectBuffer authenticationBuffer = null;
+    if (claims != null) {
+      authenticationBuffer = convertToBuffer(Authentication.of(b -> b.claims(claims)));
+    }
+
     return engine
         .batchOperation()
         .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
         .withFilter(filterBuffer)
+        .withAuthentication(authenticationBuffer)
         .create(DEFAULT_USER.getUsername())
         .getValue()
         .getBatchOperationKey();
   }
 
   protected long createNewModifyProcessInstanceBatchOperation(
-      final Set<Long> itemKeys, final String sourceElementId, final String targetElementId) {
+      final Set<Long> itemKeys,
+      final String sourceElementId,
+      final String targetElementId,
+      final Map<String, Object> claims) {
     final var result =
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(
                 itemKeys.stream().map(this::mockProcessInstanceEntity).collect(Collectors.toList()))
             .total(itemKeys.size())
             .build();
-    Mockito.when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
+
+    when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
         .thenReturn(result);
 
     final var filterBuffer = convertToBuffer(new ProcessInstanceFilter.Builder().build());
@@ -112,10 +137,16 @@ abstract class AbstractBatchOperationTest {
     mappingInstruction.setTargetElementId(targetElementId);
     modificationPlan.addMoveInstruction(mappingInstruction);
 
+    DirectBuffer authenticationBuffer = null;
+    if (claims != null) {
+      authenticationBuffer = convertToBuffer(Authentication.of(b -> b.claims(claims)));
+    }
+
     return engine
         .batchOperation()
         .newCreation(BatchOperationType.MODIFY_PROCESS_INSTANCE)
         .withFilter(filterBuffer)
+        .withAuthentication(authenticationBuffer)
         .withModificationPlan(modificationPlan)
         .create(DEFAULT_USER.getUsername())
         .getValue()
@@ -123,7 +154,7 @@ abstract class AbstractBatchOperationTest {
   }
 
   protected long createNewFailedCancelProcessInstanceBatchOperation() {
-    Mockito.when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
+    when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
         .thenThrow(new RuntimeException("You are playing with fire!"));
 
     final var filterBuffer =
@@ -141,7 +172,7 @@ abstract class AbstractBatchOperationTest {
   }
 
   protected long createNewResolveIncidentsBatchOperation(
-      final Map<Long, Set<Long>> piAndIncidentKeys) {
+      final Map<Long, Set<Long>> piAndIncidentKeys, final Map<String, Object> claims) {
     final var processInstanceResult =
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(
@@ -150,7 +181,7 @@ abstract class AbstractBatchOperationTest {
                     .collect(Collectors.toList()))
             .total(piAndIncidentKeys.size())
             .build();
-    Mockito.when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
+    when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
         .thenReturn(processInstanceResult);
     final var incidentKeys =
         piAndIncidentKeys.values().stream().flatMap(Set::stream).collect(Collectors.toSet());
@@ -166,10 +197,16 @@ abstract class AbstractBatchOperationTest {
         convertToBuffer(
             new ProcessInstanceFilter.Builder().processInstanceKeys(1L, 3L, 8L).build());
 
+    DirectBuffer authenticationBuffer = null;
+    if (claims != null) {
+      authenticationBuffer = convertToBuffer(Authentication.of(b -> b.claims(claims)));
+    }
+
     return engine
         .batchOperation()
         .newCreation(BatchOperationType.RESOLVE_INCIDENT)
         .withFilter(filterBuffer)
+        .withAuthentication(authenticationBuffer)
         .create(DEFAULT_USER.getUsername())
         .getValue()
         .getBatchOperationKey();
@@ -178,14 +215,15 @@ abstract class AbstractBatchOperationTest {
   protected long createNewMigrateProcessesBatchOperation(
       final Set<Long> itemKeys,
       final long targetProcessDefinitionId,
-      final Map<String, String> mappingInstructions) {
+      final Map<String, String> mappingInstructions,
+      final Map<String, Object> claims) {
     final var result =
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(
                 itemKeys.stream().map(this::mockProcessInstanceEntity).collect(Collectors.toList()))
             .total(itemKeys.size())
             .build();
-    Mockito.when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
+    when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
         .thenReturn(result);
 
     final var filterBuffer = convertToBuffer(new ProcessInstanceFilter.Builder().build());
@@ -203,10 +241,16 @@ abstract class AbstractBatchOperationTest {
             })
         .forEach(migrationPlan::addMappingInstruction);
 
+    DirectBuffer authenticationBuffer = null;
+    if (claims != null) {
+      authenticationBuffer = convertToBuffer(Authentication.of(b -> b.claims(claims)));
+    }
+
     return engine
         .batchOperation()
         .newCreation(BatchOperationType.MIGRATE_PROCESS_INSTANCE)
         .withFilter(filterBuffer)
+        .withAuthentication(authenticationBuffer)
         .withMigrationPlan(migrationPlan)
         .create(DEFAULT_USER.getUsername())
         .getValue()

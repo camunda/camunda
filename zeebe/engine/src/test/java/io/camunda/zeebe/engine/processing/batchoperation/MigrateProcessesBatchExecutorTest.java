@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
@@ -26,6 +27,8 @@ public final class MigrateProcessesBatchExecutorTest extends AbstractBatchOperat
   @Test
   public void shouldMigrateProcess() {
     // given
+    final Map<String, Object> claims = Map.of("claim1", "value1", "claim2", "value2");
+
     // create a process with a user task a
     engine
         .deployment()
@@ -65,7 +68,10 @@ public final class MigrateProcessesBatchExecutorTest extends AbstractBatchOperat
     // then start the batch where we migrate to a target process definition with a user task b
     final var batchOperationKey =
         createNewMigrateProcessesBatchOperation(
-            Set.of(processInstanceKey), processDefinitionKey2, Map.of("userTaskA", "userTaskB"));
+            Set.of(processInstanceKey),
+            processDefinitionKey2,
+            Map.of("userTaskA", "userTaskB"),
+            claims);
 
     // then we have executed and completed event
     assertThat(
@@ -84,10 +90,15 @@ public final class MigrateProcessesBatchExecutorTest extends AbstractBatchOperat
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationExecutionIntent.EXECUTE);
 
-    // and we have a migrated event
-    assertThat(
-            RecordingExporter.processInstanceMigrationRecords().withRecordKey(processInstanceKey))
-        .extracting(Record::getIntent)
-        .containsSequence(ProcessInstanceMigrationIntent.MIGRATED);
+    // and we have migrate commands
+    final var migrationCommands =
+        RecordingExporter.processInstanceMigrationRecords()
+            .withRecordType(RecordType.COMMAND)
+            .withRecordKey(processInstanceKey)
+            .toList();
+    assertThat(migrationCommands).hasSize(1);
+    assertThat(migrationCommands.getFirst().getIntent())
+        .isEqualTo(ProcessInstanceMigrationIntent.MIGRATE);
+    assertThat(migrationCommands.getFirst().getAuthorizations()).isEqualTo(claims);
   }
 }

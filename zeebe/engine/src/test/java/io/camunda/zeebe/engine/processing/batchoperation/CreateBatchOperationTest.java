@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.batchoperation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
@@ -93,7 +94,8 @@ public final class CreateBatchOperationTest extends AbstractBatchOperationTest {
                     mockProcessInstanceEntity(3L)))
             .total(3)
             .build();
-    Mockito.when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
+
+    when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
         .thenReturn(result);
 
     // when

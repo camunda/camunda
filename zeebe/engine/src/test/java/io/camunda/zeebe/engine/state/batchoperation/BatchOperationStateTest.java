@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.security.auth.Authentication;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.BatchOperationStatus;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -54,11 +55,14 @@ public class BatchOperationStateTest {
             .processDefinitionIds("process")
             .processDefinitionVersions(1)
             .build();
+    final String username = "bud spencer";
+    final var authentication = Authentication.of(b -> b.user(username));
     final var record =
         new BatchOperationCreationRecord()
             .setBatchOperationKey(batchOperationKey)
             .setBatchOperationType(type)
-            .setEntityFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(filter)));
+            .setEntityFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(filter)))
+            .setAuthentication(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(authentication)));
 
     // when
     state.create(batchOperationKey, record);
@@ -72,6 +76,7 @@ public class BatchOperationStateTest {
     assertThat(batchOperation.getBatchOperationType()).isEqualTo(type);
     assertThat(recordFilter).isEqualTo(filter);
     assertThat(batchOperation.getStatus()).isEqualTo(BatchOperationStatus.CREATED);
+    assertThat(batchOperation.getAuthentication()).isEqualTo(authentication);
   }
 
   @Test

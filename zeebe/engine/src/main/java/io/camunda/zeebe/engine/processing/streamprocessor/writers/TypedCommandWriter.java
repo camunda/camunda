@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
+import java.util.Map;
 
 /** This interface is supposed to replace TypedCommandWriter */
 public interface TypedCommandWriter {
@@ -40,10 +41,16 @@ public interface TypedCommandWriter {
    * @param intent the intent of the command
    * @param value the record of the command
    * @param operationReference the operation reference of the command
+   * @param claims the authorization claims
    * @throws ExceededBatchRecordSizeException if the appended command doesn't fit into the
    *     RecordBatch
    */
-  void appendFollowUpCommand(long key, Intent intent, RecordValue value, long operationReference);
+  void appendFollowUpCommand(
+      long key,
+      Intent intent,
+      RecordValue value,
+      long operationReference,
+      Map<String, Object> claims);
 
   /**
    * @param commandLength the length of the command that will be written

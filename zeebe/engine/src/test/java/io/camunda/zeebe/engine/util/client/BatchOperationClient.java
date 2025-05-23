@@ -95,6 +95,13 @@ public final class BatchOperationClient {
       return this;
     }
 
+    public BatchOperationCreationClient withAuthentication(final DirectBuffer authentication) {
+      if (authentication != null) {
+        batchOperationCreationRecord.setAuthentication(authentication);
+      }
+      return this;
+    }
+
     public BatchOperationCreationClient withMigrationPlan(
         final BatchOperationProcessInstanceMigrationPlanValue migrationPlan) {
       batchOperationCreationRecord.setMigrationPlan(migrationPlan);

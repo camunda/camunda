@@ -18,7 +18,6 @@ import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
-import io.camunda.security.auth.Authorization.Builder;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -66,7 +65,7 @@ public final class BatchOperationServices
     return batchOperationSearchClient
         .withSecurityContext(
             securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(Builder::read)))
+                authentication, Authorization.of(a -> a.batchOperation().read())))
         .searchBatchOperationItems(query);
   }
 

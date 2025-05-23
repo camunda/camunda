@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.engine.state.batchoperation;
 
+import io.camunda.security.auth.Authentication;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
+import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
@@ -40,16 +42,19 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
       new ObjectProperty<>("modificationPlan", new BatchOperationProcessInstanceModificationPlan());
   private final ArrayProperty<LongValue> chunkKeysProp =
       new ArrayProperty<>("chunkKeys", LongValue::new);
+  // Authentication claims, needed for query + command auth
+  private final DocumentProperty authenticationProp = new DocumentProperty("authentication");
 
   public PersistedBatchOperation() {
-    super(7);
+    super(8);
     declareProperty(keyProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(statusProp)
         .declareProperty(entityFilterProp)
         .declareProperty(migrationPlanProp)
         .declareProperty(modificationPlanProp)
-        .declareProperty(chunkKeysProp);
+        .declareProperty(chunkKeysProp)
+        .declareProperty(authenticationProp);
   }
 
   public PersistedBatchOperation wrap(final BatchOperationCreationRecord record) {
@@ -58,6 +63,7 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
     setEntityFilter(record.getEntityFilterBuffer());
     setMigrationPlan(record.getMigrationPlan());
     setModificationPlan(record.getModificationPlan());
+    setAuthentication(record.getAuthenticationBuffer());
     return this;
   }
 
@@ -124,6 +130,19 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
 
   public PersistedBatchOperation setEntityFilter(final DirectBuffer filter) {
     entityFilterProp.setValue(new UnsafeBuffer(filter));
+    return this;
+  }
+
+  public Authentication getAuthentication() {
+    if (authenticationProp.getValue() != null) {
+      return MsgPackConverter.convertToObject(authenticationProp.getValue(), Authentication.class);
+    } else {
+      return Authentication.none();
+    }
+  }
+
+  public PersistedBatchOperation setAuthentication(final DirectBuffer authentication) {
+    authenticationProp.setValue(authentication);
     return this;
   }
 
