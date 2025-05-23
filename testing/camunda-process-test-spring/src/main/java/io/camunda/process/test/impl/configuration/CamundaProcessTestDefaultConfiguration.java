@@ -19,10 +19,8 @@ import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_EMPTY
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.client.CamundaClient;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.impl.CamundaObjectMapper;
-import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
@@ -48,11 +46,5 @@ public class CamundaProcessTestDefaultConfiguration {
     return new ObjectMapper()
         .configure(FAIL_ON_UNKNOWN_PROPERTIES, false)
         .configure(ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true);
-  }
-
-  @Bean
-  @ConditionalOnMissingBean
-  public CamundaClientBuilderFactory camundaClientBuilderSupplier() {
-    return () -> CamundaClient.newClientBuilder().usePlaintext();
   }
 }
