@@ -8,9 +8,7 @@
 package io.camunda.security.auth;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.Objects;
 import java.util.function.Function;
 
 /**
@@ -22,18 +20,9 @@ import java.util.function.Function;
  * later extended to more than one authorization (for composite permissions checks).
  */
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-public final class SecurityContext {
-  private final Authentication authentication;
-  private final Authorization authorization;
-
-  /** */
-  @JsonCreator
-  public SecurityContext(
-      final @JsonProperty("authentication") Authentication authentication,
-      final @JsonProperty("authorization") Authorization authorization) {
-    this.authentication = authentication;
-    this.authorization = authorization;
-  }
+public record SecurityContext(
+    @JsonProperty("authentication") Authentication authentication,
+    @JsonProperty("authorization") Authorization authorization) {
 
   public boolean requiresAuthorizationChecks() {
     return authentication != null && authorization != null;
@@ -45,43 +34,6 @@ public final class SecurityContext {
 
   public static SecurityContext withoutAuthentication() {
     return new Builder().build();
-  }
-
-  public Authentication authentication() {
-    return authentication;
-  }
-
-  public Authorization authorization() {
-    return authorization;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(authentication, authorization);
-  }
-
-  @Override
-  public boolean equals(final Object obj) {
-    if (obj == this) {
-      return true;
-    }
-    if (obj == null || obj.getClass() != getClass()) {
-      return false;
-    }
-    final SecurityContext that = (SecurityContext) obj;
-    return Objects.equals(authentication, that.authentication)
-        && Objects.equals(authorization, that.authorization);
-  }
-
-  @Override
-  public String toString() {
-    return "SecurityContext["
-        + "authentication="
-        + authentication
-        + ", "
-        + "authorization="
-        + authorization
-        + ']';
   }
 
   public static class Builder {
