@@ -7,7 +7,6 @@
  */
 package io.camunda.service;
 
-import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
@@ -62,7 +61,7 @@ public final class ProcessInstanceServiceTest {
   public void before() {
     client = mock(ProcessInstanceSearchClient.class);
     sequenceFlowSearchClient = mock(SequenceFlowSearchClient.class);
-    authentication = mock(Authentication.class);
+    authentication = Authentication.none();
     when(client.withSecurityContext(any())).thenReturn(client);
     when(sequenceFlowSearchClient.withSecurityContext(any())).thenReturn(sequenceFlowSearchClient);
     securityContextProvider = mock(SecurityContextProvider.class);
@@ -322,7 +321,6 @@ public final class ProcessInstanceServiceTest {
     record.setBatchOperationType(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
 
     final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
-    when(authentication.claims()).thenReturn(emptyMap());
     when(brokerClient.sendRequest(captor.capture()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
@@ -371,7 +369,6 @@ public final class ProcessInstanceServiceTest {
     record.setBatchOperationType(BatchOperationType.MODIFY_PROCESS_INSTANCE);
 
     final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
-    when(authentication.claims()).thenReturn(emptyMap());
     when(brokerClient.sendRequest(captor.capture()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
