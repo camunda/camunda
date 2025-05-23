@@ -103,11 +103,11 @@ public class DbMigratorImpl implements DbMigrator {
 
   @Override
   public void runMigrations() {
-    var runMigrations = true;
+    var initializationOnly = false;
     switch (checkVersionCompatibility()) {
       case final Indeterminate.PreviousVersionUnknown unknown:
         LOGGER.debug("Snapshot is empty, no migrations to run");
-        runMigrations = false;
+        initializationOnly = true;
         break;
       case final Compatible.SameVersion compatible:
         LOGGER.debug("No migrations to run, snapshot is the same as current version");
@@ -117,19 +117,27 @@ public class DbMigratorImpl implements DbMigrator {
     }
     logPreview(migrationTasks);
 
-    final var executedMigrations = new ArrayList<MigrationTask>();
-    if (runMigrations) {
-      for (int index = 1; index <= migrationTasks.size(); index++) {
-        // one based index looks nicer in logs
-        final var migration = migrationTasks.get(index - 1);
-        final var executed = handleMigrationTask(migration, index, migrationTasks.size());
-        if (executed) {
-          executedMigrations.add(migration);
-        }
-      }
-    }
+    final var executedMigrations = runMigrations(initializationOnly);
+
     markMigrationsAsCompleted();
     logSummary(executedMigrations);
+  }
+
+  private List<MigrationTask> runMigrations(final boolean initializationOnly) {
+    final var executedMigrations = new ArrayList<MigrationTask>();
+    var migrationsToRun = migrationTasks; // no copy is needed
+    if (initializationOnly) {
+      migrationsToRun = migrationsToRun.stream().filter(MigrationTask::isInitialization).toList();
+    }
+    for (int index = 1; index <= migrationsToRun.size(); index++) {
+      // one based index looks nicer in logs
+      final var migration = migrationsToRun.get(index - 1);
+      final var executed = handleMigrationTask(migration, index, migrationsToRun.size());
+      if (executed) {
+        executedMigrations.add(migration);
+      }
+    }
+    return executedMigrations;
   }
 
   private VersionCompatibilityCheck.CheckResult checkVersionCompatibility() {

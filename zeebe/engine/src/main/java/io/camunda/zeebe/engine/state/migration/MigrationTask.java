@@ -51,6 +51,14 @@ public interface MigrationTask {
   /** Returns whether the migration needs to run. */
   boolean needsToRun(final MigrationTaskContext context);
 
+  /**
+   * Returns whether the migration is an initialization task, that must be executed even when the
+   * database is empty.
+   */
+  default boolean isInitialization() {
+    return false;
+  }
+
   /** Implementations of this method perform the actual migration */
   void runMigration(final MutableMigrationTaskContext context);
 }
