@@ -200,7 +200,7 @@ jobs:
       - name: Start server
         run: yarn start:visual-regression &
       - name: Run A11y tests
-        run: yarn playwright a11y
+        run: yarn test:a11y
       - uses: actions/upload-artifact@v4
         if: always()
         with:

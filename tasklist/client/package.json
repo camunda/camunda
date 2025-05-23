@@ -48,6 +48,8 @@
     "test:e2e": "IS_E2E=true playwright test --project=e2e",
     "test:e2e:ci": "CI=true IS_E2E=true playwright test --project=e2e",
     "test:visual": "playwright test --project=visual",
+    "test:a11y": "IS_A11Y=true playwright test --project=a11y",
+    "test:docs": "CI=true IS_E2E=true playwright test --project=docs",
     "ts-check": "tsc && tsc -p ./e2e/tsconfig.json",
     "eslint": "eslint .",
     "stylelint": "stylelint \"src/**/*.?(s)css\"",

@@ -60,6 +60,13 @@ const config: PlaywrightTestConfig = {
         ...devices['Desktop Chrome'],
       },
     },
+    {
+      name: 'docs',
+      testMatch: 'docs/**/*.spec.ts',
+      use: {
+        ...devices['Desktop Chrome'],
+      },
+    },
   ],
   outputDir: 'test-results/',
   use: {
