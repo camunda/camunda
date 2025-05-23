@@ -28,6 +28,8 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeDbTransaction;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -50,6 +52,7 @@ import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.stream.util.Records;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.util.exception.RecoverableException;
+import io.camunda.zeebe.util.health.FailureListener;
 import java.io.Closeable;
 import java.io.IOException;
 import java.time.Duration;
@@ -66,6 +69,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.InOrder;
+import org.mockito.Mockito;
 import org.mockito.verification.VerificationWithTimeout;
 
 @ExtendWith(StreamPlatformExtension.class)
@@ -1497,6 +1501,49 @@ public final class StreamProcessorTest {
         .onSkipped(any());
     verify(streamPlatform.getDefaultMockedRecordProcessor(), never()).accepts(any());
     verify(streamPlatform.getDefaultMockedRecordProcessor(), never()).process(any(), any());
+  }
+
+  @Test
+  void shouldShutDownStreamProcessorOnUncommittedStateException() throws Exception {
+    // given -- a transaction that fails unexpectedly, not with a regular `ZeebeDbException`.
+    streamPlatform.startStreamProcessor();
+    final var unexpectedException = new RuntimeException("Unexpected exception");
+
+    final var failingTransaction = mock(ZeebeDbTransaction.class);
+    doThrow(unexpectedException).when(failingTransaction).commit();
+
+    final var mockTransactionContext = mock(TransactionContext.class);
+    when(mockTransactionContext.getCurrentTransaction()).thenReturn(failingTransaction);
+
+    // given -- a modified processing state machine which uses the mock transaction context.
+    final var processingStateMachineField =
+        StreamProcessor.class.getDeclaredField("processingStateMachine");
+    processingStateMachineField.setAccessible(true);
+    final var processingStateMachine =
+        (ProcessingStateMachine)
+            processingStateMachineField.get(streamPlatform.getStreamProcessor());
+    final var transactionContextField =
+        ProcessingStateMachine.class.getDeclaredField("transactionContext");
+    transactionContextField.setAccessible(true);
+    transactionContextField.set(processingStateMachine, mockTransactionContext);
+
+    // given -- a failure listener to capture the exception
+    final var failureListener = mock(FailureListener.class);
+    streamPlatform.getStreamProcessor().addFailureListener(failureListener);
+
+    // when -- processing something to trigger a commit
+    streamPlatform.writeBatch(
+        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+
+    // then
+    verify(failureListener, TIMEOUT)
+        .onUnrecoverableFailure(
+            Mockito.argThat(
+                healthReport ->
+                    healthReport.isDead()
+                        && healthReport.getIssue().throwable()
+                            instanceof final UncommittedStateException uncommittedStateException
+                        && uncommittedStateException.getCause().equals(unexpectedException)));
   }
 
   private static final class TestProcessor implements RecordProcessor {
