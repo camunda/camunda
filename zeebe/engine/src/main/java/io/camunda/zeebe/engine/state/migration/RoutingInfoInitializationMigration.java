@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
-public class RoutingInfoMigration implements MigrationTask {
+public class RoutingInfoInitializationMigration implements MigrationTask {
 
   @Override
   public String getIdentifier() {

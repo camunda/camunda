@@ -57,7 +57,7 @@ public class DbMigratorImpl implements DbMigrator {
           new ColumnFamilyPrefixCorrectionMigration(),
           new MultiTenancySignalSubscriptionStateMigration(),
           new JobBackoffRestoreMigration(),
-          new RoutingInfoMigration(),
+          new RoutingInfoInitializationMigration(),
           new OrderedCommandDistributionMigration());
   private static final Logger LOGGER =
       LoggerFactory.getLogger(DbMigratorImpl.class.getPackageName());
@@ -91,7 +91,7 @@ public class DbMigratorImpl implements DbMigrator {
         initializationOnly = true;
         break;
       case final Compatible.SameVersion compatible:
-        LOGGER.info("No migrations to run, snapshot is the same as current version");
+        LOGGER.debug("No migrations to run, snapshot is the same as current version");
         return;
       default:
         break;
