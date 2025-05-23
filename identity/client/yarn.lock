@@ -1376,13 +1376,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:18.3.21":
-  version: 18.3.21
-  resolution: "@types/react@npm:18.3.21"
+"@types/react@npm:18.3.22":
+  version: 18.3.22
+  resolution: "@types/react@npm:18.3.22"
   dependencies:
     "@types/prop-types": "npm:*"
     csstype: "npm:^3.0.2"
-  checksum: 10c0/b33424c62f01ab2404c60abef995e05aa1a696a636bdd77a34ef6c942d171c673b1e451d9dba7f9a169a83c9eef0ddfaf1ba08f6cef542df9404290199a73967
+  checksum: 10c0/d5d77d5329ed6cf6d2f77d778bfc128e2a4d1b0e30d8eebd5e295c207615842abaff57813cd39be5939a9c4aecacd3771f4e7a8d874d5a8002ff18809f237c19
   languageName: node
   linkType: hard
 
@@ -2930,7 +2930,7 @@ __metadata:
     "@carbon/react": "npm:1.66.0"
     "@types/event-source-polyfill": "npm:1.0.5"
     "@types/node": "npm:20.16.15"
-    "@types/react": "npm:18.3.21"
+    "@types/react": "npm:18.3.22"
     "@types/react-dom": "npm:18.3.7"
     "@types/react-transition-group": "npm:4.4.12"
     "@typescript-eslint/eslint-plugin": "npm:8.6.0"
