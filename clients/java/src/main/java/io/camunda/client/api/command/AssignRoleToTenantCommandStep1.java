@@ -18,8 +18,7 @@ package io.camunda.client.api.command;
 import io.camunda.client.api.response.AssignRoleToTenantResponse;
 
 /** Step to assign a role to a tenant. */
-public interface AssignRoleToTenantCommandStep1
-    extends FinalCommandStep<AssignRoleToTenantResponse> {
+public interface AssignRoleToTenantCommandStep1 {
 
   /**
    * Sets the ID of the role to assign.
@@ -27,5 +26,17 @@ public interface AssignRoleToTenantCommandStep1
    * @param roleId the ID of the role
    * @return the builder for this command
    */
-  AssignRoleToTenantCommandStep1 roleId(String roleId);
+  AssignRoleToTenantCommandStep2 roleId(String roleId);
+
+  interface AssignRoleToTenantCommandStep2 extends FinalCommandStep<AssignRoleToTenantResponse> {
+
+    /**
+     * Sets the tenant ID.
+     *
+     * @param tenantId the tenantId of the tenant
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    AssignRoleToTenantCommandStep2 tenantId(String tenantId);
+  }
 }
