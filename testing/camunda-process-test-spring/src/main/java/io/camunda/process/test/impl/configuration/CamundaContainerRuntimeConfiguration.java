@@ -133,7 +133,7 @@ public class CamundaContainerRuntimeConfiguration {
   }
 
   public static class RemoteConfiguration {
-    private CamundaClientProperties client;
+    private CamundaClientProperties client = new CamundaClientProperties();
 
     private String camundaMonitoringApiAddress =
         ContainerRuntimeDefaults.LOCAL_CAMUNDA_MONITORING_API_ADDRESS;

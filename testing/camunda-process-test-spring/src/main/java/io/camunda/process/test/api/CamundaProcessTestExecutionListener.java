@@ -17,7 +17,9 @@ package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaContainerRuntimeConfiguration;
@@ -31,8 +33,10 @@ import io.camunda.process.test.impl.runtime.CamundaRuntime;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
 import io.camunda.process.test.impl.testresult.ProcessTestResult;
+import io.camunda.spring.client.configuration.CamundaClientConfigurationImpl;
 import io.camunda.spring.client.event.CamundaClientClosingEvent;
 import io.camunda.spring.client.event.CamundaClientCreatedEvent;
+import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.spring.client.properties.CamundaClientProperties;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.spring.client.event.ZeebeClientClosingEvent;
@@ -40,6 +44,7 @@ import io.camunda.zeebe.spring.client.event.ZeebeClientCreatedEvent;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -253,15 +258,27 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     final CamundaClientProperties remoteClientProperties =
         runtimeConfiguration.getRemote().getClient();
-    //    new CamundaClientConfigurationImpl(remoteClientProperties, )
+    final JsonMapper jsonMapper = testContext.getApplicationContext().getBean(JsonMapper.class);
+    final CamundaClientConfiguration remoteCamundaClientConfiguration =
+        new CamundaClientConfigurationImpl(
+            remoteClientProperties,
+            jsonMapper,
+            Collections.emptyList(),
+            Collections.emptyList(),
+            CamundaClientExecutorService.createDefault(),
+            new NoopCredentialsProvider());
     //
-    // containerRuntimeBuilder.withRemoteCamundaClient(CamundaClient.newClient(remoteClientProperties));
+    //    containerRuntimeBuilder.withRemoteCamundaClient(
+    //        CamundaClient.newClient(remoteCamundaClientConfiguration));
 
     final CamundaClientBuilder remoteClientBuilder =
         CamundaClient.newClientBuilder()
-            .restAddress(remoteClientProperties.getRestAddress())
-            .grpcAddress(remoteClientProperties.getGrpcAddress())
-            .usePlaintext();
+            .restAddress(remoteCamundaClientConfiguration.getRestAddress())
+            .grpcAddress(remoteCamundaClientConfiguration.getGrpcAddress());
+
+    if (remoteCamundaClientConfiguration.isPlaintextConnectionEnabled()) {
+      remoteClientBuilder.usePlaintext();
+    }
 
     final CamundaClientBuilderFactory camundaClientBuilderFactory =
         testContext.getApplicationContext().getBean(CamundaClientBuilderFactory.class);
