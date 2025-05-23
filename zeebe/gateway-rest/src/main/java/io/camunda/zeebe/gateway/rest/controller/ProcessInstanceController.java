@@ -195,7 +195,7 @@ public class ProcessInstanceController {
 
   @CamundaGetMapping(path = "/{processInstanceKey}/incidents")
   public ResponseEntity<Object> getIncidents(
-      @PathVariable("processInstanceKey") final Long processInstanceKey) {
+      @PathVariable("processInstanceKey") final long processInstanceKey) {
     try {
       return ResponseEntity.ok()
           .body(
@@ -203,7 +203,6 @@ public class ProcessInstanceController {
                   processInstanceServices
                       .withAuthentication(RequestMapper.getAuthentication())
                       .incidents(processInstanceKey)));
-
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

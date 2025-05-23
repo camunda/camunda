@@ -12,11 +12,13 @@ import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.SequenceFlowSearchClient;
+import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.SequenceFlowEntity;
@@ -52,31 +54,33 @@ import org.mockito.ArgumentCaptor;
 public final class ProcessInstanceServiceTest {
 
   private ProcessInstanceServices services;
-  private ProcessInstanceSearchClient client;
+  private ProcessInstanceSearchClient processInstanceSearchClient;
   private SequenceFlowSearchClient sequenceFlowSearchClient;
-  private IncidentSearchClient incidentClient;
+  private IncidentSearchClient incidentSearchClient;
   private SecurityContextProvider securityContextProvider;
   private Authentication authentication;
   private BrokerClient brokerClient;
 
   @BeforeEach
   public void before() {
-    client = mock(ProcessInstanceSearchClient.class);
+    processInstanceSearchClient = mock(ProcessInstanceSearchClient.class);
     sequenceFlowSearchClient = mock(SequenceFlowSearchClient.class);
     authentication = Authentication.none();
-    incidentClient = mock(IncidentSearchClient.class);
+    incidentSearchClient = mock(IncidentSearchClient.class);
     authentication = mock(Authentication.class);
-    when(client.withSecurityContext(any())).thenReturn(client);
+    when(processInstanceSearchClient.withSecurityContext(any()))
+        .thenReturn(processInstanceSearchClient);
     when(sequenceFlowSearchClient.withSecurityContext(any())).thenReturn(sequenceFlowSearchClient);
+    when(incidentSearchClient.withSecurityContext(any())).thenReturn(incidentSearchClient);
     securityContextProvider = mock(SecurityContextProvider.class);
     brokerClient = mock(BrokerClient.class);
     services =
         new ProcessInstanceServices(
             brokerClient,
             securityContextProvider,
-            client,
+            processInstanceSearchClient,
             sequenceFlowSearchClient,
-            incidentClient,
+            incidentSearchClient,
             authentication);
   }
 
@@ -84,7 +88,7 @@ public final class ProcessInstanceServiceTest {
   public void shouldReturnProcessInstance() {
     // given
     final var result = mock(SearchQueryResult.class);
-    when(client.searchProcessInstances(any())).thenReturn(result);
+    when(processInstanceSearchClient.searchProcessInstances(any())).thenReturn(result);
 
     final ProcessInstanceQuery searchQuery =
         SearchQueryBuilders.processInstanceSearchQuery().build();
@@ -121,7 +125,7 @@ public final class ProcessInstanceServiceTest {
     final var entity = mock(ProcessInstanceEntity.class);
     when(entity.processInstanceKey()).thenReturn(key);
     when(entity.processDefinitionId()).thenReturn("processId");
-    when(client.searchProcessInstances(any()))
+    when(processInstanceSearchClient.searchProcessInstances(any()))
         .thenReturn(new SearchQueryResult(1, List.of(entity), null, null));
     authorizeProcessReadInstance(true, "processId");
 
@@ -136,7 +140,7 @@ public final class ProcessInstanceServiceTest {
   public void shouldThrownExceptionIfNotFoundByKey() {
     // given
     final var key = 100L;
-    when(client.searchProcessInstances(any()))
+    when(processInstanceSearchClient.searchProcessInstances(any()))
         .thenReturn(new SearchQueryResult<>(0, List.of(), null, null));
 
     // when / then
@@ -152,7 +156,7 @@ public final class ProcessInstanceServiceTest {
     final var key = 200L;
     final var entity1 = mock(ProcessInstanceEntity.class);
     final var entity2 = mock(ProcessInstanceEntity.class);
-    when(client.searchProcessInstances(any()))
+    when(processInstanceSearchClient.searchProcessInstances(any()))
         .thenReturn(new SearchQueryResult<>(2, List.of(entity1, entity2), null, null));
 
     // when / then
@@ -167,7 +171,7 @@ public final class ProcessInstanceServiceTest {
     // given
     final var entity = mock(ProcessInstanceEntity.class);
     when(entity.processDefinitionId()).thenReturn("processId");
-    when(client.searchProcessInstances(any()))
+    when(processInstanceSearchClient.searchProcessInstances(any()))
         .thenReturn(new SearchQueryResult<>(1, List.of(entity), null, null));
     authorizeProcessReadInstance(false, "processId");
     // when
@@ -225,7 +229,7 @@ public final class ProcessInstanceServiceTest {
     when(parentProcess.processDefinitionId()).thenReturn("parent_process_id");
     authorizeProcessReadInstance(true, "parent_process_id");
 
-    when(client.searchProcessInstances(any()))
+    when(processInstanceSearchClient.searchProcessInstances(any()))
         .thenReturn(new SearchQueryResult<>(1, List.of(childProcess, parentProcess), null, null));
 
     // when
@@ -246,7 +250,7 @@ public final class ProcessInstanceServiceTest {
     authorizeProcessReadInstance(true, "root_process_id");
     when(rootInstance.treePath()).thenReturn(null); // No treePath
 
-    when(client.searchProcessInstances(any()))
+    when(processInstanceSearchClient.searchProcessInstances(any()))
         .thenReturn(new SearchQueryResult<>(1, List.of(rootInstance), null, null));
 
     // when
@@ -265,7 +269,7 @@ public final class ProcessInstanceServiceTest {
     authorizeProcessReadInstance(true, "root_process_id");
     when(rootInstance.treePath()).thenReturn("PI_123"); // Root treePath
 
-    when(client.searchProcessInstances(any()))
+    when(processInstanceSearchClient.searchProcessInstances(any()))
         .thenReturn(new SearchQueryResult<>(1, List.of(rootInstance), null, null));
 
     // when
@@ -413,5 +417,58 @@ public final class ProcessInstanceServiceTest {
             authentication,
             Authorization.of(a -> a.processDefinition().readProcessInstance())))
         .thenReturn(authorize);
+  }
+
+  @Test
+  void shouldReturnIncidentsForProcessInstanceKey() {
+    // given
+    final var processInstanceKey = 123L;
+
+    final var processInstance = mock(ProcessInstanceEntity.class);
+    when(processInstance.treePath()).thenReturn("PI_123/FN_A/FNI_456/PI_789/FN_B/FNI_654");
+    when(processInstance.processInstanceKey()).thenReturn(processInstanceKey);
+    when(processInstance.processDefinitionId()).thenReturn("processId");
+    when(processInstanceSearchClient.searchProcessInstances(any()))
+        .thenReturn(new SearchQueryResult<>(1, List.of(processInstance), null, null));
+    authorizeProcessReadInstance(true, processInstance.processDefinitionId());
+
+    final var incidentEntity = mock(IncidentEntity.class);
+    when(incidentSearchClient.searchIncidents(any()))
+        .thenReturn(new SearchQueryResult<>(1, List.of(incidentEntity), null, null));
+    Authorization.of(a -> a.processDefinition().readProcessInstance());
+
+    // when
+    final var result = services.incidents(processInstanceKey);
+
+    // then
+    assertThat(result).hasSize(1);
+    assertThat(result.getFirst()).isEqualTo(incidentEntity);
+    verify(incidentSearchClient)
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication,
+                Authorization.of(a -> a.processDefinition().readProcessInstance())));
+  }
+
+  @Test
+  void incidentsShouldThrowForbiddenExceptionIfNotAuthorizedToReadProcessInstance() {
+    // given
+    final var processInstanceKey = 123L;
+
+    final var processInstance = mock(ProcessInstanceEntity.class);
+    when(processInstance.processDefinitionId()).thenReturn("processId");
+    when(processInstanceSearchClient.searchProcessInstances(any()))
+        .thenReturn(new SearchQueryResult<>(1, List.of(processInstance), null, null));
+    authorizeProcessReadInstance(false, processInstance.processDefinitionId());
+
+    // when
+    final Executable executeGetByKey = () -> services.incidents(processInstanceKey);
+
+    // then
+    final var exception = assertThrowsExactly(ForbiddenException.class, executeGetByKey);
+    assertThat(exception.getMessage())
+        .isEqualTo(
+            "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
+    verifyNoInteractions(incidentSearchClient);
   }
 }

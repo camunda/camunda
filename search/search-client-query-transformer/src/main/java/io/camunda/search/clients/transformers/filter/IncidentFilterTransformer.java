@@ -92,7 +92,7 @@ public class IncidentFilterTransformer extends IndexFilterTransformer<IncidentFi
   }
 
   private SearchQuery getTreePathQuery(final List<String> treePaths) {
-    return stringTerms("treePath", treePaths); // TODO: Change literal to const?
+    return stringTerms("treePath", treePaths);
   }
 
   private SearchQuery getCreationTimeQuery(final DateValueFilter filter) {
