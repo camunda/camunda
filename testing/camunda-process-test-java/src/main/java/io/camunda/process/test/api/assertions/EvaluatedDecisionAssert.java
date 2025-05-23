@@ -15,18 +15,8 @@
  */
 package io.camunda.process.test.api.assertions;
 
-/** The assertion object to verify a decision. */
-public interface DecisionInstanceAssert {
-  /**
-   * Verifies that the decision is evaluated. The verification fails if the decision is not
-   * evaluated or if the evaluation fails.
-   *
-   * <p>The assertion waits until the decision is evaluated.
-   *
-   * @return the assertion object
-   */
-  DecisionInstanceAssert isEvaluated();
-
+/** The assertion object to verify an evaluated decision. */
+public interface EvaluatedDecisionAssert {
   /**
    * Verifies that the decision is evaluated with the expected output. The verification fails if the
    * decision is not evaluated or the output does not match.
@@ -34,14 +24,14 @@ public interface DecisionInstanceAssert {
    * @param expectedOutput the expected output value
    * @return the assertion object
    */
-  DecisionInstanceAssert hasOutput(final Object expectedOutput);
+  EvaluatedDecisionAssert hasOutput(final Object expectedOutput);
 
   /**
    * Verifies that the decision matched nothing.
    *
    * @return the assertion object
    */
-  DecisionInstanceAssert hasNoMatchedRules();
+  EvaluatedDecisionAssert hasNoMatchedRules();
 
   /**
    * Verifies that the decision has matched the given rule indices.
@@ -49,7 +39,7 @@ public interface DecisionInstanceAssert {
    * @param expectedMatchedRuleIndexes the rule indices that should have matched
    * @return the assertion object
    */
-  DecisionInstanceAssert hasMatchedRules(final int... expectedMatchedRuleIndexes);
+  EvaluatedDecisionAssert hasMatchedRules(final int... expectedMatchedRuleIndexes);
 
   /**
    * Verifies that the decision has not matched the given rule indices.
@@ -57,5 +47,5 @@ public interface DecisionInstanceAssert {
    * @param expectedUnmatchedRuleIndexes the rule indices that should not have matched
    * @return the assertion object
    */
-  DecisionInstanceAssert hasNotMatchedRules(final int... expectedUnmatchedRuleIndexes);
+  EvaluatedDecisionAssert hasNotMatchedRules(final int... expectedUnmatchedRuleIndexes);
 }

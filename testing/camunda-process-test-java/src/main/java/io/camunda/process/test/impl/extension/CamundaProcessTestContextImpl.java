@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.process.test.api.CamundaProcessTestContext;
@@ -319,5 +320,29 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
               activatedJob.set(jobs.get(0));
             });
     return activatedJob.get();
+  }
+
+  @Override
+  public EvaluateDecisionResponse evaluateDecisionByDecisionId(
+      final String decisionId, final Object variables) {
+
+    return createClient()
+        .newEvaluateDecisionCommand()
+        .decisionId(decisionId)
+        .variables(variables)
+        .send()
+        .join();
+  }
+
+  @Override
+  public EvaluateDecisionResponse evaluateDecisionByDecisionKey(
+      final long decisionKey, final Object variables) {
+
+    return createClient()
+        .newEvaluateDecisionCommand()
+        .decisionKey(decisionKey)
+        .variables(variables)
+        .send()
+        .join();
   }
 }
