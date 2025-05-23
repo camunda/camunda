@@ -7,6 +7,9 @@
  */
 package io.camunda.authentication.config;
 
+import static io.camunda.security.configuration.secureheaders.ContentSecurityPolicyConfig.DEFAULT_SAAS_SECURITY_POLICY;
+import static io.camunda.security.configuration.secureheaders.ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY;
+
 import io.camunda.authentication.CamundaJwtAuthenticationConverter;
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
@@ -14,19 +17,27 @@ import io.camunda.authentication.ConditionalOnUnprotectedApi;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
+import io.camunda.security.configuration.CsrfProtectionMatcher;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.configuration.secureheaders.SecurityHeaderConfigurations;
+import io.camunda.security.configuration.secureheaders.values.FrameOptionMode;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
+import org.springframework.boot.actuate.logging.LoggersEndpoint;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,9 +50,16 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.CacheControlConfig;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.ContentSecurityPolicyConfig;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.ContentTypeOptionsConfig;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.FrameOptionsConfig;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer.HstsConfig;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -54,6 +72,15 @@ import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.security.web.header.writers.CrossOriginEmbedderPolicyHeaderWriter.CrossOriginEmbedderPolicy;
+import org.springframework.security.web.header.writers.CrossOriginOpenerPolicyHeaderWriter.CrossOriginOpenerPolicy;
+import org.springframework.security.web.header.writers.CrossOriginResourcePolicyHeaderWriter.CrossOriginResourcePolicy;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
+import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter.HeaderValue;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -61,6 +88,7 @@ import org.springframework.security.web.access.intercept.AuthorizationFilter;
 @Profile("consolidated-auth")
 public class WebSecurityConfig {
   public static final String SESSION_COOKIE = "camunda-session";
+  public static final String X_CSRF_TOKEN = "X-CSRF-TOKEN";
 
   private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
   // Used for chains that grant unauthenticated access, always comes first.
@@ -115,13 +143,19 @@ public class WebSecurityConfig {
 
   @Bean
   @Order(ORDER_UNPROTECTED)
-  public SecurityFilterChain unprotectedPathsSecurityFilterChain(final HttpSecurity httpSecurity)
+  public SecurityFilterChain unprotectedPathsSecurityFilterChain(
+      final HttpSecurity httpSecurity, final SecurityConfiguration securityConfiguration)
       throws Exception {
     return httpSecurity
         .securityMatcher(UNPROTECTED_PATHS.toArray(String[]::new))
         .authorizeHttpRequests(
             (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().permitAll())
-        .headers(WebSecurityConfig::setupStrictTransportSecurity)
+        .headers(
+            headers ->
+                setupSecureHeaders(
+                    headers,
+                    securityConfiguration.getSecurityHeaders(),
+                    securityConfiguration.getSaas().isConfigured()))
         .csrf(AbstractHttpConfigurer::disable)
         .cors(AbstractHttpConfigurer::disable)
         .formLogin(AbstractHttpConfigurer::disable)
@@ -132,7 +166,8 @@ public class WebSecurityConfig {
   @Bean
   @ConditionalOnUnprotectedApi
   @Order(ORDER_UNPROTECTED)
-  public SecurityFilterChain unprotectedApiAuthSecurityFilterChain(final HttpSecurity httpSecurity)
+  public SecurityFilterChain unprotectedApiAuthSecurityFilterChain(
+      final HttpSecurity httpSecurity, final SecurityConfiguration securityConfiguration)
       throws Exception {
     LOG.warn(
         "The API is unprotected. Please disable {} for any deployment.",
@@ -141,7 +176,12 @@ public class WebSecurityConfig {
         .securityMatcher(API_PATHS.toArray(String[]::new))
         .authorizeHttpRequests(
             (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().permitAll())
-        .headers(WebSecurityConfig::setupStrictTransportSecurity)
+        .headers(
+            headers ->
+                setupSecureHeaders(
+                    headers,
+                    securityConfiguration.getSecurityHeaders(),
+                    securityConfiguration.getSaas().isConfigured()))
         .csrf(AbstractHttpConfigurer::disable)
         .cors(AbstractHttpConfigurer::disable)
         .formLogin(AbstractHttpConfigurer::disable)
@@ -175,13 +215,159 @@ public class WebSecurityConfig {
     response.setStatus(HttpStatus.NO_CONTENT.value());
   }
 
-  private static void setupStrictTransportSecurity(final HeadersConfigurer<HttpSecurity> headers) {
-    headers.httpStrictTransportSecurity(
-        (httpStrictTransportSecurity) ->
-            httpStrictTransportSecurity
-                .includeSubDomains(true)
-                .maxAgeInSeconds(63072000)
-                .preload(true));
+  private static void setupSecureHeaders(
+      final HeadersConfigurer<HttpSecurity> headers,
+      final SecurityHeaderConfigurations headerConfig,
+      final boolean isSaas) {
+
+    if (headerConfig.getContentTypeOptionsConfig().isDisabled()) {
+      headers.contentTypeOptions(ContentTypeOptionsConfig::disable);
+    }
+
+    headers.xssProtection(
+        xssConfig ->
+            xssConfig.headerValue(
+                HeaderValue.valueOf(headerConfig.getXssConfig().getMode().name())));
+
+    if (headerConfig.getCacheConfig().isDisabled()) {
+      headers.cacheControl(CacheControlConfig::disable);
+    }
+
+    if (headerConfig.getHstsConfig().isDisabled()) {
+      headers.httpStrictTransportSecurity(HstsConfig::disable);
+    } else {
+      headers.httpStrictTransportSecurity(
+          hsts ->
+              hsts.includeSubDomains(headerConfig.getHstsConfig().isIncludeSubDomains())
+                  .maxAgeInSeconds(headerConfig.getHstsConfig().getMaxAgeInSeconds())
+                  .preload(headerConfig.getHstsConfig().isPreload()));
+    }
+
+    if (headerConfig.getFrameOptionsConfig().disabled()) {
+      headers.frameOptions(FrameOptionsConfig::disable);
+    } else {
+      if (headerConfig.getFrameOptionsConfig().getMode() == FrameOptionMode.DENY) {
+        headers.frameOptions(FrameOptionsConfig::deny);
+      }
+      if (headerConfig.getFrameOptionsConfig().getMode() == FrameOptionMode.SAMEORIGIN) {
+        headers.frameOptions(FrameOptionsConfig::sameOrigin);
+      }
+    }
+
+    if (headerConfig.getContentSecurityPolicyConfig().isEnabled()) {
+      final String policy = getContentSecurityPolicy(headerConfig, isSaas);
+      headers.contentSecurityPolicy(csp -> csp.policyDirectives(policy));
+      if (headerConfig.getContentSecurityPolicyConfig().isReportOnly()) {
+        headers.contentSecurityPolicy(ContentSecurityPolicyConfig::reportOnly);
+      }
+    }
+
+    headers.referrerPolicy(
+        rp ->
+            rp.policy(
+                ReferrerPolicy.valueOf(
+                    headerConfig.getReferrerPolicyConfig().getReferrerPolicy().name())));
+
+    if (headerConfig.getPermissionsPolicyConfig().getPolicy() != null
+        && !headerConfig.getPermissionsPolicyConfig().getPolicy().isBlank()) {
+      headers.permissionsPolicyHeader(
+          pp -> pp.policy(headerConfig.getPermissionsPolicyConfig().getPolicy()));
+    }
+
+    headers.crossOriginOpenerPolicy(
+        coop ->
+            coop.policy(
+                CrossOriginOpenerPolicy.valueOf(
+                    headerConfig
+                        .getCrossOriginOpenerPolicyConfig()
+                        .getCrossOriginOpenerPolicy()
+                        .name())));
+
+    headers.crossOriginEmbedderPolicy(
+        coep ->
+            coep.policy(
+                CrossOriginEmbedderPolicy.valueOf(
+                    headerConfig
+                        .getCrossOriginEmbedderPolicyConfig()
+                        .getCrossOriginEmbedderPolicy()
+                        .name())));
+
+    headers.crossOriginResourcePolicy(
+        corp ->
+            corp.policy(
+                CrossOriginResourcePolicy.valueOf(
+                    headerConfig
+                        .getCrossOriginResourcePolicyConfig()
+                        .getCrossOriginResourcePolicy()
+                        .name())));
+  }
+
+  private static String getContentSecurityPolicy(
+      final SecurityHeaderConfigurations headerConfig, final boolean isSaas) {
+    final String policy;
+    if (headerConfig.getContentSecurityPolicyConfig().getPolicyDirectives() == null
+        || headerConfig.getContentSecurityPolicyConfig().getPolicyDirectives().isEmpty()) {
+      if (isSaas) {
+        policy = DEFAULT_SAAS_SECURITY_POLICY;
+      } else {
+        policy = DEFAULT_SM_SECURITY_POLICY;
+      }
+    } else {
+      policy = headerConfig.getContentSecurityPolicyConfig().getPolicyDirectives();
+    }
+    return policy;
+  }
+
+  private static void configureCsrf(
+      final CookieCsrfTokenRepository repository, final CsrfConfigurer<HttpSecurity> csrf) {
+    csrf.csrfTokenRepository(repository)
+        .requireCsrfProtectionMatcher(
+            new CsrfProtectionMatcher(UNPROTECTED_PATHS, Set.of(LOGIN_URL, LOGOUT_URL)))
+        .ignoringRequestMatchers(EndpointRequest.to(LoggersEndpoint.class));
+  }
+
+  private static OncePerRequestFilter csrfHeaderFilter() {
+    return new OncePerRequestFilter() {
+
+      @Override
+      protected void doFilterInternal(
+          final HttpServletRequest request,
+          final HttpServletResponse response,
+          final FilterChain filterChain)
+          throws ServletException, IOException {
+        filterChain.doFilter(request, addCSRFTokenWhenAvailable(request, response));
+      }
+    };
+  }
+
+  private static HttpServletResponse addCSRFTokenWhenAvailable(
+      final HttpServletRequest request, final HttpServletResponse response) {
+    if (shouldAddCSRF(request)) {
+      final CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+      if (token != null) {
+        response.setHeader(X_CSRF_TOKEN, token.getToken());
+      }
+    }
+    return response;
+  }
+
+  private static boolean shouldAddCSRF(final HttpServletRequest request) {
+    final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    final String path = request.getRequestURI();
+    final String method = request.getMethod();
+    return (auth != null && auth.isAuthenticated())
+        && (path == null || !path.contains(LOGOUT_URL))
+        && ("GET".equalsIgnoreCase(method) || (path != null && (path.contains(LOGIN_URL))));
+  }
+
+  @Bean
+  @ConditionalOnMissingBean(CookieCsrfTokenRepository.class)
+  public CookieCsrfTokenRepository cookieCsrfTokenRepository() {
+    final CookieCsrfTokenRepository repository = new CookieCsrfTokenRepository();
+    repository.setHeaderName(X_CSRF_TOKEN);
+    repository.setCookieCustomizer(cc -> cc.httpOnly(true).secure(true));
+    repository.setCookieName(X_CSRF_TOKEN);
+    return repository;
   }
 
   @Configuration
@@ -201,7 +387,9 @@ public class WebSecurityConfig {
     @Bean
     @Order(ORDER_WEBAPP_API)
     public SecurityFilterChain httpBasicApiAuthSecurityFilterChain(
-        final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
+        final HttpSecurity httpSecurity,
+        final AuthFailureHandler authFailureHandler,
+        final SecurityConfiguration securityConfiguration)
         throws Exception {
       LOG.info("The API is protected by HTTP Basic authentication.");
       return httpSecurity
@@ -213,7 +401,12 @@ public class WebSecurityConfig {
                       .permitAll()
                       .anyRequest()
                       .authenticated())
-          .headers(WebSecurityConfig::setupStrictTransportSecurity)
+          .headers(
+              headers ->
+                  setupSecureHeaders(
+                      headers,
+                      securityConfiguration.getSecurityHeaders(),
+                      securityConfiguration.getSaas().isConfigured()))
           .csrf(AbstractHttpConfigurer::disable)
           .cors(AbstractHttpConfigurer::disable)
           .formLogin(AbstractHttpConfigurer::disable)
@@ -238,7 +431,9 @@ public class WebSecurityConfig {
     public SecurityFilterChain httpBasicWebappAuthSecurityFilterChain(
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
-        final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter)
+        final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter,
+        final SecurityConfiguration securityConfiguration,
+        final CookieCsrfTokenRepository csrfTokenRepository)
         throws Exception {
       LOG.info("Web Applications Login/Logout is setup.");
       return httpSecurity
@@ -246,7 +441,11 @@ public class WebSecurityConfig {
           // webapps are accessible without any authentication required
           .authorizeHttpRequests(
               (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().permitAll())
-          .csrf(AbstractHttpConfigurer::disable)
+          .csrf(
+              securityConfiguration.getCsrf().isEnabled()
+                  ? csrf -> configureCsrf(csrfTokenRepository, csrf)
+                  : AbstractHttpConfigurer::disable)
+          .addFilterAfter(csrfHeaderFilter(), CsrfFilter.class)
           .cors(AbstractHttpConfigurer::disable)
           .anonymous(AbstractHttpConfigurer::disable)
           // http basic auth is possible to obtain a session
@@ -265,7 +464,9 @@ public class WebSecurityConfig {
                   logout
                       .logoutUrl(LOGOUT_URL)
                       .logoutSuccessHandler(WebSecurityConfig::noContentSuccessHandler)
-                      .deleteCookies(SESSION_COOKIE))
+                      .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN)
+                      .invalidateHttpSession(true)
+                      .clearAuthentication(true))
           .exceptionHandling(
               exceptionHandling ->
                   exceptionHandling
@@ -336,7 +537,8 @@ public class WebSecurityConfig {
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
         final JwtDecoder jwtDecoder,
-        final CamundaJwtAuthenticationConverter converter)
+        final CamundaJwtAuthenticationConverter converter,
+        final SecurityConfiguration securityConfiguration)
         throws Exception {
       return httpSecurity
           .securityMatcher(API_PATHS.toArray(new String[0]))
@@ -347,7 +549,12 @@ public class WebSecurityConfig {
                       .permitAll()
                       .anyRequest()
                       .authenticated())
-          .headers(WebSecurityConfig::setupStrictTransportSecurity)
+          .headers(
+              headers ->
+                  setupSecureHeaders(
+                      headers,
+                      securityConfiguration.getSecurityHeaders(),
+                      securityConfiguration.getSaas().isConfigured()))
           .exceptionHandling(
               (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
           .csrf(AbstractHttpConfigurer::disable)
@@ -373,7 +580,9 @@ public class WebSecurityConfig {
         final ClientRegistrationRepository clientRegistrationRepository,
         final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter,
         final JwtDecoder jwtDecoder,
-        final CamundaJwtAuthenticationConverter converter)
+        final CamundaJwtAuthenticationConverter converter,
+        final SecurityConfiguration securityConfiguration,
+        final CookieCsrfTokenRepository csrfTokenRepository)
         throws Exception {
       return httpSecurity
           .securityMatcher(WEBAPP_PATHS.toArray(new String[0]))
@@ -384,10 +593,19 @@ public class WebSecurityConfig {
                       .permitAll()
                       .anyRequest()
                       .authenticated())
-          .headers(WebSecurityConfig::setupStrictTransportSecurity)
+          .headers(
+              headers ->
+                  setupSecureHeaders(
+                      headers,
+                      securityConfiguration.getSecurityHeaders(),
+                      securityConfiguration.getSaas().isConfigured()))
           .exceptionHandling(
               (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
-          .csrf(AbstractHttpConfigurer::disable)
+          .csrf(
+              securityConfiguration.getCsrf().isEnabled()
+                  ? csrf -> configureCsrf(csrfTokenRepository, csrf)
+                  : AbstractHttpConfigurer::disable)
+          .addFilterAfter(csrfHeaderFilter(), CsrfFilter.class)
           .cors(AbstractHttpConfigurer::disable)
           .formLogin(AbstractHttpConfigurer::disable)
           .anonymous(AbstractHttpConfigurer::disable)
@@ -410,7 +628,9 @@ public class WebSecurityConfig {
                   logout
                       .logoutUrl(LOGOUT_URL)
                       .logoutSuccessHandler(WebSecurityConfig::noContentSuccessHandler)
-                      .deleteCookies())
+                      .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN)
+                      .invalidateHttpSession(true)
+                      .clearAuthentication(true))
           .addFilterAfter(webApplicationAuthorizationCheckFilter, AuthorizationFilter.class)
           .build();
     }
