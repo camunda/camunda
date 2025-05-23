@@ -58,7 +58,10 @@ export default function DashboardRenderer({
       style={style}
       isDraggable={!!disableTileInteractions}
       isResizable={!!disableTileInteractions}
-      onDragStart={() => setIsDragging(true)}
+      onDragStart={(_layout, _oldItem, _newItem, _placeholder, event, element) => {
+        setIsDragging(true);
+        element.dispatchEvent(createEvent('mousemove', {x: event.clientX, y: event.clientY}));
+      }}
       onResizeStart={() => setIsDragging(true)}
     >
       {tiles.map((tile, idx) => {
@@ -123,4 +126,14 @@ function getTileKey(tile, idx) {
       tile.configuration?.external ||
       JSON.stringify(tile.configuration?.text || '').substring(20))
   );
+}
+
+function createEvent(type, position) {
+  return new MouseEvent(type, {
+    view: window,
+    bubbles: true,
+    cancelable: true,
+    clientX: position.x,
+    clientY: position.y,
+  });
 }
