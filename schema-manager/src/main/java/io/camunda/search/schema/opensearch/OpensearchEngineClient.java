@@ -20,6 +20,7 @@ import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
 import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.utils.SearchEngineClientUtils;
+import io.camunda.search.schema.utils.SuppressLogger;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
@@ -56,11 +57,11 @@ import org.opensearch.client.opensearch.indices.PutMappingRequest;
 import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateItem;
 import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateSummary;
 import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplateMapping;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class OpensearchEngineClient implements SearchEngineClient {
-  private static final Logger LOG = LoggerFactory.getLogger(OpensearchEngineClient.class);
+  private static final SuppressLogger LOG =
+      new SuppressLogger(LoggerFactory.getLogger(OpensearchEngineClient.class));
   private static final String OPERATE_DELETE_ARCHIVED_POLICY =
       "/schema/opensearch/create/policy/operate_delete_archived_indices.json";
   private static final long AUTO_SLICES = 0; // see OS docs; 0 means auto
