@@ -360,6 +360,9 @@ public class ElasticsearchExporter implements Exporter {
       if (index.messageCorrelation) {
         createValueIndexTemplate(ValueType.MESSAGE_CORRELATION, version);
       }
+      if (index.requestMetadata) {
+        createValueIndexTemplate(ValueType.REQUEST_METADATA, version);
+      }
     }
 
     indexTemplatesCreated.add(version);

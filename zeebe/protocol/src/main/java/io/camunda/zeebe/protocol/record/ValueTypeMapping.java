@@ -52,6 +52,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceResultIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.RequestMetadataIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
@@ -99,6 +100,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordV
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceResultRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.RequestMetadataRecordValue;
 import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
@@ -295,6 +297,9 @@ public final class ValueTypeMapping {
         ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
         new Mapping<>(
             BatchOperationLifecycleManagementRecordValue.class, BatchOperationIntent.class));
+    mapping.put(
+        ValueType.REQUEST_METADATA,
+        new Mapping<>(RequestMetadataRecordValue.class, RequestMetadataIntent.class));
     return mapping;
   }
 

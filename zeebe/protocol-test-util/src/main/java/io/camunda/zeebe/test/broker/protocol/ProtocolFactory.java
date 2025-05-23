@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.ValueTypeMapping;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.ImmutableCommandDistributionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableRequestMetadataRecordValue;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfo;
 import io.github.classgraph.ClassInfoList;
@@ -287,6 +288,22 @@ public final class ProtocolFactory {
               .withValueType(valueType)
               .withIntent(random.nextObject(typeInfo.getIntentClass()))
               .withCommandValue(generateObject(typeInfo.getValueClass()))
+              .build();
+        });
+
+    randomizerRegistry.registerRandomizer(
+        ImmutableRequestMetadataRecordValue.class,
+        () -> {
+          final var valueType = random.nextObject(ValueType.class);
+          final var typeInfo = ValueTypeMapping.get(valueType);
+          return ImmutableRequestMetadataRecordValue.builder()
+              .withMetadataKey(random.nextLong())
+              .withScopeKey(random.nextLong())
+              .withValueType(valueType)
+              .withIntent(random.nextObject(typeInfo.getIntentClass()))
+              .withRequestId(random.nextLong())
+              .withRequestStreamId(random.nextInt())
+              .withOperationReference(random.nextLong())
               .build();
         });
   }

@@ -16,12 +16,13 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.UserTaskState;
+import io.camunda.zeebe.engine.state.immutable.RequestMetadataState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.RequestMetadataIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
@@ -32,7 +33,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
   private static final String DEFAULT_ACTION = "complete";
 
   private final ElementInstanceState elementInstanceState;
-  private final UserTaskState userTaskState;
+  private final RequestMetadataState requestMetadataState;
   private final EventHandle eventHandle;
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
@@ -45,7 +46,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
       final Writers writers,
       final AuthorizationCheckBehavior authCheckBehavior) {
     elementInstanceState = state.getElementInstanceState();
-    userTaskState = state.getUserTaskState();
+    requestMetadataState = state.getRequestMetadataState();
     this.eventHandle = eventHandle;
     stateWriter = writers.state();
     commandWriter = writers.command();
@@ -79,38 +80,29 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
   public void onFinalizeCommand(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord);
+    completeElementInstance(userTaskRecord);
 
     if (command.hasRequestMetadata()) {
-      stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord);
-      completeElementInstance(userTaskRecord);
-
       responseWriter.writeEventOnCommand(
           userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord, command);
     } else {
-      /*
-       * If the request metadata is not present in the received command, it indicates that
-       * "complete" task listeners were configured, and that the normal flow of the "COMPLETE"
-       * command was interrupted by the "COMPLETE_TASK_LISTENER" command.
-       * In this case, we need to use the `requestId` and `requestStreamId` from the persisted
-       * metadata, which refers to the original "COMPLETE" command, to correctly write the
-       * response back.
-       *
-       * Note: It's important to retrieve this metadata from the user task state before appending
-       * the "COMPLETED" event, as it will be cleared by the "COMPLETED" event applier.
-       */
-      final var recordRequestMetadata = userTaskState.findRecordRequestMetadata(userTaskKey);
-      stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord);
-      completeElementInstance(userTaskRecord);
+      requestMetadataState
+          .find(
+              userTaskRecord.getElementInstanceKey(), ValueType.USER_TASK, UserTaskIntent.COMPLETE)
+          .ifPresent(
+              metadata -> {
+                responseWriter.writeResponse(
+                    userTaskKey,
+                    UserTaskIntent.COMPLETED,
+                    userTaskRecord,
+                    ValueType.USER_TASK,
+                    metadata.requestId(),
+                    metadata.requestStreamId());
 
-      recordRequestMetadata.ifPresent(
-          metadata ->
-              responseWriter.writeResponse(
-                  userTaskKey,
-                  UserTaskIntent.COMPLETED,
-                  userTaskRecord,
-                  ValueType.USER_TASK,
-                  metadata.getRequestId(),
-                  metadata.getRequestStreamId()));
+                stateWriter.appendFollowUpEvent(
+                    metadata.metadataKey(), RequestMetadataIntent.PROCESSED, metadata.record());
+              });
     }
   }
 

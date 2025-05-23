@@ -56,6 +56,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceResultIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.RequestMetadataIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
@@ -142,6 +143,7 @@ public final class EventAppliers implements EventApplier {
     registerMappingAppliers(state);
     registerBatchOperationAppliers(state);
     registerIdentitySetupAppliers();
+    registerRequestMetadataAppliers(state);
 
     return this;
   }
@@ -630,6 +632,12 @@ public final class EventAppliers implements EventApplier {
 
   private void registerIdentitySetupAppliers() {
     register(IdentitySetupIntent.INITIALIZED, NOOP_EVENT_APPLIER);
+  }
+
+  private void registerRequestMetadataAppliers(final MutableProcessingState state) {
+    final var metadataState = state.getRequestMetadataState();
+    register(RequestMetadataIntent.RECEIVED, new RequestMetadataReceivedApplier(metadataState));
+    register(RequestMetadataIntent.PROCESSED, new RequestMetadataProcessedApplier(metadataState));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {

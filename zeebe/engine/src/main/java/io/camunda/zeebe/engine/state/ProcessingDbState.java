@@ -34,6 +34,7 @@ import io.camunda.zeebe.engine.state.instance.DbElementInstanceState;
 import io.camunda.zeebe.engine.state.instance.DbEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.instance.DbIncidentState;
 import io.camunda.zeebe.engine.state.instance.DbJobState;
+import io.camunda.zeebe.engine.state.instance.DbRequestMetadataState;
 import io.camunda.zeebe.engine.state.instance.DbTimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.DbUserTaskState;
 import io.camunda.zeebe.engine.state.message.DbMessageCorrelationState;
@@ -68,6 +69,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.mutable.MutableRequestMetadataState;
 import io.camunda.zeebe.engine.state.mutable.MutableResourceState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
@@ -128,6 +130,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableBatchOperationState batchOperationState;
   private final MutableMembershipState membershipState;
   private final MutableUsageMetricState usageMetricState;
+  private final MutableRequestMetadataState requestMetadataState;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
   private final int partitionId;
 
@@ -185,6 +188,7 @@ public class ProcessingDbState implements MutableProcessingState {
     batchOperationState = new DbBatchOperationState(zeebeDb, transactionContext);
     membershipState = new DbMembershipState(zeebeDb, transactionContext);
     usageMetricState = new DbUsageMetricState(zeebeDb, transactionContext);
+    requestMetadataState = new DbRequestMetadataState(zeebeDb, transactionContext);
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
   }
 
@@ -364,6 +368,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableUsageMetricState getUsageMetricState() {
     return usageMetricState;
+  }
+
+  @Override
+  public MutableRequestMetadataState getRequestMetadataState() {
+    return requestMetadataState;
   }
 
   @Override

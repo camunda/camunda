@@ -36,7 +36,6 @@ public final class UserTaskUpdatedV2Applier
 
     // Clear operational data related to the current update transition
     userTaskState.deleteIntermediateState(key);
-    userTaskState.deleteRecordRequestMetadata(key);
 
     final var elementInstance = elementInstanceState.getInstance(value.getElementInstanceKey());
     if (elementInstance != null) {
