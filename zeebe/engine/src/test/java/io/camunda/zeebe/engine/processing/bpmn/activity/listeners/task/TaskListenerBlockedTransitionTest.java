@@ -27,8 +27,10 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
+import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
@@ -425,8 +427,19 @@ public class TaskListenerBlockedTransitionTest {
   }
 
   @Test
-  public void
-      shouldUpdateUserTaskAfterAllUpdatingTaskListenersAreExecutedTriggeredByVariableUpdate() {
+  public void shouldUpdateUserTaskAfterAllUpdatingListenersOnVariableUpdateWithLocalSemantic() {
+    verifyUserTaskUpdateAfterAllUpdatingListenersTriggeredByVariableUpdate(
+        VariableDocumentUpdateSemantic.LOCAL);
+  }
+
+  @Test
+  public void shouldUpdateUserTaskAfterAllUpdatingListenersOnVariableUpdateWithPropagateSemantic() {
+    verifyUserTaskUpdateAfterAllUpdatingListenersTriggeredByVariableUpdate(
+        VariableDocumentUpdateSemantic.PROPAGATE);
+  }
+
+  private void verifyUserTaskUpdateAfterAllUpdatingListenersTriggeredByVariableUpdate(
+      final VariableDocumentUpdateSemantic semantic) {
     // given
     final long processInstanceKey =
         helper.createProcessInstance(
@@ -447,7 +460,7 @@ public class TaskListenerBlockedTransitionTest {
         .variables()
         .ofScope(userTaskElementInstanceKey)
         .withDocument(Map.of("status", "APPROVED"))
-        .withLocalSemantic()
+        .withUpdateSemantic(semantic)
         .expectUpdating()
         .update();
     helper.completeJobs(processInstanceKey, listenerType, listenerType + "_2", listenerType + "_3");
@@ -486,25 +499,38 @@ public class TaskListenerBlockedTransitionTest {
             tuple(ValueType.USER_TASK, UserTaskIntent.UPDATED),
             tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATED));
 
+    if (semantic == VariableDocumentUpdateSemantic.LOCAL) {
+      verifyVariableCreated(
+          processInstanceKey, userTaskElementInstanceKey, "status", "\"APPROVED\"");
+    } else {
+      verifyVariableCreated(processInstanceKey, processInstanceKey, "status", "\"APPROVED\"");
+    }
+
     helper.assertUserTaskRecordWithIntent(
         processInstanceKey,
         UserTaskIntent.UPDATED,
         userTask ->
             Assertions.assertThat(userTask)
-                .hasAssignee(createdUserTask.getAssignee())
-                .hasCandidateGroupsList(createdUserTask.getCandidateGroupsList())
-                .hasCandidateUsersList(createdUserTask.getCandidateUsersList())
-                .hasDueDate(createdUserTask.getDueDate())
-                .hasFollowUpDate(createdUserTask.getFollowUpDate())
-                .hasPriority(createdUserTask.getPriority())
                 .hasVariables(Map.of("status", "APPROVED"))
-                .hasAction("")
-                .hasOnlyChangedAttributes(UserTaskRecord.VARIABLES));
+                .hasOnlyChangedAttributes(UserTaskRecord.VARIABLES)
+                .hasAction(""));
+  }
+
+  private static void verifyVariableCreated(
+      final long processInstanceKey, final long scopeKey, final String name, final String value) {
+    Assertions.assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasScopeKey(scopeKey)
+        .hasName(name)
+        .hasValue(value);
   }
 
   @Test
   public void
-      shouldUpdateUserTaskAfterAllUpdatingTaskListenersAreExecutedTriggeredByVariableUpdateWithEmptyDocument() {
+      shouldUpdateUserTaskAfterAllUpdatingTaskListenersAreExecutedTriggeredByVariableUpdateWithLocalSemanticAndEmptyDocument() {
     // given
     final long processInstanceKey =
         helper.createProcessInstance(

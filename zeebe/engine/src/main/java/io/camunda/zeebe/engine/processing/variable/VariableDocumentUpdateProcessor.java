@@ -48,9 +48,6 @@ public final class VariableDocumentUpdateProcessor
   private static final String INVALID_USER_TASK_STATE_MESSAGE =
       "Expected to trigger update transition for user task with key '%d', but it is in state '%s'";
 
-  private static final String USER_TASK_PROPAGATE_SEMANTIC_NOT_SUPPORTED =
-      "Expected to update variables for user task with key '%d', but updates with 'PROPAGATE' semantic are not supported yet.";
-
   private final ElementInstanceState elementInstanceState;
   private final MutableUserTaskState userTaskState;
   private final ProcessState processState;
@@ -115,15 +112,6 @@ public final class VariableDocumentUpdateProcessor
 
     if (isCamundaUserTask(scope)) {
       final long userTaskKey = scope.getUserTaskKey();
-      // Temporary check: to reject variable updates with 'PROPAGATE' semantic for a user task.
-      // This will be removed in the following PRs when support for propagation is implemented.
-      if (value.getUpdateSemantics() == VariableDocumentUpdateSemantic.PROPAGATE) {
-        final var reason = USER_TASK_PROPAGATE_SEMANTIC_NOT_SUPPORTED.formatted(userTaskKey);
-        writers.rejection().appendRejection(record, RejectionType.INVALID_ARGUMENT, reason);
-        writers.response().writeRejectionOnCommand(record, RejectionType.INVALID_ARGUMENT, reason);
-        return;
-      }
-
       final var lifecycleState = userTaskState.getLifecycleState(userTaskKey);
       if (lifecycleState != LifecycleState.CREATED) {
         final var reason = INVALID_USER_TASK_STATE_MESSAGE.formatted(userTaskKey, lifecycleState);
@@ -158,13 +146,28 @@ public final class VariableDocumentUpdateProcessor
         return;
       }
 
-      variableBehavior.mergeLocalDocument(
-          userTaskRecord.getElementInstanceKey(),
-          userTaskRecord.getProcessDefinitionKey(),
-          userTaskRecord.getProcessInstanceKey(),
-          userTaskRecord.getBpmnProcessIdBuffer(),
-          userTaskRecord.getTenantId(),
-          value.getVariablesBuffer());
+      switch (value.getUpdateSemantics()) {
+        case LOCAL ->
+            variableBehavior.mergeLocalDocument(
+                userTaskRecord.getElementInstanceKey(),
+                userTaskRecord.getProcessDefinitionKey(),
+                userTaskRecord.getProcessInstanceKey(),
+                userTaskRecord.getBpmnProcessIdBuffer(),
+                userTaskRecord.getTenantId(),
+                value.getVariablesBuffer());
+        case PROPAGATE ->
+            variableBehavior.mergeDocument(
+                userTaskRecord.getElementInstanceKey(),
+                userTaskRecord.getProcessDefinitionKey(),
+                userTaskRecord.getProcessInstanceKey(),
+                userTaskRecord.getBpmnProcessIdBuffer(),
+                userTaskRecord.getTenantId(),
+                value.getVariablesBuffer());
+        default ->
+            throw new IllegalStateException(
+                "Unexpected variable update semantic: '%s'. Expected either 'LOCAL' or 'PROPAGATE'."
+                    .formatted(value.getUpdateSemantics()));
+      }
 
       writers
           .state()

@@ -1015,40 +1015,8 @@ public final class CamundaUserTaskTest {
   }
 
   @Test
-  public void shouldRejectVariableUpdateWithPropagateSemanticForUserTask() {
-    // given
-    ENGINE.deployment().withXmlResource(process()).deploy();
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
-
-    final var createdUserTaskRecord =
-        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
-
-    // when: attempting to update variables with 'PROPAGATE' semantic for a user task instance
-    final var variableUpdateRejection =
-        ENGINE
-            .variables()
-            .ofScope(createdUserTaskRecord.getValue().getElementInstanceKey())
-            .withDocument(Map.of("approvalStatus", "SUBMITTED"))
-            .withPropagateSemantic()
-            .expectRejection()
-            .update();
-
-    // then
-    Assertions.assertThat(variableUpdateRejection)
-        .describedAs(
-            "Expect rejection when trying to update variables for a user task instance with 'PROPAGATE' semantic")
-        .hasRecordType(RecordType.COMMAND_REJECTION)
-        .hasValueType(ValueType.VARIABLE_DOCUMENT)
-        .hasRejectionReason(
-            "Expected to update variables for user task with key '%d', but updates with 'PROPAGATE' semantic are not supported yet."
-                .formatted(createdUserTaskRecord.getKey()));
-  }
-
-  @Test
   public void
-      shouldUpdateVariablesAndPassUserTaskUpdateTransitionWhenUserTaskHasNoUpdatingListeners() {
+      shouldUpdateLocalVariablesAndPassUserTaskUpdateTransitionWhenUserTaskHasNoUpdatingListeners() {
     // given
     ENGINE.deployment().withXmlResource(process()).deploy();
     final long processInstanceKey =
@@ -1089,6 +1057,60 @@ public final class CamundaUserTaskTest {
         .hasName("approvalStatus")
         .hasValue("\"SUBMITTED\"");
 
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.UPDATED))
+        .extracting(Record::getIntent, r -> r.getValue().getChangedAttributes())
+        .describedAs(
+            "Expect the user task to pass the update transition with variables as a changed attribute")
+        .containsSequence(
+            Tuple.tuple(UserTaskIntent.UPDATING, List.of(UserTaskRecord.VARIABLES)),
+            Tuple.tuple(UserTaskIntent.UPDATED, List.of(UserTaskRecord.VARIABLES)));
+  }
+
+  @Test
+  public void
+      shouldPropagateVariableUpdatesAndPassUserTaskUpdateTransitionWhenUserTaskHasNoUpdatingListeners() {
+    // given: a process with a user task and one process-level variable
+    ENGINE.deployment().withXmlResource(process()).deploy();
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("approvalStatus", "PENDING"))
+            .create();
+
+    final var createdUserTaskRecord =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when: updating a process-level variable and creating a new one using `PROPAGATE` semantic
+    ENGINE
+        .variables()
+        .ofScope(createdUserTaskRecord.getValue().getElementInstanceKey())
+        .withDocument(
+            Map.of(
+                "approvalStatus", "SUBMITTED",
+                "reviewerComment", "LGTM"))
+        .withPropagateSemantic()
+        .update();
+
+    // then: process-level variables should be updated/created accordingly
+    assertThat(
+            RecordingExporter.variableRecords().withProcessInstanceKey(processInstanceKey).limit(3))
+        .extracting(
+            Record::getIntent,
+            r -> r.getValue().getScopeKey(),
+            r -> r.getValue().getName(),
+            r -> r.getValue().getValue())
+        .contains(
+            tuple(VariableIntent.CREATED, processInstanceKey, "approvalStatus", "\"PENDING\""),
+            tuple(VariableIntent.UPDATED, processInstanceKey, "approvalStatus", "\"SUBMITTED\""),
+            tuple(VariableIntent.CREATED, processInstanceKey, "reviewerComment", "\"LGTM\""));
+
+    // and: user task should pass update transition with VARIABLES in changedAttributes
     assertThat(
             RecordingExporter.userTaskRecords()
                 .withProcessInstanceKey(processInstanceKey)
