@@ -29,6 +29,7 @@ import io.camunda.process.test.impl.configuration.CamundaContainerRuntimeConfigu
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
+import io.camunda.process.test.impl.proxy.CamundaProcessSpecRunnerProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.ZeebeClientProxy;
 import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
@@ -77,6 +78,7 @@ public class ExecutionListenerTest {
   @Mock private CamundaProcessTestContextProxy camundaProcessTestContextProxy;
   @Mock private CamundaManagementClient camundaManagementClient;
   @Mock private CamundaProcessTestResultCollector camundaProcessTestResultCollector;
+  @Mock private CamundaProcessSpecRunnerProxy camundaProcessSpecRunnerProxy;
 
   @Mock private TestContext testContext;
 
@@ -108,6 +110,8 @@ public class ExecutionListenerTest {
     when(applicationContext.getBean(ZeebeClientProxy.class)).thenReturn(zeebeClientProxy);
     when(applicationContext.getBean(CamundaProcessTestContextProxy.class))
         .thenReturn(camundaProcessTestContextProxy);
+    when(applicationContext.getBean(CamundaProcessSpecRunnerProxy.class))
+        .thenReturn(camundaProcessSpecRunnerProxy);
     when(applicationContext.getBean(CamundaContainerRuntimeConfiguration.class))
         .thenReturn(new CamundaContainerRuntimeConfiguration());
   }

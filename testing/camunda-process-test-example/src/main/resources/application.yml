@@ -1,0 +1,17 @@
+camunda:
+  client:
+    mode: self-managed
+    rest-address: http://localhost:8080
+    grpc-address: http://localhost:26500
+
+logging:
+  level:
+    root: info
+    io:
+      camunda:
+        process:
+          test: info
+    # Hide default logging from Testcontainers
+    org:
+      testcontainers: warn
+    tc: error
