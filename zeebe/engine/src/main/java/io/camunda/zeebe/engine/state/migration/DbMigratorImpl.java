@@ -27,6 +27,7 @@ import io.camunda.zeebe.engine.state.migration.to_8_6.OrderedCommandDistribution
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.stream.api.ClusterContext;
 import io.camunda.zeebe.util.VersionUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -64,34 +65,81 @@ public class DbMigratorImpl implements DbMigrator {
   // should be solved first, before adding any migration that can take a long time
   private final MutableMigrationTaskContext migrationTaskContext;
   private final List<MigrationTask> migrationTasks;
+<<<<<<< HEAD
 
   public DbMigratorImpl(
       final ClusterContext clusterContext, final MutableProcessingState processingState) {
     this(new MigrationTaskContextImpl(clusterContext, processingState), MIGRATION_TASKS);
+=======
+  private final String currentVersion;
+  private final boolean versionCheckRestrictionEnabled;
+
+  private int skippedMigrations = 0;
+
+  public DbMigratorImpl(
+      final boolean versionCheckRestrictionEnabled,
+      final ClusterContext clusterContext,
+      final MutableProcessingState processingState) {
+    this(
+        versionCheckRestrictionEnabled,
+        new MigrationTaskContextImpl(clusterContext, processingState),
+        MIGRATION_TASKS,
+        null);
+>>>>>>> 98eca57b (feat: skip running all migrations when zeebe is run for the first time)
   }
 
   public DbMigratorImpl(
       final MutableMigrationTaskContext migrationTaskContext,
       final List<MigrationTask> migrationTasks) {
+<<<<<<< HEAD
+=======
+    this(true, migrationTaskContext, migrationTasks, null);
+  }
+
+  @VisibleForTesting
+  public DbMigratorImpl(
+      final boolean versionCheckRestrictionEnabled,
+      final MutableMigrationTaskContext migrationTaskContext,
+      final List<MigrationTask> migrationTasks,
+      final String currentVersion) {
+    this.versionCheckRestrictionEnabled = versionCheckRestrictionEnabled;
+>>>>>>> 98eca57b (feat: skip running all migrations when zeebe is run for the first time)
     this.migrationTaskContext = migrationTaskContext;
     this.migrationTasks = migrationTasks;
+    this.currentVersion = currentVersion != null ? currentVersion : VersionUtil.getVersion();
   }
 
   @Override
   public void runMigrations() {
+<<<<<<< HEAD
     if (checkVersionCompatibility() instanceof Compatible.SameVersion) {
       LOGGER.info("No migrations to run, snapshot is the same as current version");
       return;
+=======
+    var runMigrations = true;
+    switch (checkVersionCompatibility()) {
+      case final Indeterminate.PreviousVersionUnknown unknown:
+        LOGGER.debug("Snapshot is empty, no migrations to run");
+        runMigrations = false;
+        break;
+      case final Compatible.SameVersion compatible:
+        LOGGER.debug("No migrations to run, snapshot is the same as current version");
+        return;
+      default:
+        break;
+>>>>>>> 98eca57b (feat: skip running all migrations when zeebe is run for the first time)
     }
     logPreview(migrationTasks);
 
     final var executedMigrations = new ArrayList<MigrationTask>();
-    for (int index = 1; index <= migrationTasks.size(); index++) {
-      // one based index looks nicer in logs
-      final var migration = migrationTasks.get(index - 1);
-      final var executed = handleMigrationTask(migration, index, migrationTasks.size());
-      if (executed) {
-        executedMigrations.add(migration);
+    if (runMigrations) {
+      for (int index = 1; index <= migrationTasks.size(); index++) {
+        // one based index looks nicer in logs
+        final var migration = migrationTasks.get(index - 1);
+        final var executed = handleMigrationTask(migration, index, migrationTasks.size());
+        if (executed) {
+          executedMigrations.add(migration);
+        }
       }
     }
     markMigrationsAsCompleted();
@@ -101,7 +149,6 @@ public class DbMigratorImpl implements DbMigrator {
   private VersionCompatibilityCheck.CheckResult checkVersionCompatibility() {
     final var migratedByVersion =
         migrationTaskContext.processingState().getMigrationState().getMigratedByVersion();
-    final var currentVersion = VersionUtil.getVersion();
     final CheckResult checkResult =
         VersionCompatibilityCheck.check(migratedByVersion, currentVersion);
     switch (checkResult) {
@@ -127,10 +174,7 @@ public class DbMigratorImpl implements DbMigrator {
   }
 
   private void markMigrationsAsCompleted() {
-    migrationTaskContext
-        .processingState()
-        .getMigrationState()
-        .setMigratedByVersion(VersionUtil.getVersion());
+    migrationTaskContext.processingState().getMigrationState().setMigratedByVersion(currentVersion);
   }
 
   private void logPreview(final List<MigrationTask> migrationTasks) {
