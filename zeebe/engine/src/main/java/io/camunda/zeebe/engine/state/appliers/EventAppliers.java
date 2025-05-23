@@ -460,4 +460,8 @@ public final class EventAppliers implements EventApplier {
 
     applierForVersion.applyState(key, value);
   }
+
+  public Map<Intent, Map<Integer, TypedEventApplier>> getRegisteredAppliers() {
+    return Map.copyOf(mapping);
+  }
 }
