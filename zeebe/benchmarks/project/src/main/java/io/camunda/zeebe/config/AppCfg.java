@@ -22,12 +22,14 @@ public class AppCfg {
   private int monitoringPort;
   private StarterCfg starter;
   private WorkerCfg worker;
+  private AuthenticationMode authenticationMode = AuthenticationMode.none;
+  private BasicAuthCfg basicAuth;
 
   public String getBrokerUrl() {
     return brokerUrl;
   }
 
-  public void setBrokerUrl(String brokerUrl) {
+  public void setBrokerUrl(final String brokerUrl) {
     this.brokerUrl = brokerUrl;
   }
 
@@ -43,7 +45,7 @@ public class AppCfg {
     return starter;
   }
 
-  public void setStarter(StarterCfg starter) {
+  public void setStarter(final StarterCfg starter) {
     this.starter = starter;
   }
 
@@ -51,7 +53,7 @@ public class AppCfg {
     return worker;
   }
 
-  public void setWorker(WorkerCfg worker) {
+  public void setWorker(final WorkerCfg worker) {
     this.worker = worker;
   }
 
@@ -59,7 +61,23 @@ public class AppCfg {
     return monitoringPort;
   }
 
-  public void setMonitoringPort(int monitoringPort) {
+  public void setMonitoringPort(final int monitoringPort) {
     this.monitoringPort = monitoringPort;
+  }
+
+  public AuthenticationMode getAuthenticationMode() {
+    return authenticationMode;
+  }
+
+  public void setAuthenticationMode(final AuthenticationMode authenticationMode) {
+    this.authenticationMode = authenticationMode;
+  }
+
+  public BasicAuthCfg getBasicAuth() {
+    return basicAuth;
+  }
+
+  public void setBasicAuth(final BasicAuthCfg basicAuth) {
+    this.basicAuth = basicAuth;
   }
 }

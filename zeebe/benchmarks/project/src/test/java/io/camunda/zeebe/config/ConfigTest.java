@@ -32,6 +32,13 @@ public class ConfigTest {
     assertThat(appCfg.getBrokerUrl()).isEqualTo("localhost:26500");
     assertThat(appCfg.isTls()).isFalse();
     assertThat(appCfg.getMonitoringPort()).isEqualTo(9600);
+    assertThat(appCfg.getAuthenticationMode()).isEqualTo(AuthenticationMode.none);
+
+    // basic auth
+    final var basicAuthCfg = appCfg.getBasicAuth();
+    assertThat(basicAuthCfg).isNotNull();
+    assertThat(basicAuthCfg.getUsername()).isEqualTo("demo");
+    assertThat(basicAuthCfg.getPassword()).isEqualTo("demo");
 
     // starter
     final var starterCfg = appCfg.getStarter();
@@ -79,6 +86,13 @@ public class ConfigTest {
     assertThat(appCfg.getBrokerUrl()).isEqualTo("localhost:26500");
     assertThat(appCfg.isTls()).isFalse();
     assertThat(appCfg.getMonitoringPort()).isEqualTo(9600);
+    assertThat(appCfg.getAuthenticationMode()).isEqualTo(AuthenticationMode.basic);
+
+    // basic auth
+    final var basicAuthCfg = appCfg.getBasicAuth();
+    assertThat(basicAuthCfg).isNotNull();
+    assertThat(basicAuthCfg.getUsername()).isEqualTo("zeebe");
+    assertThat(basicAuthCfg.getPassword()).isEqualTo("ebeez");
 
     // starter
     final var starterCfg = appCfg.getStarter();
