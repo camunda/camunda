@@ -16,7 +16,6 @@
 package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.CamundaClientBuilder;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
@@ -390,9 +389,9 @@ public class CamundaProcessTestExtension
     return this;
   }
 
-  public CamundaProcessTestExtension withCamundaClient(
-      final Supplier<CamundaClientBuilder> camundaClientBuilderSupplier) {
-    runtimeBuilder.withCamundaClientBuilder(camundaClientBuilderSupplier);
+  public CamundaProcessTestExtension withRemoteCamundaClientBuilderFactory(
+      final CamundaClientBuilderFactory camundaClientBuilderFactory) {
+    runtimeBuilder.withRemoteCamundaClientBuilderFactory(camundaClientBuilderFactory);
     return this;
   }
 

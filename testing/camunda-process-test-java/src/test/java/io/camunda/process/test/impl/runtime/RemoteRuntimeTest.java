@@ -22,10 +22,10 @@ import io.camunda.client.api.response.BrokerInfo;
 import io.camunda.client.api.response.PartitionBrokerHealth;
 import io.camunda.client.api.response.PartitionInfo;
 import io.camunda.client.api.response.Topology;
+import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaRuntimeMode;
 import java.net.URI;
 import java.util.Collections;
-import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -102,7 +102,7 @@ public class RemoteRuntimeTest {
     final URI camundaRestApiAddress = URI.create("http://camunda.com:1000");
     final URI camundaGrpcApiAddress = URI.create("http://camunda.com:2000");
 
-    final Supplier<CamundaClientBuilder> clientBuilderSupplier =
+    final CamundaClientBuilderFactory clientBuilderFactory =
         () ->
             CamundaClient.newClientBuilder()
                 .restAddress(camundaRestApiAddress)
@@ -112,14 +112,14 @@ public class RemoteRuntimeTest {
     final CamundaRuntime camundaRuntime =
         CamundaContainerRuntime.newBuilder()
             .withRuntimeMode(CamundaRuntimeMode.REMOTE)
-            .withCamundaClientBuilder(clientBuilderSupplier)
+            .withRemoteCamundaClientBuilderFactory(clientBuilderFactory)
             .build();
 
     // then
     assertThat(camundaRuntime.getCamundaRestApiAddress()).isEqualTo(camundaRestApiAddress);
     assertThat(camundaRuntime.getCamundaGrpcApiAddress()).isEqualTo(camundaGrpcApiAddress);
 
-    assertThat(camundaRuntime.getClientBuilderSupplier()).isEqualTo(clientBuilderSupplier);
+    assertThat(camundaRuntime.getCamundaClientBuilderFactory()).isEqualTo(clientBuilderFactory);
   }
 
   @Test
@@ -140,7 +140,7 @@ public class RemoteRuntimeTest {
     final CamundaRuntime camundaRuntime =
         CamundaContainerRuntime.newBuilder()
             .withRuntimeMode(CamundaRuntimeMode.REMOTE)
-            .withCamundaClientBuilder(() -> camundaClientBuilder)
+            .withRemoteCamundaClientBuilderFactory(() -> camundaClientBuilder)
             .build();
 
     // when/then
@@ -161,7 +161,7 @@ public class RemoteRuntimeTest {
     final CamundaRuntime camundaRuntime =
         CamundaContainerRuntime.newBuilder()
             .withRuntimeMode(CamundaRuntimeMode.REMOTE)
-            .withCamundaClientBuilder(() -> camundaClientBuilder)
+            .withRemoteCamundaClientBuilderFactory(() -> camundaClientBuilder)
             .build();
 
     // when/then

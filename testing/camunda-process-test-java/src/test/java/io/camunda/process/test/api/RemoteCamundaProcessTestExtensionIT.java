@@ -81,7 +81,7 @@ public class RemoteCamundaProcessTestExtensionIT {
     @Override
     public void beforeAll(final ExtensionContext context) {
       EXTENSION
-          .withCamundaClient(
+          .withRemoteCamundaClientBuilderFactory(
               () ->
                   CamundaClient.newClientBuilder()
                       .usePlaintext()

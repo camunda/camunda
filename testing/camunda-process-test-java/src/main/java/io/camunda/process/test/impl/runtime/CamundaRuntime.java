@@ -7,9 +7,8 @@
  */
 package io.camunda.process.test.impl.runtime;
 
-import io.camunda.client.CamundaClientBuilder;
+import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import java.net.URI;
-import java.util.function.Supplier;
 
 public interface CamundaRuntime extends AutoCloseable {
 
@@ -23,5 +22,5 @@ public interface CamundaRuntime extends AutoCloseable {
 
   URI getConnectorsRestApiAddress();
 
-  Supplier<CamundaClientBuilder> getClientBuilderSupplier();
+  CamundaClientBuilderFactory getCamundaClientBuilderFactory();
 }

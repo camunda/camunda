@@ -88,7 +88,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
       final CamundaRuntime camundaRuntime,
       final Consumer<AutoCloseable> clientCreationCallback,
       final CamundaManagementClient camundaManagementClient) {
-    camundaClientBuilderSupplier = camundaRuntime.getClientBuilderSupplier();
+    camundaClientBuilderSupplier = camundaRuntime.getCamundaClientBuilderFactory();
     camundaRestApiAddress = camundaRuntime.getCamundaRestApiAddress();
     camundaGrpcApiAddress = camundaRuntime.getCamundaGrpcApiAddress();
     connectorsRestApiAddress = camundaRuntime.getConnectorsRestApiAddress();

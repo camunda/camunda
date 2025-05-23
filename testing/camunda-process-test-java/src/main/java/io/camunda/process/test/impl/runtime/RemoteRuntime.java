@@ -13,6 +13,7 @@ import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.response.PartitionBrokerHealth;
 import io.camunda.client.api.response.PartitionInfo;
 import io.camunda.client.api.response.Topology;
+import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import java.net.URI;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -26,15 +27,15 @@ public class RemoteRuntime implements CamundaRuntime {
   private final URI camundaGrpcApiAddress;
   private final URI camundaMonitoringApiAddress;
   private final URI connectorsRestApiAddress;
-  private final Supplier<CamundaClientBuilder> camundaClientBuilderSupplier;
+  private final CamundaClientBuilderFactory camundaClientBuilderFactory;
 
   public RemoteRuntime(final CamundaContainerRuntimeBuilder runtimeBuilder) {
-    camundaClientBuilderSupplier = runtimeBuilder.getCamundaClientBuilderSupplier();
+    camundaClientBuilderFactory = runtimeBuilder.getRemoteCamundaClientBuilderFactory();
     camundaMonitoringApiAddress = runtimeBuilder.getRemoteCamundaMonitoringApiAddress();
     connectorsRestApiAddress = runtimeBuilder.getRemoteConnectorsRestApiAddress();
 
     final CamundaClientConfiguration clientConfiguration =
-        getClientConfiguration(camundaClientBuilderSupplier);
+        getClientConfiguration(camundaClientBuilderFactory);
     camundaRestApiAddress = clientConfiguration.getRestAddress();
     camundaGrpcApiAddress = clientConfiguration.getGrpcAddress();
   }
@@ -74,12 +75,12 @@ public class RemoteRuntime implements CamundaRuntime {
   }
 
   @Override
-  public Supplier<CamundaClientBuilder> getClientBuilderSupplier() {
-    return camundaClientBuilderSupplier;
+  public CamundaClientBuilderFactory getCamundaClientBuilderFactory() {
+    return camundaClientBuilderFactory;
   }
 
   private void checkConnectionToRemoteRuntime() {
-    try (final CamundaClient camundaClient = getClientBuilderSupplier().get().build()) {
+    try (final CamundaClient camundaClient = getCamundaClientBuilderFactory().get().build()) {
       final Topology topology = camundaClient.newTopologyRequest().send().join();
 
       final boolean isHealthy =

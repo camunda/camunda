@@ -246,7 +246,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     final CamundaClientBuilderFactory camundaClientBuilderFactory =
         testContext.getApplicationContext().getBean(CamundaClientBuilderFactory.class);
-    containerRuntimeBuilder.withCamundaClientBuilder(camundaClientBuilderFactory);
+    containerRuntimeBuilder.withRemoteCamundaClientBuilderFactory(camundaClientBuilderFactory);
 
     return containerRuntimeBuilder.build();
   }

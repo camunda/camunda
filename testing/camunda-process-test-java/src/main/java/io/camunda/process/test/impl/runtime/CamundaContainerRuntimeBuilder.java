@@ -16,7 +16,7 @@
 package io.camunda.process.test.impl.runtime;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.CamundaClientBuilder;
+import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaRuntimeMode;
 import io.camunda.process.test.impl.containers.ContainerFactory;
 import java.net.URI;
@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 
 public class CamundaContainerRuntimeBuilder {
 
@@ -57,14 +56,10 @@ public class CamundaContainerRuntimeBuilder {
   private boolean connectorsEnabled = false;
   private final Map<String, String> connectorsSecrets = new HashMap<>();
 
-  private Supplier<CamundaClientBuilder> camundaClientBuilderSupplier =
-      () -> CamundaClient.newClientBuilder().usePlaintext();
-
   private CamundaRuntimeMode runtimeMode = CamundaRuntimeMode.MANAGED;
 
-  private CamundaClient remoteCamundaClient =
-      CamundaClient.newClientBuilder().usePlaintext().build();
-
+  private CamundaClientBuilderFactory remoteCamundaClientBuilderFactory =
+      () -> CamundaClient.newClientBuilder().usePlaintext();
   private URI remoteCamundaMonitoringApiAddress =
       URI.create(ContainerRuntimeDefaults.LOCAL_CAMUNDA_MONITORING_API_ADDRESS);
   private URI remoteConnectorsRestApiAddress =
@@ -196,9 +191,9 @@ public class CamundaContainerRuntimeBuilder {
     return this;
   }
 
-  public CamundaContainerRuntimeBuilder withCamundaClientBuilder(
-      final Supplier<CamundaClientBuilder> camundaClientBuilderSupplier) {
-    this.camundaClientBuilderSupplier = camundaClientBuilderSupplier;
+  public CamundaContainerRuntimeBuilder withRemoteCamundaClientBuilderFactory(
+      final CamundaClientBuilderFactory remoteCamundaClientBuilderFactory) {
+    this.remoteCamundaClientBuilderFactory = remoteCamundaClientBuilderFactory;
     return this;
   }
 
@@ -211,12 +206,6 @@ public class CamundaContainerRuntimeBuilder {
   public CamundaContainerRuntimeBuilder withRemoteConnectorsRestApiAddress(
       final String remoteConnectorsRestApiAddress) {
     this.remoteConnectorsRestApiAddress = URI.create(remoteConnectorsRestApiAddress);
-    return this;
-  }
-
-  public CamundaContainerRuntimeBuilder withRemoteCamundaClient(
-      final CamundaClient remoteCamundaClient) {
-    this.remoteCamundaClient = remoteCamundaClient;
     return this;
   }
 
@@ -307,8 +296,8 @@ public class CamundaContainerRuntimeBuilder {
     return runtimeMode;
   }
 
-  public Supplier<CamundaClientBuilder> getCamundaClientBuilderSupplier() {
-    return camundaClientBuilderSupplier;
+  public CamundaClientBuilderFactory getRemoteCamundaClientBuilderFactory() {
+    return remoteCamundaClientBuilderFactory;
   }
 
   public URI getRemoteCamundaMonitoringApiAddress() {
@@ -317,9 +306,5 @@ public class CamundaContainerRuntimeBuilder {
 
   public URI getRemoteConnectorsRestApiAddress() {
     return remoteConnectorsRestApiAddress;
-  }
-
-  public CamundaClient getRemoteCamundaClient() {
-    return remoteCamundaClient;
   }
 }
