@@ -188,6 +188,14 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
           distributeToPartition(partition, distributionRecord, distributionKey);
         });
 
+    // Scale up is in progress, enqueue upcoming distributions for the new partitions
+    if (routingInfo.desiredPartitions().size() > routingInfo.partitions().size()) {
+      routingInfo.desiredPartitions().stream()
+          .filter(this::isPartitionScaling)
+          .forEach(
+              partition -> distributeToPartition(partition, distributionRecord, distributionKey));
+    }
+
     getMetrics().startedDistribution();
     getMetrics().addActiveDistribution();
   }
