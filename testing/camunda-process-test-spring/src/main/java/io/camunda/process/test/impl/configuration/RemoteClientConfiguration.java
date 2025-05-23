@@ -9,29 +9,32 @@ package io.camunda.process.test.impl.configuration;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
-import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
-import io.camunda.client.api.JsonMapper;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
-import io.camunda.spring.client.configuration.CamundaClientConfigurationImpl;
-import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
+import io.camunda.spring.client.configuration.CredentialsProviderConfiguration;
 import io.camunda.spring.client.properties.CamundaClientAuthProperties;
 import io.camunda.spring.client.properties.CamundaClientCloudProperties;
 import io.camunda.spring.client.properties.CamundaClientProperties;
 import io.camunda.spring.client.properties.CamundaClientProperties.ClientMode;
-import io.grpc.ClientInterceptor;
-import java.util.List;
-import org.apache.hc.client5.http.async.AsyncExecChainHandler;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 @Configuration
 public class RemoteClientConfiguration {
 
   @Bean
+  @Primary
+  @ConfigurationProperties(prefix = "io.camunda.process.test.remote.client")
+  CamundaClientProperties remoteClientProperties() {
+    return new CamundaClientProperties();
+  }
+
+  @Bean
   public CamundaClientBuilderFactory remoteClientBuilderFactory(
-      final CamundaClientProperties remoteClientProperties,
-      final CamundaClientConfiguration remoteClientConfiguration) {
+      @Qualifier("remoteClientProperties") final CamundaClientProperties remoteClientProperties) {
 
     final CamundaClientBuilder remoteClientBuilder =
         createRemoteClientBuilder(remoteClientProperties);
@@ -43,12 +46,6 @@ public class RemoteClientConfiguration {
       remoteClientBuilder.grpcAddress(remoteClientProperties.getGrpcAddress());
     }
 
-    if (remoteClientConfiguration.isPlaintextConnectionEnabled()) {
-      remoteClientBuilder.usePlaintext();
-    } else {
-      remoteClientBuilder.credentialsProvider(remoteClientConfiguration.getCredentialsProvider());
-    }
-
     return () -> remoteClientBuilder;
   }
 
@@ -58,31 +55,19 @@ public class RemoteClientConfiguration {
       final CamundaClientCloudProperties cloudProperties = camundaClientProperties.getCloud();
       final CamundaClientAuthProperties authProperties = camundaClientProperties.getAuth();
 
+      final CredentialsProvider credentialsProvider =
+          new CredentialsProviderConfiguration()
+              .camundaClientCredentialsProvider(camundaClientProperties);
+
       return CamundaClient.newCloudClientBuilder()
           .withClusterId(cloudProperties.getClusterId())
           .withClientId(authProperties.getClientId())
           .withClientSecret(authProperties.getClientSecret())
-          .withRegion(cloudProperties.getRegion());
+          .withRegion(cloudProperties.getRegion())
+          .credentialsProvider(credentialsProvider);
 
     } else {
-      return CamundaClient.newClientBuilder();
+      return CamundaClient.newClientBuilder().usePlaintext();
     }
-  }
-
-  @Bean
-  public CamundaClientConfiguration remoteCamundaClientConfiguration(
-      final CamundaClientProperties remoteClientProperties,
-      final JsonMapper jsonMapper,
-      final List<ClientInterceptor> interceptors,
-      final List<AsyncExecChainHandler> chainHandlers,
-      final CamundaClientExecutorService camundaClientExecutorService,
-      final CredentialsProvider camundaClientCredentialsProvider) {
-    return new CamundaClientConfigurationImpl(
-        remoteClientProperties,
-        jsonMapper,
-        interceptors,
-        chainHandlers,
-        camundaClientExecutorService,
-        camundaClientCredentialsProvider);
   }
 }

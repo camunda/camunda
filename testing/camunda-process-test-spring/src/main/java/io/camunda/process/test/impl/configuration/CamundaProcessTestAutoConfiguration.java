@@ -16,7 +16,6 @@
 package io.camunda.process.test.impl.configuration;
 
 import io.camunda.spring.client.configuration.CamundaAutoConfiguration;
-import io.camunda.spring.client.configuration.CredentialsProviderConfiguration;
 import io.camunda.spring.client.testsupport.CamundaSpringProcessTestContext;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
@@ -29,8 +28,7 @@ import org.springframework.context.annotation.Bean;
   CamundaProcessTestDefaultConfiguration.class,
   CamundaAutoConfiguration.class,
   CamundaContainerRuntimeConfiguration.class,
-  RemoteClientConfiguration.class,
-  CredentialsProviderConfiguration.class
+  RemoteClientConfiguration.class
 })
 @AutoConfigureBefore(CamundaAutoConfiguration.class)
 public class CamundaProcessTestAutoConfiguration {
