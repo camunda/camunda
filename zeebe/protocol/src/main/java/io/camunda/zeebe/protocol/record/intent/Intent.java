@@ -74,6 +74,7 @@ public interface Intent {
           BatchOperationIntent.class,
           BatchOperationChunkIntent.class,
           BatchOperationExecutionIntent.class,
+          UsageMetricIntent.class,
           AdHocSubProcessActivityActivationIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
@@ -192,6 +193,8 @@ public interface Intent {
         return BatchOperationChunkIntent.from(intent);
       case BATCH_OPERATION_LIFECYCLE_MANAGEMENT:
         return BatchOperationIntent.from(intent);
+      case USAGE_METRIC:
+        return UsageMetricIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
