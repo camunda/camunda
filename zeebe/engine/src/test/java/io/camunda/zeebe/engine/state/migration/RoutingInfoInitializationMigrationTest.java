@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ProcessingStateExtension.class)
-final class RoutingInfoMigrationTest {
+final class RoutingInfoInitializationMigrationTest {
   @SuppressWarnings("unused")
   private MutableProcessingState processingState;
 
@@ -27,7 +27,7 @@ final class RoutingInfoMigrationTest {
     final var clusterContext = new ClusterContextImpl(3);
 
     // when
-    final var migration = new RoutingInfoMigration();
+    final var migration = new RoutingInfoInitializationMigration();
     final var context = new MigrationTaskContextImpl(clusterContext, processingState);
     migration.runMigration(context);
 
@@ -40,7 +40,7 @@ final class RoutingInfoMigrationTest {
   void shouldNotRunMigrationAgain() {
     // given
     final var clusterContext = new ClusterContextImpl(3);
-    final var migration = new RoutingInfoMigration();
+    final var migration = new RoutingInfoInitializationMigration();
     final var context = new MigrationTaskContextImpl(clusterContext, processingState);
 
     // when
@@ -54,7 +54,7 @@ final class RoutingInfoMigrationTest {
   void shouldInitializeRoutingInfo() {
     // given
     final var clusterContext = new ClusterContextImpl(3);
-    final var migration = new RoutingInfoMigration();
+    final var migration = new RoutingInfoInitializationMigration();
     final var context = new MigrationTaskContextImpl(clusterContext, processingState);
 
     // when
@@ -66,5 +66,14 @@ final class RoutingInfoMigrationTest {
     assertThat(updatedRoutingState.currentPartitions()).containsExactlyInAnyOrder(1, 2, 3);
     assertThat(updatedRoutingState.messageCorrelation())
         .isEqualTo(new MessageCorrelation.HashMod(3));
+  }
+
+  @Test
+  void shouldBeAnInitialization() {
+    // given
+    final var migration = new RoutingInfoInitializationMigration();
+
+    // when/then
+    assertThat(migration.isInitialization()).isTrue();
   }
 }
