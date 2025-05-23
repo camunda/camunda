@@ -209,13 +209,7 @@ public final class ProcessInstanceServices
 
   public CompletableFuture<BatchOperationCreationRecord>
       cancelProcessInstanceBatchOperationWithResult(final ProcessInstanceFilter filter) {
-    final var rootInstanceFilter =
-        filter.toBuilder()
-            // It is only possible to cancel root processes in zeebe,
-            // whereby zeebe then automatically cancels the sub-processes.
-            .parentProcessInstanceKeyOperations(Operation.exists(false))
-            .states(ProcessInstanceState.ACTIVE.name())
-            .build();
+    final var rootInstanceFilter = filter.toBuilder().build();
 
     final var brokerRequest =
         new BrokerCreateBatchOperationRequest()
