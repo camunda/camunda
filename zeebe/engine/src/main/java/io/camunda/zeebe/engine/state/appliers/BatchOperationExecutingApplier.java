@@ -23,6 +23,6 @@ public class BatchOperationExecutingApplier
 
   @Override
   public void applyState(final long key, final BatchOperationExecutionRecord value) {
-    batchOperationState.removeItemKeys(value.getBatchOperationKey(), value.getItemKeys());
+    batchOperationState.removeItemKey(value.getBatchOperationKey(), value.getItemKey());
   }
 }

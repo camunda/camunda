@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
-import java.util.List;
 import java.util.Optional;
 
 public interface BatchOperationState {
@@ -19,7 +18,7 @@ public interface BatchOperationState {
 
   void foreachPendingBatchOperation(BatchOperationVisitor visitor);
 
-  List<Long> getNextItemKeys(long batchOperationKey, int batchSize);
+  Optional<Long> getNextItemKey(long batchOperationKey);
 
   @FunctionalInterface
   interface BatchOperationVisitor {
