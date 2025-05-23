@@ -34,7 +34,11 @@ public class DecisionInstanceTemplate extends AbstractTemplateDescriptor
   public static final String DECISION_VERSION = "decisionVersion";
   public static final String DECISION_TYPE = "decisionType";
   public static final String EVALUATION_DATE = "evaluationDate";
+
+  @Deprecated(since = "8.6.16") // use EVALUATION_FAILURE_MESSAGE instead
   public static final String EVALUATION_FAILURE = "evaluationFailure";
+
+  public static final String EVALUATION_FAILURE_MESSAGE = "evaluationFailureMessage";
   public static final String RESULT = "result";
   public static final String EVALUATED_INPUTS = "evaluatedInputs";
   public static final String EVALUATED_OUTPUTS = "evaluatedOutputs";
