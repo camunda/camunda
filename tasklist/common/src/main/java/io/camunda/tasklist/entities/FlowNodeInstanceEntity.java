@@ -57,8 +57,9 @@ public class FlowNodeInstanceEntity extends TasklistZeebeEntity<FlowNodeInstance
     return state;
   }
 
-  public void setState(final FlowNodeState state) {
+  public FlowNodeInstanceEntity setState(final FlowNodeState state) {
     this.state = state;
+    return this;
   }
 
   @Override
