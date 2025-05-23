@@ -78,7 +78,7 @@
     "@types/lodash": "4.17.17",
     "@types/mixpanel-browser": "2.50.2",
     "@types/node": "20.16.15",
-    "@types/react": "18.3.21",
+    "@types/react": "18.3.22",
     "@types/react-dom": "18.3.7",
     "@types/react-transition-group": "4.4.12",
     "cross-env": "^7.0.3",
