@@ -12,7 +12,7 @@ import java.nio.ByteBuffer;
 import java.util.Iterator;
 
 /**
- * Represents a snapshot chunk reader, which means it is used to chunk an {@link PersistedSnapshot}
+ * Represents a snapshot chunk reader, which means it is used to chunk a {@link PersistedSnapshot}
  * and read it from it's persisted storage.
  */
 public interface SnapshotChunkReader extends Iterator<SnapshotChunk>, CloseableSilently {

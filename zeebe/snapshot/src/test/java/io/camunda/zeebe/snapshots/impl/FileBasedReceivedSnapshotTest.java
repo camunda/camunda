@@ -27,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Clock;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.Assertions;
@@ -52,6 +53,8 @@ public class FileBasedReceivedSnapshotTest {
   private FileBasedSnapshotStore receiverSnapshotStore;
   private Path receiverPendingDir;
   private Path receiverSnapshotsDir;
+  private Path reservationsDirectory;
+  private final Clock clock = Clock.systemUTC();
 
   @Before
   public void beforeEach() throws Exception {
@@ -62,6 +65,7 @@ public class FileBasedReceivedSnapshotTest {
 
     final var senderRoot = temporaryFolder.newFolder("sender").toPath();
     senderSnapshotStore = createStore(senderRoot);
+    reservationsDirectory = senderRoot.resolve(FileBasedSnapshotStoreImpl.RESERVATIONS_DIRECTORY);
   }
 
   @Test
@@ -164,11 +168,13 @@ public class FileBasedReceivedSnapshotTest {
         new FileBasedSnapshot(
             persistedSnapshot.getDirectory(),
             persistedSnapshot.getChecksumPath(),
+            reservationsDirectory,
             new SfvChecksumImpl(),
             persistedSnapshot.getSnapshotId(),
             null,
             s -> {},
-            null);
+            null,
+            clock);
 
     // when
     final var receivedSnapshot = receiveSnapshot(corruptedSnapshot);

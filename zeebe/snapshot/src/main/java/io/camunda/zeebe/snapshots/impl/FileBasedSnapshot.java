@@ -12,6 +12,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.PersistedSnapshotReservation;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.SnapshotMetadata;
@@ -21,8 +22,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.Set;
+import java.time.InstantSource;
+import java.util.UUID;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,20 +39,20 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   private final FileBasedSnapshotId snapshotId;
   private final SnapshotMetadata metadata;
   private final Consumer<FileBasedSnapshot> onSnapshotDeleted;
-
-  private final Set<FileBasedSnapshotReservation> reservations = new HashSet<>();
   private final ConcurrencyControl actor;
-
+  private final FileBasedSnapshotReservationStore reservations;
   private boolean deleted = false;
 
   FileBasedSnapshot(
       final Path directory,
       final Path checksumFile,
+      final Path reservationDirectory,
       final ImmutableChecksumsSFV checksums,
       final FileBasedSnapshotId snapshotId,
       final SnapshotMetadata metadata,
       final Consumer<FileBasedSnapshot> onSnapshotDeleted,
-      final ConcurrencyControl actor) {
+      final ConcurrencyControl actor,
+      final InstantSource clock) {
     this.directory = directory;
     this.checksumFile = checksumFile;
     this.checksums = checksums;
@@ -59,6 +60,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
     this.metadata = metadata;
     this.onSnapshotDeleted = onSnapshotDeleted;
     this.actor = actor;
+    reservations = new FileBasedSnapshotReservationStore(this, reservationDirectory, actor, clock);
   }
 
   public FileBasedSnapshotId getSnapshotId() {
@@ -67,6 +69,10 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
 
   public Path getDirectory() {
     return directory;
+  }
+
+  public Path getReservationsPath() {
+    return reservations.path();
   }
 
   @Override
@@ -130,8 +136,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
     actor.run(
         () -> {
           if (!deleted) {
-            final FileBasedSnapshotReservation reservation = new FileBasedSnapshotReservation(this);
-            reservations.add(reservation);
+            final var reservation = reservations.inMemoryReservation();
             snapshotLocked.complete(reservation);
           } else {
             snapshotLocked.completeExceptionally(
@@ -144,8 +149,41 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   }
 
   @Override
+  public ActorFuture<PersistedSnapshotReservation> reserveWithPersistence(
+      final UUID id, final long validUntil, final PersistedSnapshotReservation.Reason reason) {
+    final CompletableActorFuture<PersistedSnapshotReservation> snapshotLocked =
+        new CompletableActorFuture<>();
+    actor.run(
+        () -> {
+          if (!deleted) {
+            try {
+              final var reservation = reservations.persistedReservation(id, validUntil, reason);
+              snapshotLocked.complete(reservation);
+            } catch (final IOException e) {
+              snapshotLocked.completeExceptionally(e);
+            }
+          } else {
+            snapshotLocked.completeExceptionally(
+                new SnapshotNotFoundException(
+                    String.format(
+                        "Expected to reserve snapshot %s, but snapshot is deleted.", getId())));
+          }
+        });
+    return snapshotLocked;
+  }
+
+  @Override
+  public ActorFuture<PersistedSnapshotReservation> getPersistedSnapshotReservation(final UUID id) {
+    try {
+      return CompletableActorFuture.completed(reservations.getPersistedSnapshotReservation(id));
+    } catch (final Exception e) {
+      return CompletableActorFuture.completedExceptionally(e);
+    }
+  }
+
+  @Override
   public boolean isReserved() {
-    return !reservations.isEmpty();
+    return reservations.isReserved();
   }
 
   void delete() {
@@ -154,6 +192,11 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
       Files.deleteIfExists(checksumFile);
     } catch (final IOException e) {
       LOGGER.warn("Failed to delete snapshot checksum file {}", checksumFile, e);
+    }
+    try {
+      Files.deleteIfExists(reservations.path());
+    } catch (final IOException e) {
+      LOGGER.warn("Failed to delete snapshot reservation file {}", reservations.path(), e);
     }
 
     try {
@@ -209,13 +252,5 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
         + ", metadata="
         + metadata
         + '}';
-  }
-
-  ActorFuture<Void> removeReservation(final FileBasedSnapshotReservation reservation) {
-    return actor.call(
-        () -> {
-          reservations.remove(reservation);
-          return null;
-        });
   }
 }

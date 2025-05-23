@@ -14,6 +14,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
+import java.time.Clock;
 
 public final class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
 
@@ -30,7 +31,8 @@ public final class SnapshotStoreStep implements StartupStep<PartitionStartupCont
             context.partitionMetadata().id().id(),
             context.partitionDirectory(),
             new ChecksumProviderRocksDBImpl(),
-            context.partitionMeterRegistry());
+            context.partitionMeterRegistry(),
+            Clock.systemUTC());
 
     var result =
         context

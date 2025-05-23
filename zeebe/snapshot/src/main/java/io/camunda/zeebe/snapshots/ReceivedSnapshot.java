@@ -23,7 +23,7 @@ public interface ReceivedSnapshot extends PersistableSnapshot {
   long index();
 
   /**
-   * Applies the next {@link SnapshotChunk} to the snapshot. Based on the implementation the chunk
+   * Applies the next {@link SnapshotChunk} to the snapshot. Based on the implementation, the chunk
    * can be validated before applied to the snapshot. In case of failure, the future will be
    * completed with a SnapshotWriteException.
    *
