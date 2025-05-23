@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.interceptors.impl;
 
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.security.auth.OidcPrincipalLoader;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.util.Either;
@@ -46,6 +47,7 @@ public sealed interface AuthenticationHandler {
     public static final String BEARER_PREFIX = "Bearer ";
     private final JwtDecoder jwtDecoder;
     private final OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
+    private final OidcPrincipalLoader oidcPrincipalLoader;
 
     public Oidc(
         final JwtDecoder jwtDecoder,
@@ -53,6 +55,10 @@ public sealed interface AuthenticationHandler {
       this.jwtDecoder = Objects.requireNonNull(jwtDecoder);
       this.oidcAuthenticationConfiguration =
           Objects.requireNonNull(oidcAuthenticationConfiguration);
+      oidcPrincipalLoader =
+          new OidcPrincipalLoader(
+              oidcAuthenticationConfiguration.getUsernameClaim(),
+              oidcAuthenticationConfiguration.getClientIdClaim());
     }
 
     @Override
@@ -73,38 +79,18 @@ public sealed interface AuthenticationHandler {
                 .withCause(e));
       }
 
-      final var username =
-          token.getClaims().get(oidcAuthenticationConfiguration.getUsernameClaim());
-
-      if (username != null) {
-        if (username instanceof String) {
-          return Either.right(
-              Context.current()
-                  .withValue(USERNAME, username.toString())
-                  .withValue(USER_CLAIMS, token.getClaims()));
-        } else {
-          return Either.left(
-              Status.UNAUTHENTICATED.augmentDescription(
-                  CONFIGURED_CLAIM_NOT_A_STRING.formatted(
-                      "username", oidcAuthenticationConfiguration.getUsernameClaim())));
-        }
+      final var principals = oidcPrincipalLoader.load(token.getClaims());
+      if (principals.username() != null) {
+        return Either.right(
+            Context.current()
+                .withValue(USERNAME, principals.username())
+                .withValue(USER_CLAIMS, token.getClaims()));
       }
-
-      final var clientId =
-          token.getClaims().get(oidcAuthenticationConfiguration.getClientIdClaim());
-
-      if (clientId != null) {
-        if (clientId instanceof String) {
-          return Either.right(
-              Context.current()
-                  .withValue(CLIENT_ID, clientId.toString())
-                  .withValue(USER_CLAIMS, token.getClaims()));
-        } else {
-          return Either.left(
-              Status.UNAUTHENTICATED.augmentDescription(
-                  CONFIGURED_CLAIM_NOT_A_STRING.formatted(
-                      "client id", oidcAuthenticationConfiguration.getClientIdClaim())));
-        }
+      if (principals.clientId() != null) {
+        return Either.right(
+            Context.current()
+                .withValue(CLIENT_ID, principals.clientId())
+                .withValue(USER_CLAIMS, token.getClaims()));
       }
 
       return Either.left(
