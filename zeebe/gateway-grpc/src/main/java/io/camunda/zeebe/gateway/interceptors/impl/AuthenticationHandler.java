@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.interceptors.impl;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.security.auth.OidcPrincipalLoader;
+import io.camunda.security.auth.OidcPrincipalLoader.OidcPrincipals;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.util.Either;
@@ -79,7 +80,15 @@ public sealed interface AuthenticationHandler {
                 .withCause(e));
       }
 
-      final var principals = oidcPrincipalLoader.load(token.getClaims());
+      final OidcPrincipals principals;
+      try {
+        principals = oidcPrincipalLoader.load(token.getClaims());
+      } catch (final Exception e) {
+        return Either.left(
+            Status.UNAUTHENTICATED
+                .augmentDescription("Failed to load OIDC principals, see cause for details")
+                .withCause(e));
+      }
       if (principals.username() != null) {
         return Either.right(
             Context.current()
