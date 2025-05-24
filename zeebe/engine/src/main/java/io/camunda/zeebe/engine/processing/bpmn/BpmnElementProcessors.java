@@ -33,6 +33,7 @@ import io.camunda.zeebe.engine.processing.bpmn.task.ScriptTaskProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.task.UndefinedTaskProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.task.UserTaskProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.EnumMap;
 import java.util.Map;
@@ -45,6 +46,7 @@ public final class BpmnElementProcessors {
   public BpmnElementProcessors(
       final BpmnBehaviors bpmnBehaviors,
       final BpmnStateTransitionBehavior stateTransitionBehavior,
+      final ProcessingState processingState,
       final EngineConfiguration config) {
     // tasks
     processors.put(
@@ -86,7 +88,8 @@ public final class BpmnElementProcessors {
 
     // containers
     processors.put(
-        BpmnElementType.PROCESS, new ProcessProcessor(bpmnBehaviors, stateTransitionBehavior));
+        BpmnElementType.PROCESS,
+        new ProcessProcessor(bpmnBehaviors, stateTransitionBehavior, processingState));
     processors.put(
         BpmnElementType.SUB_PROCESS,
         new SubProcessProcessor(bpmnBehaviors, stateTransitionBehavior));

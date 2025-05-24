@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFa
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.EventApplier;
+import io.camunda.zeebe.engine.state.TriggeringRecordMetadata;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
@@ -105,7 +106,11 @@ public class Engine implements RecordProcessor {
   @Override
   public void replay(final TypedRecord event) {
     eventApplier.applyState(
-        event.getKey(), event.getIntent(), event.getValue(), event.getRecordVersion());
+        event.getKey(),
+        event.getIntent(),
+        event.getValue(),
+        event.getRecordVersion(),
+        TriggeringRecordMetadata.from(event));
   }
 
   @Override

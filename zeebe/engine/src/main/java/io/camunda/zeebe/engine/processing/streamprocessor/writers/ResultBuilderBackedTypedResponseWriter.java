@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
+import io.camunda.zeebe.engine.state.TriggeringRecordMetadata;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -91,13 +92,22 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
       final Intent eventState,
       final UnpackedObject eventValue,
       final TypedRecord<?> command) {
+    writeResponse(eventKey, eventState, eventValue, TriggeringRecordMetadata.from(command));
+  }
+
+  @Override
+  public void writeResponse(
+      final long eventKey,
+      final Intent eventState,
+      final UnpackedObject eventValue,
+      final TriggeringRecordMetadata metadata) {
     writeResponse(
         eventKey,
         eventState,
         eventValue,
-        command.getValueType(),
-        command.getRequestId(),
-        command.getRequestStreamId());
+        metadata.getValueType(),
+        metadata.getRequestId(),
+        metadata.getRequestStreamId());
   }
 
   @Override

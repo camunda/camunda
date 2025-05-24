@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 import io.camunda.zeebe.engine.state.EventApplier;
+import io.camunda.zeebe.engine.state.TriggeringRecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -38,22 +39,26 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
 
   @Override
   public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
-    final int latestVersion = eventApplier.getLatestVersion(intent);
-    appendFollowUpEvent(key, intent, value, latestVersion);
+    appendFollowUpEvent(key, intent, value, TriggeringRecordMetadata.empty());
   }
 
   @Override
   public void appendFollowUpEvent(
-      final long key, final Intent intent, final RecordValue value, final int recordVersion) {
-    final var metadata =
+      final long key,
+      final Intent intent,
+      final RecordValue value,
+      final TriggeringRecordMetadata metadata) {
+    final int latestVersion = eventApplier.getLatestVersion(intent);
+    final var eventMetadata =
         new RecordMetadata()
             .recordType(RecordType.EVENT)
             .intent(intent)
-            .recordVersion(recordVersion)
+            .recordVersion(latestVersion)
             .rejectionType(RejectionType.NULL_VAL)
-            .rejectionReason("");
-    resultBuilder().appendRecord(key, value, metadata);
-    eventApplier.applyState(key, intent, value, recordVersion);
+            .rejectionReason("")
+            .operationReference(metadata.getOperationReference());
+    resultBuilder().appendRecord(key, value, eventMetadata);
+    eventApplier.applyState(key, intent, value, latestVersion, metadata);
   }
 
   @Override

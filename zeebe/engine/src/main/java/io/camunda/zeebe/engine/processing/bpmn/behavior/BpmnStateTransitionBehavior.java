@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSeq
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.TriggeringRecordMetadata;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -32,7 +33,9 @@ import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public final class BpmnStateTransitionBehavior {
   private static final String ALREADY_MIGRATED_ERROR_MSG =
@@ -237,6 +240,12 @@ public final class BpmnStateTransitionBehavior {
    * @return context with updated intent
    */
   public BpmnElementContext transitionToTerminating(final BpmnElementContext context) {
+    return transitionToTerminating(context, Optional::empty);
+  }
+
+  public BpmnElementContext transitionToTerminating(
+      final BpmnElementContext context,
+      final Supplier<Optional<TriggeringRecordMetadata>> triggeringRecordMetadataSupplier) {
     resetTreePathProperties(context);
 
     if (context.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING) {
@@ -246,7 +255,8 @@ public final class BpmnStateTransitionBehavior {
               context.getBpmnElementType(),
               "#transitionToTerminating"));
     }
-    return transitionTo(context, ProcessInstanceIntent.ELEMENT_TERMINATING);
+    return transitionTo(
+        context, ProcessInstanceIntent.ELEMENT_TERMINATING, triggeringRecordMetadataSupplier);
   }
 
   /**
@@ -254,19 +264,40 @@ public final class BpmnStateTransitionBehavior {
    */
   public BpmnElementContext transitionToTerminated(
       final BpmnElementContext context, final BpmnEventType eventType) {
+    return transitionToTerminated(context, eventType, Optional::empty);
+  }
+
+  public BpmnElementContext transitionToTerminated(
+      final BpmnElementContext context,
+      final BpmnEventType eventType,
+      final Supplier<Optional<TriggeringRecordMetadata>> triggeringRecordMetadataSupplier) {
     resetTreePathProperties(context);
 
-    final var transitionedContext = transitionTo(context, ProcessInstanceIntent.ELEMENT_TERMINATED);
+    final var transitionedContext =
+        transitionTo(
+            context, ProcessInstanceIntent.ELEMENT_TERMINATED, triggeringRecordMetadataSupplier);
     metrics.elementInstanceTerminated(context, eventType);
     return transitionedContext;
   }
 
   private BpmnElementContext transitionTo(
       final BpmnElementContext context, final ProcessInstanceIntent transition) {
+    return transitionTo(context, transition, Optional::empty);
+  }
+
+  private BpmnElementContext transitionTo(
+      final BpmnElementContext context,
+      final ProcessInstanceIntent transition,
+      final Supplier<Optional<TriggeringRecordMetadata>> triggeringRecordMetadataSupplier) {
     final var key = context.getElementInstanceKey();
     final var value = context.getRecordValue();
 
-    stateWriter.appendFollowUpEvent(key, transition, value);
+    triggeringRecordMetadataSupplier
+        .get()
+        .ifPresentOrElse(
+            metadata -> stateWriter.appendFollowUpEvent(key, transition, value, metadata),
+            () -> stateWriter.appendFollowUpEvent(key, transition, value));
+
     return context.copy(key, value, transition);
   }
 

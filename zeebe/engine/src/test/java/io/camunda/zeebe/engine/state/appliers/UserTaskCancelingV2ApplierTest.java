@@ -9,12 +9,15 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.state.TriggeringRecordMetadata;
+import io.camunda.zeebe.engine.state.immutable.TriggeringRecordMetadataState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.instance.UserTaskIntermediateStateValue;
-import io.camunda.zeebe.engine.state.instance.UserTaskTransitionTriggerRequestMetadata;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
+import io.camunda.zeebe.engine.util.MockTypedRecord;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
@@ -42,6 +45,8 @@ public class UserTaskCancelingV2ApplierTest {
   /** Used for state assertions. */
   private MutableUserTaskState userTaskState;
 
+  private TriggeringRecordMetadataState recordMetadataState;
+
   /** For setting up the state before testing the applier. */
   private AppliersTestSetupHelper testSetup;
 
@@ -49,6 +54,7 @@ public class UserTaskCancelingV2ApplierTest {
   public void setup() {
     userTaskCancelingApplier = new UserTaskCancelingV2Applier(processingState);
     userTaskState = processingState.getUserTaskState();
+    recordMetadataState = processingState.getTriggeringRecordMetadataState();
     testSetup = new AppliersTestSetupHelper(processingState);
   }
 
@@ -69,8 +75,8 @@ public class UserTaskCancelingV2ApplierTest {
     assertThat(userTaskState.getLifecycleState(userTaskKey))
         .describedAs("Expected user task to be in CREATED state before applying CANCELING")
         .isEqualTo(LifecycleState.CREATED);
-    assertThat(userTaskState.findRecordRequestMetadata(userTaskKey))
-        .describedAs("Expected no record request metadata before canceling")
+    assertThat(recordMetadataState.findOnly(userTaskKey, ValueType.USER_TASK))
+        .describedAs("Expected no record metadata before canceling")
         .isEmpty();
 
     // when
@@ -120,7 +126,7 @@ public class UserTaskCancelingV2ApplierTest {
     assertThat(processingState.getVariableState().findVariableDocumentState(elementInstanceKey))
         .describedAs("Expected variable document state to exist before user task cancellation")
         .isPresent();
-    assertThat(userTaskState.findRecordRequestMetadata(userTaskKey))
+    assertThat(recordMetadataState.findOnly(userTaskKey, ValueType.USER_TASK))
         .describedAs("Expected no record request metadata before canceling")
         .isEmpty();
     assertThat(userTaskState.getIntermediateState(userTaskKey))
@@ -162,16 +168,21 @@ public class UserTaskCancelingV2ApplierTest {
     testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATED, userTaskRecord);
 
     // simulate user task assignment and persisting request metadata
+    final UserTaskRecord claimRecord = userTaskRecord.copy().setAssignee("john");
+    final var claimCommand =
+        new MockTypedRecord<>(
+            userTaskKey,
+            new RecordMetadata()
+                .intent(UserTaskIntent.CLAIM)
+                .valueType(ValueType.USER_TASK)
+                .requestId(11)
+                .requestStreamId(22),
+            claimRecord);
     testSetup.applyEventToState(
-        userTaskKey, UserTaskIntent.CLAIMING, userTaskRecord.copy().setAssignee("john"));
-    // persist request metadata
-    userTaskState.storeRecordRequestMetadata(
         userTaskKey,
-        new UserTaskTransitionTriggerRequestMetadata()
-            .setIntent(UserTaskIntent.CLAIMING)
-            .setTriggerType(ValueType.USER_TASK)
-            .setRequestId(new Random().nextLong())
-            .setRequestStreamId(new Random().nextInt()));
+        UserTaskIntent.CLAIMING,
+        claimRecord,
+        TriggeringRecordMetadata.from(claimCommand));
 
     // preconditions
     assertThat(userTaskState.getIntermediateState(userTaskKey))
@@ -187,9 +198,9 @@ public class UserTaskCancelingV2ApplierTest {
                 Assertions.assertThat(state.getRecord())
                     .describedAs("Expected record in intermediate to have previous transition data")
                     .hasAssignee("john"));
-    assertThat(userTaskState.findRecordRequestMetadata(userTaskKey))
+    assertThat(recordMetadataState.findOnly(userTaskKey, ValueType.USER_TASK))
         .hasValueSatisfying(
-            metadata -> assertThat(metadata.getIntent()).isEqualTo(UserTaskIntent.CLAIMING));
+            metadata -> assertThat(metadata.getIntent()).isEqualTo(UserTaskIntent.CLAIM));
 
     // when
     userTaskCancelingApplier.applyState(userTaskKey, userTaskRecord);
@@ -202,8 +213,8 @@ public class UserTaskCancelingV2ApplierTest {
         .describedAs("Expected new intermediate state to be related to 'cancel' transition")
         .extracting(UserTaskIntermediateStateValue::getLifecycleState)
         .isEqualTo(LifecycleState.CANCELING);
-    assertThat(userTaskState.findRecordRequestMetadata(userTaskKey))
-        .describedAs("Expected record request metadata to be removed on canceling")
+    assertThat(recordMetadataState.findOnly(userTaskKey, ValueType.USER_TASK))
+        .describedAs("Expected record record metadata to be removed on canceling")
         .isEmpty();
   }
 
