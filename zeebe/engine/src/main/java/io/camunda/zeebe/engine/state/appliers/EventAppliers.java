@@ -201,6 +201,7 @@ public final class EventAppliers implements EventApplier {
     final var eventScopeInstanceState = state.getEventScopeInstanceState();
     final var processState = state.getProcessState();
     final var variableState = state.getVariableState();
+    final var recordMetadataState = state.getTriggeringRecordMetadataState();
     final var bufferedStartMessageEventStateApplier =
         new BufferedStartMessageEventStateApplier(processState, state.getMessageState());
 
@@ -230,11 +231,14 @@ public final class EventAppliers implements EventApplier {
             bufferedStartMessageEventStateApplier));
     register(
         ProcessInstanceIntent.ELEMENT_TERMINATING,
-        new ProcessInstanceElementTerminatingApplier(elementInstanceState));
+        new ProcessInstanceElementTerminatingApplier(elementInstanceState, recordMetadataState));
     register(
         ProcessInstanceIntent.ELEMENT_TERMINATED,
         new ProcessInstanceElementTerminatedApplier(
-            elementInstanceState, eventScopeInstanceState, bufferedStartMessageEventStateApplier));
+            elementInstanceState,
+            eventScopeInstanceState,
+            recordMetadataState,
+            bufferedStartMessageEventStateApplier));
     register(
         ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN,
         new ProcessInstanceSequenceFlowTakenApplier(elementInstanceState, processState));

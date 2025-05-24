@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 import io.camunda.zeebe.engine.state.TriggeringRecordMetadata;
+import io.camunda.zeebe.protocol.record.RecordMetadataEncoder;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
@@ -41,7 +42,10 @@ public interface TypedEventWriter {
   /** TODO add documentation */
   default void appendFollowUpEventOnCommand(
       long key, Intent intent, RecordValue value, TypedRecord<?> triggeringCommand) {
-    if (triggeringCommand.hasRequestMetadata()) {
+    final boolean hasOperationReference =
+        triggeringCommand.getOperationReference()
+            != RecordMetadataEncoder.operationReferenceNullValue();
+    if (triggeringCommand.hasRequestMetadata() || hasOperationReference) {
       appendFollowUpEvent(key, intent, value, TriggeringRecordMetadata.from(triggeringCommand));
     } else {
       appendFollowUpEvent(key, intent, value);

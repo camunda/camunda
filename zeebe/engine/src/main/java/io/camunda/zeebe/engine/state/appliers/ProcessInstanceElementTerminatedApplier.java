@@ -7,28 +7,33 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
-import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.MetadataAwareTypedEventApplier;
+import io.camunda.zeebe.engine.state.TriggeringRecordMetadata;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableTriggeringRecordMetadataState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 
 /** Applies state changes for `ProcessInstance:Element_Terminated` */
 final class ProcessInstanceElementTerminatedApplier
-    implements TypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
+    implements MetadataAwareTypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
 
   private final MutableElementInstanceState elementInstanceState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
+  private final MutableTriggeringRecordMetadataState recordMetadataState;
   private final BufferedStartMessageEventStateApplier bufferedStartMessageEventStateApplier;
 
   public ProcessInstanceElementTerminatedApplier(
       final MutableElementInstanceState elementInstanceState,
       final MutableEventScopeInstanceState eventScopeInstanceState,
+      final MutableTriggeringRecordMetadataState recordMetadataState,
       final BufferedStartMessageEventStateApplier bufferedStartMessageEventStateApplier) {
     this.elementInstanceState = elementInstanceState;
     this.eventScopeInstanceState = eventScopeInstanceState;
+    this.recordMetadataState = recordMetadataState;
     this.bufferedStartMessageEventStateApplier = bufferedStartMessageEventStateApplier;
   }
 
@@ -57,5 +62,12 @@ final class ProcessInstanceElementTerminatedApplier
       flowScopeInstance.incrementNumberOfTerminatedElementInstances();
       elementInstanceState.updateInstance(flowScopeInstance);
     }
+  }
+
+  @Override
+  public void applyState(
+      final long key, final ProcessInstanceRecord value, final TriggeringRecordMetadata metadata) {
+    applyState(key, value);
+    recordMetadataState.remove(key, metadata);
   }
 }

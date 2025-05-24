@@ -26,6 +26,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.state.TriggeringRecordMetadata;
 import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -42,6 +43,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 
 @ExcludeAuthorizationCheck
@@ -81,7 +83,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             processEngineMetrics,
             this::getContainerProcessor,
             writers);
-    processors = new BpmnElementProcessors(bpmnBehaviors, stateTransitionBehavior, config);
+    processors =
+        new BpmnElementProcessors(bpmnBehaviors, stateTransitionBehavior, processingState, config);
     stateBehavior = bpmnBehaviors.stateBehavior();
     jobBehavior = bpmnBehaviors.jobBehavior();
     eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();
@@ -112,7 +115,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         .ifRightOrLeft(
             ok -> {
               LOGGER.trace("Process process instance event [context: {}]", context);
-              processEvent(intent, processor, element);
+              processEvent(record, intent, processor, element);
             },
             violation ->
                 rejectionWriter.appendRejection(
@@ -154,6 +157,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
   }
 
   private void processEvent(
+      final TypedRecord<ProcessInstanceRecord> command,
       final ProcessInstanceIntent intent,
       final BpmnElementProcessor<ExecutableFlowElement> processor,
       final ExecutableFlowElement element) {
@@ -175,7 +179,9 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             .ifLeft(failure -> incidentBehavior.createIncident(failure, completingContext));
         break;
       case TERMINATE_ELEMENT:
-        final var terminatingContext = stateTransitionBehavior.transitionToTerminating(context);
+        final var terminatingContext =
+            stateTransitionBehavior.transitionToTerminating(
+                context, () -> provideTriggeringRecordMetadataForTerminatingProcess(command));
         final var transitionOutcome = processor.onTerminate(element, terminatingContext);
         if (transitionOutcome == TransitionOutcome.CONTINUE) {
           processor.finalizeTermination(element, terminatingContext);
@@ -205,6 +211,19 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             String.format(
                 "Expected the processor '%s' to handle the event but the intent '%s' is not supported",
                 processor.getClass(), intent));
+    }
+  }
+
+  private static @NotNull Optional<TriggeringRecordMetadata>
+      provideTriggeringRecordMetadataForTerminatingProcess(
+          final TypedRecord<ProcessInstanceRecord> command) {
+    final boolean isProcessElement =
+        command.getValue().getBpmnElementType() == BpmnElementType.PROCESS;
+    final boolean hasOperationReference = command.getOperationReference() != -1;
+    if (isProcessElement && hasOperationReference) {
+      return Optional.of(TriggeringRecordMetadata.from(command));
+    } else {
+      return Optional.empty();
     }
   }
 
