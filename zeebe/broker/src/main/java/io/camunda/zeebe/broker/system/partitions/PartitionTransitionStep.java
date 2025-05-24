@@ -56,7 +56,7 @@ public interface PartitionTransitionStep {
 
   /**
    * This method is a hook to prepare steps for a pending transition. This method is deprecated
-   * because eventually we want ro remove it. Once removed, all steps need to take the necessary
+   * because eventually we want to remove it. Once removed, all steps need to take the necessary
    * preparatory steps as part of {@code newRaftRole(...)}.
    *
    * <p>For a time being, however, this method will be supported. Steps will be called in reverse
