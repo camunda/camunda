@@ -141,6 +141,14 @@ public final class CommandDistributionBehavior {
           }
           distributeToPartition(partition, distributionRecord, distributionKey);
         });
+
+    // Scale up is in progress, enqueue upcoming distributions for the new partitions
+    if (routingInfo.desiredPartitions().size() > routingInfo.partitions().size()) {
+      routingInfo.desiredPartitions().stream()
+          .filter(this::isPartitionScaling)
+          .forEach(
+              partition -> distributeToPartition(partition, distributionRecord, distributionKey));
+    }
   }
 
   private void distributeToPartition(
@@ -171,6 +179,12 @@ public final class CommandDistributionBehavior {
         distributionKey,
         CommandDistributionIntent.ENQUEUED,
         commandDistributionEnqueued.setQueueId(queue).setPartitionId(partition));
+  }
+
+  /** Returns whether a partition is being scaled up at that point in time. */
+  private boolean isPartitionScaling(final int partitionId) {
+    return !routingInfo.partitions().contains(partitionId)
+        && routingInfo.desiredPartitions().contains(partitionId);
   }
 
   /**
@@ -232,8 +246,10 @@ public final class CommandDistributionBehavior {
 
     sideEffectWriter.appendSideEffect(
         () -> {
-          interPartitionCommandSender.sendCommand(
-              partition, valueType, intent, distributionKey, commandValue);
+          if (!isPartitionScaling(partition)) {
+            interPartitionCommandSender.sendCommand(
+                partition, valueType, intent, distributionKey, commandValue);
+          }
           return true;
         });
   }
