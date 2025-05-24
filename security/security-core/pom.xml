@@ -17,15 +17,14 @@
   <artifactId>camunda-security-core</artifactId>
   <name>Camunda Security Core</name>
 
-  <properties>
-    <!-- must match the zeebe-protocol lowest support JDK version -->
-    <version.java>8</version.java>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-protocol</artifactId>
     </dependency>
   </dependencies>
 </project>

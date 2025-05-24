@@ -51,6 +51,12 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-protocol</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-security-services</artifactId>
       <scope>test</scope>
     </dependency>
