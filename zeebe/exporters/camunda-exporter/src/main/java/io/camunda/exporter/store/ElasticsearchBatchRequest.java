@@ -191,26 +191,28 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       return;
     }
 
-    final Map<ErrorKey, List<String>> groupedErrors =
+    final Map<ErrorKey, ErrorValues> groupedErrors =
         errorItems.stream()
             .collect(
                 Collectors.groupingBy(
-                    item -> new ErrorKey(item.operationType(), item.index(), item.error().reason()),
+                    item -> new ErrorKey(item.operationType(), item.error().reason()),
                     LinkedHashMap::new,
-                    Collectors.mapping(BulkResponseItem::id, Collectors.toList())));
+                    Collectors.collectingAndThen(
+                        Collectors.toList(),
+                        list ->
+                            new ErrorValues(
+                                list.stream().map(BulkResponseItem::index).distinct().toList(),
+                                list.stream().map(BulkResponseItem::id).toList()))));
 
     final String errorMessages =
         groupedErrors.entrySet().stream()
-            // these error groups can sometimes be too large and even
-            // overflow the logger buffer.
-            .limit(100)
             .map(
                 entry ->
                     String.format(
-                        "%s failed for type %s with ids: %s: %s",
+                        "%s failed on indexes [%s] with ids: [%s]: %s",
                         entry.getKey().operationType,
-                        entry.getKey().index,
-                        entry.getValue(),
+                        entry.getValue().indexes,
+                        entry.getValue().ids,
                         entry.getKey().errorReason))
             .collect(Collectors.joining(", \n"));
 
@@ -220,7 +222,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         item -> {
           final String message =
               String.format(
-                  "%s failed for type [%s] and id [%s]: %s",
+                  "%s failed on index [%s] and id [%s]: %s",
                   item.operationType(), item.index(), item.id(), item.error().reason());
           if (customErrorHandlers != null) {
             final Error error = new Error(message, item.error().type(), item.status());
@@ -231,7 +233,9 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         });
   }
 
-  private record ErrorKey(OperationType operationType, String index, String errorReason) {
+  private record ErrorValues(List<String> indexes, List<String> ids) {}
+
+  private record ErrorKey(OperationType operationType, String errorReason) {
     @Override
     public boolean equals(final Object obj) {
       if (this == obj) {
@@ -241,13 +245,12 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         return false;
       }
       return Objects.equals(operationType, errorKey.operationType)
-          && Objects.equals(index, errorKey.index)
           && Objects.equals(errorReason, errorKey.errorReason);
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(operationType, index, errorReason);
+      return Objects.hash(operationType, errorReason);
     }
   }
 }
