@@ -14,12 +14,15 @@ import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkRequest.Builder;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
+import co.elastic.clients.elasticsearch.core.bulk.OperationType;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -188,21 +191,38 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       return;
     }
 
-    final String errorMessages =
+    final Map<ErrorKey, ErrorValues> groupedErrors =
         errorItems.stream()
+            .collect(
+                Collectors.groupingBy(
+                    item -> new ErrorKey(item.operationType(), item.error().reason()),
+                    LinkedHashMap::new,
+                    Collectors.collectingAndThen(
+                        Collectors.toList(),
+                        list ->
+                            new ErrorValues(
+                                list.stream().map(BulkResponseItem::index).distinct().toList(),
+                                list.stream().map(BulkResponseItem::id).toList()))));
+
+    final String errorMessages =
+        groupedErrors.entrySet().stream()
             .map(
-                item ->
+                entry ->
                     String.format(
-                        "%s failed for type [%s] and id [%s]: %s",
-                        item.operationType(), item.index(), item.id(), item.error().reason()))
+                        "%s failed on indexes [%s] with ids: [%s]: %s",
+                        entry.getKey().operationType,
+                        entry.getValue().indexes,
+                        entry.getValue().ids,
+                        entry.getKey().errorReason))
             .collect(Collectors.joining(", \n"));
+
     LOGGER.debug("Bulk request execution failed: \n[{}]", errorMessages);
 
     errorItems.forEach(
         item -> {
           final String message =
               String.format(
-                  "%s failed for type [%s] and id [%s]: %s",
+                  "%s failed on index [%s] and id [%s]: %s",
                   item.operationType(), item.index(), item.id(), item.error().reason());
           if (customErrorHandlers != null) {
             final Error error = new Error(message, item.error().type(), item.status());
@@ -211,5 +231,26 @@ public class ElasticsearchBatchRequest implements BatchRequest {
             throw new PersistenceException(message);
           }
         });
+  }
+
+  private record ErrorValues(List<String> indexes, List<String> ids) {}
+
+  private record ErrorKey(OperationType operationType, String errorReason) {
+    @Override
+    public boolean equals(final Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (!(obj instanceof final ErrorKey errorKey)) {
+        return false;
+      }
+      return Objects.equals(operationType, errorKey.operationType)
+          && Objects.equals(errorReason, errorKey.errorReason);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(operationType, errorReason);
+    }
   }
 }
