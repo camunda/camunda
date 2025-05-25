@@ -74,7 +74,11 @@ public final class MessageEventProcessors {
         .onCommand(
             ValueType.MESSAGE_BATCH,
             MessageBatchIntent.EXPIRE,
-            new MessageBatchExpireProcessor(writers.state(), writers.rejection(), messageState))
+            new MessageBatchExpireProcessor(
+                writers.state(),
+                writers.rejection(),
+                messageState,
+                featureFlags.enableMessageBodyOnExpired()))
         .onCommand(
             ValueType.MESSAGE, MessageIntent.EXPIRE, new MessageExpireProcessor(writers.state()))
         .onCommand(

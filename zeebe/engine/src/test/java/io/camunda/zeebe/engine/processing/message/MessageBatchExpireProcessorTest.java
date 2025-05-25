@@ -39,7 +39,7 @@ public final class MessageBatchExpireProcessorTest {
   private final TypedRejectionWriter rejectionWriter = Mockito.mock(TypedRejectionWriter.class);
   private final MessageState messageState = Mockito.mock(MessageState.class);
   final MessageBatchExpireProcessor messageBatchExpireProcessor =
-      new MessageBatchExpireProcessor(stateWriter, rejectionWriter, messageState);
+      new MessageBatchExpireProcessor(stateWriter, rejectionWriter, messageState, true);
 
   @Test
   public void shouldStopProcessingWhenExceedingBatchLimit() {

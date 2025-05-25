@@ -28,6 +28,7 @@ public final class MessageBatchExpireProcessor implements TypedRecordProcessor<M
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final MessageState messageState;
+  private final boolean appendMessageBodyOnExpired;
 
   private final MessageRecord emptyDeleteMessageCommand =
       new MessageRecord().setName("").setCorrelationKey("").setTimeToLive(-1L);
@@ -35,10 +36,12 @@ public final class MessageBatchExpireProcessor implements TypedRecordProcessor<M
   public MessageBatchExpireProcessor(
       final StateWriter stateWriter,
       final TypedRejectionWriter rejectionWriter,
-      final MessageState messageState) {
+      final MessageState messageState,
+      final boolean appendMessageBodyOnExpired) {
     this.stateWriter = stateWriter;
     this.rejectionWriter = rejectionWriter;
     this.messageState = messageState;
+    this.appendMessageBodyOnExpired = appendMessageBodyOnExpired;
   }
 
   @Override
@@ -48,15 +51,20 @@ public final class MessageBatchExpireProcessor implements TypedRecordProcessor<M
 
     for (final long messageKey : record.getValue().getMessageKeys()) {
       try {
-        final StoredMessage persistedMessage = messageState.getMessage(messageKey);
-        if (persistedMessage != null) {
-          stateWriter.appendFollowUpEvent(messageKey, EXPIRED, persistedMessage.getMessage());
-          expiredMessagesCount++;
+        if (appendMessageBodyOnExpired) {
+          final StoredMessage persistedMessage = messageState.getMessage(messageKey);
+          if (persistedMessage != null) {
+            stateWriter.appendFollowUpEvent(messageKey, EXPIRED, persistedMessage.getMessage());
+            expiredMessagesCount++;
+          } else {
+            // the message was expired before processing it here, so we can skip it
+            LOG.warn(
+                "Expected to expire messages in a batch, but message with key {} was not found.",
+                messageKey);
+          }
         } else {
-          // the message was expired before processing it here, so we can skip it
-          LOG.warn(
-              "Expected to expire messages in a batch, but message with key {} was not found.",
-              messageKey);
+          stateWriter.appendFollowUpEvent(messageKey, EXPIRED, emptyDeleteMessageCommand);
+          expiredMessagesCount++;
         }
       } catch (final ExceededBatchRecordSizeException exceededBatchRecordSizeException) {
         LOG.warn(
@@ -68,7 +76,7 @@ public final class MessageBatchExpireProcessor implements TypedRecordProcessor<M
       }
     }
 
-    if (expiredMessagesCount == 0) {
+    if (appendMessageBodyOnExpired && expiredMessagesCount == 0) {
       rejectionWriter.appendRejection(
           record,
           RejectionType.NOT_FOUND,
