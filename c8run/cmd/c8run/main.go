@@ -1,22 +1,28 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
+	"sync"
+	"syscall"
 
 	"github.com/camunda/camunda/c8run/internal/health"
-	"github.com/camunda/camunda/c8run/internal/overrides"
+	"github.com/camunda/camunda/c8run/internal/processmanagement"
 	"github.com/camunda/camunda/c8run/internal/shutdown"
+	"github.com/camunda/camunda/c8run/internal/start"
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/camunda/camunda/c8run/internal/unix"
 	"github.com/camunda/camunda/c8run/internal/windows"
 	"github.com/joho/godotenv"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 func getC8RunPlatform() types.C8Run {
@@ -112,7 +118,7 @@ func handleDockerCommand(settings types.C8RunSettings, baseCommand string, compo
 	case "stop":
 		err = runDockerCommand(composeExtractedFolder, "down")
 	default:
-		err = fmt.Errorf("No valid command. Only start and stop supported.")
+		err = fmt.Errorf("command invalid, only start and stop supported")
 	}
 
 	if err != nil {
@@ -167,94 +173,7 @@ func createStopFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	return stopFlagSet
 }
 
-func GetJavaVersion(javaBinary string) (string, error) {
-	javaVersionCmd := exec.Command(javaBinary, "JavaVersion")
-	var out strings.Builder
-	var stderr strings.Builder
-	javaVersionCmd.Stdout = &out
-	javaVersionCmd.Stderr = &stderr
-	err := javaVersionCmd.Run()
-	if err != nil {
-		return "", fmt.Errorf("failed to run java version command: %w", err)
-	}
-	javaVersionOutput := out.String()
-	return javaVersionOutput, nil
-}
-
-func GetJavaHome(javaBinary string) (string, error) {
-	javaHomeCmd := exec.Command(javaBinary, "JavaHome")
-	var out strings.Builder
-	var stderr strings.Builder
-	javaHomeCmd.Stdout = &out
-	javaHomeCmd.Stderr = &stderr
-	err := javaHomeCmd.Run()
-	if err != nil {
-		return "", fmt.Errorf("failed to run java version command: %w", err)
-	}
-	javaHomeOutput := out.String()
-	return javaHomeOutput, nil
-}
-
-func resolveJavaHomeAndBinary() (string, string, error) {
-	javaHome := os.Getenv("JAVA_HOME")
-	javaBinary := "java"
-	var javaHomeAfterSymlink string
-	var err error
-	if javaHome != "" {
-		javaHomeAfterSymlink, err = filepath.EvalSymlinks(javaHome)
-		if err != nil {
-			fmt.Println("JAVA_HOME is not a valid path, obtaining JAVA_HOME from java binary")
-			javaHome = ""
-		} else {
-			javaHome = javaHomeAfterSymlink
-		}
-	}
-	if javaHome == "" {
-		javaHome, err = GetJavaHome(javaBinary)
-		if err != nil {
-			return "", "", fmt.Errorf("Failed to get JAVA_HOME")
-		}
-	}
-
-	if javaHome != "" {
-		err = filepath.Walk(javaHome, func(path string, info os.FileInfo, err error) error {
-			_, filename := filepath.Split(path)
-			if strings.Compare(filename, "java.exe") == 0 || strings.Compare(filename, "java") == 0 {
-				javaBinary = path
-				return filepath.SkipAll
-			}
-			return nil
-		})
-		if err != nil {
-			return "", "", err
-		}
-		// fallback to bin/java.exe
-		if javaBinary == "" {
-			if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-				javaBinary = filepath.Join(javaHome, "bin", "java")
-			} else if runtime.GOOS == "windows" {
-				javaBinary = filepath.Join(javaHome, "bin", "java.exe")
-			}
-		}
-	} else {
-		path, err := exec.LookPath("java")
-		if err != nil {
-			return "", "", fmt.Errorf("Failed to find JAVA_HOME or java program.")
-		}
-
-		// go up 2 directories since it's not guaranteed that java is in a bin folder
-		javaHome = filepath.Dir(filepath.Dir(path))
-		javaBinary = path
-	}
-
-	return javaHome, javaBinary, nil
-}
-
-func main() {
-	c8 := getC8RunPlatform()
-	baseDir, _ := os.Getwd()
-	parentDir := baseDir
-
+func initialize(baseCommand string, baseDir string) *types.State {
 	err := godotenv.Load()
 	if err != nil {
 		fmt.Println(err.Error())
@@ -265,16 +184,9 @@ func main() {
 	connectorsVersion := os.Getenv("CONNECTORS_VERSION")
 	composeExtractedFolder := os.Getenv("COMPOSE_EXTRACTED_FOLDER")
 
-	expectedJavaVersion := 21
-
 	elasticsearchPidPath := filepath.Join(baseDir, "elasticsearch.process")
 	connectorsPidPath := filepath.Join(baseDir, "connectors.process")
 	camundaPidPath := filepath.Join(baseDir, "camunda.process")
-
-	baseCommand, err := getBaseCommand()
-	if err != nil {
-		fmt.Println(err.Error())
-	}
 
 	settings, err := getBaseCommandSettings(baseCommand)
 	if err != nil {
@@ -286,7 +198,7 @@ func main() {
 		os.Setenv("ZEEBE_LOG_LEVEL", settings.LogLevel)
 	}
 
-	err = validateKeystore(settings, parentDir)
+	err = validateKeystore(settings, baseDir)
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
@@ -298,151 +210,81 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Rresolve JAVA_HOME and javaBinary
-	javaHome, javaBinary, err := resolveJavaHomeAndBinary()
-	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
-	}
-
-	err = overrides.SetEnvVars(javaHome)
-	if err != nil {
-		fmt.Println("Failed to set envVars:", err)
-	}
-
 	processInfo := types.Processes{
 		Camunda: types.Process{
 			Version: camundaVersion,
-			Pid:     camundaPidPath,
+			PidPath: camundaPidPath,
 		},
 		Connectors: types.Process{
 			Version: connectorsVersion,
-			Pid:     connectorsPidPath,
+			PidPath: connectorsPidPath,
 		},
 		Elasticsearch: types.Process{
 			Version: elasticsearchVersion,
-			Pid:     elasticsearchPidPath,
+			PidPath: elasticsearchPidPath,
 		},
 	}
 
+	return &types.State{
+		C8:          getC8RunPlatform(),
+		Settings:    settings,
+		ProcessInfo: processInfo,
+	}
+}
+
+func main() {
+	consoleWriter := zerolog.ConsoleWriter{Out: os.Stderr}
+	logger := zerolog.New(consoleWriter).With().Timestamp().Logger()
+	if os.Getenv("C8RUN_DEBUG_WITH_LINE_NUMBERS") != "" {
+		logger = logger.With().Caller().Logger()
+	}
+	log.Logger = logger
+
+	baseCommand, err := getBaseCommand()
+	if err != nil {
+		log.Err(err).Msg("There is an issue with getting the base command")
+		os.Exit(1)
+	}
+
+	baseDir, _ := os.Getwd()
+	state := initialize(baseCommand, baseDir)
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGKILL, syscall.SIGINT, syscall.SIGTERM)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	workDone := make(chan struct{})
+	sh := &shutdown.ShutdownHandler{
+		ProcessHandler: &processmanagement.ProcessHandler{
+			C8: state.C8,
+		},
+	}
+	startupHandler := &start.StartupHandler{
+		ProcessHandler: &processmanagement.ProcessHandler{
+			C8: state.C8,
+		},
+	}
 	switch baseCommand {
 	case "start":
-		startCommand(c8, settings, processInfo, parentDir, javaBinary, expectedJavaVersion)
+		go func() {
+			// TODO make a lock file to prevent zombie processes if start is called with &
+			startupHandler.StartCommand(&wg, ctx, stop, state, baseDir)
+			close(workDone)
+		}()
 	case "stop":
-		shutdown.ShutdownProcesses(c8, settings, processInfo)
-	}
-}
-
-func printSystemInformation(javaVersion string) {
-	fmt.Println("")
-	fmt.Println("System Version Information")
-	fmt.Println("--------------------------")
-	fmt.Println("Camunda Details:")
-	fmt.Printf("  Version: %s\n", os.Getenv("CAMUNDA_VERSION"))
-	fmt.Println("Java Details:")
-	fmt.Printf("  Version: %s\n", javaVersion)
-	fmt.Println("--------------------------")
-	fmt.Println("")
-}
-
-func startCommand(c8 types.C8Run, settings types.C8RunSettings, processInfo types.Processes, parentDir, javaBinary string, expectedJavaVersion int) {
-	javaVersion := os.Getenv("JAVA_VERSION")
-	var err error
-	if javaVersion == "" {
-		javaVersion, err = GetJavaVersion(javaBinary)
-		if err != nil {
-			fmt.Println("Failed to get Java version")
-			os.Exit(1)
-		}
+		go func() {
+			sh.ShutdownProcesses(state)
+			close(workDone)
+		}()
 	}
 
-	printSystemInformation(javaVersion)
-
-	versionSplit := strings.Split(javaVersion, ".")
-	if len(versionSplit) == 0 {
-		fmt.Println("Java needs to be installed. Please install JDK " + strconv.Itoa(expectedJavaVersion) + " or newer.")
-		os.Exit(1)
-	}
-	javaMajorVersion := versionSplit[0]
-	javaMajorVersionInt, _ := strconv.Atoi(javaMajorVersion)
-	if javaMajorVersionInt < expectedJavaVersion {
-		fmt.Print("You must use at least JDK " + strconv.Itoa(expectedJavaVersion) + " to start Camunda Platform Run.\n")
-		os.Exit(1)
-	}
-
-	javaOpts := os.Getenv("JAVA_OPTS")
-	if javaOpts != "" {
-		fmt.Print("JAVA_OPTS: " + javaOpts + "\n")
-	}
-	javaOpts = overrides.AdjustJavaOpts(javaOpts, settings)
-
-	if !settings.DisableElasticsearch {
-		fmt.Print("Starting Elasticsearch " + processInfo.Elasticsearch.Version + "...\n")
-		fmt.Print("(Hint: you can find the log output in the 'elasticsearch.log' file in the 'log' folder of your distribution.)\n")
-
-		elasticsearchCmd := c8.ElasticsearchCmd(processInfo.Elasticsearch.Version, parentDir)
-		elasticsearchLogFilePath := filepath.Join(parentDir, "log", "elasticsearch.log")
-		startApplication(elasticsearchCmd, processInfo.Elasticsearch.Pid, elasticsearchLogFilePath)
-		health.QueryElasticsearch("Elasticsearch", "http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s")
-	}
-
-	connectorsCmd := c8.ConnectorsCmd(javaBinary, parentDir, processInfo.Camunda.Version)
-	connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
-	startApplication(connectorsCmd, processInfo.Connectors.Pid, connectorsLogPath)
-
-	var extraArgs string
-	if settings.Config != "" {
-		path := filepath.Join(parentDir, settings.Config)
-		var slash string
-		if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-			slash = "/"
-		} else if runtime.GOOS == "windows" {
-			slash = "\\"
-		}
-
-		configStat, err := os.Stat(path)
-		if err != nil {
-			fmt.Printf("Failed to read config file: %s\n", path)
-			os.Exit(1)
-		}
-		if configStat.IsDir() {
-			extraArgs = "--spring.config.additional-location=file:" + filepath.Join(parentDir, settings.Config) + slash
-		} else {
-			extraArgs = "--spring.config.additional-location=file:" + filepath.Join(parentDir, settings.Config)
-		}
-	}
-
-	camundaCmd := c8.CamundaCmd(processInfo.Camunda.Version, parentDir, extraArgs, javaOpts)
-	camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
-	startApplication(camundaCmd, processInfo.Camunda.Pid, camundaLogPath)
-	err = health.QueryCamunda(c8, "Camunda", settings)
-	if err != nil {
-		fmt.Printf("%+v", err)
-		os.Exit(1)
-	}
-}
-
-func startApplication(cmd *exec.Cmd, pid string, logPath string) {
-	logFile, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE, 0644)
-	if err != nil {
-		fmt.Print("Failed to open file: " + logPath)
-		os.Exit(1)
-	}
-	cmd.Stdout = logFile
-	cmd.Stderr = logFile
-	err = cmd.Start()
-	if err != nil {
-		fmt.Printf("%+v", err)
-		os.Exit(1)
-	}
-
-	pidFile, err := os.OpenFile(pid, os.O_RDWR|os.O_CREATE, 0644)
-	if err != nil {
-		fmt.Print("Failed to open file: " + pid)
-		os.Exit(1)
-	}
-	_, err = pidFile.Write([]byte(strconv.Itoa(cmd.Process.Pid)))
-	if err != nil {
-		fmt.Print("Failed to write to file: " + pid + " continuing...")
+	select {
+	case <-workDone:
+		log.Info().Msg("All processes are running and healthy, exiting...")
+	case <-ctx.Done():
+		log.Info().Msg("Received shutdown signal, stopping all workers...")
+		sh.ShutdownProcesses(state)
+		wg.Wait()
+		log.Info().Msg("All workers have stopped. Application has been gracefully shut down.")
 	}
 }

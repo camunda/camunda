@@ -8,16 +8,19 @@
 package health
 
 import (
-	"fmt"
-	"os"
+	"context"
+	"errors"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
-func QueryElasticsearch(name string, url string) {
-	if isRunning(name, url, 12, 10*time.Second) {
-		fmt.Println(name + " has successfully been started.")
+func QueryElasticsearch(ctx context.Context, name string, retries int, url string) error {
+	if isRunning(ctx, name, url, retries, 10*time.Second) {
+		log.Info().Str("name", name).Msg("Started successfully")
 	} else {
-		fmt.Println("Error: " + name + " did not start!")
-		os.Exit(1)
+		log.Error().Str("name", name).Msg("Not Started")
+		return errors.New("elasticsearch did not start")
 	}
+	return nil
 }

@@ -1,17 +1,18 @@
 package types
 
 import (
+	"context"
 	"os"
 	"os/exec"
 )
 
 type C8Run interface {
-	OpenBrowser(protocol string, port int) error
+	OpenBrowser(ctx context.Context, protocol string, port int) error
 	ProcessTree(commandPid int) []*os.Process
-	VersionCmd(javaBinaryPath string) *exec.Cmd
-	ElasticsearchCmd(elasticsearchVersion string, parentDir string) *exec.Cmd
-	ConnectorsCmd(javaBinary string, parentDir string, camundaVersion string) *exec.Cmd
-	CamundaCmd(camundaVersion string, parentDir string, extraArgs string, javaOpts string) *exec.Cmd
+	VersionCmd(ctx context.Context, javaBinaryPath string) *exec.Cmd
+	ElasticsearchCmd(ctx context.Context, elasticsearchVersion string, parentDir string) *exec.Cmd
+	ConnectorsCmd(ctx context.Context, javaBinary string, parentDir string, camundaVersion string) *exec.Cmd
+	CamundaCmd(ctx context.Context, camundaVersion string, parentDir string, extraArgs string, javaOpts string) *exec.Cmd
 }
 
 type C8RunSettings struct {
@@ -40,5 +41,11 @@ type Processes struct {
 
 type Process struct {
 	Version string
-	Pid     string
+	PidPath string
+}
+
+type State struct {
+	C8          C8Run
+	Settings    C8RunSettings
+	ProcessInfo Processes
 }

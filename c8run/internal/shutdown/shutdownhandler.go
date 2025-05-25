@@ -1,18 +1,27 @@
 package shutdown
 
 import (
+	"errors"
 	"fmt"
 	"os"
-	"strconv"
-	"strings"
 	"time"
 
+	"github.com/camunda/camunda/c8run/internal/processmanagement"
 	"github.com/camunda/camunda/c8run/internal/types"
+	"github.com/rs/zerolog/log"
 )
 
-func ShutdownProcesses(c8 types.C8Run, settings types.C8RunSettings, processInfo types.Processes) {
+type ShutdownHandler struct {
+	ProcessHandler *processmanagement.ProcessHandler
+}
+
+func (s *ShutdownHandler) ShutdownProcesses(state *types.State) {
+	log.Info().Msg("Initiating shutdown of services...")
+	settings := state.Settings
+	processInfo := state.ProcessInfo
+
 	timeout := 30 * time.Second
-	fmt.Println("Stopping all services... timeout set to ", timeout)
+	log.Info().Str("timeout", timeout.String()).Msg("Stopping all services...")
 
 	progressChars := []string{"|", "/", "-", "\\"}
 	tick := time.NewTicker(100 * time.Millisecond)
@@ -31,60 +40,84 @@ func ShutdownProcesses(c8 types.C8Run, settings types.C8RunSettings, processInfo
 		}
 	}()
 
+	log.Debug().Msg("stopCommand goroutine initiated")
 	go func() {
-		stopCommand(c8, settings, processInfo)
+		s.stopCommand(settings, processInfo)
 		close(done)
 	}()
 
 	select {
 	case <-done:
-		fmt.Println()
-		fmt.Println("All services have been stopped.")
+		log.Info().Msg("All services have been stopped.")
 	case <-time.After(timeout):
 		fmt.Println()
-		fmt.Println("Warning: Timeout while stopping services. Some processes may still be running.")
+		log.Warn().Msg("Warning: Timeout while stopping services. Some processes may still be running.")
 	}
 }
 
-func stopCommand(c8 types.C8Run, settings types.C8RunSettings, processes types.Processes) {
+func (s *ShutdownHandler) stopCommand(settings types.C8RunSettings, processes types.Processes) {
 	if !settings.DisableElasticsearch {
-		err := stopProcess(c8, processes.Elasticsearch.Pid)
+		log.Info().Msg("Trying to stop Elasticsearch")
+
+		err := s.stopProcess(processes.Elasticsearch.PidPath)
 		if err != nil {
-			fmt.Printf("%+v\n", err)
+			log.Debug().Err(err).Msg("Failed to stop Elasticsearch")
+		} else {
+			log.Info().Msg("Elasticsearch is stopped.")
 		}
-		fmt.Println("Elasticsearch is stopped.")
 	}
-	err := stopProcess(c8, processes.Connectors.Pid)
+	err := s.stopProcess(processes.Connectors.PidPath)
 	if err != nil {
-		fmt.Printf("%+v\n", err)
+		log.Debug().Err(err).Msg("Failed to stop connectors")
+	} else {
+		log.Info().Msg("Connectors is stopped.")
 	}
-	fmt.Println("Connectors is stopped.")
-	err = stopProcess(c8, processes.Camunda.Pid)
+	err = s.stopProcess(processes.Camunda.PidPath)
 	if err != nil {
-		fmt.Printf("%+v\n", err)
+		log.Debug().Err(err).Msg("Failed to stop Camunda")
+	} else {
+		log.Info().Msg("Camunda is stopped.")
 	}
-	fmt.Println("Camunda is stopped.")
 }
 
-func stopProcess(c8 types.C8Run, pidfile string) error {
-	fmt.Println("Stopping process with pidfile: ", pidfile)
-	if _, err := os.Stat(pidfile); err == nil {
-		commandPidText, _ := os.ReadFile(pidfile)
-		commandPidStripped := strings.TrimSpace(string(commandPidText))
-		commandPid, err := strconv.Atoi(string(commandPidStripped))
-		if err != nil {
-			return fmt.Errorf("stopProcess: could not stop process %d, %w", commandPid, err)
-		}
+func (s *ShutdownHandler) stopProcess(pidPath string) error {
+	log.Debug().Str("pidFile", pidPath).Msg("Attempting to stop process via pidfile")
 
-		for _, process := range c8.ProcessTree(int(commandPid)) {
-			fmt.Printf("Stopping process %d\n", process.Pid)
-			err = process.Kill()
-			if err != nil {
-				return fmt.Errorf("stopProcess: could not kill process %d, %w", commandPid, err)
-			}
-		}
-		os.Remove(pidfile)
-
+	if pidPath == "" {
+		return errors.New("stopProcess: pidfile path is empty")
 	}
+
+	if _, err := os.Stat(pidPath); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("stopProcess: pidfile does not exist: %s", pidPath)
+		}
+		return fmt.Errorf("stopProcess: unable to stat pidfile: %w", err)
+	}
+
+	pid, err := s.ProcessHandler.ReadPIDFromFile(pidPath)
+	if err != nil {
+		return fmt.Errorf("stopProcess: %w", err)
+	}
+
+	var killErr error
+	procs := s.ProcessHandler.GetProcessFromPid(pid)
+	for _, proc := range procs {
+		if proc == nil {
+			continue
+		}
+
+		killErr = s.ProcessHandler.KillProcess(proc)
+	}
+
+	if err := os.Remove(pidPath); err != nil && !errors.Is(err, os.ErrNotExist) {
+		log.Warn().Err(err).Str("pidFile", pidPath).Msg("Failed to remove pidfile")
+	}
+
+	if killErr != nil {
+		return fmt.Errorf("stopProcess: %w", killErr)
+	}
+
+	log.Info().Str("pidFile", pidPath).Msg("Successfully stopped process")
+
 	return nil
 }
