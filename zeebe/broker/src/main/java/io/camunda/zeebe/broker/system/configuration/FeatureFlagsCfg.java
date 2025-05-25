@@ -39,6 +39,7 @@ public final class FeatureFlagsCfg {
       DEFAULT_SETTINGS.enableStraightThroughProcessingLoopDetector();
   private boolean enablePartitionScaling = DEFAULT_SETTINGS.enablePartitionScaling();
   private boolean enableIdentitySetup = DEFAULT_SETTINGS.enableIdentitySetup();
+  private boolean enableMessageBodyOnExpired = DEFAULT_SETTINGS.enableMessageBodyOnExpired();
 
   public boolean isEnableYieldingDueDateChecker() {
     return enableYieldingDueDateChecker;
@@ -97,6 +98,14 @@ public final class FeatureFlagsCfg {
     this.enableIdentitySetup = enableIdentitySetup;
   }
 
+  public boolean isEnableMessageBodyOnExpired() {
+    return enableMessageBodyOnExpired;
+  }
+
+  public void setEnableMessageBodyOnExpired(final boolean enableMessageBodyOnExpired) {
+    this.enableMessageBodyOnExpired = enableMessageBodyOnExpired;
+  }
+
   public FeatureFlags toFeatureFlags() {
     return new FeatureFlags(
         enableYieldingDueDateChecker,
@@ -105,7 +114,8 @@ public final class FeatureFlagsCfg {
         enableTimerDueDateCheckerAsync,
         enableStraightThroughProcessingLoopDetector,
         enablePartitionScaling,
-        enableIdentitySetup
+        enableIdentitySetup,
+        enableMessageBodyOnExpired
         /*, enableFoo*/ );
   }
 
