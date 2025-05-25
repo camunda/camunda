@@ -38,11 +38,7 @@ public final class FeatureFlagsCfg {
   private boolean enableStraightThroughProcessingLoopDetector =
       DEFAULT_SETTINGS.enableStraightThroughProcessingLoopDetector();
   private boolean enablePartitionScaling = DEFAULT_SETTINGS.enablePartitionScaling();
-<<<<<<< HEAD
-=======
-  private boolean enableIdentitySetup = DEFAULT_SETTINGS.enableIdentitySetup();
   private boolean enableMessageBodyOnExpired = DEFAULT_SETTINGS.enableMessageBodyOnExpired();
->>>>>>> 24fcc0ee (feat: feature flag for enabling appending message body on expired)
 
   public boolean isEnableYieldingDueDateChecker() {
     return enableYieldingDueDateChecker;
@@ -93,16 +89,6 @@ public final class FeatureFlagsCfg {
     this.enablePartitionScaling = enablePartitionScaling;
   }
 
-<<<<<<< HEAD
-=======
-  public boolean isEnableIdentitySetup() {
-    return enableIdentitySetup;
-  }
-
-  public void setEnableIdentitySetup(final boolean enableIdentitySetup) {
-    this.enableIdentitySetup = enableIdentitySetup;
-  }
-
   public boolean isEnableMessageBodyOnExpired() {
     return enableMessageBodyOnExpired;
   }
@@ -111,7 +97,6 @@ public final class FeatureFlagsCfg {
     this.enableMessageBodyOnExpired = enableMessageBodyOnExpired;
   }
 
->>>>>>> 24fcc0ee (feat: feature flag for enabling appending message body on expired)
   public FeatureFlags toFeatureFlags() {
     return new FeatureFlags(
         enableYieldingDueDateChecker,
@@ -119,13 +104,8 @@ public final class FeatureFlagsCfg {
         enableMessageTtlCheckerAsync,
         enableTimerDueDateCheckerAsync,
         enableStraightThroughProcessingLoopDetector,
-<<<<<<< HEAD
-        enablePartitionScaling
-=======
         enablePartitionScaling,
-        enableIdentitySetup,
         enableMessageBodyOnExpired
->>>>>>> 24fcc0ee (feat: feature flag for enabling appending message body on expired)
         /*, enableFoo*/ );
   }
 
