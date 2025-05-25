@@ -53,6 +53,40 @@ public record FeatureFlags(
   private static final boolean ENABLE_DUE_DATE_CHECKER_ASYNC = false;
   private static final boolean ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR = true;
   private static final boolean ENABLE_PARTITION_SCALING = false;
+<<<<<<< HEAD
+=======
+  private static final boolean ENABLE_IDENTITY_SETUP = true;
+  private static final boolean ENABLE_MESSAGE_BODY_ON_EXPIRED = false;
+
+  private boolean yieldingDueDateChecker;
+  private boolean enableActorMetrics;
+  private boolean enableMessageTTLCheckerAsync;
+  private boolean enableTimerDueDateCheckerAsync;
+  private boolean enableStraightThroughProcessingLoopDetector;
+  private boolean enablePartitionScaling;
+  private boolean enableIdentitySetup;
+  private boolean enableMessageBodyOnExpired;
+
+  public FeatureFlags(
+      final boolean yieldingDueDateChecker,
+      final boolean enableActorMetrics,
+      final boolean enableMessageTTLCheckerAsync,
+      final boolean enableTimerDueDateCheckerAsync,
+      final boolean enableStraightThroughProcessingLoopDetector,
+      final boolean enablePartitionScaling,
+      final boolean enableIdentitySetup,
+      final boolean enableMessageBodyOnExpired
+      /*, boolean foo*/ ) {
+    this.yieldingDueDateChecker = yieldingDueDateChecker;
+    this.enableActorMetrics = enableActorMetrics;
+    this.enableMessageTTLCheckerAsync = enableMessageTTLCheckerAsync;
+    this.enableTimerDueDateCheckerAsync = enableTimerDueDateCheckerAsync;
+    this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
+    this.enablePartitionScaling = enablePartitionScaling;
+    this.enableIdentitySetup = enableIdentitySetup;
+    this.enableMessageBodyOnExpired = enableMessageBodyOnExpired;
+  }
+>>>>>>> 24fcc0ee (feat: feature flag for enabling appending message body on expired)
 
   public static FeatureFlags createDefault() {
     return new FeatureFlags(
@@ -61,7 +95,13 @@ public record FeatureFlags(
         ENABLE_MSG_TTL_CHECKER_ASYNC,
         ENABLE_DUE_DATE_CHECKER_ASYNC,
         ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR,
+<<<<<<< HEAD
         ENABLE_PARTITION_SCALING
+=======
+        ENABLE_PARTITION_SCALING,
+        ENABLE_IDENTITY_SETUP,
+        ENABLE_MESSAGE_BODY_ON_EXPIRED
+>>>>>>> 24fcc0ee (feat: feature flag for enabling appending message body on expired)
         /*, FOO_DEFAULT*/ );
   }
 
@@ -77,10 +117,84 @@ public record FeatureFlags(
         true, /* ENABLE_MSG_TTL_CHECKER_ASYNC */
         true, /* ENABLE_DUE_DATE_CHECKER_ASYNC */
         true, /* ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR */
+<<<<<<< HEAD
         true /* ENABLE_PARTITION_SCALING */
         /*, FOO_DEFAULT*/ );
   }
 
+=======
+        true, /* ENABLE_PARTITION_SCALING */
+        false, /* ENABLE_IDENTITY_SETUP */
+        false /* ENABLE_MESSAGE_BODY_ON_EXPIRED */
+        /*, FOO_DEFAULT*/ );
+  }
+
+  public boolean yieldingDueDateChecker() {
+    return yieldingDueDateChecker;
+  }
+
+  public boolean enableActorMetrics() {
+    return enableActorMetrics;
+  }
+
+  public boolean enableMessageTTLCheckerAsync() {
+    return enableMessageTTLCheckerAsync;
+  }
+
+  public boolean enableTimerDueDateCheckerAsync() {
+    return enableTimerDueDateCheckerAsync;
+  }
+
+  public boolean enableStraightThroughProcessingLoopDetector() {
+    return enableStraightThroughProcessingLoopDetector;
+  }
+
+  public boolean enablePartitionScaling() {
+    return enablePartitionScaling;
+  }
+
+  public boolean enableIdentitySetup() {
+    return enableIdentitySetup;
+  }
+
+  public boolean enableMessageBodyOnExpired() {
+    return enableMessageBodyOnExpired;
+  }
+
+  public void setYieldingDueDateChecker(final boolean yieldingDueDateChecker) {
+    this.yieldingDueDateChecker = yieldingDueDateChecker;
+  }
+
+  public void setEnableActorMetrics(final boolean enableActorMetrics) {
+    this.enableActorMetrics = enableActorMetrics;
+  }
+
+  public void setEnableMessageTTLCheckerAsync(final boolean enableMessageTTLCheckerAsync) {
+    this.enableMessageTTLCheckerAsync = enableMessageTTLCheckerAsync;
+  }
+
+  public void setEnableTimerDueDateCheckerAsync(final boolean enableTimerDueDateCheckerAsync) {
+    this.enableTimerDueDateCheckerAsync = enableTimerDueDateCheckerAsync;
+  }
+
+  public void setEnableStraightThroughProcessingLoopDetector(
+      final boolean enableStraightThroughProcessingLoopDetector) {
+    this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
+  }
+
+  public void setEnablePartitionScaling(final boolean enablePartitionScaling) {
+    this.enablePartitionScaling = enablePartitionScaling;
+  }
+
+  public void setEnableIdentitySetup(final boolean enableIdentitySetup) {
+    this.enableIdentitySetup = enableIdentitySetup;
+  }
+
+  public void setEnableMessageBodyOnExpired(final boolean enableMessageBodyOnExpired) {
+    this.enableMessageBodyOnExpired = enableMessageBodyOnExpired;
+  }
+
+>>>>>>> 24fcc0ee (feat: feature flag for enabling appending message body on expired)
   @Override
   public String toString() {
     return ToStringBuilder.reflectionToString(this, ToStringStyle.SHORT_PREFIX_STYLE);
