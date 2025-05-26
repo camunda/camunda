@@ -49,4 +49,22 @@ public interface ProcessingResult {
    *     false otherwise.
    */
   boolean isEmpty();
+
+  /**
+   * Signals that any follow-up commands generated during the processing of the current record
+   * should be scheduled for handling in a new, separate command batch, rather than being processed
+   * within the current batch.
+   *
+   * <p>This method is typically called when a processor (see {@code
+   * TypedRecordProcessor#shouldProcessResultsInSeparateBatches()}) has requested isolation for the
+   * results it produces. Separating follow-up commands into distinct batches can improve
+   * consistency and error isolation (e.g., a failure in one follow-up will not impact the
+   * processing of others). However, it may also lead to reduced throughput due to increased
+   * overhead, though it enables interleaving with user or system commands at batch boundaries.
+   *
+   * @return this builder instance for chaining
+   */
+  default boolean shouldProcessInASeparateBatch() {
+    return false;
+  }
 }

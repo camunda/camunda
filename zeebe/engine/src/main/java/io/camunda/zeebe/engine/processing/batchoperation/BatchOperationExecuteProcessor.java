@@ -114,6 +114,11 @@ public final class BatchOperationExecuteProcessor
         command.getKey(), BatchOperationExecutionIntent.EXECUTE, followupCommand, batchKey, null);
   }
 
+  @Override
+  public boolean shouldProcessResultsInSeparateBatches() {
+    return true;
+  }
+
   private PersistedBatchOperation getBatchOperation(final long batchOperationKey) {
     return batchOperationState.get(batchOperationKey).orElse(null);
   }

@@ -131,6 +131,10 @@ public class Engine implements RecordProcessor {
       }
 
       if (shouldProcessCommand(typedCommand)) {
+        if (currentProcessor.shouldProcessResultsInSeparateBatches()) {
+          processingResultBuilder.withProcessInASeparateBatch();
+        }
+
         currentProcessor.processRecord(record);
       }
     }
