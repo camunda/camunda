@@ -54,11 +54,12 @@ public final class MessageBatchExpireProcessor implements TypedRecordProcessor<M
         if (persistedMessage != null) {
           stateWriter.appendFollowUpEvent(messageKey, EXPIRED, persistedMessage.getMessage());
           expiredMessagesCount++;
+        } else {
+          // the message was expired before processing it here, so we can skip it
+          LOG.warn(
+              "Expected to expire messages in a batch, but message with key {} was not found.",
+              messageKey);
         }
-        // else, the message was expired before processing it here, so we can skip it
-        LOG.warn(
-            "Expected to expire messages in a batch, but message with key {} was not found.",
-            messageKey);
       } catch (final ExceededBatchRecordSizeException exceededBatchRecordSizeException) {
         LOG.warn(
             "Expected to expire messages in a batch, but exceeded the resulting batch size after expiring {} out of {} messages. "
