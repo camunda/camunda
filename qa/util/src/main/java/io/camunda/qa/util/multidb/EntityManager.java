@@ -153,7 +153,7 @@ public final class EntityManager {
   public void await() {
     // TODO replace with proper search queries when they are implemented
     try {
-      Thread.sleep(2000);
+      Thread.sleep(5000);
     } catch (final InterruptedException e) {
       throw new RuntimeException(e);
     }
