@@ -61,7 +61,8 @@ public class JobUpdateBehaviour {
         new AuthorizationRequest(
                 command,
                 AuthorizationResourceType.PROCESS_DEFINITION,
-                PermissionType.UPDATE_PROCESS_INSTANCE)
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                job.getTenantId())
             .addResourceId(job.getBpmnProcessId());
     return authCheckBehavior.isAuthorized(authRequest).map(unused -> job);
   }
