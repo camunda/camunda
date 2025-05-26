@@ -19,7 +19,6 @@ import static org.assertj.core.api.Assertions.*;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.spring.client.annotation.AnnotationUtil;
 import io.camunda.spring.client.annotation.JobWorker;
 import io.camunda.spring.client.annotation.Variable;
 import io.camunda.spring.client.annotation.VariablesAsType;
@@ -28,6 +27,7 @@ import io.camunda.spring.client.bean.ClassInfo;
 import io.camunda.spring.client.bean.MethodInfo;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -135,23 +135,6 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     customizer.customize(jobWorkerValue);
     // then
     assertThat(jobWorkerValue.getName()).isEqualTo("testBean#sampleWorker");
-  }
-
-  @Test
-  void shouldSetDefaultTenantIds() {
-    // given
-    final CamundaClientProperties properties = properties();
-    properties.getWorker().getDefaults().setTenantIds(List.of("customTenantId"));
-
-    final PropertyBasedJobWorkerValueCustomizer customizer =
-        new PropertyBasedJobWorkerValueCustomizer(properties);
-
-    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
-    // when
-    customizer.customize(jobWorkerValue);
-    // then
-    assertThat(jobWorkerValue.getTenantIds()).contains("customTenantId");
   }
 
   @Test
@@ -446,6 +429,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
         generateInput(), i -> shouldSetGlobalProperty(i.setter(), i.getter(), i.expected()));
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void shouldSetGlobalProperty(
       final BiConsumer<CamundaClientJobWorkerProperties, Object> setter,
       final Function<JobWorkerValue, Object> getter,
@@ -461,7 +445,11 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "emptyWorker"));
     customizer.customize(jobWorkerValue);
     final Object result = getter.apply(jobWorkerValue);
-    assertThat(result).isEqualTo(expected);
+    if (result instanceof Collection<?>) {
+      assertThat((Collection<?>) result).containsExactlyInAnyOrderElementsOf((Iterable) expected);
+    } else {
+      assertThat(result).isEqualTo(expected);
+    }
   }
 
   @Test
@@ -480,31 +468,151 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   }
 
   @Test
-  void shouldApplyTenantIdIfNothingElseConfigured() {
+  void shouldApplyWorkerDefaultTenantIds() {
+    // given
+    final CamundaClientProperties properties = properties();
+    properties.getWorker().getDefaults().setTenantIds(List.of("customTenantId"));
+
+    final PropertyBasedJobWorkerValueCustomizer customizer =
+        new PropertyBasedJobWorkerValueCustomizer(properties);
+
+    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
+    // when
+    customizer.customize(jobWorkerValue);
+    // then
+    assertThat(jobWorkerValue.getTenantIds()).contains("customTenantId");
+  }
+
+  @Test
+  void shouldMergeWorkerDefaultTenantIdsAndWorkerAnnotationTenantIds() {
+    // given
+    final CamundaClientProperties properties = properties();
+    properties.getWorker().getDefaults().setTenantIds(List.of("customTenantId"));
+
+    final PropertyBasedJobWorkerValueCustomizer customizer =
+        new PropertyBasedJobWorkerValueCustomizer(properties);
+
+    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
+    jobWorkerValue.setTenantIds(List.of("annotationTenantId"));
+    // when
+    customizer.customize(jobWorkerValue);
+    // then
+    assertThat(jobWorkerValue.getTenantIds())
+        .containsExactlyInAnyOrder("annotationTenantId", "customTenantId");
+  }
+
+  @Test
+  void shouldApplyClientDefaultTenantIdWhenNothingElseConfigured() {
     // given
     final CamundaClientProperties properties = properties();
     properties.setTenantId("testTenantId");
     final PropertyBasedJobWorkerValueCustomizer customizer =
         new PropertyBasedJobWorkerValueCustomizer(properties);
     final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "emptyWorker"));
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
     customizer.customize(jobWorkerValue);
     assertThat(jobWorkerValue.getTenantIds()).containsOnly("testTenantId");
   }
 
   @Test
-  void shouldCombineWorkerDefaultsAnnotationsAndTenantId() {
+  void shouldApplyWorkerDefaultTenantIdsOnlyWhenClientDefaultTenantIdIsSet() {
     // given
     final CamundaClientProperties properties = properties();
-    properties.setTenantId("testTenantId");
-    properties.getWorker().getDefaults().setTenantIds(List.of("workerDefaultsTenantId"));
+    properties.setTenantId("customTenantId");
+    properties.getWorker().getDefaults().setTenantIds(List.of("testTenantId1", "testTenantId2"));
+
     final PropertyBasedJobWorkerValueCustomizer customizer =
         new PropertyBasedJobWorkerValueCustomizer(properties);
-    final JobWorkerValue jobWorkerValue =
-        AnnotationUtil.getJobWorkerValue(methodInfo(this, "testBean", "customTenantWorker")).get();
+
+    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
+    // when
     customizer.customize(jobWorkerValue);
+    // then
     assertThat(jobWorkerValue.getTenantIds())
-        .containsAll(List.of("testTenantId", "workerDefaultsTenantId", "tenant1", "tenant2"));
+        .containsExactlyInAnyOrder("testTenantId1", "testTenantId2");
+  }
+
+  @Test
+  void shouldApplyDeprecatedDefaultTenantIdsWhenNothingElseConfigured() {
+    // given
+    final CamundaClientProperties properties = properties();
+    properties.setTenantIds(List.of("testTenantId1", "testTenantId2"));
+
+    final PropertyBasedJobWorkerValueCustomizer customizer =
+        new PropertyBasedJobWorkerValueCustomizer(properties);
+
+    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
+    // when
+    customizer.customize(jobWorkerValue);
+    // then
+    assertThat(jobWorkerValue.getTenantIds())
+        .containsExactlyInAnyOrder("testTenantId1", "testTenantId2");
+  }
+
+  @Test
+  void shouldApplyWorkerDefaultTenantIdsWhenDeprecatedDefaultTenantIdsAreSet() {
+    // given
+    final CamundaClientProperties properties = properties();
+    properties.setTenantIds(List.of("testTenantId1", "testTenantId2"));
+    properties.getWorker().getDefaults().setTenantIds(List.of("testTenantId3", "testTenantId4"));
+
+    final PropertyBasedJobWorkerValueCustomizer customizer =
+        new PropertyBasedJobWorkerValueCustomizer(properties);
+
+    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
+    // when
+    customizer.customize(jobWorkerValue);
+    // then
+    assertThat(jobWorkerValue.getTenantIds())
+        .containsExactlyInAnyOrder("testTenantId3", "testTenantId4");
+  }
+
+  @Test
+  void shouldMergeClientDefaultTenantIdsAndWorkerAnnotationTenantIdsWhenNothingElseConfigured() {
+    // given
+    final CamundaClientProperties properties = properties();
+    properties.setTenantId("customTenantId");
+
+    final PropertyBasedJobWorkerValueCustomizer customizer =
+        new PropertyBasedJobWorkerValueCustomizer(properties);
+
+    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
+    jobWorkerValue.setTenantIds(List.of("annotationTenantId"));
+    // when
+    customizer.customize(jobWorkerValue);
+    // then
+    assertThat(jobWorkerValue.getTenantIds())
+        .containsExactlyInAnyOrder("annotationTenantId", "customTenantId");
+  }
+
+  @Test
+  void shouldApplyTenantIdWorkerOverridesRegardlessOfDefaultsSet() {
+    // given
+    final CamundaClientProperties properties = properties();
+    properties.getWorker().getDefaults().setTenantIds(List.of("workerDefaultsId"));
+    properties.setTenantId("clientDefaultId");
+    properties.setTenantIds(List.of("deprecatedClientDefaults"));
+    final CamundaClientJobWorkerProperties overrideJobWorkerValue =
+        new CamundaClientJobWorkerProperties();
+    overrideJobWorkerValue.setTenantIds(List.of("overriddenTenantId"));
+    properties.getWorker().getOverride().put("sampleWorker", overrideJobWorkerValue);
+
+    final PropertyBasedJobWorkerValueCustomizer customizer =
+        new PropertyBasedJobWorkerValueCustomizer(properties);
+
+    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
+    jobWorkerValue.setTenantIds(List.of("annotationWorkerDefaultsId"));
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
+    // when
+    customizer.customize(jobWorkerValue);
+    // then
+    assertThat(jobWorkerValue.getTenantIds()).contains("overriddenTenantId");
   }
 
   private record Input<T extends Object>(
