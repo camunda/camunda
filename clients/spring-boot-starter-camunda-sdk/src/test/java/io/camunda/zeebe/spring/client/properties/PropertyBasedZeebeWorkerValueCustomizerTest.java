@@ -142,23 +142,6 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   }
 
   @Test
-  void shouldSetDefaultTenantIds() {
-    // given
-    final CamundaClientProperties properties = properties();
-    properties.getZeebe().getDefaults().setTenantIds(List.of("customTenantId"));
-
-    final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(properties);
-
-    final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
-    zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
-    // when
-    customizer.customize(zeebeWorkerValue);
-    // then
-    assertThat(zeebeWorkerValue.getTenantIds()).contains("customTenantId");
-  }
-
-  @Test
   void shouldSetDefaultType() {
     // given
     final CamundaClientProperties properties = properties();
@@ -404,6 +387,155 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
     assertThat(jobWorkerValue.getType()).isEqualTo("localOverride");
     assertThat(jobWorkerValue.getName()).isEqualTo("localName");
     assertThat(jobWorkerValue.getFetchVariables()).contains("overrideVariable");
+  }
+
+  @Test
+  void shouldApplyWorkerDefaultTenantIds() {
+    // given
+    final CamundaClientProperties properties = properties();
+    properties.getZeebe().getDefaults().setTenantIds(List.of("customTenantId"));
+
+    final PropertyBasedZeebeWorkerValueCustomizer customizer =
+        new PropertyBasedZeebeWorkerValueCustomizer(properties);
+
+    final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
+    zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
+    // when
+    customizer.customize(zeebeWorkerValue);
+    // then
+    assertThat(zeebeWorkerValue.getTenantIds()).contains("customTenantId");
+  }
+
+  @Test
+  void shouldApplyClientDefaultTenantIdWhenNothingElseConfigured() {
+    // given
+    final CamundaClientProperties properties = properties();
+    properties.setTenantId("testTenantId");
+    final PropertyBasedZeebeWorkerValueCustomizer customizer =
+        new PropertyBasedZeebeWorkerValueCustomizer(properties);
+    final ZeebeWorkerValue jobWorkerValue = new ZeebeWorkerValue();
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
+    customizer.customize(jobWorkerValue);
+    assertThat(jobWorkerValue.getTenantIds()).containsOnly("testTenantId");
+  }
+
+  @Test
+  void shouldMergeWorkerDefaultTenantIdsAndClientDefaultTenantIdWhenNothingElseConfigured() {
+    // given
+    final CamundaClientProperties properties = properties();
+    properties.setTenantId("customTenantId");
+    properties.getZeebe().getDefaults().setTenantIds(List.of("testTenantId1", "testTenantId2"));
+
+    final PropertyBasedZeebeWorkerValueCustomizer customizer =
+        new PropertyBasedZeebeWorkerValueCustomizer(properties);
+
+    final ZeebeWorkerValue jobWorkerValue = new ZeebeWorkerValue();
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
+    // when
+    customizer.customize(jobWorkerValue);
+    // then
+    assertThat(jobWorkerValue.getTenantIds())
+        .containsExactlyInAnyOrder("testTenantId1", "testTenantId2", "customTenantId");
+  }
+
+  @Test
+  void shouldApplyDeprecatedDefaultTenantIdsWhenNothingElseConfigured() {
+    // given
+    final CamundaClientProperties properties = properties();
+    properties.setTenantIds(List.of("testTenantId1", "testTenantId2"));
+
+    final PropertyBasedZeebeWorkerValueCustomizer customizer =
+        new PropertyBasedZeebeWorkerValueCustomizer(properties);
+
+    final ZeebeWorkerValue jobWorkerValue = new ZeebeWorkerValue();
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
+    // when
+    customizer.customize(jobWorkerValue);
+    // then
+    assertThat(jobWorkerValue.getTenantIds())
+        .containsExactlyInAnyOrder("testTenantId1", "testTenantId2");
+  }
+
+  @Test
+  void shouldMergeDeprecatedDefaultTenantIdsAndClientDefaultTenantIdWhenNothingElseConfigured() {
+    // given
+    final CamundaClientProperties properties = properties();
+    properties.setTenantIds(List.of("testTenantId1", "testTenantId2"));
+    properties.setTenantId("customTenantId");
+
+    final PropertyBasedZeebeWorkerValueCustomizer customizer =
+        new PropertyBasedZeebeWorkerValueCustomizer(properties);
+
+    final ZeebeWorkerValue jobWorkerValue = new ZeebeWorkerValue();
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
+    // when
+    customizer.customize(jobWorkerValue);
+    // then
+    assertThat(jobWorkerValue.getTenantIds())
+        .containsExactlyInAnyOrder("testTenantId1", "testTenantId2", "customTenantId");
+  }
+
+  @Test
+  void
+      shouldOverrideDeprecatedDefaultTenantIdsWhenWorkerDefaultTenantIdsAndNothingElseConfigured() {
+    // given
+    final CamundaClientProperties properties = properties();
+    properties.setTenantIds(List.of("testTenantId1", "testTenantId2"));
+    properties.getZeebe().getDefaults().setTenantIds(List.of("testTenantId3", "testTenantId4"));
+
+    final PropertyBasedZeebeWorkerValueCustomizer customizer =
+        new PropertyBasedZeebeWorkerValueCustomizer(properties);
+
+    final ZeebeWorkerValue jobWorkerValue = new ZeebeWorkerValue();
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
+    // when
+    customizer.customize(jobWorkerValue);
+    // then
+    assertThat(jobWorkerValue.getTenantIds())
+        .containsExactlyInAnyOrder("testTenantId3", "testTenantId4");
+  }
+
+  @Test
+  void shouldMergeClientDefaultTenantIdsAndWorkerAnnotationTenantIdsWhenNothingElseConfigured() {
+    // given
+    final CamundaClientProperties properties = properties();
+    properties.setTenantId("customTenantId");
+
+    final PropertyBasedZeebeWorkerValueCustomizer customizer =
+        new PropertyBasedZeebeWorkerValueCustomizer(properties);
+
+    final ZeebeWorkerValue jobWorkerValue = new ZeebeWorkerValue();
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
+    jobWorkerValue.setTenantIds(List.of("annotationTenantId"));
+    // when
+    customizer.customize(jobWorkerValue);
+    // then
+    assertThat(jobWorkerValue.getTenantIds())
+        .containsExactlyInAnyOrder("annotationTenantId", "customTenantId");
+  }
+
+  @Test
+  void shouldApplyWorkerOverridesRegardlessOfDefaultsSet() {
+    // given
+    final CamundaClientProperties properties = properties();
+    properties.getZeebe().getDefaults().setTenantIds(List.of("workerDefaultsId"));
+    properties.setTenantId("clientDefaultId");
+    properties.setTenantIds(List.of("deprecatedClientDefaults"));
+    final ZeebeWorkerValue overrideJobWorkerValue = new ZeebeWorkerValue();
+    overrideJobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
+    overrideJobWorkerValue.setTenantIds(List.of("overriddenTenantId"));
+    properties.getZeebe().getOverride().put("sampleWorker", overrideJobWorkerValue);
+
+    final PropertyBasedZeebeWorkerValueCustomizer customizer =
+        new PropertyBasedZeebeWorkerValueCustomizer(properties);
+
+    final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
+    zeebeWorkerValue.setTenantIds(List.of("annotationWorkerDefaultsId"));
+    zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
+    // when
+    customizer.customize(zeebeWorkerValue);
+    // then
+    assertThat(zeebeWorkerValue.getTenantIds()).contains("overriddenTenantId");
   }
 
   private static final class ComplexProcessVariable {
