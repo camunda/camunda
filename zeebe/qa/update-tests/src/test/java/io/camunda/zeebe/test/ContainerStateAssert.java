@@ -11,7 +11,6 @@ import static io.camunda.zeebe.test.UpdateTestCaseProvider.PROCESS_ID;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator.PartitionStatus;
-import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import java.time.Duration;
 import java.util.Map;
 import org.assertj.core.api.AbstractObjectAssert;
@@ -89,29 +88,5 @@ final class ContainerStateAssert
     }
 
     return myself;
-  }
-
-  public void hasNewSnapshotAvailable(final int partitionId, final String snapshotId) {
-    final var partitions = actual.getPartitionsActuator().query();
-    final PartitionStatus partitionStatus = partitions.get(partitionId);
-    if (partitionStatus == null) {
-      failWithMessage(
-          "expected partitions query to return info about partition %d, but got %s",
-          partitionId, partitions.keySet());
-    }
-    final var newSnapshotId = FileBasedSnapshotId.ofFileName(partitionStatus.snapshotId());
-
-    final var oldSnapshotId = FileBasedSnapshotId.ofFileName(snapshotId);
-
-    org.assertj.core.api.Assertions.assertThat(oldSnapshotId)
-        .isPresent()
-        .hasValueSatisfying(
-            oldId ->
-                org.assertj.core.api.Assertions.assertThat(newSnapshotId)
-                    .isPresent()
-                    .hasValueSatisfying(
-                        newId ->
-                            org.assertj.core.api.Assertions.assertThat(oldId.getProcessedPosition())
-                                .isLessThan(newId.getProcessedPosition())));
   }
 }
