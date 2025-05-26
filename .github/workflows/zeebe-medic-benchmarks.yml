@@ -39,10 +39,10 @@ jobs:
           then
             # We want to have always at least 4 benchmarks running
             echo "Delete namespaces for ${{ steps.data.outputs.normal }}"
-            # kubectl delete ${{ steps.data.outputs.normal }}
-            # kubectl delete ${{ steps.data.outputs.normal }}-mixed
-            # kubectl delete ${{ steps.data.outputs.normal }}-latency
-          else 
+            kubectl delete ${{ steps.data.outputs.normal }}
+            kubectl delete ${{ steps.data.outputs.normal }}-mixed
+            kubectl delete ${{ steps.data.outputs.normal }}-latency
+          else
             echo "Detected only ${{ steps.data.outputs.count }} benchmarks. Do not delete the oldest."
           fi
   benchmark-data:
@@ -62,7 +62,7 @@ jobs:
           if [[ ${#var} -eq 0 ]]; then
             echo "Creating new weekly benchmark"
             echo "benchmark=medic-y-$(date +%Y)-cw-$(date +%V)-$(git rev-parse --short HEAD)-benchmark" >> $GITHUB_OUTPUT
-          else 
+          else
             # Example:
             # $ echo ${var%?}
             # medic-y-2025-cw-18-b1bd4006-benchmark-b1bd400
