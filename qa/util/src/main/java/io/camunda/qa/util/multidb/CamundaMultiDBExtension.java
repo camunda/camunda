@@ -304,12 +304,8 @@ public class CamundaMultiDBExtension
     authenticatedClientFactory = new CamundaClientTestFactory();
     // we support only static fields for now - to make sure test setups are build in a way
     // such they are reusable and tests methods are not relying on order, etc.
-    // We want to run tests in a efficient manner, and reduce setup time
+    // We want to run tests in an efficient manner, and reduce setup time
     injectStaticClientField(testClass);
-    final List<User> users = findUsers(testClass, null, ModifierSupport::isStatic);
-    if (!users.isEmpty()) {
-      authenticatedClientFactory.withUsers(users);
-    }
   }
 
   private void manageApplicationUnderTest() {
@@ -405,7 +401,7 @@ public class CamundaMultiDBExtension
         if (field.getType() == CamundaClient.class) {
           if (ModifierSupport.isStatic(field)) {
             field.setAccessible(true);
-            field.set(null, createCamundaClient(field.getAnnotation(Authenticated.class)));
+            field.set(null, getCamundaClient(field.getAnnotation(Authenticated.class)));
           } else {
             fail("Camunda Client field couldn't be injected. Make sure it is static.");
           }
@@ -419,6 +415,7 @@ public class CamundaMultiDBExtension
   @Override
   public void afterAll(final ExtensionContext context) {
     CloseHelper.quietCloseAll(closeables);
+    authenticatedClientFactory.close();
   }
 
   @Override
@@ -432,15 +429,12 @@ public class CamundaMultiDBExtension
   public Object resolveParameter(
       final ParameterContext parameterContext, final ExtensionContext extensionContext)
       throws ParameterResolutionException {
-    return createCamundaClient(parameterContext.getParameter().getAnnotation(Authenticated.class));
+    return getCamundaClient(parameterContext.getParameter().getAnnotation(Authenticated.class));
   }
 
-  private CamundaClient createCamundaClient(final Authenticated authenticated) {
-    final CamundaClient camundaClient =
-        authenticatedClientFactory.createCamundaClient(
-            applicationUnderTest.application, authenticated);
-    closeables.add(camundaClient);
-    return camundaClient;
+  private CamundaClient getCamundaClient(final Authenticated authenticated) {
+    return authenticatedClientFactory.getCamundaClient(
+        applicationUnderTest.application, authenticated);
   }
 
   record ApplicationUnderTest(TestStandaloneApplication<?> application, boolean shouldBeManaged) {}

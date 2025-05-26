@@ -15,12 +15,13 @@ import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,48 +30,42 @@ public final class CamundaClientTestFactory implements AutoCloseable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaClientTestFactory.class);
 
-  private final Map<String, User> usersRegistry = new HashMap<>();
   private final Map<String, CamundaClient> cachedClients = new ConcurrentHashMap<>();
 
-  public CamundaClientTestFactory() {
-    usersRegistry.put(InitializationConfiguration.DEFAULT_USER_USERNAME, User.DEFAULT);
-  }
-
-  public CamundaClientTestFactory withUsers(final List<User> users) {
-    users.forEach(user -> usersRegistry.put(user.username(), user));
-    return this;
-  }
-
-  public CamundaClient createCamundaClient(
-      final TestGateway<?> gateway, final Authenticated authenticated) {
-    if (authenticated == null) {
-      LOGGER.info(
-          "Creating unauthorized Zeebe client for broker address '{}", gateway.restAddress());
-      return gateway.newClientBuilder().preferRestOverGrpc(true).build();
-    } else {
-      LOGGER.info(
-          "Creating Zeebe client for user '{}' and broker address '{}",
-          authenticated.value(),
-          gateway.restAddress());
-    }
+  public CamundaClientTestFactory withUsers(
+      final TestStandaloneApplication<?> application, final List<User> users) {
     final CamundaClient defaultClient =
         cachedClients.computeIfAbsent(
             InitializationConfiguration.DEFAULT_USER_USERNAME,
-            __ -> createDefaultUserClient(gateway));
-    final String username = authenticated.value();
-    if (InitializationConfiguration.DEFAULT_USER_USERNAME.equals(username)) {
-      return defaultClient;
-    } else {
-      return cachedClients.computeIfAbsent(
-          username, k -> createClientForUser(gateway, defaultClient, k));
-    }
+            __ -> createDefaultUserClient(application));
+    users.forEach(
+        user -> {
+          createUserWithPermissions(
+              defaultClient, user.username(), user.password(), user.permissions());
+          createClientForUser(application, user);
+        });
+    return this;
   }
 
-  private CamundaClient createClientForUser(
-      final TestGateway<?> gateway, final CamundaClient defaultClient, final String username) {
-    final User user = usersRegistry.get(username);
-    createUserWithPermissions(defaultClient, user.username(), user.password(), user.permissions());
-    return createAuthenticatedClient(gateway, user.username(), user.password());
+  public CamundaClient getCamundaClient(
+      final TestGateway<?> gateway, final Authenticated authenticated) {
+    if (authenticated == null) {
+      LOGGER.info(
+          "Creating unauthorized Camunda client for broker address '{}", gateway.restAddress());
+      return gateway.newClientBuilder().preferRestOverGrpc(true).build();
+    }
+
+    LOGGER.info(
+        "Retrieving Camunda client for user '{}' and broker address '{}",
+        authenticated.value(),
+        gateway.restAddress());
+    final var username = authenticated.value();
+    return cachedClients.get(username);
+  }
+
+  private void createClientForUser(final TestGateway<?> gateway, final User user) {
+    final var client = createAuthenticatedClient(gateway, user.username(), user.password());
+    cachedClients.put(user.username(), client);
   }
 
   private CamundaClient createDefaultUserClient(final TestGateway<?> gateway) {
@@ -141,6 +136,6 @@ public final class CamundaClientTestFactory implements AutoCloseable {
 
   @Override
   public void close() {
-    cachedClients.values().forEach(CamundaClient::close);
+    CloseHelper.quietCloseAll(cachedClients.values());
   }
 }
