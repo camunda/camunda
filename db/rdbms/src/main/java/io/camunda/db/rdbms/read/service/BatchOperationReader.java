@@ -11,16 +11,10 @@ import io.camunda.db.rdbms.read.domain.BatchOperationDbQuery;
 import io.camunda.db.rdbms.read.mapper.BatchOperationEntityMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.columns.BatchOperationSearchColumn;
-import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
-import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,32 +52,10 @@ public class BatchOperationReader extends AbstractEntityReader<BatchOperationEnt
 
     LOG.trace("[RDBMS DB] Search for batch operations with filter {}", dbQuery);
     final var totalHits = batchOperationMapper.count(dbQuery);
-    final var groupedHits = groupAndSumToList(batchOperationMapper.search(dbQuery));
-    final var hits = groupedHits.stream()
+    final var hits =
+        batchOperationMapper.search(dbQuery).stream()
             .map(BatchOperationEntityMapper::toEntity)
             .toList();
     return buildSearchQueryResult(totalHits, hits, dbSort);
-  }
-
-  private static Collection<BatchOperationDbModel> groupAndSumToList(
-      final List<BatchOperationDbModel> models) {
-    return models.stream()
-        .collect(Collectors.toMap(
-            BatchOperationDbModel::batchOperationKey,
-            Function.identity(),
-            (a, b) -> new BatchOperationDbModel(
-                a.batchOperationKey(),
-                a.state(),
-                a.operationType(),
-                a.startDate(),
-                a.endDate(),
-                a.operationsTotalCount() + b.operationsTotalCount(),
-                a.operationsFailedCount() + b.operationsFailedCount(),
-                a.operationsCompletedCount() + b.operationsCompletedCount(),
-                a.partitionId(),
-                true
-            )
-        ))
-        .values();
   }
 }

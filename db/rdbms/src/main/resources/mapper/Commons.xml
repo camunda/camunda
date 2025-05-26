@@ -193,6 +193,14 @@
                    LIMIT #{limit})
   </sql>
 
+  <sql id="now">
+    <choose>
+      <when test="_databaseId == 'oracle'">SYSDATE</when>
+      <when test="_databaseId == 'sqlserver'">GETDATE()</when>
+      <otherwise>CURRENT_TIMESTAMP</otherwise>
+    </choose>
+  </sql>
+
   <resultMap id="flowNodeStatisticsResultMap"
     type="io.camunda.search.entities.ProcessFlowNodeStatisticsEntity">
     <constructor>

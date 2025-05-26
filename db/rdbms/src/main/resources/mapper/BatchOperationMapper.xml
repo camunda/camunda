@@ -38,6 +38,7 @@
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel">
     INSERT INTO ${prefix}BATCH_OPERATION (BATCH_OPERATION_KEY,
                                  STATE,
+    STATE_UPDATED_DATE,
                                  OPERATION_TYPE,
                                  START_DATE,
                                  END_DATE,
@@ -48,6 +49,7 @@
                                           IS_LEAD)
     VALUES (#{batchOperationKey},
             #{state},
+    <include refid="io.camunda.db.rdbms.sql.Commons.now"/>,
             #{operationType},
             #{startDate},
             #{endDate},
@@ -133,8 +135,14 @@
   </update>
 
   <select id="count" resultType="java.lang.Long">
-    SELECT COUNT(*)
-    FROM ${prefix}BATCH_OPERATION
+      Select count(*) from batch_operation
+           inner join (Select batch_operation_key,
+                MAX(state_updated_date)         AS last_state_updated_date
+             from batch_operation
+             group by batch_operation.batch_operation_key
+           ) as groupedByKeyAndStatus
+      on batch_operation.batch_operation_key = groupedByKeyAndStatus.batch_operation_key
+        and batch_operation.state_updated_date = groupedByKeyAndStatus.last_state_updated_date
     <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.searchFilter"/>
   </select>
 
@@ -143,28 +151,36 @@
     resultMap="BatchOperationResultMap"
     statementType="PREPARED">
     SELECT * FROM (
-    SELECT BATCH_OPERATION_KEY FROM (
-    SELECT
-    bo.BATCH_OPERATION_KEY,
-    bo.STATE,
-    bo.OPERATION_TYPE,
-    bo.START_DATE,
-    bo.END_DATE
-    FROM ${prefix}BATCH_OPERATION bo
+    Select batch_operation.batch_operation_key,
+           batch_operation.state,
+           batch_operation.operation_type,
+           batch_operation.start_date,
+           batch_operation.end_date,
+           groupedByKeyAndStatus.operations_completed_count,
+           groupedByKeyAndStatus.operations_failed_count,
+           groupedByKeyAndStatus.operations_total_count,
+           batch_operation.partition_id,
+           batch_operation.is_lead
+    from batch_operation
+           inner join (Select batch_operation_key,
+                MAX(state_updated_date)         AS last_state_updated_date,
+                SUM(operations_completed_count) as operations_completed_count,
+                SUM(operations_failed_count)    as operations_failed_count,
+                SUM(operations_total_count)     as operations_total_count
+             from batch_operation
+             group by batch_operation.batch_operation_key
+           ) as groupedByKeyAndStatus
+      on batch_operation.batch_operation_key = groupedByKeyAndStatus.batch_operation_key
+        and batch_operation.state_updated_date = groupedByKeyAndStatus.last_state_updated_date
     <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.searchFilter"/>
-    ) filtered
+    ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
-    ) sorted
-    LEFT JOIN ${prefix}BATCH_OPERATION boFull ON boFull.BATCH_OPERATION_KEY =
-    sorted.BATCH_OPERATION_KEY
   </select>
 
   <sql id="searchFilter">
-    WHERE
-    <!-- all filters should just go against lead entry -->
-    IS_LEAD = true
+    WHERE 1 = 1
     <!-- basic filters -->
     <if test="filter.batchOperationIds != null and !filter.batchOperationIds.isEmpty()">
       AND BATCH_OPERATION_KEY IN
