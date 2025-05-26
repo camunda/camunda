@@ -21,6 +21,9 @@ on:
     - cron: "30 23 * * *"
   workflow_dispatch:
 
+env:
+  GO_VERSION: ">= 1.23.1"
+
 permissions:
   actions: write
   attestations: none
@@ -46,13 +49,37 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: ">=1.23.1"
+          go-version: ${{ env.GO_VERSION}}
           cache: false # disabling since not working anyways without a cache-dependency-path specified
 
       - name: golangci-lint
         uses: golangci/golangci-lint-action@55c2c1448f86e01eaae002a5a3a9624417608d84 # v6.5.2
         with:
           working-directory: ./c8run
+
+  test_c8run_unittests:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, macos-13, windows-latest]
+    name: C8Run Unit Tests ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 2
+    defaults:
+      run:
+        working-directory: ./c8run
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION}}
+          cache: false
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Unit tests
+        run: go test ./...
 
   camunda-dist-build:
     name: Build camunda-dist
@@ -91,7 +118,7 @@ jobs:
           name: camunda-platform-dist-zip
           path: ${{ steps.build-dist.outputs.distzip }}
 
-  test_c8run:
+  test_c8run_on_unix:
     strategy:
       matrix:
         # macos-latest is ARM, mac os 13 will execute on x86 runner.
@@ -131,10 +158,6 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
         working-directory: ./c8run/e2e_tests
-
-      - name: Unit tests
-        run: go test ./...
-        working-directory: ./c8run
 
       - name: Run Playwright tests
         run: npx playwright test
@@ -179,7 +202,7 @@ jobs:
           }' \
           $SLACK_WEBHOOK_URL
 
-  test_c8run_windows:
+  test_c8run_e2e_on_windows:
     name: C8Run Test Windows
     runs-on: windows-latest
     timeout-minutes: 15
@@ -202,7 +225,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: ">=1.23.1"
+          go-version: ${{ env.GO_VERSION}}
           cache: false # disabling since not working anyways without a cache-dependency-path specified
 
       - name: Download Camunda Core Dist
@@ -244,13 +267,6 @@ jobs:
       - name: Set env
         run: echo "JAVA_HOME=${JAVA_HOME_22_X64}" >> $GITHUB_ENV
         shell: bash
-
-      - name: Unit tests
-        run: go test ./...
-        working-directory: .\c8run
-        shell: bash
-        env:
-          JAVA_VERSION: "22.0.2"
 
       - name: Run c8run
         run: bash -c './c8run.exe start --config e2e_tests/prefix-config.yaml'
