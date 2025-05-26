@@ -13,8 +13,8 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VisibleForTesting;
-import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import java.time.Duration;
@@ -36,42 +36,39 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
   private volatile HealthReport healthReport;
   private final boolean areMigrationsPerformed;
   private final Duration scheduleDelay;
-  private final ComponentTreeListener treeListener;
   private final ConcurrencyControl control;
-  private final FailureListener snapshotFailureListener;
+  private final HealthMonitor healthMonitor;
 
   public MigrationSnapshotDirector(
       final AsyncSnapshotDirector asyncSnapshotDirector,
       final boolean areMigrationsPerformed,
       final ConcurrencyControl control,
       final Duration scheduleDelay,
-      final ComponentTreeListener treeListener) {
+      final HealthMonitor healthMonitor) {
     snapshotDirector = asyncSnapshotDirector;
     this.areMigrationsPerformed = areMigrationsPerformed;
+    this.control = control;
+    this.scheduleDelay = scheduleDelay;
+    this.healthMonitor = healthMonitor;
     if (areMigrationsPerformed) {
       healthReport = snapshotNotTaken();
+      scheduleSnapshot();
     } else {
       healthReport = HealthReport.healthy(this);
     }
-    this.control = control;
-    this.scheduleDelay = scheduleDelay;
-    this.treeListener = treeListener;
-    treeListener.registerNode(this, asyncSnapshotDirector);
-    snapshotFailureListener = asyncSnapshotDirector.migrationSnapshotListener();
-    addFailureListener(snapshotFailureListener);
-    notifyListeners();
+    healthMonitor.registerComponent(this);
+    LOG.debug("Initialized migration snapshot director with status {}", healthReport);
   }
 
   @Override
   public void close() {
     cancelScheduledSnapshot();
-    treeListener.unregisterNode(this);
-    treeListener.unregisterRelationship(this, snapshotDirector);
+    healthMonitor.removeComponent(this);
   }
 
   public void scheduleSnapshot() {
-    LOG.debug("Scheduling snapshot for migration: {} , {}", areMigrationsPerformed, snapshotTaken);
     if (areMigrationsPerformed && !snapshotTaken) {
+      LOG.debug("Scheduling snapshot for migration.");
       forceSnapshotUntilSuccessful();
     }
   }
