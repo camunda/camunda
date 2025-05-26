@@ -43,7 +43,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 
 @ExcludeAuthorizationCheck
@@ -214,7 +213,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     }
   }
 
-  private static @NotNull Optional<TriggeringRecordMetadata>
+  private static Optional<TriggeringRecordMetadata>
       provideTriggeringRecordMetadataForTerminatingProcess(
           final TypedRecord<ProcessInstanceRecord> command) {
     final boolean isProcessElement =

@@ -87,4 +87,10 @@ public final class TriggeringRecordMetadata {
         && getValueType() == that.getValueType()
         && Objects.equals(getIntent(), that.getIntent());
   }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        getValueType(), getIntent(), getRequestId(), getRequestStreamId(), getOperationReference());
+  }
 }
