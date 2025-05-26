@@ -115,24 +115,6 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
   }
 
   @Test
-  void shouldSetDefaultTenantIds() {
-    // given
-    final ZeebeClientConfigurationProperties properties = properties();
-    properties.setDefaultJobWorkerTenantIds(List.of("customTenantId"));
-
-    final PropertyBasedZeebeWorkerValueCustomizer customizer =
-        new PropertyBasedZeebeWorkerValueCustomizer(properties);
-
-    final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
-    zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
-
-    // when
-    customizer.customize(zeebeWorkerValue);
-    // then
-    assertThat(zeebeWorkerValue.getTenantIds()).contains("customTenantId");
-  }
-
-  @Test
   void shouldSetDefaultType() {
     // given
     final ZeebeClientConfigurationProperties properties = properties();
@@ -250,6 +232,83 @@ public class PropertyBasedZeebeWorkerValueCustomizerTest {
 
     // then
     assertThat(zeebeWorkerValue.getFetchVariables()).containsExactly("value");
+  }
+
+  @Test
+  void shouldSetInternalDefaultTenantId() {
+    // given
+    final ZeebeClientConfigurationProperties properties = properties();
+    // no tenant property is set explicitly
+
+    final PropertyBasedZeebeWorkerValueCustomizer customizer =
+        new PropertyBasedZeebeWorkerValueCustomizer(properties);
+
+    final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
+    zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
+
+    // when
+    customizer.customize(zeebeWorkerValue);
+    // then
+    assertThat(zeebeWorkerValue.getTenantIds()).contains("<default>");
+  }
+
+  @Test
+  void shouldSetDefaultTenantIds() {
+    // given
+    final ZeebeClientConfigurationProperties properties = properties();
+    properties.setDefaultJobWorkerTenantIds(List.of("customTenantId"));
+
+    final PropertyBasedZeebeWorkerValueCustomizer customizer =
+        new PropertyBasedZeebeWorkerValueCustomizer(properties);
+
+    final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
+    zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
+
+    // when
+    customizer.customize(zeebeWorkerValue);
+    // then
+    assertThat(zeebeWorkerValue.getTenantIds()).contains("customTenantId");
+  }
+
+  @Test
+  void shouldMergeClientDefaultTenantIdsAndWorkerAnnotationTenantIdsWhenNothingElseConfigured() {
+    // given
+    final ZeebeClientConfigurationProperties properties = properties();
+    properties.setDefaultJobWorkerTenantIds(List.of("customTenantId"));
+
+    final PropertyBasedZeebeWorkerValueCustomizer customizer =
+        new PropertyBasedZeebeWorkerValueCustomizer(properties);
+
+    final ZeebeWorkerValue jobWorkerValue = new ZeebeWorkerValue();
+    jobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
+    jobWorkerValue.setTenantIds(List.of("annotationTenantId"));
+    // when
+    customizer.customize(jobWorkerValue);
+    // then
+    assertThat(jobWorkerValue.getTenantIds())
+        .containsExactlyInAnyOrder("annotationTenantId", "customTenantId");
+  }
+
+  @Test
+  void shouldApplyTenantIdWorkerOverridesRegardlessOfDefaultsSet() {
+    // given
+    final ZeebeClientConfigurationProperties properties = properties();
+    properties.setDefaultJobWorkerTenantIds(List.of("workerDefaultsId"));
+    final ZeebeWorkerValue overrideJobWorkerValue = new ZeebeWorkerValue();
+    overrideJobWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
+    overrideJobWorkerValue.setTenantIds(List.of("overriddenTenantId"));
+    properties.getWorker().getOverride().put("sampleWorker", overrideJobWorkerValue);
+
+    final PropertyBasedZeebeWorkerValueCustomizer customizer =
+        new PropertyBasedZeebeWorkerValueCustomizer(properties);
+
+    final ZeebeWorkerValue zeebeWorkerValue = new ZeebeWorkerValue();
+    zeebeWorkerValue.setTenantIds(List.of("annotationWorkerDefaultsId"));
+    zeebeWorkerValue.setMethodInfo(methodInfo(this, "testBean", "sampleWorker"));
+    // when
+    customizer.customize(zeebeWorkerValue);
+    // then
+    assertThat(zeebeWorkerValue.getTenantIds()).contains("overriddenTenantId");
   }
 
   private static final class ComplexProcessVariable {
