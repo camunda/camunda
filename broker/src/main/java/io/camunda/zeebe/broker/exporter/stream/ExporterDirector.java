@@ -26,11 +26,11 @@ import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.BackOffRetryStrategy;
-import io.camunda.zeebe.scheduler.retry.EndlessRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
 import io.camunda.zeebe.stream.api.EventFilter;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
@@ -50,6 +50,8 @@ import org.slf4j.Logger;
 
 public final class ExporterDirector extends Actor implements HealthMonitorable, LogRecordAwaiter {
 
+  private static final String ERROR_MESSAGE_DESERIALIZATION_ERROR_EXPORTING_ABORTED =
+      "Expected to export record '{}' successfully, but exception was thrown when deserializing the record.";
   private static final String ERROR_MESSAGE_EXPORTING_ABORTED =
       "Expected to export record '{}' successfully, but exception was thrown.";
   private static final String ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED =
@@ -65,7 +67,6 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final ExporterMetrics metrics;
   private final String name;
   private final RetryStrategy exportingRetryStrategy;
-  private final RetryStrategy recordWrapStrategy;
   private final Set<FailureListener> listeners = new HashSet<>();
   private LogStreamReader logStreamReader;
   private EventFilter eventFilter;
@@ -86,6 +87,14 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final EventFilter positionsToSkipFilter;
 
   public ExporterDirector(final ExporterDirectorContext context, final boolean shouldPauseOnStart) {
+    this(context, shouldPauseOnStart, Function.identity());
+  }
+
+  @VisibleForTesting
+  ExporterDirector(
+      final ExporterDirectorContext context,
+      final boolean shouldPauseOnStart,
+      final Function<RecordExporter, RecordExporter> recorderExporter) {
     name = context.getName();
 
     logStream = Objects.requireNonNull(context.getLogStream());
@@ -95,9 +104,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
             .map(descriptor -> new ExporterContainer(descriptor, partitionId))
             .collect(Collectors.toList());
     metrics = new ExporterMetrics(partitionId);
-    recordExporter = new RecordExporter(metrics, containers, partitionId);
+    recordExporter = recorderExporter.apply(new RecordExporter(metrics, containers, partitionId));
     exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
-    recordWrapStrategy = new EndlessRetryStrategy(actor);
     zeebeDb = context.getZeebeDb();
     isHardPaused = shouldPauseOnStart;
     partitionMessagingService = context.getPartitionMessagingService();
@@ -442,34 +450,28 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   private void exportEvent(final LoggedEvent event) {
-    final ActorFuture<Boolean> wrapRetryFuture =
-        recordWrapStrategy.runWithRetry(
-            () -> {
-              recordExporter.wrap(event);
-              return true;
-            },
-            this::isClosed);
+    try {
+      recordExporter.wrap(event);
+    } catch (final Exception exception) {
+      LOG.warn(ERROR_MESSAGE_DESERIALIZATION_ERROR_EXPORTING_ABORTED, event, exception);
+      onFailure();
+      return;
+    }
+
+    final ActorFuture<Boolean> retryFuture =
+        exportingRetryStrategy.runWithRetry(recordExporter::export, this::isClosed);
 
     actor.runOnCompletion(
-        wrapRetryFuture,
-        (b, t) -> {
-          assert t == null : "Throwable must be null";
-
-          final ActorFuture<Boolean> retryFuture =
-              exportingRetryStrategy.runWithRetry(recordExporter::export, this::isClosed);
-
-          actor.runOnCompletion(
-              retryFuture,
-              (bool, throwable) -> {
-                if (throwable != null) {
-                  LOG.error(ERROR_MESSAGE_EXPORTING_ABORTED, event, throwable);
-                  onFailure();
-                } else {
-                  metrics.eventExported(recordExporter.getTypedEvent().getValueType());
-                  inExportingPhase = false;
-                  actor.submit(this::readNextEvent);
-                }
-              });
+        retryFuture,
+        (bool, throwable) -> {
+          if (throwable != null) {
+            LOG.error(ERROR_MESSAGE_EXPORTING_ABORTED, event, throwable);
+            onFailure();
+          } else {
+            metrics.eventExported(recordExporter.getTypedEvent().getValueType());
+            inExportingPhase = false;
+            actor.submit(this::readNextEvent);
+          }
         });
   }
 
@@ -519,7 +521,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     return actor.call(() -> state.getLowestPosition());
   }
 
-  private static class RecordExporter {
+  @VisibleForTesting
+  public static class RecordExporter {
 
     private final RecordValues recordValues = new RecordValues();
     private final RecordMetadata rawMetadata = new RecordMetadata();
