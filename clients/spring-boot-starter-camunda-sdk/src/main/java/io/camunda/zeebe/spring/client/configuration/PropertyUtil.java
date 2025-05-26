@@ -35,7 +35,7 @@ public class PropertyUtil {
    * @return the property resolved
    * @param <T> the type of the property
    */
-  public static <T> T getOrLegacyOrDefault(
+  public static <T> T getLegacyOrPropertyOrDefault(
       final String propertyName,
       final Supplier<T> propertySupplier,
       final Supplier<T> legacyPropertySupplier,
@@ -79,7 +79,7 @@ public class PropertyUtil {
       final Supplier<T> propertySupplier,
       final T defaultProperty,
       final Map<String, Object> configCache) {
-    return getOrLegacyOrDefault(
+    return getLegacyOrPropertyOrDefault(
         propertyName, propertySupplier, noPropertySupplier(), defaultProperty, configCache);
   }
 
