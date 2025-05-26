@@ -25,12 +25,18 @@ describe('Operations - Cancel Operation', () => {
   });
 
   it('should show modal when trying to cancel called instance', async () => {
-    mockFetchCallHierarchy().withSuccess({
-      items: [
-        {processInstanceKey: '3', processDefinitionName: 'some root process'},
-        {processInstanceKey: '2', processDefinitionName: 'some parent process'},
-      ],
-    });
+    mockFetchCallHierarchy().withSuccess([
+      {
+        processInstanceKey: '3',
+        processDefinitionName: 'some root process',
+        processDefinitionKey: 'process-key',
+      },
+      {
+        processInstanceKey: '2',
+        processDefinitionName: 'some parent process',
+        processDefinitionKey: 'process-key',
+      },
+    ]);
     const onOperationMock = jest.fn();
 
     const modalText =
@@ -66,14 +72,13 @@ describe('Operations - Cancel Operation', () => {
 
   it('should redirect to linked parent instance', async () => {
     const rootInstanceId = '6755399441058622';
-    mockFetchCallHierarchy().withSuccess({
-      items: [
-        {
-          processInstanceKey: rootInstanceId,
-          processDefinitionName: 'some root process',
-        },
-      ],
-    });
+    mockFetchCallHierarchy().withSuccess([
+      {
+        processInstanceKey: rootInstanceId,
+        processDefinitionName: 'some root process',
+        processDefinitionKey: 'process-key',
+      },
+    ]);
 
     const {user} = render(
       <Operations

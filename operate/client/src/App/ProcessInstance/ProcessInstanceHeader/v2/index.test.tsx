@@ -239,7 +239,7 @@ describe('InstanceHeader', () => {
   });
 
   it.skip('should show spinner when operation is applied', async () => {
-    mockFetchCallHierarchy().withSuccess({items: []});
+    mockFetchCallHierarchy().withSuccess([]);
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockApplyOperation().withSuccess(mockOperationCreated);
@@ -330,7 +330,7 @@ describe('InstanceHeader', () => {
   });
 
   it.skip('should remove spinner when operation fails', async () => {
-    mockFetchCallHierarchy().withSuccess({items: []});
+    mockFetchCallHierarchy().withSuccess([]);
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockApplyOperation().withDelayedServerError();

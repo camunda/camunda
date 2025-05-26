@@ -27,7 +27,7 @@ function getParentAndRootProcessInformation(callHierarchy?: CallHierarchy[]) {
 const Error: React.FC = () => {
   const {data: callHierarchy} = useCallHierarchy();
   const {parentProcessId, parentProcessName, rootProcessId, rootProcessName} =
-    getParentAndRootProcessInformation(callHierarchy?.items);
+    getParentAndRootProcessInformation(callHierarchy);
 
   if (parentProcessId === undefined || rootProcessId === undefined) {
     return null;

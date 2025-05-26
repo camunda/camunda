@@ -35,18 +35,18 @@ const mockEndpoints = [
   rest.get(
     '/v2/process-instances/:processInstanceKey/call-hierarchy',
     async (req, res, ctx) => {
-      const mockResponse: GetProcessInstanceCallHierarchyResponseBody = {
-        items: [
-          {
-            processInstanceKey: '2251799833223965',
-            processDefinitionName: 'Call Activity Process',
-          },
-          {
-            processInstanceKey: '2251799833223971',
-            processDefinitionName: 'called-process',
-          },
-        ],
-      };
+      const mockResponse: GetProcessInstanceCallHierarchyResponseBody = [
+        {
+          processInstanceKey: '2251799833223965',
+          processDefinitionName: 'Call Activity Process',
+          processDefinitionKey: '',
+        },
+        {
+          processInstanceKey: '2251799833223971',
+          processDefinitionName: 'called-process',
+          processDefinitionKey: '',
+        },
+      ];
 
       return res(ctx.json(mockResponse));
     },
