@@ -11,7 +11,10 @@ import static org.assertj.core.api.Fail.fail;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.auth.Authenticated;
-import io.camunda.qa.util.auth.Group;
+import io.camunda.qa.util.auth.GroupDefinition;
+import io.camunda.qa.util.auth.RoleDefinition;
+import io.camunda.qa.util.auth.TestGroup;
+import io.camunda.qa.util.auth.TestRole;
 import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
@@ -218,6 +221,7 @@ public class CamundaMultiDBExtension
   private MultiDbConfigurator multiDbConfigurator;
   private MultiDbSetupHelper setupHelper = new NoopDBSetupHelper();
   private CamundaClientTestFactory authenticatedClientFactory;
+  private EntityManager entityManager;
 
   public CamundaMultiDBExtension() {
     this(new TestStandaloneBroker());
@@ -301,11 +305,23 @@ public class CamundaMultiDBExtension
       manageApplicationUnderTest();
     }
 
-    authenticatedClientFactory = new CamundaClientTestFactory();
+    authenticatedClientFactory = new CamundaClientTestFactory(applicationUnderTest.application);
+    entityManager = new EntityManager(authenticatedClientFactory.getDefaultUserCamundaClient());
+    createEntities(testClass);
     // we support only static fields for now - to make sure test setups are build in a way
     // such they are reusable and tests methods are not relying on order, etc.
     // We want to run tests in an efficient manner, and reduce setup time
     injectStaticClientField(testClass);
+  }
+
+  private void createEntities(final Class<?> testClass) {
+    final var users = findUsers(testClass, null, ModifierSupport::isStatic);
+    final var groups = findGroups(testClass, null, ModifierSupport::isStatic);
+    final var roles = findRoles(testClass, null, ModifierSupport::isStatic);
+    entityManager.withUser(users).withGroups(groups).withRoles(roles);
+    users.forEach(
+        user ->
+            authenticatedClientFactory.createClientForUser(applicationUnderTest.application, user));
   }
 
   private void manageApplicationUnderTest() {
@@ -368,19 +384,30 @@ public class CamundaMultiDBExtension
 
   private List<User> findUsers(
       final Class<?> testClass, final Object testInstance, final Predicate<Field> predicate) {
-    return findFields(testClass, testInstance, predicate, UserDefinition.class);
+    return findFields(testClass, testInstance, predicate, User.class, UserDefinition.class);
+  }
+
+  private List<TestGroup> findGroups(
+      final Class<?> testClass, final Object testInstance, final Predicate<Field> predicate) {
+    return findFields(testClass, testInstance, predicate, TestGroup.class, GroupDefinition.class);
+  }
+
+  private List<TestRole> findRoles(
+      final Class<?> testClass, final Object testInstance, final Predicate<Field> predicate) {
+    return findFields(testClass, testInstance, predicate, TestRole.class, RoleDefinition.class);
   }
 
   private <T> List<T> findFields(
       final Class<?> testClass,
       final Object testInstance,
       Predicate<Field> predicate,
+      final Class<T> entityClass,
       final Class<? extends Annotation> definitionClass) {
     final var instances = new ArrayList<T>();
     predicate =
         predicate.and(
             field ->
-                field.getType() == Group.class && field.getAnnotation(definitionClass) != null);
+                field.getType() == entityClass && field.getAnnotation(definitionClass) != null);
     for (final Field field : testClass.getDeclaredFields()) {
       try {
         if (predicate.test(field)) {
