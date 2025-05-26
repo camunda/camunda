@@ -305,7 +305,7 @@ public class CamundaMultiDBExtension
       manageApplicationUnderTest();
     }
 
-    authenticatedClientFactory = new CamundaClientTestFactory(applicationUnderTest.application);
+    authenticatedClientFactory = new CamundaClientTestFactory(applicationUnderTest);
     entityManager = new EntityManager(authenticatedClientFactory.getDefaultUserCamundaClient());
     createEntities(testClass);
     // we support only static fields for now - to make sure test setups are build in a way
@@ -464,7 +464,8 @@ public class CamundaMultiDBExtension
         applicationUnderTest.application, authenticated);
   }
 
-  record ApplicationUnderTest(TestStandaloneApplication<?> application, boolean shouldBeManaged) {}
+  public record ApplicationUnderTest(
+      TestStandaloneApplication<?> application, boolean shouldBeManaged) {}
 
   private static final class NoopDBSetupHelper implements MultiDbSetupHelper {
     @Override

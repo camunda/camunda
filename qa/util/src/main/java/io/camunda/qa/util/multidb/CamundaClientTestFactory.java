@@ -11,9 +11,9 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension.ApplicationUnderTest;
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import java.time.Duration;
 import java.util.Map;
@@ -29,7 +29,7 @@ public final class CamundaClientTestFactory implements AutoCloseable {
 
   private final Map<String, CamundaClient> cachedClients = new ConcurrentHashMap<>();
 
-  public CamundaClientTestFactory(final TestStandaloneApplication<?> application) {
+  public CamundaClientTestFactory(final ApplicationUnderTest application) {
     cachedClients.put(
         InitializationConfiguration.DEFAULT_USER_USERNAME, createDefaultUserClient(application));
   }
@@ -63,20 +63,24 @@ public final class CamundaClientTestFactory implements AutoCloseable {
     cachedClients.put(user.username(), client);
   }
 
-  private CamundaClient createDefaultUserClient(final TestGateway<?> gateway) {
+  private CamundaClient createDefaultUserClient(final ApplicationUnderTest application) {
     final CamundaClient defaultClient =
         createAuthenticatedClient(
-            gateway,
+            application.application(),
             InitializationConfiguration.DEFAULT_USER_USERNAME,
             InitializationConfiguration.DEFAULT_USER_PASSWORD);
-    // block until the default user is created
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(20))
-        .ignoreExceptions()
-        .untilAsserted(
-            () ->
-                TopologyAssert.assertThat(defaultClient.newTopologyRequest().send().join())
-                    .isHealthy());
+    // Block until the default user is created. If the application is not managed by the extension
+    // there is no point waiting for the topology to be healthy, as the application might not be
+    // started yet.
+    if (application.shouldBeManaged()) {
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(20))
+          .ignoreExceptions()
+          .untilAsserted(
+              () ->
+                  TopologyAssert.assertThat(defaultClient.newTopologyRequest().send().join())
+                      .isHealthy());
+    }
     return defaultClient;
   }
 
