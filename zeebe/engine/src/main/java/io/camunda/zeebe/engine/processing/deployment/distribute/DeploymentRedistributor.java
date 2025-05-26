@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.distribute;
 import static io.camunda.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 
 import io.camunda.zeebe.engine.state.immutable.DeploymentState;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
@@ -31,11 +32,14 @@ public class DeploymentRedistributor implements StreamProcessorLifecycleAware {
   private static final Logger LOG = LoggerFactory.getLogger(DeploymentRedistributor.class);
   private final DeploymentDistributionCommandSender deploymentDistributionCommandSender;
   private final DeploymentState deploymentState;
+  private final RoutingInfo routingInfo;
   private final Map<PendingDistribution, Long> retryCyclesPerDistribution = new HashMap<>();
 
   public DeploymentRedistributor(
       final DeploymentDistributionCommandSender deploymentDistributionCommandSender,
-      final DeploymentState deploymentState) {
+      final DeploymentState deploymentState,
+      final RoutingInfo routingInfo) {
+    this.routingInfo = routingInfo;
     this.deploymentDistributionCommandSender = deploymentDistributionCommandSender;
     this.deploymentState = deploymentState;
   }
