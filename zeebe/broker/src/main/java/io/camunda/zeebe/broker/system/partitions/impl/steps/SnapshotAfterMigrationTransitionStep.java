@@ -42,9 +42,8 @@ public class SnapshotAfterMigrationTransitionStep implements PartitionTransition
                 context.areMigrationsPerformed(),
                 context.getConcurrencyControl(),
                 scheduleDelay,
-                context.getComponentTreeListener());
+                context.getComponentHealthMonitor());
       }
-      migrationSnapshotDirector.scheduleSnapshot();
     }
     return CompletableActorFuture.completed();
   }
