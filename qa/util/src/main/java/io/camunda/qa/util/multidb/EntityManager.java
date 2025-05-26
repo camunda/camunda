@@ -148,4 +148,14 @@ public final class EntityManager {
           }
         });
   }
+
+  /** Will wait until all entities are created and permissions are assigned. */
+  public void await() {
+    // TODO replace with proper search queries when they are implemented
+    try {
+      Thread.sleep(2000);
+    } catch (final InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+  }
 }

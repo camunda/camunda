@@ -318,7 +318,7 @@ public class CamundaMultiDBExtension
     final var users = findUsers(testClass, null, ModifierSupport::isStatic);
     final var groups = findGroups(testClass, null, ModifierSupport::isStatic);
     final var roles = findRoles(testClass, null, ModifierSupport::isStatic);
-    entityManager.withUser(users).withGroups(groups).withRoles(roles);
+    entityManager.withUser(users).withGroups(groups).withRoles(roles).await();
     users.forEach(
         user ->
             authenticatedClientFactory.createClientForUser(applicationUnderTest.application, user));
