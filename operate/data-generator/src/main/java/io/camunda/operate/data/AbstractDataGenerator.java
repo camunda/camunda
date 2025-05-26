@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.DependsOn;
 
 @DependsOn("searchEngineSchemaInitializer")
@@ -33,7 +34,9 @@ public abstract class AbstractDataGenerator implements DataGenerator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractDataGenerator.class);
 
-  @Autowired protected CamundaClient client;
+  @Autowired
+  @Qualifier("camundaClient")
+  protected CamundaClient client;
 
   protected boolean manuallyCalled = false;
   protected ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);
