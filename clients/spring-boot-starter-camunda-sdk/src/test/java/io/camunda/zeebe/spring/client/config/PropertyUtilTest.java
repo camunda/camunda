@@ -25,7 +25,7 @@ public class PropertyUtilTest {
   @Test
   void shouldPreferLegacy() {
     final String property =
-        PropertyUtil.getOrLegacyOrDefault(
+        PropertyUtil.getLegacyOrPropertyOrDefault(
             "Test", () -> "prop", () -> "legacy", "default", new HashMap<>());
     assertThat(property).isEqualTo("legacy");
   }
@@ -33,7 +33,7 @@ public class PropertyUtilTest {
   @Test
   void shouldApplyDefault() {
     final String property =
-        PropertyUtil.getOrLegacyOrDefault(
+        PropertyUtil.getLegacyOrPropertyOrDefault(
             "Test", () -> null, () -> null, "default", new HashMap<>());
     assertThat(property).isEqualTo("default");
   }
@@ -41,7 +41,7 @@ public class PropertyUtilTest {
   @Test
   void shouldIgnoreDefaultOnLegacy() {
     final String property =
-        PropertyUtil.getOrLegacyOrDefault(
+        PropertyUtil.getLegacyOrPropertyOrDefault(
             "Test", () -> "prop", () -> "default", "default", new HashMap<>());
     assertThat(property).isEqualTo("prop");
   }
@@ -49,7 +49,7 @@ public class PropertyUtilTest {
   @Test
   void shouldHandleExceptionOnPropertySupplier() {
     final String property =
-        PropertyUtil.getOrLegacyOrDefault(
+        PropertyUtil.getLegacyOrPropertyOrDefault(
             "Test",
             () -> {
               throw new NullPointerException();
@@ -63,7 +63,7 @@ public class PropertyUtilTest {
   @Test
   void shouldHandleExceptionOnLegacyPropertySupplier() {
     final String property =
-        PropertyUtil.getOrLegacyOrDefault(
+        PropertyUtil.getLegacyOrPropertyOrDefault(
             "Test",
             () -> null,
             () -> {

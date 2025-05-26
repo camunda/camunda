@@ -80,7 +80,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public String getGatewayAddress() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrPropertyOrDefault(
         "GatewayAddress",
         this::composeGatewayAddress,
         () -> PropertiesUtil.getZeebeGatewayAddress(properties),
@@ -90,7 +90,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public URI getRestAddress() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrPropertyOrDefault(
         "RestAddress",
         () -> camundaClientProperties.getZeebe().getRestAddress(),
         () -> properties.getBroker().getRestAddress(),
@@ -100,7 +100,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public URI getGrpcAddress() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrPropertyOrDefault(
         "GrpcAddress",
         () -> camundaClientProperties.getZeebe().getGrpcAddress(),
         properties::getGrpcAddress,
@@ -110,7 +110,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public String getDefaultTenantId() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrPropertyOrDefault(
         "DefaultTenantId",
         prioritized(
             DEFAULT.getDefaultTenantId(),
@@ -124,7 +124,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public List<String> getDefaultJobWorkerTenantIds() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrPropertyOrDefault(
         "DefaultJobWorkerTenantIds",
         prioritized(
             DEFAULT.getDefaultJobWorkerTenantIds(),
@@ -138,7 +138,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public int getNumJobWorkerExecutionThreads() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrPropertyOrDefault(
         "NumJobWorkerExecutionThreads",
         () -> camundaClientProperties.getZeebe().getExecutionThreads(),
         () -> properties.getWorker().getThreads(),
@@ -148,7 +148,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public int getDefaultJobWorkerMaxJobsActive() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrPropertyOrDefault(
         "DefaultJobWorkerMaxJobsActive",
         () -> camundaClientProperties.getZeebe().getDefaults().getMaxJobsActive(),
         () -> properties.getWorker().getMaxJobsActive(),
@@ -158,7 +158,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public String getDefaultJobWorkerName() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrPropertyOrDefault(
         "DefaultJobWorkerName",
         () -> camundaClientProperties.getZeebe().getDefaults().getName(),
         () -> properties.getWorker().getDefaultName(),
@@ -168,7 +168,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public Duration getDefaultJobTimeout() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrPropertyOrDefault(
         "DefaultJobTimeout",
         () -> camundaClientProperties.getZeebe().getDefaults().getTimeout(),
         () -> properties.getJob().getTimeout(),
@@ -178,7 +178,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public Duration getDefaultJobPollInterval() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrPropertyOrDefault(
         "DefaultJobPollInterval",
         () -> camundaClientProperties.getZeebe().getDefaults().getPollInterval(),
         () -> properties.getJob().getPollInterval(),
@@ -188,7 +188,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public Duration getDefaultMessageTimeToLive() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrPropertyOrDefault(
         "DefaultMessageTimeToLive",
         () -> camundaClientProperties.getZeebe().getMessageTimeToLive(),
         () -> properties.getMessage().getTimeToLive(),
@@ -198,7 +198,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public Duration getDefaultRequestTimeout() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrPropertyOrDefault(
         "DefaultRequestTimeout",
         prioritized(
             DEFAULT.getDefaultRequestTimeout(),
@@ -212,7 +212,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public boolean isPlaintextConnectionEnabled() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrPropertyOrDefault(
         "PlaintextConnectionEnabled",
         this::composePlaintext,
         () -> properties.getSecurity().isPlaintext(),
@@ -222,7 +222,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public String getCaCertificatePath() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrPropertyOrDefault(
         "CaCertificatePath",
         () -> camundaClientProperties.getZeebe().getCaCertificatePath(),
         () -> properties.getSecurity().getCertPath(),
@@ -232,7 +232,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public CredentialsProvider getCredentialsProvider() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrPropertyOrDefault(
         "CredentialsProvider",
         this::credentialsProvider,
         this::legacyCredentialsProvider,
@@ -242,7 +242,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public Duration getKeepAlive() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrPropertyOrDefault(
         "KeepAlive",
         () -> camundaClientProperties.getZeebe().getKeepAlive(),
         () -> properties.getBroker().getKeepAlive(),
@@ -267,7 +267,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public String getOverrideAuthority() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrPropertyOrDefault(
         "OverrideAuthority",
         () -> camundaClientProperties.getZeebe().getOverrideAuthority(),
         () -> properties.getSecurity().getOverrideAuthority(),
@@ -277,7 +277,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public int getMaxMessageSize() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrPropertyOrDefault(
         "MaxMessageSize",
         () -> camundaClientProperties.getZeebe().getMaxMessageSize(),
         () -> properties.getMessage().getMaxMessageSize(),
@@ -301,7 +301,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public boolean ownsJobWorkerExecutor() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrPropertyOrDefault(
         "ownsJobWorkerExecutor",
         zeebeClientExecutorService::isOwnedByZeebeClient,
         properties::ownsJobWorkerExecutor,
@@ -311,7 +311,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public boolean getDefaultJobWorkerStreamEnabled() {
-    return getOrLegacyOrDefault(
+    return getLegacyOrPropertyOrDefault(
         "DefaultJobWorkerStreamEnabled",
         () -> camundaClientProperties.getZeebe().getDefaults().getStreamEnabled(),
         properties::getDefaultJobWorkerStreamEnabled,
