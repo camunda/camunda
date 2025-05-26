@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.entities.dmn;
 
-import io.camunda.operate.entities.FlowNodeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,7 +17,7 @@ public enum DecisionType {
   UNSPECIFIED,
   UNKNOWN;
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(FlowNodeType.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(DecisionType.class);
 
   public static DecisionType fromString(final String decisionType) {
     if (decisionType == null) {
