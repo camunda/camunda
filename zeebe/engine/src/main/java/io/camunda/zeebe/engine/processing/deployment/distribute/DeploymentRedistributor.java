@@ -59,6 +59,15 @@ public class DeploymentRedistributor implements StreamProcessorLifecycleAware {
     final var pendingDistributions = new HashSet<PendingDistribution>();
     deploymentState.foreachPendingDeploymentDistribution(
         (deploymentKey, partitionId, directBuffer) -> {
+          // If the partition is currently being scaled up, we won't yet try distributing to it.
+          if (routingInfo.isPartitionScaling(partitionId)) {
+            LOG.debug(
+                "Excluding deployment {} for partition {} as it is currently being scaled up.",
+                deploymentKey,
+                partitionId);
+            return;
+          }
+
           final var pending = new PendingDistribution(deploymentKey, partitionId);
           pendingDistributions.add(pending);
           retryDistribution(pending, directBuffer);
