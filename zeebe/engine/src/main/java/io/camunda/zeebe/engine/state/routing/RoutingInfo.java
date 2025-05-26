@@ -33,6 +33,9 @@ public interface RoutingInfo {
   /** Returns the current partition id for the given correlation key. */
   int partitionForCorrelationKey(final DirectBuffer correlationKey);
 
+  // Returns whether a partition is being scaled up at that point in time
+  boolean isPartitionScaling(final int partitionId);
+
   /**
    * Creates a {@link RoutingInfo} instance for static partitions. This is used when the partitions
    * are fixed and known at startup. Only relevant for testing.
@@ -71,6 +74,11 @@ public interface RoutingInfo {
     @Override
     public int partitionForCorrelationKey(final DirectBuffer correlationKey) {
       return SubscriptionUtil.getSubscriptionPartitionId(correlationKey, partitionCount);
+    }
+
+    @Override
+    public boolean isPartitionScaling(final int partitionId) {
+      return false;
     }
   }
 
@@ -114,6 +122,12 @@ public interface RoutingInfo {
           return SubscriptionUtil.getSubscriptionPartitionId(correlationKey, partitionCount);
         }
       }
+    }
+
+    @Override
+    public boolean isPartitionScaling(final int partitionId) {
+      return !routingState.currentPartitions().contains(partitionId)
+          && routingState.desiredPartitions().contains(partitionId);
     }
   }
 }
