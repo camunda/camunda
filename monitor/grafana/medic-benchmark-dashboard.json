@@ -1227,10 +1227,6 @@
       "type": "stat"
     },
     {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
       "datasource": {
         "type": "prometheus",
         "uid": "$DS_PROMETHEUS"
@@ -1238,44 +1234,68 @@
       "description": "Shows the execution time of a process instance. This means the time (latency) between creating the instance and completing it.",
       "fieldConfig": {
         "defaults": {
-          "links": []
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "barAlignment": 0,
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "spanNulls": false,
+            "insertNulls": false,
+            "showPoints": "never",
+            "pointSize": 5,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto",
+            "axisLabel": "seconds",
+            "axisColorMode": "text",
+            "axisBorderShow": false,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "axisCenteredZero": false,
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "value": 2.1,
+                "color": "red"
+              }
+            ]
+          },
+          "links": [],
+          "unit": "short"
         },
         "overrides": []
       },
-      "fill": 1,
-      "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 24,
         "x": 0,
         "y": 26
       },
-      "hiddenSeries": false,
       "id": 288,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
       "pluginVersion": "10.4.0",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
       "targets": [
         {
           "datasource": {
@@ -1300,47 +1320,47 @@
           "legendFormat": "p99 {{namespace}}",
           "range": true,
           "refId": "B"
-        }
-      ],
-      "thresholds": [
-        {
-          "$$hashKey": "object:38",
-          "colorMode": "critical",
-          "fill": true,
-          "line": true,
-          "op": "gt",
-          "value": 2.1,
-          "yaxis": "left"
-        }
-      ],
-      "timeRegions": [],
-      "title": "Process Instance Execution Time (avg)",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "mode": "time",
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "short",
-          "label": "seconds",
-          "logBase": 1,
-          "show": true
         },
         {
-          "format": "short",
-          "logBase": 1,
-          "show": true
+          "datasource": {
+            "uid": "$DS_PROMETHEUS"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"medic.*latency\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "format": "heatmap",
+          "interval": "30s",
+          "intervalFactor": 1,
+          "legendFormat": "p50 {{namespace}}",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "uid": "$DS_PROMETHEUS"
+          },
+          "editorMode": "code",
+          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"medic.*latency\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "interval": "",
+          "legendFormat": "p99 {{namespace}}",
+          "range": true,
+          "refId": "D"
         }
       ],
-      "yaxis": {
-        "align": false
+      "title": "Process Instance Execution Time (avg)",
+      "type": "timeseries",
+      "timeFrom": null,
+      "timeShift": null,
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        }
       }
     },
     {
@@ -1904,148 +1924,6 @@
       "yaxis": {
         "align": false
       }
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
-      "description": "Shows the reason for the last pod restart",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
-            },
-            "filterable": false,
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "reason"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 200
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 13,
-        "x": 11,
-        "y": 45
-      },
-      "id": 295,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true
-      },
-      "pluginVersion": "10.4.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "editorMode": "code",
-          "expr": "kube_pod_container_status_last_terminated_reason{cluster=~\"$cluster\", namespace=~\"release.*\", container=\"zeebe\"}",
-          "interval": "",
-          "legendFormat": "{{ pod }}",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Pod Last Terminated Reason",
-      "transformations": [
-        {
-          "id": "reduce",
-          "options": {
-            "includeTimeField": false,
-            "mode": "reduceFields",
-            "reducers": [
-              "lastNotNull"
-            ]
-          }
-        },
-        {
-          "id": "labelsToFields",
-          "options": {}
-        },
-        {
-          "id": "merge",
-          "options": {}
-        },
-        {
-          "id": "filterByValue",
-          "options": {
-            "filters": [
-              {
-                "config": {
-                  "id": "equal",
-                  "options": {
-                    "value": 0
-                  }
-                },
-                "fieldName": "Value"
-              }
-            ],
-            "match": "all",
-            "type": "exclude"
-          }
-        },
-        {
-          "id": "organize",
-          "options": {
-            "excludeByName": {
-              "Value": true,
-              "__name__": true,
-              "container": true,
-              "endpoint": true,
-              "instance": true,
-              "job": true,
-              "namespace": true,
-              "reducer": true,
-              "service": true
-            },
-            "indexByName": {},
-            "renameByName": {}
-          }
-        }
-      ],
-      "type": "table"
     },
     {
       "collapsed": false,
