@@ -99,10 +99,14 @@ public class SnapshotMigrationTransitionStepTest {
     // when
     step.prepareTransition(transitionContext, 0, role).join();
     step.transitionTo(transitionContext, 0, role).join();
+    // then
     checkMetricsAre(HealthStatus.UNHEALTHY);
+    // when
+    when(snapshotDirector.forceSnapshot())
+        .thenReturn(CompletableActorFuture.completed(mock(PersistedSnapshot.class)));
     concurrencyControl.runAll();
-
-    checkMetricsAre(HealthStatus.UNHEALTHY);
+    // then
+    checkMetricsAre(HealthStatus.HEALTHY);
 
     // then
     // when
@@ -156,7 +160,6 @@ public class SnapshotMigrationTransitionStepTest {
 
     step.prepareTransition(transitionContext, 0, Role.LEADER).join();
     step.transitionTo(transitionContext, 0, Role.LEADER).join();
-    concurrencyControl.runAll();
 
     // then
     // no more interactions
