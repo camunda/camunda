@@ -18,7 +18,6 @@ package io.camunda.spring.client.properties;
 import static io.camunda.spring.client.annotation.AnnotationUtil.getVariableParameters;
 import static io.camunda.spring.client.annotation.AnnotationUtil.getVariableValue;
 import static io.camunda.spring.client.annotation.AnnotationUtil.getVariablesAsTypeParameters;
-import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.StringUtils.*;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -29,9 +28,10 @@ import io.camunda.spring.client.bean.MethodInfo;
 import io.camunda.spring.client.bean.ParameterInfo;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
@@ -227,19 +227,29 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
   }
 
   private void applyDefaultJobWorkerTenantIds(final JobWorkerValue jobWorkerValue) {
-    final List<String> tenantIds =
-        new ArrayList<>(
-            ofNullable(camundaClientProperties.getWorker().getDefaults().getTenantIds())
-                .orElse(Collections.emptyList()));
+    final Set<String> tenantIds = new HashSet<>();
+
+    // we consider default worker tenant ids configurations first
+    if (camundaClientProperties.getWorker().getDefaults().getTenantIds() != null
+        && !camundaClientProperties.getWorker().getDefaults().getTenantIds().isEmpty()) {
+      tenantIds.addAll(camundaClientProperties.getWorker().getDefaults().getTenantIds());
+    } else if (camundaClientProperties.getTenantIds() != null
+        && !camundaClientProperties.getTenantIds().isEmpty()) {
+      // the deprecated config only gets considered in the absence of it's successor
+      tenantIds.addAll(camundaClientProperties.getTenantIds());
+    } else if (StringUtils.isNotBlank(camundaClientProperties.getTenantId())) {
+      // the default tenant set on the client is included in the default if no other default is set
+      tenantIds.add(camundaClientProperties.getTenantId());
+    }
+
+    // if set, worker annotation defaults get included as well
     if (jobWorkerValue.getTenantIds() != null) {
       tenantIds.addAll(jobWorkerValue.getTenantIds());
     }
-    if (StringUtils.isNotBlank(camundaClientProperties.getTenantId())) {
-      tenantIds.add(camundaClientProperties.getTenantId());
-    }
+
     if (!tenantIds.isEmpty()) {
       LOG.debug("Worker '{}': Setting tenantIds to {}", jobWorkerValue.getName(), tenantIds);
-      jobWorkerValue.setTenantIds(tenantIds.stream().distinct().toList());
+      jobWorkerValue.setTenantIds(new ArrayList<>(tenantIds));
     }
   }
 
