@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
+import io.camunda.zeebe.engine.state.distribution.PersistedCommandDistribution;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import java.util.Optional;
 
@@ -57,6 +58,13 @@ public interface DistributionState {
    * @return an new instance of the {@link CommandDistributionRecord}
    */
   CommandDistributionRecord getCommandDistributionRecord(long distributionKey, int partition);
+
+  /**
+   * Visits each persisted command distribution {@link PersistedCommandDistribution}
+   *
+   * @param visitor Each distribution is visited by this visitor
+   */
+  void foreachCommandDistribution(CommandDistributionVisitor visitor);
 
   /**
    * Visits each persisted retriable distribution, providing both the key of that distribution and
@@ -124,6 +132,13 @@ public interface DistributionState {
      * @return true if the visitor should continue visiting, false if it should stop
      */
     boolean visit(final long distributionKey, final CommandDistributionRecord pendingDistribution);
+  }
+
+  /** This visitor can visit pending distributions of {@link CommandDistributionRecord}. */
+  @FunctionalInterface
+  interface CommandDistributionVisitor {
+    boolean visit(
+        final long distributionKey, final PersistedCommandDistribution pendingDistribution);
   }
 
   @FunctionalInterface

@@ -247,9 +247,16 @@ public class DbDistributionState implements MutableDistributionState {
 
     return new CommandDistributionRecord()
         .setPartitionId(partition)
+        .setQueueId(persistedDistribution.getQueueId().orElse(null))
         .setValueType(persistedDistribution.getValueType())
         .setIntent(persistedDistribution.getIntent())
         .setCommandValue(persistedDistribution.getCommandValue());
+  }
+
+  @Override
+  public void foreachCommandDistribution(final CommandDistributionVisitor visitor) {
+    commandDistributionRecordColumnFamily.whileTrue(
+        (compositeKey, record) -> visitor.visit(distributionKey.getValue(), record));
   }
 
   @Override
