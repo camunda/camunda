@@ -32,7 +32,7 @@
     "react-transition-group": "4.4.5",
     "sass": "1.79.6",
     "serve": "14.2.4",
-    "styled-components": "6.1.17",
+    "styled-components": "6.1.18",
     "stylis": "4.3.6"
   },
   "scripts": {
@@ -75,10 +75,10 @@
     "@types/carbon-components-react": "7.55.13",
     "@types/carbon__elements": "11.10.3",
     "@types/jest": "29.5.14",
-    "@types/lodash": "4.17.16",
+    "@types/lodash": "4.17.17",
     "@types/mixpanel-browser": "2.50.2",
     "@types/node": "20.16.15",
-    "@types/react": "18.3.20",
+    "@types/react": "18.3.21",
     "@types/react-dom": "18.3.7",
     "@types/react-transition-group": "4.4.12",
     "cross-env": "^7.0.3",

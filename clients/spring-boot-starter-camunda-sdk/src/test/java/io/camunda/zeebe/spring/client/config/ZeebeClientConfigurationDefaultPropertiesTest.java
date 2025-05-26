@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.spring.client.config;
 
+import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_MESSAGE_TTL;
 import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_KB;
 import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_MB;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,7 +61,7 @@ public class ZeebeClientConfigurationDefaultPropertiesTest {
     assertThat(client.getConfiguration().getDefaultJobWorkerTenantIds())
         .isEqualTo(Collections.singletonList("<default>"));
     assertThat(client.getConfiguration().getDefaultMessageTimeToLive())
-        .isEqualTo(Duration.ofHours(1));
+        .isEqualTo(DEFAULT_MESSAGE_TTL);
     assertThat(client.getConfiguration().getDefaultRequestTimeout())
         .isEqualTo(Duration.ofSeconds(10));
     assertThat(client.getConfiguration().getDefaultTenantId()).isEqualTo("<default>");

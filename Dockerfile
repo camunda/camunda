@@ -5,9 +5,9 @@
 # Both ubuntu and eclipse-temurin are pinned via digest and not by a strict version tag, as Renovate
 # has trouble with custom versioning schemes
 ARG BASE_IMAGE="ubuntu:noble"
-ARG BASE_DIGEST="sha256:1e622c5f073b4f6bfad6632f2616c7f59ef256e96fe78bf6a595d1dc4376ac02"
+ARG BASE_DIGEST="sha256:6015f66923d7afbc53558d7ccffd325d43b4e249f41a6e93eef074c9505d2233"
 ARG JDK_IMAGE="eclipse-temurin:21-jdk-noble"
-ARG JDK_DIGEST="sha256:5d935f3e86b5b629fc8994503e89b73137b24048a5b465fbaa605de80c678b54"
+ARG JDK_DIGEST="sha256:fe91199c2e240531902be7172e089632579d47d68506eb154acb9a1c99b0f654"
 
 # set to "build" to build zeebe from scratch instead of using a distball
 ARG DIST="distball"
