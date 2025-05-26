@@ -84,6 +84,21 @@ public interface ProcessingResultBuilder {
    */
   ProcessingResultBuilder resetPostCommitTasks();
 
+  /**
+   * Signals to the streaming platform to process the result in a separate command batch.
+   *
+   * <p>This is useful for cases where
+   * <li>The processing of the records is complex, or requires additional resources, and you want to
+   *     ensure that they are not mixed with other records in the same batch
+   * <li>Various commands are independent of each other, and one failing shouldn't have an impact on
+   *     the other.
+   *
+   * @return itself for method chaining
+   */
+  default ProcessingResultBuilder withProcessInASeparateBatch() {
+    return this;
+  }
+
   ProcessingResult build();
 
   boolean canWriteEventOfLength(int eventLength);

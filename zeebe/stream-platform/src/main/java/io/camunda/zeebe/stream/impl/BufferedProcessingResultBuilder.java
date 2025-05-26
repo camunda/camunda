@@ -42,6 +42,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   private final RecordBatch mutableRecordBatch;
   private ProcessingResponseImpl processingResponse;
   private final long operationReference;
+  private boolean processInASeparateBatch = false;
 
   BufferedProcessingResultBuilder(final RecordBatchSizePredicate predicate) {
     this(predicate, operationReferenceNullValue());
@@ -124,8 +125,15 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   }
 
   @Override
+  public ProcessingResultBuilder withProcessInASeparateBatch() {
+    processInASeparateBatch = true;
+    return this;
+  }
+
+  @Override
   public ProcessingResult build() {
-    return new BufferedResult(mutableRecordBatch, processingResponse, postCommitTasks);
+    return new BufferedResult(
+        mutableRecordBatch, processingResponse, postCommitTasks, processInASeparateBatch);
   }
 
   @Override
