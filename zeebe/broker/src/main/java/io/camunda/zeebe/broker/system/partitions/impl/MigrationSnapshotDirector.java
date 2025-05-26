@@ -64,9 +64,6 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
 
   @Override
   public void close() {
-    healthReport = HealthReport.dead(this);
-    notifyListeners();
-    removeFailureListener(snapshotFailureListener);
     cancelScheduledSnapshot();
     treeListener.unregisterNode(this);
     treeListener.unregisterRelationship(this, snapshotDirector);
