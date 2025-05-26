@@ -33,7 +33,15 @@ import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -52,7 +60,14 @@ public class NoCompatibilityModeOperateAuthorizationIT {
       new TestCamundaApplication()
           .withAuthorizationsEnabled()
           .withBasicAuth()
-          .withProperty("camunda.operate.zeebe.compatibility.enabled", false);
+          .withAdditionalProperties(
+              Map.of(
+                  "camunda.operate.zeebe.compatibility.enabled",
+                  false,
+                  "camunda.operate.operationExecutor.executorEnabled",
+                  true))
+          .withExporter(
+              "recordingExporter", cfg -> cfg.setClassName(RecordingExporter.class.getName()));
 
   private static final String DECISION_RESOURCE = "decisions/decision_model.dmn";
   private static final String PROCESS_FOR_DELETION_RESOURCE = "process/manual_process.bpmn";
@@ -170,27 +185,15 @@ public class NoCompatibilityModeOperateAuthorizationIT {
       final var responseBody = response.get();
       assertThat(responseBody).isNotNull();
       assertThat(responseBody.statusCode()).isEqualTo(expectedResponseCode);
-    }
-  }
-
-  @ParameterizedTest
-  @MethodSource("provideUserAndResponseCode")
-  public void shouldNotBeAuthorizedToDeleteProcessDefinition(
-      final TestUser user, final int expectedResponseCode) {
-    // given
-    // a user with process delete permissions
-    try (final var operateRestClient =
-        STANDALONE_CAMUNDA.newOperateClient(user.username(), user.password())) {
-
-      // when
-      final var response =
-          operateRestClient.deleteProcessDefinition(processDefinitionForDeletionKey);
-
-      // then
-      assertThat(response).isRight();
-      final var responseBody = response.get();
-      assertThat(responseBody).isNotNull();
-      assertThat(responseBody.statusCode()).isEqualTo(expectedResponseCode);
+      if (expectedResponseCode == 200) {
+        // if the request is successful, we expect the process definition to be deleted
+        assertThat(
+                RecordingExporter.records()
+                    .withIntent(ResourceDeletionIntent.DELETED)
+                    .withRecordKey(processDefinitionForDeletionKey)
+                    .count())
+            .isEqualTo(1L);
+      }
     }
   }
 
@@ -211,6 +214,15 @@ public class NoCompatibilityModeOperateAuthorizationIT {
       final var responseBody = response.get();
       assertThat(responseBody).isNotNull();
       assertThat(responseBody.statusCode()).isEqualTo(expectedResponseCode);
+      if (expectedResponseCode == 200) {
+        // if the request is successful, we expect the decision definition to be deleted
+        assertThat(
+                RecordingExporter.records()
+                    .withIntent(ResourceDeletionIntent.DELETED)
+                    .withRecordKey(decisionDefinitionForDeletionKey)
+                    .count())
+            .isEqualTo(1L);
+      }
     }
   }
 
@@ -238,6 +250,16 @@ public class NoCompatibilityModeOperateAuthorizationIT {
       final var responseBody = response.get();
       assertThat(responseBody).isNotNull();
       assertThat(responseBody.statusCode()).isEqualTo(expectedResponseCode);
+      if (expectedResponseCode == 200) {
+        // if the request is successful, we expect the process instance to be canceled
+        assertThat(
+                RecordingExporter.processInstanceRecords()
+                    .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                    .withRecordKey(processInstanceKey)
+                    .withProcessInstanceKey(processInstanceKey)
+                    .count())
+            .isEqualTo(1L);
+      }
     }
   }
 
@@ -285,6 +307,12 @@ public class NoCompatibilityModeOperateAuthorizationIT {
       final var responseBody = response.get();
       assertThat(responseBody).isNotNull();
       assertThat(responseBody.statusCode()).isEqualTo(200);
+      assertThat(
+              RecordingExporter.processInstanceMigrationRecords()
+                  .withIntent(ProcessInstanceMigrationIntent.MIGRATED)
+                  .withProcessInstanceKey(processInstanceKey)
+                  .count())
+          .isEqualTo(1L);
     }
   }
 
@@ -321,6 +349,15 @@ public class NoCompatibilityModeOperateAuthorizationIT {
       final var responseBody = response.get();
       assertThat(responseBody).isNotNull();
       assertThat(responseBody.statusCode()).isEqualTo(expectedResponseCode);
+      if (expectedResponseCode == 200) {
+        // if the request is successful, we expect the process instance to be modified
+        assertThat(
+                RecordingExporter.processInstanceModificationRecords()
+                    .withIntent(ProcessInstanceModificationIntent.MODIFIED)
+                    .withProcessInstanceKey(processInstanceKey)
+                    .count())
+            .isEqualTo(1L);
+      }
     }
   }
 
@@ -351,6 +388,16 @@ public class NoCompatibilityModeOperateAuthorizationIT {
       final var responseBody = response.get();
       assertThat(responseBody).isNotNull();
       assertThat(responseBody.statusCode()).isEqualTo(expectedResponseCode);
+      if (expectedResponseCode == 200) {
+        // if the request is successful, we expect the variable to be updated
+        assertThat(
+                RecordingExporter.variableRecords()
+                    .withIntent(VariableIntent.UPDATED)
+                    .withScopeKey(processInstanceKey)
+                    .withName(variableName)
+                    .count())
+            .isEqualTo(1L);
+      }
     }
   }
 
@@ -380,6 +427,15 @@ public class NoCompatibilityModeOperateAuthorizationIT {
       final var responseBody = response.get();
       assertThat(responseBody).isNotNull();
       assertThat(responseBody.statusCode()).isEqualTo(expectedResponseCode);
+      if (expectedResponseCode == 200) {
+        // if the request is successful, we expect the incident to be resolved
+        assertThat(
+                RecordingExporter.incidentRecords()
+                    .withIntent(IncidentIntent.RESOLVED)
+                    .withProcessInstanceKey(processInstanceKey)
+                    .count())
+            .isEqualTo(1L);
+      }
     }
   }
 
