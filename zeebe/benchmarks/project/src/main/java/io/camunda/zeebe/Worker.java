@@ -20,7 +20,9 @@ import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.api.worker.JobWorkerMetrics;
+import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.zeebe.config.AppCfg;
+import io.camunda.zeebe.config.AuthenticationMode;
 import io.camunda.zeebe.config.WorkerCfg;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.micrometer.core.instrument.Tags;
@@ -184,6 +186,15 @@ public class Worker extends App {
 
     if (!appCfg.isTls()) {
       builder.usePlaintext();
+    }
+
+    if (appCfg.getAuthenticationMode().equals(AuthenticationMode.basic)) {
+      final var basicAuthCfg = appCfg.getBasicAuth();
+      builder.credentialsProvider(
+          new BasicAuthCredentialsProviderBuilder()
+              .username(basicAuthCfg.getUsername())
+              .password(basicAuthCfg.getPassword())
+              .build());
     }
 
     return builder.build();
