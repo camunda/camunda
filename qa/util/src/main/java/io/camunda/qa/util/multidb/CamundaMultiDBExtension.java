@@ -11,6 +11,7 @@ import static org.assertj.core.api.Fail.fail;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.Group;
 import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -369,24 +371,32 @@ public class CamundaMultiDBExtension
   }
 
   private List<User> findUsers(
-      final Class<?> testClass, final Object testInstance, Predicate<Field> predicate) {
-    final var users = new ArrayList<User>();
+      final Class<?> testClass, final Object testInstance, final Predicate<Field> predicate) {
+    return findFields(testClass, testInstance, predicate, UserDefinition.class);
+  }
+
+  private <T> List<T> findFields(
+      final Class<?> testClass,
+      final Object testInstance,
+      Predicate<Field> predicate,
+      final Class<? extends Annotation> definitionClass) {
+    final var instances = new ArrayList<T>();
     predicate =
         predicate.and(
             field ->
-                field.getType() == User.class && field.getAnnotation(UserDefinition.class) != null);
+                field.getType() == Group.class && field.getAnnotation(definitionClass) != null);
     for (final Field field : testClass.getDeclaredFields()) {
       try {
         if (predicate.test(field)) {
           field.setAccessible(true);
-          final var user = (User) field.get(testInstance);
-          users.add(user);
+          final var instance = (T) field.get(testInstance);
+          instances.add(instance);
         }
       } catch (final Exception ex) {
         throw new RuntimeException(ex);
       }
     }
-    return users;
+    return instances;
   }
 
   private void injectStaticClientField(final Class<?> testClass) {
