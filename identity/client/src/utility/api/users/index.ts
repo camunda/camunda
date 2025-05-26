@@ -28,7 +28,7 @@ export const searchUser: ApiDefinition<
   SearchUserParams | undefined
 > = (filterParams) => {
   const params = filterParams?.usernames
-    ? { filter: { $in: filterParams.usernames } }
+    ? { filter: { username: { $in: filterParams.usernames } } }
     : undefined;
   return apiPost(`${USERS_ENDPOINT}/search`, params);
 };
