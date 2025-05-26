@@ -62,13 +62,11 @@ final class StartPartitionScaleUpApplier implements ClusterOperationApplier {
               "Desired partition count must not exceed %d".formatted(Protocol.MAXIMUM_PARTITIONS)));
     }
 
-    for (int partition = Protocol.START_PARTITION_ID;
-        partition < Protocol.START_PARTITION_ID + desiredPartitionCount;
-        partition++) {
-      if (!currentClusterConfiguration.hasPartition(partition)) {
-        return new Left<>(
-            new IllegalStateException("Partition %d is not known.".formatted(partition)));
-      }
+    if (desiredPartitionCount <= currentClusterConfiguration.partitionCount()) {
+      return new Left<>(
+          new IllegalStateException(
+              "Desired partition count (%d) must be greater than current partition count(%d)"
+                  .formatted(desiredPartitionCount, currentClusterConfiguration.partitionCount())));
     }
 
     if (currentClusterConfiguration.routingState().isEmpty()) {
