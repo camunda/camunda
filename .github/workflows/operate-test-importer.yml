@@ -1,6 +1,6 @@
 # description: Workflow that runs Integration Tests that match **/*ZeebeImportIT.java or **/*ZeebeIT.java If the name of the Java class does not match either of those, then the test is not run
 # test location: operate/qa/integration-tests
-# owner:
+# owner: Data Layers
 ---
 name: Operate Run Test Importer
 
