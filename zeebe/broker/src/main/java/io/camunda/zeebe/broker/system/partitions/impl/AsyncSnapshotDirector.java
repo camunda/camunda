@@ -158,12 +158,6 @@ public final class AsyncSnapshotDirector extends Actor
     }
   }
 
-  @SuppressWarnings("java:S3077") // the update is run inside the actor
-  public FailureListener migrationSnapshotListener() {
-    return FailureListener.ofConsumer(
-        child -> actor.run(() -> healthReport = healthReport.withChild(child)));
-  }
-
   private void scheduleSnapshotOnRate() {
     actor.runAtFixedRate(snapshotRate, this::trySnapshot);
     trySnapshot();

@@ -8,7 +8,6 @@
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
@@ -21,35 +20,66 @@ import io.camunda.zeebe.broker.system.monitoring.HealthTreeMetrics;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.MigrationSnapshotDirector;
+import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
+import java.time.Duration;
+import java.util.Optional;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.mockito.Answers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SnapshotMigrationTransitionStepTest {
+  @AutoClose static ActorScheduler scheduler = ActorScheduler.newActorScheduler().build();
+  private static final Logger LOG =
+      LoggerFactory.getLogger(SnapshotMigrationTransitionStepTest.class);
   final TestPartitionTransitionContext transitionContext = new TestPartitionTransitionContext();
+  @AutoClose final ActorWithControl actor = new ActorWithControl();
   private final SnapshotAfterMigrationTransitionStep step =
       new SnapshotAfterMigrationTransitionStep();
   private final AsyncSnapshotDirector snapshotDirector =
       mock(AsyncSnapshotDirector.class, Answers.RETURNS_DEEP_STUBS);
+
+  private final io.camunda.zeebe.util.health.HealthMonitor healthMonitor =
+      new CriticalComponentsHealthMonitor(
+          "health-monitor",
+          actor.control(),
+          transitionContext.getComponentTreeListener(),
+          Optional.empty(),
+          LOG,
+          Duration.ofMillis(100));
   private final TestConcurrencyControl concurrencyControl = new TestConcurrencyControl(true);
+
+  @BeforeAll
+  static void setupAll() {
+    scheduler.start();
+  }
 
   @BeforeEach
   void setup() {
+    actor.setMonitor(healthMonitor);
+    scheduler.submitActor(actor).join();
+    transitionContext.setConcurrencyControl(actor);
     transitionContext.setSnapshotDirector(snapshotDirector);
     transitionContext.setConcurrencyControl(concurrencyControl);
-
-    when(snapshotDirector.componentName()).thenReturn(AsyncSnapshotDirector.actorName(1));
+    transitionContext.setComponentHealthMonitor(healthMonitor);
   }
 
   @AfterEach
@@ -69,7 +99,6 @@ public class SnapshotMigrationTransitionStepTest {
     // when
     step.prepareTransition(transitionContext, 0, role).join();
     step.transitionTo(transitionContext, 0, role).join();
-
     checkMetricsAre(HealthStatus.UNHEALTHY);
     concurrencyControl.runAll();
 
@@ -80,10 +109,13 @@ public class SnapshotMigrationTransitionStepTest {
     step.prepareTransition(transitionContext, 0, Role.INACTIVE);
 
     // then
-    assertThat(transitionContext.getPartitionStartupMeterRegistry().getMeters()).isEmpty();
+    Awaitility.await("until metric is unregistered")
+        .untilAsserted(
+            () ->
+                assertThat(transitionContext.getPartitionStartupMeterRegistry().getMeters())
+                    .singleElement()
+                    .satisfies(m -> m.getId().getTag("id").equals("health-monitor")));
     assertThat(concurrencyControl.scheduledTasks()).isZero();
-    verify(snapshotDirector.migrationSnapshotListener())
-        .onHealthReport(argThat(HealthReport::isDead));
   }
 
   @ParameterizedTest
@@ -118,8 +150,9 @@ public class SnapshotMigrationTransitionStepTest {
     concurrencyControl.runAll();
     verify(snapshotDirector, times(1)).forceSnapshot();
     assertThat(step.isSnapshotTaken()).isTrue();
-    verify(snapshotDirector.migrationSnapshotListener())
-        .onHealthReport(argThat(HealthReport::isHealthy));
+    Awaitility.await("until report becomes true")
+        .untilAsserted(
+            () -> assertThat(healthMonitor.getHealthReport()).satisfies(HealthReport::isHealthy));
 
     step.prepareTransition(transitionContext, 0, Role.LEADER).join();
     step.transitionTo(transitionContext, 0, Role.LEADER).join();
@@ -177,8 +210,9 @@ public class SnapshotMigrationTransitionStepTest {
     // TestConcurrencyControl runs immediately when scheduled instead of waiting
     Awaitility.await("until snapshot is retried 2 times")
         .untilAsserted(() -> verify(snapshotDirector, atLeast(2)).forceSnapshot());
-    verify(snapshotDirector.migrationSnapshotListener())
-        .onHealthReport(argThat(HealthReport::isUnhealthy));
+    Awaitility.await("until report is unhealthy")
+        .untilAsserted(
+            () -> assertThat(healthMonitor.getHealthReport()).satisfies(HealthReport::isUnhealthy));
 
     // when
     when(snapshotDirector.forceSnapshot())
@@ -213,7 +247,7 @@ public class SnapshotMigrationTransitionStepTest {
     assertThat(concurrencyControl.scheduledTasks()).isNotZero();
 
     // when
-    step.prepareTransition(transitionContext, 0, Role.FOLLOWER);
+    step.prepareTransition(transitionContext, 0, Role.INACTIVE);
 
     assertThat(concurrencyControl.scheduledTasks()).isZero();
   }
@@ -245,26 +279,58 @@ public class SnapshotMigrationTransitionStepTest {
   }
 
   public void checkMetricsAre(final HealthStatus expected) {
-    final var meters = transitionContext.getPartitionStartupMeterRegistry().getMeters();
-    final var expectedTags =
-        Tags.of(
-                "id",
-                MigrationSnapshotDirector.COMPONENT_NAME,
-                "partition",
-                String.valueOf(transitionContext.getPartitionId()),
-                "path",
-                String.format(
-                    "%s/%s",
-                    AsyncSnapshotDirector.actorName(1), MigrationSnapshotDirector.COMPONENT_NAME))
-            .stream()
-            .toArray(Tag[]::new);
-    assertThat(meters)
-        .singleElement()
-        .satisfies(
-            m -> {
-              assertThat(m.getId().getTags()).contains(expectedTags);
-              assertThat(m.measure().iterator().next().getValue())
-                  .isEqualTo(HealthTreeMetrics.statusValue(expected));
+    Awaitility.await("until metrics are published")
+        .untilAsserted(
+            () -> {
+              final var meters =
+                  transitionContext.getPartitionTransitionMeterRegistry().getMeters();
+              System.out.println(meters.stream().map(m -> m.getId().getTags()).toList());
+              final var expectedTags =
+                  Tags.of(
+                          "id",
+                          MigrationSnapshotDirector.COMPONENT_NAME,
+                          "partition",
+                          String.valueOf(transitionContext.getPartitionId()),
+                          "path",
+                          String.format(
+                              "%s/%s",
+                              healthMonitor.componentName(),
+                              MigrationSnapshotDirector.COMPONENT_NAME))
+                      .stream()
+                      .toArray(Tag[]::new);
+              assertThat(
+                      meters.stream()
+                          .filter(
+                              m ->
+                                  m.getId()
+                                      .getTag("id")
+                                      .equals(MigrationSnapshotDirector.COMPONENT_NAME))
+                          .toList())
+                  .singleElement()
+                  .satisfies(
+                      m -> {
+                        assertThat(m.getId().getTags()).contains(expectedTags);
+                        assertThat(m.measure().iterator().next().getValue())
+                            .isEqualTo(HealthTreeMetrics.statusValue(expected));
+                      });
             });
+  }
+
+  public static class ActorWithControl extends Actor {
+
+    private HealthMonitor monitor;
+
+    public void setMonitor(final HealthMonitor monitor) {
+      this.monitor = monitor;
+    }
+
+    @Override
+    protected void onActorStarted() {
+      monitor.startMonitoring();
+    }
+
+    public ActorControl control() {
+      return actor;
+    }
   }
 }
