@@ -102,7 +102,7 @@ public final class CamundaUser extends User implements CamundaPrincipal {
     private String email;
     private List<RoleEntity> roles = List.of();
     private List<? extends GrantedAuthority> authorities = List.of();
-    private List<String> authorizedApplications = List.of();
+    private List<String> authorizedComponents = List.of();
     private List<TenantDTO> tenants = List.of();
     private List<String> groups = List.of();
     private String salesPlanType;
@@ -150,9 +150,8 @@ public final class CamundaUser extends User implements CamundaPrincipal {
       return this;
     }
 
-    public CamundaUserBuilder withAuthorizedApplications(
-        final List<String> authorizedApplications) {
-      this.authorizedApplications = Objects.requireNonNullElse(authorizedApplications, List.of());
+    public CamundaUserBuilder withAuthorizedComponents(final List<String> authorizedComponents) {
+      this.authorizedComponents = Objects.requireNonNullElse(authorizedComponents, List.of());
       return this;
     }
 
@@ -192,7 +191,7 @@ public final class CamundaUser extends User implements CamundaPrincipal {
           new AuthenticationContextBuilder()
               .withUsername(username)
               .withRoles(roles)
-              .withAuthorizedApplications(authorizedApplications)
+              .withAuthorizedComponents(authorizedComponents)
               .withTenants(tenants)
               .withGroups(groups)
               .build(),

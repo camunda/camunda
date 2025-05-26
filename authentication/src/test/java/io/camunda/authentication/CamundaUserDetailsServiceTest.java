@@ -65,7 +65,7 @@ public class CamundaUserDetailsServiceTest {
                 null));
 
     final var roleId = "admin";
-    when(authorizationServices.getAuthorizedApplications(Set.of(roleId, "roleGroup", TEST_USER_ID)))
+    when(authorizationServices.getAuthorizedComponents(Set.of(roleId, "roleGroup", TEST_USER_ID)))
         .thenReturn(List.of("operate", "identity"));
     final var adminGroup = new GroupEntity(1L, "admin", "Admin Group", "description");
     when(groupServices.getGroupsByMemberId(TEST_USER_ID, EntityType.USER))
@@ -92,7 +92,7 @@ public class CamundaUserDetailsServiceTest {
     assertThat(user.getPassword()).isEqualTo("password1");
     assertThat(user.getEmail()).isEqualTo("email@tested");
     assertThat(user.getAuthenticationContext().username()).isEqualTo(TEST_USER_ID);
-    assertThat(user.getAuthenticationContext().authorizedApplications())
+    assertThat(user.getAuthenticationContext().authorizedComponents())
         .containsExactlyInAnyOrder("operate", "identity");
     assertThat(user.getAuthenticationContext().roles()).isEqualTo(List.of(adminRole, groupRole));
     assertThat(user.getAuthenticationContext().groups()).isEqualTo(List.of(adminGroup.groupId()));

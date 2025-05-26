@@ -21,7 +21,7 @@ public enum ResourceType {
   MESSAGE,
   BATCH,
   BATCH_OPERATION,
-  APPLICATION,
+  COMPONENT,
   SYSTEM,
   TENANT,
   RESOURCE,

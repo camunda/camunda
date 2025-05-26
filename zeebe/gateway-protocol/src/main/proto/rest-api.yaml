@@ -695,7 +695,7 @@ paths:
         - name: clientId
           in: path
           required: true
-          description: The unique identifier of the application.
+          description: The unique identifier of the component.
           schema:
             type: string
       responses:
@@ -6898,7 +6898,7 @@ components:
         - MESSAGE
         - BATCH
         - BATCH_OPERATION
-        - APPLICATION
+        - COMPONENT
         - SYSTEM
         - TENANT
         - RESOURCE
@@ -7173,8 +7173,8 @@ components:
         displayName:
           description: The display name of the user.
           type: string
-        authorizedApplications:
-          description: The applications the user is authorized to use.
+        authorizedComponents:
+          description: The component's user is authorized to use.
           type: array
           items:
             type: string

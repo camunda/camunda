@@ -8,7 +8,7 @@
 package io.camunda.it.auth;
 
 import static io.camunda.client.api.search.enums.PermissionType.ACCESS;
-import static io.camunda.client.api.search.enums.ResourceType.APPLICATION;
+import static io.camunda.client.api.search.enums.ResourceType.COMPONENT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -40,7 +40,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-class ApplicationAuthorizationIT {
+class ComponentAuthorizationIT {
 
   private static final String PATH_OPERATE = "operate";
   private static final String PATH_OPERATE_WEBAPP_USER = "/user";
@@ -59,14 +59,14 @@ class ApplicationAuthorizationIT {
   @UserDefinition
   private static final TestUser ADMIN_USER =
       new TestUser(
-          ADMIN, DEFAULT_PASSWORD, List.of(new Permissions(APPLICATION, ACCESS, List.of("*"))));
+          ADMIN, DEFAULT_PASSWORD, List.of(new Permissions(COMPONENT, ACCESS, List.of("*"))));
 
   @UserDefinition
   private static final TestUser RESTRICTED_USER =
       new TestUser(
           RESTRICTED,
           DEFAULT_PASSWORD,
-          List.of(new Permissions(APPLICATION, ACCESS, List.of("tasklist"))));
+          List.of(new Permissions(COMPONENT, ACCESS, List.of("tasklist"))));
 
   @AutoClose
   private static final HttpClient HTTP_CLIENT =
@@ -189,7 +189,7 @@ class ApplicationAuthorizationIT {
 
     // then
     final MeResponse meResponse = OBJECT_MAPPER.readValue(response.body(), MeResponse.class);
-    assertThat(meResponse.authorizedApplications).containsExactly("tasklist");
+    assertThat(meResponse.authorizedComponents).containsExactly("tasklist");
   }
 
   private static void assertRedirectToForbidden(
@@ -219,5 +219,5 @@ class ApplicationAuthorizationIT {
             HttpURLConnection.HTTP_MOVED_TEMP);
   }
 
-  private record MeResponse(List<String> authorizedApplications) {}
+  private record MeResponse(List<String> authorizedComponents) {}
 }

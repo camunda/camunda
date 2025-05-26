@@ -17,7 +17,7 @@ public record AuthenticationContext(
     String username,
     String clientId,
     List<RoleEntity> roles,
-    List<String> authorizedApplications,
+    List<String> authorizedComponents,
     List<TenantDTO> tenants,
     List<String> groups)
     implements Serializable {
@@ -26,7 +26,7 @@ public record AuthenticationContext(
     private String username;
     private String clientId;
     private List<RoleEntity> roles = new ArrayList<>();
-    private List<String> authorizedApplications = new ArrayList<>();
+    private List<String> authorizedComponents = new ArrayList<>();
     private List<TenantDTO> tenants = new ArrayList<>();
     private List<String> groups = new ArrayList<>();
 
@@ -45,9 +45,9 @@ public record AuthenticationContext(
       return this;
     }
 
-    public AuthenticationContextBuilder withAuthorizedApplications(
-        final List<String> authorizedApplications) {
-      this.authorizedApplications = authorizedApplications;
+    public AuthenticationContextBuilder withAuthorizedComponents(
+        final List<String> authorizedComponents) {
+      this.authorizedComponents = authorizedComponents;
       return this;
     }
 
@@ -63,7 +63,7 @@ public record AuthenticationContext(
 
     public AuthenticationContext build() {
       return new AuthenticationContext(
-          username, clientId, roles, authorizedApplications, tenants, groups);
+          username, clientId, roles, authorizedComponents, tenants, groups);
     }
   }
 }

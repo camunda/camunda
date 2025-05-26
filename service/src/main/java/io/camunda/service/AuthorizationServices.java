@@ -89,14 +89,14 @@ public class AuthorizationServices
     return findAll(authorizationQuery).stream().map(AuthorizationEntity::resourceId).toList();
   }
 
-  public List<String> getAuthorizedApplications(final Set<String> ownerIds) {
+  public List<String> getAuthorizedComponents(final Set<String> ownerIds) {
     if (!securityConfiguration.getAuthorizations().isEnabled()) {
       // if authorizations are not enabled, we default to a wildcard authorization which is
       // needed for frontend side checks
       return List.of("*");
     }
     return getAuthorizedResources(
-        ownerIds, PermissionType.ACCESS, AuthorizationResourceType.APPLICATION);
+        ownerIds, PermissionType.ACCESS, AuthorizationResourceType.COMPONENT);
   }
 
   public Set<String> fetchAssignedPermissions(

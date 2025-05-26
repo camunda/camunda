@@ -68,8 +68,8 @@ public class CamundaUserDetailsService implements UserDetailsService {
     final var roles = roleServices.getRolesByUserAndGroups(username, groups);
     final var roleIds = roles.stream().map(RoleEntity::roleId).collect(Collectors.toSet());
 
-    final var authorizedApplications =
-        authorizationServices.getAuthorizedApplications(
+    final var authorizedComponents =
+        authorizationServices.getAuthorizedComponents(
             Stream.concat(roles.stream().map(RoleEntity::roleId), Stream.of(storedUser.username()))
                 .collect(Collectors.toSet()));
 
@@ -84,7 +84,7 @@ public class CamundaUserDetailsService implements UserDetailsService {
         .withUsername(storedUser.username())
         .withPassword(storedUser.password())
         .withEmail(storedUser.email())
-        .withAuthorizedApplications(authorizedApplications)
+        .withAuthorizedComponents(authorizedComponents)
         .withRoles(roles)
         .withTenants(tenants)
         .withGroups(groups.stream().toList())

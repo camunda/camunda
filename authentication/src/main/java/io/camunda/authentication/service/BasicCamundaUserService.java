@@ -41,7 +41,7 @@ public class BasicCamundaUserService implements CamundaUserService {
                   user.getDisplayName(),
                   user.getDisplayName(), // migrated for historical purposes username -> displayName
                   user.getEmail(),
-                  auth.authorizedApplications(),
+                  auth.authorizedComponents(),
                   auth.tenants(),
                   auth.groups(),
                   auth.roles().stream().map(RoleEntity::name).toList(),
