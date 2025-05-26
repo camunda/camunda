@@ -54,16 +54,7 @@ public final class MessageBatchExpireProcessor implements TypedRecordProcessor<M
     for (final long messageKey : record.getValue().getMessageKeys()) {
       try {
         if (appendMessageBodyOnExpired) {
-          final StoredMessage persistedMessage = messageState.getMessage(messageKey);
-          if (persistedMessage != null) {
-            stateWriter.appendFollowUpEvent(messageKey, EXPIRED, persistedMessage.getMessage());
-            expiredMessagesCount++;
-          } else {
-            // the message was expired before processing it here, so we can skip it
-            LOG.warn(
-                "Expected to expire messages in a batch, but message with key {} was not found.",
-                messageKey);
-          }
+          expiredMessagesCount += expireWithMessageBody(messageKey);
         } else {
           stateWriter.appendFollowUpEvent(messageKey, EXPIRED, emptyDeleteMessageCommand);
           expiredMessagesCount++;
@@ -85,6 +76,26 @@ public final class MessageBatchExpireProcessor implements TypedRecordProcessor<M
           String.format(
               "Expected to expire %d messages in a batch, but none of the messages were found in the state.",
               totalMessagesCount));
+    }
+  }
+
+  /**
+   * Expires a message and appends the message body to the follow-up event.
+   *
+   * @param messageKey the key of the message to expire
+   * @return the number of messages expired (1 if successful, 0 if not found)
+   */
+  private int expireWithMessageBody(final long messageKey) {
+    final StoredMessage persistedMessage = messageState.getMessage(messageKey);
+    if (persistedMessage != null) {
+      stateWriter.appendFollowUpEvent(messageKey, EXPIRED, persistedMessage.getMessage());
+      return 1;
+    } else {
+      // the message was expired before processing it here, so we can skip it
+      LOG.warn(
+          "Expected to expire messages in a batch, but message with key {} was not found.",
+          messageKey);
+      return 0;
     }
   }
 }
