@@ -353,6 +353,9 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
     if (groupQuery.filter().tenantId() != null) {
       query = expandTenantFilter(groupQuery);
     }
+    if (groupQuery.filter().roleId() != null) {
+      query = expandRoleFilter(groupQuery);
+    }
     return getSearchExecutor()
         .search(query, io.camunda.webapps.schema.entities.usermanagement.GroupEntity.class);
   }
@@ -538,6 +541,13 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
     final var mappingIds = getRoleMemberIds(mappingQuery.filter().roleId(), MAPPING);
     return mappingQuery.toBuilder()
         .filter(mappingQuery.filter().toBuilder().mappingIds(mappingIds).build())
+        .build();
+  }
+
+  private GroupQuery expandRoleFilter(final GroupQuery groupQuery) {
+    final var groupIds = getRoleMemberIds(groupQuery.filter().roleId(), GROUP);
+    return groupQuery.toBuilder()
+        .filter(groupQuery.filter().toBuilder().groupIds(groupIds).build())
         .build();
   }
 
