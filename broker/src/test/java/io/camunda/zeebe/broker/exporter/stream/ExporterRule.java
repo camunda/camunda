@@ -28,6 +28,11 @@ import io.camunda.zeebe.test.util.AutoCloseableRule;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
+<<<<<<< HEAD:broker/src/test/java/io/camunda/zeebe/broker/exporter/stream/ExporterRule.java
+=======
+import java.util.function.Function;
+import java.util.stream.Collectors;
+>>>>>>> 89c35aba (fix: do not retry deserializing a record in ExporterDirector):zeebe/broker/src/test/java/io/camunda/zeebe/broker/exporter/stream/ExporterRule.java
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
@@ -98,6 +103,21 @@ public final class ExporterRule implements TestRule {
   }
 
   public void startExporterDirector(final List<ExporterDescriptor> exporterDescriptors) {
+<<<<<<< HEAD:broker/src/test/java/io/camunda/zeebe/broker/exporter/stream/ExporterRule.java
+=======
+    startExporterDirector(exporterDescriptors, ExporterPhase.EXPORTING);
+  }
+
+  public void startExporterDirector(
+      final List<ExporterDescriptor> exporterDescriptors, final ExporterPhase phase) {
+    startExporterDirector(exporterDescriptors, phase, Function.identity());
+  }
+
+  public void startExporterDirector(
+      final List<ExporterDescriptor> exporterDescriptors,
+      final ExporterPhase phase,
+      final Function<RecordExporter, RecordExporter> recordExporter) {
+>>>>>>> 89c35aba (fix: do not retry deserializing a record in ExporterDirector):zeebe/broker/src/test/java/io/camunda/zeebe/broker/exporter/stream/ExporterRule.java
     final var stream = streams.getLogStream(STREAM_NAME);
     final var runtimeFolder = streams.createRuntimeFolder(stream);
     capturedZeebeDb = spy(zeebeDbFactory.createDb(runtimeFolder.toFile()));
@@ -114,7 +134,11 @@ public final class ExporterRule implements TestRule {
             .descriptors(exporterDescriptors)
             .positionsToSkipFilter(positionsToSkipFilter);
 
+<<<<<<< HEAD:broker/src/test/java/io/camunda/zeebe/broker/exporter/stream/ExporterRule.java
     director = new ExporterDirector(context, false);
+=======
+    director = new ExporterDirector(context, phase, recordExporter);
+>>>>>>> 89c35aba (fix: do not retry deserializing a record in ExporterDirector):zeebe/broker/src/test/java/io/camunda/zeebe/broker/exporter/stream/ExporterRule.java
     director.startAsync(actorSchedulerRule.get()).join();
   }
 
