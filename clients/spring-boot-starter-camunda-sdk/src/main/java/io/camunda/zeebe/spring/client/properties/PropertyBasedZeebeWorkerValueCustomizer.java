@@ -51,7 +51,7 @@ public class PropertyBasedZeebeWorkerValueCustomizer implements ZeebeWorkerValue
   private static final CopyNotNullBeanUtilsBean COPY_NOT_NULL_BEAN_UTILS_BEAN =
       new CopyNotNullBeanUtilsBean();
   private static final CopyWithProtectionBeanUtilsBean COPY_WITH_PROTECTION_BEAN_UTILS_BEAN =
-      new CopyWithProtectionBeanUtilsBean(Set.of("name", "type", "fetchVariables"));
+      new CopyWithProtectionBeanUtilsBean(Set.of("name", "type", "fetchVariables", "tenantIds"));
 
   private final ZeebeClientConfigurationProperties zeebeClientConfigurationProperties;
   private final CamundaClientProperties camundaClientProperties;
@@ -226,22 +226,31 @@ public class PropertyBasedZeebeWorkerValueCustomizer implements ZeebeWorkerValue
   }
 
   private void applyDefaultJobWorkerTenantIds(final ZeebeWorkerValue zeebeWorker) {
-    final List<String> defaultJobWorkerTenantIds =
+    final Set<String> tenantIds = new HashSet<>();
+
+    tenantIds.addAll(
+        // we consider default worker tenant ids configurations first (legacy goes first)
         getOrLegacyOrDefault(
             "DefaultJobWorkerTenantIds",
             prioritized(
                 DEFAULT.getDefaultJobWorkerTenantIds(),
                 List.of(
-                    camundaClientProperties::getTenantIds,
-                    () -> camundaClientProperties.getZeebe().getDefaults().getTenantIds())),
+                    // if no legacy property is set, the new defaults workers property is loaded
+                    camundaClientProperties.getZeebe().getDefaults()::getTenantIds,
+                    // otherwise the client defaults
+                    camundaClientProperties::getTenantIds)),
             zeebeClientConfigurationProperties::getDefaultJobWorkerTenantIds,
             DEFAULT.getDefaultJobWorkerTenantIds(),
-            null);
+            null));
 
-    LOG.debug(
-        "Worker '{}': Setting tenantIds to default {}",
-        zeebeWorker.getTenantIds(),
-        defaultJobWorkerTenantIds);
-    zeebeWorker.setTenantIds(defaultJobWorkerTenantIds);
+    // if set, worker annotation defaults get included as well
+    if (zeebeWorker.getTenantIds() != null) {
+      tenantIds.addAll(zeebeWorker.getTenantIds());
+    }
+
+    if (!tenantIds.isEmpty()) {
+      LOG.debug("Worker '{}': Setting tenantIds to {}", zeebeWorker.getName(), tenantIds);
+      zeebeWorker.setTenantIds(new ArrayList<>(tenantIds));
+    }
   }
 }
