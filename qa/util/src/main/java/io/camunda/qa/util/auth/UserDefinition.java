@@ -7,6 +7,7 @@
  */
 package io.camunda.qa.util.auth;
 
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -15,8 +16,8 @@ import java.lang.annotation.Target;
 
 /**
  * Marker annotation for a user definition, that is picked up by the {@link
- * CamundaMultiDbExtension}. This is to clearly communicate that this user definition,
- * will be consumed and created (related permissions) by the {@link CamundaMultiDbExtension}.
+ * CamundaMultiDBExtension}. This is to clearly communicate that this user definition,
+ * will be consumed and created (related permissions) by the {@link CamundaMultiDBExtension}.
  *
  *  <pre>{@code
  *  @Tag("multi-db-test")
