@@ -17,7 +17,9 @@ package io.camunda.client.impl.search.request;
 
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.protocol.rest.SearchQueryPageRequest;
+import io.camunda.client.protocol.rest.SearchQuerySortItem;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class SearchRequestPageImpl
     extends TypedSearchRequestPropertyProvider<SearchQueryPageRequest>
@@ -43,18 +45,56 @@ public class SearchRequestPageImpl
 
   @Override
   public SearchRequestPage searchBefore(final List<Object> values) {
-    page.setSearchBefore(values);
+    page.setSearchBefore(toSortItems(values));
     return this;
   }
 
   @Override
   public SearchRequestPage searchAfter(final List<Object> values) {
-    page.setSearchAfter(values);
+    page.setSearchAfter(toSortItems(values));
     return this;
   }
 
   @Override
   public SearchQueryPageRequest getSearchRequestProperty() {
     return page;
+  }
+
+  private static List<SearchQuerySortItem> toSortItems(final List<Object> sortObjects) {
+    if (sortObjects == null) {
+      return null;
+    }
+
+    return sortObjects.stream().map(SearchRequestPageImpl::toSortItem).collect(Collectors.toList());
+  }
+
+  private static SearchQuerySortItem toSortItem(final Object sortObject) {
+    if (sortObject == null) {
+      return null;
+    }
+
+    final String value = sortObject.toString();
+    final String type;
+    if (sortObject instanceof Boolean) {
+      type = "boolean";
+    } else if (sortObject instanceof Integer) {
+      type = "int32";
+    } else if (sortObject instanceof Long) {
+      type = "int64";
+    } else if (sortObject instanceof Float) {
+      type = "float";
+    } else if (sortObject instanceof Double) {
+      type = "double";
+    } else if (sortObject instanceof String) {
+      type = "string";
+    } else {
+      throw new RuntimeException(
+          String.format("Unsupported sort object class: %s", sortObject.getClass().getName()));
+    }
+    final SearchQuerySortItem sortItem = new SearchQuerySortItem();
+    sortItem.setValue(value);
+    sortItem.setType(type);
+
+    return sortItem;
   }
 }

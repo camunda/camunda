@@ -8262,12 +8262,21 @@ components:
           description: Items to search after. Correlates to the `lastSortValues` property of a previous search response.
           type: array
           items:
-            type: object
+            $ref: "#/components/schemas/SearchQuerySortItem"
         searchBefore:
           description: Items to search before. Correlates to the `firstSortValues` property of a previous search response.
           type: array
           items:
-            type: object
+            $ref: "#/components/schemas/SearchQuerySortItem"
+    SearchQuerySortItem:
+      type: object
+      properties:
+        value:
+          type: string
+          description: The serialized JSON value
+        type:
+          type: string
+          description: The original data type of the value
     SearchQueryResponse:
       type: object
       properties:
@@ -8287,12 +8296,12 @@ components:
           description: The sort values of the first item in the result set. Use this in the `searchBefore` field of an ensuing request.
           type: array
           items:
-            type: object
+            $ref: "#/components/schemas/SearchQuerySortItem"
         lastSortValues:
           description: The sort values of the last item in the result set. Use this in the `searchAfter` field of an ensuing request.
           type: array
           items:
-            type: object
+            $ref: "#/components/schemas/SearchQuerySortItem"
     DecisionRequirementsSearchQuerySortRequest:
       type: object
       properties:
