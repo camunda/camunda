@@ -204,21 +204,21 @@ public class PropertyBasedZeebeWorkerValueCustomizer implements ZeebeWorkerValue
     final Set<String> tenantIds = new HashSet<>();
 
     // we consider default worker tenant ids configurations first
-    if (camundaClientProperties.getZeebe().getDefaults().getTenantIds() != null) {
+    if (camundaClientProperties.getZeebe().getDefaults().getTenantIds() != null
+        && !camundaClientProperties.getZeebe().getDefaults().getTenantIds().isEmpty()) {
       tenantIds.addAll(camundaClientProperties.getZeebe().getDefaults().getTenantIds());
-    } else if (camundaClientProperties.getTenantIds() != null) {
+    } else if (camundaClientProperties.getTenantIds() != null
+        && !camundaClientProperties.getTenantIds().isEmpty()) {
       // the deprecated config only gets considered in the absence of it's successor
       tenantIds.addAll(camundaClientProperties.getTenantIds());
+    } else if (StringUtils.isNotBlank(camundaClientProperties.getTenantId())) {
+      // the default tenant set on the client is included in the default if no other default is set
+      tenantIds.add(camundaClientProperties.getTenantId());
     }
 
     // if set, worker annotation defaults get included as well
     if (zeebeWorker.getTenantIds() != null) {
       tenantIds.addAll(zeebeWorker.getTenantIds());
-    }
-
-    // lastly the default tenant set on the client is included in the default
-    if (StringUtils.isNotBlank(camundaClientProperties.getTenantId())) {
-      tenantIds.add(camundaClientProperties.getTenantId());
     }
 
     if (!tenantIds.isEmpty()) {
