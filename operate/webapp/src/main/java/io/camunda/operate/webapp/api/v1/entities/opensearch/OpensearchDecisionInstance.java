@@ -14,42 +14,29 @@
  * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
-package io.camunda.operate.webapp.api.v1.entities;
+package io.camunda.operate.webapp.api.v1.entities.opensearch;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.camunda.operate.entities.dmn.DecisionType;
+import io.camunda.operate.webapp.api.v1.entities.DecisionInstanceInput;
+import io.camunda.operate.webapp.api.v1.entities.DecisionInstanceOutput;
+import io.camunda.operate.webapp.api.v1.entities.DecisionInstanceState;
+import java.util.List;
 
-public enum DecisionInstanceState {
-  FAILED,
-  EVALUATED,
-  UNKNOWN,
-  UNSPECIFIED;
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(DecisionInstanceState.class);
-
-  public static DecisionInstanceState getState(
-      final io.camunda.operate.entities.dmn.DecisionInstanceState state) {
-    if (state == null) {
-      return UNSPECIFIED;
-    }
-    return switch (state) {
-      case FAILED -> FAILED;
-      case EVALUATED -> EVALUATED;
-      default -> UNKNOWN;
-    };
-  }
-
-  public static DecisionInstanceState fromString(final String state) {
-    if (state == null) {
-      return UNSPECIFIED;
-    }
-    try {
-      return DecisionInstanceState.valueOf(state);
-    } catch (final IllegalArgumentException ex) {
-      LOGGER.error(
-          "Decision instance state not found for value [{}]. UNKNOWN type will be assigned.",
-          state);
-      return UNKNOWN;
-    }
-  }
-}
+public record OpensearchDecisionInstance(
+    String id,
+    Long key,
+    DecisionInstanceState state,
+    String evaluationDate,
+    String evaluationFailure,
+    String evaluationFailureMessage,
+    Long processDefinitionKey,
+    Long processInstanceKey,
+    String decisionId,
+    String decisionDefinitionId,
+    String decisionName,
+    Integer decisionVersion,
+    DecisionType decisionType,
+    String result,
+    List<DecisionInstanceInput> evaluatedInputs,
+    List<DecisionInstanceOutput> evaluatedOutputs,
+    String tenantId) {}
