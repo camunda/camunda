@@ -50,11 +50,6 @@ public interface ComponentTreeListener extends AutoCloseable {
   /** Unregister a relationship between a child and its parent */
   void unregisterRelationship(String child, String parent);
 
-  default void unregisterRelationship(
-      final HealthMonitorable child, final HealthMonitorable parent) {
-    unregisterRelationship(child.componentName(), parent.componentName());
-  }
-
   static ComponentTreeListener noop() {
     return new ComponentTreeListener() {
       @Override
