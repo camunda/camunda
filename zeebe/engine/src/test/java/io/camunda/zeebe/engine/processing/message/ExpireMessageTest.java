@@ -8,18 +8,24 @@
 package io.camunda.zeebe.engine.processing.message;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.engine.util.client.PublishMessageClient;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordAssert;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
@@ -41,11 +47,7 @@ public final class ExpireMessageTest {
   @Before
   public void init() {
     messageClient =
-        ENGINE_RULE
-            .message()
-            .withCorrelationKey("order-123")
-            .withName("order canceled")
-            .withTimeToLive(1_000L);
+        ENGINE_RULE.message().withCorrelationKey("order-123").withName("order canceled");
   }
 
   @Test
@@ -125,5 +127,158 @@ public final class ExpireMessageTest {
 
     // then
     assertThat(deleteCommand.getSourceRecordPosition()).isLessThan(0);
+  }
+
+  @Test
+  public void shouldExpireMessageAfterTTLWithMessageBody() {
+    // given
+    final Record<MessageRecordValue> publishedRecord =
+        ENGINE_RULE
+            .message()
+            .withCorrelationKey("correlation1")
+            .withName("message1")
+            .withTimeToLive(Duration.ofMinutes(1))
+            .publish();
+
+    final Record<MessageRecordValue> secondPublishedRecord =
+        ENGINE_RULE
+            .message()
+            .withCorrelationKey("correlation2")
+            .withName("message2")
+            .withTimeToLive(Duration.ofMinutes(1))
+            .publish();
+
+    // when
+    ENGINE_RULE.increaseTime(EngineConfiguration.DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL);
+
+    // then
+    final Record<MessageBatchRecordValue> expireBatchMessageCommand =
+        RecordingExporter.messageBatchRecords().withIntent(MessageBatchIntent.EXPIRE).getFirst();
+
+    Assertions.assertThat(expireBatchMessageCommand.getValue())
+        .hasMessageKeys(List.of(publishedRecord.getKey(), secondPublishedRecord.getKey()));
+
+    final MessageRecordValue firstMessage = publishedRecord.getValue();
+    final MessageRecordValue secondMessage = secondPublishedRecord.getValue();
+
+    assertThat(RecordingExporter.messageRecords().withIntent(MessageIntent.EXPIRED).limit(2))
+        .extracting(Record::getValue)
+        .extracting(
+            MessageRecordValue::getName,
+            MessageRecordValue::getCorrelationKey,
+            MessageRecordValue::getTimeToLive)
+        .containsExactly(
+            tuple(
+                firstMessage.getName(),
+                firstMessage.getCorrelationKey(),
+                firstMessage.getTimeToLive()),
+            tuple(
+                secondMessage.getName(),
+                secondMessage.getCorrelationKey(),
+                secondMessage.getTimeToLive()));
+  }
+
+  @Test
+  public void shouldSkipAlreadyCorrelatedMessage() {
+    // given
+    final Record<MessageRecordValue> firstMessage =
+        ENGINE_RULE
+            .message()
+            .withCorrelationKey("correlation1")
+            .withName("message1")
+            .withTimeToLive(Duration.ofMinutes(1))
+            .publish();
+    final long firstMessageKey = firstMessage.getKey();
+
+    final long secondMessageKey =
+        ENGINE_RULE
+            .message()
+            .withCorrelationKey("correlation2")
+            .withName("message2")
+            .withTimeToLive(Duration.ofMinutes(1))
+            .publish()
+            .getKey();
+
+    // when
+    // assume the message already correlated and expired in the meantime
+    ENGINE_RULE.writeRecords(
+        RecordToWrite.command()
+            .key(firstMessageKey)
+            .message(MessageIntent.EXPIRE, firstMessage.getValue()));
+
+    // write the batch expire command that will be processed after the correlation
+    final MessageBatchRecord messageBatchRecord = new MessageBatchRecord();
+    messageBatchRecord.addMessageKey(firstMessageKey).addMessageKey(secondMessageKey);
+    ENGINE_RULE.writeRecords(RecordToWrite.command().messageBatch(messageBatchRecord));
+
+    // then
+    final Record<MessageBatchRecordValue> expireBatchMessageCommand =
+        RecordingExporter.messageBatchRecords().withIntent(MessageBatchIntent.EXPIRE).getFirst();
+
+    Assertions.assertThat(expireBatchMessageCommand.getValue())
+        .hasMessageKeys(List.of(firstMessageKey, secondMessageKey));
+
+    final List<Long> listOfExpiredMessageKeys =
+        RecordingExporter.messageRecords()
+            .withIntent(MessageIntent.EXPIRED)
+            .withSourceRecordPosition(
+                expireBatchMessageCommand.getPosition()) // only filter by the batch
+            .flatMapToLong(v -> LongStream.of(v.getKey()))
+            .boxed()
+            .collect(Collectors.toList());
+
+    assertThat(listOfExpiredMessageKeys).isEqualTo(List.of(secondMessageKey));
+  }
+
+  @Test
+  public void shouldRejectIfNoMessageIsExpired() {
+    // given
+    final var firstMessage =
+        ENGINE_RULE
+            .message()
+            .withCorrelationKey("correlation1")
+            .withName("message1")
+            .withTimeToLive(Duration.ofMinutes(1))
+            .publish();
+    final long firstMessageKey = firstMessage.getKey();
+
+    final var secondMessage =
+        ENGINE_RULE
+            .message()
+            .withCorrelationKey("correlation2")
+            .withName("message2")
+            .withTimeToLive(Duration.ofMinutes(1))
+            .publish();
+    final long secondMessageKey = secondMessage.getKey();
+
+    // when
+    // assume the message already correlated and expired in the meantime
+    ENGINE_RULE.writeRecords(
+        RecordToWrite.command()
+            .key(firstMessageKey)
+            .message(MessageIntent.EXPIRE, firstMessage.getValue()));
+    ENGINE_RULE.writeRecords(
+        RecordToWrite.command()
+            .key(secondMessageKey)
+            .message(MessageIntent.EXPIRE, secondMessage.getValue()));
+
+    // write the batch expire command that will be processed after the correlation
+    final MessageBatchRecord messageBatchRecord = new MessageBatchRecord();
+    messageBatchRecord.addMessageKey(firstMessageKey).addMessageKey(secondMessageKey);
+    ENGINE_RULE.writeRecords(RecordToWrite.command().messageBatch(messageBatchRecord));
+
+    // then
+    final Record<MessageBatchRecordValue> expireBatchMessageCommand =
+        RecordingExporter.messageBatchRecords()
+            .withIntent(MessageBatchIntent.EXPIRE)
+            .onlyCommandRejections()
+            .getFirst();
+
+    Assertions.assertThat(expireBatchMessageCommand.getValue())
+        .hasMessageKeys(List.of(firstMessageKey, secondMessageKey));
+    RecordAssert.assertThat(expireBatchMessageCommand)
+        .hasRejectionReason(
+            "Expected to expire 2 messages in a batch, but none of the messages were found in the state.")
+        .hasRejectionType(RejectionType.NOT_FOUND);
   }
 }
