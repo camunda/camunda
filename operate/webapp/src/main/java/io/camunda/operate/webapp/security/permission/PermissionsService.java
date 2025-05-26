@@ -8,7 +8,6 @@
 package io.camunda.operate.webapp.security.permission;
 
 import io.camunda.authentication.entity.CamundaPrincipal;
-import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.auth.Authorization;
@@ -199,7 +198,7 @@ public class PermissionsService {
         SecurityContextHolder.getContext().getAuthentication();
     if (requestAuthentication != null) {
       final Object principal = requestAuthentication.getPrincipal();
-      if (principal instanceof final CamundaUser authenticatedPrincipal) {
+      if (principal instanceof final CamundaPrincipal authenticatedPrincipal) {
         return authenticatedPrincipal.getUsername();
       }
     }
