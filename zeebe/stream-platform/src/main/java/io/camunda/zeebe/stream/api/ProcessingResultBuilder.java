@@ -84,6 +84,10 @@ public interface ProcessingResultBuilder {
    */
   ProcessingResultBuilder resetPostCommitTasks();
 
+  default ProcessingResultBuilder withStartANewBatch() {
+    return this;
+  }
+
   ProcessingResult build();
 
   boolean canWriteEventOfLength(int eventLength);

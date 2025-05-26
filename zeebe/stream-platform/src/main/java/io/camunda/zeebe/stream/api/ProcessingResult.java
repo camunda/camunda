@@ -49,4 +49,8 @@ public interface ProcessingResult {
    *     false otherwise.
    */
   boolean isEmpty();
+
+  default boolean shouldContinueProcessingInCurrentTransaction() {
+    return true;
+  }
 }

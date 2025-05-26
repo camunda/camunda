@@ -25,6 +25,10 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
     return ProcessingError.UNEXPECTED_ERROR;
   }
 
+  default boolean shouldProcessInASeparateBatch() {
+    return false;
+  }
+
   enum ProcessingError {
     EXPECTED_ERROR,
     UNEXPECTED_ERROR
