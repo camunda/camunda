@@ -87,7 +87,7 @@ public class DbMigratorImpl implements DbMigrator {
     var initializationOnly = false;
     switch (checkVersionCompatibility()) {
       case final Indeterminate.PreviousVersionUnknown unknown:
-        LOGGER.debug("Snapshot is empty, no migrations to run");
+        LOGGER.debug("Snapshot is empty, only initialization migrations will be run.");
         initializationOnly = true;
         break;
       case final Compatible.SameVersion compatible:
@@ -96,7 +96,7 @@ public class DbMigratorImpl implements DbMigrator {
       default:
         break;
     }
-    logPreview(migrationTasks);
+    logPreview(migrationTasks, initializationOnly);
 
     final var executedMigrations = runMigrations(initializationOnly);
 
@@ -152,7 +152,8 @@ public class DbMigratorImpl implements DbMigrator {
     migrationTaskContext.processingState().getMigrationState().setMigratedByVersion(currentVersion);
   }
 
-  private void logPreview(final List<MigrationTask> migrationTasks) {
+  private void logPreview(
+      final List<MigrationTask> migrationTasks, final boolean initializationOnly) {
     LOGGER.info(
         "Starting processing {} migration tasks (use LogLevel.DEBUG for more details) ... ",
         migrationTasks.size());
@@ -160,6 +161,7 @@ public class DbMigratorImpl implements DbMigrator {
         "Found {} migration tasks: {}",
         migrationTasks.size(),
         migrationTasks.stream()
+            .filter(task -> !initializationOnly || task.isInitialization())
             .map(MigrationTask::getIdentifier)
             .collect(Collectors.joining(", ")));
   }

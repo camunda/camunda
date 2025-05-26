@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.migration;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -197,7 +198,7 @@ public class DbMigratorImplTest {
     sut.runMigrations();
 
     // then
-    verify(migration).isInitialization();
+    verify(migration, atLeastOnce()).isInitialization();
     verify(migration, never()).runMigration(any());
     verify(mockProcessingState.getMigrationState()).setMigratedByVersion(eq(CURRENT_VERSION));
   }
@@ -216,7 +217,7 @@ public class DbMigratorImplTest {
     sut.runMigrations();
 
     // then
-    verify(migration).isInitialization();
+    verify(migration, atLeastOnce()).isInitialization();
     verify(migration).runMigration(any());
     verify(mockProcessingState.getMigrationState()).setMigratedByVersion(eq(CURRENT_VERSION));
   }
