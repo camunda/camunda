@@ -166,14 +166,6 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     return String.format("%s_template", elsConfig.getIndexPrefix());
   }
 
-  private Settings getIndexSettings() {
-    final TasklistElasticsearchProperties elsConfig = tasklistProperties.getElasticsearch();
-    return Settings.builder()
-        .put(NUMBER_OF_SHARDS, elsConfig.getNumberOfShards())
-        .put(NUMBER_OF_REPLICAS, elsConfig.getNumberOfReplicas())
-        .build();
-  }
-
   public void createDefaults() {
     final TasklistElasticsearchProperties elsConfig = tasklistProperties.getElasticsearch();
     final String settingsTemplate = settingsTemplateName();
@@ -243,12 +235,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
     putIndexTemplate(request);
 
     // This is necessary, otherwise tasklist won't find indexes at startup
-    final String indexName = templateDescriptor.getFullQualifiedName();
-    final var createIndexRequest =
-        new CreateIndexRequest(indexName)
-            .aliases(Set.of(new Alias(templateDescriptor.getAlias()).writeIndex(false)))
-            .settings(getIndexSettings(templateDescriptor.getIndexName()));
-    createIndex(createIndexRequest, indexName);
+    createIndex(templateDescriptor);
   }
 
   private void createIndex(final CreateIndexRequest createIndexRequest, final String indexName) {
