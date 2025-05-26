@@ -1,6 +1,6 @@
-## description: Runs the CI tests owned by Core Features. Runs a test to make sure that Operate can build, runs java checks (ie spotbugs), unit tests, and integration tests
-## test location: operate/qa/integration-tests
-## owner: Core Features
+# description: Runs integration tests CI tests owned by Core Features
+# test location: operate/qa/integration-tests
+# owner: Core Features
 name: "[Legacy] Operate"
 on:
   workflow_dispatch:
