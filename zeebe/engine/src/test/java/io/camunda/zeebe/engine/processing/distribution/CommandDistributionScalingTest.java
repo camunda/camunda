@@ -18,6 +18,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.metrics.DistributionMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
 import io.camunda.zeebe.engine.state.distribution.DbDistributionState;
@@ -46,10 +47,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ProcessingStateExtension.class)
 public class CommandDistributionScalingTest {
+  /* Injected from {@link ProcessingStateExtension} */
   private ZeebeDb<ZbColumnFamilies> zeebeDb;
   private MutableRoutingState routingState;
   private MutableProcessingState state;
   private TransactionContext transactionContext;
+
   private DistributionState distributionState;
   private FakeProcessingResultBuilder<CommandDistributionRecord> fakeProcessingResultBuilder;
   private InterPartitionCommandSender mockInterpartitionCommandSender;
@@ -59,6 +62,7 @@ public class CommandDistributionScalingTest {
   private ValueType valueType;
   private DeploymentIntent intent;
   private MockTypedRecord<DeploymentRecord> command;
+  private CommandDistributionBehavior behavior;
 
   @BeforeEach
   public void setup() {
@@ -74,20 +78,22 @@ public class CommandDistributionScalingTest {
     command =
         new MockTypedRecord<>(
             key, new RecordMetadata().valueType(valueType).intent(intent), new DeploymentRecord());
-  }
 
-  @Test
-  public void shouldWaitInQueueDuringScaling() {
-    state.getRoutingState().initializeRoutingInfo(2);
     // given a scale operation ongoing to transition to 3 partitions
+    state.getRoutingState().initializeRoutingInfo(2);
     state.getRoutingState().setDesiredPartitions(Set.of(1, 2, 3));
-    final var behavior =
+    behavior =
         new CommandDistributionBehavior(
             distributionState,
             writers,
             1,
             RoutingInfo.dynamic(state.getRoutingState(), RoutingInfo.forStaticPartitions(2)),
-            mockInterpartitionCommandSender);
+            mockInterpartitionCommandSender,
+            mock(DistributionMetrics.class));
+  }
+
+  @Test
+  public void shouldWaitInQueueDuringScaling() {
 
     // when distributing first command in queue to all partitions
     behavior.withKey(key).inQueue("test-queue").distribute(command);
@@ -100,11 +106,10 @@ public class CommandDistributionScalingTest {
             tuple(key, CommandDistributionIntent.STARTED, 1),
             tuple(key, CommandDistributionIntent.ENQUEUED, 2),
             tuple(key, CommandDistributionIntent.DISTRIBUTING, 2),
-            tuple(key, CommandDistributionIntent.ENQUEUED, 3),
-            tuple(key, CommandDistributionIntent.DISTRIBUTING, 3));
+            tuple(key, CommandDistributionIntent.ENQUEUED, 3));
 
-    // then command is sent immediately to partition 2
     fakeProcessingResultBuilder.flushPostCommitTasks();
+    // then command is sent immediately to partition 2
     verify(mockInterpartitionCommandSender)
         .sendCommand(eq(2), eq(valueType), eq(intent), eq(key), any());
     verify(mockInterpartitionCommandSender, times(0))
@@ -115,21 +120,12 @@ public class CommandDistributionScalingTest {
 
   @Test
   public void shouldQueueUpDistributions() {
-    // given a scale operation ongoing to transition to 3 partitions
-    state.getRoutingState().initializeRoutingInfo(2);
-    state.getRoutingState().setDesiredPartitions(Set.of(1, 2, 3));
-    final var behavior =
-        new CommandDistributionBehavior(
-            distributionState,
-            writers,
-            1,
-            RoutingInfo.dynamic(state.getRoutingState(), RoutingInfo.forStaticPartitions(2)),
-            mockInterpartitionCommandSender);
+    // given
 
     // when a distribution command is sent for two records
+    final var otherKey = Protocol.encodePartitionId(1, 101);
     behavior.withKey(key).inQueue("test-queue").distribute(command);
-    final var recordKey = Protocol.encodePartitionId(1, 101);
-    behavior.withKey(recordKey).inQueue("test-queue").distribute(command);
+    behavior.withKey(otherKey).inQueue("test-queue").distribute(command);
 
     // then command distribution is started on partition 1
     // first record is starting to be distributed
@@ -141,10 +137,50 @@ public class CommandDistributionScalingTest {
             tuple(key, CommandDistributionIntent.ENQUEUED, 2),
             tuple(key, CommandDistributionIntent.DISTRIBUTING, 2),
             tuple(key, CommandDistributionIntent.ENQUEUED, 3),
-            tuple(key, CommandDistributionIntent.DISTRIBUTING, 3),
-            tuple(recordKey, CommandDistributionIntent.STARTED, 1),
-            tuple(recordKey, CommandDistributionIntent.ENQUEUED, 2),
-            tuple(recordKey, CommandDistributionIntent.ENQUEUED, 3));
+            tuple(otherKey, CommandDistributionIntent.STARTED, 1),
+            tuple(otherKey, CommandDistributionIntent.ENQUEUED, 2),
+            tuple(otherKey, CommandDistributionIntent.ENQUEUED, 3));
+
+    fakeProcessingResultBuilder.flushPostCommitTasks();
+    // then command is sent immediately to partition 2 for the first record
+    verify(mockInterpartitionCommandSender)
+        .sendCommand(eq(2), eq(valueType), eq(intent), eq(key), any());
+    verify(mockInterpartitionCommandSender, times(0))
+        .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any());
+    // the second command is enqueued for partitions 2 and 3
+    verify(mockInterpartitionCommandSender, times(0))
+        .sendCommand(eq(2), eq(valueType), eq(intent), eq(otherKey), any());
+    verify(mockInterpartitionCommandSender, times(0))
+        .sendCommand(eq(3), eq(valueType), eq(intent), eq(otherKey), any());
+    verifyNoMoreInteractions(mockInterpartitionCommandSender);
+
+    assertThat(distributionState.hasPendingDistribution(key, 2)).isTrue();
+    assertThat(distributionState.hasPendingDistribution(key, 3)).isTrue();
+    assertThat(distributionState.hasPendingDistribution(otherKey, 2)).isTrue();
+    assertThat(distributionState.hasPendingDistribution(otherKey, 3)).isTrue();
+  }
+
+  @Test
+  public void shouldNotDistributeToDesiredPartitionsIfCommandSpecifiesPartition() {
+    // given
+
+    // when a distribution command is sent for two records
+    final var otherKey = Protocol.encodePartitionId(1, 101);
+    behavior.withKey(key).inQueue("test-queue").distribute(command);
+    behavior.withKey(otherKey).inQueue("test-queue").forPartition(2).distribute(command);
+
+    // then command distribution is started on partition 1
+    // first record is starting to be distributed
+    // second record is enqueued for partitions 2 and 3
+    Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords())
+        .extracting(Record::getKey, Record::getIntent, r -> r.getValue().getPartitionId())
+        .containsExactly(
+            tuple(key, CommandDistributionIntent.STARTED, 1),
+            tuple(key, CommandDistributionIntent.ENQUEUED, 2),
+            tuple(key, CommandDistributionIntent.DISTRIBUTING, 2),
+            tuple(key, CommandDistributionIntent.ENQUEUED, 3),
+            tuple(otherKey, CommandDistributionIntent.STARTED, 1),
+            tuple(otherKey, CommandDistributionIntent.ENQUEUED, 2));
 
     // then command is sent immediately to partition 2 for the first record
     fakeProcessingResultBuilder.flushPostCommitTasks();
@@ -154,13 +190,13 @@ public class CommandDistributionScalingTest {
         .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any());
 
     verify(mockInterpartitionCommandSender, times(0))
-        .sendCommand(eq(2), eq(valueType), eq(intent), eq(recordKey), any());
+        .sendCommand(eq(2), eq(valueType), eq(intent), eq(otherKey), any());
     verify(mockInterpartitionCommandSender, times(0))
-        .sendCommand(eq(3), eq(valueType), eq(intent), eq(recordKey), any());
+        .sendCommand(eq(3), eq(valueType), eq(intent), eq(otherKey), any());
     verifyNoMoreInteractions(mockInterpartitionCommandSender);
 
     assertThat(distributionState.hasPendingDistribution(key, 3)).isTrue();
-    assertThat(distributionState.hasPendingDistribution(recordKey, 2)).isTrue();
-    assertThat(distributionState.hasPendingDistribution(recordKey, 3)).isTrue();
+    assertThat(distributionState.hasPendingDistribution(otherKey, 2)).isTrue();
+    assertThat(distributionState.hasPendingDistribution(otherKey, 3)).isFalse();
   }
 }

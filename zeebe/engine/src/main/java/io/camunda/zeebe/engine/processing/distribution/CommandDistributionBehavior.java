@@ -26,6 +26,7 @@ import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -180,21 +181,16 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
     stateWriter.appendFollowUpEvent(
         distributionKey, CommandDistributionIntent.STARTED, distributionRecord);
 
-    partitions.forEach(
-        (partition) -> {
-          if (partition == currentPartitionId) {
-            return;
-          }
-          distributeToPartition(partition, distributionRecord, distributionKey);
-        });
-
-    // Scale up is in progress, enqueue upcoming distributions for the new partitions
-    if (routingInfo.desiredPartitions().size() > routingInfo.partitions().size()) {
-      routingInfo.desiredPartitions().stream()
-          .filter(this::isPartitionScaling)
-          .forEach(
-              partition -> distributeToPartition(partition, distributionRecord, distributionKey));
+    final var allPartitions = new HashSet<>(partitions);
+    if (partitions.equals(routingInfo.partitions())) {
+      // If the distribution targets all active partitions, include any potential scaling partitions
+      allPartitions.addAll(routingInfo.desiredPartitions());
     }
+
+    allPartitions.stream()
+        .filter(partition -> partition != currentPartitionId)
+        .forEach(
+            partition -> distributeToPartition(partition, distributionRecord, distributionKey));
 
     getMetrics().startedDistribution();
     getMetrics().addActiveDistribution();
@@ -206,6 +202,11 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
       final long distributionKey) {
     final var distributionQueue = Optional.ofNullable(distributionRecord.getQueueId());
     distributionQueue.ifPresent(queue -> enqueueDistribution(queue, partition, distributionKey));
+
+    if (routingInfo.isPartitionScaling(partition)) {
+      // If the partition is currently being scaled up, we don't want to distribute the command yet.
+      return;
+    }
 
     final var canDistributeImmediately =
         distributionQueue
@@ -219,8 +220,6 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
     if (canDistributeImmediately) {
       startDistributing(partition, distributionRecord, distributionKey);
     }
-
-    getMetrics().addPendingDistribution(partition);
   }
 
   private void enqueueDistribution(
@@ -230,6 +229,8 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
         distributionKey,
         CommandDistributionIntent.ENQUEUED,
         commandDistributionEnqueued.setQueueId(queue).setPartitionId(partition));
+
+    getMetrics().addPendingDistribution(partition);
   }
 
   /**
