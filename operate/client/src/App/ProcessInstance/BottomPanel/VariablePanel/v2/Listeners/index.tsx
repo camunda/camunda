@@ -7,6 +7,7 @@
  */
 
 import {observer} from 'mobx-react';
+import {GetJobsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
 import {
   CellContainer,
   Content,
@@ -40,9 +41,13 @@ type SelectedItem = {
   selectedItem: FilterLabelMappingKeys;
 };
 
+type Props = {
+  jobs: GetJobsResponseBody | undefined;
+};
+
 const ROW_HEIGHT = 46;
 
-const Listeners: React.FC = observer(() => {
+const Listeners: React.FC<Props> = observer(({jobs}) => {
   const {
     setListenerTypeFilter,
     shouldFetchPreviousListeners,
@@ -50,7 +55,7 @@ const Listeners: React.FC = observer(() => {
     shouldFetchNextListeners,
     fetchNextListeners,
   } = processInstanceListenersStore;
-  const {listeners, latestFetch} = processInstanceListenersStore.state;
+  const {latestFetch} = processInstanceListenersStore.state;
 
   const {metaData} = flowNodeMetaDataStore.state;
   const isUserTask = metaData?.instanceMetadata?.flowNodeType === 'USER_TASK';
@@ -69,6 +74,8 @@ const Listeners: React.FC = observer(() => {
 
     return 'This flow node has no execution listeners';
   };
+
+  const listeners = jobs?.items ?? [];
 
   return (
     <Content>
@@ -136,20 +143,20 @@ const Listeners: React.FC = observer(() => {
               fetchNextListeners();
             }}
             rows={listeners?.map(
-              ({listenerType, listenerKey, state, jobType, event, time}) => {
+              ({kind, jobKey, state, type, listenerEventType, endTime}) => {
                 return {
-                  key: listenerKey,
-                  dataTestId: listenerKey,
+                  key: jobKey,
+                  dataTestId: jobKey,
                   columns: [
                     {
                       cellContent: (
                         <CellContainer orientation="horizontal" gap={3}>
-                          {spaceAndCapitalize(listenerType)}
+                          {spaceAndCapitalize(kind)}
                           {state === 'FAILED' && <WarningFilled />}
                         </CellContainer>
                       ),
                     },
-                    {cellContent: <CellContainer>{listenerKey}</CellContainer>},
+                    {cellContent: <CellContainer>{jobKey}</CellContainer>},
                     {
                       cellContent: (
                         <CellContainer>
@@ -158,18 +165,18 @@ const Listeners: React.FC = observer(() => {
                       ),
                     },
                     {
-                      cellContent: <CellContainer>{jobType}</CellContainer>,
+                      cellContent: <CellContainer>{type}</CellContainer>,
                     },
                     {
                       cellContent: (
                         <CellContainer>
-                          {spaceAndCapitalize(event)}
+                          {spaceAndCapitalize(listenerEventType)}
                         </CellContainer>
                       ),
                     },
                     {
                       cellContent: (
-                        <CellContainer>{formatDate(time)}</CellContainer>
+                        <CellContainer>{formatDate(endTime)}</CellContainer>
                       ),
                     },
                   ],

@@ -15,11 +15,11 @@ const mockEndpoints = [
       items: [
         {
           jobKey: '2251799813916032',
-          type: 'type',
+          type: 'task_start_el_1',
           worker: 'worker',
           state: 'CREATED',
           kind: 'EXECUTION_LISTENER',
-          listenerEventType: 'UNSPECIFIED',
+          listenerEventType: 'START',
           retries: 3,
           isDenied: false,
           deniedReason: 'deniedReason',
@@ -27,7 +27,7 @@ const mockEndpoints = [
           errorCode: 'errorCode',
           errorMessage: 'errorMessage',
           deadline: 'deadline',
-          endTime: 'endTime',
+          endTime: '2024-05-27T07:42:43.705+0000',
           processDefinitionId: 'processDefinitionId',
           processDefinitionKey: 'processDefinitionKey',
           processInstanceKey: 'processInstanceKey',

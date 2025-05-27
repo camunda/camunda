@@ -272,6 +272,8 @@ class ProcessInstanceListeners {
       payload,
     });
 
+    console.log('v1 response', response);
+
     if (response.isSuccess) {
       const {listeners, totalCount} = response.data;
 
