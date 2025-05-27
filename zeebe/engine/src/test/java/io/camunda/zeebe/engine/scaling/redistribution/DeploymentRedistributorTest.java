@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.scaling.redistribution;
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -22,10 +21,10 @@ import io.camunda.zeebe.engine.state.immutable.DeploymentState.PendingDeployment
 import io.camunda.zeebe.engine.state.immutable.RoutingState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo.StaticRoutingInfo;
+import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
-import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.impl.StreamProcessorContext;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Set;
@@ -34,29 +33,30 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, ProcessingStateExtension.class})
 public class DeploymentRedistributorTest {
 
   @Mock private DeploymentDistributionCommandSender deploymentDistributionCommandSender;
   @Mock private DeploymentState deploymentState;
-  @Mock private StreamProcessorContext context;
+
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+  private StreamProcessorContext context;
+
   @Mock private RoutingState routingState;
-  @Mock private PendingDeploymentVisitor visitor;
-  private ProcessingScheduleService mockScheduleService;
   private DeploymentRedistributor deploymentRedistributor;
   private ArgumentCaptor<Runnable> taskCaptor;
   private long recordKey;
   private DirectBuffer resourceBuffer;
+  private DeploymentRecord deploymentRecord;
 
   @BeforeEach
   public void setUp() {
-    mockScheduleService = mock(ProcessingScheduleService.class);
     when(context.getPartitionId()).thenReturn(1);
-    when(context.getScheduleService()).thenReturn(mockScheduleService);
 
     when(routingState.currentPartitions()).thenReturn(Set.of(1, 2));
     when(routingState.desiredPartitions()).thenReturn(Set.of(1, 2, 3));
@@ -74,7 +74,8 @@ public class DeploymentRedistributorTest {
             .setResourceName("test.bpmn")
             .setResource(BufferUtil.wrapString("test"));
     resourceBuffer = BufferUtil.createCopy(deploymentResource);
-
+    deploymentRecord = new DeploymentRecord();
+    deploymentRecord.wrap(resourceBuffer);
     taskCaptor = forClass(Runnable.class);
   }
 
@@ -105,12 +106,10 @@ public class DeploymentRedistributorTest {
     deploymentRedistributor.onRecovered(context);
     Awaitility.await()
         .untilAsserted(
-            () -> verify(mockScheduleService).runAtFixedRate(any(), taskCaptor.capture()));
+            () -> verify(context.getScheduleService()).runAtFixedRate(any(), taskCaptor.capture()));
     final Runnable scheduledTask = taskCaptor.getValue();
     scheduledTask.run();
     // then
-    final var deploymentRecord = new DeploymentRecord();
-    deploymentRecord.wrap(resourceBuffer);
     verify(deploymentDistributionCommandSender, times(1))
         .distributeToPartition(recordKey, 1, deploymentRecord);
     verify(deploymentDistributionCommandSender, times(1))
@@ -122,7 +121,6 @@ public class DeploymentRedistributorTest {
   @Test
   void shouldRedistributeToScaledPartition() {
     // given
-
     doAnswer(
             invocation -> {
               final PendingDeploymentVisitor visitor = invocation.getArgument(0);
@@ -149,12 +147,10 @@ public class DeploymentRedistributorTest {
     deploymentRedistributor.onRecovered(context);
     Awaitility.await()
         .untilAsserted(
-            () -> verify(mockScheduleService).runAtFixedRate(any(), taskCaptor.capture()));
+            () -> verify(context.getScheduleService()).runAtFixedRate(any(), taskCaptor.capture()));
     final Runnable scheduledTask = taskCaptor.getValue();
     scheduledTask.run();
     // then
-    final var deploymentRecord = new DeploymentRecord();
-    deploymentRecord.wrap(resourceBuffer);
     verify(deploymentDistributionCommandSender, times(1))
         .distributeToPartition(recordKey, 1, deploymentRecord);
     verify(deploymentDistributionCommandSender, times(1))
