@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import io.camunda.zeebe.util.FeatureFlags;
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,7 +40,8 @@ public final class ExpireMessageTest {
 
   @ClassRule
   public static final EngineRule ENGINE_RULE =
-      EngineRule.singlePartition().withFeatureFlags(ff -> ff.setEnableMessageBodyOnExpired(true));
+      EngineRule.singlePartition()
+          .withFeatureFlags(new FeatureFlags(true, false, false, false, true, false, true));
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -232,7 +234,7 @@ public final class ExpireMessageTest {
             // Speed up assertion. Otherwise, it waits 5 seconds for more EXPIRED records.
             .between(
                 r -> r.getIntent() == MessageBatchIntent.EXPIRE,
-                r -> r.getIntent() == SignalIntent.BROADCAST)
+                r -> r.getIntent() == SignalIntent.BROADCASTED)
             .withIntent(MessageIntent.EXPIRED)
             .withSourceRecordPosition(
                 expireBatchMessageCommand.getPosition()) // only filter by the batch
