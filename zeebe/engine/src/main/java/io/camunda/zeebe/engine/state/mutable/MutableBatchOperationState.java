@@ -35,4 +35,6 @@ public interface MutableBatchOperationState extends BatchOperationState {
   void resume(final long batchOperationKey);
 
   void complete(final long batchOperationKey);
+
+  void completePartition(final long batchOperationKey, int partitionId);
 }
