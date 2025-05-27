@@ -396,7 +396,8 @@ public class VariableStoreElasticSearch implements VariableStore {
     }
     final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
-            .query(constantScoreQuery(joinWithAnd(flowNodeInstanceKeyQ, varNamesQ)));
+            .query(constantScoreQuery(joinWithAnd(flowNodeInstanceKeyQ, varNamesQ)))
+            .size(tasklistProperties.getElasticsearch().getBatchSize());
     applyFetchSourceForVariableIndex(searchSourceBuilder, fieldNames);
 
     return new SearchRequest(variableIndex.getAlias()).source(searchSourceBuilder);

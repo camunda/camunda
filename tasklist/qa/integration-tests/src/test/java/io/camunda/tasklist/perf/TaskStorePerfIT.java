@@ -155,11 +155,11 @@ class TaskStorePerfIT extends TasklistIntegrationTest {
   /** (int numberOfVariablesPerTask, int numberOfMatchingTasks, int maxResponseTimeMs) */
   private static Stream<Arguments> performanceTestParams() {
     return Stream.of(
-        Arguments.of(1, 1000, 1000),
+        Arguments.of(1, 1000, 500),
         Arguments.of(1, 3000, 2000),
-        Arguments.of(2, 1000, 1000),
-        Arguments.of(2, 3000, 3000),
-        Arguments.of(1, 10_000, 13_000));
+        Arguments.of(2, 1000, 500),
+        Arguments.of(2, 3000, 2000),
+        Arguments.of(1, 10_000, 4000));
   }
 
   private void assertWithRetry(final int maxAttempts, final Runnable assertion)

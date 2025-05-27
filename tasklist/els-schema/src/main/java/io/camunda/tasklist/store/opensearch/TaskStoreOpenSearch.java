@@ -27,6 +27,7 @@ import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.queries.Sort;
 import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskOrderBy;
@@ -107,6 +108,8 @@ public class TaskStoreOpenSearch implements TaskStore {
 
   @Autowired private TaskVariableSearchUtil taskVariableSearchUtil;
 
+  @Autowired private TasklistProperties tasklistProperties;
+
   @Override
   public TaskEntity getTask(final String id) {
     try {
@@ -127,7 +130,8 @@ public class TaskStoreOpenSearch implements TaskStore {
                         term ->
                             term.field(PROCESS_INSTANCE_ID)
                                 .value(FieldValue.of(processInstanceId))))
-            .fields(f -> f.field(TaskTemplate.ID));
+            .fields(f -> f.field(TaskTemplate.ID))
+            .size(tasklistProperties.getOpenSearch().getBatchSize());
 
     try {
       return OpenSearchUtil.scrollIdsToList(searchRequest, osClient);
@@ -321,7 +325,8 @@ public class TaskStoreOpenSearch implements TaskStore {
                                     m.term(
                                         t ->
                                             t.field(STATE)
-                                                .value(FieldValue.of(TaskState.CREATED.name()))))));
+                                                .value(FieldValue.of(TaskState.CREATED.name()))))))
+        .size(tasklistProperties.getOpenSearch().getBatchSize());
   }
 
   /**
