@@ -7,12 +7,7 @@
  */
 
 import {VariablePanel} from './index';
-import {
-  render,
-  screen,
-  waitFor,
-  waitForElementToBeRemoved,
-} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
@@ -48,7 +43,7 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fe
 
 jest.mock('modules/feature-flags', () => ({
   ...jest.requireActual('modules/feature-flags'),
-  IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED: true,
+  IS_PROCESS_INSTANCE_V2_ENABLED: true,
 }));
 
 jest.mock('modules/stores/notifications', () => ({
@@ -208,9 +203,7 @@ describe('VariablePanel', () => {
     render(<VariablePanel />, {
       wrapper: getWrapper([Paths.processInstance('processInstanceId123')]),
     });
-    await waitForElementToBeRemoved(() =>
-      screen.queryByTestId('variables-skeleton'),
-    );
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
@@ -267,9 +260,7 @@ describe('VariablePanel', () => {
     });
 
     render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(() =>
-      screen.queryByTestId('variables-skeleton'),
-    );
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
@@ -360,9 +351,7 @@ describe('VariablePanel', () => {
     modificationsStore.enableModificationMode();
 
     render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(() =>
-      screen.queryByTestId('variables-skeleton'),
-    );
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
@@ -463,9 +452,7 @@ describe('VariablePanel', () => {
     });
 
     render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(() =>
-      screen.queryByTestId('variables-skeleton'),
-    );
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
@@ -526,9 +513,7 @@ describe('VariablePanel', () => {
     modificationsStore.enableModificationMode();
 
     render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(() =>
-      screen.queryByTestId('variables-skeleton'),
-    );
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(

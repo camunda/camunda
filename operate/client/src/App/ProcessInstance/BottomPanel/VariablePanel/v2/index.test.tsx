@@ -50,6 +50,11 @@ import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'mo
 
 const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
 
+jest.mock('modules/feature-flags', () => ({
+  ...jest.requireActual('modules/feature-flags'),
+  IS_PROCESS_INSTANCE_V2_ENABLED: true,
+}));
+
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
     displayNotification: jest.fn(() => () => {}),
@@ -172,9 +177,7 @@ describe('VariablePanel', () => {
 
     render(<VariablePanel />, {wrapper: getWrapper()});
 
-    await waitForElementToBeRemoved(() =>
-      screen.queryByTestId('variables-skeleton'),
-    );
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
   });
 
@@ -592,9 +595,8 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([createVariable()]);
 
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(() =>
-      screen.queryByTestId('variables-skeleton'),
-    );
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
+
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);

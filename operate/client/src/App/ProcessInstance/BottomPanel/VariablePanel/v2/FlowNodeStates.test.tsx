@@ -43,7 +43,6 @@ import {
 
 jest.mock('modules/feature-flags', () => ({
   ...jest.requireActual('modules/feature-flags'),
-  IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED: true,
   IS_PROCESS_INSTANCE_V2_ENABLED: true,
 }));
 

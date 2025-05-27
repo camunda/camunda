@@ -7,13 +7,7 @@
  */
 
 import {VariablePanel} from './index';
-import {
-  render,
-  screen,
-  UserEvent,
-  waitFor,
-  waitForElementToBeRemoved,
-} from 'modules/testing-library';
+import {render, screen, UserEvent, waitFor} from 'modules/testing-library';
 
 import {LastModification} from 'App/ProcessInstance/LastModification';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -37,6 +31,11 @@ import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
 import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+
+jest.mock('modules/feature-flags', () => ({
+  ...jest.requireActual('modules/feature-flags'),
+  IS_PROCESS_INSTANCE_V2_ENABLED: true,
+}));
 
 const editNameFromTextfieldAndBlur = async (user: UserEvent, value: string) => {
   const [nameField] = screen.getAllByTestId('new-variable-name');
@@ -157,9 +156,6 @@ describe('New Variable Modifications', () => {
     modificationsStore.enableModificationMode();
 
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(() =>
-      screen.getByTestId('variables-skeleton'),
-    );
     await waitFor(() => {
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
     });
@@ -185,8 +181,6 @@ describe('New Variable Modifications', () => {
       modificationsStore.enableModificationMode();
 
       const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-      await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
-
       await waitFor(() => {
         expect(
           screen.getByRole('button', {name: /add variable/i}),
@@ -226,8 +220,6 @@ describe('New Variable Modifications', () => {
       mockFetchVariables().withSuccess([createVariable()]);
 
       const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-      await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
-
       await waitFor(() => {
         expect(
           screen.getByRole('button', {name: /add variable/i}),
@@ -318,8 +310,6 @@ describe('New Variable Modifications', () => {
     modificationsStore.enableModificationMode();
 
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
-
     await waitFor(() => {
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
     });
@@ -359,8 +349,6 @@ describe('New Variable Modifications', () => {
         </>,
         {wrapper: getWrapper()},
       );
-      await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
-
       await waitFor(() => {
         expect(
           screen.getByRole('button', {name: /add variable/i}),
@@ -542,7 +530,6 @@ describe('New Variable Modifications', () => {
       modificationsStore.enableModificationMode();
 
       const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-      await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
       await waitFor(() => {
         expect(
