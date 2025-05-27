@@ -114,13 +114,14 @@ class TaskStorePerfIT extends TasklistIntegrationTest {
     assertWithRetry(
         3,
         () -> {
+          final int pageSize = 10_000;
           final long start = System.currentTimeMillis();
           assertThat(
                   taskStore.getTasks(
                       new TaskQuery()
                           .setState(TaskState.CREATED)
                           .setPageSize(
-                              10_000) // use max allowed page size to make sure we get all tasks
+                              pageSize) // use max allowed page size to make sure we get all tasks
                           .setTaskVariables(
                               IntStream.range(0, numberOfVariablesPerTask)
                                   .mapToObj(
@@ -129,7 +130,7 @@ class TaskStorePerfIT extends TasklistIntegrationTest {
                                               .setName("var" + i)
                                               .setValue(String.format("\"value%d\"", i)))
                                   .toArray(TaskByVariables[]::new))))
-              .hasSize(numberOfMatchingTasks);
+              .hasSize(Math.min(numberOfMatchingTasks, pageSize));
           LOG.info(
               "Performance test, for {} matches, finished in {} ms. Max response time is set to {} ms.",
               numberOfMatchingTasks,
@@ -143,10 +144,11 @@ class TaskStorePerfIT extends TasklistIntegrationTest {
   private static Stream<Arguments> performanceTestParams() {
     return Stream.of(
         Arguments.of(1, 1000, 500),
-        Arguments.of(1, 3000, 2000),
+        Arguments.of(1, 3000, 1000),
         Arguments.of(2, 1000, 500),
-        Arguments.of(2, 3000, 2000),
-        Arguments.of(1, 10_000, 4000));
+        Arguments.of(2, 3000, 1000),
+        Arguments.of(1, 10_000, 2000),
+        Arguments.of(1, 30_000, 10000));
   }
 
   private void assertWithRetry(final int maxAttempts, final Runnable assertion)

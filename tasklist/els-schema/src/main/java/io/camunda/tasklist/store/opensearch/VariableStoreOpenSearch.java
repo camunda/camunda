@@ -340,7 +340,9 @@ public class VariableStoreOpenSearch implements VariableStore {
       final SearchRequest.Builder searchRequestBuilder = new SearchRequest.Builder();
       searchRequestBuilder
           .index(variableIndex.getAlias())
-          .query(q -> q.constantScore(cs -> cs.filter(boolQuery)));
+          .query(q -> q.constantScore(cs -> cs.filter(boolQuery)))
+          .source(s -> s.filter(f -> f.includes(PROCESS_INSTANCE_KEY)))
+          .size(tasklistProperties.getOpenSearch().getBatchSize());
       final Set<String> currentIds;
       try {
         currentIds =
