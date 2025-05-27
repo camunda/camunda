@@ -392,7 +392,9 @@ public class VariableStoreOpenSearch implements VariableStore {
       final SearchRequest.Builder searchRequestBuilder = new SearchRequest.Builder();
       searchRequestBuilder
           .index(variableIndex.getAlias())
-          .query(q -> q.constantScore(cs -> cs.filter(boolQuery)));
+          .query(q -> q.constantScore(cs -> cs.filter(boolQuery)))
+          .source(s -> s.filter(f -> f.includes(PROCESS_INSTANCE_KEY)))
+          .size(tasklistProperties.getOpenSearch().getBatchSize());
       final Set<String> currentIds;
       try {
         currentIds =
@@ -454,6 +456,8 @@ public class VariableStoreOpenSearch implements VariableStore {
                         t.value(
                             Arrays.asList(
                                 FieldValue.of(FlowNodeType.AD_HOC_SUB_PROCESS.toString()),
+                                FieldValue.of(
+                                    FlowNodeType.AD_HOC_SUB_PROCESS_INNER_INSTANCE.toString()),
                                 FieldValue.of(FlowNodeType.USER_TASK.toString()),
                                 FieldValue.of(FlowNodeType.SUB_PROCESS.toString()),
                                 FieldValue.of(FlowNodeType.EVENT_SUB_PROCESS.toString()),
@@ -503,7 +507,10 @@ public class VariableStoreOpenSearch implements VariableStore {
             .filter(OpenSearchUtil.joinWithAnd(flowNodeInstanceKeyQ, varNamesQ))
             .build());
     final SearchRequest.Builder searchRequest = new SearchRequest.Builder();
-    searchRequest.index(variableIndex.getAlias()).query(query.build());
+    searchRequest
+        .index(variableIndex.getAlias())
+        .query(query.build())
+        .size(tasklistProperties.getOpenSearch().getBatchSize());
     applyFetchSourceForVariableIndex(searchRequest, fieldNames);
     return searchRequest;
   }
