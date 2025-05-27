@@ -1,8 +1,15 @@
-name: Operate Run Test Importer
+name: "[Legacy] Operate / [IT] Import"
 on:
-  schedule:
-    - cron: "0 5 * * *"
-  workflow_dispatch:
+  push:
+    branches:
+      - "stable/operate-8.5"
+    paths:
+      - '.github/workflows/operate-*'
+      - 'operate/**'
+  pull_request:
+    paths:
+      - '.github/workflows/operate-*'
+      - "operate/**"
 jobs:
   run-importer-tests:
     uses: ./.github/workflows/operate-run-tests.yml
