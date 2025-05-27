@@ -27,7 +27,9 @@ public enum BatchOperationIntent implements Intent {
   SUSPEND((short) 8),
   SUSPENDED((short) 9),
   RESUME((short) 10),
-  RESUMED((short) 11);
+  RESUMED((short) 11),
+  COMPLETE_PARTITION((short) 12),
+  PARTITION_COMPLETED((short) 13);
 
   private final short value;
 
@@ -65,7 +67,10 @@ public enum BatchOperationIntent implements Intent {
         return RESUME;
       case 11:
         return RESUMED;
-
+      case 12:
+        return COMPLETE_PARTITION;
+      case 13:
+        return PARTITION_COMPLETED;
       default:
         return Intent.UNKNOWN;
     }
@@ -85,6 +90,7 @@ public enum BatchOperationIntent implements Intent {
       case SUSPENDED:
       case CANCELED:
       case RESUMED:
+      case PARTITION_COMPLETED:
         return true;
       default:
         return false;
