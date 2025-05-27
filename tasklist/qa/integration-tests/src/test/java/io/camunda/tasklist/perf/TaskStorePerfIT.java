@@ -12,15 +12,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
 import io.camunda.tasklist.entities.FlowNodeState;
 import io.camunda.tasklist.entities.FlowNodeType;
-import io.camunda.tasklist.entities.ProcessInstanceEntity;
-import io.camunda.tasklist.entities.ProcessInstanceState;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskQuery;
 import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
-import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
 import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.store.TaskStore;
@@ -45,8 +42,6 @@ class TaskStorePerfIT extends TasklistIntegrationTest {
   @RegisterExtension @Autowired public DatabaseTestExtension databaseTestExtension;
 
   @Autowired private TaskStore taskStore;
-
-  @Autowired private ProcessInstanceIndex processInstanceIndex;
 
   @Autowired private FlowNodeInstanceIndex flowNodeInstanceIndex;
 
@@ -77,20 +72,14 @@ class TaskStorePerfIT extends TasklistIntegrationTest {
      * The test creates 100_000 process instances, flownode instances, tasks and
      * (numberOfVariablesPerTask* 100_000) variables.
      */
-    final List<ProcessInstanceEntity> processInstances = new ArrayList<>(total);
     final List<TaskEntity> tasks = new ArrayList<>(total);
     final List<FlowNodeInstanceEntity> flowNodeInstances = new ArrayList<>(total);
-    final List<VariableEntity> variables = new ArrayList<>(total);
+    final List<VariableEntity> variables = new ArrayList<>(total * numberOfVariablesPerTask);
     final long piOffset = total * 0;
     final long fniOffset = total * 1;
     final long taskOffset = total * 2;
     final long variableOffset = total * 3;
     for (int i = 0; i < total; i++) {
-      processInstances.add(
-          new ProcessInstanceEntity()
-              .setId(String.valueOf(piOffset + i))
-              .setKey(piOffset + i)
-              .setState(ProcessInstanceState.ACTIVE));
       flowNodeInstances.add(
           new FlowNodeInstanceEntity()
               .setId(String.valueOf(fniOffset + i))
@@ -118,7 +107,6 @@ class TaskStorePerfIT extends TasklistIntegrationTest {
               .setFlowNodeInstanceId(String.valueOf(fniOffset + i))
               .setState(TaskState.CREATED));
     }
-    databaseTestExtension.bulkIndex(processInstanceIndex, processInstances);
     databaseTestExtension.bulkIndex(flowNodeInstanceIndex, flowNodeInstances);
     databaseTestExtension.bulkIndex(variableIndex, variables);
     databaseTestExtension.bulkIndex(taskTemplate, tasks);
@@ -127,13 +115,14 @@ class TaskStorePerfIT extends TasklistIntegrationTest {
     assertWithRetry(
         3,
         () -> {
+          final int pageSize = 10_000;
           final long start = System.currentTimeMillis();
           assertThat(
                   taskStore.getTasks(
                       new TaskQuery()
                           .setState(TaskState.CREATED)
                           .setPageSize(
-                              10_000) // use max allowed page size to make sure we get all tasks
+                              pageSize) // use max allowed page size to make sure we get all tasks
                           .setTaskVariables(
                               IntStream.range(0, numberOfVariablesPerTask)
                                   .mapToObj(
@@ -142,7 +131,7 @@ class TaskStorePerfIT extends TasklistIntegrationTest {
                                               .setName("var" + i)
                                               .setValue(String.format("\"value%d\"", i)))
                                   .toArray(TaskByVariables[]::new))))
-              .hasSize(numberOfMatchingTasks);
+              .hasSize(Math.min(numberOfMatchingTasks, pageSize));
           LOG.info(
               "Performance test, for {} matches, finished in {} ms. Max response time is set to {} ms.",
               numberOfMatchingTasks,
@@ -156,10 +145,11 @@ class TaskStorePerfIT extends TasklistIntegrationTest {
   private static Stream<Arguments> performanceTestParams() {
     return Stream.of(
         Arguments.of(1, 1000, 500),
-        Arguments.of(1, 3000, 2000),
+        Arguments.of(1, 3000, 1000),
         Arguments.of(2, 1000, 500),
-        Arguments.of(2, 3000, 2000),
-        Arguments.of(1, 10_000, 4000));
+        Arguments.of(2, 3000, 1000),
+        Arguments.of(1, 10_000, 2000),
+        Arguments.of(1, 30_000, 10000));
   }
 
   private void assertWithRetry(final int maxAttempts, final Runnable assertion)
