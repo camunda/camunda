@@ -7068,7 +7068,7 @@ components:
           description: The field to sort by.
           type: string
           enum:
-            - mappingRuleId
+            - mappingId
             - claimName
             - claimValue
             - name

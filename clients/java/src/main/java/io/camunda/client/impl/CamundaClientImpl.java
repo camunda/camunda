@@ -100,7 +100,7 @@ import io.camunda.client.api.fetch.ElementInstanceGetRequest;
 import io.camunda.client.api.fetch.GroupGetRequest;
 import io.camunda.client.api.fetch.GroupsSearchRequest;
 import io.camunda.client.api.fetch.IncidentGetRequest;
-import io.camunda.client.api.fetch.MappingsByGroupSearchRequest;
+import io.camunda.client.api.fetch.MappingRulesByGroupSearchRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetFormRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetXmlRequest;
@@ -1169,7 +1169,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public MappingsByGroupSearchRequest newMappingsByGroupSearchRequest(final String groupId) {
+  public MappingRulesByGroupSearchRequest newMappingRulesByGroupSearchRequest(
+      final String groupId) {
     return new MappingsByGroupSearchRequestImpl(httpClient, jsonMapper, groupId);
   }
 
