@@ -296,4 +296,17 @@ abstract class AbstractBatchOperationTest {
         .withResourceId("*")
         .create(DEFAULT_USER.getUsername());
   }
+
+  protected void addProcessDefinitionPermissionsToUser(
+      final UserRecordValue user, final PermissionType permissionType) {
+    engine
+        .authorization()
+        .newAuthorization()
+        .withPermissions(permissionType)
+        .withOwnerId(user.getUsername())
+        .withOwnerType(AuthorizationOwnerType.USER)
+        .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+        .withResourceId("*")
+        .create(DEFAULT_USER.getUsername());
+  }
 }

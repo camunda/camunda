@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
@@ -17,6 +18,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
@@ -28,7 +30,7 @@ public final class MigrateProcessesBatchExecutorTest extends AbstractBatchOperat
   @Test
   public void shouldMigrateProcess() {
     // given
-    final Map<String, Object> claims = Map.of("claim1", "value1", "claim2", "value2");
+    final Map<String, Object> claims = Map.of(AUTHORIZED_USERNAME, "admin");
 
     // create a process with a user task a
     engine
@@ -106,7 +108,9 @@ public final class MigrateProcessesBatchExecutorTest extends AbstractBatchOperat
   @Test
   public void shouldHandleRejectedMigrateProcessCommand() {
     // given
-    final Map<String, Object> claims = Map.of("claim1", "value1", "claim2", "value2");
+    final var user = createUser();
+    addProcessDefinitionPermissionsToUser(user, PermissionType.UPDATE_PROCESS_INSTANCE);
+    final Map<String, Object> claims = Map.of(AUTHORIZED_USERNAME, user.getUsername());
 
     // create a process with a user task a
     engine
