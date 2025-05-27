@@ -58,11 +58,9 @@ public class MigrationTransitionStepTest {
   @Test
   public void shouldMarkMigrationDoneInContext() {
     // given
-    migrationState.setMigratedByVersion("8.1.0");
+    migrationState.setMigratedByVersion("8.7.0");
 
-    final var brokerCfg = mock(BrokerCfg.class, Answers.RETURNS_DEEP_STUBS);
-    when(brokerCfg.getExperimental().getEngine()).thenReturn(new EngineCfg());
-    context.setBrokerCfg(brokerCfg);
+    context.setBrokerCfg(new BrokerCfg());
     final var step = new MigrationTransitionStep();
 
     // when
