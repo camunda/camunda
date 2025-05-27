@@ -35,11 +35,10 @@ public class SnapshotAfterMigrationTransitionStep implements PartitionTransition
   public ActorFuture<Void> transitionTo(
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     if (targetRole != Role.INACTIVE) {
-      if (migrationSnapshotDirector == null) {
+      if (migrationSnapshotDirector == null && context.areMigrationsPerformed()) {
         migrationSnapshotDirector =
             new MigrationSnapshotDirector(
                 context.getSnapshotDirector(),
-                context.areMigrationsPerformed(),
                 context.getConcurrencyControl(),
                 scheduleDelay,
                 context.getComponentHealthMonitor());
