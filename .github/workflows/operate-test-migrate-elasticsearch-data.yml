@@ -1,11 +1,16 @@
-name: Operate Run Test Migrate Elasticsearch Data
+name: "[Legacy] Operate / Migrate Elasticsearch Data"
 on:
   push:
     branches:
-      - stable/8.6
+      - "main"
+      - "stable/**"
     paths:
       - '.github/workflows/operate-*'
       - 'operate/**'
+  pull_request:
+    paths:
+      - '.github/workflows/operate-*'
+      - "operate/**"
 jobs:
   run-migration-tests:
     uses: ./.github/workflows/operate-run-tests.yml
