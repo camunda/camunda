@@ -331,7 +331,8 @@ public class TaskStoreOpenSearch implements TaskStore {
                                     m.term(
                                         t ->
                                             t.field(TaskTemplate.STATE)
-                                                .value(FieldValue.of(TaskState.CREATED.name()))))))
+                                                .value(FieldValue.of(TaskState.CREATED.name()))))
+                            .must(m -> m.exists(t -> t.field(TaskTemplate.FLOW_NODE_INSTANCE_ID)))))
         .size(tasklistProperties.getOpenSearch().getBatchSize());
   }
 
