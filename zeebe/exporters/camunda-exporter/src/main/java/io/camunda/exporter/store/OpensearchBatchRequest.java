@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -207,6 +206,7 @@ public class OpensearchBatchRequest implements BatchRequest {
 
     final String errorMessages =
         groupedErrors.entrySet().stream()
+            .limit(50)
             .map(
                 entry ->
                     String.format(
@@ -236,22 +236,5 @@ public class OpensearchBatchRequest implements BatchRequest {
 
   private record ErrorValues(List<String> indexes, List<String> ids) {}
 
-  private record ErrorKey(OperationType operationType, String errorReason) {
-    @Override
-    public boolean equals(final Object obj) {
-      if (this == obj) {
-        return true;
-      }
-      if (!(obj instanceof final ErrorKey errorKey)) {
-        return false;
-      }
-      return Objects.equals(operationType, errorKey.operationType)
-          && Objects.equals(errorReason, errorKey.errorReason);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(operationType, errorReason);
-    }
-  }
+  private record ErrorKey(OperationType operationType, String errorReason) {}
 }
