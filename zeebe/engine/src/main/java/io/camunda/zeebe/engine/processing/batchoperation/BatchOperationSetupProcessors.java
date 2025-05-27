@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
@@ -40,7 +41,8 @@ public final class BatchOperationSetupProcessors {
       final SearchClientsProxy searchClientsProxy,
       final ProcessingState processingState,
       final EngineConfiguration engineConfiguration,
-      final int partitionId) {
+      final int partitionId,
+      final RoutingInfo routingInfo) {
     final var batchExecutionHandlers =
         Map.of(
             BatchOperationType.CANCEL_PROCESS_INSTANCE,
@@ -60,7 +62,11 @@ public final class BatchOperationSetupProcessors {
             ValueType.BATCH_OPERATION_CREATION,
             BatchOperationIntent.CREATE,
             new BatchOperationCreateProcessor(
-                writers, keyGenerator, commandDistributionBehavior, authorizationCheckBehavior))
+                writers,
+                keyGenerator,
+                commandDistributionBehavior,
+                authorizationCheckBehavior,
+                routingInfo))
         .onCommand(
             ValueType.BATCH_OPERATION_CREATION,
             BatchOperationIntent.START,
@@ -77,7 +83,12 @@ public final class BatchOperationSetupProcessors {
             ValueType.BATCH_OPERATION_EXECUTION,
             BatchOperationExecutionIntent.EXECUTE,
             new BatchOperationExecuteProcessor(
-                writers, processingState, partitionId, batchExecutionHandlers))
+                writers,
+                processingState,
+                commandDistributionBehavior,
+                keyGenerator,
+                partitionId,
+                batchExecutionHandlers))
         .onCommand(
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
             BatchOperationIntent.CANCEL,
@@ -105,6 +116,11 @@ public final class BatchOperationSetupProcessors {
                 processingState,
                 authorizationCheckBehavior,
                 keyGenerator))
+        .onCommand(
+            ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
+            BatchOperationIntent.COMPLETE_PARTITION,
+            new BatchOperationPartitionCompleteProcessor(
+                writers, processingState, commandDistributionBehavior, partitionId))
         .withListener(
             new BatchOperationExecutionScheduler(
                 scheduledTaskStateFactory,
