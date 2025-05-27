@@ -32,6 +32,7 @@ const finishMovingToken = (
   affectedTokenCount: number,
   visibleAffectedTokenCount: number,
   businessObjects: BusinessObjects,
+  bpmnProcessId?: string,
   targetFlowNodeId?: string,
 ) => {
   tracking.track({
@@ -66,6 +67,7 @@ const finishMovingToken = (
       visibleAffectedTokenCount,
       newScopeCount,
       businessObjects,
+      bpmnProcessId,
     });
   }
 
@@ -77,11 +79,13 @@ const finishMovingToken = (
 const generateParentScopeIds = (
   businessObjects: BusinessObjects,
   targetFlowNodeId: string,
+  bpmnProcessId?: string,
   totalRunningInstancesByFlowNode?: Record<string, number>,
 ) => {
   const parentFlowNodeIds = getFlowNodeParents(
     businessObjects,
     targetFlowNodeId,
+    bpmnProcessId,
   );
 
   return parentFlowNodeIds.reduce<{[flowNodeId: string]: string}>(

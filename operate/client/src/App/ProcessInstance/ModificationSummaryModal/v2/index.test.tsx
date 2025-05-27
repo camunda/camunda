@@ -265,6 +265,7 @@ describe('Modification Summary Modal', () => {
         visibleAffectedTokenCount: 1,
         newScopeCount: 1,
         businessObjects: {},
+        bpmnProcessId: '123',
       });
     });
 
@@ -361,6 +362,7 @@ describe('Modification Summary Modal', () => {
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
       businessObjects: {},
+      bpmnProcessId: '123',
     });
 
     modificationsStore.addMoveModification({
@@ -371,6 +373,7 @@ describe('Modification Summary Modal', () => {
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
       businessObjects: {},
+      bpmnProcessId: '123',
     });
 
     const {user} = render(

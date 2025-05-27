@@ -27,7 +27,10 @@ describe('getSelectedRunningInstanceCount', () => {
 
   it('should return 0 if no selection is made', () => {
     flowNodeSelectionStore.setSelection(null);
-    const result = getSelectedRunningInstanceCount(10);
+    const result = getSelectedRunningInstanceCount({
+      totalRunningInstancesForFlowNode: 10,
+      isRootNodeSelected: false,
+    });
     expect(result).toBe(0);
   });
 
@@ -37,12 +40,18 @@ describe('getSelectedRunningInstanceCount', () => {
       flowNodeInstanceId: 'someInstance',
       isPlaceholder: true,
     });
-    const result = getSelectedRunningInstanceCount(10);
+    const result = getSelectedRunningInstanceCount({
+      totalRunningInstancesForFlowNode: 10,
+      isRootNodeSelected: false,
+    });
     expect(result).toBe(0);
   });
 
   it('should return 0 if the root node is selected', () => {
-    const result = getSelectedRunningInstanceCount(10);
+    const result = getSelectedRunningInstanceCount({
+      totalRunningInstancesForFlowNode: 10,
+      isRootNodeSelected: true,
+    });
     expect(result).toBe(0);
   });
 
@@ -50,7 +59,10 @@ describe('getSelectedRunningInstanceCount', () => {
     flowNodeSelectionStore.setSelection({
       flowNodeId: undefined,
     });
-    const result = getSelectedRunningInstanceCount(10);
+    const result = getSelectedRunningInstanceCount({
+      totalRunningInstancesForFlowNode: 10,
+      isRootNodeSelected: false,
+    });
     expect(result).toBe(0);
   });
 
@@ -59,13 +71,19 @@ describe('getSelectedRunningInstanceCount', () => {
       flowNodeId: 'someNode',
       flowNodeInstanceId: 'someInstance',
     });
-    const result = getSelectedRunningInstanceCount(10);
+    const result = getSelectedRunningInstanceCount({
+      totalRunningInstancesForFlowNode: 10,
+      isRootNodeSelected: false,
+    });
     expect(result).toBe(0);
   });
 
   it('should handle edge cases with invalid selection', () => {
     flowNodeSelectionStore.setSelection({});
-    const result = getSelectedRunningInstanceCount(10);
+    const result = getSelectedRunningInstanceCount({
+      totalRunningInstancesForFlowNode: 10,
+      isRootNodeSelected: false,
+    });
     expect(result).toBe(0);
   });
 
@@ -83,11 +101,14 @@ describe('getSelectedRunningInstanceCount', () => {
     });
 
     const result = getSelectedFlowNodeName({
-      startEvent: {
-        id: 'startEvent',
-        name: 'Start Event',
-        $type: 'bpmn:StartEvent',
+      businessObjects: {
+        startEvent: {
+          id: 'startEvent',
+          name: 'Start Event',
+          $type: 'bpmn:StartEvent',
+        },
       },
+      processDefinitionName: 'someProcessName',
     });
 
     expect(result).toBe('Start Event');

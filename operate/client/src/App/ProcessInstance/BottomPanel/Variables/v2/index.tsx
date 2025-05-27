@@ -26,6 +26,7 @@ import {useNewScopeIdForFlowNode} from 'modules/hooks/modifications';
 import {usePermissions} from 'modules/queries/permissions/usePermissions';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
+import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 
 type Props = {
   isVariableModificationAllowed?: boolean;
@@ -41,6 +42,7 @@ const Variables: React.FC<Props> = observer(
     );
     const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
     const {data: permissions} = usePermissions();
+    const isRootNodeSelected = useIsRootNodeSelected();
     const {
       state: {pendingItem, loadingItemId, status},
     } = variablesStore;
@@ -77,7 +79,6 @@ const Variables: React.FC<Props> = observer(
         Object.values(initialValues).length === 0;
 
     useEffect(() => {
-      const isRootNodeSelected = flowNodeSelectionStore.isRootNodeSelected;
       const isSelectedInstanceRunning =
         flowNodeMetaDataStore.isSelectedInstanceRunning;
 
@@ -114,6 +115,7 @@ const Variables: React.FC<Props> = observer(
       status,
       isViewMode,
       loadingItemId,
+      isRootNodeSelected,
     ]);
 
     if (displayStatus === 'no-content') {

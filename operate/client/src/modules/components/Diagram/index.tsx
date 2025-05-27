@@ -15,6 +15,7 @@ import {observer} from 'mobx-react';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {getSelectedRunningInstanceCount} from 'modules/utils/flowNodeSelection';
 import {useTotalRunningInstancesForFlowNode} from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
+import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 
 type SelectedFlowNodeOverlayProps = {
   selectedFlowNodeRef: SVGElement;
@@ -55,9 +56,11 @@ const Diagram: React.FC<Props> = observer(
     const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
     const {data: totalRunningInstances} =
       useTotalRunningInstancesForFlowNode(flowNodeId);
-    const selectedRunningInstanceCount = getSelectedRunningInstanceCount(
-      totalRunningInstances ?? 0,
-    );
+    const isRootNodeSelected = useIsRootNodeSelected();
+    const selectedRunningInstanceCount = getSelectedRunningInstanceCount({
+      totalRunningInstancesForFlowNode: totalRunningInstances ?? 0,
+      isRootNodeSelected,
+    });
 
     function getViewer() {
       if (viewerRef.current === null) {

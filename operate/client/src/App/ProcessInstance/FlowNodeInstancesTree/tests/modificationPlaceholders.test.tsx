@@ -228,6 +228,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
           parentScopeIds: generateParentScopeIds(
             mockNestedSubProcessBusinessObjects,
             'user_task',
+            'nested_sub_process',
           ),
         },
       });
@@ -242,6 +243,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
           parentScopeIds: generateParentScopeIds(
             mockNestedSubProcessBusinessObjects,
             'user_task',
+            'nested_sub_process',
           ),
         },
       });
@@ -352,7 +354,7 @@ describe('FlowNodeInstancesTree - Modification placeholders', () => {
     expect(screen.queryByText('user_task')).not.toBeInTheDocument();
   });
 
-  it.skip('should not create new parent scopes for a new palceholder if there is one running scopes', async () => {
+  it('should not create new parent scopes for a new palceholder if there is one running scopes', async () => {
     mockFetchProcessInstance().withSuccess({
       ...multiInstanceProcessInstance,
       bpmnProcessId: 'nested_sub_process',

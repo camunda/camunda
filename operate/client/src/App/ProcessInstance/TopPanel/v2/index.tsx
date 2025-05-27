@@ -63,7 +63,10 @@ import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAss
 import {useProcessSequenceFlows} from 'modules/queries/sequenceFlows/useProcessSequenceFlows';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {getSubprocessOverlayFromIncidentFlowNodes} from 'modules/utils/flowNodes';
-import {useRootNode} from 'modules/hooks/flowNodeSelection';
+import {
+  useIsRootNodeSelected,
+  useRootNode,
+} from 'modules/hooks/flowNodeSelection';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -113,6 +116,7 @@ const TopPanel: React.FC = observer(() => {
     useProcessSequenceFlows(processInstanceId);
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const rootNode = useRootNode();
+  const isRootNodeSelected = useIsRootNodeSelected();
 
   const {
     data: processDefinitionData,
@@ -275,13 +279,17 @@ const TopPanel: React.FC = observer(() => {
                   affectedTokenCount,
                   visibleAffectedTokenCount,
                   businessObjects,
+                  processInstance?.processDefinitionId,
                 ),
               label: 'Discard',
             }}
           />
         )}
       {modificationsStore.isModificationModeEnabled &&
-        getSelectedRunningInstanceCount(totalRunningInstances || 0) > 1 && (
+        getSelectedRunningInstanceCount({
+          totalRunningInstancesForFlowNode: totalRunningInstances ?? 0,
+          isRootNodeSelected,
+        }) > 1 && (
           <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
         )}
       {modificationsStore.state.status === 'adding-token' &&
@@ -297,99 +305,102 @@ const TopPanel: React.FC = observer(() => {
         )}
       <DiagramPanel>
         <DiagramShell status={getStatus()}>
-          {processDefinitionData?.xml !== undefined && businessObjects && (
-            <Diagram
-              xml={processDefinitionData?.xml}
-              selectableFlowNodes={
-                isModificationModeEnabled
-                  ? modifiableFlowNodes
-                  : selectableFlowNodes
-              }
-              selectedFlowNodeIds={
-                flowNodeSelection?.flowNodeId
-                  ? [flowNodeSelection.flowNodeId]
-                  : undefined
-              }
-              onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
-                if (modificationsStore.state.status === 'moving-token') {
-                  clearSelection(rootNode);
-                  finishMovingToken(
-                    affectedTokenCount,
-                    visibleAffectedTokenCount,
-                    businessObjects,
-                    flowNodeId,
-                  );
-                } else {
-                  if (modificationsStore.state.status !== 'adding-token') {
-                    selectFlowNode(rootNode, {
-                      flowNodeId,
-                      isMultiInstance,
-                    });
-                  }
+          {processDefinitionData?.xml !== undefined &&
+            businessObjects &&
+            processInstance && (
+              <Diagram
+                xml={processDefinitionData?.xml}
+                selectableFlowNodes={
+                  isModificationModeEnabled
+                    ? modifiableFlowNodes
+                    : selectableFlowNodes
                 }
-              }}
-              overlaysData={
-                isModificationModeEnabled
-                  ? [
-                      ...(flowNodeStateOverlays ?? []),
-                      ...modificationBadgesPerFlowNode.get(),
-                    ]
-                  : flowNodeStateOverlays
-              }
-              selectedFlowNodeOverlay={
-                isModificationModeEnabled ? (
-                  <ModificationDropdown />
-                ) : (
-                  !isIncidentBarOpen && <MetadataPopover />
-                )
-              }
-              highlightedSequenceFlows={[
-                ...(processedSequenceFlows || []),
-                ...compensationAssociationIds,
-              ]}
-              highlightedFlowNodeIds={executedFlowNodes?.map(
-                ({elementId}) => elementId,
-              )}
-            >
-              {stateOverlays.map((overlay) => {
-                const payload = overlay.payload as {
-                  flowNodeState: FlowNodeState | 'completedEndEvents';
-                  count: number;
-                };
-
-                return (
-                  <StateOverlay
-                    key={`${overlay.flowNodeId}-${payload.flowNodeState}`}
-                    state={payload.flowNodeState}
-                    count={payload.count}
-                    container={overlay.container}
-                    isFaded={hasPendingCancelOrMoveModification({
-                      flowNodeId: overlay.flowNodeId,
-                      flowNodeInstanceKey: undefined,
-                      modificationsByFlowNode,
-                    })}
-                    title={
-                      payload.flowNodeState === 'completed'
-                        ? 'Execution Count'
-                        : undefined
+                selectedFlowNodeIds={
+                  flowNodeSelection?.flowNodeId
+                    ? [flowNodeSelection.flowNodeId]
+                    : undefined
+                }
+                onFlowNodeSelection={(flowNodeId, isMultiInstance) => {
+                  if (modificationsStore.state.status === 'moving-token') {
+                    clearSelection(rootNode);
+                    finishMovingToken(
+                      affectedTokenCount,
+                      visibleAffectedTokenCount,
+                      businessObjects,
+                      processInstance?.processDefinitionId,
+                      flowNodeId,
+                    );
+                  } else {
+                    if (modificationsStore.state.status !== 'adding-token') {
+                      selectFlowNode(rootNode, {
+                        flowNodeId,
+                        isMultiInstance,
+                      });
                     }
-                  />
-                );
-              })}
-              {modificationBadgeOverlays?.map((overlay) => {
-                const payload = overlay.payload as ModificationBadgePayload;
+                  }
+                }}
+                overlaysData={
+                  isModificationModeEnabled
+                    ? [
+                        ...(flowNodeStateOverlays ?? []),
+                        ...modificationBadgesPerFlowNode.get(),
+                      ]
+                    : flowNodeStateOverlays
+                }
+                selectedFlowNodeOverlay={
+                  isModificationModeEnabled ? (
+                    <ModificationDropdown />
+                  ) : (
+                    !isIncidentBarOpen && <MetadataPopover />
+                  )
+                }
+                highlightedSequenceFlows={[
+                  ...(processedSequenceFlows || []),
+                  ...compensationAssociationIds,
+                ]}
+                highlightedFlowNodeIds={executedFlowNodes?.map(
+                  ({elementId}) => elementId,
+                )}
+              >
+                {stateOverlays.map((overlay) => {
+                  const payload = overlay.payload as {
+                    flowNodeState: FlowNodeState | 'completedEndEvents';
+                    count: number;
+                  };
 
-                return (
-                  <ModificationBadgeOverlay
-                    key={overlay.flowNodeId}
-                    container={overlay.container}
-                    newTokenCount={payload.newTokenCount}
-                    cancelledTokenCount={payload.cancelledTokenCount}
-                  />
-                );
-              })}
-            </Diagram>
-          )}
+                  return (
+                    <StateOverlay
+                      key={`${overlay.flowNodeId}-${payload.flowNodeState}`}
+                      state={payload.flowNodeState}
+                      count={payload.count}
+                      container={overlay.container}
+                      isFaded={hasPendingCancelOrMoveModification({
+                        flowNodeId: overlay.flowNodeId,
+                        flowNodeInstanceKey: undefined,
+                        modificationsByFlowNode,
+                      })}
+                      title={
+                        payload.flowNodeState === 'completed'
+                          ? 'Execution Count'
+                          : undefined
+                      }
+                    />
+                  );
+                })}
+                {modificationBadgeOverlays?.map((overlay) => {
+                  const payload = overlay.payload as ModificationBadgePayload;
+
+                  return (
+                    <ModificationBadgeOverlay
+                      key={overlay.flowNodeId}
+                      container={overlay.container}
+                      newTokenCount={payload.newTokenCount}
+                      cancelledTokenCount={payload.cancelledTokenCount}
+                    />
+                  );
+                })}
+              </Diagram>
+            )}
         </DiagramShell>
         {processInstance?.hasIncident && (
           <IncidentsWrapper

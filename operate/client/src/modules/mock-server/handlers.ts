@@ -6,53 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  GetProcessInstanceCallHierarchyResponseBody,
-  ProcessInstance,
-} from '@vzeta/camunda-api-zod-schemas/operate';
-import {ProcessInstanceState} from 'modules/api/v2/processInstances/fetchProcessInstancesStatistics';
-import {RequestHandler, rest} from 'msw';
+import {RequestHandler} from 'msw';
 
-const mockEndpoints = [
-  rest.get(
-    '/v2/process-instances/:processInstanceKey',
-    async (req, res, ctx) => {
-      const mockResponse: ProcessInstance = {
-        processDefinitionId: 'complexProcess',
-        processDefinitionName: 'complexProcess',
-        processDefinitionVersion: 156,
-        startDate: '2025-04-17T11:20:09.654Z',
-        state: ProcessInstanceState.ACTIVE,
-        hasIncident: true,
-        tenantId: '\u003Cdefault\u003E',
-        processInstanceKey: '2251799814752788',
-        processDefinitionKey: '2251799814751761',
-      };
-
-      return res(ctx.json(mockResponse));
-    },
-  ),
-  rest.get(
-    '/v2/process-instances/:processInstanceKey/call-hierarchy',
-    async (req, res, ctx) => {
-      const mockResponse: GetProcessInstanceCallHierarchyResponseBody = [
-        {
-          processInstanceKey: '2251799833223965',
-          processDefinitionName: 'Call Activity Process',
-          processDefinitionKey: '2251799816361742',
-        },
-        {
-          processInstanceKey: '2251799833223971',
-          processDefinitionName: 'called-process',
-          processDefinitionKey: '2251799816361742',
-        },
-      ];
-
-      return res(ctx.json(mockResponse));
-    },
-  ),
-];
-
-const handlers: RequestHandler[] = [...mockEndpoints];
+const handlers: RequestHandler[] = [];
 
 export {handlers};

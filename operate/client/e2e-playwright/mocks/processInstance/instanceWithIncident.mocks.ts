@@ -45,6 +45,17 @@ const instanceWithIncident: InstanceMock = {
     permissions: [],
     tenantId: '',
   },
+  detailV2: {
+    processInstanceKey: '6755399441062827',
+    processDefinitionKey: '2251799813687188',
+    processDefinitionName: 'Order process',
+    processDefinitionVersion: 2,
+    startDate: '2023-08-14T05:47:07.376+0000',
+    state: 'ACTIVE',
+    processDefinitionId: 'orderProcess',
+    tenantId: '',
+    hasIncident: true,
+  },
   xml: `<?xml version="1.0" encoding="UTF-8"?>
   <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.8.0">
     <bpmn:process id="orderProcess" name="Order process" isExecutable="true">

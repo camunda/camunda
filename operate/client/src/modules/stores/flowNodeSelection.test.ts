@@ -576,6 +576,7 @@ describe('stores/flowNodeSelection', () => {
       visibleAffectedTokenCount: 3,
       newScopeCount: 3,
       businessObjects: {},
+      bpmnProcessId: 'someKey',
     });
 
     flowNodeSelectionStore.setSelection({
@@ -600,6 +601,7 @@ describe('stores/flowNodeSelection', () => {
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
       businessObjects: {},
+      bpmnProcessId: 'someKey',
     });
     modificationsStore.addMoveModification({
       sourceFlowNodeId: 'userTask',
@@ -609,6 +611,7 @@ describe('stores/flowNodeSelection', () => {
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
       businessObjects: {},
+      bpmnProcessId: 'someKey',
     });
     modificationsStore.addMoveModification({
       sourceFlowNodeId: 'userTask',
@@ -618,6 +621,7 @@ describe('stores/flowNodeSelection', () => {
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
       businessObjects: {},
+      bpmnProcessId: 'someKey',
     });
 
     flowNodeSelectionStore.setSelection({
@@ -644,6 +648,7 @@ describe('stores/flowNodeSelection', () => {
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
       businessObjects: {},
+      bpmnProcessId: 'someKey',
     });
 
     flowNodeSelectionStore.setSelection({

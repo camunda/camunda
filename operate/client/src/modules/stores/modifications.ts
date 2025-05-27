@@ -624,6 +624,7 @@ class Modifications {
     affectedTokenCount,
     visibleAffectedTokenCount,
     businessObjects,
+    bpmnProcessId,
   }: {
     sourceFlowNodeId: string;
     sourceFlowNodeInstanceKey?: string;
@@ -632,6 +633,7 @@ class Modifications {
     affectedTokenCount: number;
     visibleAffectedTokenCount: number;
     businessObjects: BusinessObjects;
+    bpmnProcessId?: string;
   }) => {
     modificationsStore.addModification({
       type: 'token',
@@ -660,6 +662,7 @@ class Modifications {
         parentScopeIds: generateParentScopeIds(
           businessObjects,
           targetFlowNodeId,
+          bpmnProcessId,
         ),
       },
     });

@@ -59,6 +59,7 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAssociation';
 import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {getSubprocessOverlayFromIncidentFlowNodes} from 'modules/utils/flowNodes';
+import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -104,6 +105,7 @@ const TopPanel: React.FC = observer(() => {
   const visibleAffectedTokenCount =
     totalMoveOperationRunningInstancesVisible || 1;
   const processDefinitionKey = useProcessDefinitionKeyContext();
+  const isRootNodeSelected = useIsRootNodeSelected();
 
   const {
     data: processDefinitionData,
@@ -268,13 +270,18 @@ const TopPanel: React.FC = observer(() => {
                   affectedTokenCount,
                   visibleAffectedTokenCount,
                   businessObjects,
+                  processInstanceDetailsStore.state.processInstance
+                    ?.bpmnProcessId,
                 ),
               label: 'Discard',
             }}
           />
         )}
       {modificationsStore.isModificationModeEnabled &&
-        getSelectedRunningInstanceCount(totalRunningInstances || 0) > 1 && (
+        getSelectedRunningInstanceCount({
+          totalRunningInstancesForFlowNode: totalRunningInstances ?? 0,
+          isRootNodeSelected,
+        }) > 1 && (
           <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
         )}
       {modificationsStore.state.status === 'adding-token' &&
@@ -310,6 +317,8 @@ const TopPanel: React.FC = observer(() => {
                     affectedTokenCount,
                     visibleAffectedTokenCount,
                     businessObjects,
+                    processInstanceDetailsStore.state.processInstance
+                      ?.bpmnProcessId,
                     flowNodeId,
                   );
                 } else {

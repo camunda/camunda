@@ -104,7 +104,7 @@ describe('finishMovingToken', () => {
   it('should add a move modification when targetFlowNodeId is provided', () => {
     (isMultiInstance as jest.Mock).mockReturnValue(false);
 
-    finishMovingToken(5, 3, businessObjects, 'targetNode');
+    finishMovingToken(5, 3, businessObjects, 'some-process-id', 'targetNode');
 
     expect(modificationsStore.addMoveModification).toHaveBeenCalledWith({
       sourceFlowNodeId: 'sourceNode',
@@ -114,13 +114,14 @@ describe('finishMovingToken', () => {
       visibleAffectedTokenCount: 3,
       newScopeCount: 5,
       businessObjects,
+      bpmnProcessId: 'some-process-id',
     });
   });
 
   it('should set newScopeCount to 1 for multi-instance source nodes', () => {
     (isMultiInstance as jest.Mock).mockReturnValue(true);
 
-    finishMovingToken(5, 3, businessObjects, 'targetNode');
+    finishMovingToken(5, 3, businessObjects, '', 'targetNode');
 
     expect(modificationsStore.addMoveModification).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -130,7 +131,7 @@ describe('finishMovingToken', () => {
   });
 
   it('should not add a move modification if targetFlowNodeId is undefined', () => {
-    finishMovingToken(5, 3, businessObjects);
+    finishMovingToken(5, 3, businessObjects, '');
 
     expect(modificationsStore.addMoveModification).not.toHaveBeenCalled();
   });
