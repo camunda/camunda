@@ -9,6 +9,8 @@ package io.camunda.zeebe.snapshots;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -25,12 +27,14 @@ public final class SnapshotTransferUtil {
           "file1", "file1 contents",
           "file2", "file2 contents");
 
-  public static PersistedSnapshot takePersistedSnapshot(
+  public static ActorFuture<PersistedSnapshot> takePersistedSnapshot(
       final ConstructableSnapshotStore senderSnapshotStore,
-      final Map<String, String> snapshotFileContents) {
+      final Map<String, String> snapshotFileContents,
+      final ConcurrencyControl control) {
     final var transientSnapshot = senderSnapshotStore.newTransientSnapshot(1L, 0L, 1, 0).get();
-    transientSnapshot.take(p -> writeSnapshot(p, snapshotFileContents)).join();
-    return transientSnapshot.persist().join();
+    return transientSnapshot
+        .take(p -> writeSnapshot(p, snapshotFileContents))
+        .andThen(ignored -> transientSnapshot.persist(), control);
   }
 
   public static void writeSnapshot(

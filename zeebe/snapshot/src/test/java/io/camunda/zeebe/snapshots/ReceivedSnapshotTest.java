@@ -396,7 +396,11 @@ public class ReceivedSnapshotTest {
   }
 
   private PersistedSnapshot takePersistedSnapshot() {
-    return SnapshotTransferUtil.takePersistedSnapshot(
-        senderSnapshotStore, SnapshotTransferUtil.SNAPSHOT_FILE_CONTENTS);
+    final var transientSnapshot = senderSnapshotStore.newTransientSnapshot(1L, 0L, 1, 0).get();
+    transientSnapshot
+        .take(
+            p -> SnapshotTransferUtil.writeSnapshot(p, SnapshotTransferUtil.SNAPSHOT_FILE_CONTENTS))
+        .join();
+    return transientSnapshot.persist().join();
   }
 }

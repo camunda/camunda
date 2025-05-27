@@ -21,7 +21,8 @@ import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerClusterStateImpl;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotTransferServiceClient;
 import io.camunda.zeebe.scheduler.Actor;
-import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
@@ -39,34 +40,28 @@ import java.time.Duration;
 import java.util.Map;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.junit.jupiter.api.AutoClose;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 
 public class SnapshotApiRequestHandlerTest {
-  @AutoClose
-  private static final ActorScheduler scheduler =
-      new ActorScheduler.ActorSchedulerBuilder()
-          .setSchedulerName("SnapshotApiRequestHandlerTest")
-          .build();
+
+  @RegisterExtension
+  public final ControlledActorSchedulerExtension scheduler =
+      new ControlledActorSchedulerExtension();
 
   @AutoClose MeterRegistry registry = new SimpleMeterRegistry();
   @TempDir Path temporaryFolder;
   final int partitionId = 1;
-  @AutoClose ConstructableSnapshotStore senderSnapshotStore;
-  @AutoClose ReceivableSnapshotStore receiverSnapshotStore;
-  @AutoClose private AtomixClientTransportAdapter clientTransport;
+  ConstructableSnapshotStore senderSnapshotStore;
+  ReceivableSnapshotStore receiverSnapshotStore;
+  private AtomixClientTransportAdapter clientTransport;
   private String serverAddress;
-  @AutoClose private AtomixServerTransport serverTransport;
-  @AutoClose private SnapshotApiRequestHandler snapshotHandler;
+  private AtomixServerTransport serverTransport;
+  private SnapshotApiRequestHandler snapshotHandler;
   private SnapshotTransferServiceClient client;
-  @AutoClose private BrokerClientImpl brokerClient;
-
-  @BeforeAll
-  public static void beforeAll() {
-    scheduler.start();
-  }
+  private BrokerClientImpl brokerClient;
 
   @BeforeEach
   void setup() {
@@ -79,7 +74,8 @@ public class SnapshotApiRequestHandlerTest {
             Address.from(serverAddress),
             new MessagingConfig(),
             registry);
-    messagingService.start().join();
+    messagingService.start();
+    scheduler.workUntilDone();
 
     final var clusterService = mock(ClusterEventService.class);
     final var brokerTopology = mock(BrokerTopologyManager.class);
@@ -95,16 +91,18 @@ public class SnapshotApiRequestHandlerTest {
             Duration.ofSeconds(5),
             messagingService,
             clusterService,
-            scheduler,
+            scheduler.getActorScheduler(),
             brokerTopology,
             metrics);
     brokerClient.start();
 
     serverTransport = new AtomixServerTransport(messagingService, new SnowflakeIdGenerator(1L));
-    scheduler.submitActor(serverTransport).join();
+    scheduler.submitActor(serverTransport);
+    scheduler.workUntilDone();
 
     snapshotHandler = new SnapshotApiRequestHandler(serverTransport);
-    scheduler.submitActor(snapshotHandler).join();
+    scheduler.submitActor(snapshotHandler);
+    scheduler.workUntilDone();
 
     // Snapshot actors:
     final var senderDirectory = temporaryFolder.resolve("sender");
@@ -112,46 +110,50 @@ public class SnapshotApiRequestHandlerTest {
     senderSnapshotStore =
         new FileBasedSnapshotStore(
             0, partitionId, senderDirectory, snapshotPath -> Map.of(), new SimpleMeterRegistry());
-    scheduler.submitActor((Actor) senderSnapshotStore).join();
+    scheduler.submitActor((Actor) senderSnapshotStore);
+    scheduler.workUntilDone();
 
-    snapshotHandler.addTransferService(1, new SnapshotTransferServiceImpl(senderSnapshotStore, 1));
+    final var transferService = new SnapshotTransferServiceImpl(senderSnapshotStore, 1);
+    snapshotHandler.addTransferService(1, transferService);
 
     receiverSnapshotStore =
         new FileBasedSnapshotStore(
             0, partitionId, receiverDirectory, snapshotPath -> Map.of(), new SimpleMeterRegistry());
 
-    scheduler.submitActor((Actor) receiverSnapshotStore).join();
+    scheduler.submitActor((Actor) receiverSnapshotStore);
+    scheduler.workUntilDone();
     client = new SnapshotTransferServiceClient(brokerClient);
-  }
 
-  //  @AfterEach
-  //  void shutdown() {
-  //    // Cannot use @Autoclose annotation because the order of closing is not correct.
-  //    CloseHelper.closeAll(
-  //        senderSnapshotStore,
-  //        receiverSnapshotStore,
-  //        brokerClient,
-  //        serverTransport,
-  //        clientTransport,
-  //        snapshotHandler,
-  //        scheduler);
-  //  }
+    scheduler.workUntilDone();
+  }
 
   @Test
   void shouldSendAllChunksCorrectly() {
 
-    takePersistedSnapshot();
+    final var takeFuture = takePersistedSnapshot();
+    scheduler.workUntilDone();
+    assertThat(takeFuture).succeedsWithin(Duration.ofSeconds(30));
+
     final var transfer =
         new SnapshotTransfer(client, receiverSnapshotStore, (Actor) senderSnapshotStore);
     // when
-    final var persistedSnapshot = transfer.getLatestSnapshot(partitionId).join();
+    final var persistedSnapshot = transfer.getLatestSnapshot(partitionId);
+    scheduler.workUntilDone();
     // then
-    assertThat(persistedSnapshot.getId())
-        .isEqualTo(senderSnapshotStore.getLatestSnapshot().get().getId());
+    assertThat(persistedSnapshot)
+        .succeedsWithin(Duration.ofSeconds(30))
+        .satisfies(
+            snapshot -> {
+              final var lastSnapshotId = senderSnapshotStore.getLatestSnapshot().get().getId();
+              final var snapshotId = snapshot.getId();
+              assertThat(snapshotId).isEqualTo(lastSnapshotId);
+            });
   }
 
-  private PersistedSnapshot takePersistedSnapshot() {
+  private ActorFuture<PersistedSnapshot> takePersistedSnapshot() {
     return SnapshotTransferUtil.takePersistedSnapshot(
-        senderSnapshotStore, SnapshotTransferUtil.SNAPSHOT_FILE_CONTENTS);
+        senderSnapshotStore,
+        SnapshotTransferUtil.SNAPSHOT_FILE_CONTENTS,
+        (Actor) receiverSnapshotStore);
   }
 }
