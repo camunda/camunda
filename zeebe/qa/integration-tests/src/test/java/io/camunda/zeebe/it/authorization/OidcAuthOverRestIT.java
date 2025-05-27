@@ -203,7 +203,7 @@ public class OidcAuthOverRestIT {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     defaultMappingClient
-        .newCreateMappingCommand()
+        .newCreateMappingRuleCommand()
         .mappingRuleId(UUID.randomUUID().toString())
         .claimName(claimName)
         .claimValue(claimValue)
@@ -233,7 +233,7 @@ public class OidcAuthOverRestIT {
     // given
     final var processId = Strings.newRandomValidBpmnId();
     defaultMappingClient
-        .newCreateMappingCommand()
+        .newCreateMappingRuleCommand()
         .mappingRuleId(RESTRICTED_USER_ID)
         .claimName(USER_ID_CLAIM_NAME)
         .claimValue(RESTRICTED_USER_ID)
