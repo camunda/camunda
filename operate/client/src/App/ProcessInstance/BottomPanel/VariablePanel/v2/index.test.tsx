@@ -168,11 +168,14 @@ describe('VariablePanel', () => {
   });
 
   it('should render variables', async () => {
+    mockFetchVariables().withSuccess([createVariable()]);
+
     render(<VariablePanel />, {wrapper: getWrapper()});
 
-    await waitFor(() =>
-      expect(screen.getByText('testVariableName')).toBeInTheDocument(),
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('variables-skeleton'),
     );
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
   });
 
   it('should add new variable', async () => {
@@ -589,10 +592,10 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([createVariable()]);
 
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
-    await waitFor(() =>
-      expect(screen.getByText('testVariableName')).toBeInTheDocument(),
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('variables-skeleton'),
     );
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);

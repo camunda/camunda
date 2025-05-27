@@ -10,7 +10,6 @@ import {VariablePanel} from './index';
 import {
   render,
   screen,
-  waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -168,9 +167,10 @@ describe('VariablePanel spinner', () => {
   it('should display spinner for variables tab when switching between tabs', async () => {
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
-    await waitFor(() =>
-      expect(screen.getByText('testVariableName')).toBeInTheDocument(),
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('variables-skeleton'),
     );
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchVariables().withDelay([createVariable({name: 'test2'})]);
@@ -219,11 +219,10 @@ describe('VariablePanel spinner', () => {
     modificationsStore.enableModificationMode();
 
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
-
-    await waitFor(() =>
-      expect(screen.getByText('testVariableName')).toBeInTheDocument(),
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('variables-skeleton'),
     );
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     act(() => {

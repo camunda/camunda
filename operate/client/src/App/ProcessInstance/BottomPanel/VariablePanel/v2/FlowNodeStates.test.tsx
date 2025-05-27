@@ -7,12 +7,7 @@
  */
 
 import {VariablePanel} from './index';
-import {
-  render,
-  screen,
-  waitFor,
-  waitForElementToBeRemoved,
-} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
@@ -192,12 +187,10 @@ describe('VariablePanel', () => {
     modificationsStore.enableModificationMode();
 
     render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitFor(() =>
-      expect(screen.getByText('testVariableName')).toBeInTheDocument(),
-    );
-
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: /add variable/i}),
+      await screen.findByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([]);
@@ -219,11 +212,11 @@ describe('VariablePanel', () => {
       cancelAllTokens('Activity_0qtp1k6', 1, 1, {});
     });
 
-    await waitFor(() =>
+    await waitFor(async () => {
       expect(
-        screen.getByText('The Flow Node has no Variables'),
-      ).toBeInTheDocument(),
-    );
+        await screen.findByText('The Flow Node has no Variables'),
+      ).toBeInTheDocument();
+    });
 
     // add a new token
     act(() => {
@@ -359,9 +352,8 @@ describe('VariablePanel', () => {
     modificationsStore.enableModificationMode();
 
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitFor(() =>
-      expect(screen.getByText('testVariableName')).toBeInTheDocument(),
-    );
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
       await screen.findByRole('button', {name: /add variable/i}),
@@ -539,17 +531,15 @@ describe('VariablePanel', () => {
     modificationsStore.enableModificationMode();
 
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitFor(() =>
-      expect(screen.getByText('testVariableName')).toBeInTheDocument(),
-    );
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
     expect(
       screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
-    await waitFor(() =>
-      expect(screen.getByText('testVariableName')).toBeInTheDocument(),
-    );
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
+
     mockFetchVariables().withSuccess([]);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);

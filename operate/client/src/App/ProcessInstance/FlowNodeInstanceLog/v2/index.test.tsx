@@ -212,10 +212,8 @@ describe('FlowNodeInstanceLog', () => {
       0,
     );
 
-    await waitFor(() =>
-      expect(
-        screen.getByText('Migrated 2018-12-12 00:00:00'),
-      ).toBeInTheDocument(),
-    );
+    expect(
+      await screen.findByText('Migrated 2018-12-12 00:00:00'),
+    ).toBeInTheDocument();
   });
 });
