@@ -91,9 +91,9 @@ public final class BatchOperationServices
     return sendBrokerRequest(brokerRequest);
   }
 
-  public CompletableFuture<BatchOperationLifecycleManagementRecord> pause(
+  public CompletableFuture<BatchOperationLifecycleManagementRecord> suspend(
       final String batchOperationId) {
-    LOGGER.debug("Pausing batch operation with id '{}'", batchOperationId);
+    LOGGER.debug("Suspending batch operation with id '{}'", batchOperationId);
 
     final var brokerRequest =
         new BrokerPauseBatchOperationRequest()

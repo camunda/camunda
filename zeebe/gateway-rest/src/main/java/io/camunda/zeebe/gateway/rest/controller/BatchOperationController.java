@@ -58,7 +58,7 @@ public class BatchOperationController {
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  @CamundaPutMapping(path = "/{batchOperationId}/cancel")
+  @CamundaPutMapping(path = "/{batchOperationId}/cancellation")
   public ResponseEntity<Object> cancelBatchOperation(@PathVariable final String batchOperationId) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
             () ->
@@ -68,17 +68,17 @@ public class BatchOperationController {
         .join();
   }
 
-  @CamundaPutMapping(path = "/{batchOperationId}/pause")
-  public ResponseEntity<Object> pauseBatchOperation(@PathVariable final String batchOperationId) {
+  @CamundaPutMapping(path = "/{batchOperationId}/suspension")
+  public ResponseEntity<Object> suspendBatchOperation(@PathVariable final String batchOperationId) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
             () ->
                 batchOperationServices
                     .withAuthentication(RequestMapper.getAuthentication())
-                    .pause(batchOperationId))
+                    .suspend(batchOperationId))
         .join();
   }
 
-  @CamundaPutMapping(path = "/{batchOperationId}/resume")
+  @CamundaPutMapping(path = "/{batchOperationId}/resumption")
   public ResponseEntity<Object> resumeBatchOperation(@PathVariable final String batchOperationId) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
             () ->

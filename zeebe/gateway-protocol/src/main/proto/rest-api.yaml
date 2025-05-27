@@ -4934,7 +4934,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /batch-operations/{batchOperationId}/cancel:
+  /batch-operations/{batchOperationId}/cancellation:
     put:
       tags:
         - Batch operation
@@ -4975,14 +4975,14 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /batch-operations/{batchOperationId}/pause:
+  /batch-operations/{batchOperationId}/suspension:
     put:
       tags:
         - Batch operation
-      operationId: pauseBatchOperation
-      summary: Pause Batch operation
+      operationId: suspendBatchOperation
+      summary: Suspend Batch operation
       description: |
-        Pauses a running batch operation.
+        Suspends a running batch operation.
         This is done asynchronously, the progress can be tracked using the batch operation status endpoint (/batch-operations/{batchOperationId}).
       parameters:
         - name: batchOperationId
@@ -5016,7 +5016,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /batch-operations/{batchOperationId}/resume:
+  /batch-operations/{batchOperationId}/resumption:
     put:
       tags:
         - Batch operation
