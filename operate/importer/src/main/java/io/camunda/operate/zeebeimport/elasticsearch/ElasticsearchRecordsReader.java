@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
@@ -97,7 +98,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
 
   private long maxPossibleSequence;
 
-  private int countEmptyRuns;
+  private final AtomicInteger countEmptyRuns = new AtomicInteger();
 
   private BackoffIdleStrategy errorStrategy;
 
@@ -141,7 +142,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
             operateProperties.getZeebeElasticsearch().getBatchSize());
     // 1st sequence of next partition - 1
     maxPossibleSequence = sequence(partitionId + 1, 0) - 1;
-    countEmptyRuns = 0;
+    countEmptyRuns.set(0);
     errorStrategy =
         new BackoffIdleStrategy(operateProperties.getImporter().getReaderBackoff(), 1.2f, 10_000);
 
@@ -256,9 +257,9 @@ public class ElasticsearchRecordsReader implements RecordsReader {
           maxNumberOfHits);
     } else {
       maxNumberOfHits = batchSize;
-      if (countEmptyRuns == operateProperties.getImporter().getMaxEmptyRuns()) {
+      if (countEmptyRuns.get() == operateProperties.getImporter().getMaxEmptyRuns()) {
         lessThanEqualsSequence = maxPossibleSequence;
-        countEmptyRuns = 0;
+        countEmptyRuns.set(0);
         LOGGER.debug(
             "Max empty runs reached. Data type {}, partitionId {}, sequence {}, lastSequence {}, maxNumberOfHits {}.",
             importValueType,
@@ -288,9 +289,9 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       final HitEntity[] hits =
           withTimerSearchHits(() -> read(searchRequest, maxNumberOfHits >= QUERY_MAX_SIZE));
       if (hits.length == 0) {
-        countEmptyRuns++;
+        countEmptyRuns.incrementAndGet();
       } else {
-        countEmptyRuns = 0;
+        countEmptyRuns.set(0);
       }
       return createImportBatch(hits);
     } catch (final ElasticsearchStatusException ex) {
