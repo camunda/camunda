@@ -242,22 +242,27 @@ class RoleAuthorizationIT {
   }
 
   @Test
-  void shouldAssignRoleToMappingIfAuthorized(
+  void shouldAssignRoleToMappingRuleIfAuthorized(
       @Authenticated(ADMIN) final CamundaClient adminClient) {
     final String roleId = Strings.newRandomValidIdentityId();
-    final String mappingId = Strings.newRandomValidIdentityId();
+    final String mappingRuleId = Strings.newRandomValidIdentityId();
 
     createRole(adminClient, roleId, "roleName");
     adminClient
-        .newCreateMappingCommand()
-        .mappingRuleId(mappingId)
+        .newCreateMappingRuleCommand()
+        .mappingRuleId(mappingRuleId)
         .name("mappingName")
         .claimName("testClaimName")
         .claimValue("testClaimValue")
         .send()
         .join();
 
-    adminClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingId).send().join();
+    adminClient
+        .newAssignRoleToMappingCommand()
+        .roleId(roleId)
+        .mappingRuleId(mappingRuleId)
+        .send()
+        .join();
 
     Awaitility.await("Mapping is assigned to the role")
         .ignoreExceptionsInstanceOf(ProblemException.class)
@@ -265,20 +270,20 @@ class RoleAuthorizationIT {
             () ->
                 assertThat(adminClient.newMappingsByRoleSearchRequest(roleId).send().join().items())
                     .hasSize(1)
-                    .anyMatch(m -> mappingId.equals(m.getMappingId())));
+                    .anyMatch(m -> mappingRuleId.equals(m.getMappingRuleId())));
 
     adminClient.newDeleteRoleCommand(roleId).send().join();
   }
 
   @Test
-  void assignRoleToMappingShouldReturnForbiddenIfUnauthorized(
+  void assignRoleToMappingRuleShouldReturnForbiddenIfUnauthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
     assertThatThrownBy(
             () ->
                 camundaClient
                     .newAssignRoleToMappingCommand()
                     .roleId(Strings.newRandomValidIdentityId())
-                    .mappingId(Strings.newRandomValidIdentityId())
+                    .mappingRuleId(Strings.newRandomValidIdentityId())
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -475,13 +480,13 @@ class RoleAuthorizationIT {
   }
 
   @Test
-  void shouldUnassignRoleFromMappingIfAuthorized(
+  void shouldUnassignRoleFromMappingRuleIfAuthorized(
       @Authenticated(ADMIN) final CamundaClient adminClient) {
-    final String mappingId = Strings.newRandomValidIdentityId();
+    final String mappingRuleId = Strings.newRandomValidIdentityId();
 
     adminClient
-        .newCreateMappingCommand()
-        .mappingRuleId(mappingId)
+        .newCreateMappingRuleCommand()
+        .mappingRuleId(mappingRuleId)
         .name("mappingName")
         .claimName("claimName")
         .claimValue("claimValue")
@@ -491,14 +496,14 @@ class RoleAuthorizationIT {
     adminClient
         .newAssignRoleToMappingCommand()
         .roleId(ROLE_ID_1)
-        .mappingId(mappingId)
+        .mappingRuleId(mappingRuleId)
         .send()
         .join();
 
     adminClient
-        .newUnassignRoleFromMappingCommand()
+        .newUnassignRoleFromMappingRuleCommand()
         .roleId(ROLE_ID_1)
-        .mappingId(mappingId)
+        .mappingRuleId(mappingRuleId)
         .send()
         .join();
 
@@ -507,19 +512,23 @@ class RoleAuthorizationIT {
         .untilAsserted(
             () ->
                 assertThat(
-                        adminClient.newRolesByGroupSearchRequest(mappingId).send().join().items())
+                        adminClient
+                            .newRolesByGroupSearchRequest(mappingRuleId)
+                            .send()
+                            .join()
+                            .items())
                     .isEmpty());
   }
 
   @Test
-  void unassignRoleFromMappingShouldReturnForbiddenIfUnauthorized(
+  void unassignRoleFromMappingRuleShouldReturnForbiddenIfUnauthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newUnassignRoleFromMappingCommand()
+                    .newUnassignRoleFromMappingRuleCommand()
                     .roleId(Strings.newRandomValidIdentityId())
-                    .mappingId(Strings.newRandomValidIdentityId())
+                    .mappingRuleId(Strings.newRandomValidIdentityId())
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)

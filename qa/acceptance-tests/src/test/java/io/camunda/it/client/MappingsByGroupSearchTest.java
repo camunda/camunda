@@ -108,7 +108,7 @@ public class MappingsByGroupSearchTest {
 
   private static void createMapping(final String mappingId) {
     camundaClient
-        .newCreateMappingCommand()
+        .newCreateMappingRuleCommand()
         .mappingRuleId(mappingId)
         .name("name")
         .claimName(mappingId + "claimName")

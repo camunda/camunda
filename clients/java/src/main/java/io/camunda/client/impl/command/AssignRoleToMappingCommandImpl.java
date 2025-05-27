@@ -46,8 +46,8 @@ public class AssignRoleToMappingCommandImpl
   }
 
   @Override
-  public AssignRoleToMappingCommandStep2 mappingId(final String mappingId) {
-    this.mappingId = mappingId;
+  public AssignRoleToMappingCommandStep2 mappingRuleId(final String mappingRuleId) {
+    mappingId = mappingRuleId;
     return this;
   }
 
