@@ -53,6 +53,7 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationPartitionLifecycleRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
@@ -591,6 +592,19 @@ public final class RecordingExporter implements Exporter {
   public static BatchOperationLifecycleRecordStream batchOperationLifecycleRecords(
       final BatchOperationIntent intent) {
     return batchOperationLifecycleRecords().withIntent(intent);
+  }
+
+  public static BatchOperationPartitionLifecycleRecordStream
+      batchOperationPartitionLifecycleRecords() {
+    return new BatchOperationPartitionLifecycleRecordStream(
+        records(
+            ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
+            BatchOperationPartitionLifecycleRecordValue.class));
+  }
+
+  public static BatchOperationPartitionLifecycleRecordStream
+      batchOperationPartitionLifecycleRecords(final BatchOperationIntent intent) {
+    return batchOperationPartitionLifecycleRecords().withIntent(intent);
   }
 
   public static void autoAcknowledge(final boolean shouldAcknowledgeRecords) {
