@@ -8,5 +8,10 @@
 package io.camunda.exporter.cache.process;
 
 import java.util.List;
+import java.util.Map;
 
-public record CachedProcessEntity(String name, String versionTag, List<String> callElementIds) {}
+public record CachedProcessEntity(
+    String name,
+    String versionTag,
+    List<String> callElementIds,
+    Map<String, String> flowNodesMap) {}

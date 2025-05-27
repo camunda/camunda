@@ -24,6 +24,7 @@ public class FlowNodeInstanceEntity
   private long key;
   private int partitionId;
   private String flowNodeId;
+  private String flowNodeName;
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
   private FlowNodeState state;
@@ -83,6 +84,15 @@ public class FlowNodeInstanceEntity
 
   public FlowNodeInstanceEntity setFlowNodeId(final String flowNodeId) {
     this.flowNodeId = flowNodeId;
+    return this;
+  }
+
+  public String getFlowNodeName() {
+    return flowNodeName;
+  }
+
+  public FlowNodeInstanceEntity setFlowNodeName(final String flowNodeName) {
+    this.flowNodeName = flowNodeName;
     return this;
   }
 
@@ -232,6 +242,7 @@ public class FlowNodeInstanceEntity
             key,
             partitionId,
             flowNodeId,
+            flowNodeName,
             startDate,
             endDate,
             state,
@@ -265,6 +276,7 @@ public class FlowNodeInstanceEntity
         && level == that.level
         && incident == that.incident
         && Objects.equals(flowNodeId, that.flowNodeId)
+        && Objects.equals(flowNodeName, that.flowNodeName)
         && Objects.equals(startDate, that.startDate)
         && Objects.equals(endDate, that.endDate)
         && state == that.state

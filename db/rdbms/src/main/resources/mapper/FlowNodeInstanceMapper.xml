@@ -119,11 +119,11 @@
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel"
     flushCache="true">
-    INSERT INTO ${prefix}FLOW_NODE_INSTANCE (FLOW_NODE_INSTANCE_KEY, FLOW_NODE_ID, PROCESS_INSTANCE_KEY,
+    INSERT INTO ${prefix}FLOW_NODE_INSTANCE (FLOW_NODE_INSTANCE_KEY, FLOW_NODE_ID, FLOW_NODE_NAME, PROCESS_INSTANCE_KEY,
                                     PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY, TYPE, STATE,
                                              START_DATE, END_DATE, TENANT_ID, TREE_PATH,
                                              INCIDENT_KEY, NUM_SUBPROCESS_INCIDENTS, PARTITION_ID, HISTORY_CLEANUP_DATE)
-    VALUES (#{flowNodeInstanceKey}, #{flowNodeId}, #{processInstanceKey}, #{processDefinitionId},
+    VALUES (#{flowNodeInstanceKey}, #{flowNodeId}, #{flowNodeName}, #{processInstanceKey}, #{processDefinitionId},
             #{processDefinitionKey}, #{type}, #{state},
             #{startDate, jdbcType=TIMESTAMP}, #{endDate, jdbcType=TIMESTAMP}, #{tenantId},
             #{treePath}, #{incidentKey}, #{numSubprocessIncidents}, #{partitionId}, #{historyCleanupDate, jdbcType=TIMESTAMP})
@@ -135,6 +135,7 @@
     flushCache="true">
     UPDATE FLOW_NODE_INSTANCE
     SET FLOW_NODE_ID             = #{flowNodeId},
+        FLOW_NODE_NAME           = #{flowNodeName},
         PROCESS_INSTANCE_KEY     = #{processInstanceKey},
         PROCESS_DEFINITION_ID    = #{processDefinitionId},
         PROCESS_DEFINITION_KEY   = #{processDefinitionKey},

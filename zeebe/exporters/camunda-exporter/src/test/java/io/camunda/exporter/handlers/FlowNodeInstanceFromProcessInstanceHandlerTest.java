@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
@@ -39,8 +40,9 @@ import org.junit.jupiter.params.provider.EnumSource.Mode;
 public class FlowNodeInstanceFromProcessInstanceHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-list-view";
+  private final TestProcessCache processCache = new TestProcessCache();
   private final FlowNodeInstanceFromProcessInstanceHandler underTest =
-      new FlowNodeInstanceFromProcessInstanceHandler(indexName);
+      new FlowNodeInstanceFromProcessInstanceHandler(indexName, processCache);
 
   @Test
   public void testGetHandledValueType() {

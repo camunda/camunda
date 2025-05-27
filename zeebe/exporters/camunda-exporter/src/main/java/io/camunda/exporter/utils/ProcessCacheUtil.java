@@ -10,14 +10,16 @@ package io.camunda.exporter.utils;
 import io.camunda.exporter.cache.ExporterEntityCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.webapps.schema.entities.ProcessEntity;
+import io.camunda.webapps.schema.entities.ProcessFlowNodeEntity;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.BaseElement;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
+import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.util.modelreader.ProcessModelReader;
+import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public final class ProcessCacheUtil {
 
@@ -67,5 +69,65 @@ public final class ProcessCacheUtil {
 
   public static List<String> sortedCallActivityIds(final Collection<CallActivity> callActivities) {
     return callActivities.stream().map(BaseElement::getId).sorted().toList();
+  }
+
+  /**
+   * Returns all flow nodes from the Process diagram
+   *
+   * @param processEntity processEntity
+   * @return Map where key is flowNodeId, and value is flowNodeName
+   */
+  public static Map<String, String> extractFlowNodesMapFromDiagram(
+      final ProcessEntity processEntity) {
+    final String bpmnXml = processEntity.getBpmnXml();
+
+    final BpmnModelInstance modelInstance =
+        Bpmn.readModelFromStream(
+            new ByteArrayInputStream(bpmnXml.getBytes(StandardCharsets.UTF_8)));
+
+    return sortedFlowNodesMap(modelInstance.getModelElementsByType(FlowNode.class));
+  }
+
+  /**
+   * Returns flowNodeName from process cache by flowNodeId
+   *
+   * @param processCache
+   * @param processDefinitionKey
+   * @param flowNodeId
+   * @return flowNodeId
+   */
+  public static Optional<String> getFlowNodeName(
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final Long processDefinitionKey,
+      final String flowNodeId) {
+
+    if (processDefinitionKey == null) {
+      return Optional.empty();
+    }
+    final var cachedProcess = processCache.get(processDefinitionKey);
+    if (cachedProcess.isEmpty()
+        || cachedProcess.get().flowNodesMap() == null
+        || flowNodeId == null) {
+      return Optional.empty();
+    }
+    return Optional.of(cachedProcess.get().flowNodesMap().get(flowNodeId));
+  }
+
+  public static Map<String, String> sortedFlowNodesMap(Collection<FlowNode> flowNodes) {
+    final Map<String, String> flowNodesMap = new TreeMap<>();
+    for (FlowNode flowNode : flowNodes) {
+      flowNodesMap.put(flowNode.getId(), flowNode.getName());
+    }
+
+    return flowNodesMap;
+  }
+
+  public static Map<String, String> sortedFlowNodesMap(List<ProcessFlowNodeEntity> flowNodes) {
+    final Map<String, String> flowNodesMap = new TreeMap<>();
+    for (ProcessFlowNodeEntity flowNode : flowNodes) {
+      flowNodesMap.put(flowNode.getId(), flowNode.getName());
+    }
+
+    return flowNodesMap;
   }
 }
