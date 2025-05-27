@@ -99,10 +99,10 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
             mapping ->
                 setupRecord.addMapping(
                     new MappingRecord()
-                        .setMappingId(mapping.getMappingId())
+                        .setMappingRuleId(mapping.getMappingRuleId())
                         .setClaimName(mapping.getClaimName())
                         .setClaimValue(mapping.getClaimValue())
-                        .setName(mapping.getMappingId())));
+                        .setName(mapping.getMappingRuleId())));
 
     setupRecord.setDefaultTenant(
         new TenantRecord().setTenantId(DEFAULT_TENANT_ID).setName(DEFAULT_TENANT_NAME));

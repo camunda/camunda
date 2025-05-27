@@ -74,15 +74,17 @@ public class CamundaOAuthPrincipalService {
     }
 
     final var groups =
-        groupServices.getGroupsByMemberIds(mappingIds, EntityType.MAPPING).stream()
+        groupServices.getGroupsByMemberIds(mappingRuleIds, EntityType.MAPPING).stream()
             .map(GroupEntity::groupId)
             .collect(Collectors.toSet());
 
-    final var roles = roleServices.getRolesByMappingsAndGroups(mappingIds, groups);
+    final var roles = roleServices.getRolesByMappingsAndGroups(mappingRuleIds, groups);
     final var roleIds = roles.stream().map(RoleEntity::roleId).collect(Collectors.toSet());
 
     final var tenants =
-        tenantServices.getTenantsByMappingsAndGroupsAndRoles(mappingIds, groups, roleIds).stream()
+        tenantServices
+            .getTenantsByMappingsAndGroupsAndRoles(mappingRuleIds, groups, roleIds)
+            .stream()
             .map(TenantDTO::fromEntity)
             .toList();
 
@@ -90,7 +92,7 @@ public class CamundaOAuthPrincipalService {
         new AuthenticationContextBuilder()
             .withAuthorizedApplications(
                 authorizationServices.getAuthorizedApplications(
-                    Stream.concat(roles.stream().map(RoleEntity::roleId), mappingIds.stream())
+                    Stream.concat(roles.stream().map(RoleEntity::roleId), mappingRuleIds.stream())
                         .collect(Collectors.toSet())))
             .withTenants(tenants)
             .withGroups(groups.stream().toList())
@@ -129,18 +131,17 @@ public class CamundaOAuthPrincipalService {
     }
   }
 
-  private String getApplicationIdFromClaims(final Map<String, Object> claims) {
-    final var maybeApplicationId = Optional.ofNullable(claims.get(applicationIdClaim));
+  private String getClientIdFromClaims(final Map<String, Object> claims) {
+    final var maybeClientId = Optional.ofNullable(claims.get(clientIdClaim));
 
-    if (maybeApplicationId.isEmpty()) {
+    if (maybeClientId.isEmpty()) {
       return null;
     }
 
-    if (maybeApplicationId.get() instanceof final String applicationId) {
-      return applicationId;
+    if (maybeClientId.get() instanceof final String clientId) {
+      return clientId;
     } else {
-      throw new IllegalArgumentException(
-          CLAIM_NOT_STRING.formatted("application", applicationIdClaim));
+      throw new IllegalArgumentException(CLAIM_NOT_STRING.formatted("client", clientIdClaim));
     }
   }
 }

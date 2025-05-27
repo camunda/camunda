@@ -367,12 +367,12 @@ public class IdentitySetupInitializeTest {
                 new RoleRecord()
                     .setRoleId(role.getRoleId())
                     .setEntityType(EntityType.MAPPING)
-                    .setEntityId(mapping1.getMappingId()))
+                    .setEntityId(mapping1.getMappingRuleId()))
             .withRoleMember(
                 new RoleRecord()
                     .setRoleId(role.getRoleId())
                     .setEntityType(EntityType.MAPPING)
-                    .setEntityId(mapping2.getMappingId()))
+                    .setEntityId(mapping2.getMappingRuleId()))
             .initialize()
             .getValue();
 
