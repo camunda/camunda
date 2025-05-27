@@ -388,7 +388,7 @@ class RoleAuthorizationIT {
         .description("description")
         .send()
         .join();
-    adminClient.newAssignRoleToTenantCommand(tenantId).roleId(ROLE_ID_1).send().join();
+    adminClient.newAssignRoleToTenantCommand().roleId(ROLE_ID_1).tenantId(tenantId).send().join();
 
     adminClient
         .newUnassignRoleFromTenantCommand()
