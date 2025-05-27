@@ -368,7 +368,7 @@ class ElasticsearchBatchRequestTest {
 
     final String message =
         String.format(
-            "%s failed for type [%s] and id [%s]: %s",
+            "%s failed on index [%s] and id [%s]: %s",
             item.operationType(), item.index(), item.id(), item.error().reason());
 
     // When
