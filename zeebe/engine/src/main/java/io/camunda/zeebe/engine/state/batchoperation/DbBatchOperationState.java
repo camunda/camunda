@@ -191,6 +191,17 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
+  public void completePartition(final long batchOperationKey, final int partitionId) {
+    LOGGER.trace(
+        "Complete batch operation with key {} on partition {}", batchOperationKey, partitionId);
+    batchKey.wrapLong(batchOperationKey);
+
+    final var batch = batchOperationColumnFamily.get(batchKey);
+    batch.addCompletedPartition(partitionId);
+    batchOperationColumnFamily.update(batchKey, batch);
+  }
+
+  @Override
   public boolean exists(final long batchOperationKey) {
     return get(batchOperationKey).isPresent();
   }
