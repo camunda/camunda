@@ -7,6 +7,8 @@
  */
 package io.camunda.application.commons.search;
 
+import static org.springframework.context.annotation.Bean.Bootstrap.BACKGROUND;
+
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineIndexProperties;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineRetentionProperties;
@@ -18,11 +20,15 @@ import io.camunda.search.schema.config.SchemaManagerConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.io.IOException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 
 @Configuration(proxyBeanMethods = false)
 @Conditional(SearchEngineEnabledCondition.class)
@@ -34,11 +40,20 @@ import org.springframework.context.annotation.Configuration;
 })
 public class SearchEngineDatabaseConfiguration {
 
-  @Bean
+  @Bean(bootstrap = BACKGROUND)
+  @DependsOn({"searchEngineConfiguration", "prometheusMeterRegistry"})
   public SearchEngineSchemaInitializer searchEngineSchemaInitializer(
-      final SearchEngineConfiguration searchEngineConfiguration,
-      final MeterRegistry meterRegistry) {
-    return new SearchEngineSchemaInitializer(searchEngineConfiguration, meterRegistry);
+      final SearchEngineConfiguration searchEngineConfiguration, final MeterRegistry meterRegistry)
+      throws IOException {
+    final var searchEngineSchemaInitializer =
+        new SearchEngineSchemaInitializer(searchEngineConfiguration, meterRegistry);
+    searchEngineSchemaInitializer.afterPropertiesSet();
+    return searchEngineSchemaInitializer;
+  }
+
+  @Bean("bootstrapExecutor")
+  public Executor bootstrapExecutor() {
+    return Executors.newSingleThreadExecutor();
   }
 
   @Bean

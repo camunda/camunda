@@ -32,10 +32,12 @@ import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 @Component("process-migrator")
 @EnableConfigurationProperties(ProcessMigrationProperties.class)
+@DependsOn("searchEngineSchemaInitializer")
 public class MigrationRunner implements Migrator {
 
   private static final Logger LOG = LoggerFactory.getLogger(MigrationRunner.class);

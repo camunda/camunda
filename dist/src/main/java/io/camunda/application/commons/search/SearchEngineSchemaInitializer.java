@@ -16,9 +16,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.InitializingBean;
 
-public class SearchEngineSchemaInitializer implements InitializingBean {
+public class SearchEngineSchemaInitializer {
   private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngineSchemaInitializer.class);
   private final SearchEngineConfiguration searchEngineConfiguration;
   private final SchemaManagerMetrics schemaManagerMetrics;
@@ -30,7 +29,6 @@ public class SearchEngineSchemaInitializer implements InitializingBean {
     schemaManagerMetrics = new SchemaManagerMetrics(meterRegistry);
   }
 
-  @Override
   public void afterPropertiesSet() throws IOException {
     LOGGER.info("Initializing search engine schema...");
     try (final var clientAdapter = ClientAdapter.of(searchEngineConfiguration.connect())) {

@@ -15,10 +15,12 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 @EnableConfigurationProperties(IdentityMigrationProperties.class)
 @Component("identity-migrator")
+@DependsOn("searchEngineSchemaInitializer")
 public class MigrationRunner implements Migrator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(MigrationRunner.class);
