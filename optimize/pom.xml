@@ -123,6 +123,13 @@
         <type>pom</type>
       </dependency>
       <dependency>
+        <groupId>org.springframework.security</groupId>
+        <artifactId>spring-security-bom</artifactId>
+        <version>${spring.security.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-server</artifactId>
         <version>${jetty.version}</version>

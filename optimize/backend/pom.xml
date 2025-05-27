@@ -218,13 +218,6 @@
       <artifactId>spring-security-oauth2-resource-server</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-bom</artifactId>
-      <version>${spring.security.version}</version>
-      <type>pom</type>
-      <scope>import</scope>
-    </dependency>
-    <dependency>
       <groupId>com.nimbusds</groupId>
       <artifactId>nimbus-jose-jwt</artifactId>
       <version>${nimbus.jose.jwt.version}</version>
