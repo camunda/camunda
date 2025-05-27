@@ -20,10 +20,12 @@ function getQueryKey(payload: GetJobsRequestBody) {
   return [JOBS_SEARCH_QUERY_KEY, ...Object.values(payload)];
 }
 
-function useJobs<T = GetJobsResponseBody>(
-  payload: GetJobsRequestBody,
-  select?: (data: GetJobsResponseBody) => T,
-): UseQueryResult<T, RequestError> {
+function useJobs<T = GetJobsResponseBody>(options: {
+  payload: GetJobsRequestBody;
+  select?: (data: GetJobsResponseBody) => T;
+  disabled?: boolean;
+}): UseQueryResult<T, RequestError> {
+  const {payload, select, disabled} = options;
   return useQuery({
     queryKey: getQueryKey(payload),
     queryFn: async () => {
@@ -36,6 +38,7 @@ function useJobs<T = GetJobsResponseBody>(
       throw error;
     },
     select,
+    enabled: !disabled,
   });
 }
 

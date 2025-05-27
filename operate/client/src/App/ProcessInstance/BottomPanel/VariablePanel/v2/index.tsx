@@ -34,26 +34,6 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
   const {data: processInstance} = useProcessInstance();
   const isRootNodeSelected = useIsRootNodeSelected();
 
-  const {data: jobs} = useJobs({
-    filter: {processInstanceKey: {$eq: processInstanceId}},
-  });
-  // if (jobs) {
-  //   processInstanceListenersStore.setListeners({
-  //     listenersCount: jobs.page.totalItems,
-  //     listeners: jobs.items.map((job) => ({
-  //       listenerKey: job.jobKey,
-  //       jobType: job.type,
-  //       state: job.state,
-  //       listenerType: job.kind,
-  //       event: job.listenerEventType,
-  //       time: job.endTime,
-  //       sortValues: [new Date(job.endTime).valueOf().toString(), job.jobKey],
-  //     })),
-  //   });
-  // }
-
-  // console.log({processInstanceId, jobs});
-
   const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
   const flowNodeInstanceId =
     flowNodeSelectionStore.state.selection?.flowNodeInstanceId;
@@ -64,9 +44,28 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
 
   const shouldUseFlowNodeId = !flowNodeInstanceId && flowNodeId;
 
-  useEffect(() => {
-    reset();
-  }, [flowNodeId, flowNodeInstanceId, reset]);
+  let jobsFilter = {};
+  if (shouldUseFlowNodeId) {
+    jobsFilter = {
+      processInstanceKey: {$eq: processInstanceId},
+      elementId: {$eq: flowNodeId},
+      ...(listenerTypeFilter && {kind: {$eq: listenerTypeFilter}}),
+    };
+  } else if (flowNodeInstanceId) {
+    jobsFilter = {
+      processInstanceKey: {$eq: processInstanceId},
+      elementId: {$eq: flowNodeInstanceId},
+      ...(listenerTypeFilter && {kind: {$eq: listenerTypeFilter}}),
+    };
+  }
+  const {data: jobs} = useJobs({
+    payload: {filter: jobsFilter},
+    disabled: !shouldUseFlowNodeId && !flowNodeInstanceId,
+  });
+
+  // useEffect(() => {
+  //   reset();
+  // }, [flowNodeId, flowNodeInstanceId, reset]);
 
   useEffect(() => {
     init(processInstance);
