@@ -207,7 +207,12 @@ public class RolesByTenantIntegrationTest {
     createRole(roleId, "name", "desc");
     camundaClient.newAssignRoleToTenantCommand().roleId(roleId).tenantId(tenantId).send().join();
     // when
-    camundaClient.newUnassignRoleFromTenantCommand(tenantId).roleId(roleId).send().join();
+    camundaClient
+        .newUnassignRoleFromTenantCommand()
+        .roleId(roleId)
+        .tenantId(tenantId)
+        .send()
+        .join();
     // then
     Awaitility.await("Role should be unassigned from tenant")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
@@ -236,8 +241,9 @@ public class RolesByTenantIntegrationTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newUnassignRoleFromTenantCommand(tenantId)
+                    .newUnassignRoleFromTenantCommand()
                     .roleId(roleId)
+                    .tenantId(tenantId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -252,8 +258,9 @@ public class RolesByTenantIntegrationTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newUnassignRoleFromTenantCommand(tenantId)
+                    .newUnassignRoleFromTenantCommand()
                     .roleId(roleId)
+                    .tenantId(tenantId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -269,8 +276,9 @@ public class RolesByTenantIntegrationTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newUnassignRoleFromTenantCommand(tenantId)
+                    .newUnassignRoleFromTenantCommand()
                     .roleId(roleId)
+                    .tenantId(tenantId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)

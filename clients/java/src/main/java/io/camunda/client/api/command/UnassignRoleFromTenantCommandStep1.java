@@ -17,8 +17,7 @@ package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.UnassignRoleFromTenantResponse;
 
-public interface UnassignRoleFromTenantCommandStep1
-    extends FinalCommandStep<UnassignRoleFromTenantResponse> {
+public interface UnassignRoleFromTenantCommandStep1 {
 
   /**
    * Sets the role ID to unassign from the tenant.
@@ -26,5 +25,18 @@ public interface UnassignRoleFromTenantCommandStep1
    * @param roleId the ID of the role to unassign
    * @return the builder for this command
    */
-  UnassignRoleFromTenantCommandStep1 roleId(String roleId);
+  UnassignRoleFromTenantCommandStep2 roleId(String roleId);
+
+  interface UnassignRoleFromTenantCommandStep2
+      extends FinalCommandStep<UnassignRoleFromTenantResponse> {
+
+    /**
+     * Sets the tenant ID.
+     *
+     * @param tenantId the tenantId of the tenant
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    UnassignRoleFromTenantCommandStep2 tenantId(String tenantId);
+  }
 }

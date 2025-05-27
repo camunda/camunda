@@ -43,7 +43,7 @@ public class AssignRoleToTenantTest extends ClientRestTest {
   @Test
   void shouldUnassignRoleFromTenant() {
     // when
-    client.newUnassignRoleFromTenantCommand(TENANT_ID).roleId(ROLE_ID).send().join();
+    client.newUnassignRoleFromTenantCommand().roleId(ROLE_ID).tenantId(TENANT_ID).send().join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();

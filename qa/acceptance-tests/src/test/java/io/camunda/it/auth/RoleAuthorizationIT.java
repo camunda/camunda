@@ -379,6 +379,51 @@ class RoleAuthorizationIT {
   }
 
   @Test
+  void shouldUnassignRoleFromTenantIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    final String tenantId = Strings.newRandomValidIdentityId();
+
+    adminClient
+        .newCreateTenantCommand()
+        .tenantId(tenantId)
+        .name("tenantName")
+        .description("description")
+        .send()
+        .join();
+    adminClient.newAssignRoleToTenantCommand().roleId(ROLE_ID_1).tenantId(tenantId).send().join();
+
+    adminClient
+        .newUnassignRoleFromTenantCommand()
+        .roleId(ROLE_ID_1)
+        .tenantId(tenantId)
+        .send()
+        .join();
+
+    Awaitility.await("Role is unassigned from the tenant")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        adminClient.newRolesByTenantSearchRequest(tenantId).send().join().items())
+                    .isEmpty());
+  }
+
+  @Test
+  void unassignRoleFromTenantShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUnassignRoleFromTenantCommand()
+                    .roleId(Strings.newRandomValidIdentityId())
+                    .tenantId(Strings.newRandomValidIdentityId())
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
+
+  @Test
   void unassignRoleFromClientShouldReturnForbiddenIfUnauthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
     assertThatThrownBy(
