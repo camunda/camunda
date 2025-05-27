@@ -36,6 +36,12 @@ import {mockFetchProcessInstance as mockProcessInstanceDeprecated} from 'modules
 const instanceMock = createInstance({id: '1'});
 
 describe('Footer', () => {
+  afterEach(async () => {
+    jest.clearAllMocks();
+    jest.clearAllTimers();
+    await new Promise(process.nextTick);
+  });
+
   it('should disable add variable button when selected flow node is not running', async () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockProcessInstanceDeprecated().withSuccess(instanceMock);
