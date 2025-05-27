@@ -20,7 +20,6 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import org.awaitility.Awaitility;
@@ -79,7 +78,8 @@ class UserSearchingAuthorizationIT {
                       userSearchResponse.items().stream()
                           .map(io.camunda.client.api.search.response.User::getUsername)
                           .toList())
-                  .containsAll(Arrays.asList("demo", "admin", "user1", "user2"));
+                  .containsExactly(
+                      "demo", "admin", "restrictedUser", "restrictedUser2", "user1", "user2");
             });
   }
 
@@ -92,7 +92,7 @@ class UserSearchingAuthorizationIT {
     // then
     assertThat(result.items())
         .map(io.camunda.client.api.search.response.User::getUsername)
-        .containsExactly("demo", "admin", "user1", "user2", "restrictedUser2");
+        .containsExactly("demo", "admin", "restrictedUser", "restrictedUser2", "user1", "user2");
   }
 
   @Test
