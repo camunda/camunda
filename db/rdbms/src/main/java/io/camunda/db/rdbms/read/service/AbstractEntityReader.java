@@ -92,8 +92,10 @@ abstract class AbstractEntityReader<T> {
   private static List<KeySetPagination> createKeySetPagination(
       final DbQuerySorting<?> sort, final SearchQueryPage page) {
     final boolean isSearchAfter = page.searchAfter() != null;
+    // TODO get sort fields and their types to correctly decode the cursor, or write the type into
+    // the cursor while encoding
     final Object[] sortValues =
-        page.searchAfter() != null ? page.searchAfter() : page.searchBefore();
+        decodeCursor(page.searchAfter() != null ? page.searchAfter() : page.searchBefore());
     final List<KeySetPagination> keySetPagination = new ArrayList<>();
 
     for (int i = 0; i < sort.orderings().size(); i++) {
@@ -119,13 +121,22 @@ abstract class AbstractEntityReader<T> {
     return keySetPagination;
   }
 
+  private Object[] decodeCursor(final String cursor) {
+    return new Object[] {};
+  }
+
+  private String encodeCursor(final Object[] sortValues) {
+    // TODO implement encoding of sort values to a string
+    return "";
+  }
+
   protected final SearchQueryResult<T> buildSearchQueryResult(
       final long totalHits, final List<T> hits, final DbQuerySorting<T> dbSort) {
     return new SearchQueryResult.Builder<T>()
         .total(totalHits)
         .items(hits)
-        .firstSortValues(extractFirstSortValues(hits, dbSort))
-        .lastSortValues(extractLastSortValues(hits, dbSort))
+        .firstSortValues(encodeCursor(extractFirstSortValues(hits, dbSort)))
+        .lastSortValues(encodeCursor(extractLastSortValues(hits, dbSort)))
         .build();
   }
 
