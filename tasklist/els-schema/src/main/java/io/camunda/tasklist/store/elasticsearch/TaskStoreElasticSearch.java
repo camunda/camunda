@@ -30,6 +30,7 @@ import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.queries.Sort;
 import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskOrderBy;
@@ -108,6 +109,8 @@ public class TaskStoreElasticSearch implements TaskStore {
 
   @Autowired private TaskVariableTemplate taskVariableTemplate;
 
+  @Autowired private TasklistProperties tasklistProperties;
+
   @Autowired
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
@@ -130,7 +133,8 @@ public class TaskStoreElasticSearch implements TaskStore {
             .source(
                 searchSource()
                     .query(termQuery(PROCESS_INSTANCE_ID, processInstanceId))
-                    .fetchField(TaskTemplate.ID));
+                    .fetchField(TaskTemplate.ID)
+                    .size(tasklistProperties.getElasticsearch().getBatchSize()));
     try {
       return ElasticsearchUtil.scrollIdsToList(searchRequest, esClient);
     } catch (final IOException e) {
@@ -306,7 +310,8 @@ public class TaskStoreElasticSearch implements TaskStore {
                 .query(
                     boolQuery()
                         .must(termsQuery(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceIds))
-                        .must(termQuery(TaskTemplate.STATE, TaskState.CREATED))));
+                        .must(termQuery(TaskTemplate.STATE, TaskState.CREATED)))
+                .size(tasklistProperties.getElasticsearch().getBatchSize()));
   }
 
   private SearchHit[] getTasksRawResponse(final List<String> ids) throws IOException {

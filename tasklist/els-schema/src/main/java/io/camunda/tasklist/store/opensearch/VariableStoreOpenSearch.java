@@ -445,7 +445,10 @@ public class VariableStoreOpenSearch implements VariableStore {
             .filter(OpenSearchUtil.joinWithAnd(flowNodeInstanceKeyQ, varNamesQ))
             .build());
     final Builder searchRequest = new Builder();
-    searchRequest.index(variableIndex.getAlias()).query(query.build());
+    searchRequest
+        .index(variableIndex.getAlias())
+        .query(query.build())
+        .size(tasklistProperties.getOpenSearch().getBatchSize());
     applyFetchSourceForVariableIndex(searchRequest, fieldNames);
     return searchRequest;
   }
