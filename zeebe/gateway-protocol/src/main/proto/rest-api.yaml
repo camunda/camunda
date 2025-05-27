@@ -9165,7 +9165,7 @@ components:
         The migration instructions describe how to migrate a process instance from one process definition to another.
       properties:
         mappingInstructions:
-          description: Element mappings from the source process instance to the target process instance.
+          description: Element mapping-rules from the source process instance to the target process instance.
           type: array
           items:
             $ref: "#/components/schemas/MigrateProcessInstanceMappingInstruction"

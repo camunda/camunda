@@ -11,18 +11,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.CreateRoleResponse;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.Client;
-import io.camunda.client.api.search.response.Group;
 import io.camunda.client.api.search.response.Role;
 import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.client.protocol.rest.MappingSearchQueryResult;
+import io.camunda.client.protocol.rest.RoleResult;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
-import io.camunda.qa.util.auth.TestUser;
+import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -521,7 +524,7 @@ class RoleAuthorizationIT {
   }
 
   @Test
-  void unassignRoleFromMappingRuleShouldReturnForbiddenIfUnauthorized(
+  void unassignRoleFromMappingShouldReturnForbiddenIfUnauthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
     assertThatThrownBy(
             () ->
