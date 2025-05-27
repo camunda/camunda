@@ -101,6 +101,7 @@ import io.camunda.client.api.fetch.RolesSearchRequest;
 import io.camunda.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.UsersByGroupSearchRequest;
+import io.camunda.client.api.fetch.UsersSearchRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
@@ -1465,6 +1466,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the users by role search request
    */
   UsersByRoleSearchRequest newUsersByRoleSearchRequest(String roleId);
+
+  /**
+   * Executes a search request to query users.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newUsersSearchRequest()
+   *  .filter((f) -> f.username("userName"))
+   *  .sort((s) -> s.username().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the users search request
+   */
+  UsersSearchRequest newUsersSearchRequest();
 
   /**
    * Command to create a group.
