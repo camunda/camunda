@@ -49,7 +49,7 @@ class AssignMappingToTenantTest {
     // Create Mapping
 
     client
-        .newCreateMappingCommand()
+        .newCreateMappingRuleCommand()
         .claimName(CLAIM_NAME)
         .claimValue(CLAIM_VALUE)
         .name(NAME)

@@ -22,7 +22,7 @@ import io.camunda.client.protocol.rest.MappingRuleCreateRequest;
 import io.camunda.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
 
-public class CreateMappingTest extends ClientRestTest {
+public class CreateMappingRuleTest extends ClientRestTest {
 
   public static final String CLAIM_NAME = "claimName";
   public static final String CLAIM_VALUE = "claimValue";
@@ -33,7 +33,7 @@ public class CreateMappingTest extends ClientRestTest {
   void shouldCreateMapping() {
     // when
     client
-        .newCreateMappingCommand()
+        .newCreateMappingRuleCommand()
         .claimName(CLAIM_NAME)
         .claimValue(CLAIM_VALUE)
         .name(NAME)
@@ -54,7 +54,13 @@ public class CreateMappingTest extends ClientRestTest {
   void shouldRaiseExceptionOnNullClaimName() {
     // when / then
     assertThatThrownBy(
-            () -> client.newCreateMappingCommand().claimValue(CLAIM_VALUE).name(NAME).send().join())
+            () ->
+                client
+                    .newCreateMappingRuleCommand()
+                    .claimValue(CLAIM_VALUE)
+                    .name(NAME)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("claimName");
   }
@@ -63,7 +69,8 @@ public class CreateMappingTest extends ClientRestTest {
   void shouldRaiseExceptionOnNullClaimValue() {
     // when / then
     assertThatThrownBy(
-            () -> client.newCreateMappingCommand().claimName(CLAIM_NAME).name(NAME).send().join())
+            () ->
+                client.newCreateMappingRuleCommand().claimName(CLAIM_NAME).name(NAME).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("claimValue");
   }
@@ -74,7 +81,7 @@ public class CreateMappingTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newCreateMappingCommand()
+                    .newCreateMappingRuleCommand()
                     .claimName(CLAIM_NAME)
                     .claimValue(CLAIM_VALUE)
                     .send()

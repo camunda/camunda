@@ -40,7 +40,7 @@ public class UnassignMappingFromGroupTest {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
     mappingId =
         client
-            .newCreateMappingCommand()
+            .newCreateMappingRuleCommand()
             .mappingRuleId(Strings.newRandomValidIdentityId())
             .name("mappingName")
             .claimName("name")

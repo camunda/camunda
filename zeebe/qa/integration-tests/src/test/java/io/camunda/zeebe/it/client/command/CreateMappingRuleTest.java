@@ -22,7 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
-public class CreateMappingTest {
+public class CreateMappingRuleTest {
 
   public static final String CLAIM_NAME = "claimName";
   public static final String CLAIM_VALUE = "claimValue";
@@ -45,7 +45,7 @@ public class CreateMappingTest {
     // when
     final var response =
         client
-            .newCreateMappingCommand()
+            .newCreateMappingRuleCommand()
             .claimName(CLAIM_NAME)
             .claimValue(CLAIM_VALUE)
             .name(NAME)
@@ -65,7 +65,8 @@ public class CreateMappingTest {
   @Test
   void shouldRejectIfMissingClaimName() {
     // when / then
-    assertThatThrownBy(() -> client.newCreateMappingCommand().claimValue(CLAIM_VALUE).send().join())
+    assertThatThrownBy(
+            () -> client.newCreateMappingRuleCommand().claimValue(CLAIM_VALUE).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("claimName");
   }
@@ -74,7 +75,8 @@ public class CreateMappingTest {
   void shouldRejectIfMissingClaimValue() {
     // when / then
     assertThatThrownBy(
-            () -> client.newCreateMappingCommand().claimName(CLAIM_NAME).name(NAME).send().join())
+            () ->
+                client.newCreateMappingRuleCommand().claimName(CLAIM_NAME).name(NAME).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("claimValue");
   }
@@ -85,14 +87,14 @@ public class CreateMappingTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newCreateMappingCommand()
+                    .newCreateMappingRuleCommand()
                     .claimName(CLAIM_NAME)
                     .claimValue(CLAIM_VALUE)
                     .name(NAME)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("mappingId");
+        .hasMessageContaining("mappingRuleId");
   }
 
   @Test
@@ -101,7 +103,7 @@ public class CreateMappingTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newCreateMappingCommand()
+                    .newCreateMappingRuleCommand()
                     .claimName(CLAIM_NAME)
                     .claimValue(CLAIM_VALUE)
                     .send()
@@ -114,7 +116,7 @@ public class CreateMappingTest {
   void shouldRejectIfMappingAlreadyExists() {
     // given
     client
-        .newCreateMappingCommand()
+        .newCreateMappingRuleCommand()
         .claimName(CLAIM_NAME)
         .claimValue(CLAIM_VALUE)
         .name(NAME)
@@ -126,7 +128,7 @@ public class CreateMappingTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newCreateMappingCommand()
+                    .newCreateMappingRuleCommand()
                     .claimName(CLAIM_NAME)
                     .claimValue(CLAIM_VALUE)
                     .name(NAME)
@@ -143,7 +145,7 @@ public class CreateMappingTest {
   void shouldRejectIfMappingSameIDAlreadyExists() {
     // given
     client
-        .newCreateMappingCommand()
+        .newCreateMappingRuleCommand()
         .claimName("c1")
         .claimValue(CLAIM_VALUE)
         .name(NAME)
@@ -155,7 +157,7 @@ public class CreateMappingTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newCreateMappingCommand()
+                    .newCreateMappingRuleCommand()
                     .claimName("c2")
                     .claimValue(CLAIM_VALUE)
                     .name(NAME)
