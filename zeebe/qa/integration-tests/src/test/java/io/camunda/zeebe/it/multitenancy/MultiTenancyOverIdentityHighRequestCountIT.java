@@ -41,6 +41,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -335,22 +336,21 @@ public class MultiTenancyOverIdentityHighRequestCountIT {
       final List<String> tenantIds, final String clientId) throws Exception {
 
     try (final PostgresHelper postgres = new PostgresHelper()) {
-      final String accessRuleId;
+      final String accessRuleId = UUID.randomUUID().toString();
       // Create access rule for service account
       try (final var resultSet =
           postgres.executeQuery(
               """
                   INSERT INTO access_rules \
-                    (member_id, member_type, global) \
-                  VALUES ('%s', 'APPLICATION', false) \
+                    (id, member_id, member_type, global) \
+                  VALUES ('%s','%s', 'APPLICATION', false) \
                   ON CONFLICT DO NOTHING \
                   RETURNING id"""
-                  .formatted(clientId))) {
+                  .formatted(accessRuleId, clientId))) {
         if (!resultSet.next()) {
           throw new IllegalStateException(
               "Expected to find access rule associated to service account.");
         }
-        accessRuleId = resultSet.getString(1);
       }
 
       // Create tenant(s) if not already existing,
