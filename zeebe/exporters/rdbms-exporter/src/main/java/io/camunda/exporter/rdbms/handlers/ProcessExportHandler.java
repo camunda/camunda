@@ -8,6 +8,7 @@
 package io.camunda.exporter.rdbms.handlers;
 
 import static io.camunda.exporter.rdbms.utils.ProcessCacheUtil.sortedCallActivityIds;
+import static io.camunda.exporter.rdbms.utils.ProcessCacheUtil.sortedFlowNodesMap;
 
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
@@ -58,8 +59,9 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
     processModelReader.ifPresent(
         reader -> {
           final var activities = sortedCallActivityIds(reader.extractCallActivities());
+          final var flowNodesMap = sortedFlowNodesMap(reader.extractFlowNodes());
           final var cachedProcessEntity =
-              new CachedProcessEntity(resourceName, versionTag, activities);
+              new CachedProcessEntity(resourceName, versionTag, activities, flowNodesMap);
           processCache.put(value.getProcessDefinitionKey(), cachedProcessEntity);
         });
   }

@@ -29,6 +29,7 @@ import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -90,7 +91,8 @@ class ProcessCacheImplIT {
 
     // then
     final var expectedCachedProcessEntity =
-        new CachedProcessEntity("test", "v1", List.of("Banana", "Cherry", "apple"));
+        new CachedProcessEntity(
+            "test", "v1", List.of("Banana", "Cherry", "apple"), Map.of("FlowId_01", "FlowName_01"));
     assertThat(process).isPresent().get().isEqualTo(expectedCachedProcessEntity);
   }
 

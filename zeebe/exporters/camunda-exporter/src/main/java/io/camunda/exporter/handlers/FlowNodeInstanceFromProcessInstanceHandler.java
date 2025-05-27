@@ -14,7 +14,10 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_MIGRATED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
+import io.camunda.exporter.cache.ExporterEntityCache;
+import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.utils.ProcessCacheUtil;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
@@ -44,9 +47,12 @@ public class FlowNodeInstanceFromProcessInstanceHandler
       Set.of(BpmnElementType.PROCESS, BpmnElementType.SEQUENCE_FLOW);
 
   private final String indexName;
+  private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
 
-  public FlowNodeInstanceFromProcessInstanceHandler(final String indexName) {
+  public FlowNodeInstanceFromProcessInstanceHandler(
+      final String indexName, final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
     this.indexName = indexName;
+    this.processCache = processCache;
   }
 
   @Override
@@ -85,13 +91,18 @@ public class FlowNodeInstanceFromProcessInstanceHandler
       final Record<ProcessInstanceRecordValue> record, final FlowNodeInstanceEntity entity) {
     final var recordValue = record.getValue();
     final var intent = record.getIntent();
+    final var processDefinitionKey = recordValue.getProcessDefinitionKey();
 
     entity.setKey(record.getKey());
     entity.setId(String.valueOf(record.getKey()));
     entity.setPartitionId(record.getPartitionId());
     entity.setFlowNodeId(recordValue.getElementId());
+    entity.setFlowNodeName(
+        ProcessCacheUtil.getFlowNodeName(
+                processCache, processDefinitionKey, recordValue.getElementId())
+            .orElse(null));
     entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
-    entity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
+    entity.setProcessDefinitionKey(processDefinitionKey);
     entity.setBpmnProcessId(recordValue.getBpmnProcessId());
     entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
     entity.setScopeKey(recordValue.getFlowScopeKey());
@@ -138,6 +149,7 @@ public class FlowNodeInstanceFromProcessInstanceHandler
       updateFields.put(FlowNodeInstanceTemplate.LEVEL, entity.getLevel());
     }
     updateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, entity.getFlowNodeId());
+    updateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_NAME, entity.getFlowNodeName());
     updateFields.put(
         FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());
     updateFields.put(FlowNodeInstanceTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());

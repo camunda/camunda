@@ -5,6 +5,9 @@
 			"flowNodeId": {
 				"type": "keyword"
 			},
+			"flowNodeName": {
+				"type": "keyword"
+			},
 			"partitionId": {
 				"type": "integer"
 			},

@@ -207,7 +207,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new FlowNodeInstanceFromIncidentHandler(
                 indexDescriptors.get(FlowNodeInstanceTemplate.class).getFullQualifiedName()),
             new FlowNodeInstanceFromProcessInstanceHandler(
-                indexDescriptors.get(FlowNodeInstanceTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(FlowNodeInstanceTemplate.class).getFullQualifiedName(),
+                processCache),
             new IncidentHandler(
                 indexDescriptors.get(IncidentTemplate.class).getFullQualifiedName(), processCache),
             new SequenceFlowHandler(

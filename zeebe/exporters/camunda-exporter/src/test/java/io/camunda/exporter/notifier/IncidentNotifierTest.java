@@ -26,9 +26,7 @@ import static io.camunda.webapps.schema.entities.incident.ErrorType.JOB_NO_RETRI
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -99,7 +97,7 @@ class IncidentNotifierTest {
             null,
             TestObjectMapper.objectMapper());
     when(processCache.get(any()))
-        .thenReturn(Optional.of(new CachedProcessEntity(processName, processVersion, null)));
+        .thenReturn(Optional.of(new CachedProcessEntity(processName, processVersion, null, null)));
   }
 
   @Test

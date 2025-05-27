@@ -25,6 +25,7 @@ public class FlowNodeInstanceTemplate extends AbstractTemplateDescriptor
   public static final String START_DATE = "startDate";
   public static final String END_DATE = "endDate";
   public static final String FLOW_NODE_ID = "flowNodeId";
+  public static final String FLOW_NODE_NAME = "flowNodeName";
   public static final String PROCESS_INSTANCE_KEY = "processInstanceKey";
   public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";

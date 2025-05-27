@@ -239,7 +239,7 @@ public class RdbmsExporterWrapper implements Exporter {
             processCache));
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
-        new FlowNodeExportHandler(rdbmsWriter.getFlowNodeInstanceWriter()));
+        new FlowNodeExportHandler(rdbmsWriter.getFlowNodeInstanceWriter(), processCache));
     builder.withHandler(
         ValueType.VARIABLE, new VariableExportHandler(rdbmsWriter.getVariableWriter()));
     builder.withHandler(
