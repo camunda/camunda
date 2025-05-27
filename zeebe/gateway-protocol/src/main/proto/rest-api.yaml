@@ -713,7 +713,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /tenants/{tenantId}/mappings/{mappingId}:
+  /tenants/{tenantId}/mapping-rules/{mappingRuleId}:
     put:
       tags:
         - Tenant
@@ -727,7 +727,7 @@ paths:
           description: The unique identifier of the tenant.
           schema:
             type: string
-        - name: mappingId
+        - name: mappingRuleId
           in: path
           required: true
           description: The unique identifier of the mapping rule.
@@ -762,7 +762,7 @@ paths:
           description: The unique identifier of the tenant.
           schema:
             type: string
-        - name: mappingId
+        - name: mappingRuleId
           in: path
           required: true
           description: The unique identifier of the mapping rule.
@@ -783,13 +783,13 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /tenants/{tenantId}/mappings/search:
+  /tenants/{tenantId}/mapping-rules/search:
     post:
       tags:
         - Tenant
       operationId: searchMappingsForTenant
-      summary: Search mappings for tenant
-      description: Retrieves a filtered and sorted list of mappings for a specified tenant.
+      summary: Search mapping-rules for tenant
+      description: Retrieves a filtered and sorted list of mapping-rules for a specified tenant.
       parameters:
         - name: tenantId
           in: path
@@ -802,14 +802,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/MappingSearchQueryRequest"
+              $ref: "#/components/schemas/MappingRuleSearchQueryRequest"
       responses:
         "200":
-          description: The search result of mappings for the tenant.
+          description: The search result of mapping-rules for the tenant.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MappingSearchQueryResult"
+                $ref: "#/components/schemas/MappingRuleSearchQueryResult"
 
   /tenants/{tenantId}/groups/{groupId}:
     put:
@@ -3101,7 +3101,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /roles/{roleId}/mappings/{mappingId}:
+  /roles/{roleId}/mapping-rules/{mappingRuleId}:
     put:
       tags:
         - Role
@@ -3116,7 +3116,7 @@ paths:
           description: The role ID.
           schema:
             type: string
-        - name: mappingId
+        - name: mappingRuleId
           in: path
           required: true
           description: The mapping ID.
@@ -3157,7 +3157,7 @@ paths:
           description: The role ID.
           schema:
             type: string
-        - name: mappingId
+        - name: mappingRuleId
           in: path
           required: true
           description: The mapping ID.
@@ -3198,14 +3198,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/MappingSearchQueryRequest"
+              $ref: "#/components/schemas/MappingRuleSearchQueryRequest"
       responses:
         "200":
           description: The mapping rules assigned to the role.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MappingSearchQueryResult"
+                $ref: "#/components/schemas/MappingRuleSearchQueryResult"
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
@@ -3411,14 +3411,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/MappingSearchQueryRequest"
+              $ref: "#/components/schemas/MappingRuleSearchQueryRequest"
       responses:
         "200":
           description: The mapping rules assigned to the group.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MappingSearchQueryResult"
+                $ref: "#/components/schemas/MappingRuleSearchQueryResult"
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
@@ -3671,7 +3671,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /groups/{groupId}/mapping-rules/{mappingId}:
+  /groups/{groupId}/mapping-rules/{mappingRuleId}:
     put:
       tags:
         - Group
@@ -3686,7 +3686,7 @@ paths:
           description: The group ID.
           schema:
             type: string
-        - name: mappingId
+        - name: mappingRuleId
           in: path
           required: true
           description: The mapping rule ID.
@@ -3727,7 +3727,7 @@ paths:
           description: The group ID.
           schema:
             type: string
-        - name: mappingId
+        - name: mappingRuleId
           in: path
           required: true
           description: The mapping rule ID.
@@ -3820,7 +3820,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-  /mapping-rules/{mappingId}:
+  /mapping-rules/{mappingRuleId}:
     put:
       tags:
         - Mapping rule
@@ -3829,7 +3829,7 @@ paths:
       description: |
         Update a mapping rule.
       parameters:
-        - name: mappingId
+        - name: mappingRuleId
           in: path
           required: true
           description: The ID of the mapping rule to update.
@@ -3873,7 +3873,7 @@ paths:
       description: |
         Deletes the mapping rule with the given ID.
       parameters:
-        - name: mappingId
+        - name: mappingRuleId
           in: path
           required: true
           description: The ID of the mapping rule to delete.
@@ -3885,7 +3885,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
-          description: The mapping rule with the mappingId was not found.
+          description: The mapping rule with the mappingRuleId was not found.
           content:
             application/problem+json:
               schema:
@@ -3900,7 +3900,7 @@ paths:
       description: |
         Gets the mapping rule with the given ID.
       parameters:
-        - name: mappingId
+        - name: mappingRuleId
           in: path
           required: true
           description: The ID of the mapping rule to get.
@@ -3912,7 +3912,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
         "404":
-          description: The mapping rule with the mappingId was not found.
+          description: The mapping rule with the mappingRuleId was not found.
           content:
             application/problem+json:
               schema:
@@ -3925,14 +3925,14 @@ paths:
       tags:
         - Mapping rule
       operationId: searchMappings
-      summary: Search mappings
+      summary: Search mapping-rules
       description: |
         Search for mapping rules based on given criteria.
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/MappingSearchQueryRequest"
+              $ref: "#/components/schemas/MappingRuleSearchQueryRequest"
         required: true
       responses:
         "200":
@@ -3940,7 +3940,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MappingSearchQueryResult"
+                $ref: "#/components/schemas/MappingRuleSearchQueryResult"
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
@@ -7041,14 +7041,14 @@ components:
           description: The user search filters.
           allOf:
             - $ref: "#/components/schemas/UserFilterRequest"
-    MappingSearchQuerySortRequest:
+    MappingRuleSearchQuerySortRequest:
       type: object
       properties:
         field:
           description: The field to sort by.
           type: string
           enum:
-            - mappingId
+            - mappingRuleId
             - claimName
             - claimValue
             - name
@@ -7056,7 +7056,7 @@ components:
           $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
-    MappingSearchQueryRequest:
+    MappingRuleSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       type: object
@@ -7065,11 +7065,11 @@ components:
           description: Sort field criteria.
           type: array
           items:
-            $ref: "#/components/schemas/MappingSearchQuerySortRequest"
+            $ref: "#/components/schemas/MappingRuleSearchQuerySortRequest"
         filter:
-          description: The mapping search filters.
+          description: The mapping rule search filters.
           allOf:
-            - $ref: "#/components/schemas/MappingFilterRequest"
+            - $ref: "#/components/schemas/MappingRuleFilterRequest"
     UserFilterRequest:
       description: User search filter.
       type: object
@@ -7086,8 +7086,8 @@ components:
           description: The email of the user.
           allOf:
             - $ref: "#/components/schemas/StringFilterProperty"
-    MappingFilterRequest:
-      description: Mapping search filter.
+    MappingRuleFilterRequest:
+      description: MappingRule search filter.
       type: object
       properties:
         claimName:
@@ -7098,10 +7098,10 @@ components:
           description: The value of the claim to match.
         name:
           type: string
-          description: The name of the mapping.
-        mappingId:
+          description: The name of the mapping rule.
+        mappingRuleId:
           type: string
-          description: The ID of the mapping.
+          description: The ID of the mapping rule.
     CamundaUserResult:
       type: object
       properties:
@@ -7664,7 +7664,7 @@ components:
           description: The value of the claim to map.
         name:
           type: string
-          description: The name of the mapping.
+          description: The name of the mapping rule.
       required:
         - claimName
         - claimValue
@@ -7674,11 +7674,11 @@ components:
       allOf:
         - $ref: "#/components/schemas/MappingRuleCreateUpdateRequest"
       properties:
-        mappingId:
+        mappingRuleId:
           type: string
-          description: The unique ID of the mapping.
+          description: The unique ID of the mapping rule.
       required:
-        - mappingId
+        - mappingRuleId
     MappingRuleUpdateRequest:
       type: object
       allOf:
@@ -7694,10 +7694,10 @@ components:
           description: The value of the claim to map.
         name:
           type: string
-          description: The name of the mapping.
-        mappingId:
+          description: The name of the mapping rule.
+        mappingRuleId:
           type: string
-          description: The unique ID of the mapping.
+          description: The unique ID of the mapping rule.
     MappingRuleCreateResult:
       type: object
       allOf:
@@ -7706,7 +7706,7 @@ components:
       type: object
       allOf:
         - $ref: "#/components/schemas/MappingRuleCreateUpdateResult"
-    MappingSearchQueryResult:
+    MappingRuleSearchQueryResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
@@ -7715,8 +7715,8 @@ components:
           description: The matching mapping rules.
           type: array
           items:
-            $ref: "#/components/schemas/MappingResult"
-    MappingResult:
+            $ref: "#/components/schemas/MappingRuleResult"
+    MappingRuleResult:
       type: "object"
       properties:
         claimName:
@@ -7727,10 +7727,10 @@ components:
           description: The value of the claim to map.
         name:
           type: string
-          description: The name of the mapping.
-        mappingId:
+          description: The name of the mapping rule.
+        mappingRuleId:
           type: string
-          description: The ID of the mapping.
+          description: The ID of the mapping rule.
 
     TopologyResponse:
       description: The response of a topology request.
@@ -9145,7 +9145,7 @@ components:
         The migration instructions describe how to migrate a process instance from one process definition to another.
       properties:
         mappingInstructions:
-          description: Element mappings from the source process instance to the target process instance.
+          description: Element mapping-rules from the source process instance to the target process instance.
           type: array
           items:
             $ref: "#/components/schemas/MigrateProcessInstanceMappingInstruction"

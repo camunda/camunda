@@ -394,15 +394,15 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::tenantSearchQuery);
   }
 
-  public static Either<ProblemDetail, MappingQuery> toMappingQuery(
-      final MappingSearchQueryRequest request) {
+  public static Either<ProblemDetail, MappingQuery> toMappingRuleQuery(
+      final MappingRuleSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.mappingSearchQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         toSearchQuerySort(
-            SearchQuerySortRequestMapper.fromMappingSearchQuerySortRequest(request.getSort()),
+            SearchQuerySortRequestMapper.fromMappingRuleSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::mapping,
             SearchQueryRequestMapper::applyMappingSortField);
     final var filter = toMappingFilter(request.getFilter());
@@ -909,13 +909,13 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
-  private static MappingFilter toMappingFilter(final MappingFilterRequest filter) {
+  private static MappingFilter toMappingFilter(final MappingRuleFilterRequest filter) {
     final var builder = FilterBuilders.mapping();
     if (filter != null) {
       ofNullable(filter.getClaimName()).ifPresent(builder::claimName);
       ofNullable(filter.getClaimValue()).ifPresent(builder::claimValue);
       ofNullable(filter.getName()).ifPresent(builder::name);
-      ofNullable(filter.getMappingId()).ifPresent(builder::mappingId);
+      ofNullable(filter.getMappingRuleId()).ifPresent(builder::mappingId);
     }
     return builder.build();
   }
@@ -1275,13 +1275,13 @@ public final class SearchQueryRequestMapper {
   }
 
   private static List<String> applyMappingSortField(
-      final MappingSearchQuerySortRequest.FieldEnum field, final MappingSort.Builder builder) {
+      final MappingRuleSearchQuerySortRequest.FieldEnum field, final MappingSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case MAPPING_ID -> builder.mappingId();
+        case MAPPING_RULE_ID -> builder.mappingId();
         case CLAIM_NAME -> builder.claimName();
         case CLAIM_VALUE -> builder.claimValue();
         case NAME -> builder.name();

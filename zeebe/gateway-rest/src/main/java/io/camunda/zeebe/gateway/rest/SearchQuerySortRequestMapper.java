@@ -71,8 +71,9 @@ public class SearchQuerySortRequestMapper {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
-  public static List<SearchQuerySortRequest<MappingSearchQuerySortRequest.FieldEnum>>
-      fromMappingSearchQuerySortRequest(final List<MappingSearchQuerySortRequest> requests) {
+  public static List<SearchQuerySortRequest<MappingRuleSearchQuerySortRequest.FieldEnum>>
+      fromMappingRuleSearchQuerySortRequest(
+          final List<MappingRuleSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 

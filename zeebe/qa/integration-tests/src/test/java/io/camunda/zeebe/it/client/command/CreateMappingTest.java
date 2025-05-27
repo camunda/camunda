@@ -49,12 +49,12 @@ public class CreateMappingTest {
             .claimName(CLAIM_NAME)
             .claimValue(CLAIM_VALUE)
             .name(NAME)
-            .mappingId(ID)
+            .mappingRuleId(ID)
             .send()
             .join();
 
     // then
-    assertThat(response.getMappingId()).isEqualTo(ID);
+    assertThat(response.getMappingRuleId()).isEqualTo(ID);
     ZeebeAssertHelper.assertMappingCreated(
         ID,
         CLAIM_NAME,
@@ -118,7 +118,7 @@ public class CreateMappingTest {
         .claimName(CLAIM_NAME)
         .claimValue(CLAIM_VALUE)
         .name(NAME)
-        .mappingId(Strings.newRandomValidIdentityId())
+        .mappingRuleId(Strings.newRandomValidIdentityId())
         .send()
         .join();
 
@@ -130,7 +130,7 @@ public class CreateMappingTest {
                     .claimName(CLAIM_NAME)
                     .claimValue(CLAIM_VALUE)
                     .name(NAME)
-                    .mappingId(Strings.newRandomValidIdentityId())
+                    .mappingRuleId(Strings.newRandomValidIdentityId())
                     .send()
                     .join())
         .isInstanceOf(RuntimeException.class)
@@ -147,7 +147,7 @@ public class CreateMappingTest {
         .claimName("c1")
         .claimValue(CLAIM_VALUE)
         .name(NAME)
-        .mappingId(ID)
+        .mappingRuleId(ID)
         .send()
         .join();
 
@@ -159,7 +159,7 @@ public class CreateMappingTest {
                     .claimName("c2")
                     .claimValue(CLAIM_VALUE)
                     .name(NAME)
-                    .mappingId(ID)
+                    .mappingRuleId(ID)
                     .send()
                     .join())
         .isInstanceOf(RuntimeException.class)

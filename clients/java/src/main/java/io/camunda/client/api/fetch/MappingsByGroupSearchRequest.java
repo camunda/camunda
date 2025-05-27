@@ -18,9 +18,9 @@ package io.camunda.client.api.fetch;
 import io.camunda.client.api.search.filter.MappingFilter;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.TypedSearchRequest;
-import io.camunda.client.api.search.response.Mapping;
+import io.camunda.client.api.search.response.MappingRule;
 import io.camunda.client.api.search.sort.MappingSort;
 
 public interface MappingsByGroupSearchRequest
     extends TypedSearchRequest<MappingFilter, MappingSort, MappingsByGroupSearchRequest>,
-        FinalSearchRequestStep<Mapping> {}
+        FinalSearchRequestStep<MappingRule> {}

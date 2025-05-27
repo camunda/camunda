@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
-import io.camunda.client.api.search.response.Mapping;
+import io.camunda.client.api.search.response.MappingRule;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
@@ -265,7 +265,7 @@ public class RolesByMappingIntegrationTest {
                   .satisfies(
                       mapping -> {
                         assertThat(mapping.getName()).isEqualTo(mappingName);
-                        assertThat(mapping.getMappingId()).isEqualTo(mappingId);
+                        assertThat(mapping.getMappingRuleId()).isEqualTo(mappingId);
                         assertThat(mapping.getClaimValue()).isEqualTo(claimValue);
                         assertThat(mapping.getClaimName()).isEqualTo(claimName);
                       });
@@ -315,7 +315,7 @@ public class RolesByMappingIntegrationTest {
                       .join();
 
               assertThat(result.items())
-                  .extracting(Mapping::getName)
+                  .extracting(MappingRule::getName)
                   .containsExactly(nameC, nameB, nameA);
             });
   }
@@ -350,7 +350,7 @@ public class RolesByMappingIntegrationTest {
                       .join();
 
               assertThat(result.items())
-                  .extracting(Mapping::getClaimName)
+                  .extracting(MappingRule::getClaimName)
                   .containsExactly(claimA, claimB);
             });
   }
@@ -385,7 +385,7 @@ public class RolesByMappingIntegrationTest {
                       .join();
 
               assertThat(result.items())
-                  .extracting(Mapping::getClaimValue)
+                  .extracting(MappingRule::getClaimValue)
                   .containsExactly(valueB, valueA);
             });
   }
@@ -426,7 +426,7 @@ public class RolesByMappingIntegrationTest {
                       .join();
               assertThat(result.items())
                   .singleElement()
-                  .extracting(Mapping::getName)
+                  .extracting(MappingRule::getName)
                   .isEqualTo(name);
             });
   }
@@ -470,7 +470,7 @@ public class RolesByMappingIntegrationTest {
                       .join();
               assertThat(result.items())
                   .singleElement()
-                  .extracting(Mapping::getClaimName)
+                  .extracting(MappingRule::getClaimName)
                   .isEqualTo(claimName);
             });
   }
@@ -513,7 +513,7 @@ public class RolesByMappingIntegrationTest {
                       .join();
               assertThat(result.items())
                   .singleElement()
-                  .extracting(Mapping::getClaimValue)
+                  .extracting(MappingRule::getClaimValue)
                   .isEqualTo(claimValue);
             });
   }
@@ -522,7 +522,7 @@ public class RolesByMappingIntegrationTest {
       final String mappingId, final String name, final String claimName, final String claimValue) {
     camundaClient
         .newCreateMappingCommand()
-        .mappingId(mappingId)
+        .mappingRuleId(mappingId)
         .name(name)
         .claimName(claimName)
         .claimValue(claimValue)
@@ -537,10 +537,10 @@ public class RolesByMappingIntegrationTest {
             () ->
                 assertThat(searchMappingRuleByRole(roleId).items())
                     .hasSize(1)
-                    .anyMatch(m -> mappingId.equals(m.getMappingId())));
+                    .anyMatch(m -> mappingId.equals(m.getMappingRuleId())));
   }
 
-  private static SearchResponse<Mapping> searchMappingRuleByRole(final String roleId) {
+  private static SearchResponse<MappingRule> searchMappingRuleByRole(final String roleId) {
     return camundaClient.newMappingsByRoleSearchRequest(roleId).send().join();
   }
 
