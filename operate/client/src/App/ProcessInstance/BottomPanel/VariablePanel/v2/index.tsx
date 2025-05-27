@@ -20,6 +20,7 @@ import {Listeners} from './Listeners';
 import {WarningFilled} from '../styled';
 import {init, startPolling} from 'modules/utils/variables';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 
 type Props = {
@@ -33,7 +34,25 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
   const {data: processInstance} = useProcessInstance();
   const isRootNodeSelected = useIsRootNodeSelected();
 
-  // const {data: queryJobs} = useJobs({payload});
+  const {data: jobs} = useJobs({
+    filter: {processInstanceKey: {$eq: processInstanceId}},
+  });
+  // if (jobs) {
+  //   processInstanceListenersStore.setListeners({
+  //     listenersCount: jobs.page.totalItems,
+  //     listeners: jobs.items.map((job) => ({
+  //       listenerKey: job.jobKey,
+  //       jobType: job.type,
+  //       state: job.state,
+  //       listenerType: job.kind,
+  //       event: job.listenerEventType,
+  //       time: job.endTime,
+  //       sortValues: [new Date(job.endTime).valueOf().toString(), job.jobKey],
+  //     })),
+  //   });
+  // }
+
+  // console.log({processInstanceId, jobs});
 
   const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
   const flowNodeInstanceId =
@@ -57,34 +76,34 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
     };
   }, [processInstance]);
 
-  useEffect(() => {
-    if (shouldUseFlowNodeId) {
-      fetchListeners({
-        fetchType: 'initial',
-        processInstanceId: processInstanceId,
-        payload: {
-          flowNodeId,
-          ...(listenerTypeFilter && {listenerTypeFilter}),
-        },
-      });
-    } else if (flowNodeInstanceId) {
-      fetchListeners({
-        fetchType: 'initial',
-        processInstanceId: processInstanceId,
-        payload: {
-          flowNodeInstanceId,
-          ...(listenerTypeFilter && {listenerTypeFilter}),
-        },
-      });
-    }
-  }, [
-    fetchListeners,
-    processInstanceId,
-    flowNodeId,
-    flowNodeInstanceId,
-    shouldUseFlowNodeId,
-    listenerTypeFilter,
-  ]);
+  // useEffect(() => {
+  //   if (shouldUseFlowNodeId) {
+  //     fetchListeners({
+  //       fetchType: 'initial',
+  //       processInstanceId: processInstanceId,
+  //       payload: {
+  //         flowNodeId,
+  //         ...(listenerTypeFilter && {listenerTypeFilter}),
+  //       },
+  //     });
+  //   } else if (flowNodeInstanceId) {
+  //     fetchListeners({
+  //       fetchType: 'initial',
+  //       processInstanceId: processInstanceId,
+  //       payload: {
+  //         flowNodeInstanceId,
+  //         ...(listenerTypeFilter && {listenerTypeFilter}),
+  //       },
+  //     });
+  //   }
+  // }, [
+  //   fetchListeners,
+  //   processInstanceId,
+  //   flowNodeId,
+  //   flowNodeInstanceId,
+  //   shouldUseFlowNodeId,
+  //   listenerTypeFilter,
+  // ]);
 
   return (
     <TabView
@@ -129,7 +148,7 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
             labelIcon: <WarningFilled />,
           }),
           label: 'Listeners',
-          content: <Listeners />,
+          content: <Listeners jobs={jobs} />,
           removePadding: true,
           onClick: () => {
             setListenerTabVisibility(true);
