@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 
 class JobCompletedApplier implements TypedEventApplier<JobIntent, JobRecord> {
 
@@ -37,7 +38,9 @@ class JobCompletedApplier implements TypedEventApplier<JobIntent, JobRecord> {
       final ElementInstance scopeInstance = elementInstanceState.getInstance(scopeKey);
 
       if (scopeInstance != null && scopeInstance.isActive()) {
-
+        if (value.getJobKind() == JobKind.EXECUTION_LISTENER) {
+          elementInstance.incrementExecutionListenerIndex();
+        }
         elementInstance.setJobKey(-1);
         elementInstanceState.updateInstance(elementInstance);
       }

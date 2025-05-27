@@ -26,6 +26,10 @@ final class ProcessInstanceElementActivatedApplier
   @Override
   public void applyState(final long key, final ProcessInstanceRecord value) {
     elementInstanceState.updateInstance(
-        key, instance -> instance.setState(ProcessInstanceIntent.ELEMENT_ACTIVATED));
+        key,
+        instance -> {
+          instance.setState(ProcessInstanceIntent.ELEMENT_ACTIVATED);
+          instance.resetExecutionListenerIndex();
+        });
   }
 }
