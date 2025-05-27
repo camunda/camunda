@@ -1312,17 +1312,17 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *  .newAssignRoleToTenantCommand("tenantId")
+   *  .newAssignRoleToTenantCommand()
    *  .roleId("roleId")
+   *  .tenantId("tenantId")
    *  .send();
    * </pre>
    *
    * <p>This command is only sent via REST over HTTP.
    *
-   * @param tenantId the ID of the tenant
    * @return a builder for the assign role to tenant command
    */
-  AssignRoleToTenantCommandStep1 newAssignRoleToTenantCommand(String tenantId);
+  AssignRoleToTenantCommandStep1 newAssignRoleToTenantCommand();
 
   /**
    * Command to unassign a role from a tenant.
