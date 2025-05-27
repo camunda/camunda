@@ -12,7 +12,7 @@ import {useCallHierarchy} from './useCallHierarchy';
 const rootInstanceIdParser = (
   data: GetProcessInstanceCallHierarchyResponseBody,
 ) => {
-  return data.items[0]?.processInstanceKey;
+  return data[0]?.processInstanceKey;
 };
 
 const useRootInstanceId = () =>

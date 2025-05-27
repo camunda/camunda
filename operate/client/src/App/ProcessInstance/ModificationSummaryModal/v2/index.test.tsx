@@ -776,12 +776,18 @@ describe('Modification Summary Modal', () => {
       ...mockProcessInstance,
       parentProcessInstanceKey: '2',
     });
-    mockFetchCallHierarchy().withSuccess({
-      items: [
-        {processInstanceKey: '3', processDefinitionName: 'some root process'},
-        {processInstanceKey: '2', processDefinitionName: 'some parent process'},
-      ],
-    });
+    mockFetchCallHierarchy().withSuccess([
+      {
+        processInstanceKey: '3',
+        processDefinitionName: 'some root process',
+        processDefinitionKey: 'process-key',
+      },
+      {
+        processInstanceKey: '2',
+        processDefinitionName: 'some parent process',
+        processDefinitionKey: 'process-key',
+      },
+    ]);
 
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
