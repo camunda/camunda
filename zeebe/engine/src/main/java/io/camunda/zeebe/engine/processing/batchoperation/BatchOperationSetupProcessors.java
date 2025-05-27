@@ -83,7 +83,12 @@ public final class BatchOperationSetupProcessors {
             ValueType.BATCH_OPERATION_EXECUTION,
             BatchOperationExecutionIntent.EXECUTE,
             new BatchOperationExecuteProcessor(
-                writers, processingState, partitionId, batchExecutionHandlers))
+                writers,
+                processingState,
+                commandDistributionBehavior,
+                keyGenerator,
+                partitionId,
+                batchExecutionHandlers))
         .onCommand(
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
             BatchOperationIntent.CANCEL,
@@ -111,6 +116,11 @@ public final class BatchOperationSetupProcessors {
                 processingState,
                 authorizationCheckBehavior,
                 keyGenerator))
+        .onCommand(
+            ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
+            BatchOperationIntent.COMPLETE_PARTITION,
+            new BatchOperationPartitionCompleteProcessor(
+                writers, processingState, commandDistributionBehavior, partitionId))
         .withListener(
             new BatchOperationExecutionScheduler(
                 scheduledTaskStateFactory,
