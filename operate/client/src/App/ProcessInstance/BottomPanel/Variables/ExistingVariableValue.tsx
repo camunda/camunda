@@ -77,11 +77,12 @@ const createModification = ({
         operation: 'EDIT_VARIABLE',
         id: name,
         scopeId,
-        flowNodeName: getSelectedFlowNodeName(
+        flowNodeName: getSelectedFlowNodeName({
           businessObjects,
-          processInstanceDetailsStore.state.processInstance?.processName,
-          flowNodeSelectionStore.isRootNodeSelected,
-        ),
+          processDefinitionName:
+            processInstanceDetailsStore.state.processInstance?.processName,
+          isRootNodeSelected: flowNodeSelectionStore.isRootNodeSelected,
+        }),
         name,
         oldValue,
         newValue,

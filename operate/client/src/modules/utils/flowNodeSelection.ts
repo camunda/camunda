@@ -92,10 +92,13 @@ const selectFlowNode = (rootNode: Selection, selection: Selection) => {
   }
 };
 
-const getSelectedRunningInstanceCount = (
-  totalRunningInstancesForFlowNode: number,
-  isRootNodeSelected: boolean,
-) => {
+const getSelectedRunningInstanceCount = ({
+  totalRunningInstancesForFlowNode,
+  isRootNodeSelected,
+}: {
+  totalRunningInstancesForFlowNode: number;
+  isRootNodeSelected: boolean;
+}) => {
   const currentSelection = flowNodeSelectionStore.state.selection;
 
   if (currentSelection === null) {
@@ -117,11 +120,15 @@ const getSelectedRunningInstanceCount = (
   return totalRunningInstancesForFlowNode;
 };
 
-const getSelectedFlowNodeName = (
-  businessObjects?: BusinessObjects,
-  processDefinitionName?: string,
-  isRootNodeSelected?: boolean,
-) => {
+const getSelectedFlowNodeName = ({
+  businessObjects,
+  processDefinitionName,
+  isRootNodeSelected,
+}: {
+  businessObjects?: BusinessObjects;
+  processDefinitionName?: string;
+  isRootNodeSelected?: boolean;
+}) => {
   if (
     processDefinitionName === undefined ||
     flowNodeSelectionStore.state.selection === null

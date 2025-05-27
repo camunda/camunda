@@ -63,10 +63,10 @@ const Diagram: React.FC<Props> = observer(
     const {data: totalRunningInstances} =
       useTotalRunningInstancesForFlowNode(flowNodeId);
     const isRootNodeSelected = useIsRootNodeSelected();
-    const selectedRunningInstanceCount = getSelectedRunningInstanceCount(
-      totalRunningInstances ?? 0,
+    const selectedRunningInstanceCount = getSelectedRunningInstanceCount({
+      totalRunningInstancesForFlowNode: totalRunningInstances ?? 0,
       isRootNodeSelected,
-    );
+    });
     const rootNode = useRootNode();
 
     function getViewer() {

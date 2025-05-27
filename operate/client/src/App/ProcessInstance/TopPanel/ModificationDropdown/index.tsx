@@ -64,10 +64,10 @@ const ModificationDropdown: React.FC<Props> = observer(
       useTotalRunningInstancesVisibleForFlowNode(flowNodeId);
     const {data: totalRunningInstancesByFlowNode} =
       useTotalRunningInstancesByFlowNode();
-    const selectedRunningInstanceCount = getSelectedRunningInstanceCount(
-      totalRunningInstances || 0,
-      flowNodeSelectionStore.isRootNodeSelected,
-    );
+    const selectedRunningInstanceCount = getSelectedRunningInstanceCount({
+      totalRunningInstancesForFlowNode: totalRunningInstances || 0,
+      isRootNodeSelected: flowNodeSelectionStore.isRootNodeSelected,
+    });
     const availableModifications = useAvailableModifications(
       selectedRunningInstanceCount,
     );

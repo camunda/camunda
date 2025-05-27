@@ -286,10 +286,10 @@ const TopPanel: React.FC = observer(() => {
           />
         )}
       {modificationsStore.isModificationModeEnabled &&
-        getSelectedRunningInstanceCount(
-          totalRunningInstances || 0,
+        getSelectedRunningInstanceCount({
+          totalRunningInstancesForFlowNode: totalRunningInstances ?? 0,
           isRootNodeSelected,
-        ) > 1 && (
+        }) > 1 && (
           <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
         )}
       {modificationsStore.state.status === 'adding-token' &&

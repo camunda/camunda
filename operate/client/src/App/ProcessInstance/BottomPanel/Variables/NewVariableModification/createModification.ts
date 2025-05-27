@@ -49,11 +49,12 @@ const createModification = ({
         operation: 'ADD_VARIABLE',
         scopeId,
         id,
-        flowNodeName: getSelectedFlowNodeName(
+        flowNodeName: getSelectedFlowNodeName({
           businessObjects,
-          processInstanceDetailsStore.state.processInstance?.processName,
+          processDefinitionName:
+            processInstanceDetailsStore.state.processInstance?.processName,
           isRootNodeSelected,
-        ),
+        }),
         name,
         newValue: value,
       },
