@@ -93,7 +93,9 @@ class RoleAuthorizationIT {
       new User(
           RESTRICTED_WITH_READ,
           DEFAULT_PASSWORD,
-          List.of(new Permissions(ResourceType.ROLE, PermissionType.READ, List.of("*"))));
+          List.of(
+              new Permissions(
+                  ResourceType.ROLE, PermissionType.READ, List.of(ROLE_ID_1, ROLE_ID_2))));
 
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
@@ -305,12 +307,12 @@ class RoleAuthorizationIT {
 
   @Test
   void searchShouldReturnAuthorizedRoles(
-      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) throws Exception {
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
     final var roleSearchResponse = camundaClient.newRolesSearchRequest().send().join();
 
     assertThat(roleSearchResponse.items())
         .map(Role::getName)
-        .containsExactlyInAnyOrder("Admin", "RPA", "Connectors", ROLE_NAME_1, ROLE_NAME_2);
+        .containsExactlyInAnyOrder(ROLE_NAME_1, ROLE_NAME_2);
   }
 
   @Test

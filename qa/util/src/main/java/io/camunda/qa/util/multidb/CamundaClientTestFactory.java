@@ -8,19 +8,17 @@
 package io.camunda.qa.util.multidb;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.qa.util.auth.Authenticated;
-import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension.ApplicationUnderTest;
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,104 +27,61 @@ public final class CamundaClientTestFactory implements AutoCloseable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaClientTestFactory.class);
 
-  private final Map<String, User> usersRegistry = new HashMap<>();
   private final Map<String, CamundaClient> cachedClients = new ConcurrentHashMap<>();
 
-  public CamundaClientTestFactory() {
-    usersRegistry.put(InitializationConfiguration.DEFAULT_USER_USERNAME, User.DEFAULT);
+  public CamundaClientTestFactory(final ApplicationUnderTest application) {
+    cachedClients.put(
+        InitializationConfiguration.DEFAULT_USER_USERNAME, createDefaultUserClient(application));
   }
 
-  public CamundaClientTestFactory withUsers(final List<User> users) {
-    users.forEach(user -> usersRegistry.put(user.username(), user));
-    return this;
+  public CamundaClient getDefaultUserCamundaClient() {
+    return getCamundaClient(InitializationConfiguration.DEFAULT_USER_USERNAME);
   }
 
-  public CamundaClient createCamundaClient(
+  public CamundaClient getCamundaClient(final String username) {
+    return cachedClients.get(username);
+  }
+
+  public CamundaClient getCamundaClient(
       final TestGateway<?> gateway, final Authenticated authenticated) {
     if (authenticated == null) {
       LOGGER.info(
-          "Creating unauthorized Zeebe client for broker address '{}", gateway.restAddress());
+          "Creating unauthorized Camunda client for broker address '{}", gateway.restAddress());
       return gateway.newClientBuilder().preferRestOverGrpc(true).build();
-    } else {
-      LOGGER.info(
-          "Creating Zeebe client for user '{}' and broker address '{}",
-          authenticated.value(),
-          gateway.restAddress());
     }
-    final CamundaClient defaultClient =
-        cachedClients.computeIfAbsent(
-            InitializationConfiguration.DEFAULT_USER_USERNAME,
-            __ -> createDefaultUserClient(gateway));
-    final String username = authenticated.value();
-    if (InitializationConfiguration.DEFAULT_USER_USERNAME.equals(username)) {
-      return defaultClient;
-    } else {
-      return cachedClients.computeIfAbsent(
-          username, k -> createClientForUser(gateway, defaultClient, k));
-    }
+
+    LOGGER.info(
+        "Retrieving Camunda client for user '{}' and broker address '{}",
+        authenticated.value(),
+        gateway.restAddress());
+    final var username = authenticated.value();
+    return cachedClients.get(username);
   }
 
-  private CamundaClient createClientForUser(
-      final TestGateway<?> gateway, final CamundaClient defaultClient, final String username) {
-    final User user = usersRegistry.get(username);
-    createUserWithPermissions(defaultClient, user.username(), user.password(), user.permissions());
-    return createAuthenticatedClient(gateway, user.username(), user.password());
+  public void createClientForUser(final TestGateway<?> gateway, final User user) {
+    final var client = createAuthenticatedClient(gateway, user.username(), user.password());
+    cachedClients.put(user.username(), client);
   }
 
-  private CamundaClient createDefaultUserClient(final TestGateway<?> gateway) {
+  private CamundaClient createDefaultUserClient(final ApplicationUnderTest application) {
     final CamundaClient defaultClient =
         createAuthenticatedClient(
-            gateway,
+            application.application(),
             InitializationConfiguration.DEFAULT_USER_USERNAME,
             InitializationConfiguration.DEFAULT_USER_PASSWORD);
-    // block until the default user is created
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(20))
-        .ignoreExceptions()
-        .untilAsserted(
-            () ->
-                TopologyAssert.assertThat(defaultClient.newTopologyRequest().send().join())
-                    .isHealthy());
-    return defaultClient;
-  }
-
-  private void createUserWithPermissions(
-      final CamundaClient defaultClient,
-      final String username,
-      final String password,
-      final List<Permissions> permissions) {
-    defaultClient
-        .newUserCreateCommand()
-        .username(username)
-        .password(password)
-        .name(username)
-        .email("%s@foo.com".formatted(username))
-        .send()
-        .join();
-
-    permissions.forEach(
-        permission -> {
-          permission
-              .resourceIds()
-              .forEach(
-                  resourceId -> {
-                    defaultClient
-                        .newCreateAuthorizationCommand()
-                        .ownerId(username)
-                        .ownerType(OwnerType.USER)
-                        .resourceId(resourceId)
-                        .resourceType(permission.resourceType())
-                        .permissionTypes(permission.permissionType())
-                        .send()
-                        .join();
-                  });
-        });
-    // TODO replace with proper user get by key once it is implemented
-    try {
-      Thread.sleep(2000);
-    } catch (final InterruptedException e) {
-      throw new RuntimeException(e);
+    // Block until the default user is created. If the application is not managed by the extension
+    // there is no point waiting for the topology to be healthy, as the application might not be
+    // started yet.
+    if (application.shouldBeManaged()) {
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(20))
+          .ignoreExceptions()
+          .untilAsserted(
+              () ->
+                  TopologyAssert.assertThat(defaultClient.newTopologyRequest().send().join())
+                      .isHealthy());
     }
+    return defaultClient;
   }
 
   private CamundaClient createAuthenticatedClient(
@@ -141,6 +96,6 @@ public final class CamundaClientTestFactory implements AutoCloseable {
 
   @Override
   public void close() {
-    cachedClients.values().forEach(CamundaClient::close);
+    CloseHelper.quietCloseAll(cachedClients.values());
   }
 }

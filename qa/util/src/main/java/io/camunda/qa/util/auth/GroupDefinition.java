@@ -15,9 +15,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Marker annotation for a user definition, that is picked up by the {@link
- * CamundaMultiDBExtension}. This is to clearly communicate that this user definition,
- * will be consumed and created (related permissions) by the {@link CamundaMultiDBExtension}.
+ * Marker annotation for a group definition, that is picked up by the {@link
+ * CamundaMultiDBExtension}. This is to clearly communicate that this group definition,
+ * will be consumed and created (related permissions and memberships) by the {@link CamundaMultiDBExtension}.
  *
  *  <pre>{@code
  *  @Tag("multi-db-test")
@@ -29,28 +29,20 @@ import java.lang.annotation.Target;
  *    @RegisterExtension
  *    static final CamundaMultiDBExtension EXTENSION = new CamundaMultiDBExtension(BROKER);
  *
- *    private static final String ADMIN = "admin";
- *
- *    @UserDefinition
- *    private static final User ADMIN_USER =
- *      new User(ADMIN,
- *               "password",
- *               List.of(new Permissions(AUTHORIZATION, PermissionTypeEnum.READ, List.of("*"))));
+ *    @GroupDefinition
+ *    private static final TestGroup GROUP =
+ *      new TestGroup("groupId",
+ *                    "groupName",
+ *                    List.of(new Permissions(AUTHORIZATION, PermissionTypeEnum.READ, List.of("*"))),
+ *                    List.of(new Membership("username", EntityType.USER)));
  *
  *    @Test
- *    void shouldMakeUseOfClient(@Authenticated(ADMIN) final CamundaClient adminClient) {
- *      // given
- *      // ... set up
- *
- *      // when
- *      topology = adminClient.newTopologyRequest().send().join();
- *
- *      // then
- *      assertThat(topology.getClusterSize()).isEqualTo(1);
+ *    void shouldHaveCreatedGroup(@Authenticated(ADMIN) final CamundaClient adminClient) {
+ *      // The group, permissions and memberships are created before this test runs
  *    }
  *  }</pre>
  */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface UserDefinition {}
+public @interface GroupDefinition {}

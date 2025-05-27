@@ -83,7 +83,7 @@ class UserSearchingAuthorizationIT {
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
     createUser(adminClient, "user1");
     createUser(adminClient, "user2");
-    final var expectedCount = 4; // demo, admin, user1, user2
+    final var expectedCount = 6; // demo, admin, user1, user2, restricted, restrictedWithRead
     waitForUsersToBeCreated(
         adminClient.getConfiguration().getRestAddress().toString(), ADMIN, expectedCount);
   }

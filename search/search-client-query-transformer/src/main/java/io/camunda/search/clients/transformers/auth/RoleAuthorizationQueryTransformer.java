@@ -22,7 +22,7 @@ public class RoleAuthorizationQueryTransformer implements AuthorizationQueryTran
       final PermissionType permissionType,
       final List<String> resourceIds) {
     if (resourceType == AuthorizationResourceType.ROLE && permissionType == PermissionType.READ) {
-      return stringTerms("groupId", resourceIds);
+      return stringTerms("roleId", resourceIds);
     }
     throw new IllegalArgumentException(
         "Unsupported authorizations with resource:%s and permission:%s: "

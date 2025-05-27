@@ -79,8 +79,7 @@ class ProcessInstanceAuthorizationIT {
 
     startProcessInstance(adminClient, PROCESS_ID_1);
     startProcessInstance(adminClient, PROCESS_ID_2);
-
-    waitForElementInstancesBeingExported(adminClient, 4);
+    waitForProcessBeingExported(adminClient);
   }
 
   @Test
@@ -318,14 +317,25 @@ class ProcessInstanceAuthorizationIT {
     camundaClient.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().send().join();
   }
 
-  private static void waitForElementInstancesBeingExported(
-      final CamundaClient camundaClient, final int expectedCount) {
+  private static void waitForProcessBeingExported(final CamundaClient camundaClient) {
     Awaitility.await("should receive data from ES")
         .atMost(Duration.ofMinutes(1))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
-            () ->
-                assertThat(camundaClient.newElementInstanceSearchRequest().send().join().items())
-                    .hasSize(expectedCount));
+            () -> {
+              assertThat(
+                      camundaClient
+                          .newProcessInstanceSearchRequest()
+                          .filter(
+                              filter ->
+                                  filter.processDefinitionId(
+                                      fn -> fn.in(PROCESS_ID_1, PROCESS_ID_2)))
+                          .send()
+                          .join()
+                          .items())
+                  .hasSize(2); // PROCESS_ID_1 and PROCESS_ID_2
+              assertThat(camundaClient.newElementInstanceSearchRequest().send().join().items())
+                  .hasSize(4); // Start event and service task for each process
+            });
   }
 }

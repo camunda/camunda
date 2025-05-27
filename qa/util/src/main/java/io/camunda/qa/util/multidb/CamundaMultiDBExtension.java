@@ -11,6 +11,10 @@ import static org.assertj.core.api.Fail.fail;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.GroupDefinition;
+import io.camunda.qa.util.auth.RoleDefinition;
+import io.camunda.qa.util.auth.TestGroup;
+import io.camunda.qa.util.auth.TestRole;
 import io.camunda.qa.util.auth.User;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
@@ -19,6 +23,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -216,6 +221,7 @@ public class CamundaMultiDBExtension
   private MultiDbConfigurator multiDbConfigurator;
   private MultiDbSetupHelper setupHelper = new NoopDBSetupHelper();
   private CamundaClientTestFactory authenticatedClientFactory;
+  private EntityManager entityManager;
 
   public CamundaMultiDBExtension() {
     this(new TestStandaloneBroker());
@@ -299,15 +305,23 @@ public class CamundaMultiDBExtension
       manageApplicationUnderTest();
     }
 
-    authenticatedClientFactory = new CamundaClientTestFactory();
+    authenticatedClientFactory = new CamundaClientTestFactory(applicationUnderTest);
+    entityManager = new EntityManager(authenticatedClientFactory.getDefaultUserCamundaClient());
+    createEntities(testClass);
     // we support only static fields for now - to make sure test setups are build in a way
     // such they are reusable and tests methods are not relying on order, etc.
-    // We want to run tests in a efficient manner, and reduce setup time
+    // We want to run tests in an efficient manner, and reduce setup time
     injectStaticClientField(testClass);
-    final List<User> users = findUsers(testClass, null, ModifierSupport::isStatic);
-    if (!users.isEmpty()) {
-      authenticatedClientFactory.withUsers(users);
-    }
+  }
+
+  private void createEntities(final Class<?> testClass) {
+    final var users = findUsers(testClass, null, ModifierSupport::isStatic);
+    final var groups = findGroups(testClass, null, ModifierSupport::isStatic);
+    final var roles = findRoles(testClass, null, ModifierSupport::isStatic);
+    entityManager.withUser(users).withGroups(groups).withRoles(roles).await();
+    users.forEach(
+        user ->
+            authenticatedClientFactory.createClientForUser(applicationUnderTest.application, user));
   }
 
   private void manageApplicationUnderTest() {
@@ -369,24 +383,43 @@ public class CamundaMultiDBExtension
   }
 
   private List<User> findUsers(
-      final Class<?> testClass, final Object testInstance, Predicate<Field> predicate) {
-    final var users = new ArrayList<User>();
+      final Class<?> testClass, final Object testInstance, final Predicate<Field> predicate) {
+    return findFields(testClass, testInstance, predicate, User.class, UserDefinition.class);
+  }
+
+  private List<TestGroup> findGroups(
+      final Class<?> testClass, final Object testInstance, final Predicate<Field> predicate) {
+    return findFields(testClass, testInstance, predicate, TestGroup.class, GroupDefinition.class);
+  }
+
+  private List<TestRole> findRoles(
+      final Class<?> testClass, final Object testInstance, final Predicate<Field> predicate) {
+    return findFields(testClass, testInstance, predicate, TestRole.class, RoleDefinition.class);
+  }
+
+  private <T> List<T> findFields(
+      final Class<?> testClass,
+      final Object testInstance,
+      Predicate<Field> predicate,
+      final Class<T> entityClass,
+      final Class<? extends Annotation> definitionClass) {
+    final var instances = new ArrayList<T>();
     predicate =
         predicate.and(
             field ->
-                field.getType() == User.class && field.getAnnotation(UserDefinition.class) != null);
+                field.getType() == entityClass && field.getAnnotation(definitionClass) != null);
     for (final Field field : testClass.getDeclaredFields()) {
       try {
         if (predicate.test(field)) {
           field.setAccessible(true);
-          final var user = (User) field.get(testInstance);
-          users.add(user);
+          final var instance = (T) field.get(testInstance);
+          instances.add(instance);
         }
       } catch (final Exception ex) {
         throw new RuntimeException(ex);
       }
     }
-    return users;
+    return instances;
   }
 
   private void injectStaticClientField(final Class<?> testClass) {
@@ -395,7 +428,7 @@ public class CamundaMultiDBExtension
         if (field.getType() == CamundaClient.class) {
           if (ModifierSupport.isStatic(field)) {
             field.setAccessible(true);
-            field.set(null, createCamundaClient(field.getAnnotation(Authenticated.class)));
+            field.set(null, getCamundaClient(field.getAnnotation(Authenticated.class)));
           } else {
             fail("Camunda Client field couldn't be injected. Make sure it is static.");
           }
@@ -409,6 +442,7 @@ public class CamundaMultiDBExtension
   @Override
   public void afterAll(final ExtensionContext context) {
     CloseHelper.quietCloseAll(closeables);
+    authenticatedClientFactory.close();
   }
 
   @Override
@@ -422,18 +456,16 @@ public class CamundaMultiDBExtension
   public Object resolveParameter(
       final ParameterContext parameterContext, final ExtensionContext extensionContext)
       throws ParameterResolutionException {
-    return createCamundaClient(parameterContext.getParameter().getAnnotation(Authenticated.class));
+    return getCamundaClient(parameterContext.getParameter().getAnnotation(Authenticated.class));
   }
 
-  private CamundaClient createCamundaClient(final Authenticated authenticated) {
-    final CamundaClient camundaClient =
-        authenticatedClientFactory.createCamundaClient(
-            applicationUnderTest.application, authenticated);
-    closeables.add(camundaClient);
-    return camundaClient;
+  private CamundaClient getCamundaClient(final Authenticated authenticated) {
+    return authenticatedClientFactory.getCamundaClient(
+        applicationUnderTest.application, authenticated);
   }
 
-  record ApplicationUnderTest(TestStandaloneApplication<?> application, boolean shouldBeManaged) {}
+  public record ApplicationUnderTest(
+      TestStandaloneApplication<?> application, boolean shouldBeManaged) {}
 
   private static final class NoopDBSetupHelper implements MultiDbSetupHelper {
     @Override
