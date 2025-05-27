@@ -7,6 +7,10 @@
  */
 package io.camunda.tasklist.util;
 
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import java.io.IOException;
+import java.util.List;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.extension.Extension;
 
@@ -26,4 +30,7 @@ public interface DatabaseTestExtension extends Extension {
       TestCheck testCheck, Supplier<Object> supplier, Object... arguments);
 
   int getOpenScrollcontextSize();
+
+  <T extends ExporterEntity> void bulkIndex(IndexDescriptor index, List<T> documents)
+      throws IOException;
 }
