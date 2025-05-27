@@ -86,7 +86,11 @@ public class ContainerRuntimePropertiesUtilTest {
     "8.6.0-SNAPSHOT, SNAPSHOT",
     "8.5.1-SNAPSHOT, 8.5.0",
     "8.5.2-SNAPSHOT, 8.5.1",
-    "8.5.2-rc1, 8.5.1",
+    "8.5.2-rc1, 8.5.2-rc1",
+    "8.7.1-alpha4-rc1, 8.7.1-alpha4-rc1",
+    "8.8.0-alpha4.1, 8.8.0-alpha4.1",
+    "8.8.0-alpha4-optimize, 8.8.0-alpha4-optimize",
+    "8.7.1-optimize, 8.7.1-optimize",
     "custom-version, custom-version"
   })
   void shouldReturnCamundaVersion(final String propertyVersion, final String expectedVersion) {
@@ -152,8 +156,12 @@ public class ContainerRuntimePropertiesUtilTest {
     "8.6.0-SNAPSHOT, SNAPSHOT",
     "8.5.1-SNAPSHOT, 8.5.0",
     "8.5.2-SNAPSHOT, 8.5.1",
-    "8.5.2-rc1, 8.5.1",
-    "custom-version, custom-version"
+    "8.5.2-rc1, 8.5.2-rc1",
+    "8.7.1-alpha4-rc1, 8.7.1-alpha4-rc1",
+    "8.8.0-alpha4.1, 8.8.0-alpha4.1",
+    "8.8.0-alpha4-optimize, 8.8.0-alpha4-optimize",
+    "8.7.1-optimize, 8.7.1-optimize",
+    "custom-version, custom-version",
   })
   void shouldReturnCamundaDockerImageVersion(
       final String propertyVersion, final String expectedVersion) {
@@ -198,7 +206,11 @@ public class ContainerRuntimePropertiesUtilTest {
     "8.6.0-SNAPSHOT, SNAPSHOT",
     "8.5.1-SNAPSHOT, 8.5.0",
     "8.5.2-SNAPSHOT, 8.5.1",
-    "8.5.2-rc1, 8.5.1",
+    "8.5.2-rc1, 8.5.2-rc1",
+    "8.7.1-alpha4-rc1, 8.7.1-alpha4-rc1",
+    "8.8.0-alpha4.1, 8.8.0-alpha4.1",
+    "8.8.0-alpha4-optimize, 8.8.0-alpha4-optimize",
+    "8.7.1-optimize, 8.7.1-optimize",
     "custom-version, custom-version"
   })
   void shouldReturnConnectorsDockerImageVersion(
