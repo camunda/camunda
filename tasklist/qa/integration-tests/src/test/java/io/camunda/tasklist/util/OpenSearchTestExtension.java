@@ -12,11 +12,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.property.TasklistOpenSearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TasklistIndexPrefixHolder;
 import io.camunda.tasklist.qa.util.TestSchemaManager;
 import io.camunda.tasklist.qa.util.TestUtil;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +31,9 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.Refresh;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
+import org.opensearch.client.opensearch.core.bulk.IndexOperation;
 import org.opensearch.client.opensearch.indices.FlushRequest;
 import org.opensearch.client.opensearch.nodes.Stats;
 import org.slf4j.Logger;
@@ -193,5 +199,28 @@ public class OpenSearchTestExtension
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @Override
+  public <T extends ExporterEntity> void bulkIndex(
+      final IndexDescriptor index, final List<T> documents) throws IOException {
+    osClient.bulk(
+        b ->
+            b.refresh(Refresh.True)
+                .operations(
+                    documents.stream()
+                        .map(
+                            document ->
+                                new BulkOperation.Builder()
+                                    .index(
+                                        IndexOperation.of(
+                                            i ->
+                                                i.index(index.getFullQualifiedName())
+                                                    .id((document.getId()))
+                                                    .document(
+                                                        CommonUtils.getJsonObjectFromEntity(
+                                                            document))))
+                                    .build())
+                        .toList()));
   }
 }
