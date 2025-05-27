@@ -9,16 +9,15 @@ package io.camunda.zeebe.engine.scaling.redistribution;
 
 import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentRedistributor;
-import io.camunda.zeebe.engine.state.immutable.DeploymentState;
-import io.camunda.zeebe.engine.state.immutable.DeploymentState.PendingDeploymentVisitor;
-import io.camunda.zeebe.engine.state.immutable.RoutingState;
+import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo.StaticRoutingInfo;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
@@ -42,12 +41,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class DeploymentRedistributorTest {
 
   @Mock private DeploymentDistributionCommandSender deploymentDistributionCommandSender;
-  @Mock private DeploymentState deploymentState;
+  // Injected by ProcessingStateExtension
+  private MutableProcessingState processingState;
+  private MutableDeploymentState deploymentState;
+  private MutableRoutingState routingState;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private StreamProcessorContext context;
 
-  @Mock private RoutingState routingState;
   private DeploymentRedistributor deploymentRedistributor;
   private ArgumentCaptor<Runnable> taskCaptor;
   private long recordKey;
@@ -57,9 +58,10 @@ public class DeploymentRedistributorTest {
   @BeforeEach
   public void setUp() {
     when(context.getPartitionId()).thenReturn(1);
-
-    when(routingState.currentPartitions()).thenReturn(Set.of(1, 2));
-    when(routingState.desiredPartitions()).thenReturn(Set.of(1, 2, 3));
+    deploymentState = processingState.getDeploymentState();
+    routingState = processingState.getRoutingState();
+    routingState.initializeRoutingInfo(2);
+    routingState.setDesiredPartitions(Set.of(1, 2, 3));
 
     final RoutingInfo routingInfo =
         RoutingInfo.dynamic(routingState, new StaticRoutingInfo(Set.of(1, 2), 2));
@@ -76,39 +78,32 @@ public class DeploymentRedistributorTest {
     resourceBuffer = BufferUtil.createCopy(deploymentResource);
     deploymentRecord = new DeploymentRecord();
     deploymentRecord.wrap(resourceBuffer);
+    deploymentState.storeDeploymentRecord(recordKey, deploymentRecord);
     taskCaptor = forClass(Runnable.class);
+
+    // Add pending deployment distributions for partitions 1, 2, and 3
+    routingState
+        .desiredPartitions()
+        .forEach(
+            partition -> deploymentState.addPendingDeploymentDistribution(recordKey, partition));
   }
 
   @Test
   void shouldNotRedistributeToScalingPartitions() {
     // given
-
-    doAnswer(
-            invocation -> {
-              final PendingDeploymentVisitor visitor = invocation.getArgument(0);
-              visitor.visit(recordKey, 1, resourceBuffer);
-              // Revisit this to simulate interval
-              visitor.visit(recordKey, 1, resourceBuffer);
-              visitor.visit(recordKey, 2, resourceBuffer);
-              // Revisit this to simulate interval
-              visitor.visit(recordKey, 2, resourceBuffer);
-              // Simulate multiple visits for the deployment on the scaling partition
-              visitor.visit(recordKey, 3, resourceBuffer);
-              visitor.visit(recordKey, 3, resourceBuffer);
-              visitor.visit(recordKey, 3, resourceBuffer);
-              visitor.visit(recordKey, 3, resourceBuffer);
-              return null;
-            })
-        .when(deploymentState)
-        .foreachPendingDeploymentDistribution(any());
-
     // when
     deploymentRedistributor.onRecovered(context);
+
+    // capture the scheduled task to run it immediately
     Awaitility.await()
         .untilAsserted(
             () -> verify(context.getScheduleService()).runAtFixedRate(any(), taskCaptor.capture()));
     final Runnable scheduledTask = taskCaptor.getValue();
+
+    // run the scheduled task twice, since first one always does not run
     scheduledTask.run();
+    scheduledTask.run();
+
     // then
     verify(deploymentDistributionCommandSender, times(1))
         .distributeToPartition(recordKey, 1, deploymentRecord);
@@ -121,40 +116,34 @@ public class DeploymentRedistributorTest {
   @Test
   void shouldRedistributeToScaledPartition() {
     // given
-    doAnswer(
-            invocation -> {
-              final PendingDeploymentVisitor visitor = invocation.getArgument(0);
-              visitor.visit(recordKey, 1, resourceBuffer);
-              // Revisit this to simulate interval
-              visitor.visit(recordKey, 1, resourceBuffer);
-              visitor.visit(recordKey, 2, resourceBuffer);
-              // Revisit this to simulate interval
-              visitor.visit(recordKey, 2, resourceBuffer);
-              // Simulate multiple visits for the deployment on the scaling partition
-              visitor.visit(recordKey, 3, resourceBuffer);
-              visitor.visit(recordKey, 3, resourceBuffer);
-              visitor.visit(recordKey, 3, resourceBuffer);
-              // Simulate scaling up is finished
-              when(routingState.currentPartitions()).thenReturn(Set.of(1, 2, 3));
-              visitor.visit(recordKey, 3, resourceBuffer);
-              visitor.visit(recordKey, 3, resourceBuffer);
-              return null;
-            })
-        .when(deploymentState)
-        .foreachPendingDeploymentDistribution(any());
-
     // when
     deploymentRedistributor.onRecovered(context);
+
+    // capture the scheduled task to run it immediately
     Awaitility.await()
         .untilAsserted(
             () -> verify(context.getScheduleService()).runAtFixedRate(any(), taskCaptor.capture()));
     final Runnable scheduledTask = taskCaptor.getValue();
+
+    // run the scheduled task twice, since first one always does not run
     scheduledTask.run();
+    scheduledTask.run();
+
     // then
     verify(deploymentDistributionCommandSender, times(1))
         .distributeToPartition(recordKey, 1, deploymentRecord);
     verify(deploymentDistributionCommandSender, times(1))
         .distributeToPartition(recordKey, 2, deploymentRecord);
+    verify(deploymentDistributionCommandSender, times(0))
+        .distributeToPartition(recordKey, 3, deploymentRecord);
+
+    // then
+    // Partition 3 is now scaled up, so it should be redistributed
+    routingState.arriveAtDesiredState();
+
+    // run the scheduled task twice, since first one always does not run
+    scheduledTask.run();
+    scheduledTask.run();
     verify(deploymentDistributionCommandSender, times(1))
         .distributeToPartition(recordKey, 3, deploymentRecord);
   }
