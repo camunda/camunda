@@ -41,13 +41,13 @@ public class AssignMappingToGroupTest {
     mappingId =
         client
             .newCreateMappingCommand()
-            .mappingId(Strings.newRandomValidIdentityId())
+            .mappingRuleId(Strings.newRandomValidIdentityId())
             .name("mappingName")
             .claimName("name")
             .claimValue("value")
             .send()
             .join()
-            .getMappingId();
+            .getMappingRuleId();
 
     groupId =
         client

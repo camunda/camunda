@@ -249,7 +249,7 @@ class RoleAuthorizationIT {
     createRole(adminClient, roleId, "roleName");
     adminClient
         .newCreateMappingCommand()
-        .mappingId(mappingId)
+        .mappingRuleId(mappingId)
         .name("mappingName")
         .claimName("testClaimName")
         .claimValue("testClaimValue")
@@ -480,7 +480,7 @@ class RoleAuthorizationIT {
 
     adminClient
         .newCreateMappingCommand()
-        .mappingId(mappingId)
+        .mappingRuleId(mappingId)
         .name("mappingName")
         .claimName("claimName")
         .claimValue("claimValue")

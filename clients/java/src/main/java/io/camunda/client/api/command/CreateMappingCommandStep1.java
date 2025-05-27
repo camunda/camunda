@@ -53,5 +53,5 @@ public interface CreateMappingCommandStep1 extends FinalCommandStep<CreateMappin
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  CreateMappingCommandStep1 mappingId(final String mappingId);
+  CreateMappingCommandStep1 mappingRuleId(final String mappingId);
 }

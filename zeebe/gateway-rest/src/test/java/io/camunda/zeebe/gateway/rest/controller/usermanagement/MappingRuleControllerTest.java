@@ -30,8 +30,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 
-@WebMvcTest(MappingController.class)
-public class MappingControllerTest extends RestControllerTest {
+@WebMvcTest(MappingRuleController.class)
+public class MappingRuleControllerTest extends RestControllerTest {
 
   private static final String MAPPING_RULES_PATH = "/v2/mapping-rules";
 
@@ -44,9 +44,9 @@ public class MappingControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @ValueSource(strings = {"foo", "Foo", "foo123", "foo_", "foo.", "foo@"})
-  void createMappingShouldReturnCreated(final String id) {
+  void createMappingRuleShouldReturnCreated(final String id) {
     // given
-    final var dto = validCreateMappingRequest();
+    final var dto = validCreateMappingRuleRequest();
     final var mappingRecord =
         new MappingRecord()
             .setMappingKey(1L)
@@ -64,7 +64,9 @@ public class MappingControllerTest extends RestControllerTest {
         .uri(MAPPING_RULES_PATH)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(dto)
+        .bodyValue(
+            new MappingRuleCreateRequest(
+                dto.mappingId(), dto.claimName(), dto.claimValue(), dto.name()))
         .exchange()
         .expectStatus()
         .isCreated();
@@ -74,7 +76,7 @@ public class MappingControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldRejectMappingCreationWithMissingId() {
+  void shouldRejectMappingRuleCreationWithMissingId() {
     // given
     final var request =
         new MappingRuleCreateRequest().claimValue("claimValue").claimName("claim").name("name");
@@ -87,7 +89,7 @@ public class MappingControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "No mappingId provided.",
+              "detail": "No mappingRuleId provided.",
               "instance": "%s"
             }"""
             .formatted(MAPPING_RULES_PATH));
@@ -95,14 +97,14 @@ public class MappingControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldRejectMappingCreationWitBlankId() {
+  void shouldRejectMappingRuleCreationWitBlankId() {
     // given
     final var request =
         new MappingRuleCreateRequest()
             .claimName("claim")
             .claimValue("claimValue")
             .name("name")
-            .mappingId("");
+            .mappingRuleId("");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -112,7 +114,7 @@ public class MappingControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "No mappingId provided.",
+              "detail": "No mappingRuleId provided.",
               "instance": "%s"
             }"""
             .formatted(MAPPING_RULES_PATH));
@@ -123,7 +125,7 @@ public class MappingControllerTest extends RestControllerTest {
   void shouldRejectMappingCreationWithMissingClaimName() {
     // given
     final var request =
-        new MappingRuleCreateRequest().claimValue("claimValue").name("name").mappingId("id");
+        new MappingRuleCreateRequest().claimValue("claimValue").name("name").mappingRuleId("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -141,14 +143,14 @@ public class MappingControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldRejectMappingCreationWitBlankClaimName() {
+  void shouldRejectMappingRuleCreationWitBlankClaimName() {
     // given
     final var request =
         new MappingRuleCreateRequest()
             .claimName("")
             .claimValue("claimValue")
             .name("name")
-            .mappingId("id");
+            .mappingRuleId("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -169,7 +171,7 @@ public class MappingControllerTest extends RestControllerTest {
   void shouldRejectMappingCreationWithMissingClaimValue() {
     // given
     final var request =
-        new MappingRuleCreateRequest().claimName("claimName").name("name").mappingId("id");
+        new MappingRuleCreateRequest().claimName("claimName").name("name").mappingRuleId("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -194,7 +196,7 @@ public class MappingControllerTest extends RestControllerTest {
             .claimName("claimName")
             .claimValue("")
             .name("name")
-            .mappingId("id");
+            .mappingRuleId("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -218,7 +220,7 @@ public class MappingControllerTest extends RestControllerTest {
         new MappingRuleCreateRequest()
             .claimName("claimName")
             .claimValue("claimValue")
-            .mappingId("id");
+            .mappingRuleId("id");
 
     // when then
     assertRequestRejectedExceptionally(
@@ -246,7 +248,7 @@ public class MappingControllerTest extends RestControllerTest {
     // given
     final var request =
         new MappingRuleCreateRequest()
-            .mappingId(id)
+            .mappingRuleId(id)
             .claimName("claimName")
             .claimValue("claimValue")
             .name("name");
@@ -259,7 +261,7 @@ public class MappingControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "The provided mappingId contains illegal characters. It must match the pattern '%s'.",
+              "detail": "The provided mappingRuleId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
             .formatted(IdentifierPatterns.ID_PATTERN, MAPPING_RULES_PATH));
@@ -272,7 +274,7 @@ public class MappingControllerTest extends RestControllerTest {
     final var id = "x".repeat(257);
     final var request =
         new MappingRuleCreateRequest()
-            .mappingId(id)
+            .mappingRuleId(id)
             .claimName("claimName")
             .claimValue("claimValue")
             .name("name");
@@ -285,7 +287,7 @@ public class MappingControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "The provided mappingId exceeds the limit of 256 characters.",
+              "detail": "The provided mappingRuleId exceeds the limit of 256 characters.",
               "instance": "%s"
             }"""
             .formatted(MAPPING_RULES_PATH));
@@ -293,33 +295,33 @@ public class MappingControllerTest extends RestControllerTest {
   }
 
   @Test
-  void deleteMappingShouldReturnNoContent() {
+  void deleteMappingRuleShouldReturnNoContent() {
     // given
-    final String mappingId = "id";
+    final String mappingRuleId = "id";
 
-    final var mappingRecord = new MappingRecord().setMappingId(mappingId);
+    final var mappingRuleRecord = new MappingRecord().setMappingId(mappingRuleId);
 
-    when(mappingServices.deleteMapping(mappingId))
-        .thenReturn(CompletableFuture.completedFuture(mappingRecord));
+    when(mappingServices.deleteMapping(mappingRuleId))
+        .thenReturn(CompletableFuture.completedFuture(mappingRuleRecord));
 
     // when
     webClient
         .delete()
-        .uri("%s/%s".formatted(MAPPING_RULES_PATH, mappingId))
+        .uri("%s/%s".formatted(MAPPING_RULES_PATH, mappingRuleId))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
         .isNoContent();
 
     // then
-    verify(mappingServices, times(1)).deleteMapping(mappingId);
+    verify(mappingServices, times(1)).deleteMapping(mappingRuleId);
   }
 
   @ParameterizedTest
   @ValueSource(strings = {"foo", "Foo", "foo123", "foo_", "foo.", "foo@"})
-  void updateMappingShouldReturnOk(final String id) {
+  void updateMappingRuleShouldReturnOk(final String id) {
     // given
-    final var dto = validUpdateMappingRequest(id);
+    final var dto = validUpdateMappingRuleRequest(id);
     final var mappingRecord =
         new MappingRecord()
             .setMappingKey(1L)
@@ -347,7 +349,7 @@ public class MappingControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldRejectMappingUpdateWithMissingClaimName() {
+  void shouldRejectMappingRuleUpdateWithMissingClaimName() {
     // given
     final var request = new MappingRuleUpdateRequest().claimValue("claimValue").name("name");
 
@@ -368,7 +370,7 @@ public class MappingControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldRejectMappingUpdateWitBlankClaimName() {
+  void shouldRejectMappingRuleUpdateWitBlankClaimName() {
     // given
     final var request =
         new MappingRuleUpdateRequest().claimName("").claimValue("claimValue").name("name");
@@ -390,7 +392,7 @@ public class MappingControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldRejectMappingUpdateWithMissingClaimValue() {
+  void shouldRejectMappingRuleUpdateWithMissingClaimValue() {
     // given
     final var request = new MappingRuleUpdateRequest().claimName("claimName").name("name");
 
@@ -411,7 +413,7 @@ public class MappingControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldRejectMappingUpdateWitBlankClaimValue() {
+  void shouldRejectMappingRuleUpdateWitBlankClaimValue() {
     // given
     final var request =
         new MappingRuleUpdateRequest().claimName("claimName").claimValue("").name("name");
@@ -433,7 +435,7 @@ public class MappingControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldRejectMappingUpdateWithMissingName() {
+  void shouldRejectMappingRuleUpdateWithMissingName() {
     // given
     final var request =
         new MappingRuleUpdateRequest().claimName("claimName").claimValue("claimValue");
@@ -454,11 +456,11 @@ public class MappingControllerTest extends RestControllerTest {
     verifyNoInteractions(mappingServices);
   }
 
-  private MappingDTO validCreateMappingRequest() {
+  private MappingDTO validCreateMappingRuleRequest() {
     return new MappingDTO("newClaimName", "newClaimValue", "mapName", "mapId");
   }
 
-  private MappingDTO validUpdateMappingRequest(final String id) {
+  private MappingDTO validUpdateMappingRuleRequest(final String id) {
     return new MappingDTO("newClaimName", "newClaimValue", "mapName", id);
   }
 

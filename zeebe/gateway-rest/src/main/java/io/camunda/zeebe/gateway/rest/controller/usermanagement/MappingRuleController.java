@@ -12,11 +12,11 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.service.MappingServices;
 import io.camunda.service.MappingServices.MappingDTO;
-import io.camunda.zeebe.gateway.protocol.rest.MappingResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleResult;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleUpdateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -35,10 +35,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
 @RequestMapping("/v2/mapping-rules")
-public class MappingController {
+public class MappingRuleController {
   private final MappingServices mappingServices;
 
-  public MappingController(final MappingServices mappingServices) {
+  public MappingRuleController(final MappingServices mappingServices) {
     this.mappingServices = mappingServices;
   }
 
@@ -46,55 +46,56 @@ public class MappingController {
   public CompletableFuture<ResponseEntity<Object>> create(
       @RequestBody final MappingRuleCreateRequest mappingRequest) {
     return RequestMapper.toMappingDTO(mappingRequest)
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createMapping);
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createMappingRule);
   }
 
-  @CamundaPutMapping(path = "/{mappingId}")
+  @CamundaPutMapping(path = "/{mappingRuleId}")
   public CompletableFuture<ResponseEntity<Object>> update(
-      @PathVariable final String mappingId,
-      @RequestBody final MappingRuleUpdateRequest mappingRequest) {
-    return RequestMapper.toMappingDTO(mappingId, mappingRequest)
+      @PathVariable final String mappingRuleId,
+      @RequestBody final MappingRuleUpdateRequest mappingRuleUpdateRequest) {
+    return RequestMapper.toMappingDTO(mappingRuleId, mappingRuleUpdateRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateMapping);
   }
 
-  @CamundaDeleteMapping(path = "/{mappingId}")
-  public CompletableFuture<ResponseEntity<Object>> deleteMapping(
-      @PathVariable final String mappingId) {
+  @CamundaDeleteMapping(path = "/{mappingRuleId}")
+  public CompletableFuture<ResponseEntity<Object>> deleteMappingRule(
+      @PathVariable final String mappingRuleId) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             mappingServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .deleteMapping(mappingId));
+                .deleteMapping(mappingRuleId));
   }
 
-  @CamundaGetMapping(path = "/{mappingId}")
-  public ResponseEntity<MappingResult> getMapping(@PathVariable final String mappingId) {
+  @CamundaGetMapping(path = "/{mappingRuleId}")
+  public ResponseEntity<MappingRuleResult> getMappingRule(
+      @PathVariable final String mappingRuleId) {
     try {
       return ResponseEntity.ok()
           .body(
-              SearchQueryResponseMapper.toMapping(
+              SearchQueryResponseMapper.toMappingRule(
                   mappingServices
                       .withAuthentication(RequestMapper.getAuthentication())
-                      .getMapping(mappingId)));
+                      .getMapping(mappingRuleId)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
   }
 
   @CamundaPostMapping(path = "/search")
-  public ResponseEntity<MappingSearchQueryResult> searchMappings(
-      @RequestBody(required = false) final MappingSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toMappingQuery(query)
+  public ResponseEntity<MappingRuleSearchQueryResult> searchMappingRules(
+      @RequestBody(required = false) final MappingRuleSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toMappingRuleQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  private CompletableFuture<ResponseEntity<Object>> createMapping(final MappingDTO request) {
+  private CompletableFuture<ResponseEntity<Object>> createMappingRule(final MappingDTO request) {
     return RequestMapper.executeServiceMethod(
         () ->
             mappingServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .createMapping(request),
-        ResponseMapper::toMappingCreateResponse);
+        ResponseMapper::toMappingRuleCreateResponse);
   }
 
   private CompletableFuture<ResponseEntity<Object>> updateMapping(final MappingDTO request) {
@@ -103,14 +104,14 @@ public class MappingController {
             mappingServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .updateMapping(request),
-        ResponseMapper::toMappingUpdateResponse);
+        ResponseMapper::toMappingRuleUpdateResponse);
   }
 
-  private ResponseEntity<MappingSearchQueryResult> search(final MappingQuery query) {
+  private ResponseEntity<MappingRuleSearchQueryResult> search(final MappingQuery query) {
     try {
       final var result =
           mappingServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toMappingSearchQueryResponse(result));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toMappingRuleSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

@@ -80,7 +80,7 @@ public class GroupSearchTest extends ClientRestTest {
     final String groupId = "groupId";
     client
         .newMappingsByGroupSearchRequest(groupId)
-        .filter(fn -> fn.mappingId("mappingId"))
+        .filter(fn -> fn.mappingRuleId("mappingId"))
         .sort(MappingSort::name)
         .page(fn -> fn.limit(5))
         .send()
