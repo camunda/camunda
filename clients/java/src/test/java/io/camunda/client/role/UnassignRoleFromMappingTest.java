@@ -30,7 +30,12 @@ public class UnassignRoleFromMappingTest extends ClientRestTest {
   @Test
   void shouldUnassignRoleFromMapping() {
     // when
-    client.newUnassignRoleFromMappingRuleCommand().roleId(ROLE_ID).mappingRuleId(MAPPING_ID).send().join();
+    client
+        .newUnassignRoleFromMappingRuleCommand()
+        .roleId(ROLE_ID)
+        .mappingRuleId(MAPPING_ID)
+        .send()
+        .join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
