@@ -60,7 +60,7 @@ public final class ExporterTest {
   }
 
   @Test
-  public void shouldAllowFilteringOnIntent() throws Exception {
+  public void shouldAllowFilteringOnIntent() {
     // given
     final TestExporterContainer exporter = new TestExporterContainer();
     final var record = new TestMessageRecord(MessageIntent.EXPIRED);
@@ -71,7 +71,7 @@ public final class ExporterTest {
   }
 
   @Test
-  public void shouldRejectDisallowedIntent() throws Exception {
+  public void shouldRejectDisallowedIntent() {
     // given
     final TestExporterContainer exporter = new TestExporterContainer();
     final var record = new TestMessageRecord(MessageIntent.PUBLISHED);
@@ -80,7 +80,7 @@ public final class ExporterTest {
     assertThat(exporter.isExported(record)).isFalse();
   }
 
-  static class TestExporterContainer {
+  private static final class TestExporterContainer {
     private final MessageExpiredSupportingExporter exporter;
     private final TestContext context;
 
@@ -88,14 +88,6 @@ public final class ExporterTest {
       context = new TestContext();
       exporter = new MessageExpiredSupportingExporter();
       exporter.configure(context);
-    }
-
-    public Exporter getExporter() {
-      return exporter;
-    }
-
-    public Context getContext() {
-      return context;
     }
 
     public void exportRecord(final Record<?> record) {
@@ -111,7 +103,7 @@ public final class ExporterTest {
     }
   }
 
-  static class MessageExpiredSupportingExporter implements Exporter {
+  private static final class MessageExpiredSupportingExporter implements Exporter {
     private final List<Record<?>> records = new ArrayList<>();
 
     public boolean isExported(final Record<?> record) {
@@ -129,7 +121,7 @@ public final class ExporterTest {
     }
   }
 
-  static class TestContext implements Context {
+  private static final class TestContext implements Context {
     private RecordFilter filter;
 
     @Override
@@ -167,7 +159,7 @@ public final class ExporterTest {
     }
   }
 
-  static class MessageExpiredFilter implements RecordFilter {
+  private static final class MessageExpiredFilter implements RecordFilter {
     @Override
     public boolean acceptType(final RecordType recordType) {
       return true;
@@ -187,7 +179,7 @@ public final class ExporterTest {
     }
   }
 
-  record TestMessageRecord(Intent intent) implements Record<MessageRecordValue> {
+  private record TestMessageRecord(Intent intent) implements Record<MessageRecordValue> {
     @Override
     public long getPosition() {
       return 0;
