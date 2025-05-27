@@ -10,11 +10,13 @@ package io.camunda.zeebe.engine.state.appliers;
 import io.camunda.zeebe.engine.processing.job.JobThrowErrorProcessor;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
+import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -25,15 +27,23 @@ final class IncidentResolvedV2Applier implements TypedEventApplier<IncidentInten
 
   private final MutableIncidentState incidentState;
   private final MutableJobState jobState;
+  private final MutableElementInstanceState elementInstanceState;
 
   public IncidentResolvedV2Applier(
-      final MutableIncidentState incidentState, final MutableJobState jobState) {
+      final MutableIncidentState incidentState,
+      final MutableJobState jobState,
+      final MutableElementInstanceState elementInstanceState) {
     this.incidentState = incidentState;
     this.jobState = jobState;
+    this.elementInstanceState = elementInstanceState;
   }
 
   @Override
   public void applyState(final long incidentKey, final IncidentRecord value) {
+    if (value.getErrorType() == ErrorType.EXTRACT_VALUE_ERROR) {
+      resetExecutionListenerIndex(value);
+    }
+
     final var jobKey = value.getJobKey();
     final boolean isJobRelatedIncident = jobKey > 0;
 
@@ -46,6 +56,14 @@ final class IncidentResolvedV2Applier implements TypedEventApplier<IncidentInten
       }
     }
     incidentState.deleteIncident(incidentKey);
+  }
+
+  private void resetExecutionListenerIndex(final IncidentRecord value) {
+    final var elementInstance = elementInstanceState.getInstance(value.getElementInstanceKey());
+    if (elementInstance != null) {
+      elementInstance.resetExecutionListenerIndex();
+      elementInstanceState.updateInstance(elementInstance);
+    }
   }
 
   /**
