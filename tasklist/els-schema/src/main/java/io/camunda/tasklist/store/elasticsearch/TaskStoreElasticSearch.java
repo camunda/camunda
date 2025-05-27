@@ -337,7 +337,8 @@ public class TaskStoreElasticSearch implements TaskStore {
                 .query(
                     boolQuery()
                         .must(termsQuery(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceIds))
-                        .must(termQuery(TaskTemplate.STATE, TaskState.CREATED)))
+                        .must(termQuery(TaskTemplate.STATE, TaskState.CREATED))
+                        .must(existsQuery(TaskTemplate.FLOW_NODE_INSTANCE_ID)))
                 .size(tasklistProperties.getElasticsearch().getBatchSize()));
   }
 

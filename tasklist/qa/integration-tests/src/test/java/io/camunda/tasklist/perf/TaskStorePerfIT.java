@@ -22,6 +22,9 @@ import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
+import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship;
+import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
+import io.camunda.webapps.schema.entities.usertask.TaskProcessInstanceEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskState;
 import java.util.ArrayList;
 import java.util.List;
@@ -73,6 +76,7 @@ class TaskStorePerfIT extends TasklistIntegrationTest {
      * (numberOfVariablesPerTask* 100_000) variables.
      */
     final List<TaskEntity> tasks = new ArrayList<>(total);
+    final List<TaskProcessInstanceEntity> tasksPIs = new ArrayList<>(total);
     final List<FlowNodeInstanceEntity> flowNodeInstances = new ArrayList<>(total);
     final List<VariableEntity> variables = new ArrayList<>(total * numberOfVariablesPerTask);
     final long piOffset = total * 0;
@@ -98,29 +102,38 @@ class TaskStorePerfIT extends TasklistIntegrationTest {
                 .setValue(
                     i < numberOfMatchingTasks ? String.format("\"value%d\"", j) : "\"other\""));
       }
+      tasksPIs.add(
+          new TaskProcessInstanceEntity()
+              .setId(String.valueOf(piOffset + i))
+              .setProcessInstanceId(piOffset + i)
+              .setJoin(new TaskJoinRelationship(TaskJoinRelationshipType.PROCESS.getType())));
       tasks.add(
           new TaskEntity()
               .setId(String.valueOf(taskOffset + i))
               .setKey(taskOffset + i)
               .setProcessInstanceId(String.valueOf(piOffset + i))
               .setFlowNodeInstanceId(String.valueOf(fniOffset + i))
-              .setState(TaskState.CREATED));
+              .setState(TaskState.CREATED)
+              .setJoin(
+                  new TaskJoinRelationship(TaskJoinRelationshipType.TASK.getType(), piOffset + i)));
     }
     databaseTestExtension.bulkIndex(flowNodeInstanceIndex, flowNodeInstances);
     databaseTestExtension.bulkIndex(variableIndex, variables);
-    databaseTestExtension.bulkIndex(taskTemplate, tasks);
+    databaseTestExtension.bulkIndex(taskTemplate, tasksPIs);
+    databaseTestExtension.bulkIndex(taskTemplate, tasks, TaskEntity::getProcessInstanceId);
 
     LOG.info("Data loaded, starting performance test");
     assertWithRetry(
         3,
         () -> {
+          final int pageSize = 10_000;
           final long start = System.currentTimeMillis();
           assertThat(
                   taskStore.getTasks(
                       new TaskQuery()
                           .setState(TaskState.CREATED)
                           .setPageSize(
-                              10_000) // use max allowed page size to make sure we get all tasks
+                              pageSize) // use max allowed page size to make sure we get all tasks
                           .setTaskVariables(
                               IntStream.range(0, numberOfVariablesPerTask)
                                   .mapToObj(
@@ -129,7 +142,7 @@ class TaskStorePerfIT extends TasklistIntegrationTest {
                                               .setName("var" + i)
                                               .setValue(String.format("\"value%d\"", i)))
                                   .toArray(TaskByVariables[]::new))))
-              .hasSize(numberOfMatchingTasks);
+              .hasSize(Math.min(numberOfMatchingTasks, pageSize));
           LOG.info(
               "Performance test, for {} matches, finished in {} ms. Max response time is set to {} ms.",
               numberOfMatchingTasks,
@@ -143,10 +156,11 @@ class TaskStorePerfIT extends TasklistIntegrationTest {
   private static Stream<Arguments> performanceTestParams() {
     return Stream.of(
         Arguments.of(1, 1000, 500),
-        Arguments.of(1, 3000, 2000),
+        Arguments.of(1, 3000, 1000),
         Arguments.of(2, 1000, 500),
-        Arguments.of(2, 3000, 2000),
-        Arguments.of(1, 10_000, 4000));
+        Arguments.of(2, 3000, 1000),
+        Arguments.of(1, 10_000, 2000),
+        Arguments.of(1, 30_000, 10000));
   }
 
   private void assertWithRetry(final int maxAttempts, final Runnable assertion)

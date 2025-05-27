@@ -24,6 +24,7 @@ import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.elasticsearch.action.admin.indices.flush.FlushRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
@@ -204,13 +205,17 @@ public class ElasticsearchTestExtension
 
   @Override
   public <T extends ExporterEntity> void bulkIndex(
-      final IndexDescriptor index, final List<T> documents) throws IOException {
+      final IndexDescriptor index,
+      final List<T> documents,
+      final Function<T, String> routingFunction)
+      throws IOException {
     final var bulkRequest = new BulkRequest().setRefreshPolicy(RefreshPolicy.IMMEDIATE);
     for (final var document : documents) {
       bulkRequest.add(
           new IndexRequest()
               .index(index.getFullQualifiedName())
               .id(document.getId())
+              .routing(routingFunction.apply(document))
               .source(objectMapper.writeValueAsString(document), XContentType.JSON));
     }
     esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
