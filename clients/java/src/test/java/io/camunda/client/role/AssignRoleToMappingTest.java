@@ -31,7 +31,7 @@ public class AssignRoleToMappingTest extends ClientRestTest {
   @Test
   void shouldAssignRoleToMapping() {
     // when
-    client.newAssignRoleToMappingCommand().roleId(ROLE_ID).mappingId(MAPPING_ID).send().join();
+    client.newAssignRoleToMappingCommand().roleId(ROLE_ID).mappingRuleId(MAPPING_ID).send().join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
@@ -47,7 +47,7 @@ public class AssignRoleToMappingTest extends ClientRestTest {
                 client
                     .newAssignRoleToMappingCommand()
                     .roleId(null)
-                    .mappingId(MAPPING_ID)
+                    .mappingRuleId(MAPPING_ID)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
@@ -62,7 +62,7 @@ public class AssignRoleToMappingTest extends ClientRestTest {
                 client
                     .newAssignRoleToMappingCommand()
                     .roleId("")
-                    .mappingId(MAPPING_ID)
+                    .mappingRuleId(MAPPING_ID)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
@@ -77,7 +77,7 @@ public class AssignRoleToMappingTest extends ClientRestTest {
                 client
                     .newAssignRoleToMappingCommand()
                     .roleId(ROLE_ID)
-                    .mappingId(null)
+                    .mappingRuleId(null)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
@@ -89,7 +89,12 @@ public class AssignRoleToMappingTest extends ClientRestTest {
     // when / then
     assertThatThrownBy(
             () ->
-                client.newAssignRoleToMappingCommand().roleId(ROLE_ID).mappingId("").send().join())
+                client
+                    .newAssignRoleToMappingCommand()
+                    .roleId(ROLE_ID)
+                    .mappingRuleId("")
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("mappingId must not be empty");
   }

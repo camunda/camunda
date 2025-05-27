@@ -50,10 +50,15 @@ public class RolesByMappingIntegrationTest {
     final var mappingId = Strings.newRandomValidIdentityId();
 
     createRole(roleId, "ARoleName", "description");
-    createMapping(mappingId, "mappingName", "testClaimName", "testClaimValue");
+    createMappingRule(mappingId, "mappingName", "testClaimName", "testClaimValue");
 
     // when
-    camundaClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingId).send().join();
+    camundaClient
+        .newAssignRoleToMappingCommand()
+        .roleId(roleId)
+        .mappingRuleId(mappingId)
+        .send()
+        .join();
     // then
     verifyRoleIsAssignedToMapping(roleId, mappingId);
   }
@@ -65,9 +70,14 @@ public class RolesByMappingIntegrationTest {
     final var mappingId = Strings.newRandomValidIdentityId();
 
     createRole(roleId, "ARoleName", "description");
-    createMapping(mappingId, "someMappingName", "someTestClaimName", "someTestClaimValue");
+    createMappingRule(mappingId, "someMappingName", "someTestClaimName", "someTestClaimValue");
 
-    camundaClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingId).send().join();
+    camundaClient
+        .newAssignRoleToMappingCommand()
+        .roleId(roleId)
+        .mappingRuleId(mappingId)
+        .send()
+        .join();
 
     verifyRoleIsAssignedToMapping(roleId, mappingId);
 
@@ -75,7 +85,7 @@ public class RolesByMappingIntegrationTest {
     camundaClient
         .newUnassignRoleFromMappingCommand()
         .roleId(roleId)
-        .mappingId(mappingId)
+        .mappingRuleId(mappingId)
         .send()
         .join();
 
@@ -92,9 +102,14 @@ public class RolesByMappingIntegrationTest {
     final var mappingId = Strings.newRandomValidIdentityId();
 
     createRole(roleId, "ARoleName", "description");
-    createMapping(mappingId, "mappingName", "aClaimName", "aClaimValue");
+    createMappingRule(mappingId, "mappingName", "aClaimName", "aClaimValue");
 
-    camundaClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingId).send().join();
+    camundaClient
+        .newAssignRoleToMappingCommand()
+        .roleId(roleId)
+        .mappingRuleId(mappingId)
+        .send()
+        .join();
 
     verifyRoleIsAssignedToMapping(roleId, mappingId);
 
@@ -112,12 +127,12 @@ public class RolesByMappingIntegrationTest {
     // given
     final var mappingId = Strings.newRandomValidIdentityId();
 
-    createMapping(mappingId, "mappingName", "claimName", "claimValue");
+    createMappingRule(mappingId, "mappingName", "claimName", "claimValue");
 
     camundaClient
         .newAssignRoleToMappingCommand()
         .roleId(EXISTING_ROLE_ID)
-        .mappingId(mappingId)
+        .mappingRuleId(mappingId)
         .send()
         .join();
 
@@ -127,7 +142,7 @@ public class RolesByMappingIntegrationTest {
                 camundaClient
                     .newAssignRoleToMappingCommand()
                     .roleId(EXISTING_ROLE_ID)
-                    .mappingId(mappingId)
+                    .mappingRuleId(mappingId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -144,7 +159,7 @@ public class RolesByMappingIntegrationTest {
     // given
     final var mappingId = Strings.newRandomValidIdentityId();
 
-    createMapping(mappingId, "mappingName", "someClaimName", "someClaimValue");
+    createMappingRule(mappingId, "mappingName", "someClaimName", "someClaimValue");
 
     // when/then
     assertThatThrownBy(
@@ -152,7 +167,7 @@ public class RolesByMappingIntegrationTest {
                 camundaClient
                     .newUnassignRoleFromMappingCommand()
                     .roleId(EXISTING_ROLE_ID)
-                    .mappingId(mappingId)
+                    .mappingRuleId(mappingId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -172,7 +187,7 @@ public class RolesByMappingIntegrationTest {
                 camundaClient
                     .newAssignRoleToMappingCommand()
                     .roleId(Strings.newRandomValidIdentityId())
-                    .mappingId(Strings.newRandomValidIdentityId())
+                    .mappingRuleId(Strings.newRandomValidIdentityId())
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -191,7 +206,7 @@ public class RolesByMappingIntegrationTest {
                 camundaClient
                     .newAssignRoleToMappingCommand()
                     .roleId(EXISTING_ROLE_ID)
-                    .mappingId(mappingId)
+                    .mappingRuleId(mappingId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -214,7 +229,7 @@ public class RolesByMappingIntegrationTest {
                 camundaClient
                     .newUnassignRoleFromMappingCommand()
                     .roleId(EXISTING_ROLE_ID)
-                    .mappingId(mappingId)
+                    .mappingRuleId(mappingId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -234,7 +249,7 @@ public class RolesByMappingIntegrationTest {
                 camundaClient
                     .newUnassignRoleFromMappingCommand()
                     .roleId(Strings.newRandomValidIdentityId())
-                    .mappingId(Strings.newRandomValidIdentityId())
+                    .mappingRuleId(Strings.newRandomValidIdentityId())
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -246,14 +261,19 @@ public class RolesByMappingIntegrationTest {
   void shouldSearchMappingsByRole() {
     // given
     final var roleId = Strings.newRandomValidIdentityId();
-    final var mappingId = Strings.newRandomValidIdentityId();
-    final var mappingName = Strings.newRandomValidIdentityId();
+    final var mappingRuleId = Strings.newRandomValidIdentityId();
+    final var mappingRuleName = Strings.newRandomValidIdentityId();
     final var claimName = Strings.newRandomValidIdentityId();
     final var claimValue = Strings.newRandomValidIdentityId();
 
     createRole(roleId, "SearchRole", "desc");
-    createMapping(mappingId, mappingName, claimName, claimValue);
-    camundaClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingId).send().join();
+    createMappingRule(mappingRuleId, mappingRuleName, claimName, claimValue);
+    camundaClient
+        .newAssignRoleToMappingCommand()
+        .roleId(roleId)
+        .mappingRuleId(mappingRuleId)
+        .send()
+        .join();
     // when / then
     Awaitility.await("Mapping should be found by role")
         .ignoreExceptionsInstanceOf(ProblemException.class)
@@ -264,8 +284,8 @@ public class RolesByMappingIntegrationTest {
                   .singleElement()
                   .satisfies(
                       mapping -> {
-                        assertThat(mapping.getName()).isEqualTo(mappingName);
-                        assertThat(mapping.getMappingId()).isEqualTo(mappingId);
+                        assertThat(mapping.getName()).isEqualTo(mappingRuleName);
+                        assertThat(mapping.getMappingRuleId()).isEqualTo(mappingRuleId);
                         assertThat(mapping.getClaimValue()).isEqualTo(claimValue);
                         assertThat(mapping.getClaimName()).isEqualTo(claimName);
                       });
@@ -292,16 +312,31 @@ public class RolesByMappingIntegrationTest {
     final var nameC = "CCC-" + Strings.newRandomValidIdentityId();
 
     createRole(roleId, "SortRole", "desc");
-    createMapping(
+    createMappingRule(
         mappingA, nameA, Strings.newRandomValidIdentityId(), Strings.newRandomValidIdentityId());
-    createMapping(
+    createMappingRule(
         mappingB, nameB, Strings.newRandomValidIdentityId(), Strings.newRandomValidIdentityId());
-    createMapping(
+    createMappingRule(
         mappingC, nameC, Strings.newRandomValidIdentityId(), Strings.newRandomValidIdentityId());
 
-    camundaClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingA).send().join();
-    camundaClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingB).send().join();
-    camundaClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingC).send().join();
+    camundaClient
+        .newAssignRoleToMappingCommand()
+        .roleId(roleId)
+        .mappingRuleId(mappingA)
+        .send()
+        .join();
+    camundaClient
+        .newAssignRoleToMappingCommand()
+        .roleId(roleId)
+        .mappingRuleId(mappingB)
+        .send()
+        .join();
+    camundaClient
+        .newAssignRoleToMappingCommand()
+        .roleId(roleId)
+        .mappingRuleId(mappingC)
+        .send()
+        .join();
 
     Awaitility.await("Mappings are sorted by name")
         .ignoreExceptionsInstanceOf(ProblemException.class)
@@ -330,13 +365,23 @@ public class RolesByMappingIntegrationTest {
     final var claimB = "BBB-" + Strings.newRandomValidIdentityId();
 
     createRole(roleId, "SortRole", "desc");
-    createMapping(
+    createMappingRule(
         mappingA, Strings.newRandomValidIdentityId(), claimA, Strings.newRandomValidIdentityId());
-    createMapping(
+    createMappingRule(
         mappingB, Strings.newRandomValidIdentityId(), claimB, Strings.newRandomValidIdentityId());
 
-    camundaClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingA).send().join();
-    camundaClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingB).send().join();
+    camundaClient
+        .newAssignRoleToMappingCommand()
+        .roleId(roleId)
+        .mappingRuleId(mappingA)
+        .send()
+        .join();
+    camundaClient
+        .newAssignRoleToMappingCommand()
+        .roleId(roleId)
+        .mappingRuleId(mappingB)
+        .send()
+        .join();
 
     Awaitility.await("Mappings are sorted by claimName")
         .ignoreExceptionsInstanceOf(ProblemException.class)
@@ -365,13 +410,23 @@ public class RolesByMappingIntegrationTest {
     final var valueB = "bbb-" + Strings.newRandomValidIdentityId();
 
     createRole(roleId, "SortRole", "desc");
-    createMapping(
+    createMappingRule(
         mappingA, Strings.newRandomValidIdentityId(), Strings.newRandomValidIdentityId(), valueA);
-    createMapping(
+    createMappingRule(
         mappingB, Strings.newRandomValidIdentityId(), Strings.newRandomValidIdentityId(), valueB);
 
-    camundaClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingA).send().join();
-    camundaClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingB).send().join();
+    camundaClient
+        .newAssignRoleToMappingCommand()
+        .roleId(roleId)
+        .mappingRuleId(mappingA)
+        .send()
+        .join();
+    camundaClient
+        .newAssignRoleToMappingCommand()
+        .roleId(roleId)
+        .mappingRuleId(mappingB)
+        .send()
+        .join();
 
     Awaitility.await("Mappings are sorted by claimValue")
         .ignoreExceptionsInstanceOf(ProblemException.class)
@@ -398,19 +453,24 @@ public class RolesByMappingIntegrationTest {
     final var name = "filter-name-" + Strings.newRandomValidIdentityId();
 
     createRole(roleId, "FilterRole", "desc");
-    createMapping(
+    createMappingRule(
         mappingId, name, Strings.newRandomValidIdentityId(), Strings.newRandomValidIdentityId());
-    createMapping(
+    createMappingRule(
         nonMatchingMappingId,
         Strings.newRandomValidIdentityId(),
         Strings.newRandomValidIdentityId(),
         Strings.newRandomValidIdentityId());
 
-    camundaClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingId).send().join();
     camundaClient
         .newAssignRoleToMappingCommand()
         .roleId(roleId)
-        .mappingId(nonMatchingMappingId)
+        .mappingRuleId(mappingId)
+        .send()
+        .join();
+    camundaClient
+        .newAssignRoleToMappingCommand()
+        .roleId(roleId)
+        .mappingRuleId(nonMatchingMappingId)
         .send()
         .join();
 
@@ -439,22 +499,27 @@ public class RolesByMappingIntegrationTest {
     final var claimName = "filter-claimName-" + Strings.newRandomValidIdentityId();
 
     createRole(roleId, "FilterRole", "desc");
-    createMapping(
+    createMappingRule(
         mappingId,
         Strings.newRandomValidIdentityId(),
         claimName,
         Strings.newRandomValidIdentityId());
-    createMapping(
+    createMappingRule(
         nonMatchingMappingId,
         Strings.newRandomValidIdentityId(),
         Strings.newRandomValidIdentityId(),
         Strings.newRandomValidIdentityId());
 
-    camundaClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingId).send().join();
     camundaClient
         .newAssignRoleToMappingCommand()
         .roleId(roleId)
-        .mappingId(nonMatchingMappingId)
+        .mappingRuleId(mappingId)
+        .send()
+        .join();
+    camundaClient
+        .newAssignRoleToMappingCommand()
+        .roleId(roleId)
+        .mappingRuleId(nonMatchingMappingId)
         .send()
         .join();
 
@@ -483,21 +548,26 @@ public class RolesByMappingIntegrationTest {
     final var claimValue = "filter-claimValue-" + Strings.newRandomValidIdentityId();
 
     createRole(roleId, "FilterRole", "desc");
-    createMapping(
+    createMappingRule(
         mappingId,
         Strings.newRandomValidIdentityId(),
         Strings.newRandomValidIdentityId(),
         claimValue);
-    createMapping(
+    createMappingRule(
         nonMatchingMappingId,
         Strings.newRandomValidIdentityId(),
         Strings.newRandomValidIdentityId(),
         Strings.newRandomValidIdentityId());
-    camundaClient.newAssignRoleToMappingCommand().roleId(roleId).mappingId(mappingId).send().join();
     camundaClient
         .newAssignRoleToMappingCommand()
         .roleId(roleId)
-        .mappingId(nonMatchingMappingId)
+        .mappingRuleId(mappingId)
+        .send()
+        .join();
+    camundaClient
+        .newAssignRoleToMappingCommand()
+        .roleId(roleId)
+        .mappingRuleId(nonMatchingMappingId)
         .send()
         .join();
 
@@ -518,11 +588,14 @@ public class RolesByMappingIntegrationTest {
             });
   }
 
-  private static void createMapping(
-      final String mappingId, final String name, final String claimName, final String claimValue) {
+  private static void createMappingRule(
+      final String mappingRuleId,
+      final String name,
+      final String claimName,
+      final String claimValue) {
     camundaClient
         .newCreateMappingCommand()
-        .mappingId(mappingId)
+        .mappingRuleId(mappingRuleId)
         .name(name)
         .claimName(claimName)
         .claimValue(claimValue)
@@ -530,14 +603,15 @@ public class RolesByMappingIntegrationTest {
         .join();
   }
 
-  private static void verifyRoleIsAssignedToMapping(final String roleId, final String mappingId) {
+  private static void verifyRoleIsAssignedToMapping(
+      final String roleId, final String mappingRuleId) {
     Awaitility.await("Mapping is assigned to the role")
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () ->
                 assertThat(searchMappingRuleByRole(roleId).items())
                     .hasSize(1)
-                    .anyMatch(m -> mappingId.equals(m.getMappingId())));
+                    .anyMatch(m -> mappingRuleId.equals(m.getMappingRuleId())));
   }
 
   private static SearchResponse<Mapping> searchMappingRuleByRole(final String roleId) {

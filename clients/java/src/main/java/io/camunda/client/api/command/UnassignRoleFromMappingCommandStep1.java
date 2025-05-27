@@ -33,10 +33,10 @@ public interface UnassignRoleFromMappingCommandStep1 {
     /**
      * Sets the mapping ID.
      *
-     * @param mappingId the mappingId of the mapping
+     * @param mappingRuleId the mappingId of the mapping
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    UnassignRoleFromMappingCommandStep2 mappingId(String mappingId);
+    UnassignRoleFromMappingCommandStep2 mappingRuleId(String mappingRuleId);
   }
 }

@@ -46,7 +46,7 @@ public class UnassignRoleFromMappingCommandImpl
   }
 
   @Override
-  public UnassignRoleFromMappingCommandStep2 mappingId(final String mappingId) {
+  public UnassignRoleFromMappingCommandStep2 mappingRuleId(final String mappingId) {
     this.mappingId = mappingId;
     return this;
   }

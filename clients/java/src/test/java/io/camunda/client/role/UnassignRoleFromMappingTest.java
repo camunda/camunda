@@ -30,7 +30,12 @@ public class UnassignRoleFromMappingTest extends ClientRestTest {
   @Test
   void shouldUnassignRoleFromMapping() {
     // when
-    client.newUnassignRoleFromMappingCommand().roleId(ROLE_ID).mappingId(MAPPING_ID).send().join();
+    client
+        .newUnassignRoleFromMappingCommand()
+        .roleId(ROLE_ID)
+        .mappingRuleId(MAPPING_ID)
+        .send()
+        .join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
@@ -46,7 +51,7 @@ public class UnassignRoleFromMappingTest extends ClientRestTest {
                 client
                     .newUnassignRoleFromMappingCommand()
                     .roleId(null)
-                    .mappingId(MAPPING_ID)
+                    .mappingRuleId(MAPPING_ID)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
@@ -61,7 +66,7 @@ public class UnassignRoleFromMappingTest extends ClientRestTest {
                 client
                     .newUnassignRoleFromMappingCommand()
                     .roleId("")
-                    .mappingId(MAPPING_ID)
+                    .mappingRuleId(MAPPING_ID)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
@@ -76,7 +81,7 @@ public class UnassignRoleFromMappingTest extends ClientRestTest {
                 client
                     .newUnassignRoleFromMappingCommand()
                     .roleId(ROLE_ID)
-                    .mappingId(null)
+                    .mappingRuleId(null)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
@@ -91,7 +96,7 @@ public class UnassignRoleFromMappingTest extends ClientRestTest {
                 client
                     .newUnassignRoleFromMappingCommand()
                     .roleId(ROLE_ID)
-                    .mappingId("")
+                    .mappingRuleId("")
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
