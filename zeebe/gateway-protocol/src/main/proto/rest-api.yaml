@@ -1920,7 +1920,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ProcessInstanceMigrationBatchOperationInstruction"
+              $ref: "#/components/schemas/ProcessInstanceMigrationBatchOperationRequest"
       responses:
         "200":
           description: The batch operation request was created.
@@ -1961,7 +1961,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ProcessInstanceModificationBatchOperationInstruction"
+              $ref: "#/components/schemas/ProcessInstanceModificationBatchOperationRequest"
       responses:
         "200":
           description: The batch operation request was created.
@@ -9191,16 +9191,32 @@ components:
             The unique identifier of the created process instance; to be used wherever a request
             needs a process instance key (e.g. CancelProcessInstanceRequest).
           type: string
-    ProcessInstanceMigrationBatchOperationInstruction:
+    ProcessInstanceMigrationBatchOperationRequest:
       type: object
       properties:
         filter:
           $ref: "#/components/schemas/ProcessInstanceFilter"
         migrationPlan:
-          $ref: "#/components/schemas/ProcessInstanceMigrationInstruction"
+          $ref: "#/components/schemas/ProcessInstanceMigrationBatchOperationPlan"
       required:
         - filter
         - migrationPlan
+    ProcessInstanceMigrationBatchOperationPlan:
+      type: object
+      description: |
+        The migration instructions describe how to migrate a process instance from one process definition to another.
+      properties:
+        mappingInstructions:
+          description: Element mappings from the source process instance to the target process instance.
+          type: array
+          items:
+            $ref: "#/components/schemas/MigrateProcessInstanceMappingInstruction"
+        targetProcessDefinitionKey:
+          description: The key of process definition to migrate the process instance to.
+          type: string
+      required:
+        - targetProcessDefinitionKey
+        - mappingInstructions
     ProcessInstanceMigrationInstruction:
       type: object
       description: |
@@ -9623,7 +9639,7 @@ components:
         errorMessage:
           description: the error message from the engine in case of a failed operation.
           type: string
-    ProcessInstanceModificationBatchOperationInstruction:
+    ProcessInstanceModificationBatchOperationRequest:
       type: object
       description: |
         The process instance filter to define on which process instances tokens should be moved,

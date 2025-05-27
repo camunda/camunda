@@ -17,9 +17,10 @@ import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateO
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationActivateInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateInstruction;
@@ -60,6 +61,22 @@ public class ProcessInstanceRequestValidator {
         });
   }
 
+  public static Optional<ProblemDetail> validateMigrateProcessInstanceBatchOperationRequest(
+      final ProcessInstanceMigrationBatchOperationPlan request) {
+    return validate(
+        violations -> {
+          if (request.getTargetProcessDefinitionKey() == null) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("targetProcessDefinitionKey"));
+          }
+          if (request.getMappingInstructions() == null
+              || request.getMappingInstructions().isEmpty()) {
+            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("mappingInstructions"));
+          } else {
+            validateMappingInstructions(request.getMappingInstructions(), violations);
+          }
+        });
+  }
+
   public static Optional<ProblemDetail> validateMigrateProcessInstanceRequest(
       final ProcessInstanceMigrationInstruction request) {
     return validate(
@@ -87,8 +104,8 @@ public class ProcessInstanceRequestValidator {
         });
   }
 
-  public static Optional<ProblemDetail> validateModifyProcessInstanceBatchRequest(
-      final ProcessInstanceModificationBatchOperationInstruction request) {
+  public static Optional<ProblemDetail> validateModifyProcessInstanceBatchOperationRequest(
+      final ProcessInstanceModificationBatchOperationRequest request) {
     return validate(
         violations -> {
           validateMoveBatchInstructions(request.getMoveInstructions(), violations);

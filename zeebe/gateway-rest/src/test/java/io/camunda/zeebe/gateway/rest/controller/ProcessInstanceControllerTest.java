@@ -20,8 +20,8 @@ import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
-import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -1477,7 +1477,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     record.setBatchOperationType(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
 
     when(processInstanceServices.migrateProcessInstancesBatchOperation(
-            any(ProcessInstanceMigrationBatchOperationRequest.class)))
+            any(ProcessInstanceMigrateBatchOperationRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(record));
 
     final var request =
@@ -1517,7 +1517,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     verify(processInstanceServices)
         .migrateProcessInstancesBatchOperation(
-            any(ProcessInstanceMigrationBatchOperationRequest.class));
+            any(ProcessInstanceMigrateBatchOperationRequest.class));
   }
 
   @Test

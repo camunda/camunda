@@ -21,9 +21,9 @@ import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceFilter;
-import io.camunda.client.protocol.rest.ProcessInstanceMigrationBatchOperationInstruction;
-import io.camunda.client.protocol.rest.ProcessInstanceMigrationInstruction;
-import io.camunda.client.protocol.rest.ProcessInstanceModificationBatchOperationInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
+import io.camunda.client.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
+import io.camunda.client.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
 import java.util.List;
@@ -87,10 +87,10 @@ public final class CreateBatchOperationTest extends ClientRestTest {
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
     assertThat(request.getUrl()).isEqualTo("/v2/process-instances/migration");
 
-    final ProcessInstanceMigrationBatchOperationInstruction lastRequest =
-        gatewayService.getLastRequest(ProcessInstanceMigrationBatchOperationInstruction.class);
+    final ProcessInstanceMigrationBatchOperationRequest lastRequest =
+        gatewayService.getLastRequest(ProcessInstanceMigrationBatchOperationRequest.class);
     assertThat(lastRequest.getFilter().getProcessDefinitionId().get$Eq()).isEqualTo("test-01");
-    final ProcessInstanceMigrationInstruction migrationPlan = lastRequest.getMigrationPlan();
+    final ProcessInstanceMigrationBatchOperationPlan migrationPlan = lastRequest.getMigrationPlan();
     assertThat(migrationPlan).isNotNull();
     assertThat(migrationPlan.getTargetProcessDefinitionKey()).isEqualTo("1");
     final List<MigrateProcessInstanceMappingInstruction> mappingInstructions =
@@ -120,8 +120,8 @@ public final class CreateBatchOperationTest extends ClientRestTest {
 
     assertThat(request.getUrl()).isEqualTo("/v2/process-instances/modification");
 
-    final ProcessInstanceModificationBatchOperationInstruction lastRequest =
-        gatewayService.getLastRequest(ProcessInstanceModificationBatchOperationInstruction.class);
+    final ProcessInstanceModificationBatchOperationRequest lastRequest =
+        gatewayService.getLastRequest(ProcessInstanceModificationBatchOperationRequest.class);
     assertThat(lastRequest.getFilter().getProcessDefinitionId().get$Eq()).isEqualTo("test-01");
     assertThat(lastRequest.getMoveInstructions()).hasSize(2);
     assertThat(lastRequest.getMoveInstructions().get(0).getSourceElementId()).isEqualTo("source");

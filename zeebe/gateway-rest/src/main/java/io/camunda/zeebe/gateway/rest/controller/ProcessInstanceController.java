@@ -14,16 +14,16 @@ import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
-import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResult;
@@ -181,14 +181,14 @@ public class ProcessInstanceController {
 
   @CamundaPostMapping(path = "/migration")
   public CompletableFuture<ResponseEntity<Object>> migrateProcessInstancesBatchOperation(
-      @RequestBody final ProcessInstanceMigrationBatchOperationInstruction request) {
+      @RequestBody final ProcessInstanceMigrationBatchOperationRequest request) {
     return RequestMapper.toProcessInstanceMigrationBatchOperationRequest(request)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationModify);
   }
 
   @CamundaPostMapping(path = "/modification")
   public CompletableFuture<ResponseEntity<Object>> modifyProcessInstancesBatchOperation(
-      @RequestBody final ProcessInstanceModificationBatchOperationInstruction request) {
+      @RequestBody final ProcessInstanceModificationBatchOperationRequest request) {
     return RequestMapper.toProcessInstanceModifyBatchOperationRequest(request)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationModify);
   }
@@ -228,7 +228,7 @@ public class ProcessInstanceController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> batchOperationModify(
-      final ProcessInstanceMigrationBatchOperationRequest request) {
+      final ProcessInstanceMigrateBatchOperationRequest request) {
     return RequestMapper.executeServiceMethod(
         () ->
             processInstanceServices
