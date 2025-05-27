@@ -33,7 +33,7 @@ public interface RoutingInfo {
   /** Returns the current partition id for the given correlation key. */
   int partitionForCorrelationKey(final DirectBuffer correlationKey);
 
-  // Returns whether a partition is being scaled up at that point in time
+  /** Returns whether a partition is being scaled up at that point in time. */
   boolean isPartitionScaling(final int partitionId);
 
   /**
