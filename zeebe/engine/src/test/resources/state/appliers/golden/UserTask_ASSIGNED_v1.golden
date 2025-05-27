@@ -25,7 +25,10 @@ public final class UserTaskAssignedApplier
 
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
-    userTaskState.update(key, task -> task.setAssignee(value.getAssignee()));
+    final String assignee = value.getAssignee();
+    final UserTaskRecord userTask = userTaskState.getUserTask(key);
+    userTask.setAssignee(assignee);
+    userTaskState.update(userTask);
     userTaskState.updateUserTaskLifecycleState(key, LifecycleState.CREATED);
   }
 }
