@@ -22,9 +22,9 @@ public final class DelayedTimerSubscription implements TimerSubscription {
   private final boolean isRecurring;
   private volatile boolean isDone = false;
   private volatile boolean isCanceled = false;
-  private volatile long timerId = -1L;
+  private long timerId = -1L;
   private ActorThread thread;
-  private volatile long timerExpiredAt;
+  private long timerExpiredAt;
 
   public DelayedTimerSubscription(
       final ActorJob job, final long delay, final TimeUnit timeUnit, final boolean isRecurring) {

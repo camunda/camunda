@@ -58,7 +58,7 @@ final class JobStreamerImpl implements JobStreamer {
   private FinalCommandStep<StreamJobsResponse> command;
 
   @GuardedBy("streamLock")
-  private volatile boolean isClosed;
+  private boolean isClosed;
 
   @GuardedBy("streamLock")
   private long retryDelay;

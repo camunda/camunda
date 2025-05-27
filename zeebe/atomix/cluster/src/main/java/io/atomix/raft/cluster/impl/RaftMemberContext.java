@@ -33,7 +33,7 @@ public final class RaftMemberContext {
   private static final int APPEND_WINDOW_SIZE = 8;
   private final DefaultRaftMember member;
   private final int maxAppendsPerMember;
-  private volatile boolean open = true;
+  private boolean open = true;
   private long term;
   private long configIndex;
   private long snapshotIndex;

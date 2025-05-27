@@ -43,7 +43,7 @@ public class ActorTask {
   public final CompletableActorFuture<Void> closeFuture = CompletableActorFuture.completed(null);
   final Actor actor;
   ActorJob currentJob;
-  volatile boolean shouldYield;
+  boolean shouldYield;
   final AtomicReference<TaskSchedulingState> schedulingState = new AtomicReference<>();
   final AtomicLong stateCount = new AtomicLong(0);
   private final CompletableActorFuture<Void> jobClosingTaskFuture = new CompletableActorFuture<>();
