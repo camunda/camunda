@@ -15,7 +15,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentRedistributor;
-import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
@@ -41,9 +40,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class DeploymentRedistributorTest {
 
   @Mock private DeploymentDistributionCommandSender deploymentDistributionCommandSender;
-  // Injected by ProcessingStateExtension
+
+  /** Injected by {@link ProcessingStateExtension} */
   private MutableProcessingState processingState;
-  private MutableDeploymentState deploymentState;
+
   private MutableRoutingState routingState;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
@@ -52,13 +52,14 @@ public class DeploymentRedistributorTest {
   private DeploymentRedistributor deploymentRedistributor;
   private ArgumentCaptor<Runnable> taskCaptor;
   private long recordKey;
-  private DirectBuffer resourceBuffer;
   private DeploymentRecord deploymentRecord;
 
   @BeforeEach
   public void setUp() {
     when(context.getPartitionId()).thenReturn(1);
-    deploymentState = processingState.getDeploymentState();
+    taskCaptor = forClass(Runnable.class);
+
+    final var deploymentState = processingState.getDeploymentState();
     routingState = processingState.getRoutingState();
     routingState.initializeRoutingInfo(2);
     routingState.setDesiredPartitions(Set.of(1, 2, 3));
@@ -70,16 +71,17 @@ public class DeploymentRedistributorTest {
         new DeploymentRedistributor(
             deploymentDistributionCommandSender, deploymentState, routingInfo);
 
-    recordKey = Protocol.encodePartitionId(1, 100);
     final DeploymentResource deploymentResource =
         new DeploymentResource()
             .setResourceName("test.bpmn")
             .setResource(BufferUtil.wrapString("test"));
-    resourceBuffer = BufferUtil.createCopy(deploymentResource);
+    final DirectBuffer resourceBuffer = BufferUtil.createCopy(deploymentResource);
+
+    recordKey = Protocol.encodePartitionId(1, 100);
     deploymentRecord = new DeploymentRecord();
     deploymentRecord.wrap(resourceBuffer);
+
     deploymentState.storeDeploymentRecord(recordKey, deploymentRecord);
-    taskCaptor = forClass(Runnable.class);
 
     // Add pending deployment distributions for partitions 1, 2, and 3
     routingState
@@ -100,7 +102,7 @@ public class DeploymentRedistributorTest {
             () -> verify(context.getScheduleService()).runAtFixedRate(any(), taskCaptor.capture()));
     final Runnable scheduledTask = taskCaptor.getValue();
 
-    // run the scheduled task twice, since first one always does not run
+    // run the scheduled task twice, since first one always does not try distributing the records
     scheduledTask.run();
     scheduledTask.run();
 
@@ -125,7 +127,7 @@ public class DeploymentRedistributorTest {
             () -> verify(context.getScheduleService()).runAtFixedRate(any(), taskCaptor.capture()));
     final Runnable scheduledTask = taskCaptor.getValue();
 
-    // run the scheduled task twice, since first one always does not run
+    // run the scheduled task twice, since first one always does not try distributing the records
     scheduledTask.run();
     scheduledTask.run();
 
@@ -141,7 +143,7 @@ public class DeploymentRedistributorTest {
     // Partition 3 is now scaled up, so it should be redistributed
     routingState.arriveAtDesiredState();
 
-    // run the scheduled task twice, since first one always does not run
+    // run the scheduled task twice, since first one always does not try distributing the records
     scheduledTask.run();
     scheduledTask.run();
     verify(deploymentDistributionCommandSender, times(1))
