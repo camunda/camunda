@@ -97,6 +97,7 @@ const Members: FC<MembersProps> = ({ roleId }) => {
         sortProperty="username"
         loading={loading}
         addEntityLabel={t("assignUser")}
+        onAddEntity={openAssignModal}
         searchPlaceholder={t("searchByUsername")}
         menuItems={[
           {
