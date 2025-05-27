@@ -34,30 +34,23 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
   private final AsyncSnapshotDirector snapshotDirector;
 
   private volatile HealthReport healthReport;
-  private final boolean areMigrationsPerformed;
   private final Duration scheduleDelay;
   private final ConcurrencyControl control;
   private final HealthMonitor healthMonitor;
 
   public MigrationSnapshotDirector(
       final AsyncSnapshotDirector asyncSnapshotDirector,
-      final boolean areMigrationsPerformed,
       final ConcurrencyControl control,
       final Duration scheduleDelay,
       final HealthMonitor healthMonitor) {
     snapshotDirector = asyncSnapshotDirector;
-    this.areMigrationsPerformed = areMigrationsPerformed;
     this.control = control;
     this.scheduleDelay = scheduleDelay;
     this.healthMonitor = healthMonitor;
-    if (areMigrationsPerformed) {
-      healthReport = snapshotNotTaken();
-      scheduleSnapshot();
-    } else {
-      healthReport = HealthReport.healthy(this);
-    }
+    healthReport = snapshotNotTaken();
     healthMonitor.registerComponent(this);
-    LOG.debug("Initialized migration snapshot director with status {}", healthReport);
+    LOG.debug("Initialized migration snapshot director. Scheduling snapshot");
+    scheduleSnapshot();
   }
 
   @Override
@@ -67,7 +60,7 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
   }
 
   public void scheduleSnapshot() {
-    if (areMigrationsPerformed && !snapshotTaken) {
+    if (!snapshotTaken) {
       LOG.debug("Scheduling snapshot for migration.");
       forceSnapshotUntilSuccessful();
     }
@@ -126,11 +119,11 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
                 if (snapshot != null) {
                   // reset the flag
                   snapshotTaken = true;
-                  LOG.debug("Snapshot taken after migrations");
+                  LOG.debug("Snapshot taken after migrations: {}", snapshot.getId());
                   healthReport = HealthReport.healthy(this);
                   notifyListeners();
                 } else {
-                  LOG.debug("Snapshot not taken after migrations");
+                  LOG.debug("Snapshot not taken after migrations, retrying in {}.", scheduleDelay);
                 }
                 runningSnapshot = null;
                 return null;

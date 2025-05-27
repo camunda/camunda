@@ -47,9 +47,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SnapshotMigrationTransitionStepTest {
-  @AutoClose static ActorScheduler scheduler = ActorScheduler.newActorScheduler().build();
+  @AutoClose private static ActorScheduler scheduler = ActorScheduler.newActorScheduler().build();
+
   private static final Logger LOG =
       LoggerFactory.getLogger(SnapshotMigrationTransitionStepTest.class);
+
   final TestPartitionTransitionContext transitionContext = new TestPartitionTransitionContext();
   @AutoClose final ActorWithControl actor = new ActorWithControl();
   private final SnapshotAfterMigrationTransitionStep step =
@@ -65,6 +67,7 @@ public class SnapshotMigrationTransitionStepTest {
           Optional.empty(),
           LOG,
           Duration.ofMillis(100));
+
   private final TestConcurrencyControl concurrencyControl = new TestConcurrencyControl(true);
 
   @BeforeAll
@@ -283,6 +286,7 @@ public class SnapshotMigrationTransitionStepTest {
 
   public void checkMetricsAre(final HealthStatus expected) {
     Awaitility.await("until metrics are published")
+        .atMost(Duration.ofSeconds(5))
         .untilAsserted(
             () -> {
               final var meters =
