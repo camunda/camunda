@@ -12,16 +12,19 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.RoleSort;
 import io.camunda.security.auth.Authentication;
+import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
@@ -42,6 +45,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
   @MockitoBean private RoleServices roleServices;
   @MockitoBean private UserServices userServices;
   @MockitoBean private MappingServices mappingsServices;
+  @MockitoBean private GroupServices groupServices;
 
   @BeforeEach
   void setup() {
@@ -49,6 +53,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
     when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
     when(mappingsServices.withAuthentication(any(Authentication.class)))
         .thenReturn(mappingsServices);
+    when(groupServices.withAuthentication(any(Authentication.class))).thenReturn(groupServices);
   }
 
   @Test
@@ -382,5 +387,56 @@ public class RoleQueryControllerTest extends RestControllerTest {
             new RoleQuery.Builder()
                 .filter(f -> f.joinParentId(roleId).memberType(EntityType.CLIENT))
                 .build());
+  }
+
+  @Test
+  void shouldSearchGroupsByRole() {
+    // given
+    final var roleId = "roleId";
+    when(groupServices.search(any(GroupQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<GroupEntity>()
+                .total(2)
+                .items(
+                    List.of(
+                        new GroupEntity(1L, "group1", "Group 1", "desc 1"),
+                        new GroupEntity(2L, "group2", "Group 2", "desc 2")))
+                .build());
+    // when / then
+    webClient
+        .post()
+        .uri("%s/%s/groups/search".formatted(ROLE_BASE_URL, roleId))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+            {
+              "items": [
+                {
+                  "groupId": "group1",
+                  "name": "Group 1",
+                  "description": "desc 1"
+                },
+                {
+                  "groupId": "group2",
+                  "name": "Group 2",
+                  "description": "desc 2"
+                }
+              ],
+              "page": {
+                "totalItems": 2,
+                "firstSortValues": [],
+                "lastSortValues": []
+              }
+            }""");
+
+    verify(groupServices).search(new GroupQuery.Builder().filter(f -> f.roleId(roleId)).build());
   }
 }

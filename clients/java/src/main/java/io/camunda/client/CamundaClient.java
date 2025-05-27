@@ -112,6 +112,7 @@ import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
 import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
+import io.camunda.client.api.search.request.GroupsByRoleSearchRequest;
 import io.camunda.client.api.search.request.IncidentSearchRequest;
 import io.camunda.client.api.search.request.MappingsByRoleSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
@@ -2319,4 +2320,20 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the roles by group search request
    */
   RolesByGroupSearchRequest newRolesByGroupSearchRequest(String groupId);
+
+  /**
+   * Executes a search request to query groups by role.
+   *
+   * <pre>
+   * camundaClient
+   *  .newGroupsByRoleSearchRequest("roleId")
+   *  .sort((s) -> s.name().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @param roleId the ID of the role
+   * @return a builder for the groups by role search request
+   */
+  GroupsByRoleSearchRequest newGroupsByRoleSearchRequest(String roleId);
 }

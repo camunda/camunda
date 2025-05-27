@@ -11,18 +11,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.CreateRoleResponse;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.Client;
+import io.camunda.client.api.search.response.Group;
 import io.camunda.client.api.search.response.Role;
 import io.camunda.client.api.search.response.SearchResponse;
-import io.camunda.client.protocol.rest.MappingSearchQueryResult;
-import io.camunda.client.protocol.rest.RoleResult;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.User;
@@ -31,18 +28,10 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.List;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -55,9 +44,6 @@ class RoleAuthorizationIT {
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
-
-  private static final ObjectMapper OBJECT_MAPPER =
-      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
   private static final String ROLE_ID_1 = Strings.newRandomValidIdentityId();
   private static final String ROLE_ID_2 = Strings.newRandomValidIdentityId();
@@ -96,8 +82,6 @@ class RoleAuthorizationIT {
           List.of(
               new Permissions(
                   ResourceType.ROLE, PermissionType.READ, List.of(ROLE_ID_1, ROLE_ID_2))));
-
-  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
@@ -278,12 +262,7 @@ class RoleAuthorizationIT {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () ->
-                assertThat(
-                        searchMappingRuleByRole(
-                                adminClient.getConfiguration().getRestAddress().toString(),
-                                ADMIN,
-                                roleId)
-                            .getItems())
+                assertThat(adminClient.newMappingsByRoleSearchRequest(roleId).send().join().items())
                     .hasSize(1)
                     .anyMatch(m -> mappingId.equals(m.getMappingId())));
 
@@ -451,12 +430,7 @@ class RoleAuthorizationIT {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () ->
-                assertThat(
-                        searchRolesByGroupId(
-                                adminClient.getConfiguration().getRestAddress().toString(),
-                                ADMIN,
-                                groupId)
-                            .items())
+                assertThat(adminClient.newRolesByGroupSearchRequest(groupId).send().join().items())
                     .anyMatch(r -> roleId.equals(r.getRoleId())));
 
     adminClient.newDeleteRoleCommand(roleId).send().join();
@@ -532,11 +506,7 @@ class RoleAuthorizationIT {
         .untilAsserted(
             () ->
                 assertThat(
-                        searchRolesByGroupId(
-                                adminClient.getConfiguration().getRestAddress().toString(),
-                                ADMIN,
-                                mappingId)
-                            .items())
+                        adminClient.newRolesByGroupSearchRequest(mappingId).send().join().items())
                     .isEmpty());
   }
 
@@ -583,12 +553,7 @@ class RoleAuthorizationIT {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () ->
-                assertThat(
-                        searchRolesByGroupId(
-                                adminClient.getConfiguration().getRestAddress().toString(),
-                                ADMIN,
-                                groupId)
-                            .items())
+                assertThat(adminClient.newRolesByGroupSearchRequest(groupId).send().join().items())
                     .isEmpty());
   }
 
@@ -685,6 +650,38 @@ class RoleAuthorizationIT {
     createRole(adminClient, roleId, roleName, null);
   }
 
+  @Test
+  void searchGroupsByRoleShouldReturnGroupsIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    // given
+    final String groupId = Strings.newRandomValidIdentityId();
+    final String roleId = Strings.newRandomValidIdentityId();
+
+    createRole(adminClient, roleId, "roleName");
+    adminClient.newCreateGroupCommand().groupId(groupId).name("groupName").send().join();
+    adminClient.newAssignRoleToGroupCommand().roleId(roleId).groupId(groupId).send().join();
+
+    // when/then
+    Awaitility.await("Group is searchable by role")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var response = adminClient.newGroupsByRoleSearchRequest(roleId).send().join();
+              assertThat(response.items()).anyMatch(g -> groupId.equals(g.getGroupId()));
+            });
+
+    // clean up
+    adminClient.newDeleteRoleCommand(roleId).send().join();
+  }
+
+  @Test
+  void searchGroupsByRoleShouldReturnEmptyListIfUnauthorized(
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
+    final SearchResponse<Group> response =
+        camundaClient.newGroupsByRoleSearchRequest(ROLE_ID_1).send().join();
+    assertThat(response.items()).isEmpty();
+  }
+
   private static void createRole(
       final CamundaClient adminClient,
       final String roleId,
@@ -698,46 +695,4 @@ class RoleAuthorizationIT {
         .send()
         .join();
   }
-
-  // TODO once available, this test should use the client to make the request
-  private static RoleSearchResponse searchRolesByGroupId(
-      final String restAddress, final String username, final String groupId)
-      throws URISyntaxException, IOException, InterruptedException {
-    final var encodedCredentials =
-        Base64.getEncoder()
-            .encodeToString("%s:%s".formatted(username, DEFAULT_PASSWORD).getBytes());
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(new URI("%s%s".formatted(restAddress, "v2/groups/" + groupId + "/roles/search")))
-            .POST(HttpRequest.BodyPublishers.ofString(""))
-            .header("Authorization", "Basic %s".formatted(encodedCredentials))
-            .build();
-
-    final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-    return OBJECT_MAPPER.readValue(response.body(), RoleSearchResponse.class);
-  }
-
-  // TODO once available, this test should use the client to make the request
-  private static MappingSearchQueryResult searchMappingRuleByRole(
-      final String restAddress, final String username, final String roleId)
-      throws URISyntaxException, IOException, InterruptedException {
-    final var encodedCredentials =
-        Base64.getEncoder()
-            .encodeToString("%s:%s".formatted(username, DEFAULT_PASSWORD).getBytes());
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(
-                new URI(
-                    "%s%s".formatted(restAddress, "v2/roles/" + roleId + "/mapping-rules/search")))
-            .POST(HttpRequest.BodyPublishers.ofString(""))
-            .header("Authorization", "Basic %s".formatted(encodedCredentials))
-            .build();
-
-    final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-    return OBJECT_MAPPER.readValue(response.body(), MappingSearchQueryResult.class);
-  }
-
-  private record RoleSearchResponse(List<RoleResult> items) {}
 }

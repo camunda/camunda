@@ -21,7 +21,8 @@ public record GroupFilter(
     EntityType memberType,
     String tenantId,
     Set<String> groupIds,
-    EntityType childMemberType)
+    EntityType childMemberType,
+    String roleId)
     implements FilterBase {
 
   public Builder toBuilder() {
@@ -35,7 +36,8 @@ public record GroupFilter(
         .memberType(memberType)
         .tenantId(tenantId)
         .groupIds(groupIds)
-        .childMemberType(childMemberType);
+        .childMemberType(childMemberType)
+        .roleId(roleId);
   }
 
   public static final class Builder implements ObjectBuilder<GroupFilter> {
@@ -49,6 +51,7 @@ public record GroupFilter(
     private String tenantId;
     private Set<String> groupIds;
     private EntityType childMemberType;
+    private String roleId;
 
     public Builder groupKey(final Long value) {
       groupKey = value;
@@ -104,6 +107,11 @@ public record GroupFilter(
       return this;
     }
 
+    public Builder roleId(final String value) {
+      roleId = value;
+      return this;
+    }
+
     @Override
     public GroupFilter build() {
       return new GroupFilter(
@@ -116,7 +124,8 @@ public record GroupFilter(
           memberType,
           tenantId,
           groupIds,
-          childMemberType);
+          childMemberType,
+          roleId);
     }
   }
 }
