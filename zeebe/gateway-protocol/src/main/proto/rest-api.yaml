@@ -1836,6 +1836,7 @@ paths:
         Cancels multiple running process instances.
         Since only ACTIVE root instances can be cancelled, any given filters for state and
         parentProcessInstanceKey are ignored and overridden during this batch operation.
+        This is done asynchronously, the progress can be tracked using the batchOperationId from the response and the batch operation status endpoint (/batch-operations/{batchOperationId}).
       requestBody:
         required: false
         content:
@@ -1843,8 +1844,8 @@ paths:
             schema:
               $ref: "#/components/schemas/ProcessInstanceFilter"
       responses:
-        "202":
-          description: The batch operation request was accepted.
+        "200":
+          description: The batch operation request was created.
           content:
             application/json:
               schema:
@@ -1874,6 +1875,7 @@ paths:
         Resolves multiple instances of process instances.
         Since only process instances with ACTIVE state can have unresolved incidents, any given
         filters for state are ignored and overridden during this batch operation.
+        This is done asynchronously, the progress can be tracked using the batchOperationId from the response and the batch operation status endpoint (/batch-operations/{batchOperationId}).
       requestBody:
         required: false
         content:
@@ -1881,8 +1883,8 @@ paths:
             schema:
               $ref: "#/components/schemas/ProcessInstanceFilter"
       responses:
-        "202":
-          description: The batch operation request was accepted.
+        "200":
+          description: The batch operation request was created.
           content:
             application/json:
               schema:
@@ -1912,6 +1914,7 @@ paths:
         Migrate multiple instances of process instances.
         Since only process instances with ACTIVE state can be migrated, any given
         filters for state are ignored and overridden during this batch operation.
+        This is done asynchronously, the progress can be tracked using the batchOperationId from the response and the batch operation status endpoint (/batch-operations/{batchOperationId}).
       requestBody:
         required: true
         content:
@@ -1919,8 +1922,8 @@ paths:
             schema:
               $ref: "#/components/schemas/ProcessInstanceMigrationBatchOperationInstruction"
       responses:
-        "202":
-          description: The batch operation request was accepted.
+        "200":
+          description: The batch operation request was created.
           content:
             application/json:
               schema:
@@ -1950,6 +1953,9 @@ paths:
         Modify multiple process instances.
         Since only process instances with ACTIVE state can be modified, any given
         filters for state are ignored and overridden during this batch operation.
+        In contrast to single modification operation, it is not possible to add variable instructions or modify by element key.
+        It is only possible to use the element id of the source and target.
+        This is done asynchronously, the progress can be tracked using the batchOperationId from the response and the batch operation status endpoint (/batch-operations/{batchOperationId}).
       requestBody:
         required: true
         content:
@@ -1957,8 +1963,8 @@ paths:
             schema:
               $ref: "#/components/schemas/ProcessInstanceModificationBatchOperationInstruction"
       responses:
-        "202":
-          description: The batch operation request was accepted.
+        "200":
+          description: The batch operation request was created.
           content:
             application/json:
               schema:
@@ -4934,7 +4940,9 @@ paths:
         - Batch operation
       operationId: cancelBatchOperation
       summary: Cancel Batch operation
-      description: Cancels a running batch operation.
+      description: |
+        Cancels a running batch operation.
+        This is done asynchronously, the progress can be tracked using the batch operation status endpoint (/batch-operations/{batchOperationId}).
       parameters:
         - name: batchOperationId
           in: path
@@ -4951,8 +4959,8 @@ paths:
               nullable: true
         required: false
       responses:
-        "202":
-          description: The batch operation cancel request was accepted.
+        "204":
+          description: The batch operation cancel request was created.
           content: { }
         "400":
           $ref: "#/components/responses/InvalidData"
@@ -4973,7 +4981,9 @@ paths:
         - Batch operation
       operationId: pauseBatchOperation
       summary: Pause Batch operation
-      description: Pauses a running batch operation.
+      description: |
+        Pauses a running batch operation.
+        This is done asynchronously, the progress can be tracked using the batch operation status endpoint (/batch-operations/{batchOperationId}).
       parameters:
         - name: batchOperationId
           in: path
@@ -4990,8 +5000,8 @@ paths:
               nullable: true
         required: false
       responses:
-        "202":
-          description: The batch operation pause request was accepted.
+        "204":
+          description: The batch operation pause request was created.
           content: { }
         "400":
           $ref: "#/components/responses/InvalidData"
@@ -5012,7 +5022,9 @@ paths:
         - Batch operation
       operationId: resumeBatchOperation
       summary: Resume Batch operation
-      description: Resumes a paused batch operation.
+      description: |
+        Resumes a paused batch operation.
+        This is done asynchronously, the progress can be tracked using the batch operation status endpoint (/batch-operations/{batchOperationId}).
       parameters:
         - name: batchOperationId
           in: path
@@ -5029,8 +5041,8 @@ paths:
               nullable: true
         required: false
       responses:
-        "202":
-          description: The batch operation resume request was accepted.
+        "204":
+          description: The batch operation resume request was created.
           content: { }
         "400":
           $ref: "#/components/responses/InvalidData"

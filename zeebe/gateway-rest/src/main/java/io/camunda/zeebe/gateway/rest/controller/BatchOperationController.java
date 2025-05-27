@@ -60,7 +60,7 @@ public class BatchOperationController {
 
   @CamundaPutMapping(path = "/{batchOperationId}/cancel")
   public ResponseEntity<Object> cancelBatchOperation(@PathVariable final String batchOperationId) {
-    return RequestMapper.executeServiceMethodWithAcceptedResult(
+    return RequestMapper.executeServiceMethodWithNoContentResult(
             () ->
                 batchOperationServices
                     .withAuthentication(RequestMapper.getAuthentication())
@@ -70,7 +70,7 @@ public class BatchOperationController {
 
   @CamundaPutMapping(path = "/{batchOperationId}/pause")
   public ResponseEntity<Object> pauseBatchOperation(@PathVariable final String batchOperationId) {
-    return RequestMapper.executeServiceMethodWithAcceptedResult(
+    return RequestMapper.executeServiceMethodWithNoContentResult(
             () ->
                 batchOperationServices
                     .withAuthentication(RequestMapper.getAuthentication())
@@ -80,7 +80,7 @@ public class BatchOperationController {
 
   @CamundaPutMapping(path = "/{batchOperationId}/resume")
   public ResponseEntity<Object> resumeBatchOperation(@PathVariable final String batchOperationId) {
-    return RequestMapper.executeServiceMethodWithAcceptedResult(
+    return RequestMapper.executeServiceMethodWithNoContentResult(
             () ->
                 batchOperationServices
                     .withAuthentication(RequestMapper.getAuthentication())

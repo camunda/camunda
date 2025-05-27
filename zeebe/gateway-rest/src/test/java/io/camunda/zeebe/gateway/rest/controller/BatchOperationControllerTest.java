@@ -117,7 +117,7 @@ class BatchOperationControllerTest extends RestControllerTest {
         .uri("/v2/batch-operations/{key}/cancel", batchOperationId)
         .exchange()
         .expectStatus()
-        .isAccepted();
+        .isNoContent();
   }
 
   @Test
@@ -131,7 +131,7 @@ class BatchOperationControllerTest extends RestControllerTest {
         .uri("/v2/batch-operations/{key}/pause", batchOperationId)
         .exchange()
         .expectStatus()
-        .isAccepted();
+        .isNoContent();
   }
 
   @Test
@@ -145,7 +145,7 @@ class BatchOperationControllerTest extends RestControllerTest {
         .uri("/v2/batch-operations/{key}/resume", batchOperationId)
         .exchange()
         .expectStatus()
-        .isAccepted();
+        .isNoContent();
   }
 
   private static BatchOperationEntity getBatchOperationEntity(final String batchOperationId) {
