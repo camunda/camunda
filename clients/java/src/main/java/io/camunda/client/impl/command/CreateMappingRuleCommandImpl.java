@@ -17,7 +17,7 @@ package io.camunda.client.impl.command;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.command.CreateMappingCommandStep1;
+import io.camunda.client.api.command.CreateMappingRuleCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CreateMappingResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
@@ -29,14 +29,14 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class CreateMappingCommandImpl implements CreateMappingCommandStep1 {
+public class CreateMappingRuleCommandImpl implements CreateMappingRuleCommandStep1 {
 
   private final MappingRuleCreateRequest mappingRequest;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public CreateMappingCommandImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
+  public CreateMappingRuleCommandImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -44,25 +44,25 @@ public class CreateMappingCommandImpl implements CreateMappingCommandStep1 {
   }
 
   @Override
-  public CreateMappingCommandStep1 claimName(final String claimName) {
+  public CreateMappingRuleCommandStep1 claimName(final String claimName) {
     mappingRequest.claimName(claimName);
     return this;
   }
 
   @Override
-  public CreateMappingCommandStep1 claimValue(final String claimValue) {
+  public CreateMappingRuleCommandStep1 claimValue(final String claimValue) {
     mappingRequest.claimValue(claimValue);
     return this;
   }
 
   @Override
-  public CreateMappingCommandStep1 name(final String name) {
+  public CreateMappingRuleCommandStep1 name(final String name) {
     mappingRequest.name(name);
     return this;
   }
 
   @Override
-  public CreateMappingCommandStep1 mappingRuleId(final String mappingRuleId) {
+  public CreateMappingRuleCommandStep1 mappingRuleId(final String mappingRuleId) {
     mappingRequest.mappingRuleId(mappingRuleId);
     return this;
   }

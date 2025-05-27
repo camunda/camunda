@@ -162,7 +162,7 @@ import io.camunda.client.impl.command.CreateDocumentBatchCommandImpl;
 import io.camunda.client.impl.command.CreateDocumentCommandImpl;
 import io.camunda.client.impl.command.CreateDocumentLinkCommandImpl;
 import io.camunda.client.impl.command.CreateGroupCommandImpl;
-import io.camunda.client.impl.command.CreateMappingCommandImpl;
+import io.camunda.client.impl.command.CreateMappingRuleCommandImpl;
 import io.camunda.client.impl.command.CreateProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.CreateRoleCommandImpl;
 import io.camunda.client.impl.command.CreateTenantCommandImpl;
@@ -956,7 +956,7 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public CreateMappingRuleCommandStep1 newCreateMappingRuleCommand() {
-    return new CreateMappingCommandImpl(httpClient, jsonMapper);
+    return new CreateMappingRuleCommandImpl(httpClient, jsonMapper);
   }
 
   @Override

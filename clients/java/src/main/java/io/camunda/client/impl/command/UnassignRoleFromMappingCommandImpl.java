@@ -32,7 +32,7 @@ public class UnassignRoleFromMappingCommandImpl
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
   private String roleId;
-  private String mappingId;
+  private String mappingRuleId;
 
   public UnassignRoleFromMappingCommandImpl(final HttpClient httpClient) {
     this.httpClient = httpClient;
@@ -46,8 +46,8 @@ public class UnassignRoleFromMappingCommandImpl
   }
 
   @Override
-  public UnassignRoleFromMappingCommandStep2 mappingRuleId(final String mappingId) {
-    this.mappingId = mappingId;
+  public UnassignRoleFromMappingCommandStep2 mappingRuleId(final String mappingRuleId) {
+    this.mappingRuleId = mappingRuleId;
     return this;
   }
 
@@ -61,10 +61,10 @@ public class UnassignRoleFromMappingCommandImpl
   @Override
   public CamundaFuture<UnassignRoleFromMappingResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("roleId", roleId);
-    ArgumentUtil.ensureNotNullNorEmpty("mappingId", mappingId);
+    ArgumentUtil.ensureNotNullNorEmpty("mappingRuleId", mappingRuleId);
     final HttpCamundaFuture<UnassignRoleFromMappingResponse> result = new HttpCamundaFuture<>();
     httpClient.delete(
-        "/roles/" + roleId + "/mappings/" + mappingId,
+        "/roles/" + roleId + "/mapping-rules/" + mappingRuleId,
         null, // No request body needed
         httpRequestConfig.build(),
         result);
