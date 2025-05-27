@@ -19,14 +19,22 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TasklistIndexPrefixHolder;
 import io.camunda.tasklist.qa.util.TestSchemaManager;
 import io.camunda.tasklist.qa.util.TestUtil;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.elasticsearch.action.admin.indices.flush.FlushRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.xcontent.XContentType;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -70,6 +78,7 @@ public class ElasticsearchTestExtension
   @Autowired private TestSchemaManager schemaManager;
   @Autowired private TasklistIndexPrefixHolder indexPrefixHolder;
   private String indexPrefix;
+  @Autowired private ObjectMapper objectMapper;
 
   @Override
   public void beforeEach(final ExtensionContext extensionContext) {
@@ -191,6 +200,20 @@ public class ElasticsearchTestExtension
   @Override
   public int getOpenScrollcontextSize() {
     return getIntValueForJSON(PATH_SEARCH_STATISTICS, OPEN_SCROLL_CONTEXT_FIELD, 0);
+  }
+
+  @Override
+  public <T extends ExporterEntity> void bulkIndex(
+      final IndexDescriptor index, final List<T> documents) throws IOException {
+    final var bulkRequest = new BulkRequest().setRefreshPolicy(RefreshPolicy.IMMEDIATE);
+    for (final var document : documents) {
+      bulkRequest.add(
+          new IndexRequest()
+              .index(index.getFullQualifiedName())
+              .id(document.getId())
+              .source(objectMapper.writeValueAsString(document), XContentType.JSON));
+    }
+    esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
   }
 
   private int getIntValueForJSON(
