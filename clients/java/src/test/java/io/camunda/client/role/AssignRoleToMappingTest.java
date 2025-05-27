@@ -89,7 +89,12 @@ public class AssignRoleToMappingTest extends ClientRestTest {
     // when / then
     assertThatThrownBy(
             () ->
-                client.newAssignRoleToMappingCommand().roleId(ROLE_ID).mappingRuleId("").send().join())
+                client
+                    .newAssignRoleToMappingCommand()
+                    .roleId(ROLE_ID)
+                    .mappingRuleId("")
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("mappingId must not be empty");
   }
