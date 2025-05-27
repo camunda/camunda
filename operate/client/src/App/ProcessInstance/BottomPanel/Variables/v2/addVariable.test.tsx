@@ -29,6 +29,7 @@ describe('Add variable', () => {
   beforeEach(() => {
     mockFetchProcessInstanceDeprecated().withSuccess(createInstance());
     mockFetchProcessDefinitionXml().withSuccess('');
+    mockFetchProcessDefinitionXml().withSuccess('');
   });
 
   it('should show/hide add variable inputs', async () => {
@@ -121,7 +122,7 @@ describe('Add variable', () => {
     expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
   });
 
-  it.skip('should not allow empty characters in variable name', async () => {
+  it('should not allow empty characters in variable name', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
@@ -400,7 +401,7 @@ describe('Add variable', () => {
     ).not.toBeInTheDocument();
   });
 
-  it.skip('should not exit add variable state when user presses Enter', async () => {
+  it('should not exit add variable state when user presses Enter', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 

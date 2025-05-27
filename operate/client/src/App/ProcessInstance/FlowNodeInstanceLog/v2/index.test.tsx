@@ -49,6 +49,19 @@ const mockProcessInstance: ProcessInstance = {
   processDefinitionName: 'Multi-Instance Process',
   hasIncident: true,
 };
+const mockDeprecatedProcessInstance = createInstance({
+  id: '1',
+  state: 'ACTIVE',
+  processName: 'processName',
+  bpmnProcessId: 'processName',
+  operations: [
+    createOperation({
+      state: 'COMPLETED',
+      type: 'MIGRATE_PROCESS_INSTANCE',
+      completedDate: MOCK_TIMESTAMP,
+    }),
+  ],
+});
 
 const Wrapper = ({children}: {children?: React.ReactNode}) => {
   useEffect(() => {
@@ -74,19 +87,7 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
 describe('FlowNodeInstanceLog', () => {
   beforeEach(async () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
-      createInstance({
-        id: '1',
-        state: 'ACTIVE',
-        processName: 'processName',
-        bpmnProcessId: 'processName',
-        operations: [
-          createOperation({
-            state: 'COMPLETED',
-            type: 'MIGRATE_PROCESS_INSTANCE',
-            completedDate: MOCK_TIMESTAMP,
-          }),
-        ],
-      }),
+      mockDeprecatedProcessInstance,
     );
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
@@ -197,7 +198,10 @@ describe('FlowNodeInstanceLog', () => {
     jest.useRealTimers();
   });
 
-  it.skip('should render flow node instances tree', async () => {
+  it('should render flow node instances tree', async () => {
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockDeprecatedProcessInstance,
+    );
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessDefinitionXml().withSuccess('');
     init(mockProcessInstance);
@@ -208,8 +212,10 @@ describe('FlowNodeInstanceLog', () => {
       0,
     );
 
-    expect(
-      screen.getByText('Migrated 2018-12-12 00:00:00'),
-    ).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByText('Migrated 2018-12-12 00:00:00'),
+      ).toBeInTheDocument(),
+    );
   });
 });
