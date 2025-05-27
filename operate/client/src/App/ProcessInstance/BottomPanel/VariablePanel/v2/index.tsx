@@ -16,7 +16,7 @@ import {processInstanceListenersStore} from 'modules/stores/processInstanceListe
 import {useProcessInstancePageParams} from '../../../useProcessInstancePageParams';
 import {InputOutputMappings} from '../InputOutputMappings';
 import {VariablesContent as VariablesContentV2} from './VariablesContent';
-import {Listeners} from '../Listeners';
+import {Listeners} from './Listeners';
 import {WarningFilled} from '../styled';
 import {init, startPolling} from 'modules/utils/variables';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
@@ -32,6 +32,8 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const {data: processInstance} = useProcessInstance();
   const isRootNodeSelected = useIsRootNodeSelected();
+
+  // const {data: queryJobs} = useJobs({payload});
 
   const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
   const flowNodeInstanceId =
