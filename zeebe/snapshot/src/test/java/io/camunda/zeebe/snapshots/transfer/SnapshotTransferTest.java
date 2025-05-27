@@ -11,34 +11,41 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
+import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.SnapshotTransferUtil;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.util.Map;
 import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-public class SnapshotTransferTest extends SnapshotTransferUtil {
-
-  @TempDir Path temporaryFolder;
+public class SnapshotTransferTest {
 
   @AutoClose
-  ActorScheduler scheduler =
+  static final ActorScheduler scheduler =
       new ActorScheduler.ActorSchedulerBuilder().setIoBoundActorThreadCount(2).build();
 
+  @TempDir Path temporaryFolder;
+  @AutoClose ConstructableSnapshotStore senderSnapshotStore;
+  @AutoClose ReceivableSnapshotStore receiverSnapshotStore;
   private SnapshotTransferService transferService;
   private SnapshotTransfer snapshotTransfer;
+
+  @BeforeAll
+  public static void beforeAll() {
+    scheduler.start();
+  }
 
   @BeforeEach
   public void beforeEach() throws Exception {
     final int partitionId = 1;
     final var senderDirectory = temporaryFolder.resolve("sender");
     final var receiverDirectory = temporaryFolder.resolve("receiver");
-
-    scheduler.start();
 
     senderSnapshotStore =
         new FileBasedSnapshotStore(
@@ -49,7 +56,7 @@ public class SnapshotTransferTest extends SnapshotTransferUtil {
         new FileBasedSnapshotStore(
             0, partitionId, receiverDirectory, snapshotPath -> Map.of(), new SimpleMeterRegistry());
 
-    final var receiverActor = scheduler.submitActor((Actor) receiverSnapshotStore).join();
+    scheduler.submitActor((Actor) receiverSnapshotStore).join();
 
     transferService = new SnapshotTransferServiceImpl(senderSnapshotStore, 1);
     snapshotTransfer =
@@ -60,7 +67,8 @@ public class SnapshotTransferTest extends SnapshotTransferUtil {
   public void shouldTransferSnapshot() {
     // given
     final int partitionId = 1;
-    takePersistedSnapshot();
+    SnapshotTransferUtil.takePersistedSnapshot(
+        senderSnapshotStore, SnapshotTransferUtil.SNAPSHOT_FILE_CONTENTS);
     // when
     final var persistedSnapshot = snapshotTransfer.getLatestSnapshot(partitionId).join();
     // then

@@ -22,6 +22,9 @@ import io.camunda.zeebe.broker.client.impl.BrokerClusterStateImpl;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotTransferServiceClient;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransfer;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferServiceImpl;
@@ -34,38 +37,41 @@ import io.netty.util.NetUtil;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
-import org.agrona.CloseHelper;
 import org.agrona.concurrent.SnowflakeIdGenerator;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-public class SnapshotApiRequestHandlerTest extends SnapshotTransferUtil {
-  @AutoClose MeterRegistry registry = new SimpleMeterRegistry();
-
-  @TempDir Path temporaryFolder;
-
-  final int partitionId = 1;
-
-  ActorScheduler scheduler =
+public class SnapshotApiRequestHandlerTest {
+  @AutoClose
+  private static final ActorScheduler scheduler =
       new ActorScheduler.ActorSchedulerBuilder()
-          .setSchedulerName(getClass().getSimpleName())
+          .setSchedulerName("SnapshotApiRequestHandlerTest")
           .build();
 
-  private AtomixClientTransportAdapter clientTransport;
+  @AutoClose MeterRegistry registry = new SimpleMeterRegistry();
+  @TempDir Path temporaryFolder;
+  final int partitionId = 1;
+  @AutoClose ConstructableSnapshotStore senderSnapshotStore;
+  @AutoClose ReceivableSnapshotStore receiverSnapshotStore;
+  @AutoClose private AtomixClientTransportAdapter clientTransport;
   private String serverAddress;
-  private AtomixServerTransport serverTransport;
-  private SnapshotApiRequestHandler snapshotHandler;
+  @AutoClose private AtomixServerTransport serverTransport;
+  @AutoClose private SnapshotApiRequestHandler snapshotHandler;
   private SnapshotTransferServiceClient client;
-  private BrokerClientImpl brokerClient;
+  @AutoClose private BrokerClientImpl brokerClient;
+
+  @BeforeAll
+  public static void beforeAll() {
+    scheduler.start();
+  }
 
   @BeforeEach
   void setup() {
     final var address = SocketUtil.getNextAddress();
 
-    scheduler.start();
     serverAddress = NetUtil.toSocketAddressString(address);
     final var messagingService =
         new NettyMessagingService(
@@ -118,18 +124,18 @@ public class SnapshotApiRequestHandlerTest extends SnapshotTransferUtil {
     client = new SnapshotTransferServiceClient(brokerClient);
   }
 
-  @AfterEach
-  void shutdown() {
-    // Cannot use @Autoclose annotation because the order of closing is not correct.
-    CloseHelper.closeAll(
-        senderSnapshotStore,
-        receiverSnapshotStore,
-        brokerClient,
-        serverTransport,
-        clientTransport,
-        snapshotHandler,
-        scheduler);
-  }
+  //  @AfterEach
+  //  void shutdown() {
+  //    // Cannot use @Autoclose annotation because the order of closing is not correct.
+  //    CloseHelper.closeAll(
+  //        senderSnapshotStore,
+  //        receiverSnapshotStore,
+  //        brokerClient,
+  //        serverTransport,
+  //        clientTransport,
+  //        snapshotHandler,
+  //        scheduler);
+  //  }
 
   @Test
   void shouldSendAllChunksCorrectly() {
@@ -142,5 +148,10 @@ public class SnapshotApiRequestHandlerTest extends SnapshotTransferUtil {
     // then
     assertThat(persistedSnapshot.getId())
         .isEqualTo(senderSnapshotStore.getLatestSnapshot().get().getId());
+  }
+
+  private PersistedSnapshot takePersistedSnapshot() {
+    return SnapshotTransferUtil.takePersistedSnapshot(
+        senderSnapshotStore, SnapshotTransferUtil.SNAPSHOT_FILE_CONTENTS);
   }
 }

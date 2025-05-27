@@ -11,7 +11,6 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
-import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -22,21 +21,22 @@ import java.nio.file.StandardOpenOption;
 import java.util.Map;
 
 public abstract class SnapshotTransferUtil {
-  protected ConstructableSnapshotStore senderSnapshotStore;
-  protected ReceivableSnapshotStore receiverSnapshotStore;
 
-  private final Map<String, String> snapshotFileContents =
+  public static final Map<String, String> SNAPSHOT_FILE_CONTENTS =
       Map.of(
           "file1", "file1 contents",
           "file2", "file2 contents");
 
-  protected PersistedSnapshot takePersistedSnapshot() {
+  public static PersistedSnapshot takePersistedSnapshot(
+      final ConstructableSnapshotStore senderSnapshotStore,
+      final Map<String, String> snapshotFileContents) {
     final var transientSnapshot = senderSnapshotStore.newTransientSnapshot(1L, 0L, 1, 0).get();
-    transientSnapshot.take(this::writeSnapshot).join();
+    transientSnapshot.take(p -> writeSnapshot(p, snapshotFileContents)).join();
     return transientSnapshot.persist().join();
   }
 
-  protected void writeSnapshot(final Path path) {
+  public static void writeSnapshot(
+      final Path path, final Map<String, String> snapshotFileContents) {
     try {
       FileUtil.ensureDirectoryExists(path);
 

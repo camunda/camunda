@@ -23,12 +23,15 @@ import java.util.concurrent.ExecutionException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.rules.TemporaryFolder;
 
-public class ReceivedSnapshotTest extends SnapshotTransferUtil {
+public class ReceivedSnapshotTest {
 
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
   @Rule public ActorSchedulerRule scheduler = new ActorSchedulerRule();
+  @AutoClose ConstructableSnapshotStore senderSnapshotStore;
+  @AutoClose ReceivableSnapshotStore receiverSnapshotStore;
 
   @Before
   public void beforeEach() throws Exception {
@@ -390,5 +393,10 @@ public class ReceivedSnapshotTest extends SnapshotTransferUtil {
     }
 
     return receivedSnapshot;
+  }
+
+  private PersistedSnapshot takePersistedSnapshot() {
+    return SnapshotTransferUtil.takePersistedSnapshot(
+        senderSnapshotStore, SnapshotTransferUtil.SNAPSHOT_FILE_CONTENTS);
   }
 }
