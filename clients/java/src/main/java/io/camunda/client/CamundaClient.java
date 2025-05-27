@@ -89,7 +89,7 @@ import io.camunda.client.api.fetch.ElementInstanceGetRequest;
 import io.camunda.client.api.fetch.GroupGetRequest;
 import io.camunda.client.api.fetch.GroupsSearchRequest;
 import io.camunda.client.api.fetch.IncidentGetRequest;
-import io.camunda.client.api.fetch.MappingsByGroupSearchRequest;
+import io.camunda.client.api.fetch.MappingRulesByGroupSearchRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetFormRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetXmlRequest;
@@ -2285,7 +2285,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param groupId the ID of the group
    * @return a builder for the mappings by group search request
    */
-  MappingsByGroupSearchRequest newMappingsByGroupSearchRequest(String groupId);
+  MappingRulesByGroupSearchRequest newMappingRulesByGroupSearchRequest(String groupId);
 
   /**
    * Executes a search request to query mappings by role.

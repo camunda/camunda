@@ -21,7 +21,7 @@ import static io.camunda.client.api.search.request.SearchRequestBuilders.searchR
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.fetch.MappingsByGroupSearchRequest;
+import io.camunda.client.api.fetch.MappingRulesByGroupSearchRequest;
 import io.camunda.client.api.search.filter.MappingFilter;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.SearchRequestPage;
@@ -41,7 +41,7 @@ import org.apache.hc.client5.http.config.RequestConfig;
 
 public class MappingsByGroupSearchRequestImpl
     extends TypedSearchRequestPropertyProvider<MappingRuleSearchQueryRequest>
-    implements MappingsByGroupSearchRequest {
+    implements MappingRulesByGroupSearchRequest {
 
   private final MappingRuleSearchQueryRequest request;
   private final String groupId;
@@ -79,18 +79,18 @@ public class MappingsByGroupSearchRequestImpl
   }
 
   @Override
-  public MappingsByGroupSearchRequest filter(final MappingFilter value) {
+  public MappingRulesByGroupSearchRequest filter(final MappingFilter value) {
     request.setFilter(provideSearchRequestProperty(value));
     return this;
   }
 
   @Override
-  public MappingsByGroupSearchRequest filter(final Consumer<MappingFilter> fn) {
+  public MappingRulesByGroupSearchRequest filter(final Consumer<MappingFilter> fn) {
     return filter(mappingFilter(fn));
   }
 
   @Override
-  public MappingsByGroupSearchRequest sort(final MappingSort value) {
+  public MappingRulesByGroupSearchRequest sort(final MappingSort value) {
     request.setSort(
         SearchRequestSortMapper.toMappingSearchQuerySortRequest(
             provideSearchRequestProperty(value)));
@@ -98,18 +98,18 @@ public class MappingsByGroupSearchRequestImpl
   }
 
   @Override
-  public MappingsByGroupSearchRequest sort(final Consumer<MappingSort> fn) {
+  public MappingRulesByGroupSearchRequest sort(final Consumer<MappingSort> fn) {
     return sort(mappingSort(fn));
   }
 
   @Override
-  public MappingsByGroupSearchRequest page(final SearchRequestPage value) {
+  public MappingRulesByGroupSearchRequest page(final SearchRequestPage value) {
     request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 
   @Override
-  public MappingsByGroupSearchRequest page(final Consumer<SearchRequestPage> fn) {
+  public MappingRulesByGroupSearchRequest page(final Consumer<SearchRequestPage> fn) {
     return page(searchRequestPage(fn));
   }
 

@@ -21,6 +21,6 @@ import io.camunda.client.api.search.request.TypedSearchRequest;
 import io.camunda.client.api.search.response.MappingRule;
 import io.camunda.client.api.search.sort.MappingSort;
 
-public interface MappingsByGroupSearchRequest
-    extends TypedSearchRequest<MappingFilter, MappingSort, MappingsByGroupSearchRequest>,
+public interface MappingRulesByGroupSearchRequest
+    extends TypedSearchRequest<MappingFilter, MappingSort, MappingRulesByGroupSearchRequest>,
         FinalSearchRequestStep<MappingRule> {}
