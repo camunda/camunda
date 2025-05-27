@@ -4917,7 +4917,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/ProcessInstanceSearchQuery"
+              $ref: "#/components/schemas/BatchOperationSearchQuery"
       responses:
         "200":
           description: The batch operation search result.
