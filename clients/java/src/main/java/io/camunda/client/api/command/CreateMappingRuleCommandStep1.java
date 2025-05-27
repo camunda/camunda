@@ -17,7 +17,7 @@ package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.CreateMappingResponse;
 
-public interface CreateMappingCommandStep1 extends FinalCommandStep<CreateMappingResponse> {
+public interface CreateMappingRuleCommandStep1 extends FinalCommandStep<CreateMappingResponse> {
 
   /**
    * Set the claim name to create mapping with.
@@ -26,7 +26,7 @@ public interface CreateMappingCommandStep1 extends FinalCommandStep<CreateMappin
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  CreateMappingCommandStep1 claimName(final String claimName);
+  CreateMappingRuleCommandStep1 claimName(final String claimName);
 
   /**
    * Set the claim value to create mapping with.
@@ -35,7 +35,7 @@ public interface CreateMappingCommandStep1 extends FinalCommandStep<CreateMappin
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  CreateMappingCommandStep1 claimValue(final String claimValue);
+  CreateMappingRuleCommandStep1 claimValue(final String claimValue);
 
   /**
    * Set the name to create mapping with.
@@ -44,14 +44,14 @@ public interface CreateMappingCommandStep1 extends FinalCommandStep<CreateMappin
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  CreateMappingCommandStep1 name(final String name);
+  CreateMappingRuleCommandStep1 name(final String name);
 
   /**
    * Set the id to create mapping with.
    *
-   * @param mappingId the mapping id value
+   * @param mappingRuleId the mapping id value
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  CreateMappingCommandStep1 mappingRuleId(final String mappingId);
+  CreateMappingRuleCommandStep1 mappingRuleId(final String mappingRuleId);
 }

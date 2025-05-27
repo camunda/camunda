@@ -40,7 +40,7 @@ import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
 import io.camunda.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.client.api.command.CreateDocumentLinkCommandStep1;
 import io.camunda.client.api.command.CreateGroupCommandStep1;
-import io.camunda.client.api.command.CreateMappingCommandStep1;
+import io.camunda.client.api.command.CreateMappingRuleCommandStep1;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.CreateRoleCommandStep1;
 import io.camunda.client.api.command.CreateTenantCommandStep1;
@@ -65,7 +65,7 @@ import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignMappingFromGroupStep1;
 import io.camunda.client.api.command.UnassignRoleFromClientCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromGroupCommandStep1;
-import io.camunda.client.api.command.UnassignRoleFromMappingCommandStep1;
+import io.camunda.client.api.command.UnassignRoleFromMappingRuleCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromUserCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
@@ -1395,7 +1395,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the unassign role from mapping command
    */
-  UnassignRoleFromMappingCommandStep1 newUnassignRoleFromMappingCommand();
+  UnassignRoleFromMappingRuleCommandStep1 newUnassignRoleFromMappingRuleCommand();
 
   /**
    * Command to unassign a role from a client.
@@ -1595,7 +1595,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  CreateMappingCommandStep1 newCreateMappingCommand();
+  CreateMappingRuleCommandStep1 newCreateMappingRuleCommand();
 
   /*
    * Retrieves the XML representation of a decision requirements.
