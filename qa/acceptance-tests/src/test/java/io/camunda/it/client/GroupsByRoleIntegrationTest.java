@@ -156,7 +156,6 @@ public class GroupsByRoleIntegrationTest {
                   camundaClient
                       .newGroupsByRoleSearchRequest(roleId)
                       .filter(f -> f.groupId(groupId))
-                      .filter(f -> f.groupId(groupId))
                       .send()
                       .join()
                       .items();
