@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.search.response.Mapping;
+import io.camunda.client.api.search.response.MappingRule;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import org.awaitility.Awaitility;
@@ -51,7 +51,10 @@ public class MappingsByGroupSearchTest {
     assertThat(mappings.items().size()).isEqualTo(2);
     assertThat(mappings.items())
         .extracting(
-            Mapping::getMappingId, Mapping::getClaimName, Mapping::getClaimValue, Mapping::getName)
+            MappingRule::getMappingRuleId,
+            MappingRule::getClaimName,
+            MappingRule::getClaimValue,
+            MappingRule::getName)
         .contains(
             tuple(MAPPING_ID_1, MAPPING_ID_1 + "claimName", MAPPING_ID_1 + "claimValue", "name"),
             tuple(MAPPING_ID_2, MAPPING_ID_2 + "claimName", MAPPING_ID_2 + "claimValue", "name"));
@@ -62,12 +65,14 @@ public class MappingsByGroupSearchTest {
     final var mappings =
         camundaClient
             .newMappingsByGroupSearchRequest(GROUP_ID)
-            .filter(fn -> fn.mappingId(MAPPING_ID_1))
+            .filter(fn -> fn.mappingRuleId(MAPPING_ID_1))
             .send()
             .join();
 
     assertThat(mappings.items().size()).isEqualTo(1);
-    assertThat(mappings.items()).extracting(Mapping::getMappingId).containsExactly(MAPPING_ID_1);
+    assertThat(mappings.items())
+        .extracting(MappingRule::getMappingRuleId)
+        .containsExactly(MAPPING_ID_1);
   }
 
   @Test
@@ -81,7 +86,7 @@ public class MappingsByGroupSearchTest {
 
     assertThat(mappings.items().size()).isEqualTo(2);
     assertThat(mappings.items())
-        .extracting(Mapping::getMappingId)
+        .extracting(MappingRule::getMappingRuleId)
         .containsExactly(MAPPING_ID_2, MAPPING_ID_1);
   }
 
@@ -104,7 +109,7 @@ public class MappingsByGroupSearchTest {
   private static void createMapping(final String mappingId) {
     camundaClient
         .newCreateMappingCommand()
-        .mappingId(mappingId)
+        .mappingRuleId(mappingId)
         .name("name")
         .claimName(mappingId + "claimName")
         .claimValue(mappingId + "claimValue")

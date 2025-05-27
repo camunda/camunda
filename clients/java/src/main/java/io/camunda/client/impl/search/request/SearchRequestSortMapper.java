@@ -57,7 +57,7 @@ public class SearchRequestSortMapper {
   }
 
   public static List<SearchRequestSort> fromMappingSearchQuerySortRequest(
-      final List<MappingSearchQuerySortRequest> requests) {
+      final List<MappingRuleSearchQuerySortRequest> requests) {
     return requests.stream()
         .map(r -> createFrom(r.getField(), r.getOrder()))
         .collect(Collectors.toList());
@@ -229,13 +229,14 @@ public class SearchRequestSortMapper {
         .collect(Collectors.toList());
   }
 
-  public static List<MappingSearchQuerySortRequest> toMappingSearchQuerySortRequest(
+  public static List<MappingRuleSearchQuerySortRequest> toMappingSearchQuerySortRequest(
       final List<SearchRequestSort> requests) {
     return requests.stream()
         .map(
             r -> {
-              final MappingSearchQuerySortRequest request = new MappingSearchQuerySortRequest();
-              request.setField(MappingSearchQuerySortRequest.FieldEnum.fromValue(r.getField()));
+              final MappingRuleSearchQuerySortRequest request =
+                  new MappingRuleSearchQuerySortRequest();
+              request.setField(MappingRuleSearchQuerySortRequest.FieldEnum.fromValue(r.getField()));
               request.setOrder(r.getOrder());
               return request;
             })

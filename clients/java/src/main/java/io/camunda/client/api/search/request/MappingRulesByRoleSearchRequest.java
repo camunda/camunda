@@ -16,9 +16,9 @@
 package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.filter.MappingFilter;
-import io.camunda.client.api.search.response.Mapping;
+import io.camunda.client.api.search.response.MappingRule;
 import io.camunda.client.api.search.sort.MappingSort;
 
-public interface MappingsByRoleSearchRequest
-    extends TypedSearchRequest<MappingFilter, MappingSort, MappingsByRoleSearchRequest>,
-        FinalSearchRequestStep<Mapping> {}
+public interface MappingRulesByRoleSearchRequest
+    extends TypedSearchRequest<MappingFilter, MappingSort, MappingRulesByRoleSearchRequest>,
+        FinalSearchRequestStep<MappingRule> {}

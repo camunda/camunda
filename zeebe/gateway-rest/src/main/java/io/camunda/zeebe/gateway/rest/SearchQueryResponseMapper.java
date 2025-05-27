@@ -72,8 +72,8 @@ import io.camunda.zeebe.gateway.protocol.rest.GroupUserResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUserSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.MappingResult;
-import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleResult;
+import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
@@ -294,10 +294,10 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(List::of));
   }
 
-  public static MappingSearchQueryResult toMappingSearchQueryResponse(
+  public static MappingRuleSearchQueryResult toMappingRuleSearchQueryResponse(
       final SearchQueryResult<MappingEntity> result) {
     final var page = toSearchQueryPageResponse(result);
-    return new MappingSearchQueryResult()
+    return new MappingRuleSearchQueryResult()
         .page(page)
         .items(
             ofNullable(result.items())
@@ -582,15 +582,15 @@ public final class SearchQueryResponseMapper {
     return new RoleClientResult().clientId(roleMember.id());
   }
 
-  private static List<MappingResult> toMappings(final List<MappingEntity> mappings) {
-    return mappings.stream().map(SearchQueryResponseMapper::toMapping).toList();
+  private static List<MappingRuleResult> toMappings(final List<MappingEntity> mappings) {
+    return mappings.stream().map(SearchQueryResponseMapper::toMappingRule).toList();
   }
 
-  public static MappingResult toMapping(final MappingEntity mappingEntity) {
-    return new MappingResult()
+  public static MappingRuleResult toMappingRule(final MappingEntity mappingEntity) {
+    return new MappingRuleResult()
         .claimName(mappingEntity.claimName())
         .claimValue(mappingEntity.claimValue())
-        .mappingId(mappingEntity.mappingId())
+        .mappingRuleId(mappingEntity.mappingId())
         .name(mappingEntity.name());
   }
 
