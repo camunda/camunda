@@ -1826,7 +1826,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /process-instances/batch-operations/cancellation:
+  /process-instances/cancellation:
     post:
       tags:
         - Process instance
@@ -1864,7 +1864,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /process-instances/batch-operations/incident-resolution:
+  /process-instances/incident-resolution:
     post:
       tags:
         - Process instance
@@ -1902,7 +1902,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /process-instances/batch-operations/migration:
+  /process-instances/migration:
     post:
       tags:
         - Process instance
@@ -1940,7 +1940,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /process-instances/batch-operations/modification:
+  /process-instances/modification:
     post:
       tags:
         - Process instance

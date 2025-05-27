@@ -1326,7 +1326,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri("/v2/process-instances/batch-operations/cancellation")
+        .uri("/v2/process-instances/cancellation")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -1374,7 +1374,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri("/v2/process-instances/batch-operations/modification")
+        .uri("/v2/process-instances/modification")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -1450,7 +1450,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri("/v2/process-instances/batch-operations/incident-resolution")
+        .uri("/v2/process-instances/incident-resolution")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
@@ -1500,7 +1500,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri("/v2/process-instances/batch-operations/migration")
+        .uri("/v2/process-instances/migration")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)

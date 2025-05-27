@@ -44,7 +44,7 @@ public final class CreateBatchOperationTest extends ClientRestTest {
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
-    assertThat(request.getUrl()).isEqualTo("/v2/process-instances/batch-operations/cancellation");
+    assertThat(request.getUrl()).isEqualTo("/v2/process-instances/cancellation");
 
     final ProcessInstanceFilter filter = gatewayService.getLastRequest(ProcessInstanceFilter.class);
     assertThat(filter).isNotNull();
@@ -63,7 +63,7 @@ public final class CreateBatchOperationTest extends ClientRestTest {
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
-    assertThat(request.getUrl()).isEqualTo("/v2/process-instances/batch-operations/cancellation");
+    assertThat(request.getUrl()).isEqualTo("/v2/process-instances/cancellation");
 
     final ProcessInstanceFilter filter = gatewayService.getLastRequest(ProcessInstanceFilter.class);
     assertThat(filter.getProcessDefinitionId().get$Eq()).isEqualTo("test-01");
@@ -85,7 +85,7 @@ public final class CreateBatchOperationTest extends ClientRestTest {
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
-    assertThat(request.getUrl()).isEqualTo("/v2/process-instances/batch-operations/migration");
+    assertThat(request.getUrl()).isEqualTo("/v2/process-instances/migration");
 
     final ProcessInstanceMigrationBatchOperationInstruction lastRequest =
         gatewayService.getLastRequest(ProcessInstanceMigrationBatchOperationInstruction.class);
@@ -118,7 +118,7 @@ public final class CreateBatchOperationTest extends ClientRestTest {
     final LoggedRequest request = RestGatewayService.getLastRequest();
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
 
-    assertThat(request.getUrl()).isEqualTo("/v2/process-instances/batch-operations/modification");
+    assertThat(request.getUrl()).isEqualTo("/v2/process-instances/modification");
 
     final ProcessInstanceModificationBatchOperationInstruction lastRequest =
         gatewayService.getLastRequest(ProcessInstanceModificationBatchOperationInstruction.class);

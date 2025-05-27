@@ -129,13 +129,13 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
   private String getUrl() {
     switch (type) {
       case CANCEL_PROCESS_INSTANCE:
-        return "/process-instances/batch-operations/cancellation";
+        return "/process-instances/cancellation";
       case RESOLVE_INCIDENT:
-        return "/process-instances/batch-operations/incident-resolution";
+        return "/process-instances/incident-resolution";
       case MIGRATE_PROCESS_INSTANCE:
-        return "/process-instances/batch-operations/migration";
+        return "/process-instances/migration";
       case MODIFY_PROCESS_INSTANCE:
-        return "/process-instances/batch-operations/modification";
+        return "/process-instances/modification";
       default:
         throw new IllegalArgumentException("Unsupported batch operation type: " + type);
     }

@@ -155,8 +155,8 @@ public class ProcessInstanceController {
     }
   }
 
-  @CamundaPostMapping(path = "/batch-operations/cancellation")
-  public CompletableFuture<ResponseEntity<Object>> cancelProcessInstanceBatchOperation(
+  @CamundaPostMapping(path = "/cancellation")
+  public CompletableFuture<ResponseEntity<Object>> cancelProcessInstancesBatchOperation(
       @RequestBody(required = false) final ProcessInstanceFilter filter) {
 
     return SearchQueryRequestMapper.toProcessInstanceFilter(filter)
@@ -167,7 +167,7 @@ public class ProcessInstanceController {
             this::batchOperationCancellation);
   }
 
-  @CamundaPostMapping(path = "/batch-operations/incident-resolution")
+  @CamundaPostMapping(path = "/incident-resolution")
   public CompletableFuture<ResponseEntity<Object>> resolveIncidentsBatchOperation(
       @RequestBody(required = false) final ProcessInstanceFilter filter) {
 
@@ -179,14 +179,14 @@ public class ProcessInstanceController {
             this::batchOperationResolveIncidents);
   }
 
-  @CamundaPostMapping(path = "/batch-operations/migration")
+  @CamundaPostMapping(path = "/migration")
   public CompletableFuture<ResponseEntity<Object>> migrateProcessInstancesBatchOperation(
       @RequestBody final ProcessInstanceMigrationBatchOperationInstruction request) {
     return RequestMapper.toProcessInstanceMigrationBatchOperationRequest(request)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationModify);
   }
 
-  @CamundaPostMapping(path = "/batch-operations/modification")
+  @CamundaPostMapping(path = "/modification")
   public CompletableFuture<ResponseEntity<Object>> modifyProcessInstancesBatchOperation(
       @RequestBody final ProcessInstanceModificationBatchOperationInstruction request) {
     return RequestMapper.toProcessInstanceModifyBatchOperationRequest(request)
