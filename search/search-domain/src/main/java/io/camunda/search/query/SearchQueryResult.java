@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Objects;
 
 public record SearchQueryResult<T>(
-    long total, List<T> items, Object[] firstSortValues, Object[] lastSortValues) {
+    long total, List<T> items, String firstSortValues, String lastSortValues) {
 
   public static <T> SearchQueryResult<T> empty() {
     return new SearchQueryResult<>(0, Collections.emptyList(), null, null);
@@ -23,8 +23,8 @@ public record SearchQueryResult<T>(
 
     private long total;
     private List<T> items;
-    private Object[] firstSortValues;
-    private Object[] lastSortValues;
+    private String firstSortValues;
+    private String lastSortValues;
 
     public Builder<T> total(final long value) {
       total = value;
@@ -36,12 +36,12 @@ public record SearchQueryResult<T>(
       return this;
     }
 
-    public Builder<T> firstSortValues(final Object[] values) {
+    public Builder<T> firstSortValues(final String values) {
       firstSortValues = values;
       return this;
     }
 
-    public Builder<T> lastSortValues(final Object[] values) {
+    public Builder<T> lastSortValues(final String values) {
       lastSortValues = values;
       return this;
     }
