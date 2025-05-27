@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.partitioning.scaling.snapshot;
 
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.transport.snapshotapi.GetSnapshotChunkBrokerRequest;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -59,7 +60,7 @@ public class SnapshotTransferServiceClient implements SnapshotTransferService {
               } else {
                 if (response.isRejection()) {
                   return CompletableFuture.failedFuture(
-                      new RuntimeException(response.getRejection().toString()));
+                      new BrokerRejectionException(response.getRejection()));
                 } else {
                   return CompletableFuture.failedFuture(
                       new RuntimeException("Unexpected response: " + response));

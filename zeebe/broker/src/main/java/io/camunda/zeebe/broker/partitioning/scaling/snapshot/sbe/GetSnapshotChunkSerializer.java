@@ -8,7 +8,6 @@
 package io.camunda.zeebe.broker.partitioning.scaling.snapshot.sbe;
 
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.GetSnapshotChunk;
-import org.agrona.BitUtil;
 import org.agrona.MutableDirectBuffer;
 
 public class GetSnapshotChunkSerializer {
@@ -19,7 +18,7 @@ public class GetSnapshotChunkSerializer {
   public int size(final GetSnapshotChunk response) {
     return MessageHeaderEncoder.ENCODED_LENGTH
         + encoder.sbeBlockLength()
-        + 2 * (BitUtil.SIZE_OF_INT)
+        + 2 * (Integer.BYTES)
         + response.snapshotId().map(String::length).orElse(0)
         + response.lastChunkName().map(String::length).orElse(0);
   }

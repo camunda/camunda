@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.agrona.CloseHelper;
 
 public class SnapshotTransferServiceImpl implements SnapshotTransferService {
 
@@ -95,7 +96,7 @@ public class SnapshotTransferServiceImpl implements SnapshotTransferService {
 
     private final String snapshotId;
     private String lastChunkName;
-    private SnapshotChunkReader reader;
+    private final SnapshotChunkReader reader;
 
     PendingTransfer(
         final String snapshotId, final String lastChunkName, final SnapshotChunkReader reader) {
@@ -110,10 +111,7 @@ public class SnapshotTransferServiceImpl implements SnapshotTransferService {
         lastChunkName = next.getChunkName();
         return next;
       } else {
-        if (reader != null) {
-          reader.close();
-          reader = null;
-        }
+        CloseHelper.close(reader);
         return null;
       }
     }

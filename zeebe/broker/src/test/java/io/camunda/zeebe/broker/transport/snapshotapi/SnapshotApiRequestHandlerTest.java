@@ -142,7 +142,5 @@ public class SnapshotApiRequestHandlerTest extends SnapshotTransferUtil {
     // then
     assertThat(persistedSnapshot.getId())
         .isEqualTo(senderSnapshotStore.getLatestSnapshot().get().getId());
-
-    System.out.println(persistedSnapshot);
   }
 }
