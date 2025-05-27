@@ -7,7 +7,12 @@
  */
 
 import {VariablePanel} from './index';
-import {render, screen, waitFor} from 'modules/testing-library';
+import {
+  render,
+  screen,
+  waitFor,
+  waitForElementToBeRemoved,
+} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
@@ -86,7 +91,7 @@ const getWrapper = (
   return Wrapper;
 };
 
-describe.skip('VariablePanel', () => {
+describe('VariablePanel', () => {
   beforeEach(() => {
     const mockProcessInstance: ProcessInstance = {
       processInstanceKey: 'instance_id',
@@ -105,6 +110,10 @@ describe.skip('VariablePanel', () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
@@ -139,14 +148,15 @@ describe.skip('VariablePanel', () => {
     });
 
     mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchVariables().withSuccess([createVariable()]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
-    initFlowNodeMetadata('instance_id', statistics);
-    initFlowNodeSelection(null, 'instance_id');
+    initFlowNodeMetadata('process-instance', statistics);
+    flowNodeSelectionStore.init();
     processInstanceDetailsStore.setProcessInstance(
       createInstance({
         id: 'instance_id',
@@ -201,13 +211,16 @@ describe.skip('VariablePanel', () => {
     render(<VariablePanel />, {
       wrapper: getWrapper([Paths.processInstance('processInstanceId123')]),
     });
-    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByText('testVariableName')).toBeInTheDocument(),
+    );
 
     expect(
       screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
-    expect(screen.getByText('testVariableName')).toBeInTheDocument();
-    expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument(),
+    );
 
     act(() => {
       cancelAllTokens('Activity_0qtp1k6', 1, 1, {});
@@ -255,7 +268,10 @@ describe.skip('VariablePanel', () => {
     });
 
     render(<VariablePanel />, {wrapper: getWrapper()});
-    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
+    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    await waitFor(() =>
+      expect(screen.getByText('testVariableName')).toBeInTheDocument(),
+    );
 
     expect(
       screen.getByRole('button', {name: /add variable/i}),
@@ -345,7 +361,10 @@ describe.skip('VariablePanel', () => {
     modificationsStore.enableModificationMode();
 
     render(<VariablePanel />, {wrapper: getWrapper()});
-    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
+    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    await waitFor(() =>
+      expect(screen.getByText('testVariableName')).toBeInTheDocument(),
+    );
 
     expect(
       screen.getByRole('button', {name: /add variable/i}),
@@ -445,7 +464,10 @@ describe.skip('VariablePanel', () => {
     });
 
     render(<VariablePanel />, {wrapper: getWrapper()});
-    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
+    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    await waitFor(() =>
+      expect(screen.getByText('testVariableName')).toBeInTheDocument(),
+    );
 
     expect(
       screen.getByRole('button', {name: /add variable/i}),
@@ -505,7 +527,10 @@ describe.skip('VariablePanel', () => {
     modificationsStore.enableModificationMode();
 
     render(<VariablePanel />, {wrapper: getWrapper()});
-    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
+    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    await waitFor(() =>
+      expect(screen.getByText('testVariableName')).toBeInTheDocument(),
+    );
 
     expect(
       screen.getByRole('button', {name: /add variable/i}),

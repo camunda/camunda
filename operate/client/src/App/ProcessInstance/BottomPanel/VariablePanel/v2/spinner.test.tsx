@@ -10,6 +10,7 @@ import {VariablePanel} from './index';
 import {
   render,
   screen,
+  waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -82,7 +83,7 @@ const getWrapper = (
   return Wrapper;
 };
 
-describe.skip('VariablePanel spinner', () => {
+describe('VariablePanel spinner', () => {
   beforeEach(() => {
     const mockProcessInstance: ProcessInstance = {
       processInstanceKey: 'instance_id',
@@ -140,6 +141,8 @@ describe.skip('VariablePanel spinner', () => {
     });
 
     mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchVariables().withSuccess([createVariable()]);
+
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
@@ -165,7 +168,9 @@ describe.skip('VariablePanel spinner', () => {
   it('should display spinner for variables tab when switching between tabs', async () => {
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
-    expect(screen.getByText('testVariableName')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByText('testVariableName')).toBeInTheDocument(),
+    );
 
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchVariables().withDelay([createVariable({name: 'test2'})]);
@@ -216,7 +221,9 @@ describe.skip('VariablePanel spinner', () => {
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
-    expect(screen.getByText('testVariableName')).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByText('testVariableName')).toBeInTheDocument(),
+    );
 
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     act(() => {
