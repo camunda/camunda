@@ -32,6 +32,12 @@ describe('Add variable', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
   });
 
+  afterEach(async () => {
+    jest.clearAllMocks();
+    jest.clearAllTimers();
+    await new Promise(process.nextTick);
+  });
+
   it('should show/hide add variable inputs', async () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
