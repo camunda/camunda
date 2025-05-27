@@ -42,6 +42,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.commons.collections4.ListUtils;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
@@ -81,6 +82,7 @@ public abstract class ElasticsearchUtil {
       30000; // this scroll timeout value is used for reindex and delete queries
   public static final int QUERY_MAX_SIZE = 10000;
   public static final int UPDATE_RETRY_COUNT = 3;
+  public static final int DEFAULT_MAX_TERMS_COUNT = 65536;
   public static final Function<SearchHit, Long> SEARCH_HIT_ID_TO_LONG =
       (hit) -> Long.valueOf(hit.getId());
   public static final Function<SearchHit, String> SEARCH_HIT_ID_TO_STRING = SearchHit::getId;
@@ -372,6 +374,26 @@ public abstract class ElasticsearchUtil {
           e);
     }
     return entity;
+  }
+
+  /**
+   * Helper method to scroll in chunks. This is useful when you have a large number of ids and want
+   * to avoid sending them all at once to OpenSearch to not hit the max allowed terms limit {@link
+   * #DEFAULT_MAX_TERMS_COUNT}
+   */
+  public static <T> List<T> scrollInChunks(
+      final List<String> list,
+      final int chunkSize,
+      final Function<List<String>, SearchRequest> chunkToSearchRequest,
+      final Class<T> clazz,
+      final ObjectMapper objectMapper,
+      final RestHighLevelClient esClient)
+      throws IOException {
+    final var result = new ArrayList<T>();
+    for (final var chunk : ListUtils.partition(list, chunkSize)) {
+      result.addAll(scroll(chunkToSearchRequest.apply(chunk), clazz, objectMapper, esClient));
+    }
+    return result;
   }
 
   public static <T> List<T> scroll(
