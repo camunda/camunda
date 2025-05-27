@@ -53,6 +53,7 @@
     <guava.version>33.3.1-jre</guava.version>
     <spring.boot.version>3.3.10</spring.boot.version>
     <spring.version>6.1.17</spring.version>
+    <spring.security.version>6.4.6</spring.security.version>
     <httpclient.version>4.5.14</httpclient.version>
     <quartz.version>2.3.2</quartz.version>
     <jakarta.rs-api.version>4.0.0</jakarta.rs-api.version>
@@ -121,6 +122,13 @@
         <version>${jackson.version}</version>
         <scope>import</scope>
         <type>pom</type>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.security</groupId>
+        <artifactId>spring-security-bom</artifactId>
+        <version>${spring.security.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
