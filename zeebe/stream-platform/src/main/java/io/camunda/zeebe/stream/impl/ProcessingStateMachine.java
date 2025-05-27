@@ -81,17 +81,14 @@ import org.slf4j.Logger;
  *           ^                    |     updateState()    |
  *           +--------------------|                      |
  *                                +----------------------+
- *                                       ^      |
- *                                       |      | exception
- *                                       |      |
+ *                                              |
+ *                                              | exception
+ *                                              |
  *                                    +---------v----+
  *                                    |              |
- *                                    |   onError()  |
+ *                                    |   FAILED     |
  *                                    |              |
  *                                    +--------------+
- *                                       ^     |
- *                                       |     |  exception
- *                                       +-----+
  *
  * </pre>
  */
