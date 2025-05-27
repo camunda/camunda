@@ -9,4 +9,10 @@ package io.camunda.exporter.cache.process;
 
 import java.util.List;
 
-public record CachedProcessEntity(String name, String versionTag, List<String> callElementIds) {}
+public record CachedProcessEntity(
+    String name, String versionTag, String version, List<String> callElementIds) {
+  public CachedProcessEntity(
+      final String name, final String versionTag, final List<String> callElementIds) {
+    this(name, versionTag, null, callElementIds);
+  }
+}

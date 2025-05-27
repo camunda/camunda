@@ -149,7 +149,11 @@ public class IncidentNotifier {
       if (process.isPresent()) {
         incidentFields.put(FIELD_NAME_BPMN_PROCESS_ID, inc.getBpmnProcessId());
         incidentFields.put(FIELD_NAME_PROCESS_NAME, process.get().name());
-        incidentFields.put(FIELD_NAME_PROCESS_VERSION, process.get().versionTag());
+        final var processVersionField =
+            process.get().versionTag() != null
+                ? process.get().versionTag()
+                : process.get().version();
+        incidentFields.put(FIELD_NAME_PROCESS_VERSION, processVersionField);
       }
       incidentList.add(incidentFields);
     }
