@@ -25,6 +25,10 @@ public record Template(
     Long priority,
     Long version) {
 
+  public Template withTemplatePriority(final Long priority) {
+    return new Template(patterns, composedOf, template, priority, version);
+  }
+
   @JsonInclude(Include.NON_EMPTY)
   public record TemplateProperty(
       Map<String, Object> aliases, Map<String, Object> settings, Map<String, Object> mappings) {}

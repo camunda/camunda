@@ -20,6 +20,7 @@ public class TasklistElasticsearchProperties extends ElasticsearchProperties {
   private int numberOfReplicas = DEFAULT_NUMBER_OF_REPLICAS;
   private Map<String, Integer> numberOfShardsPerIndex = Map.of();
   private Map<String, Integer> numberOfReplicasPerIndices = Map.of();
+  private Long templatePriority;
 
   private String refreshInterval = DEFAULT_REFRESH_INTERVAL;
 
@@ -73,5 +74,13 @@ public class TasklistElasticsearchProperties extends ElasticsearchProperties {
 
   public void setNumberOfReplicasPerIndices(final Map<String, Integer> numberOfReplicasPerIndices) {
     this.numberOfReplicasPerIndices = numberOfReplicasPerIndices;
+  }
+
+  public Long getTemplatePriority() {
+    return templatePriority;
+  }
+
+  public void setTemplatePriority(final Long templatePriority) {
+    this.templatePriority = templatePriority;
   }
 }

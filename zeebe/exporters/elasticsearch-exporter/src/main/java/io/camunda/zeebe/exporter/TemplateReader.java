@@ -42,7 +42,9 @@ final class TemplateReader {
    */
   Template readIndexTemplate(
       final ValueType valueType, final String searchPattern, final String aliasName) {
-    final Template template = readTemplate(findResourceForTemplate(valueType));
+    final Template template =
+        readTemplate(findResourceForTemplate(valueType))
+            .withTemplatePriority(config.index.templatePriority);
 
     // update prefix in template in case it was changed in configuration
     template.composedOf().set(0, config.index.prefix);

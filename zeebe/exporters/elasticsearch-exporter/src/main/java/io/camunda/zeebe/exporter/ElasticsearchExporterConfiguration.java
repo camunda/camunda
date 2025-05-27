@@ -176,6 +176,7 @@ public class ElasticsearchExporterConfiguration {
 
     // update index template on startup
     public boolean createTemplate = true;
+    public Long templatePriority = 20L;
 
     // record types to export
     public boolean command = false;

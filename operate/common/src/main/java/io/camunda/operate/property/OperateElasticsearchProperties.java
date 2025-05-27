@@ -16,6 +16,7 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
   private static final int DEFAULT_NUMBER_OF_REPLICAS = 0;
   private static final String DEFAULT_REFRESH_INTERVAL = "1s";
 
+  private Long templatePriority;
   private String indexPrefix = DEFAULT_INDEX_PREFIX;
   private int numberOfShards = DEFAULT_NUMBER_OF_SHARDS;
   private Map<String, Integer> numberOfShardsForIndices = Map.of();
@@ -27,7 +28,7 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
     return indexPrefix;
   }
 
-  public void setIndexPrefix(String indexPrefix) {
+  public void setIndexPrefix(final String indexPrefix) {
     this.indexPrefix = indexPrefix;
   }
 
@@ -55,7 +56,7 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
     return refreshInterval;
   }
 
-  public void setRefreshInterval(String refreshInterval) {
+  public void setRefreshInterval(final String refreshInterval) {
     this.refreshInterval = refreshInterval;
   }
 
@@ -63,7 +64,7 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
     return numberOfShardsForIndices;
   }
 
-  public void setNumberOfShardsForIndices(Map<String, Integer> numberOfShardsForIndices) {
+  public void setNumberOfShardsForIndices(final Map<String, Integer> numberOfShardsForIndices) {
     this.numberOfShardsForIndices = numberOfShardsForIndices;
   }
 
@@ -71,7 +72,15 @@ public class OperateElasticsearchProperties extends ElasticsearchProperties {
     return numberOfReplicasForIndices;
   }
 
-  public void setNumberOfReplicasForIndices(Map<String, Integer> numberOfReplicasForIndices) {
+  public void setNumberOfReplicasForIndices(final Map<String, Integer> numberOfReplicasForIndices) {
     this.numberOfReplicasForIndices = numberOfReplicasForIndices;
+  }
+
+  public Long getTemplatePriority() {
+    return templatePriority;
+  }
+
+  public void setTemplatePriority(final Long templatePriority) {
+    this.templatePriority = templatePriority;
   }
 }

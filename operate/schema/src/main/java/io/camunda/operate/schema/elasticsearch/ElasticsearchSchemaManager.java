@@ -350,6 +350,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
             .indexPatterns(List.of(templateDescriptor.getIndexPattern()))
             .template(template)
             .componentTemplates(List.of(settingsTemplateName()))
+            .priority(operateProperties.getElasticsearch().getTemplatePriority())
             .build();
     final PutComposableIndexTemplateRequest request =
         new PutComposableIndexTemplateRequest()
