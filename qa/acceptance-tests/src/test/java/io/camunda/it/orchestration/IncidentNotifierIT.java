@@ -21,6 +21,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.exporter.CamundaExporter;
@@ -37,7 +38,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.StreamSupport;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -56,9 +57,8 @@ public class IncidentNotifierIT {
   private static final HttpClient HTTP_CLIENT = spy(HttpClient.newHttpClient());
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  @Test
-  public void shouldNotifyWebhookAboutIncident() throws IOException, InterruptedException {
-    // given
+  @BeforeAll
+  public static void setUp() throws IOException, InterruptedException {
     stubHttpClientResponses();
     final var camundaExporter = CamundaExporter.class.getSimpleName().toLowerCase();
     STANDALONE_CAMUNDA.withBrokerConfig(
@@ -75,49 +75,65 @@ public class IncidentNotifierIT {
           c.getExporters().get(camundaExporter).setArgs(newArgs);
         });
 
+  @Test
+  public void shouldNotifyWebhookAboutIncident() {
     // when
-    STANDALONE_CAMUNDA.start();
-    STANDALONE_CAMUNDA.awaitCompleteTopology();
+    if (!STANDALONE_CAMUNDA.isStarted()) {
+      STANDALONE_CAMUNDA.start();
+      STANDALONE_CAMUNDA.awaitCompleteTopology();
+    }
 
     final var camundaClient = STANDALONE_CAMUNDA.newClientBuilder().build();
-    generateIncident(camundaClient);
+    final var incident = generateIncident(camundaClient);
 
     // then
-    final var incidents =
-        await()
-            .atMost(Duration.ofSeconds(30))
-            .pollInterval(Duration.ofSeconds(1))
-            .until(() -> getIncidents(camundaClient), res -> res.items().size() == 1);
+    waitForIncidentToExist(incident, camundaClient);
 
     await()
         .untilAsserted(
-            () -> {
-              verify(HTTP_CLIENT)
-                  .send(
-                      argThat(
-                          req ->
-                              req.uri().toString().endsWith(WEBHOOK_PATH)
-                                  && req.method().equalsIgnoreCase("POST")
-                                  && getProcessInstanceIdsForIncidentsSentInRequest(req)
-                                      .contains(
-                                          incidents.items().getFirst().getProcessInstanceKey())),
-                      any());
-            });
+            () ->
+                verify(HTTP_CLIENT)
+                    .send(
+                        argThat(
+                            req ->
+                                req.uri().toString().endsWith(WEBHOOK_PATH)
+                                    && req.method().equalsIgnoreCase("POST")
+                                    && incidentsInRequestContainProcessInstanceKey(
+                                        req, incident.getProcessInstanceKey())),
+                        any()));
   }
 
-  private List<Long> getProcessInstanceIdsForIncidentsSentInRequest(final HttpRequest httpRequest) {
+  private void waitForIncidentToExist(
+      final ProcessInstanceEvent incident, final CamundaClient camundaClient) {
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .pollInterval(Duration.ofSeconds(1))
+        .until(
+            () -> getIncidents(camundaClient),
+            res ->
+                res.items().stream()
+                    .anyMatch(
+                        inc ->
+                            inc.getProcessInstanceKey().equals(incident.getProcessInstanceKey())));
+  }
+
+  private boolean incidentsInRequestContainProcessInstanceKey(
+      final HttpRequest httpRequest, final Long processInstanceKey) {
+    return getIncidentsInRequestPayload(httpRequest).stream()
+        .anyMatch(map -> map.get("processInstanceId").equals(processInstanceKey.toString()));
+  }
+
+  private List<Map<String, Object>> getIncidentsInRequestPayload(final HttpRequest httpRequest) {
     try {
-      final var incidentsSentToWebHook =
+      final var incidents =
           MAPPER.readTree(HttpRequestBodyTestUtility.extractBody(httpRequest)).at("/alerts");
-      return StreamSupport.stream(incidentsSentToWebHook.spliterator(), false)
-          .map(node -> node.at("/processInstanceId").asLong())
-          .toList();
+      return MAPPER.convertValue(incidents, List.class);
     } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
     }
   }
 
-  private void stubHttpClientResponses() throws IOException, InterruptedException {
+  private static void stubHttpClientResponses() throws IOException, InterruptedException {
     final var mockTokenResponse = mock(HttpResponse.class);
     when(mockTokenResponse.statusCode()).thenReturn(200);
     when(mockTokenResponse.body())
@@ -150,14 +166,14 @@ public class IncidentNotifierIT {
     return camundaClient.newIncidentSearchRequest().send().join();
   }
 
-  private void generateIncident(final CamundaClient camundaClient) {
+  private ProcessInstanceEvent generateIncident(final CamundaClient camundaClient) {
     camundaClient
         .newDeployResourceCommand()
         .addResourceFromClasspath("process/incident_process_v1.bpmn")
         .send()
         .join();
 
-    camundaClient
+    return camundaClient
         .newCreateInstanceCommand()
         .bpmnProcessId("incident_process_v1")
         .latestVersion()
