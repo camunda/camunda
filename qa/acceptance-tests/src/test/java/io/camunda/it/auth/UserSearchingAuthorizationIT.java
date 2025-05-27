@@ -9,8 +9,6 @@ package io.camunda.it.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
@@ -21,18 +19,11 @@ import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.Base64;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -42,9 +33,6 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 class UserSearchingAuthorizationIT {
 
-  public static final ObjectMapper OBJECT_MAPPER =
-      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
@@ -53,7 +41,6 @@ class UserSearchingAuthorizationIT {
   private static final String RESTRICTED = "restrictedUser";
   private static final String RESTRICTED_WITH_READ = "restrictedUser2";
   private static final String DEFAULT_PASSWORD = "password";
-  private static final String USER_SEARCH_ENDPOINT = "v2/users/search";
   private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(15);
 
   @UserDefinition
@@ -77,60 +64,47 @@ class UserSearchingAuthorizationIT {
           DEFAULT_PASSWORD,
           List.of(new Permissions(ResourceType.USER, PermissionType.READ, List.of("*"))));
 
-  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
-
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
     createUser(adminClient, "user1");
     createUser(adminClient, "user2");
-    final var expectedCount = 6; // demo, admin, user1, user2, restricted, restrictedWithRead
-    waitForUsersToBeCreated(
-        adminClient.getConfiguration().getRestAddress().toString(), ADMIN, expectedCount);
-  }
 
-  private static UserSearchResponse searchUsers(final String restAddress, final String username)
-      throws URISyntaxException, IOException, InterruptedException {
-    final var encodedCredentials =
-        Base64.getEncoder()
-            .encodeToString("%s:%s".formatted(username, DEFAULT_PASSWORD).getBytes());
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(new URI("%s%s".formatted(restAddress, USER_SEARCH_ENDPOINT)))
-            .POST(HttpRequest.BodyPublishers.ofString(""))
-            .header("Authorization", "Basic %s".formatted(encodedCredentials))
-            .build();
-
-    final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-
-    return OBJECT_MAPPER.readValue(response.body(), UserSearchResponse.class);
+    Awaitility.await("should create users and import in ES")
+        .atMost(AWAIT_TIMEOUT)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var userSearchResponse = adminClient.newUsersSearchRequest().send().join();
+              assertThat(
+                      userSearchResponse.items().stream()
+                          .map(io.camunda.client.api.search.response.User::getUsername)
+                          .toList())
+                  .containsAll(Arrays.asList("demo", "admin", "user1", "user2"));
+            });
   }
 
   @Test
   void searchShouldReturnAuthorizedUsers(
-      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient userClient) throws Exception {
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient userClient) {
     // when
-    final var userSearchResponse =
-        searchUsers(
-            userClient.getConfiguration().getRestAddress().toString(), RESTRICTED_WITH_READ);
+    final var result = userClient.newUsersSearchRequest().send().join();
 
     // then
-    assertThat(userSearchResponse.items())
-        .map(UserResponse::username)
-        .contains("demo", "admin", "user1", "user2", "restrictedUser2");
+    assertThat(result.items())
+        .map(io.camunda.client.api.search.response.User::getUsername)
+        .containsExactly("demo", "admin", "user1", "user2", "restrictedUser2");
   }
 
   @Test
   void searchShouldReturnOnlyRestrictedUserWhenUnauthorized(
-      @Authenticated(RESTRICTED) final CamundaClient userClient) throws Exception {
+      @Authenticated(RESTRICTED) final CamundaClient userClient) {
     // when
-    final var tenantSearchResponse =
-        searchUsers(userClient.getConfiguration().getRestAddress().toString(), RESTRICTED);
+    final var result = userClient.newUsersSearchRequest().send().join();
 
     // then
-    assertThat(tenantSearchResponse.items())
+    assertThat(result.items())
         .hasSize(1)
-        .map(UserResponse::username)
+        .map(io.camunda.client.api.search.response.User::getUsername)
         .containsExactlyInAnyOrder("restrictedUser");
   }
 
@@ -144,21 +118,4 @@ class UserSearchingAuthorizationIT {
         .send()
         .join();
   }
-
-  private static void waitForUsersToBeCreated(
-      final String restAddress, final String username, final int expectedCount) {
-    Awaitility.await("should create users and import in ES")
-        .atMost(AWAIT_TIMEOUT)
-        .ignoreExceptions()
-        .untilAsserted(
-            () -> {
-              final var userSearchResponse = searchUsers(restAddress, username);
-
-              assert userSearchResponse.items().size() == expectedCount;
-            });
-  }
-
-  private record UserSearchResponse(List<UserResponse> items) {}
-
-  private record UserResponse(String username) {}
 }
