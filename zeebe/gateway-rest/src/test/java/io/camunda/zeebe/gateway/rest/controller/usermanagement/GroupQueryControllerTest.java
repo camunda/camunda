@@ -196,13 +196,13 @@ public class GroupQueryControllerTest extends RestControllerTest {
         "items":[
           {
             "name":"name",
-            "mappingId":"%s",
+            "mappingRuleId":"%s",
             "claimName":"claimName1",
             "claimValue":"claimValue1"
           },
           {
             "name":"name",
-            "mappingId":"%s",
+            "mappingRuleId":"%s",
             "claimName":"claimName2",
             "claimValue":"claimValue2"
           }
