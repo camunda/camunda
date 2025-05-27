@@ -372,6 +372,7 @@ public class VariableStoreElasticSearch implements VariableStore {
         QueryBuilders.termsQuery(
             FlowNodeInstanceTemplate.TYPE,
             FlowNodeType.AD_HOC_SUB_PROCESS.toString(),
+            FlowNodeType.AD_HOC_SUB_PROCESS_INNER_INSTANCE.toString(),
             FlowNodeType.USER_TASK.toString(),
             FlowNodeType.SUB_PROCESS.toString(),
             FlowNodeType.EVENT_SUB_PROCESS.toString(),
@@ -401,7 +402,8 @@ public class VariableStoreElasticSearch implements VariableStore {
     }
     final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
-            .query(constantScoreQuery(joinWithAnd(flowNodeInstanceKeyQ, varNamesQ)));
+            .query(constantScoreQuery(joinWithAnd(flowNodeInstanceKeyQ, varNamesQ)))
+            .size(tasklistProperties.getElasticsearch().getBatchSize());
     applyFetchSourceForVariableIndex(searchSourceBuilder, fieldNames);
 
     return new SearchRequest(variableIndex.getFullQualifiedName()).source(searchSourceBuilder);

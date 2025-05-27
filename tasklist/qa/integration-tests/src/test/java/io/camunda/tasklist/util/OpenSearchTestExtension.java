@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -203,7 +204,10 @@ public class OpenSearchTestExtension
 
   @Override
   public <T extends ExporterEntity> void bulkIndex(
-      final IndexDescriptor index, final List<T> documents) throws IOException {
+      final IndexDescriptor index,
+      final List<T> documents,
+      final Function<T, String> routingFunction)
+      throws IOException {
     osClient.bulk(
         b ->
             b.refresh(Refresh.True)
@@ -217,6 +221,7 @@ public class OpenSearchTestExtension
                                             i ->
                                                 i.index(index.getFullQualifiedName())
                                                     .id((document.getId()))
+                                                    .routing(routingFunction.apply(document))
                                                     .document(
                                                         CommonUtils.getJsonObjectFromEntity(
                                                             document))))
