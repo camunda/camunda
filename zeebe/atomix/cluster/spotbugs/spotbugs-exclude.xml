@@ -12,7 +12,13 @@
     <Bug pattern="AT_NONATOMIC_OPERATIONS_ON_SHARED_VARIABLE"/>
   </Match>
   <Match>
+    <Class name="io.atomix.raft.roles.CandidateRole"/>
+    <Bug pattern="AT_NONATOMIC_OPERATIONS_ON_SHARED_VARIABLE"/>
+  </Match>
+  <Match>
     <Class name="io.atomix.raft.cluster.impl.RaftMemberContext"/>
     <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
   </Match>
+
+
 </FindBugsFilter>
