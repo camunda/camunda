@@ -39,12 +39,12 @@ const mockEndpoints = [
         {
           processInstanceKey: '2251799833223965',
           processDefinitionName: 'Call Activity Process',
-          processDefinitionKey: '',
+          processDefinitionKey: '2251799816361742',
         },
         {
           processInstanceKey: '2251799833223971',
           processDefinitionName: 'called-process',
-          processDefinitionKey: '',
+          processDefinitionKey: '2251799816361742',
         },
       ];
 
