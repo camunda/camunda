@@ -21,7 +21,7 @@ import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.Client;
 import io.camunda.client.api.search.response.Role;
 import io.camunda.client.api.search.response.SearchResponse;
-import io.camunda.client.protocol.rest.MappingSearchQueryResult;
+import io.camunda.client.protocol.rest.MappingRuleSearchQueryResult;
 import io.camunda.client.protocol.rest.RoleResult;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
@@ -285,7 +285,7 @@ class RoleAuthorizationIT {
                                 roleId)
                             .getItems())
                     .hasSize(1)
-                    .anyMatch(m -> mappingId.equals(m.getMappingId())));
+                    .anyMatch(m -> mappingId.equals(m.getMappingRuleId())));
 
     adminClient.newDeleteRoleCommand(roleId).send().join();
   }
@@ -674,7 +674,7 @@ class RoleAuthorizationIT {
   }
 
   // TODO once available, this test should use the client to make the request
-  private static MappingSearchQueryResult searchMappingRuleByRole(
+  private static MappingRuleSearchQueryResult searchMappingRuleByRole(
       final String restAddress, final String username, final String roleId)
       throws URISyntaxException, IOException, InterruptedException {
     final var encodedCredentials =
@@ -691,7 +691,7 @@ class RoleAuthorizationIT {
 
     final HttpResponse<String> response =
         HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-    return OBJECT_MAPPER.readValue(response.body(), MappingSearchQueryResult.class);
+    return OBJECT_MAPPER.readValue(response.body(), MappingRuleSearchQueryResult.class);
   }
 
   private record RoleSearchResponse(List<RoleResult> items) {}
