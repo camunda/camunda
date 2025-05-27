@@ -39,3 +39,25 @@
 /.github/workflows/retry-workflow.yml                    @camunda/monorepo-devops-team
 /.github/workflows/statistics-daily.yml                  @camunda/monorepo-devops-team
 /.github/workflows/zeebe-release-stable-dry-run.yml      @camunda/monorepo-devops-team
+
+# Data Layer
+/db/                                                                   @data-layer
+/zeebe/exporters/                                                      @data-layer
+/zeebe/exporter-api                                                    @data-layer
+/zeebe/exporter-test                                                   @data-layer
+/webapps-backup/                                                       @data-layer
+/webapps-schema/                                                       @data-layer
+/operate/importer/                                                     @data-layer
+/operate/importer-8.5/                                                 @data-layer
+/operate/importer-8.6/                                                 @data-layer
+/operate/importer-8.7/                                                 @data-layer
+/operate/importer-common/                                              @data-layer
+/operate/operate-schema/                                               @data-layer
+/tasklist/importer/                                                    @data-layer
+/tasklist/importer-850/                                                @data-layer
+/tasklist/importer-860/                                                @data-layer
+/tasklist/importer-870/                                                @data-layer
+/tasklist/importer-common/                                             @data-layer
+/tasklist/els-schema/                                                  @data-layer
+/optimize/backend/src/main/java/io/camunda/optimize/service/importing/ @data-layer
+/migration/process-migration/                                          @data-layer
