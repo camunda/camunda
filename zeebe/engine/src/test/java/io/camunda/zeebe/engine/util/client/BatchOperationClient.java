@@ -25,13 +25,12 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementR
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Random;
-import java.util.Set;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
 
 public final class BatchOperationClient {
 
-  private static final int DEFAULT_PARTITION = 1;
+  public static final int DEFAULT_PARTITION = 1;
 
   private final CommandWriter writer;
 
@@ -213,7 +212,7 @@ public final class BatchOperationClient {
 
     private final CommandWriter writer;
     private final BatchOperationExecutionRecord batchOperationExecutionRecord;
-    private final int partition = DEFAULT_PARTITION;
+    private int partition = DEFAULT_PARTITION;
 
     public BatchOperationExecutionClient(final CommandWriter writer) {
       this.writer = writer;
@@ -225,8 +224,8 @@ public final class BatchOperationClient {
       return this;
     }
 
-    public BatchOperationExecutionClient withItemKeys(final Set<Long> items) {
-      batchOperationExecutionRecord.setItemKeys(items);
+    public BatchOperationExecutionClient onPartition(final int partition) {
+      this.partition = partition;
       return this;
     }
 
