@@ -59,8 +59,9 @@ public class CamundaDataSource {
         .items();
   }
 
-  public List<Variable> findVariablesByProcessInstanceKey(final long processInstanceKey) {
-    return findVariables(filter -> filter.processInstanceKey(processInstanceKey));
+  public List<Variable> findGlobalVariablesByProcessInstanceKey(final long processInstanceKey) {
+    return findVariables(
+        filter -> filter.processInstanceKey(processInstanceKey).scopeKey(processInstanceKey));
   }
 
   public List<Variable> findVariables(final Consumer<VariableFilter> filter) {
