@@ -74,6 +74,33 @@ public class IncidentNotifierIT {
 
           c.getExporters().get(camundaExporter).setArgs(newArgs);
         });
+  }
+
+  @Test
+  public void shouldUseProcessVersionForWebhookPayloadProcessVersionField() {
+    if (!STANDALONE_CAMUNDA.isStarted()) {
+      STANDALONE_CAMUNDA.start();
+      STANDALONE_CAMUNDA.awaitCompleteTopology();
+    }
+
+    final var camundaClient = STANDALONE_CAMUNDA.newClientBuilder().build();
+    final var incident = generateIncident(camundaClient);
+
+    waitForIncidentToExist(incident, camundaClient);
+
+    await()
+        .untilAsserted(
+            () ->
+                verify(HTTP_CLIENT)
+                    .send(
+                        argThat(
+                            req ->
+                                getIncidentsInRequestPayload(req) != null
+                                    && getIncidentsInRequestPayload(req).stream()
+                                        .allMatch(
+                                            incidents -> incidents.get("processVersion") != null)),
+                        any()));
+  }
 
   @Test
   public void shouldNotifyWebhookAboutIncident() {
