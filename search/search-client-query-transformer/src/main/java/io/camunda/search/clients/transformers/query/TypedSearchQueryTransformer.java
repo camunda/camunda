@@ -59,8 +59,10 @@ public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOpt
     }
 
     final var searchAfter = page.startNextPageAfter();
-    if (searchAfter != null && searchAfter.length > 0) {
-      builder.searchAfter(searchAfter);
+    if (searchAfter != null) {
+      final Object[] decodedSearchAfter = decodeCursor(searchAfter);
+
+      builder.searchAfter(decodedSearchAfter);
     }
 
     final var resultConfig = query.resultConfig();
@@ -73,6 +75,10 @@ public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOpt
         .ifPresent(aggregation -> builder.aggregations(toAggregations(aggregation)));
 
     return builder.build();
+  }
+
+  private Object[] decodeCursor(final String searchAfter) {
+    return new Object[] {};
   }
 
   private SearchSourceConfig toSearchSourceConfig(final QueryResultConfig resultConfig) {
