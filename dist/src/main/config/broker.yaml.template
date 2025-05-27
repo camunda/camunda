@@ -1347,4 +1347,5 @@
         # Please be aware that this may introduce performance regressions or cause the expired message state to grow more quickly over time.
         # To maintain backward compatibility and avoid performance degradation, the default value is false,
         # meaning message bodies will not be appended unless explicitly enabled.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLEMESSAGEBODYONEXPIRED
         # enableMessageBodyOnExpired: false
