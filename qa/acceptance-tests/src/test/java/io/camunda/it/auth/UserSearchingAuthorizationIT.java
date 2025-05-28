@@ -64,10 +64,10 @@ class UserSearchingAuthorizationIT {
           List.of(new Permissions(ResourceType.USER, PermissionType.READ, List.of("*"))));
 
   @UserDefinition
-  private static final TestUser user1 = new TestUser(FIRST_USER, DEFAULT_PASSWORD, List.of());
+  private static final TestUser USER_1 = new TestUser(FIRST_USER, DEFAULT_PASSWORD, List.of());
 
   @UserDefinition
-  private static final TestUser user2 = new TestUser(SECOND_USER, DEFAULT_PASSWORD, List.of());
+  private static final TestUser USER_2 = new TestUser(SECOND_USER, DEFAULT_PASSWORD, List.of());
 
   @Test
   void searchShouldReturnAuthorizedUsers(
