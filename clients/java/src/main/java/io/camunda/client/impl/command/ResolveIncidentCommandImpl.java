@@ -17,6 +17,7 @@ package io.camunda.client.impl.command;
 
 import io.camunda.client.CredentialsProvider.StatusCode;
 import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.response.ResolveIncidentResponse;
@@ -24,6 +25,7 @@ import io.camunda.client.impl.RetriableClientFutureImpl;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.ResolveIncidentResponseImpl;
+import io.camunda.client.protocol.rest.IncidentResolutionRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
@@ -44,6 +46,8 @@ public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandS
   private final RequestConfig.Builder httpRequestConfig;
   private boolean useRest;
   private final long incidentKey;
+  private final IncidentResolutionRequest incidentResolutionRequest;
+  private final JsonMapper jsonMapper;
 
   public ResolveIncidentCommandImpl(
       final GatewayStub asyncStub,
@@ -51,7 +55,8 @@ public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandS
       final Duration requestTimeout,
       final Predicate<StatusCode> retryPredicate,
       final HttpClient httpClient,
-      final boolean preferRestOverGrpc) {
+      final boolean preferRestOverGrpc,
+      final JsonMapper jsonMapper) {
     this.asyncStub = asyncStub;
     builder = ResolveIncidentRequest.newBuilder().setIncidentKey(incidentKey);
     this.requestTimeout = requestTimeout;
@@ -60,6 +65,8 @@ public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandS
     httpRequestConfig = httpClient.newRequestConfig();
     useRest = preferRestOverGrpc;
     this.incidentKey = incidentKey;
+    incidentResolutionRequest = new IncidentResolutionRequest();
+    this.jsonMapper = jsonMapper;
   }
 
   @Override
@@ -81,7 +88,10 @@ public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandS
   private CamundaFuture<ResolveIncidentResponse> sendRestRequest() {
     final HttpCamundaFuture<ResolveIncidentResponse> result = new HttpCamundaFuture<>();
     httpClient.post(
-        "/incidents/" + incidentKey + "/resolution", "", httpRequestConfig.build(), result);
+        "/incidents/" + incidentKey + "/resolution",
+        jsonMapper.toJson(incidentResolutionRequest),
+        httpRequestConfig.build(),
+        result);
     return result;
   }
 
@@ -110,6 +120,7 @@ public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandS
 
   @Override
   public ResolveIncidentCommandStep1 operationReference(final long operationReference) {
+    incidentResolutionRequest.setOperationReference(operationReference);
     builder.setOperationReference(operationReference);
     return this;
   }

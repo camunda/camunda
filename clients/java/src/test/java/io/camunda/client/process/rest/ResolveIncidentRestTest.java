@@ -18,9 +18,11 @@ package io.camunda.client.process.rest;
 import static io.camunda.client.util.assertions.LoggedRequestAssert.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
+import io.camunda.client.protocol.rest.JobUpdateRequest;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
 import io.camunda.client.util.RestGatewayService;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class ResolveIncidentRestTest extends ClientRestTest {
@@ -36,7 +38,30 @@ public class ResolveIncidentRestTest extends ClientRestTest {
     // then
     assertThat(RestGatewayService.getLastRequest())
         .hasMethod(RequestMethod.POST)
+        .hasUrl(RestGatewayPaths.getIncidentResolutionUrl(incidentKey));
+  }
+
+  @Test
+  public void shouldSendCommandWithOperationReference() {
+    // given
+    final int incidentKey = 123;
+    final long operationReference = 12345678L;
+
+    // when
+    client
+        .newResolveIncidentCommand(incidentKey)
+        .operationReference(operationReference)
+        .send()
+        .join();
+
+    // then
+    assertThat(RestGatewayService.getLastRequest())
+        .hasMethod(RequestMethod.POST)
         .hasUrl(RestGatewayPaths.getIncidentResolutionUrl(incidentKey))
-        .hasEmptyBody();
+        .hasBodySatisfying(
+            JobUpdateRequest.class,
+            r -> {
+              Assertions.assertEquals(operationReference, r.getOperationReference());
+            });
   }
 }
