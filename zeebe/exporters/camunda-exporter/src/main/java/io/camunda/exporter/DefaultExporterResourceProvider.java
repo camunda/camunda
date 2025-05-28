@@ -8,10 +8,8 @@
 package io.camunda.exporter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.exporter.cache.ExporterEntityCacheImpl;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.cache.form.CachedFormEntity;
-import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.errorhandling.Error;
@@ -107,6 +105,8 @@ import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import io.micrometer.core.instrument.MeterRegistry;

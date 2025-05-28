@@ -35,13 +35,13 @@ import static org.mockito.Mockito.when;
 
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
-import io.camunda.exporter.cache.ExporterEntityCache;
-import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.config.ExporterConfiguration.IncidentNotifierConfiguration;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.entities.incident.ErrorType;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentState;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.http.HttpClient;
