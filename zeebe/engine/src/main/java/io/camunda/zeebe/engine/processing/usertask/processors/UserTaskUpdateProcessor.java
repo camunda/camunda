@@ -85,7 +85,12 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
     }
 
     final var recordRequestMetadata = userTaskState.findRecordRequestMetadata(userTaskKey);
-    if (recordRequestMetadata.isPresent()) {
+    if (recordRequestMetadata.isEmpty()) {
+      LOGGER.warn(
+          "No request metadata found for userTaskKey={}, writing 'USER_TASK.UPDATED' without response.",
+          userTaskKey);
+      stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
+    } else {
       final var metadata = recordRequestMetadata.get();
       switch (metadata.getTriggerType()) {
         case USER_TASK -> {
@@ -140,11 +145,6 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
                 "Unexpected user task transition trigger type: '%s'"
                     .formatted(metadata.getTriggerType()));
       }
-    } else {
-      LOGGER.warn(
-          "No request metadata found for userTaskKey={}, writing 'USER_TASK.UPDATED' without response.",
-          userTaskKey);
-      stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
     }
   }
 
