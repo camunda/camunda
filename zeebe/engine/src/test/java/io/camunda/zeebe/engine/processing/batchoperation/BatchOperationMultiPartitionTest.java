@@ -72,7 +72,7 @@ public final class BatchOperationMultiPartitionTest {
   }
 
   @Test
-  public void shouldCompleteOnAllPartitions() {
+  public void shouldCompletePartitionsOnAllPartitions() {
     // given
     final long batchOperationKey =
         engine
@@ -139,6 +139,32 @@ public final class BatchOperationMultiPartitionTest {
                   .collect(Collectors.toList()))
           .extracting(Record::getIntent)
           .containsExactly(BatchOperationIntent.CANCEL, BatchOperationIntent.CANCELED);
+    }
+  }
+
+  @Test
+  public void shouldCompleteOnAllPartitions() {
+    // given
+    final long batchOperationKey = createDistributedBatchOperation();
+
+    // when
+
+    engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).complete();
+
+    assertThatCommandIsDistributedCorrectly(
+        ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
+        BatchOperationIntent.COMPLETE,
+        BatchOperationIntent.COMPLETED);
+
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
+      assertThat(
+              RecordingExporter.batchOperationLifecycleRecords()
+                  .withBatchOperationKey(batchOperationKey)
+                  .withPartitionId(partitionId)
+                  .limit(record -> record.getIntent().equals(BatchOperationIntent.COMPLETED))
+                  .collect(Collectors.toList()))
+          .extracting(Record::getIntent)
+          .containsExactly(BatchOperationIntent.COMPLETE, BatchOperationIntent.COMPLETED);
     }
   }
 

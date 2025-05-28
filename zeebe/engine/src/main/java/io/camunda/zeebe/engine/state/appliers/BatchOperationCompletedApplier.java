@@ -23,6 +23,6 @@ public class BatchOperationCompletedApplier
 
   @Override
   public void applyState(final long key, final BatchOperationLifecycleManagementRecord value) {
-    batchOperationState.complete(key);
+    batchOperationState.complete(value.getBatchOperationKey());
   }
 }
