@@ -94,6 +94,10 @@ describe('FlowNodeInstanceLog', () => {
     processInstanceDetailsStore.init({id: '1'});
   });
 
+  afterEach(async () => {
+    await new Promise(process.nextTick);
+  });
+
   it('should render skeleton when instance tree is not loaded', async () => {
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessDefinitionXml().withSuccess('');
@@ -199,6 +203,7 @@ describe('FlowNodeInstanceLog', () => {
   });
 
   it('should render flow node instances tree', async () => {
+    jest.useFakeTimers();
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockDeprecatedProcessInstance,
     );
@@ -215,5 +220,7 @@ describe('FlowNodeInstanceLog', () => {
     expect(
       await screen.findByText('Migrated 2018-12-12 00:00:00'),
     ).toBeInTheDocument();
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 });
