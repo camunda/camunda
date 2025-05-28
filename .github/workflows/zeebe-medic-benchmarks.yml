@@ -30,12 +30,13 @@ jobs:
         id: data
         run: |
           # Count normal weekly namespaces
-          echo "count=$(kubectl get ns -o name | grep -E namespace/medic-y-[0-9]+-cw-[0-9]+-[a-z0-9]+-benchmark$ | wc -l)" >> $GITHUB_OUTPUT
+          echo "count=$(kubectl get ns -o name | grep -c -E "namespace/medic-y-[0-9]+-cw-[0-9]+-[a-z0-9]+-benchmark$")" >> "$GITHUB_OUTPUT"
           # Get all namespaces, filter for medic benchmarks and select the oldest one
-          echo "normal=$(kubectl get ns -o name | grep -E namespace/medic-y-[0-9]+-cw-[0-9]+-[a-z0-9]+-benchmark$ | sort -V | head -n1)" >> $GITHUB_OUTPUT
+          echo "normal=$(kubectl get ns -o name | grep -E "namespace/medic-y-[0-9]+-cw-[0-9]+-[a-z0-9]+-benchmark$" | sort -V | head -n1)" >> "$GITHUB_OUTPUT"
       - name: Delete benchmarks
         run: |
-          if [[  ${{ steps.data.outputs.count }} -ge 4 ]];
+          COUNT="${{ steps.data.outputs.count }}"
+          if [[  $COUNT -ge 4 ]];
           then
             # We want to have always at least 4 benchmarks running
             echo "Delete namespaces for ${{ steps.data.outputs.normal }}"
@@ -61,7 +62,7 @@ jobs:
           # ${#var} will return the length of the string
           if [[ ${#var} -eq 0 ]]; then
             echo "Creating new weekly benchmark"
-            echo "benchmark=medic-y-$(date +%Y)-cw-$(date +%V)-$(git rev-parse --short HEAD)-benchmark" >> $GITHUB_OUTPUT
+            echo "benchmark=medic-y-$(date +%Y)-cw-$(date +%V)-$(git rev-parse --short HEAD)-benchmark" >> "$GITHUB_OUTPUT"
           else
             # Example:
             # $ echo ${var%?}
@@ -71,9 +72,9 @@ jobs:
             tag=${{ inputs.reuse-tag }}
             var=${tag%-*}
             echo "Re-creating weekly benchmark, with name: $var and tag: $tag"
-            echo "benchmark=$var" >> $GITHUB_OUTPUT
+            echo "benchmark=$var" >> "$GITHUB_OUTPUT"
           fi
-          echo "full-ref"=$(git rev-parse HEAD) >> $GITHUB_OUTPUT
+          echo "full-ref=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
   setup-normal-benchmark:
     name: Normal Benchmark

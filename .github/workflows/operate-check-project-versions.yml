@@ -36,7 +36,7 @@ jobs:
         run: |
           IDENTITY_VERSION=$(./mvnw -f operate help:evaluate -Dexpression=version.identity -q -DforceStdout)
 
-          if [[ $IDENTITY_VERSION != $RELEASE_VERSION ]]; then
+          if [[ "$IDENTITY_VERSION" != "$RELEASE_VERSION" ]]; then
             echo "Please update Identity versions!"
             echo "Current Identity version: $IDENTITY_VERSION"
             echo "Both should be updated to: $RELEASE_VERSION"

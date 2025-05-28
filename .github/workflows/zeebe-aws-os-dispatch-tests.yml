@@ -75,11 +75,13 @@ jobs:
       - name: Set temp GH envs
         id: temp-vars
         run: |
-          echo "AWS_REGION=$(echo $AWS_REGION)" >> "$GITHUB_ENV"
-          echo "AWS_DEFAULT_REGION=$(echo $AWS_DEFAULT_REGION)" >> "$GITHUB_ENV"
-          echo "AWS_ROLE_ARN=$(echo $AWS_ROLE_ARN)" >> "$GITHUB_ENV"
-          echo "AWS_WEB_IDENTITY_TOKEN_FILE=$(echo $AWS_WEB_IDENTITY_TOKEN_FILE)" >> "$GITHUB_ENV"
-          echo "AWS_STS_REGIONAL_ENDPOINTS=$(echo $AWS_STS_REGIONAL_ENDPOINTS)" >> "$GITHUB_ENV"
+          {
+            echo "AWS_REGION=$AWS_REGION"
+            echo "AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION"
+            echo "AWS_ROLE_ARN=$AWS_ROLE_ARN"
+            echo "AWS_WEB_IDENTITY_TOKEN_FILE=$AWS_WEB_IDENTITY_TOKEN_FILE"
+            echo "AWS_STS_REGIONAL_ENDPOINTS=$AWS_STS_REGIONAL_ENDPOINTS"
+          } >> "$GITHUB_ENV"
 
           if [[ "${{ matrix.os_version }}" = "2.9" ]]
           then
@@ -115,7 +117,7 @@ jobs:
         with:
           maven-extra-args: -T1C -D skip.fe.build -D skip.yarn -D skip.docker
       - name: Create build output log file
-        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Test Build
         run: >
           ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates

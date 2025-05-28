@@ -67,10 +67,11 @@ jobs:
         name: Calculate image tag
         shell: bash
         run: |
+          # shellcheck disable=SC2153
           # Replace dots and slashes with dashes
           branch=${BRANCH/[\/\.]/-}
           version=$(./mvnw help:evaluate -q -DforceStdout -D"expression=project.version")
-          echo "image-tag=$version-$branch-${GITHUB_SHA::8}" >> $GITHUB_OUTPUT
+          echo "image-tag=$version-$branch-${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
         env:
           BRANCH: ${{ inputs.branch }}
       - uses: ./.github/actions/build-zeebe
@@ -110,7 +111,7 @@ jobs:
       - name: Set Auth Token
         id: token
         run: |
-          echo "access_token=$(echo '${{ steps.authorization.outputs.response }}' | jq -r '.access_token')" >> $GITHUB_ENV
+          echo "access_token=$(echo '${{ steps.authorization.outputs.response }}' | jq -r '.access_token')" >> "$GITHUB_ENV"
 
       - name: Start Test
         shell: bash
