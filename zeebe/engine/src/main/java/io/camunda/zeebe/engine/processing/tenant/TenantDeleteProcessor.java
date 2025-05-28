@@ -147,23 +147,17 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
     final var tenant = tenantState.getTenantById(record.getTenantId()).orElseThrow();
     final var tenantId = tenant.getTenantId();
     final var tenantKey = tenant.getTenantKey();
-
     membershipState.forEachMember(
         RelationType.TENANT,
         tenantId,
-        (type, id) -> {
-          switch (type) {
-            case USER ->
-                stateWriter.appendFollowUpEvent(
-                    tenantKey,
-                    TenantIntent.ENTITY_REMOVED,
-                    new TenantRecord().setTenantId(tenantId).setEntityId(id).setEntityType(type));
-            default ->
-                throw new UnsupportedOperationException(
-                    String.format(
-                        "Expected to remove entity with id %s and type %s from tenant %s, but the type is not supported.",
-                        id, type, tenantId));
-          }
+        (entityType, entityId) -> {
+          stateWriter.appendFollowUpEvent(
+              tenantKey,
+              TenantIntent.ENTITY_REMOVED,
+              new TenantRecord()
+                  .setTenantId(tenantId)
+                  .setEntityType(entityType)
+                  .setEntityId(entityId));
         });
   }
 
