@@ -75,18 +75,13 @@ public class DbMigratorImpl implements DbMigrator {
   public DbMigratorImpl(
       final boolean versionCheckRestrictionEnabled,
       final ClusterContext clusterContext,
-      final MutableProcessingState processingState) {
+      final MutableProcessingState processingState,
+      final String version) {
     this(
         versionCheckRestrictionEnabled,
         new MigrationTaskContextImpl(clusterContext, processingState),
         MIGRATION_TASKS,
-        null);
-  }
-
-  public DbMigratorImpl(
-      final MutableMigrationTaskContext migrationTaskContext,
-      final List<MigrationTask> migrationTasks) {
-    this(true, migrationTaskContext, migrationTasks, null);
+        version);
   }
 
   @VisibleForTesting

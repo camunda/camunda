@@ -17,6 +17,7 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
+import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import java.util.List;
 
@@ -82,4 +83,8 @@ public interface PartitionContext {
    * does not update during scale up.
    */
   int getPartitionCount();
+
+  default String getBrokerVersion() {
+    return VersionUtil.getVersion();
+  }
 }
