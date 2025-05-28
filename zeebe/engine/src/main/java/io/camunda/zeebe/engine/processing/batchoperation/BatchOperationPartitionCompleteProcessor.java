@@ -11,12 +11,12 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.slf4j.Logger;
@@ -30,6 +30,7 @@ public final class BatchOperationPartitionCompleteProcessor
       LoggerFactory.getLogger(BatchOperationPartitionCompleteProcessor.class);
 
   private final StateWriter stateWriter;
+  private final TypedCommandWriter commandWriter;
   private final BatchOperationState batchOperationState;
   private final CommandDistributionBehavior commandDistributionBehavior;
 
@@ -38,6 +39,7 @@ public final class BatchOperationPartitionCompleteProcessor
       final ProcessingState processingState,
       final CommandDistributionBehavior commandDistributionBehavior) {
     stateWriter = writers.state();
+    commandWriter = writers.command();
     batchOperationState = processingState.getBatchOperationState();
     this.commandDistributionBehavior = commandDistributionBehavior;
   }
@@ -85,10 +87,10 @@ public final class BatchOperationPartitionCompleteProcessor
           LOGGER.debug(
               "All partitions completed, appending COMPLETED event for batch operation {}",
               batchOperationKey);
-          final var batchExecute = new BatchOperationExecutionRecord();
-          batchExecute.setBatchOperationKey(batchOperationKey);
-          stateWriter.appendFollowUpEvent(
-              batchOperationKey, BatchOperationExecutionIntent.COMPLETED, batchExecute);
+          final var batchComplete = new BatchOperationLifecycleManagementRecord();
+          batchComplete.setBatchOperationKey(batchOperationKey);
+          commandWriter.appendFollowUpCommand(
+              batchOperationKey, BatchOperationIntent.COMPLETE, batchComplete);
         }
       }
     }

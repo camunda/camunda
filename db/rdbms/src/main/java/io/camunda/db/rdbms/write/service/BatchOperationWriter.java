@@ -107,7 +107,7 @@ public class BatchOperationWriter {
     }
   }
 
-  public void finish(final String batchOperationKey, final OffsetDateTime endDate) {
+  public void complete(final String batchOperationKey, final OffsetDateTime endDate) {
     updateCompleted(
         batchOperationKey,
         new BatchOperationUpdateDto(batchOperationKey, BatchOperationState.COMPLETED, endDate));

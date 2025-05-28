@@ -46,6 +46,24 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
   }
 
   @Test
+  public void shouldCompleteBatchOperation() {
+    // given
+    final var processInstanceKeys = Set.of(1L, 2L, 3L);
+    final var batchOperationKey = createNewCancelProcessInstanceBatchOperation(processInstanceKeys);
+
+    // when we cancel the batch operation
+    engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).complete();
+
+    // then we have a completed event
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .onlyEvents())
+        .extracting(Record::getIntent)
+        .containsSequence(BatchOperationIntent.COMPLETED);
+  }
+
+  @Test
   public void shouldPauseBatchOperationInScheduler() {
     // given
     final var processInstanceKeys = Set.of(1L, 2L, 3L);
@@ -182,16 +200,18 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
                 .withBatchOperationKey(batchOperationKey)
                 .onlyEvents())
         .extracting(Record::getIntent)
-        .containsSequence(BatchOperationIntent.PAUSED, BatchOperationIntent.RESUMED);
+        .containsSequence(
+            BatchOperationIntent.PAUSED,
+            BatchOperationIntent.RESUMED,
+            BatchOperationIntent.COMPLETED);
 
-    // and at least the completed
+    // and at least one EXECUTED
     assertThat(
             RecordingExporter.batchOperationExecutionRecords()
                 .withBatchOperationKey(batchOperationKey)
                 .onlyEvents())
         .extracting(Record::getIntent)
-        .containsSequence(
-            BatchOperationExecutionIntent.EXECUTED, BatchOperationExecutionIntent.COMPLETED);
+        .containsSequence(BatchOperationExecutionIntent.EXECUTED);
   }
 
   @Test

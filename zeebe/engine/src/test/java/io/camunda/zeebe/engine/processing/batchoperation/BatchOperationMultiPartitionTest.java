@@ -16,7 +16,6 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -73,7 +72,7 @@ public final class BatchOperationMultiPartitionTest {
   }
 
   @Test
-  public void shouldCompleteOnAllPartitions() {
+  public void shouldCompletePartitionsOnAllPartitions() {
     // given
     final long batchOperationKey =
         engine
@@ -109,12 +108,12 @@ public final class BatchOperationMultiPartitionTest {
             BatchOperationIntent.COMPLETED_PARTITION);
 
     assertThat(
-            RecordingExporter.batchOperationExecutionRecords()
+            RecordingExporter.batchOperationLifecycleRecords()
                 .withBatchOperationKey(batchOperationKey)
                 .withPartitionId(1)
                 .collect(Collectors.toList()))
         .extracting(Record::getIntent)
-        .contains(BatchOperationExecutionIntent.COMPLETED);
+        .contains(BatchOperationIntent.COMPLETED);
   }
 
   @Test
@@ -140,6 +139,32 @@ public final class BatchOperationMultiPartitionTest {
                   .collect(Collectors.toList()))
           .extracting(Record::getIntent)
           .containsExactly(BatchOperationIntent.CANCEL, BatchOperationIntent.CANCELED);
+    }
+  }
+
+  @Test
+  public void shouldCompleteOnAllPartitions() {
+    // given
+    final long batchOperationKey = createDistributedBatchOperation();
+
+    // when
+
+    engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).complete();
+
+    assertThatCommandIsDistributedCorrectly(
+        ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
+        BatchOperationIntent.COMPLETE,
+        BatchOperationIntent.COMPLETED);
+
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
+      assertThat(
+              RecordingExporter.batchOperationLifecycleRecords()
+                  .withBatchOperationKey(batchOperationKey)
+                  .withPartitionId(partitionId)
+                  .limit(record -> record.getIntent().equals(BatchOperationIntent.COMPLETED))
+                  .collect(Collectors.toList()))
+          .extracting(Record::getIntent)
+          .containsExactly(BatchOperationIntent.COMPLETE, BatchOperationIntent.COMPLETED);
     }
   }
 
