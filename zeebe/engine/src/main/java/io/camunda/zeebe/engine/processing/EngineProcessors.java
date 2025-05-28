@@ -166,7 +166,8 @@ public final class EngineProcessors {
         commandDistributionBehavior,
         config,
         clock,
-        authCheckBehavior);
+        authCheckBehavior,
+        routingInfo);
     addMessageProcessors(
         bpmnBehaviors,
         subscriptionCommandSender,
@@ -412,7 +413,8 @@ public final class EngineProcessors {
       final CommandDistributionBehavior distributionBehavior,
       final EngineConfiguration config,
       final InstantSource clock,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final RoutingInfo routingInfo) {
 
     // on deployment partition CREATE Command is received and processed
     // it will cause a distribution to other partitions
@@ -434,7 +436,8 @@ public final class EngineProcessors {
     final var deploymentRedistributor =
         new DeploymentRedistributor(
             deploymentDistributionCommandSender,
-            scheduledTaskStateSupplier.get().getDeploymentState());
+            scheduledTaskStateSupplier.get().getDeploymentState(),
+            routingInfo);
     typedRecordProcessors.withListener(deploymentRedistributor);
 
     // on other partitions DISTRIBUTE command is received and processed

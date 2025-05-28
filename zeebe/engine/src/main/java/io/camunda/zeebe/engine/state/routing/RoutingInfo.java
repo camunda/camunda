@@ -27,8 +27,14 @@ public interface RoutingInfo {
   /** Returns the current set of partitions. */
   Set<Integer> partitions();
 
+  /** Returns the desired set of partitions. */
+  Set<Integer> desiredPartitions();
+
   /** Returns the current partition id for the given correlation key. */
   int partitionForCorrelationKey(final DirectBuffer correlationKey);
+
+  /** Returns whether a partition is being scaled up at that point in time. */
+  boolean isPartitionScaling(final int partitionId);
 
   /**
    * Creates a {@link RoutingInfo} instance for static partitions. This is used when the partitions
@@ -61,8 +67,18 @@ public interface RoutingInfo {
     }
 
     @Override
+    public Set<Integer> desiredPartitions() {
+      return partitions();
+    }
+
+    @Override
     public int partitionForCorrelationKey(final DirectBuffer correlationKey) {
       return SubscriptionUtil.getSubscriptionPartitionId(correlationKey, partitionCount);
+    }
+
+    @Override
+    public boolean isPartitionScaling(final int partitionId) {
+      return false;
     }
   }
 
@@ -88,6 +104,14 @@ public interface RoutingInfo {
     }
 
     @Override
+    public Set<Integer> desiredPartitions() {
+      if (!routingState.isInitialized()) {
+        return fallback.partitions();
+      }
+      return routingState.desiredPartitions();
+    }
+
+    @Override
     public int partitionForCorrelationKey(final DirectBuffer correlationKey) {
       if (!routingState.isInitialized()) {
         return fallback.partitionForCorrelationKey(correlationKey);
@@ -98,6 +122,12 @@ public interface RoutingInfo {
           return SubscriptionUtil.getSubscriptionPartitionId(correlationKey, partitionCount);
         }
       }
+    }
+
+    @Override
+    public boolean isPartitionScaling(final int partitionId) {
+      return !routingState.currentPartitions().contains(partitionId)
+          && routingState.desiredPartitions().contains(partitionId);
     }
   }
 }
