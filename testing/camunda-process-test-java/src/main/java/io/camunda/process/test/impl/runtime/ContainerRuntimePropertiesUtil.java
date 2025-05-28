@@ -48,6 +48,11 @@ public final class ContainerRuntimePropertiesUtil {
   private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\$\\{.*}");
 
   private static final String VERSION_FORMAT = "%d.%d.%d";
+  /**
+   * Format string for versions that include additional labels (e.g., alpha, rc).
+   * This is used to format semantic versions with non-SNAPSHOT labels.
+   */
+  private static final String LABELED_VERSION_FORMAT = "%d.%d.%d%s";
 
   private final String camundaVersion;
   private final String camundaDockerImageName;
@@ -123,11 +128,12 @@ public final class ContainerRuntimePropertiesUtil {
     if (label == null) {
       // release version
       return String.format(VERSION_FORMAT, major, minor, patch);
-
+    } else if (!label.contains(SNAPSHOT_VERSION)) {
+      // alpha, rc or other labeled version
+      return String.format(EXTENDED_VERSION_FORMAT, major, minor, patch, label);
     } else if (patch == 0) {
       // current dev version
       return SNAPSHOT_VERSION;
-
     } else {
       // maintenance dev version
       final int previousPatchVersion = patch - 1;
