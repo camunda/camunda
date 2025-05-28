@@ -71,6 +71,7 @@
       <validValue name="AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION">53</validValue>
       <validValue name="BATCH_OPERATION_LIFECYCLE_MANAGEMENT">54</validValue>
       <validValue name="BATCH_OPERATION_PARTITION_LIFECYCLE">55</validValue>
+      <validValue name="ASYNC_REQUEST_METADATA">56</validValue>
 
       <!-- Management records / record not related to process automation -->
       <!-- value 252 was used for "REDISTRIBUTION, do not use-->
