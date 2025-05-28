@@ -86,8 +86,9 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
 
     final var recordRequestMetadata = userTaskState.findRecordRequestMetadata(userTaskKey);
     if (recordRequestMetadata.isEmpty()) {
-      LOGGER.warn(
-          "No request metadata found for userTaskKey={}, writing 'USER_TASK.UPDATED' without response.",
+      LOGGER.error(
+          "Bug: No request metadata found for userTaskKey='{}', writing 'USER_TASK.UPDATED' without response. "
+              + "This may indicate a problem with how the update was triggered. Please investigate.",
           userTaskKey);
       stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
       return;
@@ -109,13 +110,13 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
         // Update triggered by a VariableDocument command.
         // Retrieve the original VariableDocumentRecord to apply correct variable
         // merge logic and write follow-up event.
-
         final var optionalVariableDocumentState =
             variableState.findVariableDocumentState(userTaskRecord.getElementInstanceKey());
         if (optionalVariableDocumentState.isEmpty()) {
-          LOGGER.warn(
-              "No VariableDocumentState found for elementInstanceKey={} during task update. "
-                  + "Skipping variable merge, only writing 'USER_TASK.UPDATED'.",
+          LOGGER.error(
+              "Bug: No VariableDocumentState found for elementInstanceKey='{}' during a task update triggered by user task variables update. "
+                  + "No variables will be merged, and only 'USER_TASK.UPDATED' will be written. "
+                  + "This may be caused by a corrupted or incomplete variable update request. Please investigate.",
               userTaskRecord.getElementInstanceKey());
           stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
           return;
