@@ -182,16 +182,18 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
                 .withBatchOperationKey(batchOperationKey)
                 .onlyEvents())
         .extracting(Record::getIntent)
-        .containsSequence(BatchOperationIntent.PAUSED, BatchOperationIntent.RESUMED);
+        .containsSequence(
+            BatchOperationIntent.PAUSED,
+            BatchOperationIntent.RESUMED,
+            BatchOperationIntent.COMPLETED);
 
-    // and at least the completed
+    // and at least one EXECUTED
     assertThat(
             RecordingExporter.batchOperationExecutionRecords()
                 .withBatchOperationKey(batchOperationKey)
                 .onlyEvents())
         .extracting(Record::getIntent)
-        .containsSequence(
-            BatchOperationExecutionIntent.EXECUTED, BatchOperationExecutionIntent.COMPLETED);
+        .containsSequence(BatchOperationExecutionIntent.EXECUTED);
   }
 
   @Test

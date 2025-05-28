@@ -333,7 +333,7 @@ public class BatchOperationIT {
 
     // when
     final OffsetDateTime endDate = OffsetDateTime.now();
-    writer.getBatchOperationWriter().finish(batchOperation.batchOperationKey(), endDate);
+    writer.getBatchOperationWriter().complete(batchOperation.batchOperationKey(), endDate);
     writer.flush();
 
     // then

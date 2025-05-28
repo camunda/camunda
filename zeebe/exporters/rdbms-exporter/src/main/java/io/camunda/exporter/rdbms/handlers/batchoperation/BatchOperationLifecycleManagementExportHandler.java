@@ -22,7 +22,10 @@ public class BatchOperationLifecycleManagementExportHandler
 
   private static final Set<Intent> EXPORTABLE_INTENTS =
       Set.of(
-          BatchOperationIntent.CANCELED, BatchOperationIntent.PAUSED, BatchOperationIntent.RESUMED);
+          BatchOperationIntent.CANCELED,
+          BatchOperationIntent.PAUSED,
+          BatchOperationIntent.RESUMED,
+          BatchOperationIntent.COMPLETED);
 
   private final BatchOperationWriter batchOperationWriter;
 
@@ -43,6 +46,9 @@ public class BatchOperationLifecycleManagementExportHandler
     final var batchOperationKey = String.valueOf(value.getBatchOperationKey());
     if (record.getIntent().equals(BatchOperationIntent.CANCELED)) {
       batchOperationWriter.cancel(
+          batchOperationKey, DateUtil.toOffsetDateTime(record.getTimestamp()));
+    } else if (record.getIntent().equals(BatchOperationIntent.COMPLETED)) {
+      batchOperationWriter.complete(
           batchOperationKey, DateUtil.toOffsetDateTime(record.getTimestamp()));
     } else if (record.getIntent().equals(BatchOperationIntent.PAUSED)) {
       batchOperationWriter.pause(batchOperationKey);
