@@ -1,8 +1,7 @@
 # description: Workflow for Front-End end to end tests for Operate only. Tests will use a running instance of Operate for the API
 # test location: operate/client/e2e-playwright/tests
-# owner:
----
-name: Operate E2E Tests
+# owner: Core Features
+name: "[Legacy] Operate / E2E Tests"
 on:
   push:
     branches:

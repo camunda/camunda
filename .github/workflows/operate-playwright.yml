@@ -1,8 +1,4 @@
-# description: Workflow for Front-End end visual regression tests
-# test location: operate/client/e2e-playwright/visual
-# owner:
----
-name: Operate Visual regression tests
+name: "[Legacy] Operate / Visual Regression Tests"
 on:
   push:
     branches:
