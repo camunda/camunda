@@ -23,6 +23,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.MigrationSnapshotDirector;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
@@ -32,8 +33,10 @@ import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Optional;
+import org.agrona.LangUtil;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
@@ -146,21 +149,13 @@ public class SnapshotMigrationTransitionStepTest {
       names = {"INACTIVE"})
   public void shouldNotScheduleASnapshotAfterItsDoneInAPreviousTransition(final Role role) {
     // given
-    transitionContext.markMigrationsDone();
-    when(snapshotDirector.forceSnapshot())
-        .thenReturn(CompletableActorFuture.completed(mock(PersistedSnapshot.class)));
-
-    // when
-    step.prepareTransition(transitionContext, 0, role).join();
-    step.transitionTo(transitionContext, 0, role).join();
-
-    concurrencyControl.runAll();
-    verify(snapshotDirector, times(1)).forceSnapshot();
+    setupCommonCase(role, CompletableActorFuture.completed(mock(PersistedSnapshot.class)));
     assertThat(step.isSnapshotTaken()).isTrue();
     Awaitility.await("until report becomes true")
         .untilAsserted(
             () -> assertThat(healthMonitor.getHealthReport()).satisfies(HealthReport::isHealthy));
 
+    // when
     step.prepareTransition(transitionContext, 0, Role.LEADER).join();
     step.transitionTo(transitionContext, 0, Role.LEADER).join();
 
@@ -176,17 +171,7 @@ public class SnapshotMigrationTransitionStepTest {
       mode = Mode.EXCLUDE,
       names = {"INACTIVE"})
   public void shouldScheduleASnapshotImmediately(final Role role) {
-    // given
-    transitionContext.markMigrationsDone();
-    when(snapshotDirector.forceSnapshot())
-        .thenReturn(CompletableActorFuture.completed(mock(PersistedSnapshot.class)));
-
-    // when
-    step.prepareTransition(transitionContext, 0, role).join();
-    step.transitionTo(transitionContext, 0, role).join();
-
-    assertThat(concurrencyControl.scheduledTasks()).isNotZero();
-    concurrencyControl.runAll();
+    setupCommonCase(role, CompletableActorFuture.completed(mock(PersistedSnapshot.class)));
 
     // then
     verify(snapshotDirector).forceSnapshot();
@@ -202,15 +187,8 @@ public class SnapshotMigrationTransitionStepTest {
       names = {"INACTIVE"})
   public void shouldRetryUntilSnapshotDirectorReturnsASnapshot(final Role role) {
     // given
-    transitionContext.markMigrationsDone();
-    when(snapshotDirector.forceSnapshot()).thenReturn(CompletableActorFuture.completed(null));
+    setupCommonCase(role, CompletableActorFuture.completed(null));
 
-    // when
-    step.prepareTransition(transitionContext, 0, role).join();
-    step.transitionTo(transitionContext, 0, role).join();
-
-    assertThat(concurrencyControl.scheduledTasks()).isNotZero();
-    concurrencyControl.runAll();
     concurrencyControl.runAll();
     // then
     // TestConcurrencyControl runs immediately when scheduled instead of waiting
@@ -240,21 +218,13 @@ public class SnapshotMigrationTransitionStepTest {
       names = {"INACTIVE"})
   public void shouldCancelScheduleTimerWhenATransitionIsDone(final Role role) {
     // given
-    transitionContext.markMigrationsDone();
-    when(snapshotDirector.forceSnapshot()).thenReturn(CompletableActorFuture.completed(null));
-
-    // when
-    step.prepareTransition(transitionContext, 0, role).join();
-    step.transitionTo(transitionContext, 0, role).join();
-
-    concurrencyControl.runAll();
-    // then
-    verify(snapshotDirector, atLeastOnce()).forceSnapshot();
+    setupCommonCase(role, CompletableActorFuture.completed(null));
     assertThat(concurrencyControl.scheduledTasks()).isNotZero();
 
     // when
     step.prepareTransition(transitionContext, 0, Role.INACTIVE);
 
+    // then
     assertThat(concurrencyControl.scheduledTasks()).isZero();
   }
 
@@ -265,16 +235,9 @@ public class SnapshotMigrationTransitionStepTest {
       names = {"INACTIVE"})
   public void shouldRescheduleASnapshotAfterANewTransition(final Role role) {
     // given
-    transitionContext.markMigrationsDone();
-    when(snapshotDirector.forceSnapshot()).thenReturn(CompletableActorFuture.completed(null));
+    setupCommonCase(role, CompletableActorFuture.completed(null));
 
     // when
-    step.prepareTransition(transitionContext, 0, role).join();
-    step.transitionTo(transitionContext, 0, role).join();
-
-    concurrencyControl.runAll();
-    verify(snapshotDirector, atLeastOnce()).forceSnapshot();
-
     step.prepareTransition(transitionContext, 0, Role.LEADER);
     step.transitionTo(transitionContext, 0, Role.LEADER);
 
@@ -282,6 +245,64 @@ public class SnapshotMigrationTransitionStepTest {
     // then
     verify(snapshotDirector, atLeast(2)).forceSnapshot();
     assertThat(concurrencyControl.scheduledTasks()).isNotZero();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = Role.class,
+      mode = Mode.EXCLUDE,
+      names = {"INACTIVE"})
+  public void shouldRetryIOExceptions(final Role role) {
+    // given
+    setupCommonCase(
+        role, CompletableActorFuture.completedExceptionally(new IOException("expected")));
+    // when
+    concurrencyControl.runAll();
+    // then
+    verify(snapshotDirector, atLeast(2)).forceSnapshot();
+    assertThat(concurrencyControl.scheduledTasks()).isNotZero();
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = Role.class,
+      mode = Mode.EXCLUDE,
+      names = {"INACTIVE"})
+  public void shouldRetryIOExceptionsRaisedInAFuture(final Role role) {
+    // given
+    setupCommonCase(
+        role,
+        CompletableActorFuture.completed(null)
+            .thenApply(
+                ignored -> {
+                  try {
+                    throw new IOException("expected");
+                  } catch (final Exception e) {
+                    LangUtil.rethrowUnchecked(e);
+                  }
+                  return mock(PersistedSnapshot.class);
+                },
+                concurrencyControl));
+    // when
+    concurrencyControl.runAll();
+    // then
+    verify(snapshotDirector, atLeast(2)).forceSnapshot();
+    assertThat(concurrencyControl.scheduledTasks()).isNotZero();
+  }
+
+  private void setupCommonCase(
+      final Role role, final ActorFuture<PersistedSnapshot> snapshotResult) {
+    // given
+    transitionContext.markMigrationsDone();
+    when(snapshotDirector.forceSnapshot()).thenReturn(snapshotResult);
+
+    // when
+    step.prepareTransition(transitionContext, 0, role).join();
+    step.transitionTo(transitionContext, 0, role).join();
+    assertThat(concurrencyControl.scheduledTasks()).isNotZero();
+
+    concurrencyControl.runAll();
+    verify(snapshotDirector, atLeastOnce()).forceSnapshot();
   }
 
   public void checkMetricsAre(final HealthStatus expected) {

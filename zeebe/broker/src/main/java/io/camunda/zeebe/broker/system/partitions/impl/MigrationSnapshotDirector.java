@@ -17,8 +17,10 @@ import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.slf4j.Logger;
@@ -99,13 +101,27 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
   }
 
   private void forceSnapshotUntilSuccessful() {
-    if (!snapshotTaken && runningSnapshot == null) {
+    forceSnapshotUntilSuccessful(null);
+  }
+
+  private void forceSnapshotUntilSuccessful(final Throwable error) {
+    var shouldBeRetried = !snapshotTaken && runningSnapshot == null;
+    if (error != null) {
+      shouldBeRetried &=
+          error instanceof IOException
+              || (error instanceof CompletionException && error.getCause() instanceof IOException);
+    }
+    if (shouldBeRetried) {
       runningSnapshot =
           control.schedule(
               scheduleDelay,
               () -> {
                 forceSnapshot()
-                    .onComplete((ignored, error) -> forceSnapshotUntilSuccessful(), control);
+                    .onComplete(
+                        (ignored, ex) -> {
+                          forceSnapshotUntilSuccessful(ex);
+                        },
+                        control);
               });
     }
   }
@@ -114,8 +130,8 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
     if (!snapshotTaken) {
       return snapshotDirector
           .forceSnapshot()
-          .thenApply(
-              snapshot -> {
+          .andThen(
+              (snapshot, error) -> {
                 if (snapshot != null) {
                   // reset the flag
                   snapshotTaken = true;
@@ -126,7 +142,7 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
                   LOG.debug("Snapshot not taken after migrations, retrying in {}.", scheduleDelay);
                 }
                 runningSnapshot = null;
-                return null;
+                return CompletableActorFuture.completed(null);
               },
               control);
     } else {
