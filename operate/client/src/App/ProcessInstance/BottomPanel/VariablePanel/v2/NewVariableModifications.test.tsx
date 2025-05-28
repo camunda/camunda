@@ -582,7 +582,7 @@ describe('New Variable Modifications', () => {
     },
   );
 
-  it.skip('should be able to remove the first added variable modification after switching between flow node instances', async () => {
+  it('should be able to remove the first added variable modification after switching between flow node instances', async () => {
     jest.useFakeTimers();
     modificationsStore.enableModificationMode();
 
@@ -640,7 +640,7 @@ describe('New Variable Modifications', () => {
 
     act(() => {
       selectFlowNode(
-        {},
+        {flowNodeInstanceId: 'instance_id', isMultiInstance: false},
         {
           flowNodeInstanceId: 'instance_id',
           isMultiInstance: false,
