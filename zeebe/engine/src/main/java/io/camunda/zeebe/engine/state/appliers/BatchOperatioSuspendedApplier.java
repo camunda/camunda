@@ -12,17 +12,18 @@ import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 
-public class BatchOperationPausedApplier
+public class BatchOperatioSuspendedApplier
     implements TypedEventApplier<BatchOperationIntent, BatchOperationLifecycleManagementRecord> {
 
   private final MutableBatchOperationState batchOperationState;
 
-  public BatchOperationPausedApplier(final MutableBatchOperationState batchOperationState) {
+  public BatchOperatioSuspendedApplier(final MutableBatchOperationState batchOperationState) {
     this.batchOperationState = batchOperationState;
   }
 
   @Override
-  public void applyState(final long pauseKey, final BatchOperationLifecycleManagementRecord value) {
-    batchOperationState.pause(value.getBatchOperationKey());
+  public void applyState(
+      final long suspendKey, final BatchOperationLifecycleManagementRecord value) {
+    batchOperationState.suspend(value.getBatchOperationKey());
   }
 }

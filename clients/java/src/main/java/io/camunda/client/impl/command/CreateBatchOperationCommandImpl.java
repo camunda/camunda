@@ -36,9 +36,9 @@ import io.camunda.client.impl.response.CreateBatchOperationResponseImpl;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.client.protocol.rest.BatchOperationTypeEnum;
 import io.camunda.client.protocol.rest.MigrateProcessInstanceMappingInstruction;
-import io.camunda.client.protocol.rest.ProcessInstanceMigrationBatchOperationInstruction;
-import io.camunda.client.protocol.rest.ProcessInstanceMigrationInstruction;
-import io.camunda.client.protocol.rest.ProcessInstanceModificationBatchOperationInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
+import io.camunda.client.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
+import io.camunda.client.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
 import io.camunda.client.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -61,8 +61,8 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
   private final BatchOperationTypeEnum type;
   private final Function<Consumer<E>, E> filterFactory;
   private E filter;
-  private final ProcessInstanceMigrationInstruction migrationPlan =
-      new ProcessInstanceMigrationInstruction();
+  private final ProcessInstanceMigrationBatchOperationPlan migrationPlan =
+      new ProcessInstanceMigrationBatchOperationPlan();
   private final List<ProcessInstanceModificationMoveBatchOperationInstruction> moveInstructions =
       new ArrayList<>();
 
@@ -129,13 +129,13 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
   private String getUrl() {
     switch (type) {
       case CANCEL_PROCESS_INSTANCE:
-        return "/process-instances/batch-operations/cancellation";
+        return "/process-instances/cancellation";
       case RESOLVE_INCIDENT:
-        return "/process-instances/batch-operations/incident-resolution";
+        return "/process-instances/incident-resolution";
       case MIGRATE_PROCESS_INSTANCE:
-        return "/process-instances/batch-operations/migration";
+        return "/process-instances/migration";
       case MODIFY_PROCESS_INSTANCE:
-        return "/process-instances/batch-operations/modification";
+        return "/process-instances/modification";
       default:
         throw new IllegalArgumentException("Unsupported batch operation type: " + type);
     }
@@ -143,11 +143,11 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
 
   private Object getBody() {
     if (type == BatchOperationTypeEnum.MIGRATE_PROCESS_INSTANCE) {
-      return new ProcessInstanceMigrationBatchOperationInstruction()
+      return new ProcessInstanceMigrationBatchOperationRequest()
           .filter(provideSearchRequestProperty(filter))
           .migrationPlan(migrationPlan);
     } else if (type == BatchOperationTypeEnum.MODIFY_PROCESS_INSTANCE) {
-      return new ProcessInstanceModificationBatchOperationInstruction()
+      return new ProcessInstanceModificationBatchOperationRequest()
           .filter(provideSearchRequestProperty(filter))
           .moveInstructions(moveInstructions);
     } else {

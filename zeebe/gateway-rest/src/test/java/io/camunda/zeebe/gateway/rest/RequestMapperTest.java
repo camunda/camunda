@@ -19,15 +19,15 @@ import io.camunda.authentication.entity.CamundaJwtUser;
 import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder;
 import io.camunda.authentication.entity.OAuthContext;
-import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrationBatchOperationRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
 import io.camunda.zeebe.util.Either;
 import java.time.Instant;
@@ -210,20 +210,20 @@ class RequestMapperTest {
   @Test
   void shouldMapToProcessInstanceMigrationBatchOperationRequest() {
     // given
-    final var migrationInstruction = new ProcessInstanceMigrationInstruction();
-    migrationInstruction.setTargetProcessDefinitionKey("123");
+    final var migrationPlan = new ProcessInstanceMigrationBatchOperationPlan();
+    migrationPlan.setTargetProcessDefinitionKey("123");
     final var mappingInstruction = new MigrateProcessInstanceMappingInstruction();
     mappingInstruction.setSourceElementId("source1");
     mappingInstruction.setTargetElementId("target1");
-    migrationInstruction.setMappingInstructions(List.of(mappingInstruction));
+    migrationPlan.setMappingInstructions(List.of(mappingInstruction));
 
-    final var batchOperationInstruction = new ProcessInstanceMigrationBatchOperationInstruction();
-    batchOperationInstruction.setMigrationPlan(migrationInstruction);
+    final var batchOperationInstruction = new ProcessInstanceMigrationBatchOperationRequest();
+    batchOperationInstruction.setMigrationPlan(migrationPlan);
     final var filter = new ProcessInstanceFilter();
     batchOperationInstruction.setFilter(filter);
 
     // when
-    final Either<ProblemDetail, ProcessInstanceMigrationBatchOperationRequest> result =
+    final Either<ProblemDetail, ProcessInstanceMigrateBatchOperationRequest> result =
         RequestMapper.toProcessInstanceMigrationBatchOperationRequest(batchOperationInstruction);
 
     // then
@@ -243,21 +243,21 @@ class RequestMapperTest {
   @Test
   void shouldReturnProblemDetailForInvalidInput() {
     // given
-    final var migrationInstruction = new ProcessInstanceMigrationInstruction();
-    migrationInstruction.setTargetProcessDefinitionKey("123");
+    final var migrationPlan = new ProcessInstanceMigrationBatchOperationPlan();
+    migrationPlan.setTargetProcessDefinitionKey("123");
     final var mappingInstruction = new MigrateProcessInstanceMappingInstruction();
     mappingInstruction.setSourceElementId(null);
     mappingInstruction.setTargetElementId(null);
-    migrationInstruction.setMappingInstructions(List.of(mappingInstruction));
+    migrationPlan.setMappingInstructions(List.of(mappingInstruction));
 
-    final var batchOperationInstruction = new ProcessInstanceMigrationBatchOperationInstruction();
-    batchOperationInstruction.setMigrationPlan(migrationInstruction);
+    final var batchOperationRequest = new ProcessInstanceMigrationBatchOperationRequest();
+    batchOperationRequest.setMigrationPlan(migrationPlan);
     final var filter = new ProcessInstanceFilter();
-    batchOperationInstruction.setFilter(filter);
+    batchOperationRequest.setFilter(filter);
 
     // when
-    final Either<ProblemDetail, ProcessInstanceMigrationBatchOperationRequest> result =
-        RequestMapper.toProcessInstanceMigrationBatchOperationRequest(batchOperationInstruction);
+    final Either<ProblemDetail, ProcessInstanceMigrateBatchOperationRequest> result =
+        RequestMapper.toProcessInstanceMigrationBatchOperationRequest(batchOperationRequest);
 
     // then
     assertTrue(result.isLeft());
@@ -274,13 +274,13 @@ class RequestMapperTest {
             .sourceElementId("source1")
             .targetElementId("target1");
 
-    final var modificationInstruction =
-        new ProcessInstanceModificationBatchOperationInstruction()
+    final var modificationRequest =
+        new ProcessInstanceModificationBatchOperationRequest()
             .addMoveInstructionsItem(moveInstruction);
 
     // when
     final Either<ProblemDetail, ProcessInstanceModifyBatchOperationRequest> result =
-        RequestMapper.toProcessInstanceModifyBatchOperationRequest(modificationInstruction);
+        RequestMapper.toProcessInstanceModifyBatchOperationRequest(modificationRequest);
 
     // then
     assertTrue(result.isRight());
@@ -301,13 +301,13 @@ class RequestMapperTest {
     final var moveInstruction =
         new ProcessInstanceModificationMoveBatchOperationInstruction().sourceElementId("source1");
 
-    final var modificationInstruction =
-        new ProcessInstanceModificationBatchOperationInstruction()
+    final var modificationRequest =
+        new ProcessInstanceModificationBatchOperationRequest()
             .addMoveInstructionsItem(moveInstruction);
 
     // when
     final Either<ProblemDetail, ProcessInstanceModifyBatchOperationRequest> result =
-        RequestMapper.toProcessInstanceModifyBatchOperationRequest(modificationInstruction);
+        RequestMapper.toProcessInstanceModifyBatchOperationRequest(modificationRequest);
 
     // then
     assertTrue(result.isLeft());

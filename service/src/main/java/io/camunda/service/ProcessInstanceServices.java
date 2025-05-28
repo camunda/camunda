@@ -230,7 +230,7 @@ public final class ProcessInstanceServices
   }
 
   public CompletableFuture<BatchOperationCreationRecord> migrateProcessInstancesBatchOperation(
-      final ProcessInstanceMigrationBatchOperationRequest request) {
+      final ProcessInstanceMigrateBatchOperationRequest request) {
     final var migrationPlan = new BatchOperationProcessInstanceMigrationPlan();
     migrationPlan.setTargetProcessDefinitionKey(request.targetProcessDefinitionKey);
     request.mappingInstructions.forEach(migrationPlan::addMappingInstruction);
@@ -319,7 +319,7 @@ public final class ProcessInstanceServices
       List<ProcessInstanceModificationTerminateInstruction> terminateInstructions,
       Long operationReference) {}
 
-  public record ProcessInstanceMigrationBatchOperationRequest(
+  public record ProcessInstanceMigrateBatchOperationRequest(
       ProcessInstanceFilter filter,
       Long targetProcessDefinitionKey,
       List<ProcessInstanceMigrationMappingInstruction> mappingInstructions) {}

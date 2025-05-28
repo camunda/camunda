@@ -270,7 +270,7 @@ public class BatchOperationIT {
   }
 
   @TestTemplate
-  public void shouldPauseBatchOperation(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldSuspendBatchOperation(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
     // given
@@ -281,7 +281,7 @@ public class BatchOperationIT {
     createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationId(), 2);
 
     // when
-    writer.getBatchOperationWriter().pause(batchOperation.batchOperationId());
+    writer.getBatchOperationWriter().suspend(batchOperation.batchOperationId());
     writer.flush();
 
     // then
@@ -290,7 +290,7 @@ public class BatchOperationIT {
     assertThat(updatedBatchOperation).isNotNull();
     assertThat(updatedBatchOperation.items().getFirst().endDate()).isNull();
     assertThat(updatedBatchOperation.items().getFirst().state())
-        .isEqualTo(BatchOperationState.PAUSED);
+        .isEqualTo(BatchOperationState.SUSPENDED);
   }
 
   @TestTemplate
@@ -304,7 +304,7 @@ public class BatchOperationIT {
 
     createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationId(), 2);
 
-    writer.getBatchOperationWriter().pause(batchOperation.batchOperationId());
+    writer.getBatchOperationWriter().suspend(batchOperation.batchOperationId());
     writer.flush();
 
     // when

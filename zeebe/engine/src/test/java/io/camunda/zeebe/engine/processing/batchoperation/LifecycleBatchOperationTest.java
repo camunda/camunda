@@ -46,21 +46,21 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
   }
 
   @Test
-  public void shouldPauseBatchOperationInScheduler() {
+  public void shouldSuspendBatchOperationInScheduler() {
     // given
     final var processInstanceKeys = Set.of(1L, 2L, 3L);
     final var batchOperationKey = createNewCancelProcessInstanceBatchOperation(processInstanceKeys);
 
-    // when we pause the batch operation
-    engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).pause();
+    // when we suspend the batch operation
+    engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).suspend();
 
-    // then we have a paused event
+    // then we have a suspended event
     assertThat(
             RecordingExporter.batchOperationLifecycleRecords()
                 .withBatchOperationKey(batchOperationKey)
                 .onlyEvents())
         .extracting(Record::getIntent)
-        .containsSequence(BatchOperationIntent.PAUSED);
+        .containsSequence(BatchOperationIntent.SUSPENDED);
 
     // and no follow op up command to execute again
     assertThat(
@@ -72,13 +72,13 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
   }
 
   @Test
-  public void shouldPauseBatchOperationInExecutor() {
+  public void shouldSuspendBatchOperationInExecutor() {
     // given
     final var processInstanceKeys = Set.of(1L, 2L, 3L);
     final var batchOperationKey = createNewCancelProcessInstanceBatchOperation(processInstanceKeys);
 
-    // when we pause the batch operation
-    engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).pause();
+    // when we suspend the batch operation
+    engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).suspend();
 
     // and send the execute command
     engine
@@ -87,13 +87,13 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
         .withBatchOperationKey(batchOperationKey)
         .executeWithoutExpectation();
 
-    // then we have a paused event
+    // then we have a suspended event
     assertThat(
             RecordingExporter.batchOperationLifecycleRecords()
                 .withBatchOperationKey(batchOperationKey)
                 .onlyEvents())
         .extracting(Record::getIntent)
-        .containsSequence(BatchOperationIntent.PAUSED);
+        .containsSequence(BatchOperationIntent.SUSPENDED);
 
     // and that we have no executed event
     assertThat(
@@ -105,16 +105,16 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
   }
 
   @Test
-  public void shouldRejectPauseBatchOperationIfNotFound() {
+  public void shouldRejectSuspendatchOperationIfNotFound() {
     // given a nonexisting batch operation key
     final var batchOperationKey = 1L;
 
-    // when we pause the batch operation which does not exist
+    // when we suspend the batch operation which does not exist
     engine
         .batchOperation()
         .newLifecycle()
         .withBatchOperationKey(batchOperationKey)
-        .pauseWithoutExpectations();
+        .suspendWithoutExpectations();
 
     // then we have a rejected command
     assertThat(
@@ -123,7 +123,7 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
                 .withRejectionType(RejectionType.NOT_FOUND)
                 .onlyCommandRejections())
         .extracting(Record::getIntent)
-        .containsSequence(BatchOperationIntent.PAUSE);
+        .containsSequence(BatchOperationIntent.SUSPEND);
 
     // and no follow op up command to execute again
     assertThat(
@@ -135,16 +135,16 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
   }
 
   @Test
-  public void shouldRejectPauseBatchOperationIfInvalidState() {
+  public void shouldRejectSuspendBatchOperationIfInvalidState() {
     // given a failed batch operation
     final var batchOperationKey = createNewFailedCancelProcessInstanceBatchOperation();
 
-    // when we pause the batch operation which does not exist
+    // when we suspend the batch operation which does not exist
     engine
         .batchOperation()
         .newLifecycle()
         .withBatchOperationKey(batchOperationKey)
-        .pauseWithoutExpectations();
+        .suspendWithoutExpectations();
 
     // then we have a rejected command
     assertThat(
@@ -153,7 +153,7 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
                 .withRejectionType(RejectionType.INVALID_STATE)
                 .onlyCommandRejections())
         .extracting(Record::getIntent)
-        .containsSequence(BatchOperationIntent.PAUSE);
+        .containsSequence(BatchOperationIntent.SUSPEND);
 
     // and no follow-up command to execute again
     assertThat(
@@ -170,8 +170,8 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
     final var processInstanceKeys = Set.of(1L, 2L, 3L);
     final var batchOperationKey = createNewCancelProcessInstanceBatchOperation(processInstanceKeys);
 
-    // and we pause the batch operation
-    engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).pause();
+    // and we suspend the batch operation
+    engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).suspend();
 
     // when we resume it again
     engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).resume();
@@ -182,7 +182,7 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
                 .withBatchOperationKey(batchOperationKey)
                 .onlyEvents())
         .extracting(Record::getIntent)
-        .containsSequence(BatchOperationIntent.PAUSED, BatchOperationIntent.RESUMED);
+        .containsSequence(BatchOperationIntent.SUSPENDED, BatchOperationIntent.RESUMED);
 
     // and at least the completed
     assertThat(
@@ -224,11 +224,11 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
 
   @Test
   public void shouldRejectResumeBatchOperationIfInvalidState() {
-    // given a batch operation wich is not paused
+    // given a batch operation wich is not suspended
     final var processInstanceKeys = Set.of(1L, 2L, 3L);
     final var batchOperationKey = createNewCancelProcessInstanceBatchOperation(processInstanceKeys);
 
-    // when we resume the batch operation which is not paused
+    // when we resume the batch operation which is not suspended
     engine
         .batchOperation()
         .newLifecycle()
@@ -275,7 +275,7 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
   }
 
   @Test
-  public void shouldRejectPauseBatchOperationWithNoPermission() {
+  public void shouldRejectSuspendBatchOperationWithNoPermission() {
     // given
     final var processInstanceKeys = Set.of(1L, 2L, 3L);
     final var batchOperationKey = createNewCancelProcessInstanceBatchOperation(processInstanceKeys);
@@ -289,7 +289,7 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
         .newLifecycle()
         .withBatchOperationKey(batchOperationKey)
         .expectRejection()
-        .pause(user.getUsername());
+        .suspend(user.getUsername());
 
     // then we have a rejected cancel command
     assertThat(
@@ -298,7 +298,7 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
                 .withBatchOperationKey(batchOperationKey))
         .allSatisfy(
             r -> {
-              assertThat(r.getIntent()).isEqualTo(BatchOperationIntent.PAUSE);
+              assertThat(r.getIntent()).isEqualTo(BatchOperationIntent.SUSPEND);
               assertThat(r.getRejectionType()).isEqualTo(RejectionType.FORBIDDEN);
             });
   }
@@ -309,8 +309,8 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
     final var processInstanceKeys = Set.of(1L, 2L, 3L);
     final var batchOperationKey = createNewCancelProcessInstanceBatchOperation(processInstanceKeys);
 
-    // and we pause the batch operation
-    engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).pause();
+    // and we suspend the batch operation
+    engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).suspend();
 
     // and we add a new user with no permissions
     final var user = createUser();

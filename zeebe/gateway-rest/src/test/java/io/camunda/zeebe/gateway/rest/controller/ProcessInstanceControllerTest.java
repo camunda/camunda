@@ -20,8 +20,8 @@ import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
+import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
-import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -1326,13 +1326,13 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri("/v2/process-instances/batch-operations/cancellation")
+        .uri("/v2/process-instances/cancellation")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
         .exchange()
         .expectStatus()
-        .isAccepted()
+        .isOk()
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
@@ -1374,13 +1374,13 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri("/v2/process-instances/batch-operations/modification")
+        .uri("/v2/process-instances/modification")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
         .exchange()
         .expectStatus()
-        .isAccepted()
+        .isOk()
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
@@ -1450,13 +1450,13 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri("/v2/process-instances/batch-operations/incident-resolution")
+        .uri("/v2/process-instances/incident-resolution")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
         .exchange()
         .expectStatus()
-        .isAccepted()
+        .isOk()
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
@@ -1477,7 +1477,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     record.setBatchOperationType(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
 
     when(processInstanceServices.migrateProcessInstancesBatchOperation(
-            any(ProcessInstanceMigrationBatchOperationRequest.class)))
+            any(ProcessInstanceMigrateBatchOperationRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(record));
 
     final var request =
@@ -1500,13 +1500,13 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri("/v2/process-instances/batch-operations/migration")
+        .uri("/v2/process-instances/migration")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
         .exchange()
         .expectStatus()
-        .isAccepted()
+        .isOk()
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
@@ -1517,7 +1517,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     verify(processInstanceServices)
         .migrateProcessInstancesBatchOperation(
-            any(ProcessInstanceMigrationBatchOperationRequest.class));
+            any(ProcessInstanceMigrateBatchOperationRequest.class));
   }
 
   @Test

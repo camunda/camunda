@@ -114,24 +114,24 @@ class BatchOperationControllerTest extends RestControllerTest {
 
     webClient
         .put()
-        .uri("/v2/batch-operations/{key}/cancel", batchOperationId)
+        .uri("/v2/batch-operations/{key}/cancellation", batchOperationId)
         .exchange()
         .expectStatus()
-        .isAccepted();
+        .isNoContent();
   }
 
   @Test
-  void shouldPauseBatchOperation() {
+  void shouldSuspendBatchOperation() {
     final var batchOperationId = "1";
-    when(batchOperationServices.pause(batchOperationId))
+    when(batchOperationServices.suspend(batchOperationId))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     webClient
         .put()
-        .uri("/v2/batch-operations/{key}/pause", batchOperationId)
+        .uri("/v2/batch-operations/{key}/suspension", batchOperationId)
         .exchange()
         .expectStatus()
-        .isAccepted();
+        .isNoContent();
   }
 
   @Test
@@ -142,10 +142,10 @@ class BatchOperationControllerTest extends RestControllerTest {
 
     webClient
         .put()
-        .uri("/v2/batch-operations/{key}/resume", batchOperationId)
+        .uri("/v2/batch-operations/{key}/resumption", batchOperationId)
         .exchange()
         .expectStatus()
-        .isAccepted();
+        .isNoContent();
   }
 
   private static BatchOperationEntity getBatchOperationEntity(final String batchOperationId) {

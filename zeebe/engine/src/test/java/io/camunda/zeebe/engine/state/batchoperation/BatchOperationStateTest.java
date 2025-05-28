@@ -457,7 +457,7 @@ public class BatchOperationStateTest {
   }
 
   @Test
-  void shouldReturnTrueForCanPause() {
+  void shouldReturnTrueForCanSuspend() {
     // given
     final var batchOperationKey = 1L;
     final var batchRecord =
@@ -471,11 +471,11 @@ public class BatchOperationStateTest {
     // then
     final var persistedBatchOperation = state.get(batchOperationKey);
     assertThat(persistedBatchOperation).isNotEmpty();
-    assertThat(persistedBatchOperation.get().canPause()).isTrue();
+    assertThat(persistedBatchOperation.get().canSuspend()).isTrue();
   }
 
   @Test
-  void shouldReturnFalseForCanPause() {
+  void shouldReturnFalseForCanSuspend() {
     // given
     final var batchOperationKey = 1L;
     final var batchRecord =
@@ -491,11 +491,11 @@ public class BatchOperationStateTest {
     // then
     final var persistedBatchOperation = state.get(batchOperationKey);
     assertThat(persistedBatchOperation).isNotEmpty();
-    assertThat(persistedBatchOperation.get().canPause()).isFalse();
+    assertThat(persistedBatchOperation.get().canSuspend()).isFalse();
   }
 
   @Test
-  void shouldPauseBatch() {
+  void shouldSuspendBatch() {
     // given
     final var batchOperationKey = 1L;
     final var batchRecord =
@@ -505,12 +505,12 @@ public class BatchOperationStateTest {
     state.create(batchOperationKey, batchRecord);
 
     // when
-    state.pause(batchOperationKey);
+    state.suspend(batchOperationKey);
 
     // then
     final var persistedBatchOperation = state.get(batchOperationKey);
     assertThat(persistedBatchOperation).isNotEmpty();
-    assertThat(persistedBatchOperation.get().isPaused()).isTrue();
+    assertThat(persistedBatchOperation.get().isSuspended()).isTrue();
   }
 
   @Test
@@ -522,7 +522,7 @@ public class BatchOperationStateTest {
             .setBatchOperationKey(batchOperationKey)
             .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
     state.create(batchOperationKey, batchRecord);
-    state.pause(batchOperationKey);
+    state.suspend(batchOperationKey);
 
     // when
     state.resume(batchOperationKey);
@@ -543,7 +543,7 @@ public class BatchOperationStateTest {
             .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
     state.create(batchOperationKey, batchRecord);
     state.start(batchOperationKey);
-    state.pause(batchOperationKey);
+    state.suspend(batchOperationKey);
 
     // when
     state.resume(batchOperationKey);
@@ -564,7 +564,7 @@ public class BatchOperationStateTest {
             .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
     state.create(batchOperationKey, batchRecord);
     state.start(batchOperationKey);
-    state.pause(batchOperationKey);
+    state.suspend(batchOperationKey);
 
     // when
     final var persistedBatchOperation = state.get(batchOperationKey).get();

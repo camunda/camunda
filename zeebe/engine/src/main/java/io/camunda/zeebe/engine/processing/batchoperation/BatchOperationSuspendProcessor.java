@@ -31,13 +31,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ExcludeAuthorizationCheck
-public final class BatchOperationPauseProcessor
+public final class BatchOperationSuspendProcessor
     implements DistributedTypedRecordProcessor<BatchOperationLifecycleManagementRecord> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationPauseProcessor.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(BatchOperationSuspendProcessor.class);
 
   private static final String MESSAGE_PREFIX =
-      "Expected to pause a batch operation with key '%d', but ";
+      "Expected to suspend a batch operation with key '%d', but ";
   private static final String BATCH_OPERATION_NOT_FOUND_MESSAGE =
       MESSAGE_PREFIX + "no such batch operation was found.";
   private static final String BATCH_OPERATION_INVALID_STATE_MESSAGE =
@@ -51,7 +52,7 @@ public final class BatchOperationPauseProcessor
   private final BatchOperationState batchOperationState;
   private final AuthorizationCheckBehavior authCheckBehavior;
 
-  public BatchOperationPauseProcessor(
+  public BatchOperationSuspendProcessor(
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final ProcessingState processingState,
@@ -82,9 +83,9 @@ public final class BatchOperationPauseProcessor
 
     final var recordValue = command.getValue();
     final var batchOperationKey = command.getValue().getBatchOperationKey();
-    final var pauseKey = keyGenerator.nextKey();
+    final var suspendKey = keyGenerator.nextKey();
     LOGGER.debug(
-        "Processing new command to pause batch operation with key '{}': {}",
+        "Processing new command to suspend batch operation with key '{}': {}",
         command.getKey(),
         recordValue);
 
@@ -95,18 +96,18 @@ public final class BatchOperationPauseProcessor
       return;
     }
 
-    // check if the batch operation can be paused
-    if (!batchOperation.get().canPause()) {
+    // check if the batch operation can be suspended
+    if (!batchOperation.get().canSuspend()) {
       final var batchOperationStatus = batchOperation.get().getStatus().name();
       rejectInvalidState(command, batchOperationKey, batchOperationStatus, recordValue);
       return;
     }
 
-    pauseBatchOperation(pauseKey, recordValue);
+    suspendBatchOperation(suspendKey, recordValue);
     responseWriter.writeEventOnCommand(
-        pauseKey, BatchOperationIntent.PAUSED, command.getValue(), command);
+        suspendKey, BatchOperationIntent.SUSPENDED, command.getValue(), command);
     commandDistributionBehavior
-        .withKey(pauseKey)
+        .withKey(suspendKey)
         .inQueue(DistributionQueue.BATCH_OPERATION)
         .distribute(command);
   }
@@ -119,15 +120,15 @@ public final class BatchOperationPauseProcessor
 
     // Validation
     final var batchOperation = batchOperationState.get(batchOperationKey);
-    if (batchOperation.isPresent() && batchOperation.get().canPause()) {
+    if (batchOperation.isPresent() && batchOperation.get().canSuspend()) {
       LOGGER.debug(
-          "Processing distributed command to pause with key '{}': {}",
+          "Processing distributed command to suspend with key '{}': {}",
           batchOperationKey,
           recordValue);
-      pauseBatchOperation(batchOperationKey, recordValue);
+      suspendBatchOperation(batchOperationKey, recordValue);
     } else {
       LOGGER.debug(
-          "Distributed command to pause batch operation with key '{}' will be ignored: {}",
+          "Distributed command to suspend batch operation with key '{}' will be ignored: {}",
           batchOperationKey,
           recordValue);
     }
@@ -135,9 +136,9 @@ public final class BatchOperationPauseProcessor
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private void pauseBatchOperation(
-      final Long pauseKey, final BatchOperationLifecycleManagementRecord recordValue) {
-    stateWriter.appendFollowUpEvent(pauseKey, BatchOperationIntent.PAUSED, recordValue);
+  private void suspendBatchOperation(
+      final Long suspendKey, final BatchOperationLifecycleManagementRecord recordValue) {
+    stateWriter.appendFollowUpEvent(suspendKey, BatchOperationIntent.SUSPENDED, recordValue);
   }
 
   private void rejectInvalidState(
@@ -146,7 +147,7 @@ public final class BatchOperationPauseProcessor
       final String batchOperationStatus,
       final BatchOperationLifecycleManagementRecord recordValue) {
     LOGGER.info(
-        "Batch operation with key '{}' cannot be paused because of invalid status '{}', rejecting command: {}",
+        "Batch operation with key '{}' cannot be suspended because of invalid status '{}', rejecting command: {}",
         batchOperationKey,
         batchOperationStatus,
         recordValue);

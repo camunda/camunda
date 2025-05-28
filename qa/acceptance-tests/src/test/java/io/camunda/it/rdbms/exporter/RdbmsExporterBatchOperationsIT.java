@@ -11,8 +11,8 @@ import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationChunk
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationExecutionCompletedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationLifecycleCanceledRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationLifecyclePausedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationLifecycleResumeRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationLifecycleSuspendedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationModifyProcessInstanceRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationProcessMigratedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationResolveIncidentRecord;
@@ -144,24 +144,24 @@ class RdbmsExporterBatchOperationsIT {
   }
 
   @Test
-  public void shouldPauseBatchOperation() {
+  public void shouldSuspendBatchOperation() {
     // given
     final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
     final var batchOperationKey = batchOperationCreatedRecord.getKey();
     final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
-    final var batchOperationPauseRecord =
-        getBatchOperationLifecyclePausedRecord(batchOperationKey, 3L);
+    final var batchOperationSuspendedRecord =
+        getBatchOperationLifecycleSuspendedRecord(batchOperationKey, 3L);
 
     exporter.export(batchOperationCreatedRecord);
     exporter.export(batchOperationChunkRecord);
 
-    // when we pause it
-    exporter.export(batchOperationPauseRecord);
+    // when we suspend it
+    exporter.export(batchOperationSuspendedRecord);
 
     // then it should be canceled
     final var batchOperation =
         rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
-    assertThat(batchOperation.state()).isEqualTo(BatchOperationState.PAUSED);
+    assertThat(batchOperation.state()).isEqualTo(BatchOperationState.SUSPENDED);
   }
 
   @Test
@@ -170,14 +170,14 @@ class RdbmsExporterBatchOperationsIT {
     final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
     final var batchOperationKey = batchOperationCreatedRecord.getKey();
     final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
-    final var batchOperationPauseRecord =
-        getBatchOperationLifecyclePausedRecord(batchOperationKey, 3L);
+    final var batchOperationSuspendedRecord =
+        getBatchOperationLifecycleSuspendedRecord(batchOperationKey, 3L);
     final var batchOperationResumeRecord =
         getBatchOperationLifecycleResumeRecord(batchOperationKey, 4L);
 
     exporter.export(batchOperationCreatedRecord);
     exporter.export(batchOperationChunkRecord);
-    exporter.export(batchOperationPauseRecord);
+    exporter.export(batchOperationSuspendedRecord);
 
     // when we resume it
     exporter.export(batchOperationResumeRecord);

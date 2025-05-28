@@ -287,19 +287,19 @@ public final class BatchOperationClient {
                     .getFirst();
 
     private static final Function<Long, Record<BatchOperationLifecycleManagementRecordValue>>
-        PAUSE_SUCCESS_EXPECTATION =
+        SUSPEND_SUCCESS_EXPECTATION =
             (position) ->
                 RecordingExporter.batchOperationLifecycleRecords()
-                    .withIntent(BatchOperationIntent.PAUSED)
+                    .withIntent(BatchOperationIntent.SUSPENDED)
                     .withSourceRecordPosition(position)
                     .getFirst();
 
     private static final Function<Long, Record<BatchOperationLifecycleManagementRecordValue>>
-        PAUSE_REJECTION_EXPECTATION =
+        SUSPEND_REJECTION_EXPECTATION =
             (position) ->
                 RecordingExporter.batchOperationLifecycleRecords()
                     .onlyCommandRejections()
-                    .withIntent(BatchOperationIntent.PAUSE)
+                    .withIntent(BatchOperationIntent.SUSPEND)
                     .withSourceRecordPosition(position)
                     .getFirst();
 
@@ -366,42 +366,42 @@ public final class BatchOperationClient {
           : CANCEL_REJECTION_EXPECTATION.apply(position);
     }
 
-    public Record<BatchOperationLifecycleManagementRecordValue> pause() {
-      return pause(
+    public Record<BatchOperationLifecycleManagementRecordValue> suspend() {
+      return suspend(
           AuthorizationUtil.getAuthInfoWithClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
     }
 
-    public Record<BatchOperationLifecycleManagementRecordValue> pause(final String username) {
-      return pause(AuthorizationUtil.getAuthInfo(username));
+    public Record<BatchOperationLifecycleManagementRecordValue> suspend(final String username) {
+      return suspend(AuthorizationUtil.getAuthInfo(username));
     }
 
-    public Record<BatchOperationLifecycleManagementRecordValue> pause(
+    public Record<BatchOperationLifecycleManagementRecordValue> suspend(
         final AuthInfo authorizations) {
       final long position =
           writer.writeCommandOnPartition(
               partition,
               r ->
-                  r.intent(BatchOperationIntent.PAUSE)
+                  r.intent(BatchOperationIntent.SUSPEND)
                       .event(batchOperationLifecycleManagementRecord)
                       .authorizations(authorizations)
                       .requestId(new Random().nextLong())
                       .requestStreamId(new Random().nextInt()));
 
       return expectSuccess
-          ? PAUSE_SUCCESS_EXPECTATION.apply(position)
-          : PAUSE_REJECTION_EXPECTATION.apply(position);
+          ? SUSPEND_SUCCESS_EXPECTATION.apply(position)
+          : SUSPEND_REJECTION_EXPECTATION.apply(position);
     }
 
-    public void pauseWithoutExpectations() {
-      pauseWithoutExpectations(
+    public void suspendWithoutExpectations() {
+      suspendWithoutExpectations(
           AuthorizationUtil.getAuthInfoWithClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
     }
 
-    public void pauseWithoutExpectations(final AuthInfo authorizations) {
+    public void suspendWithoutExpectations(final AuthInfo authorizations) {
       writer.writeCommandOnPartition(
           partition,
           r ->
-              r.intent(BatchOperationIntent.PAUSE)
+              r.intent(BatchOperationIntent.SUSPEND)
                   .event(batchOperationLifecycleManagementRecord)
                   .authorizations(authorizations)
                   .requestId(new Random().nextLong())

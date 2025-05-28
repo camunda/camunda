@@ -15,8 +15,8 @@ import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCancelProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCreateProcessor;
-import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationPauseProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationResumeProcessor;
+import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSuspendProcessor;
 import io.camunda.zeebe.engine.processing.clock.ClockProcessor;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCreateProcessor;
@@ -259,19 +259,19 @@ public class CommandDistributionIdempotencyTest {
             BatchOperationCancelProcessor.class
           },
           {
-            "BatchOperation.PAUSE is idempotent",
+            "BatchOperation.SUSPEND is idempotent",
             new Scenario(
                 ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
-                BatchOperationIntent.PAUSE,
+                BatchOperationIntent.SUSPEND,
                 () -> {
                   final var batchOperation = createBatchOperation();
                   return ENGINE
                       .batchOperation()
                       .newLifecycle()
                       .withBatchOperationKey(batchOperation.getKey())
-                      .pause();
+                      .suspend();
                 }),
-            BatchOperationPauseProcessor.class
+            BatchOperationSuspendProcessor.class
           },
           {
             "BatchOperation.RESUME is idempotent",
@@ -280,7 +280,7 @@ public class CommandDistributionIdempotencyTest {
                 BatchOperationIntent.RESUME,
                 () -> {
                   final var batchOperation = createBatchOperation();
-                  pauseBatchOperation(batchOperation.getKey());
+                  suspendBatchOperation(batchOperation.getKey());
                   return ENGINE
                       .batchOperation()
                       .newLifecycle()
@@ -692,9 +692,9 @@ public class CommandDistributionIdempotencyTest {
         .create();
   }
 
-  private static Record<BatchOperationLifecycleManagementRecordValue> pauseBatchOperation(
+  private static Record<BatchOperationLifecycleManagementRecordValue> suspendBatchOperation(
       final long batchKey) {
-    return ENGINE.batchOperation().newLifecycle().withBatchOperationKey(batchKey).pause();
+    return ENGINE.batchOperation().newLifecycle().withBatchOperationKey(batchKey).suspend();
   }
 
   private static Record<UserRecordValue> createUser() {
