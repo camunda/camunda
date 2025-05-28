@@ -28,6 +28,7 @@ import io.camunda.zeebe.engine.state.migration.to_8_7.IdempotentCommandDistribut
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.stream.api.ClusterContext;
 import io.camunda.zeebe.util.VersionUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -57,7 +58,7 @@ public class DbMigratorImpl implements DbMigrator {
           new ColumnFamilyPrefixCorrectionMigration(),
           new MultiTenancySignalSubscriptionStateMigration(),
           new JobBackoffRestoreMigration(),
-          new RoutingInfoMigration(),
+          new RoutingInfoInitializationMigration(),
           new OrderedCommandDistributionMigration(),
           new IdempotentCommandDistributionMigration());
   private static final Logger LOGGER =
@@ -66,6 +67,7 @@ public class DbMigratorImpl implements DbMigrator {
   // should be solved first, before adding any migration that can take a long time
   private final MutableMigrationTaskContext migrationTaskContext;
   private final List<MigrationTask> migrationTasks;
+  private final String currentVersion;
   private final boolean versionCheckRestrictionEnabled;
 
   private int skippedMigrations = 0;
@@ -77,49 +79,70 @@ public class DbMigratorImpl implements DbMigrator {
     this(
         versionCheckRestrictionEnabled,
         new MigrationTaskContextImpl(clusterContext, processingState),
-        MIGRATION_TASKS);
+        MIGRATION_TASKS,
+        null);
   }
 
   public DbMigratorImpl(
       final MutableMigrationTaskContext migrationTaskContext,
       final List<MigrationTask> migrationTasks) {
-    this(true, migrationTaskContext, migrationTasks);
+    this(true, migrationTaskContext, migrationTasks, null);
   }
 
+  @VisibleForTesting
   public DbMigratorImpl(
       final boolean versionCheckRestrictionEnabled,
       final MutableMigrationTaskContext migrationTaskContext,
-      final List<MigrationTask> migrationTasks) {
+      final List<MigrationTask> migrationTasks,
+      final String currentVersion) {
     this.versionCheckRestrictionEnabled = versionCheckRestrictionEnabled;
     this.migrationTaskContext = migrationTaskContext;
     this.migrationTasks = migrationTasks;
+    this.currentVersion = currentVersion != null ? currentVersion : VersionUtil.getVersion();
   }
 
   @Override
   public void runMigrations() {
-    if (checkVersionCompatibility() instanceof Compatible.SameVersion) {
-      LOGGER.debug("No migrations to run, snapshot is the same as current version");
-      return;
+    var initializationOnly = false;
+    switch (checkVersionCompatibility()) {
+      case final Indeterminate.PreviousVersionUnknown unknown:
+        LOGGER.debug("Snapshot is empty, only initialization migrations will be run.");
+        initializationOnly = true;
+        break;
+      case final Compatible.SameVersion compatible:
+        LOGGER.debug("No migrations to run, snapshot is the same as current version");
+        return;
+      default:
+        break;
     }
-    logPreview(migrationTasks);
+    logPreview(migrationTasks, initializationOnly);
 
+    final var executedMigrations = runMigrations(initializationOnly);
+
+    markMigrationsAsCompleted();
+    logSummary(executedMigrations);
+  }
+
+  private List<MigrationTask> runMigrations(final boolean initializationOnly) {
     final var executedMigrations = new ArrayList<MigrationTask>();
-    for (int index = 1; index <= migrationTasks.size(); index++) {
+    var migrationsToRun = migrationTasks; // no copy is needed
+    if (initializationOnly) {
+      migrationsToRun = migrationsToRun.stream().filter(MigrationTask::isInitialization).toList();
+    }
+    for (int index = 1; index <= migrationsToRun.size(); index++) {
       // one based index looks nicer in logs
-      final var migration = migrationTasks.get(index - 1);
-      final var executed = handleMigrationTask(migration, index, migrationTasks.size());
+      final var migration = migrationsToRun.get(index - 1);
+      final var executed = handleMigrationTask(migration, index, migrationsToRun.size());
       if (executed) {
         executedMigrations.add(migration);
       }
     }
-    markMigrationsAsCompleted();
-    logSummary(executedMigrations);
+    return executedMigrations;
   }
 
   private VersionCompatibilityCheck.CheckResult checkVersionCompatibility() {
     final var migratedByVersion =
         migrationTaskContext.processingState().getMigrationState().getMigratedByVersion();
-    final var currentVersion = VersionUtil.getVersion();
     final CheckResult checkResult =
         VersionCompatibilityCheck.check(migratedByVersion, currentVersion);
     switch (checkResult) {
@@ -159,13 +182,11 @@ public class DbMigratorImpl implements DbMigrator {
   }
 
   private void markMigrationsAsCompleted() {
-    migrationTaskContext
-        .processingState()
-        .getMigrationState()
-        .setMigratedByVersion(VersionUtil.getVersion());
+    migrationTaskContext.processingState().getMigrationState().setMigratedByVersion(currentVersion);
   }
 
-  private void logPreview(final List<MigrationTask> migrationTasks) {
+  private void logPreview(
+      final List<MigrationTask> migrationTasks, final boolean initializationOnly) {
     LOGGER.info(
         "Starting processing {} migration tasks (use LogLevel.DEBUG for more details) ... ",
         migrationTasks.size());
@@ -173,6 +194,7 @@ public class DbMigratorImpl implements DbMigrator {
         "Found {} migration tasks: {}",
         migrationTasks.size(),
         migrationTasks.stream()
+            .filter(task -> !initializationOnly || task.isInitialization())
             .map(MigrationTask::getIdentifier)
             .collect(Collectors.joining(", ")));
   }
