@@ -11,5 +11,10 @@ import org.junit.platform.suite.api.SelectPackages;
 import org.junit.platform.suite.api.Suite;
 
 @Suite
-@SelectPackages("io.camunda.operate.store.elasticsearch")
+@SelectPackages({
+  "io.camunda.operate.store.elasticsearch",
+  "io.camunda.operate.entities",
+  "io.camunda.operate.schema.templates",
+  "io.camunda.operate.util"
+})
 public class OperateDataLayersTestSuite {}
