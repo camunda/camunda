@@ -43,6 +43,24 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
   }
 
   @Override
+  public void appendFollowUpEventWithOperationReference(
+      final long key, final Intent intent, final RecordValue value, final long operationReference) {
+
+    final int latestVersion = eventApplier.getLatestVersion(intent);
+    final var metadata =
+        new RecordMetadata()
+            .recordType(RecordType.EVENT)
+            .intent(intent)
+            .recordVersion(latestVersion)
+            .rejectionType(RejectionType.NULL_VAL)
+            .rejectionReason("")
+            .operationReference(operationReference);
+
+    resultBuilder().appendRecord(key, value, metadata);
+    eventApplier.applyState(key, intent, value, latestVersion);
+  }
+
+  @Override
   public void appendFollowUpEvent(
       final long key, final Intent intent, final RecordValue value, final int recordVersion) {
     final var metadata =

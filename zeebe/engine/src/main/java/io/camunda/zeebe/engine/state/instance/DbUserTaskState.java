@@ -51,11 +51,6 @@ public class DbUserTaskState implements MutableUserTaskState {
   private final ColumnFamily<DbLong, UserTaskIntermediateStateValue>
       userTasksIntermediateStatesColumnFamily;
 
-  private final UserTaskTransitionTriggerRequestMetadata userTaskTransitionTriggerRequestMetadata =
-      new UserTaskTransitionTriggerRequestMetadata();
-  private final ColumnFamily<DbLong, UserTaskTransitionTriggerRequestMetadata>
-      userTasksTransitionTriggerRequestMetadataColumnFamily;
-
   private final DbString initialAssignee = new DbString();
   private final ColumnFamily<DbLong, DbString> userTasksInitialAssigneeColumnFamily;
 
@@ -79,13 +74,6 @@ public class DbUserTaskState implements MutableUserTaskState {
             transactionContext,
             userTaskIntermediateStateKey,
             userTaskIntermediateStateToRead);
-
-    userTasksTransitionTriggerRequestMetadataColumnFamily =
-        zeebeDb.createColumnFamily(
-            ZbColumnFamilies.USER_TASK_TRANSITION_TRIGGER_REQUEST_METADATA,
-            transactionContext,
-            userTaskKey,
-            userTaskTransitionTriggerRequestMetadata);
 
     userTasksInitialAssigneeColumnFamily =
         zeebeDb.createColumnFamily(
@@ -165,20 +153,6 @@ public class DbUserTaskState implements MutableUserTaskState {
   }
 
   @Override
-  public void storeRecordRequestMetadata(
-      final long key, final UserTaskTransitionTriggerRequestMetadata recordRequestMetadata) {
-    userTaskKey.wrapLong(key);
-    userTasksTransitionTriggerRequestMetadataColumnFamily.insert(
-        userTaskKey, recordRequestMetadata);
-  }
-
-  @Override
-  public void deleteRecordRequestMetadata(final long key) {
-    userTaskKey.wrapLong(key);
-    userTasksTransitionTriggerRequestMetadataColumnFamily.deleteIfExists(userTaskKey);
-  }
-
-  @Override
   public void storeInitialAssignee(final long key, final String assignee) {
     if (!StringUtils.isEmpty(assignee)) {
       userTaskKey.wrapLong(key);
@@ -224,14 +198,6 @@ public class DbUserTaskState implements MutableUserTaskState {
   public UserTaskIntermediateStateValue getIntermediateState(final long userTaskKey) {
     userTaskIntermediateStateKey.wrapLong(userTaskKey);
     return userTasksIntermediateStatesColumnFamily.get(userTaskIntermediateStateKey);
-  }
-
-  @Override
-  public Optional<UserTaskTransitionTriggerRequestMetadata> findRecordRequestMetadata(
-      final long key) {
-    userTaskKey.wrapLong(key);
-    return Optional.ofNullable(
-        userTasksTransitionTriggerRequestMetadataColumnFamily.get(userTaskKey));
   }
 
   @Override

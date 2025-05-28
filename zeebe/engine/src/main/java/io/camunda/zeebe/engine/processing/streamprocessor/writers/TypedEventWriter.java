@@ -50,6 +50,11 @@ public interface TypedEventWriter {
    */
   void appendFollowUpEvent(long key, Intent intent, RecordValue value, int recordVersion);
 
+  default void appendFollowUpEventWithOperationReference(
+      final long key, final Intent intent, final RecordValue value, final long operationReference) {
+    appendFollowUpEvent(key, intent, value);
+  }
+
   /**
    * Use this to know whether you can write an event of this length.
    *

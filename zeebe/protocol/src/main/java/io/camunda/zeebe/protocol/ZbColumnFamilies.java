@@ -217,6 +217,8 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
 
   MAPPINGS(108, ColumnFamilyScope.GLOBAL),
 
+  // No more needed, will be removed
+  @Deprecated
   USER_TASK_TRANSITION_TRIGGER_REQUEST_METADATA(109),
 
   GROUPS(110, ColumnFamilyScope.GLOBAL),
@@ -238,7 +240,9 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
 
   USER_TASK_INITIAL_ASSIGNEE(121),
 
-  RPI_USAGE_METRICS(122);
+  RPI_USAGE_METRICS(122),
+
+  REQUEST_METADATA(123);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
