@@ -336,6 +336,7 @@ public class TenantClient {
     private final CommandWriter writer;
     private final TenantRecord tenantRecord;
     private Function<Long, Record<TenantRecordValue>> expectation = SUCCESS_SUPPLIER;
+    private final boolean expectRejection = false;
 
     public TenantDeleteClient(final CommandWriter writer, final String tenantId) {
       this.writer = writer;
@@ -350,6 +351,16 @@ public class TenantClient {
      */
     public Record<TenantRecordValue> delete() {
       final long position = writer.writeCommand(TenantIntent.DELETE, tenantRecord);
+      return expectation.apply(position);
+    }
+
+    /**
+     * Submits a user-requested delete command for the tenant and returns the resulting record.
+     *
+     * @return the deleted tenant record
+     */
+    public Record<TenantRecordValue> delete(final String username) {
+      final long position = writer.writeCommand(TenantIntent.DELETE, username, tenantRecord);
       return expectation.apply(position);
     }
 
