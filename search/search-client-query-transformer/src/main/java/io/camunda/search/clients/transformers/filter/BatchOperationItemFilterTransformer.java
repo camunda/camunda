@@ -27,12 +27,13 @@ public final class BatchOperationItemFilterTransformer
   public SearchQuery toSearchQuery(final BatchOperationItemFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
 
-    Optional.ofNullable(stringTerms(BATCH_OPERATION_ID, filter.batchOperationIds()))
-        .ifPresent(queries::add);
+    Optional.ofNullable(stringOperations(BATCH_OPERATION_ID, filter.batchOperationIdOperations()))
+        .ifPresent(queries::addAll);
     Optional.ofNullable(stringTerms(STATE, filter.state())).ifPresent(queries::add);
-    Optional.ofNullable(longTerms(ITEM_KEY, filter.itemKeys())).ifPresent(queries::add);
-    Optional.ofNullable(longTerms(PROCESS_INSTANCE_KEY, filter.processInstanceKeys()))
-        .ifPresent(queries::add);
+    Optional.ofNullable(longOperations(ITEM_KEY, filter.itemKeyOperations()))
+        .ifPresent(queries::addAll);
+    Optional.ofNullable(longOperations(PROCESS_INSTANCE_KEY, filter.processInstanceKeyOperations()))
+        .ifPresent(queries::addAll);
 
     return and(queries);
   }

@@ -16,7 +16,9 @@
 package io.camunda.client.api.search.filter;
 
 import io.camunda.client.api.search.enums.BatchOperationItemState;
+import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestFilter;
+import java.util.function.Consumer;
 
 public interface BatchOperationItemFilter extends SearchRequestFilter {
 
@@ -29,6 +31,14 @@ public interface BatchOperationItemFilter extends SearchRequestFilter {
   BatchOperationItemFilter batchOperationId(final String batchOperationId);
 
   /**
+   * Filter by batchOperationId using {@link StringProperty} consumer
+   *
+   * @param fn the consumer to apply to the StringProperty
+   * @return the updated filter
+   */
+  BatchOperationItemFilter batchOperationId(final Consumer<StringProperty> fn);
+
+  /**
    * Filters batch operation items by the specified itemKey.
    *
    * @param itemKey the itemKey
@@ -37,12 +47,28 @@ public interface BatchOperationItemFilter extends SearchRequestFilter {
   BatchOperationItemFilter itemKey(final long itemKey);
 
   /**
+   * Filter by itemKey using {@link StringProperty} consumer
+   *
+   * @param fn the consumer to apply to the StringProperty
+   * @return the updated filter
+   */
+  BatchOperationItemFilter itemKey(final Consumer<StringProperty> fn);
+
+  /**
    * Filters batch operation items by the specified processInstanceKey.
    *
    * @param processInstanceKey the processInstanceKey
    * @return the updated filter
    */
   BatchOperationItemFilter processInstanceKey(final long processInstanceKey);
+
+  /**
+   * Filter by processInstanceKey using {@link StringProperty} consumer
+   *
+   * @param fn the consumer to apply to the StringProperty
+   * @return the updated filter
+   */
+  BatchOperationItemFilter processInstanceKey(final Consumer<StringProperty> fn);
 
   /**
    * Filters batch operations by the specified state.

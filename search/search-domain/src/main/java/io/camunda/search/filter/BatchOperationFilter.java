@@ -10,28 +10,43 @@ package io.camunda.search.filter;
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
 
+import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 public record BatchOperationFilter(
-    List<String> batchOperationIds, List<String> operationTypes, List<String> state)
+    List<Operation<String>> batchOperationIdOperations,
+    List<String> operationTypes,
+    List<String> state)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<BatchOperationFilter> {
 
-    private List<String> batchOperationIds;
+    private List<Operation<String>> batchOperationIdOperations;
     private List<String> operationTypes;
     private List<String> state;
 
-    public Builder batchOperationIds(final String value, final String... values) {
-      return batchOperationIds(collectValues(value, values));
+    public Builder batchOperationIdOperations(final List<Operation<String>> operations) {
+      batchOperationIdOperations = addValuesToList(batchOperationIdOperations, operations);
+      return this;
     }
 
-    public Builder batchOperationIds(final List<String> values) {
-      batchOperationIds = addValuesToList(batchOperationIds, values);
+    public Builder batchOperationIds(final String value, final String... values) {
+      return batchOperationIdOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder replaceBatchOperationIdOperations(final List<Operation<String>> operations) {
+      batchOperationIdOperations = new ArrayList<>(operations);
       return this;
+    }
+
+    @SafeVarargs
+    public final Builder batchOperationIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return batchOperationIdOperations(collectValues(operation, operations));
     }
 
     public Builder operationTypes(final String value, final String... values) {
@@ -55,7 +70,7 @@ public record BatchOperationFilter(
     @Override
     public BatchOperationFilter build() {
       return new BatchOperationFilter(
-          Objects.requireNonNullElse(batchOperationIds, Collections.emptyList()),
+          Objects.requireNonNullElse(batchOperationIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(operationTypes, Collections.emptyList()),
           Objects.requireNonNullElse(state, Collections.emptyList()));
     }

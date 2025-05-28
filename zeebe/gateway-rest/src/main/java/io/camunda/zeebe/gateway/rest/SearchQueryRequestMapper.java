@@ -684,7 +684,9 @@ public final class SearchQueryRequestMapper {
     final var builder = FilterBuilders.batchOperation();
 
     if (filter != null) {
-      ofNullable(filter.getBatchOperationId()).ifPresent(builder::batchOperationIds);
+      ofNullable(filter.getBatchOperationId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::batchOperationIdOperations);
       ofNullable(filter.getState()).map(StateEnum::toString).ifPresent(builder::state);
       ofNullable(filter.getOperationType())
           .map(BatchOperationTypeEnum::toString)
@@ -733,10 +735,18 @@ public final class SearchQueryRequestMapper {
     final var builder = FilterBuilders.batchOperationItem();
 
     if (filter != null) {
-      ofNullable(filter.getBatchOperationId()).ifPresent(builder::batchOperationIds);
+      ofNullable(filter.getBatchOperationId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::batchOperationIdOperations);
       ofNullable(filter.getState())
           .map(BatchOperationItemFilter.StateEnum::toString)
           .ifPresent(builder::state);
+      ofNullable(filter.getItemKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::itemKeyOperations);
+      ofNullable(filter.getProcessInstanceKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::processInstanceKeyOperations);
     }
 
     return builder.build();

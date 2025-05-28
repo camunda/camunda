@@ -17,7 +17,9 @@ package io.camunda.client.api.search.filter;
 
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
+import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestFilter;
+import java.util.function.Consumer;
 
 public interface BatchOperationFilter extends SearchRequestFilter {
 
@@ -28,6 +30,14 @@ public interface BatchOperationFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   BatchOperationFilter batchOperationId(final String batchOperationId);
+
+  /**
+   * Filter by batchOperationId using {@link StringProperty} consumer
+   *
+   * @param fn the consumer to apply to the StringProperty
+   * @return the updated filter
+   */
+  BatchOperationFilter batchOperationId(final Consumer<StringProperty> fn);
 
   /**
    * Filters batch operations by the specified type.

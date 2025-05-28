@@ -16,9 +16,12 @@
 package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.enums.BatchOperationItemState;
+import io.camunda.client.api.search.filter.builder.StringProperty;
+import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.BatchOperationItemFilter;
 import io.camunda.client.protocol.rest.BatchOperationItemFilter.StateEnum;
+import java.util.function.Consumer;
 
 public class BatchOperationItemFilterImpl
     extends TypedSearchRequestPropertyProvider<BatchOperationItemFilter>
@@ -33,20 +36,47 @@ public class BatchOperationItemFilterImpl
   @Override
   public io.camunda.client.api.search.filter.BatchOperationItemFilter batchOperationId(
       final String batchOperationId) {
-    filter.setBatchOperationId(batchOperationId);
+    batchOperationId(b -> b.eq(batchOperationId));
+    return this;
+  }
+
+  @Override
+  public io.camunda.client.api.search.filter.BatchOperationItemFilter batchOperationId(
+      final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setBatchOperationId(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
   public io.camunda.client.api.search.filter.BatchOperationItemFilter itemKey(final long itemKey) {
-    filter.itemKey(Long.toString(itemKey));
+    itemKey(b -> b.eq(Long.toString(itemKey)));
+    return this;
+  }
+
+  @Override
+  public io.camunda.client.api.search.filter.BatchOperationItemFilter itemKey(
+      final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setItemKey(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
   public io.camunda.client.api.search.filter.BatchOperationItemFilter processInstanceKey(
       final long processInstanceKey) {
-    filter.processInstanceKey(Long.toString(processInstanceKey));
+    processInstanceKey(b -> b.eq(Long.toString(processInstanceKey)));
+    return this;
+  }
+
+  @Override
+  public io.camunda.client.api.search.filter.BatchOperationItemFilter processInstanceKey(
+      final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setProcessInstanceKey(provideSearchRequestProperty(property));
     return this;
   }
 
