@@ -112,6 +112,7 @@ public class PartitionStartupAndTransitionContextImpl
   private final SecurityConfiguration securityConfig;
   private final MeterRegistry startupMeterRegistry;
   private MeterRegistry transitionMeterRegistry;
+  private volatile boolean migrationsPerformed = false;
 
   public PartitionStartupAndTransitionContextImpl(
       final int nodeId,
@@ -390,6 +391,21 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
+  public void markMigrationsDone() {
+    migrationsPerformed = true;
+  }
+
+  @Override
+  public boolean areMigrationsPerformed() {
+    return migrationsPerformed;
+  }
+
+  @Override
+  public ComponentTreeListener getComponentTreeListener() {
+    return healthGraphMetrics;
+  }
+
+  @Override
   public boolean shouldProcess() {
     return partitionProcessingState.shouldProcess();
   }
@@ -457,10 +473,6 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setCurrentRole(final Role currentRole) {
     this.currentRole = currentRole;
-  }
-
-  public ComponentTreeListener getComponentTreeListener() {
-    return healthGraphMetrics;
   }
 
   @Override

@@ -86,6 +86,10 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
     isDoneCondition = completionLock.newCondition();
   }
 
+  public static CompletableActorFuture<Void> completed() {
+    return CompletableActorFuture.completed(null);
+  }
+
   public static <V> CompletableActorFuture<V> completed(final V result) {
     return new CompletableActorFuture<>(result); // cast for null result
   }
