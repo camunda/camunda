@@ -35,8 +35,6 @@ import org.springframework.stereotype.Service;
 @Service
 @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
 public class CamundaOAuthPrincipalService {
-  static final String CLAIM_NOT_STRING =
-      "Configured claim for %s (%s) is not a string. Please check your OIDC configuration.";
 
   private static final Logger LOG = LoggerFactory.getLogger(CamundaOAuthPrincipalService.class);
 

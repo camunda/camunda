@@ -7,7 +7,6 @@
  */
 package io.camunda.authentication;
 
-import static io.camunda.authentication.CamundaOAuthPrincipalService.CLAIM_NOT_STRING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
@@ -107,7 +106,8 @@ public class CamundaOAuthPrincipalServiceTest {
               () -> camundaOAuthPrincipalService.loadOAuthContext(claims));
 
       assertThat(exception.getMessage())
-          .isEqualTo(CLAIM_NOT_STRING.formatted("client", APPLICATION_ID_CLAIM));
+          .isEqualTo(
+              "Value for $['client-id'] is not a string. Please check your OIDC configuration.");
     }
 
     @Test
@@ -186,7 +186,7 @@ public class CamundaOAuthPrincipalServiceTest {
               () -> camundaOAuthPrincipalService.loadOAuthContext(claims));
 
       assertThat(exception.getMessage())
-          .isEqualTo(CLAIM_NOT_STRING.formatted("username", USERNAME_CLAIM));
+          .isEqualTo("Value for $['email'] is not a string. Please check your OIDC configuration.");
     }
 
     @Test

@@ -8,6 +8,7 @@
 package io.camunda.security.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,18 @@ final class OidcPrincipalLoaderTest {
     // then
     assertThat(principals.username()).isNull();
     assertThat(principals.clientId()).isNull();
+  }
+
+  @Test
+  void shouldThrowOnUnexpectedClaimType() {
+    // given
+    final var claims = Map.<String, Object>of("username", 12345);
+    final var loader = new OidcPrincipalLoader("$.username", "$.client_id");
+    // when
+    assertThatThrownBy(() -> loader.load(claims))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining(
+            "Value for $['username'] is not a string. Please check your OIDC configuration.");
   }
 
   @Test

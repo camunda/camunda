@@ -263,6 +263,10 @@ public class AuthenticationInterceptorTest {
               assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode());
               assertThat(status.getDescription())
                   .isEqualTo("Failed to load OIDC principals, see cause for details");
+              assertThat(status.getCause())
+                  .isInstanceOf(IllegalArgumentException.class)
+                  .hasMessageContaining(
+                      "Value for $['username'] is not a string. Please check your OIDC configuration.");
             });
   }
 
@@ -298,6 +302,10 @@ public class AuthenticationInterceptorTest {
               assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode());
               assertThat(status.getDescription())
                   .isEqualTo("Failed to load OIDC principals, see cause for details");
+              assertThat(status.getCause())
+                  .isInstanceOf(IllegalArgumentException.class)
+                  .hasMessageContaining(
+                      "Value for $['client_id'] is not a string. Please check your OIDC configuration.");
             });
   }
 

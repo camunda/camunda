@@ -42,8 +42,6 @@ public sealed interface AuthenticationHandler {
   final class Oidc implements AuthenticationHandler {
     public static final Context.Key<Map<String, Object>> USER_CLAIMS =
         Context.key("io.camunda.zeebe:user_claim");
-    public static final String CONFIGURED_CLAIM_NOT_A_STRING =
-        "Configured claim for %s (%s) is not a string. Please check your OIDC configuration.";
 
     public static final String BEARER_PREFIX = "Bearer ";
     private final JwtDecoder jwtDecoder;

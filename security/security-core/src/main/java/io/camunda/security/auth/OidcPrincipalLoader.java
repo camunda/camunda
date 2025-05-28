@@ -44,7 +44,14 @@ public final class OidcPrincipalLoader {
       return null;
     }
     try {
-      return path.read(claims, CONFIGURATION);
+      return switch (path.read(claims, CONFIGURATION)) {
+        case final String stringValue -> stringValue;
+        case null -> null;
+        default ->
+            throw new IllegalArgumentException(
+                "Value for %s is not a string. Please check your OIDC configuration."
+                    .formatted(path.getPath()));
+      };
     } catch (final JsonPathException e) {
       LOG.debug("Failed to evaluate expression {} on claims {}", path, claims, e);
       return null;
