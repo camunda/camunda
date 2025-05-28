@@ -107,6 +107,23 @@ public class SnapshotMigrationTransitionStepTest {
     step.transitionTo(transitionContext, 0, role).join();
     // then
     checkMetricsAre(HealthStatus.UNHEALTHY);
+    assertThat(transitionContext.getComponentHealthMonitor().getHealthReport())
+        .satisfies(
+            r -> {
+              System.out.println(r);
+              assertThat(r.status()).isEqualTo(HealthStatus.UNHEALTHY);
+              assertThat(r.children().get(MigrationSnapshotDirector.COMPONENT_NAME))
+                  .satisfies(
+                      mr -> {
+                        assertThat(mr.status()).isEqualTo(HealthStatus.UNHEALTHY);
+                        assertThat(mr.issue())
+                            .isNotNull()
+                            .satisfies(
+                                i ->
+                                    assertThat(i.message())
+                                        .contains("Snapshot not taken yet, retryCount=1"));
+                      });
+            });
     // when
     when(snapshotDirector.forceSnapshot())
         .thenReturn(CompletableActorFuture.completed(mock(PersistedSnapshot.class)));
@@ -254,13 +271,29 @@ public class SnapshotMigrationTransitionStepTest {
       names = {"INACTIVE"})
   public void shouldRetryIOExceptions(final Role role) {
     // given
-    setupCommonCase(
-        role, CompletableActorFuture.completedExceptionally(new IOException("expected")));
+    final var exception = new IOException("expected");
+    setupCommonCase(role, CompletableActorFuture.completedExceptionally(exception));
     // when
     concurrencyControl.runAll();
     // then
     verify(snapshotDirector, atLeast(2)).forceSnapshot();
     assertThat(concurrencyControl.scheduledTasks()).isNotZero();
+    Awaitility.await("Until report is unhealthy")
+        .untilAsserted(
+            () ->
+                assertThat(
+                        transitionContext
+                            .getComponentHealthMonitor()
+                            .getHealthReport()
+                            .children()
+                            .get(MigrationSnapshotDirector.COMPONENT_NAME))
+                    .satisfies(
+                        r -> {
+                          assertThat(r.status()).isEqualTo(HealthStatus.UNHEALTHY);
+                          assertThat(r.issue())
+                              .isNotNull()
+                              .satisfies(i -> assertThat(i.throwable()).isEqualTo(exception));
+                        }));
   }
 
   @ParameterizedTest
@@ -305,6 +338,23 @@ public class SnapshotMigrationTransitionStepTest {
     verify(snapshotDirector, atLeastOnce()).forceSnapshot();
   }
 
+  @ParameterizedTest
+  @EnumSource(
+      value = Role.class,
+      mode = Mode.EXCLUDE,
+      names = {"INACTIVE"})
+  public void shouldCloseItselfIfExceptionIsNotRetriable(final Role role) {
+    setupCommonCase(
+        role, CompletableActorFuture.completedExceptionally(new RuntimeException("expected")));
+
+    Awaitility.await("Until report does not contain the component")
+        .untilAsserted(
+            () ->
+                assertThat(
+                        transitionContext.getComponentHealthMonitor().getHealthReport().children())
+                    .isEmpty());
+  }
+
   public void checkMetricsAre(final HealthStatus expected) {
     Awaitility.await("until metrics are published")
         .atMost(Duration.ofSeconds(5))
@@ -312,7 +362,6 @@ public class SnapshotMigrationTransitionStepTest {
             () -> {
               final var meters =
                   transitionContext.getPartitionTransitionMeterRegistry().getMeters();
-              System.out.println(meters.stream().map(m -> m.getId().getTags()).toList());
               final var expectedTags =
                   Tags.of(
                           "id",

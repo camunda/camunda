@@ -14,12 +14,10 @@ import io.camunda.zeebe.broker.system.partitions.impl.MigrationSnapshotDirector;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.VisibleForTesting;
-import java.time.Duration;
 
 public class SnapshotAfterMigrationTransitionStep implements PartitionTransitionStep {
 
   private MigrationSnapshotDirector migrationSnapshotDirector;
-  private final Duration scheduleDelay = Duration.ofMillis(500);
 
   @Override
   public ActorFuture<Void> prepareTransition(
@@ -40,7 +38,6 @@ public class SnapshotAfterMigrationTransitionStep implements PartitionTransition
             new MigrationSnapshotDirector(
                 context.getSnapshotDirector(),
                 context.getConcurrencyControl(),
-                scheduleDelay,
                 context.getComponentHealthMonitor());
       }
     }
