@@ -38,8 +38,6 @@ public final class MessageBatchExpireProcessorTest {
   private final StateWriter stateWriter = Mockito.mock(StateWriter.class);
   private final TypedRejectionWriter rejectionWriter = Mockito.mock(TypedRejectionWriter.class);
   private final MessageState messageState = Mockito.mock(MessageState.class);
-  final MessageBatchExpireProcessor messageBatchExpireProcessor =
-      new MessageBatchExpireProcessor(stateWriter, rejectionWriter, messageState);
 
   @Test
   public void shouldStopProcessingWhenExceedingBatchLimit() {
@@ -65,6 +63,7 @@ public final class MessageBatchExpireProcessorTest {
         .appendFollowUpEvent(eq(3L), any(), any());
 
     // when
+    final var messageBatchExpireProcessor = createProcessor(false);
     messageBatchExpireProcessor.processRecord(
         new UnwrittenRecord(-1, 1, messageBatchRecord, new RecordMetadata()));
 
@@ -99,6 +98,7 @@ public final class MessageBatchExpireProcessorTest {
     doNothing().when(stateWriter).appendFollowUpEvent(eq(2L), any(), any());
 
     // when
+    final var messageBatchExpireProcessor = createProcessor(true);
     messageBatchExpireProcessor.processRecord(
         new UnwrittenRecord(-1, 1, messageBatchRecord, new RecordMetadata()));
 
@@ -146,6 +146,7 @@ public final class MessageBatchExpireProcessorTest {
     doNothing().when(stateWriter).appendFollowUpEvent(eq(1L), any(), any());
 
     // when
+    final var messageBatchExpireProcessor = createProcessor(true);
     messageBatchExpireProcessor.processRecord(
         new UnwrittenRecord(-1, 1, messageBatchRecord, new RecordMetadata()));
 
@@ -185,6 +186,7 @@ public final class MessageBatchExpireProcessorTest {
     // when
     final UnwrittenRecord record =
         new UnwrittenRecord(-1, 1, messageBatchRecord, new RecordMetadata());
+    final var messageBatchExpireProcessor = createProcessor(true);
     messageBatchExpireProcessor.processRecord(record);
 
     // then
@@ -195,5 +197,10 @@ public final class MessageBatchExpireProcessorTest {
             "Expected to expire 2 messages in a batch, but none of the messages were found in the state.");
     verify(stateWriter, times(0)).appendFollowUpEvent(eq(1L), eq(MessageIntent.EXPIRED), any());
     verify(stateWriter, times(0)).appendFollowUpEvent(eq(2L), eq(MessageIntent.EXPIRED), any());
+  }
+
+  private MessageBatchExpireProcessor createProcessor(final boolean appendMessageBodyOnExpired) {
+    return new MessageBatchExpireProcessor(
+        stateWriter, rejectionWriter, messageState, appendMessageBodyOnExpired);
   }
 }
