@@ -18,8 +18,7 @@ package io.camunda.zeebe.protocol.record.intent;
 public enum BatchOperationExecutionIntent implements Intent {
   EXECUTE((short) 0),
   EXECUTING((short) 1),
-  EXECUTED((short) 2),
-  COMPLETED((short) 3);
+  EXECUTED((short) 2);
 
   private final short value;
 
@@ -39,8 +38,6 @@ public enum BatchOperationExecutionIntent implements Intent {
         return EXECUTING;
       case 2:
         return EXECUTED;
-      case 3:
-        return COMPLETED;
 
       default:
         return Intent.UNKNOWN;
@@ -57,7 +54,6 @@ public enum BatchOperationExecutionIntent implements Intent {
     switch (this) {
       case EXECUTING:
       case EXECUTED:
-      case COMPLETED:
         return true;
       default:
         return false;

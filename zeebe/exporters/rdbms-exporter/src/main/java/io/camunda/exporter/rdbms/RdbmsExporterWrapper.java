@@ -33,7 +33,6 @@ import io.camunda.exporter.rdbms.handlers.UserExportHandler;
 import io.camunda.exporter.rdbms.handlers.UserTaskExportHandler;
 import io.camunda.exporter.rdbms.handlers.VariableExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationChunkExportHandler;
-import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationCompletedExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationCreatedExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationLifecycleManagementExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.IncidentBatchOperationExportHandler;
@@ -260,9 +259,6 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(
         ValueType.BATCH_OPERATION_CHUNK,
         new BatchOperationChunkExportHandler(rdbmsWriter.getBatchOperationWriter()));
-    builder.withHandler(
-        ValueType.BATCH_OPERATION_EXECUTION,
-        new BatchOperationCompletedExportHandler(rdbmsWriter.getBatchOperationWriter()));
     builder.withHandler(
         ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
         new BatchOperationLifecycleManagementExportHandler(rdbmsWriter.getBatchOperationWriter()));
