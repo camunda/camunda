@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.stream.impl;
 
+import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
@@ -29,6 +31,15 @@ import org.junit.platform.commons.util.ReflectionUtils.HierarchyTraversalMode;
 public class StreamPlatformExtension implements BeforeEachCallback {
 
   private static final String FIELD_STATE = "state";
+  final ZeebeDbFactory<ZbColumnFamilies> dbFactory;
+
+  public StreamPlatformExtension() {
+    this(DefaultZeebeDbFactory.defaultFactory());
+  }
+
+  public StreamPlatformExtension(final ZeebeDbFactory<ZbColumnFamilies> dbFactory) {
+    this.dbFactory = dbFactory;
+  }
 
   @Override
   public void beforeEach(final ExtensionContext extensionContext) throws Exception {
@@ -46,7 +57,7 @@ public class StreamPlatformExtension implements BeforeEachCallback {
     final var store = getStore(extensionContext);
 
     return (StreamProcessorTestContext)
-        store.getOrComputeIfAbsent(FIELD_STATE, (key) -> new StreamProcessorTestContext());
+        store.getOrComputeIfAbsent(FIELD_STATE, (key) -> new StreamProcessorTestContext(dbFactory));
   }
 
   private void injectFields(
@@ -89,7 +100,7 @@ public class StreamPlatformExtension implements BeforeEachCallback {
     private StreamPlatform streamPlatform;
     private final ArrayList<AutoCloseable> closables;
 
-    public StreamProcessorTestContext() {
+    public StreamProcessorTestContext(final ZeebeDbFactory<ZbColumnFamilies> dbFactory) {
       closables = new ArrayList<AutoCloseable>();
       // actor scheduler
       final var builder =
@@ -106,10 +117,10 @@ public class StreamPlatformExtension implements BeforeEachCallback {
       try {
         final var tempFolder = Files.createTempDirectory(null);
         closables.add(() -> FileUtil.deleteFolderIfExists(tempFolder));
-        final var factory = DefaultZeebeDbFactory.defaultFactory();
 
         // streams
-        streamPlatform = new StreamPlatform(tempFolder, closables, actorScheduler, factory, clock);
+        streamPlatform =
+            new StreamPlatform(tempFolder, closables, actorScheduler, dbFactory, clock);
 
       } catch (final Exception e) {
         ExceptionUtils.throwAsUncheckedException(e);
