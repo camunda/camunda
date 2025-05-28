@@ -11,6 +11,7 @@ import static io.camunda.security.configuration.InitializationConfiguration.DEFA
 import static io.camunda.security.configuration.InitializationConfiguration.DEFAULT_USER_USERNAME;
 
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
+import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.security.entity.AuthenticationMethod;
@@ -43,6 +44,8 @@ public interface TestStandaloneApplication<T extends TestStandaloneApplication<T
   T withBrokerConfig(final Consumer<BrokerBasedProperties> modifier);
 
   BrokerBasedProperties brokerConfig();
+
+  CamundaSecurityProperties securityConfig();
 
   default Optional<AuthenticationMethod> clientAuthenticationMethod() {
     return Optional.empty();

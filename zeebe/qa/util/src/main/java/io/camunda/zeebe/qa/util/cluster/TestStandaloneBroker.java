@@ -244,6 +244,11 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   }
 
   @Override
+  public CamundaSecurityProperties securityConfig() {
+    return securityConfig;
+  }
+
+  @Override
   public Optional<AuthenticationMethod> clientAuthenticationMethod() {
     return apiAuthenticationMethod();
   }

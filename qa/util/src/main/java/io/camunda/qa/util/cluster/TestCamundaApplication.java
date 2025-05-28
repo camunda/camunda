@@ -244,6 +244,11 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
   }
 
   @Override
+  public CamundaSecurityProperties securityConfig() {
+    return securityConfig;
+  }
+
+  @Override
   public Optional<AuthenticationMethod> clientAuthenticationMethod() {
     return apiAuthenticationMethod();
   }
