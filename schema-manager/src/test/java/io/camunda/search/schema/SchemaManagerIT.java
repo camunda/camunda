@@ -17,6 +17,7 @@ import static io.camunda.search.test.utils.SearchDBExtension.CUSTOM_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
@@ -24,6 +25,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.search.schema.exceptions.SearchEngineException;
+import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.search.schema.utils.SchemaManagerITInvocationProvider;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
@@ -32,6 +35,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.test.util.junit.RegressionTestTemplate;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Collection;
@@ -40,6 +44,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
@@ -84,11 +89,7 @@ public class SchemaManagerIT {
     // given
     final var schemaManager =
         new SchemaManager(
-            searchEngineClientFromConfig(config),
-            Set.of(index),
-            Set.of(),
-            SearchEngineConfiguration.of(b -> b),
-            objectMapper);
+            searchEngineClientFromConfig(config), Set.of(index), Set.of(), config, objectMapper);
 
     schemaManager.initialiseResources();
 
@@ -873,5 +874,46 @@ public class SchemaManagerIT {
             newPrefix + "-tasklist-task-variable-8.3.0_",
             newPrefix + "-tasklist-import-position-8.2.0_",
             newPrefix + "-tasklist-user-1.4.0_");
+  }
+
+  @TestTemplate
+  void shouldRecordSchemaInitTimerMetric(
+      final SearchEngineConfiguration config, final SearchClientAdapter ignored) {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    final var schemaManager =
+        new SchemaManager(
+                searchEngineClientFromConfig(config), Set.of(index), Set.of(), config, objectMapper)
+            .withMetrics(new SchemaManagerMetrics(registry));
+
+    // when
+    schemaManager.startup();
+
+    // then
+    final var measuredTime = registry.find("camunda.schema.init.time").timer();
+    assertThat(measuredTime.count()).isEqualTo(1);
+    assertThat(measuredTime.totalTime(TimeUnit.MILLISECONDS)).isGreaterThan(0);
+  }
+
+  @TestTemplate
+  void shouldNotRecordSchemaInitTimerMetricOnFailure(
+      final SearchEngineConfiguration config, final SearchClientAdapter ignored) {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    // alter configuration to trigger failure
+    config.connect().setUrl("http://bad-url");
+    config.schemaManager().getRetry().setMaxRetries(1);
+    final var schemaManager =
+        new SchemaManager(
+                searchEngineClientFromConfig(config), Set.of(index), Set.of(), config, objectMapper)
+            .withMetrics(new SchemaManagerMetrics(registry));
+
+    // when
+    assertThrows(SearchEngineException.class, () -> schemaManager.startup());
+
+    // then
+    final var measuredTime = registry.find("camunda.schema.init.time").timer();
+    assertThat(measuredTime.count()).isEqualTo(0);
+    assertThat(measuredTime.totalTime(TimeUnit.MILLISECONDS)).isEqualTo(0);
   }
 }

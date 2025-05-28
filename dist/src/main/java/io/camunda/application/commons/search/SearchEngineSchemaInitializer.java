@@ -10,7 +10,9 @@ package io.camunda.application.commons.search;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,9 +21,13 @@ import org.springframework.beans.factory.InitializingBean;
 public class SearchEngineSchemaInitializer implements InitializingBean {
   private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngineSchemaInitializer.class);
   private final SearchEngineConfiguration searchEngineConfiguration;
+  private final SchemaManagerMetrics schemaManagerMetrics;
 
-  public SearchEngineSchemaInitializer(final SearchEngineConfiguration searchEngineConfiguration) {
+  public SearchEngineSchemaInitializer(
+      final SearchEngineConfiguration searchEngineConfiguration,
+      final MeterRegistry meterRegistry) {
     this.searchEngineConfiguration = searchEngineConfiguration;
+    schemaManagerMetrics = new SchemaManagerMetrics(meterRegistry);
   }
 
   @Override
@@ -34,11 +40,12 @@ public class SearchEngineSchemaInitializer implements InitializingBean {
               searchEngineConfiguration.connect().getTypeEnum().isElasticSearch());
       final SchemaManager schemaManager =
           new SchemaManager(
-              clientAdapter.getSearchEngineClient(),
-              indexDescriptors.indices(),
-              indexDescriptors.templates(),
-              searchEngineConfiguration,
-              clientAdapter.objectMapper());
+                  clientAdapter.getSearchEngineClient(),
+                  indexDescriptors.indices(),
+                  indexDescriptors.templates(),
+                  searchEngineConfiguration,
+                  clientAdapter.objectMapper())
+              .withMetrics(schemaManagerMetrics);
       schemaManager.startup();
     }
     LOGGER.info("Search engine schema initialization complete.");
