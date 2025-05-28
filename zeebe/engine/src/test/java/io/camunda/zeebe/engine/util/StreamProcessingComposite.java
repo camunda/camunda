@@ -7,7 +7,12 @@
  */
 package io.camunda.zeebe.engine.util;
 
+import io.camunda.zeebe.db.AccessMetricsConfiguration;
+import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
+import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -17,6 +22,7 @@ import io.camunda.zeebe.engine.util.client.CommandWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.util.TestLogStream;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -29,7 +35,12 @@ import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorBuilder;
 import io.camunda.zeebe.stream.impl.StreamProcessorListener;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil;
+import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.File;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.Random;
@@ -43,18 +54,13 @@ public class StreamProcessingComposite implements CommandWriter {
 
   private final TestStreams streams;
   private final int partitionId;
-  private final ZeebeDbFactory<?> zeebeDbFactory;
   private MutableProcessingState processingState;
   private final WriteActor writeActor = new WriteActor();
 
   public StreamProcessingComposite(
-      final TestStreams streams,
-      final int partitionId,
-      final ZeebeDbFactory<?> zeebeDbFactory,
-      final ActorScheduler actorScheduler) {
+      final TestStreams streams, final int partitionId, final ActorScheduler actorScheduler) {
     this.streams = streams;
     this.partitionId = partitionId;
-    this.zeebeDbFactory = zeebeDbFactory;
     actorScheduler.submitActor(writeActor).join();
   }
 
@@ -102,7 +108,6 @@ public class StreamProcessingComposite implements CommandWriter {
     final var result =
         streams.startStreamProcessor(
             getLogName(partitionId),
-            zeebeDbFactory,
             (processingContext -> {
               processingState = processingContext.getProcessingState();
 
@@ -148,7 +153,7 @@ public class StreamProcessingComposite implements CommandWriter {
   }
 
   public MeterRegistry getMeterRegistry(final int partitionId) {
-    return streams.getMeterRegistry(getLogName(partitionId));
+    return streams.getMeterRegistry(partitionId);
   }
 
   public MutableProcessingState getProcessingState() {
