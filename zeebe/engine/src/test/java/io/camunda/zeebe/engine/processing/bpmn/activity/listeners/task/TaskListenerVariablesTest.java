@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
 import java.util.UUID;
@@ -244,8 +245,21 @@ public class TaskListenerVariablesTest {
 
   @Test
   public void
-      shouldActivateUpdatingListenerJobWithCorrectChangedAttributesHeaderAndVariablesOnTaskVariableUpdate() {
-    // given: a process instance with a Camunda user task wit `updating` listener
+      shouldSetCorrectHeadersAndVariablesOnActivatedUpdatingListenerJobOnLocalVariablesUpdate() {
+    verifyActivatedUpdatingListenerJobHeadersAndVariablesOnVariableUpdate(
+        VariableDocumentUpdateSemantic.LOCAL);
+  }
+
+  @Test
+  public void
+      shouldSetCorrectHeadersAndVariablesOnActivatedUpdatingListenerJobOnPropagateVariablesUpdate() {
+    verifyActivatedUpdatingListenerJobHeadersAndVariablesOnVariableUpdate(
+        VariableDocumentUpdateSemantic.PROPAGATE);
+  }
+
+  public void verifyActivatedUpdatingListenerJobHeadersAndVariablesOnVariableUpdate(
+      final VariableDocumentUpdateSemantic semantic) {
+    // given: a process instance with a Camunda user task with an `updating` listener
     final long processInstanceKey =
         helper.createProcessInstanceWithVariables(
             helper.createProcessWithZeebeUserTask(
@@ -259,11 +273,11 @@ public class TaskListenerVariablesTest {
         .variables()
         .ofScope(userTaskElementInstanceKey)
         .withDocument(Map.of("approvalStatus", "APPROVED"))
-        .withLocalSemantic()
+        .withUpdateSemantic(semantic)
         .expectUpdating()
         .update();
 
-    // then: expect a job to be activated for the first `updating` listener
+    // then: expect a job to be activated for the `updating` listener
     helper.assertActivatedJob(
         processInstanceKey,
         listenerType + "_updating",
@@ -274,8 +288,7 @@ public class TaskListenerVariablesTest {
                   entry(Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME, "[\"variables\"]"));
 
           assertThat(job.getVariables())
-              .describedAs(
-                  "Expect job variables to include the updated local and retain process variabes")
+              .describedAs("Expect job variables to include both updated and retained variables")
               .containsExactly(entry("approvalStatus", "APPROVED"), entry("employeeId", "E12345"));
         });
   }
