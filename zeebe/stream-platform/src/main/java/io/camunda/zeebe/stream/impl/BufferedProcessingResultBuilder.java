@@ -57,8 +57,11 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   public Either<RuntimeException, ProcessingResultBuilder> appendRecordReturnEither(
       final long key, final RecordValue value, final RecordMetadata metadata) {
 
-    if (operationReference != operationReferenceNullValue()) {
-      metadata.operationReference(operationReference);
+    // `operationReference` from provided `metadata` should have a higher precedence
+    if (metadata.getOperationReference() == operationReferenceNullValue()) {
+      if (operationReference != operationReferenceNullValue()) {
+        metadata.operationReference(operationReference);
+      }
     }
 
     final ValueType valueType = TypedEventRegistry.TYPE_REGISTRY.get(value.getClass());

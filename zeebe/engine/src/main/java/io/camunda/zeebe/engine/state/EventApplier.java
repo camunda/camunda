@@ -35,6 +35,15 @@ public interface EventApplier {
   void applyState(long key, Intent intent, RecordValue recordValue, final int recordVersion)
       throws NoSuchEventApplier;
 
+  // TODO add JavaDoc
+  void applyState(
+      long key,
+      Intent intent,
+      RecordValue recordValue,
+      final int recordVersion,
+      final TriggeringRecordMetadata metadata)
+      throws NoSuchEventApplier;
+
   /** Thrown when no event applier is found for a given intent and record version. */
   abstract sealed class NoSuchEventApplier extends RuntimeException {
     public NoSuchEventApplier(final String message) {
@@ -56,6 +65,17 @@ public interface EventApplier {
             String.format(
                 "Expected to find an event applier for intent '%s' and version '%d', but '%s' is the latest supported version.",
                 intent, recordVersion, latestVersion));
+      }
+    }
+
+    public static final class NoMetadataAwareApplier extends NoSuchEventApplier {
+
+      public NoMetadataAwareApplier(final Intent intent, final int recordVersion) {
+        super(
+            String.format(
+                "Expected to find an metadata-aware event applier for intent '%s' and version '%d', "
+                    + "but the applier does not implement MetadataAwareTypedEventApplier.",
+                intent, recordVersion));
       }
     }
   }

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
+import io.camunda.zeebe.engine.state.TriggeringRecordMetadata;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -39,6 +40,12 @@ public interface TypedResponseWriter {
 
   void writeEventOnCommand(
       long eventKey, Intent eventState, UnpackedObject eventValue, TypedRecord<?> command);
+
+  void writeResponse(
+      long eventKey,
+      Intent eventState,
+      UnpackedObject eventValue,
+      TriggeringRecordMetadata metadata);
 
   void writeResponse(
       long eventKey,

@@ -7,32 +7,34 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
-import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.MetadataAwareTypedEventApplier;
+import io.camunda.zeebe.engine.state.TriggeringRecordMetadata;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.mutable.MutableTriggeringRecordMetadataState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 
 public class UserTaskAssignmentDeniedApplier
-    implements TypedEventApplier<UserTaskIntent, UserTaskRecord> {
+    implements MetadataAwareTypedEventApplier<UserTaskIntent, UserTaskRecord> {
 
   private final MutableUserTaskState userTaskState;
-
   private final MutableElementInstanceState elementInstanceState;
+  private final MutableTriggeringRecordMetadataState recordMetadataState;
 
   public UserTaskAssignmentDeniedApplier(final MutableProcessingState processingState) {
     userTaskState = processingState.getUserTaskState();
     elementInstanceState = processingState.getElementInstanceState();
+    recordMetadataState = processingState.getTriggeringRecordMetadataState();
   }
 
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
     userTaskState.updateUserTaskLifecycleState(key, LifecycleState.CREATED);
     userTaskState.deleteIntermediateState(key);
-    userTaskState.deleteRecordRequestMetadata(key);
     userTaskState.deleteInitialAssignee(key);
 
     final long elementInstanceKey = value.getElementInstanceKey();
@@ -47,5 +49,12 @@ public class UserTaskAssignmentDeniedApplier
         elementInstanceState.updateInstance(elementInstance);
       }
     }
+  }
+
+  @Override
+  public void applyState(
+      final long key, final UserTaskRecord value, final TriggeringRecordMetadata metadata) {
+    applyState(key, value);
+    recordMetadataState.remove(key, metadata);
   }
 }

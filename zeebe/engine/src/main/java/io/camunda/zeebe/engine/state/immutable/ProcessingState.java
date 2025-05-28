@@ -91,4 +91,6 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
   MembershipState getMembershipState();
 
   UsageMetricState getUsageMetricState();
+
+  TriggeringRecordMetadataState getTriggeringRecordMetadataState();
 }

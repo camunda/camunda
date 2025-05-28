@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
+import io.camunda.zeebe.engine.state.TriggeringRecordMetadata;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -31,5 +32,14 @@ class AppliersTestSetupHelper {
       final long key, final Intent intent, final UnifiedRecordValue recordValue) {
     final int latestVersion = eventAppliers.getLatestVersion(intent);
     eventAppliers.applyState(key, intent, recordValue, latestVersion);
+  }
+
+  void applyEventToState(
+      final long key,
+      final Intent intent,
+      final UnifiedRecordValue recordValue,
+      final TriggeringRecordMetadata metadata) {
+    final int latestVersion = eventAppliers.getLatestVersion(intent);
+    eventAppliers.applyState(key, intent, recordValue, latestVersion, metadata);
   }
 }

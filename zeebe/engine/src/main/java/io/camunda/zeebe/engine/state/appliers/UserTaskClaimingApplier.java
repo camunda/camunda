@@ -7,24 +7,36 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
-import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.MetadataAwareTypedEventApplier;
+import io.camunda.zeebe.engine.state.TriggeringRecordMetadata;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.mutable.MutableTriggeringRecordMetadataState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 
-public class UserTaskClaimingApplier implements TypedEventApplier<UserTaskIntent, UserTaskRecord> {
+public class UserTaskClaimingApplier
+    implements MetadataAwareTypedEventApplier<UserTaskIntent, UserTaskRecord> {
 
   private final MutableUserTaskState userTaskState;
+  private final MutableTriggeringRecordMetadataState recordMetadataState;
 
   public UserTaskClaimingApplier(final MutableProcessingState processingState) {
     userTaskState = processingState.getUserTaskState();
+    recordMetadataState = processingState.getTriggeringRecordMetadataState();
   }
 
   @Override
   public void applyState(final long key, final UserTaskRecord value) {
     userTaskState.updateUserTaskLifecycleState(key, LifecycleState.CLAIMING);
     userTaskState.storeIntermediateState(value, LifecycleState.CLAIMING);
+  }
+
+  @Override
+  public void applyState(
+      final long key, final UserTaskRecord value, final TriggeringRecordMetadata metadata) {
+    applyState(key, value);
+    recordMetadataState.store(key, metadata);
   }
 }
