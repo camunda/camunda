@@ -12,8 +12,10 @@ import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.ExponentialBackoff;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.health.FailureListener;
+import io.camunda.zeebe.util.health.HealthIssue;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
@@ -36,18 +38,17 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
   private final AsyncSnapshotDirector snapshotDirector;
 
   private volatile HealthReport healthReport;
-  private final Duration scheduleDelay;
   private final ConcurrencyControl control;
   private final HealthMonitor healthMonitor;
+  private final RetryState retryState = new RetryState();
+  private volatile boolean closed = false;
 
   public MigrationSnapshotDirector(
       final AsyncSnapshotDirector asyncSnapshotDirector,
       final ConcurrencyControl control,
-      final Duration scheduleDelay,
       final HealthMonitor healthMonitor) {
     snapshotDirector = asyncSnapshotDirector;
     this.control = control;
-    this.scheduleDelay = scheduleDelay;
     this.healthMonitor = healthMonitor;
     healthReport = snapshotNotTaken();
     healthMonitor.registerComponent(this);
@@ -57,8 +58,11 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
 
   @Override
   public void close() {
-    cancelScheduledSnapshot();
-    healthMonitor.removeComponent(this);
+    if (!closed) {
+      cancelScheduledSnapshot();
+      healthMonitor.removeComponent(this);
+      closed = true;
+    }
   }
 
   public void scheduleSnapshot() {
@@ -105,16 +109,26 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
   }
 
   private void forceSnapshotUntilSuccessful(final Throwable error) {
-    var shouldBeRetried = !snapshotTaken && runningSnapshot == null;
-    if (error != null) {
-      shouldBeRetried &=
-          error instanceof IOException
-              || (error instanceof CompletionException && error.getCause() instanceof IOException);
+    if (!isRecoverableError(error)) {
+      LOG.warn("Snapshot cannot be taken due to unrecoverable error", error);
+      close();
+      return;
     }
-    if (shouldBeRetried) {
+    if (!snapshotTaken && runningSnapshot == null) {
+      final var nextDelay = retryState.nextDelay();
+      final var issue =
+          error == null
+              ? HealthIssue.of(
+                  String.format(
+                      "Snapshot not taken yet, retryCount=%d, will retry in %s",
+                      retryState.getRetryCount(), nextDelay),
+                  Instant.now())
+              : HealthIssue.of(error, Instant.now());
+      healthReport = healthReport.withIssue(issue);
+      notifyListeners();
       runningSnapshot =
           control.schedule(
-              scheduleDelay,
+              nextDelay,
               () -> {
                 forceSnapshot()
                     .onComplete(
@@ -124,6 +138,12 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
                         control);
               });
     }
+  }
+
+  private boolean isRecoverableError(final Throwable error) {
+    return error == null
+        || (error instanceof IOException
+            || (error instanceof CompletionException && error.getCause() instanceof IOException));
   }
 
   private ActorFuture<Void> forceSnapshot() {
@@ -138,11 +158,11 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
                   LOG.debug("Snapshot taken after migrations: {}", snapshot.getId());
                   healthReport = HealthReport.healthy(this);
                   notifyListeners();
-                } else {
-                  LOG.debug("Snapshot not taken after migrations, retrying in {}.", scheduleDelay);
                 }
                 runningSnapshot = null;
-                return CompletableActorFuture.completed(null);
+                return error != null
+                    ? CompletableActorFuture.completedExceptionally(error)
+                    : CompletableActorFuture.completed(null);
               },
               control);
     } else {
@@ -160,5 +180,25 @@ public class MigrationSnapshotDirector implements HealthMonitorable, CloseableSi
 
   private HealthReport snapshotNotTaken() {
     return HealthReport.unhealthy(this).withMessage("No snapshot taken yet", Instant.now());
+  }
+
+  private static final class RetryState {
+    private int retryCount = 0;
+    private final ExponentialBackoff backoff = new ExponentialBackoff(5000, 500);
+    private long lastDelay = 500;
+
+    public void retry() {
+      retryCount++;
+    }
+
+    public Duration nextDelay() {
+      retry();
+      lastDelay = backoff.supplyRetryDelay(lastDelay);
+      return Duration.ofMillis(lastDelay);
+    }
+
+    int getRetryCount() {
+      return retryCount;
+    }
   }
 }
