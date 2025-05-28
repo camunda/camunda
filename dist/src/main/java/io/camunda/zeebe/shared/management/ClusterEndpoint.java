@@ -19,15 +19,21 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.dynamic.config.protocol.Topology.PartitionDistribution;
+import io.camunda.zeebe.dynamic.config.protocol.Topology.PartitionMembers;
+import io.camunda.zeebe.dynamic.config.protocol.Topology.PartitionsDistribution;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
+import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitionsDistribution;
 import io.camunda.zeebe.management.cluster.Error;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
 import org.springframework.http.HttpStatusCode;
@@ -44,6 +50,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Component
 @RestControllerEndpoint(id = "cluster")
 public class ClusterEndpoint {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ClusterEndpoint.class);
   private final ClusterConfigurationManagementRequestSender requestSender;
 
   @Autowired
@@ -198,6 +206,20 @@ public class ClusterEndpoint {
       final Optional<Integer> newReplicationFactor =
           Optional.ofNullable(partitions)
               .map(ClusterConfigPatchRequestPartitions::getReplicationFactor);
+      final Optional<ClusterConfigPatchRequestPartitionsDistribution> newPartitionDistribution =
+          Optional.ofNullable(partitions).map(ClusterConfigPatchRequestPartitions::getDistribution);
+
+      if (newPartitionDistribution.isPresent()) {
+        LOG.info("Got new PartitionDistribution! " + newPartitionDistribution);
+
+        LOG.info(
+            "Got partition "
+                + newPartitionDistribution.get().getPartitioning().getFirst().getPartitionId()
+                + " with nodes "
+                + newPartitionDistribution.get().getPartitioning().getFirst().getNodes());
+      } else {
+        LOG.info("Didn't get new PartitionDistribution!");
+      }
 
       if (isScale) {
         final var scaleRequest =
@@ -206,7 +228,14 @@ public class ClusterEndpoint {
         return ClusterApiUtils.mapOperationResponse(
             requestSender.scaleCluster(scaleRequest).join());
       } else {
-        return patchCluster(dryRun, request, brokers, newPartitionCount, newReplicationFactor);
+        LOG.info("Invoking patchCluster...");
+        return patchCluster(
+            dryRun,
+            request,
+            brokers,
+            newPartitionCount,
+            newReplicationFactor,
+            newPartitionDistribution);
       }
 
     } catch (final Exception error) {
@@ -219,7 +248,8 @@ public class ClusterEndpoint {
       final ClusterConfigPatchRequest request,
       final ClusterConfigPatchRequestBrokers brokers,
       final Optional<Integer> newPartitionCount,
-      final Optional<Integer> newReplicationFactor) {
+      final Optional<Integer> newReplicationFactor,
+      final Optional<ClusterConfigPatchRequestPartitionsDistribution> newPartitionDistribution) {
     final Set<MemberId> brokersToAdd =
         brokers != null
             ? request.getBrokers().getAdd().stream()
@@ -234,11 +264,55 @@ public class ClusterEndpoint {
                 .map(MemberId::from)
                 .collect(Collectors.toSet())
             : Set.of();
+
+    Optional<PartitionsDistribution> newPartitionsDistribution = Optional.empty();
+
+    if (newPartitionDistribution.isPresent()) {
+      LOG.info("Setting partitions metadata...");
+      newPartitionsDistribution =
+          Optional.of(convertToPartitionsDistribution(newPartitionDistribution.get()));
+      LOG.info("Set partitions metadata!" + newPartitionsDistribution.get());
+    }
+
     final var patchRequest =
         new ClusterPatchRequest(
-            brokersToAdd, brokersToRemove, newPartitionCount, newReplicationFactor, dryRun);
+            brokersToAdd,
+            brokersToRemove,
+            newPartitionCount,
+            newReplicationFactor,
+            newPartitionsDistribution,
+            dryRun);
 
+    LOG.info("Invoking requestSender.patchCluster...");
     return ClusterApiUtils.mapOperationResponse(requestSender.patchCluster(patchRequest).join());
+  }
+
+  private PartitionsDistribution convertToPartitionsDistribution(
+      final ClusterConfigPatchRequestPartitionsDistribution distribution) {
+    final PartitionsDistribution.Builder builder = PartitionsDistribution.newBuilder();
+
+    distribution
+        .getPartitioning()
+        .forEach(
+            partitioning -> {
+              final PartitionDistribution.Builder partitionDistributionBuilder =
+                  PartitionDistribution.newBuilder();
+              partitionDistributionBuilder.setPartitionId(partitioning.getPartitionId());
+
+              partitioning
+                  .getNodes()
+                  .forEach(
+                      node -> {
+                        partitionDistributionBuilder.addMembers(
+                            PartitionMembers.newBuilder()
+                                .setMemberId(String.valueOf(node.getNodeId()))
+                                .setPriority(node.getPriority())
+                                .build());
+                      });
+              builder.addPartitions(partitionDistributionBuilder.build());
+            });
+
+    return builder.build();
   }
 
   private ResponseEntity<?> forceRemoveBrokers(

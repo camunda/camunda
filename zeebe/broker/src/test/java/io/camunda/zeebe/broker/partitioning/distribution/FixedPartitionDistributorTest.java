@@ -13,6 +13,10 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionMetadata;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
+import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -153,6 +157,170 @@ final class FixedPartitionDistributorTest {
     assertThat(distribution)
         .as("should distribute the partitions as expected")
         .containsExactlyInAnyOrderElementsOf(expectedDistribution);
+  }
+
+  @Test
+  void shouldProcessNewFixedPartitionDistribution6() {
+    // given
+    final var initialDistribution =
+        Set.of(
+            new PartitionMetadata(
+                partition(1), Set.of(node(0), node(1)), Map.of(node(0), 2, node(1), 1), 2, node(0)),
+            new PartitionMetadata(
+                partition(2), Set.of(node(1), node(2)), Map.of(node(1), 2, node(2), 1), 2, node(1)),
+            new PartitionMetadata(
+                partition(3),
+                Set.of(node(2), node(0)),
+                Map.of(node(2), 2, node(0), 1),
+                2,
+                node(2)));
+    final var distributor =
+        new FixedPartitionDistributorBuilder(PARTITION_GROUP_NAME)
+            .assignMember(1, 0, 2)
+            .assignMember(1, 1, 1)
+            .assignMember(2, 1, 2)
+            .assignMember(2, 2, 1)
+            .assignMember(3, 2, 2)
+            .assignMember(3, 0, 1)
+            .build();
+    final var clusterMembers = Set.of(node(0), node(1), node(2));
+    final var sortedPartitionIds = List.of(partition(1), partition(2), partition(3));
+
+    // when
+    final var distribution =
+        distributor.distributePartitions(clusterMembers, sortedPartitionIds, 2);
+
+    // then
+    assertThat(distribution)
+        .as("should distribute the partitions as expected")
+        .containsExactlyInAnyOrderElementsOf(initialDistribution);
+
+    // now test newDistribution -> should produce 6 operations
+    final var newDistribution =
+        Set.of(
+            new PartitionMetadata(
+                partition(1), Set.of(node(1), node(2)), Map.of(node(1), 1, node(2), 2), 2, node(2)),
+            new PartitionMetadata(
+                partition(2), Set.of(node(2), node(0)), Map.of(node(2), 1, node(0), 2), 2, node(0)),
+            new PartitionMetadata(
+                partition(3),
+                Set.of(node(0), node(1)),
+                Map.of(node(0), 1, node(1), 2),
+                2,
+                node(1)));
+
+    distributor.setDistribution(
+        Map.of(
+            partition(1),
+            Set.of(
+                new FixedDistributionMember(node(1), 1), new FixedDistributionMember(node(2), 2)),
+            partition(2),
+            Set.of(
+                new FixedDistributionMember(node(2), 1), new FixedDistributionMember(node(0), 2)),
+            partition(3),
+            Set.of(
+                new FixedDistributionMember(node(0), 1), new FixedDistributionMember(node(1), 2))));
+
+    final var currentConfiguration =
+        ConfigurationUtil.getClusterConfigFrom(
+            false, initialDistribution, DynamicPartitionConfig.uninitialized());
+    final Either<Exception, List<ClusterConfigurationChangeOperation>> operations =
+        distributor.newGeneratePartitionDistributionOperations(
+            currentConfiguration, clusterMembers, newDistribution);
+
+    assertThat(operations.isRight()).isTrue();
+    assertThat(operations.get()).as("should generate the expected operations").hasSize(6);
+
+    // when
+    final var changedDistribution =
+        distributor.distributePartitions(clusterMembers, sortedPartitionIds, 2);
+
+    // then
+    assertThat(changedDistribution)
+        .as("should distribute the partitions as expected")
+        .containsExactlyInAnyOrderElementsOf(newDistribution);
+  }
+
+  @Test
+  void shouldProcessNewFixedPartitionDistribution9() {
+    // given
+    final var initialDistribution =
+        Set.of(
+            new PartitionMetadata(
+                partition(1), Set.of(node(0), node(1)), Map.of(node(0), 2, node(1), 1), 2, node(0)),
+            new PartitionMetadata(
+                partition(2), Set.of(node(1), node(2)), Map.of(node(1), 2, node(2), 1), 2, node(1)),
+            new PartitionMetadata(
+                partition(3),
+                Set.of(node(2), node(0)),
+                Map.of(node(2), 2, node(0), 1),
+                2,
+                node(2)));
+    final var distributor =
+        new FixedPartitionDistributorBuilder(PARTITION_GROUP_NAME)
+            .assignMember(1, 0, 2)
+            .assignMember(1, 1, 1)
+            .assignMember(2, 1, 2)
+            .assignMember(2, 2, 1)
+            .assignMember(3, 2, 2)
+            .assignMember(3, 0, 1)
+            .build();
+    final var clusterMembers = Set.of(node(0), node(1), node(2));
+    final var sortedPartitionIds = List.of(partition(1), partition(2), partition(3));
+
+    // when
+    final var distribution =
+        distributor.distributePartitions(clusterMembers, sortedPartitionIds, 2);
+
+    // then
+    assertThat(distribution)
+        .as("should distribute the partitions as expected")
+        .containsExactlyInAnyOrderElementsOf(initialDistribution);
+
+    // now test newDistribution -> should produce 9 operations
+    final var newDistribution =
+        Set.of(
+            new PartitionMetadata(
+                partition(1), Set.of(node(1), node(2)), Map.of(node(1), 2, node(2), 1), 2, node(1)),
+            new PartitionMetadata(
+                partition(2), Set.of(node(2), node(0)), Map.of(node(2), 2, node(0), 1), 2, node(2)),
+            new PartitionMetadata(
+                partition(3),
+                Set.of(node(0), node(1)),
+                Map.of(node(0), 2, node(1), 1),
+                2,
+                node(0)));
+
+    distributor.setDistribution(
+        Map.of(
+            partition(1),
+            Set.of(
+                new FixedDistributionMember(node(1), 2), new FixedDistributionMember(node(2), 1)),
+            partition(2),
+            Set.of(
+                new FixedDistributionMember(node(2), 2), new FixedDistributionMember(node(0), 1)),
+            partition(3),
+            Set.of(
+                new FixedDistributionMember(node(0), 2), new FixedDistributionMember(node(1), 1))));
+
+    final var currentConfiguration =
+        ConfigurationUtil.getClusterConfigFrom(
+            false, initialDistribution, DynamicPartitionConfig.uninitialized());
+    final Either<Exception, List<ClusterConfigurationChangeOperation>> operations =
+        distributor.newGeneratePartitionDistributionOperations(
+            currentConfiguration, clusterMembers, newDistribution);
+
+    assertThat(operations.isRight()).isTrue();
+    assertThat(operations.get()).as("should generate the expected operations").hasSize(9);
+
+    // when
+    final var changedDistribution =
+        distributor.distributePartitions(clusterMembers, sortedPartitionIds, 2);
+
+    // then
+    assertThat(changedDistribution)
+        .as("should distribute the partitions as expected")
+        .containsExactlyInAnyOrderElementsOf(newDistribution);
   }
 
   private PartitionId partition(final int id) {
