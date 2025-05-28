@@ -13,6 +13,7 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -40,7 +41,9 @@ public class BatchOperationCreatedHandler
 
   @Override
   public boolean handlesRecord(final Record<BatchOperationCreationRecordValue> record) {
-    return record.getIntent().equals(BatchOperationIntent.CREATED);
+    return record.getIntent().equals(BatchOperationIntent.CREATED)
+        && Protocol.decodePartitionId(record.getValue().getBatchOperationKey())
+            == record.getPartitionId();
   }
 
   @Override
