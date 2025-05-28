@@ -109,20 +109,16 @@ public final class BackgroundTaskManagerFactory {
 
   private List<RunnableTask> buildTasks() {
     final List<RunnableTask> tasks = new ArrayList<>();
-    int threadCount = 2;
 
     tasks.add(buildIncidentMarkerTask());
     tasks.add(buildProcessInstanceArchiverJob());
     if (partitionId == START_PARTITION_ID) {
-      threadCount = 3;
       tasks.add(buildBatchOperationArchiverJob());
       tasks.add(new ApplyRolloverPeriodJob(archiverRepository));
-    }
-    if (partitionId == START_PARTITION_ID) {
       tasks.add(buildBatchOperationUpdateTask());
     }
 
-    executor.setCorePoolSize(threadCount);
+    executor.setCorePoolSize(tasks.size());
     return tasks;
   }
 
