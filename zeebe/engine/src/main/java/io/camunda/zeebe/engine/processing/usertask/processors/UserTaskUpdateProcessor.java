@@ -112,7 +112,14 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
 
         final var optionalVariableDocumentState =
             variableState.findVariableDocumentState(userTaskRecord.getElementInstanceKey());
-        if (optionalVariableDocumentState.isPresent()) {
+        if (optionalVariableDocumentState.isEmpty()) {
+          LOGGER.warn(
+              "No VariableDocumentState found for elementInstanceKey={} during task update. "
+                  + "Skipping variable merge, only writing 'USER_TASK.UPDATED'.",
+              userTaskRecord.getElementInstanceKey());
+
+          stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
+        } else {
           final var variableDocumentState = optionalVariableDocumentState.get();
           final var variableDocumentRecord = variableDocumentState.getRecord();
           mergeVariables(userTaskRecord, variableDocumentRecord);
@@ -130,13 +137,6 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
               ValueType.VARIABLE_DOCUMENT,
               metadata.getRequestId(),
               metadata.getRequestStreamId());
-        } else {
-          LOGGER.warn(
-              "No VariableDocumentState found for elementInstanceKey={} during task update. "
-                  + "Skipping variable merge, only writing 'USER_TASK.UPDATED'.",
-              userTaskRecord.getElementInstanceKey());
-
-          stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
         }
       }
       default ->
