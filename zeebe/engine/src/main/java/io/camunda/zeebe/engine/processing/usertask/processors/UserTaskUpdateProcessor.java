@@ -105,43 +105,40 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
             metadata.getRequestId(),
             metadata.getRequestStreamId());
       }
-      case VARIABLE_DOCUMENT ->
-          // Update triggered by a VariableDocument command.
-          // Retrieve the original VariableDocumentRecord to apply correct variable
-          // merge logic and write follow-up event.
-          variableState
-              .findVariableDocumentState(userTaskRecord.getElementInstanceKey())
-              .ifPresentOrElse(
-                  variableDocumentState -> {
-                    final var variableDocumentRecord = variableDocumentState.getRecord();
-                    mergeVariables(userTaskRecord, variableDocumentRecord);
+      case VARIABLE_DOCUMENT -> {
+        // Update triggered by a VariableDocument command.
+        // Retrieve the original VariableDocumentRecord to apply correct variable
+        // merge logic and write follow-up event.
 
-                    // Write follow-up events
-                    stateWriter.appendFollowUpEvent(
-                        userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
-                    final long variableDocumentKey = variableDocumentState.getKey();
-                    stateWriter.appendFollowUpEvent(
-                        variableDocumentKey,
-                        VariableDocumentIntent.UPDATED,
-                        variableDocumentRecord);
+        final var optionalVariableDocumentState =
+            variableState.findVariableDocumentState(userTaskRecord.getElementInstanceKey());
+        if (optionalVariableDocumentState.isPresent()) {
+          final var variableDocumentState = optionalVariableDocumentState.get();
+          final var variableDocumentRecord = variableDocumentState.getRecord();
+          mergeVariables(userTaskRecord, variableDocumentRecord);
 
-                    responseWriter.writeResponse(
-                        variableDocumentKey,
-                        VariableDocumentIntent.UPDATED,
-                        variableDocumentRecord,
-                        ValueType.VARIABLE_DOCUMENT,
-                        metadata.getRequestId(),
-                        metadata.getRequestStreamId());
-                  },
-                  () -> {
-                    LOGGER.warn(
-                        "No VariableDocumentState found for elementInstanceKey={} during task update. "
-                            + "Skipping variable merge, only writing 'USER_TASK.UPDATED'.",
-                        userTaskRecord.getElementInstanceKey());
+          // Write follow-up events
+          stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
+          final long variableDocumentKey = variableDocumentState.getKey();
+          stateWriter.appendFollowUpEvent(
+              variableDocumentKey, VariableDocumentIntent.UPDATED, variableDocumentRecord);
 
-                    stateWriter.appendFollowUpEvent(
-                        userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
-                  });
+          responseWriter.writeResponse(
+              variableDocumentKey,
+              VariableDocumentIntent.UPDATED,
+              variableDocumentRecord,
+              ValueType.VARIABLE_DOCUMENT,
+              metadata.getRequestId(),
+              metadata.getRequestStreamId());
+        } else {
+          LOGGER.warn(
+              "No VariableDocumentState found for elementInstanceKey={} during task update. "
+                  + "Skipping variable merge, only writing 'USER_TASK.UPDATED'.",
+              userTaskRecord.getElementInstanceKey());
+
+          stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
+        }
+      }
       default ->
           throw new IllegalArgumentException(
               "Unexpected user task transition trigger type: '%s'"
