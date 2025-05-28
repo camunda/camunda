@@ -81,6 +81,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private CheckpointRecordsProcessor checkpointRecordsProcessor;
   private BackupStore backupStore;
   private MeterRegistry transitionMeterRegistry;
+  private String brokerVersion = PartitionTransitionContext.super.getBrokerVersion();
 
   public TestPartitionTransitionContext() {
     startupMeterRegistry.config().commonTags(PartitionKeyNames.tags(1));
@@ -169,6 +170,15 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   @Override
   public void setAdminAccess(final PartitionAdminAccess adminAccess) {}
+
+  @Override
+  public String getBrokerVersion() {
+    return brokerVersion;
+  }
+
+  public void setBrokerVersion(final String version) {
+    brokerVersion = version;
+  }
 
   @Override
   public void setExporterDirector(final ExporterDirector exporterDirector) {

@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
+import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import java.util.List;
 
@@ -66,4 +67,8 @@ public interface PartitionContext {
   PartitionAdminAccess getAdminAccess();
 
   void setAdminAccess(PartitionAdminAccess adminAccess);
+
+  default String getBrokerVersion() {
+    return VersionUtil.getVersion();
+  }
 }

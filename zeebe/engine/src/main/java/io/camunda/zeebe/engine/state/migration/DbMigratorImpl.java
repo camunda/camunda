@@ -64,8 +64,8 @@ public class DbMigratorImpl implements DbMigrator {
   private final List<MigrationTask> migrationTasks;
   private final String currentVersion;
 
-  public DbMigratorImpl(final MutableProcessingState processingState) {
-    this(processingState, MIGRATION_TASKS, null);
+  public DbMigratorImpl(final MutableProcessingState processingState, String version) {
+    this(processingState, MIGRATION_TASKS, version);
   }
 
   public DbMigratorImpl(
