@@ -34,11 +34,11 @@ describe('Add variable', () => {
 
   afterEach(async () => {
     jest.clearAllMocks();
-    jest.clearAllTimers();
     await new Promise(process.nextTick);
   });
 
   it('should show/hide add variable inputs', async () => {
+    jest.useFakeTimers();
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchVariables().withSuccess(mockVariables);
@@ -66,9 +66,7 @@ describe('Add variable', () => {
     await user.click(screen.getByRole('button', {name: /add variable/i}));
 
     expect(
-      screen.getByRole('textbox', {
-        name: /name/i,
-      }),
+      await screen.findByRole('textbox', {name: /name/i}),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('textbox', {
@@ -87,9 +85,13 @@ describe('Add variable', () => {
         name: /value/i,
       }),
     ).not.toBeInTheDocument();
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should not allow empty value', async () => {
+    jest.useFakeTimers();
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
@@ -106,7 +108,11 @@ describe('Add variable', () => {
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
 
-    expect(screen.getByRole('button', {name: /save variable/i})).toBeDisabled();
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', {name: /save variable/i}),
+      ).toBeDisabled(),
+    );
 
     await user.type(
       screen.getByRole('textbox', {
@@ -126,9 +132,13 @@ describe('Add variable', () => {
     expect(screen.getByRole('button', {name: /save variable/i})).toBeDisabled();
     expect(screen.queryByTitle('Value has to be JSON')).not.toBeInTheDocument();
     expect(await screen.findByText('Value has to be JSON')).toBeInTheDocument();
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should not allow empty characters in variable name', async () => {
+    jest.useFakeTimers();
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
@@ -225,6 +235,9 @@ describe('Add variable', () => {
 
     expect(screen.queryByText('Value has to be JSON')).not.toBeInTheDocument();
     expect(screen.getByText('Name is invalid')).toBeInTheDocument();
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should not allow to add duplicate variables', async () => {
@@ -504,6 +517,9 @@ describe('Add variable', () => {
     const {user} = render(<Variables />, {wrapper: getWrapper()});
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
+    expect(
+      await screen.findByRole('button', {name: /add variable/i}),
+    ).toBeInTheDocument();
     await user.click(screen.getByRole('button', {name: /add variable/i}));
     await user.click(
       screen.getByRole('button', {name: /open json editor modal/i}),

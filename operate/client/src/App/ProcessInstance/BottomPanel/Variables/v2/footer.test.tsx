@@ -38,7 +38,6 @@ const instanceMock = createInstance({id: '1'});
 describe('Footer', () => {
   afterEach(async () => {
     jest.clearAllMocks();
-    jest.clearAllTimers();
     await new Promise(process.nextTick);
   });
 
@@ -175,6 +174,7 @@ describe('Footer', () => {
   });
 
   it('should hide/disable add variable button if add/edit variable button is clicked', async () => {
+    jest.useFakeTimers();
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockProcessInstanceDeprecated().withSuccess(instanceMock);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
@@ -194,9 +194,11 @@ describe('Footer', () => {
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
-    expect(
-      screen.queryByRole('button', {name: /add variable/i}),
-    ).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', {name: /add variable/i}),
+      ).not.toBeInTheDocument(),
+    );
 
     await user.click(screen.getByRole('button', {name: /exit edit mode/i}));
     expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
@@ -210,5 +212,8 @@ describe('Footer', () => {
 
     await user.click(screen.getByRole('button', {name: /exit edit mode/i}));
     expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 });
