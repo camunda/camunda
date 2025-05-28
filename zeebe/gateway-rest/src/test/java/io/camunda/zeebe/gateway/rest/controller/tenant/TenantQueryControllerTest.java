@@ -124,13 +124,13 @@ public class TenantQueryControllerTest extends RestControllerTest {
              "name": "%s",
              "claimName": "%s",
              "claimValue": "%s",
-             "mappingId": %s
+             "mappingRuleId": %s
            },
            {
              "name": "%s",
              "claimName": "%s",
              "claimValue": "%s",
-             "mappingId": "%s"
+             "mappingRuleId": "%s"
            }
          ],
          "page": {
@@ -385,7 +385,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri("%s/%s/mappings/search".formatted(TENANT_BASE_URL, "tenantId"))
+        .uri("%s/%s/mapping-rules/search".formatted(TENANT_BASE_URL, "tenantId"))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(
@@ -418,7 +418,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri("%s/%s/mappings/search".formatted(TENANT_BASE_URL, "tenantId"))
+        .uri("%s/%s/mapping-rules/search".formatted(TENANT_BASE_URL, "tenantId"))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(

@@ -13,15 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.response;
+package io.camunda.client.api.search.request;
 
-public interface Mapping {
+import io.camunda.client.api.search.filter.MappingFilter;
+import io.camunda.client.api.search.response.MappingRule;
+import io.camunda.client.api.search.sort.MappingSort;
 
-  String getMappingId();
-
-  String getClaimName();
-
-  String getClaimValue();
-
-  String getName();
-}
+public interface MappingRulesByRoleSearchRequest
+    extends TypedSearchRequest<MappingFilter, MappingSort, MappingRulesByRoleSearchRequest>,
+        FinalSearchRequestStep<MappingRule> {}

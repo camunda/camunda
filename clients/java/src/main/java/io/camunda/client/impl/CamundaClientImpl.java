@@ -24,8 +24,8 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
 import io.camunda.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
+import io.camunda.client.api.command.AssignMappingRuleToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingToGroupStep1;
-import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.client.api.command.AssignRoleToClientCommandStep1;
 import io.camunda.client.api.command.AssignRoleToGroupCommandStep1;
 import io.camunda.client.api.command.AssignRoleToMappingCommandStep1;
@@ -48,7 +48,7 @@ import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
 import io.camunda.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.client.api.command.CreateDocumentLinkCommandStep1;
 import io.camunda.client.api.command.CreateGroupCommandStep1;
-import io.camunda.client.api.command.CreateMappingCommandStep1;
+import io.camunda.client.api.command.CreateMappingRuleCommandStep1;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.CreateRoleCommandStep1;
 import io.camunda.client.api.command.CreateTenantCommandStep1;
@@ -76,7 +76,7 @@ import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignMappingFromGroupStep1;
 import io.camunda.client.api.command.UnassignRoleFromClientCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromGroupCommandStep1;
-import io.camunda.client.api.command.UnassignRoleFromMappingCommandStep1;
+import io.camunda.client.api.command.UnassignRoleFromMappingRuleCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromUserCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
@@ -100,7 +100,7 @@ import io.camunda.client.api.fetch.ElementInstanceGetRequest;
 import io.camunda.client.api.fetch.GroupGetRequest;
 import io.camunda.client.api.fetch.GroupsSearchRequest;
 import io.camunda.client.api.fetch.IncidentGetRequest;
-import io.camunda.client.api.fetch.MappingsByGroupSearchRequest;
+import io.camunda.client.api.fetch.MappingRulesByGroupSearchRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetFormRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetXmlRequest;
@@ -126,7 +126,7 @@ import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
 import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
 import io.camunda.client.api.search.request.GroupsByRoleSearchRequest;
 import io.camunda.client.api.search.request.IncidentSearchRequest;
-import io.camunda.client.api.search.request.MappingsByRoleSearchRequest;
+import io.camunda.client.api.search.request.MappingRulesByRoleSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
@@ -163,7 +163,7 @@ import io.camunda.client.impl.command.CreateDocumentBatchCommandImpl;
 import io.camunda.client.impl.command.CreateDocumentCommandImpl;
 import io.camunda.client.impl.command.CreateDocumentLinkCommandImpl;
 import io.camunda.client.impl.command.CreateGroupCommandImpl;
-import io.camunda.client.impl.command.CreateMappingCommandImpl;
+import io.camunda.client.impl.command.CreateMappingRuleCommandImpl;
 import io.camunda.client.impl.command.CreateProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.CreateRoleCommandImpl;
 import io.camunda.client.impl.command.CreateTenantCommandImpl;
@@ -902,7 +902,7 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public UnassignRoleFromMappingCommandStep1 newUnassignRoleFromMappingCommand() {
+  public UnassignRoleFromMappingRuleCommandStep1 newUnassignRoleFromMappingRuleCommand() {
     return new UnassignRoleFromMappingCommandImpl(httpClient);
   }
 
@@ -962,8 +962,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public CreateMappingCommandStep1 newCreateMappingCommand() {
-    return new CreateMappingCommandImpl(httpClient, jsonMapper);
+  public CreateMappingRuleCommandStep1 newCreateMappingRuleCommand() {
+    return new CreateMappingRuleCommandImpl(httpClient, jsonMapper);
   }
 
   @Override
@@ -1075,7 +1075,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public AssignMappingToTenantCommandStep1 newAssignMappingToTenantCommand(final String tenantId) {
+  public AssignMappingRuleToTenantCommandStep1 newAssignMappingRuleToTenantCommand(
+      final String tenantId) {
     return new AssignMappingToTenantCommandImpl(httpClient, tenantId);
   }
 
@@ -1169,12 +1170,13 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public MappingsByGroupSearchRequest newMappingsByGroupSearchRequest(final String groupId) {
+  public MappingRulesByGroupSearchRequest newMappingRulesByGroupSearchRequest(
+      final String groupId) {
     return new MappingsByGroupSearchRequestImpl(httpClient, jsonMapper, groupId);
   }
 
   @Override
-  public MappingsByRoleSearchRequest newMappingsByRoleSearchRequest(final String roleId) {
+  public MappingRulesByRoleSearchRequest newMappingsByRoleSearchRequest(final String roleId) {
     return new MappingsByRoleSearchRequestImpl(httpClient, jsonMapper, roleId);
   }
 

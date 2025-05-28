@@ -10,7 +10,7 @@ import { FC } from "react";
 import { OwnerType } from "src/utility/api/authorizations";
 import { searchUser } from "src/utility/api/users";
 import { searchGroups } from "src/utility/api/groups";
-import { searchMapping } from "src/utility/api/mappings";
+import { searchMappingRule } from "src/utility/api/mappings";
 import { searchRoles } from "src/utility/api/roles";
 import useTranslate from "src/utility/localization";
 import OwnerSelection from "./OwnerSelection";
@@ -51,9 +51,9 @@ const Selection: FC<SelectionProps> = ({ type, ownerId, onChange }) => {
         <OwnerSelection
           id="mappingSelection"
           onChange={onChange}
-          searchFn={searchMapping}
-          getId={(mapping) => mapping.mappingId}
-          itemToString={(mapping) => mapping.name || mapping.mappingId}
+          searchFn={searchMappingRule}
+          getId={(mapping) => mapping.mappingRuleId}
+          itemToString={(mapping) => mapping.name || mapping.mappingRuleId}
         />
       );
     case OwnerType.ROLE:

@@ -111,10 +111,10 @@ class MappingAuthorizationIT {
       final String value,
       final String mappingId) {
     adminClient
-        .newCreateMappingCommand()
+        .newCreateMappingRuleCommand()
         .claimName(name)
         .claimValue(value)
-        .mappingId(mappingId)
+        .mappingRuleId(mappingId)
         .name(mappingId)
         .send()
         .join();

@@ -32,10 +32,10 @@ public interface AssignRoleToMappingCommandStep1 {
     /**
      * Sets the mapping ID.
      *
-     * @param mappingId the id of the mapping
+     * @param mappingRuleId the id of the mapping
      * @return the builder for this command. Call {@link #send()} to complete the command and send
      *     it to the broker.
      */
-    AssignRoleToMappingCommandStep2 mappingId(String mappingId);
+    AssignRoleToMappingCommandStep2 mappingRuleId(String mappingRuleId);
   }
 }

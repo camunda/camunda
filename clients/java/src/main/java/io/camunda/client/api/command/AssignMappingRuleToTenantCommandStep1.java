@@ -15,18 +15,18 @@
  */
 package io.camunda.client.api.command;
 
-import io.camunda.client.api.response.AssignMappingToTenantResponse;
+import io.camunda.client.api.response.AssignMappingRuleToTenantResponse;
 
 /** Command to assign a mapping to a tenant. */
-public interface AssignMappingToTenantCommandStep1
-    extends FinalCommandStep<AssignMappingToTenantResponse> {
+public interface AssignMappingRuleToTenantCommandStep1
+    extends FinalCommandStep<AssignMappingRuleToTenantResponse> {
 
   /**
    * Sets the mapping id for the assignment. Sets the mapping ID for the assignment.
    *
-   * @param mappingId the id of the mapping
+   * @param mappingRuleId the id of the mapping
    * @return the builder for this command. Call {@link #send()} to complete the command and send it
    *     to the broker.
    */
-  AssignMappingToTenantCommandStep1 mappingId(String mappingId);
+  AssignMappingRuleToTenantCommandStep1 mappingRuleId(String mappingRuleId);
 }

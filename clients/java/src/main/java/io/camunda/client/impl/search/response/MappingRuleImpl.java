@@ -15,26 +15,29 @@
  */
 package io.camunda.client.impl.search.response;
 
-import io.camunda.client.api.search.response.Mapping;
+import io.camunda.client.api.search.response.MappingRule;
 
-public class MappingImpl implements Mapping {
+public class MappingRuleImpl implements MappingRule {
 
-  private final String mappingId;
+  private final String mappingRuleId;
   private final String claimName;
   private final String claimValue;
   private final String name;
 
-  public MappingImpl(
-      final String mappingId, final String claimName, final String claimValue, final String name) {
-    this.mappingId = mappingId;
+  public MappingRuleImpl(
+      final String mappingRuleId,
+      final String claimName,
+      final String claimValue,
+      final String name) {
+    this.mappingRuleId = mappingRuleId;
     this.claimName = claimName;
     this.claimValue = claimValue;
     this.name = name;
   }
 
   @Override
-  public String getMappingId() {
-    return mappingId;
+  public String getMappingRuleId() {
+    return mappingRuleId;
   }
 
   @Override

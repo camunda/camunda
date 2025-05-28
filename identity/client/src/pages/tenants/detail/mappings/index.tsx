@@ -11,7 +11,7 @@ import { C3EmptyState } from "@camunda/camunda-composite-components";
 import { TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import { useApi } from "src/utility/api/hooks";
-import { getMappingsByTenantId } from "src/utility/api/tenants";
+import { getMappingRulesByTenantId } from "src/utility/api/tenants";
 import EntityList from "src/components/entityList";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/tenants/detail/mappings/DeleteModal";
@@ -29,7 +29,7 @@ const Mappings: FC<MappingsProps> = ({ tenantId }) => {
     loading,
     success,
     reload,
-  } = useApi(getMappingsByTenantId, {
+  } = useApi(getMappingRulesByTenantId, {
     tenantId: tenantId,
   });
 
@@ -84,12 +84,12 @@ const Mappings: FC<MappingsProps> = ({ tenantId }) => {
       <EntityList
         data={mappings?.items}
         headers={[
-          { header: t("mappingId"), key: "mappingId" },
+          { header: t("mappingId"), key: "mappingRuleId" },
           { header: t("mappingName"), key: "name" },
           { header: t("claimName"), key: "claimName" },
           { header: t("claimValue"), key: "claimValue" },
         ]}
-        sortProperty="mappingId"
+        sortProperty="mappingRuleId"
         loading={loading}
         addEntityLabel={t("assignMapping")}
         onAddEntity={openAssignModal}
