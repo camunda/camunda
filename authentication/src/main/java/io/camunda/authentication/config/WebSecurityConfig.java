@@ -267,7 +267,9 @@ public class WebSecurityConfig {
                   logout
                       .logoutUrl(LOGOUT_URL)
                       .logoutSuccessHandler(WebSecurityConfig::noContentSuccessHandler)
-                      .deleteCookies(SESSION_COOKIE))
+                      .deleteCookies(SESSION_COOKIE)
+                      .invalidateHttpSession(true)
+                      .clearAuthentication(true))
           .exceptionHandling(
               exceptionHandling ->
                   exceptionHandling
@@ -413,7 +415,9 @@ public class WebSecurityConfig {
                   logout
                       .logoutUrl(LOGOUT_URL)
                       .logoutSuccessHandler(WebSecurityConfig::noContentSuccessHandler)
-                      .deleteCookies())
+                      .deleteCookies(SESSION_COOKIE)
+                      .invalidateHttpSession(true)
+                      .clearAuthentication(true))
           .addFilterAfter(webApplicationAuthorizationCheckFilter, AuthorizationFilter.class)
           .build();
     }
