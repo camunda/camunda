@@ -41,75 +41,7 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivityResult;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResult;
-import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResult;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemResponse;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationResponse;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionResult;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceGetQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceResult;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceStateEnum;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsResult;
-import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceResult;
-import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateEnum;
-import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionInputItem;
-import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionOutputItem;
-import io.camunda.zeebe.gateway.protocol.rest.FormResult;
-import io.camunda.zeebe.gateway.protocol.rest.GroupClientResult;
-import io.camunda.zeebe.gateway.protocol.rest.GroupClientSearchResult;
-import io.camunda.zeebe.gateway.protocol.rest.GroupResult;
-import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.GroupUserResult;
-import io.camunda.zeebe.gateway.protocol.rest.GroupUserSearchResult;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentResult;
-import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.MappingResult;
-import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
-import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessElementStatisticsResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCallHierarchyEntry;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceElementStatisticsQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSequenceFlowResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSequenceFlowsQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
-import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
-import io.camunda.zeebe.gateway.protocol.rest.RoleClientResult;
-import io.camunda.zeebe.gateway.protocol.rest.RoleClientSearchResult;
-import io.camunda.zeebe.gateway.protocol.rest.RoleResult;
-import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.RoleUserResult;
-import io.camunda.zeebe.gateway.protocol.rest.RoleUserSearchResult;
-import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
-import io.camunda.zeebe.gateway.protocol.rest.TenantClientResult;
-import io.camunda.zeebe.gateway.protocol.rest.TenantClientSearchResult;
-import io.camunda.zeebe.gateway.protocol.rest.TenantResult;
-import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.TenantUserResult;
-import io.camunda.zeebe.gateway.protocol.rest.TenantUserSearchResult;
-import io.camunda.zeebe.gateway.protocol.rest.UsageMetricsResponse;
-import io.camunda.zeebe.gateway.protocol.rest.UserResult;
-import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskResult;
-import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.VariableResult;
-import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.VariableSearchResult;
+import io.camunda.zeebe.gateway.protocol.rest.*;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCacheItem;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -415,8 +347,48 @@ public final class SearchQueryResponseMapper {
 
     return new SearchQueryPageResponse()
         .totalItems(result.total())
-        .firstSortValues(firstSortValues)
-        .lastSortValues(lastSortValues);
+        .firstSortValues(toSortItems(firstSortValues))
+        .lastSortValues(toSortItems(lastSortValues));
+  }
+
+  private static List<SearchQuerySortItem> toSortItems(final List<Object> sortObjects) {
+    if (sortObjects == null) {
+      return null;
+    }
+
+    return sortObjects.stream()
+        .map(SearchQueryResponseMapper::toSortItem)
+        .collect(Collectors.toList());
+  }
+
+  private static SearchQuerySortItem toSortItem(final Object sortObject) {
+    if (sortObject == null) {
+      return null;
+    }
+
+    final String value = sortObject.toString();
+    final String type;
+    if (sortObject instanceof Boolean) {
+      type = "boolean";
+    } else if (sortObject instanceof Integer) {
+      type = "int32";
+    } else if (sortObject instanceof Long) {
+      type = "int64";
+    } else if (sortObject instanceof Float) {
+      type = "float";
+    } else if (sortObject instanceof Double) {
+      type = "double";
+    } else if (sortObject instanceof String) {
+      type = "string";
+    } else {
+      throw new RuntimeException(
+          String.format("Unsupported sort object class: %s", sortObject.getClass().getName()));
+    }
+    final SearchQuerySortItem sortItem = new SearchQuerySortItem();
+    sortItem.setValue(value);
+    sortItem.setType(type);
+
+    return sortItem;
   }
 
   private static List<ProcessDefinitionResult> toProcessDefinitions(

@@ -88,6 +88,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.ProblemDetail;
@@ -1499,8 +1500,8 @@ public final class SearchQueryRequestMapper {
       return Either.right(null);
     }
 
-    final Object[] searchAfter = toArrayOrNull(requestedPage.getSearchAfter());
-    final Object[] searchBefore = toArrayOrNull(requestedPage.getSearchBefore());
+    final Object[] searchAfter = toArrayOrNull(toSortObjects(requestedPage.getSearchAfter()));
+    final Object[] searchBefore = toArrayOrNull(toSortObjects(requestedPage.getSearchBefore()));
 
     if (searchAfter != null && searchBefore != null) {
       return Either.left(List.of(ERROR_SEARCH_BEFORE_AND_AFTER));
@@ -1516,6 +1517,51 @@ public final class SearchQueryRequestMapper {
                     .from(requestedPage.getFrom())
                     .searchAfter(searchAfter)
                     .searchBefore(searchBefore)));
+  }
+
+  private static List<Object> toSortObjects(final List<SearchQuerySortItem> sortItems) {
+    if (sortItems == null) {
+      return null;
+    }
+
+    return sortItems.stream()
+        .map(SearchQueryRequestMapper::toSortObject)
+        .collect(Collectors.toList());
+  }
+
+  private static Object toSortObject(final SearchQuerySortItem sortItem) {
+    if (sortItem == null || sortItem.getValue() == null) {
+      return null;
+    }
+
+    final Object sortObject;
+    final String value = sortItem.getValue();
+    final String type = sortItem.getType();
+    switch (type) {
+      case "boolean":
+        sortObject = Boolean.valueOf(value);
+        break;
+      case "int32":
+        sortObject = Integer.valueOf(value);
+        break;
+      case "int64":
+        sortObject = Long.valueOf(value);
+        break;
+      case "float":
+        sortObject = Float.valueOf(value);
+        break;
+      case "double":
+        sortObject = Double.valueOf(value);
+        break;
+      case "string":
+        sortObject = String.valueOf(value);
+        break;
+      case null:
+      default:
+        throw new RuntimeException(String.format("Unsupported sort item type: %s", type));
+    }
+
+    return sortObject;
   }
 
   private static <T, B extends SortOption.AbstractBuilder<B> & ObjectBuilder<T>, F>
