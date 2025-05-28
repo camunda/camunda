@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.identity;
 
 import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationReferenceNullValue;
 
-import com.jayway.jsonpath.JsonPath;
+import io.camunda.security.auth.MappingRuleMatcher;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.Rejection;
@@ -395,16 +395,7 @@ public final class AuthorizationCheckBehavior {
     final var claims =
         (Map<String, Object>)
             command.getAuthorizations().getOrDefault(Authorization.USER_TOKEN_CLAIMS, Map.of());
-
-    return mappingState.getAll().stream()
-        .filter(
-            persistedMapping -> {
-              final var claimValue = JsonPath.compile(persistedMapping.getClaimName()).read(claims);
-              if (claimValue instanceof final Collection<?> claimValues) {
-                return claimValues.contains(persistedMapping.getClaimValue());
-              }
-              return persistedMapping.getClaimValue().equals(claimValue);
-            });
+    return MappingRuleMatcher.matchingRules(mappingState.getAll().stream(), claims);
   }
 
   public static final class AuthorizationRequest {

@@ -7,7 +7,6 @@
  */
 package io.camunda.service;
 
-import com.jayway.jsonpath.JsonPath;
 import io.camunda.search.clients.MappingSearchClient;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.exception.CamundaSearchException;
@@ -17,6 +16,7 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.MappingRuleMatcher;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -24,7 +24,6 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingDeleteRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -119,17 +118,7 @@ public class MappingServices
   }
 
   public Stream<MappingEntity> getMatchingMappings(final Map<String, Object> claims) {
-    final var mappingRules = findAll(MappingQuery.of(q -> q));
-    return mappingRules.stream()
-        .filter(
-            mappingRule -> {
-              final var result = JsonPath.compile(mappingRule.claimName()).read(claims);
-              if (result instanceof final Collection<?> values) {
-                return values.contains(mappingRule.claimValue());
-              } else {
-                return mappingRule.claimValue().equals(result);
-              }
-            });
+    return MappingRuleMatcher.matchingRules(findAll(MappingQuery.of(q -> q)).stream(), claims);
   }
 
   public record MappingDTO(String claimName, String claimValue, String name, String mappingId) {}
