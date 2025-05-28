@@ -13,20 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.command;
+package io.camunda.client.api.response;
 
-import io.camunda.client.api.response.AssignMappingToTenantResponse;
-
-/** Command to assign a mapping to a tenant. */
-public interface AssignMappingToTenantCommandStep1
-    extends FinalCommandStep<AssignMappingToTenantResponse> {
-
-  /**
-   * Sets the mapping id for the assignment. Sets the mapping ID for the assignment.
-   *
-   * @param mappingId the id of the mapping
-   * @return the builder for this command. Call {@link #send()} to complete the command and send it
-   *     to the broker.
-   */
-  AssignMappingToTenantCommandStep1 mappingId(String mappingId);
-}
+public interface AssignMappingRuleToTenantResponse {}

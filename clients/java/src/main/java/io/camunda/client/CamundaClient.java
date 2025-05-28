@@ -18,8 +18,8 @@ package io.camunda.client;
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
+import io.camunda.client.api.command.AssignMappingRuleToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingToGroupStep1;
-import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.client.api.command.AssignRoleToClientCommandStep1;
 import io.camunda.client.api.command.AssignRoleToGroupCommandStep1;
 import io.camunda.client.api.command.AssignRoleToMappingCommandStep1;
@@ -1971,7 +1971,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param tenantId the unique identifier of the tenant
    * @return a builder for the assign mapping rule to tenant command
    */
-  AssignMappingToTenantCommandStep1 newAssignMappingToTenantCommand(String tenantId);
+  AssignMappingRuleToTenantCommandStep1 newAssignMappingRuleToTenantCommand(String tenantId);
 
   /**
    * Command to assign a user to a tenant.
