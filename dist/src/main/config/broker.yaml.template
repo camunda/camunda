@@ -939,6 +939,7 @@
         #
         #   history:
         #     elsRolloverDateFormat: "date"
+        #     rolloverInterval: "1d"
         #     rolloverBatchSize: 100
         #     waitPeriodBeforeArchiving: "1h"
         #     delayBetweenRuns: 2000
