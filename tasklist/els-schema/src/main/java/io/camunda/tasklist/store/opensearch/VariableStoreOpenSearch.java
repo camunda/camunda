@@ -331,7 +331,9 @@ public class VariableStoreOpenSearch implements VariableStore {
       final SearchRequest.Builder searchRequestBuilder = new SearchRequest.Builder();
       searchRequestBuilder
           .index(variableIndex.getAlias())
-          .query(q -> q.constantScore(cs -> cs.filter(boolQuery)));
+          .query(q -> q.constantScore(cs -> cs.filter(boolQuery)))
+          .source(s -> s.filter(f -> f.includes(PROCESS_INSTANCE_ID)))
+          .size(tasklistProperties.getOpenSearch().getBatchSize());
       final Set<String> currentIds;
       try {
         currentIds =
@@ -445,7 +447,10 @@ public class VariableStoreOpenSearch implements VariableStore {
             .filter(OpenSearchUtil.joinWithAnd(flowNodeInstanceKeyQ, varNamesQ))
             .build());
     final Builder searchRequest = new Builder();
-    searchRequest.index(variableIndex.getAlias()).query(query.build());
+    searchRequest
+        .index(variableIndex.getAlias())
+        .query(query.build())
+        .size(tasklistProperties.getOpenSearch().getBatchSize());
     applyFetchSourceForVariableIndex(searchRequest, fieldNames);
     return searchRequest;
   }
