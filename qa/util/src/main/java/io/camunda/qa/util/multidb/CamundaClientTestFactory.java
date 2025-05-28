@@ -10,7 +10,7 @@ package io.camunda.qa.util.multidb;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.qa.util.auth.Authenticated;
-import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.ApplicationUnderTest;
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
@@ -58,7 +58,7 @@ public final class CamundaClientTestFactory implements AutoCloseable {
     return cachedClients.get(username);
   }
 
-  public void createClientForUser(final TestGateway<?> gateway, final User user) {
+  public void createClientForUser(final TestGateway<?> gateway, final TestUser user) {
     final var client = createAuthenticatedClient(gateway, user.username(), user.password());
     cachedClients.put(user.username(), client);
   }

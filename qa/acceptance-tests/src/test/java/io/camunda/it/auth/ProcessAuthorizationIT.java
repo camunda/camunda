@@ -19,7 +19,7 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
-import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -45,8 +45,8 @@ class ProcessAuthorizationIT {
   private static final String RESTRICTED = "restrictedUser";
 
   @UserDefinition
-  private static final User ADMIN_USER =
-      new User(
+  private static final TestUser ADMIN_USER =
+      new TestUser(
           ADMIN,
           "password",
           List.of(
@@ -54,8 +54,8 @@ class ProcessAuthorizationIT {
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*"))));
 
   @UserDefinition
-  private static final User RESTRICTED_USER =
-      new User(
+  private static final TestUser RESTRICTED_USER =
+      new TestUser(
           RESTRICTED,
           "password",
           List.of(

@@ -14,7 +14,7 @@ import static org.springframework.http.HttpStatus.OK;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.auth.Authenticated;
-import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -46,9 +46,11 @@ public class OperateMultiTenancyIT {
   private static final TestCamundaApplication TEST_INSTANCE =
       new TestCamundaApplication().withBasicAuth().withMultiTenancyEnabled();
 
-  @UserDefinition private static final User USER1 = new User(USERNAME_1, PASSWORD, List.of());
+  @UserDefinition
+  private static final TestUser USER1 = new TestUser(USERNAME_1, PASSWORD, List.of());
 
-  @UserDefinition private static final User USER2 = new User(USERNAME_2, PASSWORD, List.of());
+  @UserDefinition
+  private static final TestUser USER2 = new TestUser(USERNAME_2, PASSWORD, List.of());
 
   @BeforeAll
   public static void beforeAll(

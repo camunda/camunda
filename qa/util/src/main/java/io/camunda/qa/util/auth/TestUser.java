@@ -10,9 +10,9 @@ package io.camunda.qa.util.auth;
 import io.camunda.security.configuration.InitializationConfiguration;
 import java.util.List;
 
-public record User(String username, String password, List<Permissions> permissions) {
-  public static final User DEFAULT =
-      new User(
+public record TestUser(String username, String password, List<Permissions> permissions) {
+  public static final TestUser DEFAULT =
+      new TestUser(
           InitializationConfiguration.DEFAULT_USER_USERNAME,
           InitializationConfiguration.DEFAULT_USER_PASSWORD,
           List.of());

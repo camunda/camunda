@@ -17,7 +17,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
-import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -45,8 +45,8 @@ class UserTaskAuthorizationIT {
   private static final String USER2 = "user2";
 
   @UserDefinition
-  private static final User ADMIN_USER =
-      new User(
+  private static final TestUser ADMIN_USER =
+      new TestUser(
           ADMIN,
           "password",
           List.of(
@@ -55,15 +55,15 @@ class UserTaskAuthorizationIT {
               new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))));
 
   @UserDefinition
-  private static final User USER1_USER =
-      new User(
+  private static final TestUser USER1_USER =
+      new TestUser(
           USER1,
           "password",
           List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_ID_1))));
 
   @UserDefinition
-  private static final User USER2_USER =
-      new User(
+  private static final TestUser USER2_USER =
+      new TestUser(
           USER2,
           "password",
           List.of(new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of(PROCESS_ID_2))));

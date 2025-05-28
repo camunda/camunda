@@ -14,7 +14,7 @@ import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
-import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -43,8 +43,8 @@ class UserSearchingAuthorizationIT {
   private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(15);
 
   @UserDefinition
-  private static final User ADMIN_USER =
-      new User(
+  private static final TestUser ADMIN_USER =
+      new TestUser(
           ADMIN,
           DEFAULT_PASSWORD,
           List.of(
@@ -54,11 +54,12 @@ class UserSearchingAuthorizationIT {
               new Permissions(ResourceType.AUTHORIZATION, PermissionType.UPDATE, List.of("*"))));
 
   @UserDefinition
-  private static final User RESTRICTED_USER = new User(RESTRICTED, DEFAULT_PASSWORD, List.of());
+  private static final TestUser RESTRICTED_USER =
+      new TestUser(RESTRICTED, DEFAULT_PASSWORD, List.of());
 
   @UserDefinition
-  private static final User RESTRICTED_USER_WITH_READ_PERMISSION =
-      new User(
+  private static final TestUser RESTRICTED_USER_WITH_READ_PERMISSION =
+      new TestUser(
           RESTRICTED_WITH_READ,
           DEFAULT_PASSWORD,
           List.of(new Permissions(ResourceType.USER, PermissionType.READ, List.of("*"))));

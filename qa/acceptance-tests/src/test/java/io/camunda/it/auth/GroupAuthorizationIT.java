@@ -22,7 +22,7 @@ import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.RoleDefinition;
 import io.camunda.qa.util.auth.TestGroup;
 import io.camunda.qa.util.auth.TestRole;
-import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -47,11 +47,12 @@ class GroupAuthorizationIT {
   private static final String DEFAULT_PASSWORD = "password";
 
   @UserDefinition
-  private static final User RESTRICTED_USER = new User(RESTRICTED, DEFAULT_PASSWORD, List.of());
+  private static final TestUser RESTRICTED_USER =
+      new TestUser(RESTRICTED, DEFAULT_PASSWORD, List.of());
 
   @UserDefinition
-  private static final User RESTRICTED_USER_WITH_READ_PERMISSION =
-      new User(
+  private static final TestUser RESTRICTED_USER_WITH_READ_PERMISSION =
+      new TestUser(
           RESTRICTED_WITH_READ,
           DEFAULT_PASSWORD,
           List.of(

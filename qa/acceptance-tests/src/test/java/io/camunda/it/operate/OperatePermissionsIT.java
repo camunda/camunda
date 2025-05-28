@@ -17,7 +17,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Process;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
-import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -49,8 +49,8 @@ public class OperatePermissionsIT {
   private static final List<Process> DEPLOYED_PROCESSES = new ArrayList<>();
 
   @UserDefinition
-  private static final User SUPER_USER =
-      new User(
+  private static final TestUser SUPER_USER =
+      new TestUser(
           SUPER_USER_USERNAME,
           "password",
           List.of(
@@ -58,8 +58,8 @@ public class OperatePermissionsIT {
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*"))));
 
   @UserDefinition
-  private static final User RESTRICTED_USER =
-      new User(
+  private static final TestUser RESTRICTED_USER =
+      new TestUser(
           RESTRICTED_USER_USERNAME,
           "password",
           List.of(

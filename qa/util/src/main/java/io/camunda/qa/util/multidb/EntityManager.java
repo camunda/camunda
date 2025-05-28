@@ -13,7 +13,7 @@ import io.camunda.qa.util.auth.Membership;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestGroup;
 import io.camunda.qa.util.auth.TestRole;
-import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.TestUser;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class EntityManager {
 
-  final Map<String, User> users = new ConcurrentHashMap<>();
+  final Map<String, TestUser> users = new ConcurrentHashMap<>();
   final Map<String, TestGroup> groups = new ConcurrentHashMap<>();
   final Map<String, TestRole> roles = new ConcurrentHashMap<>();
   private final CamundaClient defaultClient;
@@ -30,7 +30,7 @@ public final class EntityManager {
     this.defaultClient = defaultClient;
   }
 
-  public EntityManager withUser(final List<User> users) {
+  public EntityManager withUser(final List<TestUser> users) {
     users.stream()
         .filter(user -> !this.users.containsKey(user.username()))
         .forEach(

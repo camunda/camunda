@@ -15,7 +15,7 @@ import io.camunda.qa.util.auth.GroupDefinition;
 import io.camunda.qa.util.auth.RoleDefinition;
 import io.camunda.qa.util.auth.TestGroup;
 import io.camunda.qa.util.auth.TestRole;
-import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
@@ -382,9 +382,9 @@ public class CamundaMultiDBExtension
     return new ApplicationUnderTest(testStandaloneApplication, shouldBeManaged);
   }
 
-  private List<User> findUsers(
+  private List<TestUser> findUsers(
       final Class<?> testClass, final Object testInstance, final Predicate<Field> predicate) {
-    return findFields(testClass, testInstance, predicate, User.class, UserDefinition.class);
+    return findFields(testClass, testInstance, predicate, TestUser.class, UserDefinition.class);
   }
 
   private List<TestGroup> findGroups(
