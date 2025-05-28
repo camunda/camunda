@@ -86,7 +86,8 @@ public class ProcessCacheUtil {
         || flowNodeId == null) {
       return Optional.empty();
     }
-    return Optional.of(cachedProcess.get().flowNodesMap().get(flowNodeId));
+    final String flowNodeName = cachedProcess.get().flowNodesMap().get(flowNodeId);
+    return (flowNodeName == null) ? Optional.empty() : Optional.of(flowNodeName);
   }
 
   public static Map<String, String> getFlowNodesMap(Collection<FlowNode> flowNodes) {
