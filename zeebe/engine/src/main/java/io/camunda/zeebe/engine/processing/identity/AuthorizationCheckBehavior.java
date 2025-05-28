@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.identity;
 
 import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationReferenceNullValue;
 
+import com.jayway.jsonpath.JsonPath;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.Rejection;
@@ -394,20 +395,16 @@ public final class AuthorizationCheckBehavior {
     final var claims =
         (Map<String, Object>)
             command.getAuthorizations().getOrDefault(Authorization.USER_TOKEN_CLAIMS, Map.of());
-    return claims.entrySet().stream()
-        .flatMap(
-            claimEntry -> {
-              final var claimName = claimEntry.getKey();
-              final var claimValue = claimEntry.getValue();
-              if (claimValue instanceof final Collection<?> collection) {
-                return collection.stream()
-                    .map(value -> new UserTokenClaim(claimName, value.toString()));
-              } else {
-                return Stream.of(new UserTokenClaim(claimName, claimValue.toString()));
+
+    return mappingState.getAll().stream()
+        .filter(
+            persistedMapping -> {
+              final var claimValue = JsonPath.compile(persistedMapping.getClaimName()).read(claims);
+              if (claimValue instanceof final Collection<?> claimValues) {
+                return claimValues.contains(persistedMapping.getClaimValue());
               }
-            })
-        .map((claim) -> mappingState.get(claim.claimName(), claim.claimValue()))
-        .mapMulti(Optional::ifPresent);
+              return persistedMapping.getClaimValue().equals(claimValue);
+            });
   }
 
   public static final class AuthorizationRequest {
