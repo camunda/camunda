@@ -17,7 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
-import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -56,8 +56,8 @@ class MappingAuthorizationIT {
   private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(15);
 
   @UserDefinition
-  private static final User ADMIN_USER =
-      new User(
+  private static final TestUser ADMIN_USER =
+      new TestUser(
           ADMIN,
           DEFAULT_PASSWORD,
           List.of(
@@ -65,12 +65,13 @@ class MappingAuthorizationIT {
               new Permissions(MAPPING_RULE, READ, List.of("*"))));
 
   @UserDefinition
-  private static final User RESTRICTED_USER =
-      new User(
+  private static final TestUser RESTRICTED_USER =
+      new TestUser(
           RESTRICTED, DEFAULT_PASSWORD, List.of(new Permissions(MAPPING_RULE, READ, List.of("*"))));
 
   @UserDefinition
-  private static final User UNAUTHORIZED_USER = new User(UNAUTHORIZED, DEFAULT_PASSWORD, List.of());
+  private static final TestUser UNAUTHORIZED_USER =
+      new TestUser(UNAUTHORIZED, DEFAULT_PASSWORD, List.of());
 
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 

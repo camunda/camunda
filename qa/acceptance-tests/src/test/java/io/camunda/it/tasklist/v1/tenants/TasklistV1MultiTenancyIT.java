@@ -17,7 +17,7 @@ import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
-import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -46,8 +46,8 @@ public class TasklistV1MultiTenancyIT {
   private static final String PROCESS_DEFINITION_ID_2 = "bpm_variable_test";
 
   @UserDefinition
-  private static final User ADMIN_USER =
-      new User(
+  private static final TestUser ADMIN_USER =
+      new TestUser(
           ADMIN_USER_NAME,
           ADMIN_USER_PASSWORD,
           List.of(
@@ -70,9 +70,12 @@ public class TasklistV1MultiTenancyIT {
               new Permissions(ResourceType.USER, PermissionType.CREATE, List.of("*")),
               new Permissions(ResourceType.AUTHORIZATION, PermissionType.UPDATE, List.of("*"))));
 
-  @UserDefinition private static final User USER1 = new User(USERNAME_1, PASSWORD, List.of());
+  @UserDefinition
+  private static final TestUser USER1 = new TestUser(USERNAME_1, PASSWORD, List.of());
 
-  @UserDefinition private static final User USER2 = new User(USERNAME_2, PASSWORD, List.of());
+  @UserDefinition
+  private static final TestUser USER2 = new TestUser(USERNAME_2, PASSWORD, List.of());
+
   private static long processDefinitionKey1;
   private static long processDefinitionKey2;
 

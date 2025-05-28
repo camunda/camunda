@@ -22,7 +22,7 @@ import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
-import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
@@ -61,8 +61,8 @@ public class TasklistV1ApiGroupPermissionsIT {
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
   @UserDefinition
-  private static final User ADMIN =
-      new User(
+  private static final TestUser ADMIN =
+      new TestUser(
           ADMIN_USERNAME,
           ADMIN_USERNAME,
           List.of(
@@ -73,12 +73,12 @@ public class TasklistV1ApiGroupPermissionsIT {
               new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*"))));
 
   @UserDefinition
-  private static final User AUTHORIZED_USER =
-      new User(AUTHORIZED_USERNAME, AUTHORIZED_USERNAME, List.of());
+  private static final TestUser AUTHORIZED_USER =
+      new TestUser(AUTHORIZED_USERNAME, AUTHORIZED_USERNAME, List.of());
 
   @UserDefinition
-  private static final User UNAUTHORIZED_USER =
-      new User(UNAUTHORIZED_USERNAME, UNAUTHORIZED_USERNAME, List.of());
+  private static final TestUser UNAUTHORIZED_USER =
+      new TestUser(UNAUTHORIZED_USERNAME, UNAUTHORIZED_USERNAME, List.of());
 
   private static long processDefinitionKey;
   private static long taskKey;

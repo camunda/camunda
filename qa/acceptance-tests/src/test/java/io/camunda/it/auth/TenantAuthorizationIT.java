@@ -17,7 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
-import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -60,8 +60,8 @@ class TenantAuthorizationIT {
   private static final String UNAUTHORIZED = "unauthorizedUser";
 
   @UserDefinition
-  private static final User ADMIN_USER =
-      new User(
+  private static final TestUser ADMIN_USER =
+      new TestUser(
           ADMIN,
           PASSWORD,
           List.of(
@@ -69,14 +69,14 @@ class TenantAuthorizationIT {
               new Permissions(TENANT, READ, List.of("*"))));
 
   @UserDefinition
-  private static final User RESTRICTED_USER =
-      new User(
+  private static final TestUser RESTRICTED_USER =
+      new TestUser(
           RESTRICTED,
           PASSWORD,
           List.of(new Permissions(TENANT, READ, List.of("tenant1", "tenant2"))));
 
   @UserDefinition
-  private static final User UNAUTHORIZED_USER = new User(UNAUTHORIZED, PASSWORD, List.of());
+  private static final TestUser UNAUTHORIZED_USER = new TestUser(UNAUTHORIZED, PASSWORD, List.of());
 
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
   private boolean initialized;

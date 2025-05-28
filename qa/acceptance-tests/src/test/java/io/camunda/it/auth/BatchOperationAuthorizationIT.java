@@ -30,7 +30,7 @@ import io.camunda.client.api.search.enums.BatchOperationItemState;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
-import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -65,8 +65,8 @@ class BatchOperationAuthorizationIT {
   private static final String FORBIDDEN = "forbiddenUser";
 
   @UserDefinition
-  private static final User ADMIN_USER =
-      new User(
+  private static final TestUser ADMIN_USER =
+      new TestUser(
           ADMIN,
           "password",
           List.of(
@@ -78,8 +78,8 @@ class BatchOperationAuthorizationIT {
               new Permissions(BATCH_OPERATION, READ, List.of("*"))));
 
   @UserDefinition
-  private static final User RESTRICTED_USER =
-      new User(
+  private static final TestUser RESTRICTED_USER =
+      new TestUser(
           RESTRICTED,
           "password",
           List.of(
@@ -92,8 +92,8 @@ class BatchOperationAuthorizationIT {
                   PROCESS_DEFINITION, UPDATE_PROCESS_INSTANCE, List.of(SERVICE_TASKS_V_1))));
 
   @UserDefinition
-  private static final User RESTRICTED_CANCEL_USER =
-      new User(
+  private static final TestUser RESTRICTED_CANCEL_USER =
+      new TestUser(
           RESTRICTED_CANCEL,
           "password",
           List.of(
@@ -104,8 +104,8 @@ class BatchOperationAuthorizationIT {
                   PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of(SERVICE_TASKS_V_1))));
 
   @UserDefinition
-  private static final User RESTRICTED_READ_USER =
-      new User(
+  private static final TestUser RESTRICTED_READ_USER =
+      new TestUser(
           RESTRICTED_READ,
           "password",
           List.of(
@@ -113,7 +113,7 @@ class BatchOperationAuthorizationIT {
                   BATCH_OPERATION, CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE, List.of("*"))));
 
   @UserDefinition
-  private static final User FORBIDDEN_USER = new User(FORBIDDEN, "password", List.of());
+  private static final TestUser FORBIDDEN_USER = new TestUser(FORBIDDEN, "password", List.of());
 
   private long serviceTaskV1Key;
 

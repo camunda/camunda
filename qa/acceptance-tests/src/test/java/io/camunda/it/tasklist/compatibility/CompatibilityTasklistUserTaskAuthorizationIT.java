@@ -14,7 +14,7 @@ import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
-import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
@@ -60,8 +60,8 @@ public class CompatibilityTasklistUserTaskAuthorizationIT {
   @AutoClose private static TestRestTasklistClient tasklistRestClient;
 
   @UserDefinition
-  private static final User ADMIN_USER =
-      new User(
+  private static final TestUser ADMIN_USER =
+      new TestUser(
           ADMIN_USER_NAME,
           ADMIN_USER_PASSWORD,
           List.of(
@@ -85,12 +85,12 @@ public class CompatibilityTasklistUserTaskAuthorizationIT {
               new Permissions(ResourceType.AUTHORIZATION, PermissionType.UPDATE, List.of("*"))));
 
   @UserDefinition
-  private static final User TEST_USER_NO_PERMISSIONS =
-      new User(TEST_USER_NAME_NO_PERMISSION, TEST_USER_PASSWORD, List.of());
+  private static final TestUser TEST_USER_NO_PERMISSIONS =
+      new TestUser(TEST_USER_NAME_NO_PERMISSION, TEST_USER_PASSWORD, List.of());
 
   @UserDefinition
-  private static final User TEST_USER_WITH_PERMISSIONS =
-      new User(
+  private static final TestUser TEST_USER_WITH_PERMISSIONS =
+      new TestUser(
           TEST_USER_NAME_WITH_PERMISSION,
           TEST_USER_PASSWORD,
           List.of(

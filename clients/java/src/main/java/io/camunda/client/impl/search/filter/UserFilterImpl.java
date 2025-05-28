@@ -50,19 +50,23 @@ public class UserFilterImpl extends TypedSearchRequestPropertyProvider<UserFilte
   }
 
   @Override
+  public UserFilter name(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setName(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public UserFilter email(final String email) {
     return email(b -> b.eq(email));
   }
 
   @Override
-  public UserFilter name(final Consumer<StringProperty> fn) {
-    filter.setName(provideSearchRequestProperty(fn));
-    return this;
-  }
-
-  @Override
   public UserFilter email(final Consumer<StringProperty> fn) {
-    filter.setEmail(provideSearchRequestProperty(fn));
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setEmail(provideSearchRequestProperty(property));
     return this;
   }
 

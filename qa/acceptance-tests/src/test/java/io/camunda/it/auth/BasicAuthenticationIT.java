@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.auth.Authenticated;
-import io.camunda.qa.util.auth.User;
+import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -41,7 +41,7 @@ public class BasicAuthenticationIT {
 
   private static final String USERNAME = "correct_username";
   private static final String PASSWORD = "correct_password";
-  @UserDefinition private static final User USER = new User(USERNAME, PASSWORD, List.of());
+  @UserDefinition private static final TestUser USER = new TestUser(USERNAME, PASSWORD, List.of());
   private static CamundaClient camundaClient;
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
