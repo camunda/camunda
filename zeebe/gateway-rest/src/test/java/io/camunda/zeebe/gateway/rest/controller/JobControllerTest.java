@@ -684,8 +684,7 @@ public class JobControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    // TODO: provide operation reference: https://github.com/camunda/camunda/issues/32270
-    Mockito.verify(jobServices).updateJob(1L, new UpdateJobChangeset(5, 1000L), null);
+    Mockito.verify(jobServices).updateJob(1L, null, new UpdateJobChangeset(5, 1000L));
   }
 
   @Test
@@ -713,8 +712,7 @@ public class JobControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    // TODO: provide operation reference: https://github.com/camunda/camunda/issues/32270
-    Mockito.verify(jobServices).updateJob(1L, new UpdateJobChangeset(5, null), null);
+    Mockito.verify(jobServices).updateJob(1L, null, new UpdateJobChangeset(5, null));
   }
 
   @Test
@@ -741,8 +739,35 @@ public class JobControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    // TODO: provide operation reference: https://github.com/camunda/camunda/issues/32270
-    Mockito.verify(jobServices).updateJob(1L, new UpdateJobChangeset(null, 1000L), null);
+    Mockito.verify(jobServices).updateJob(1L, null, new UpdateJobChangeset(null, 1000L));
+  }
+
+  @Test
+  void shouldUpdateJobWithOperationReference() {
+    // given
+    when(jobServices.updateJob(anyLong(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    final var request =
+        """
+            {
+              "changeset": {
+                "timeout": 1000
+              },
+              "operationReference": 12345678
+            }""";
+    // when/then
+    webClient
+        .patch()
+        .uri(JOBS_BASE_URL + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(jobServices).updateJob(1L, 12345678L, new UpdateJobChangeset(null, 1000L));
   }
 
   @Test
