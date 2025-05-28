@@ -20,7 +20,7 @@ public class BrokerResumeBatchOperationRequest
       new BatchOperationLifecycleManagementRecord();
 
   public BrokerResumeBatchOperationRequest() {
-    super(ValueType.BATCH_OPERATION_EXECUTION, BatchOperationIntent.RESUME);
+    super(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT, BatchOperationIntent.RESUME);
   }
 
   public BrokerResumeBatchOperationRequest setBatchOperationKey(final long batchOperationKey) {
