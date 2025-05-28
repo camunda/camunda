@@ -31,10 +31,10 @@ import org.mockito.Mockito;
 public class DbMigratorImplTest {
 
   private static final String CURRENT_VERSION = "8.8.0";
-  MutableProcessingState mockProcessingState;
-  MigrationTaskContextImpl context;
-  ArrayList<MigrationTask> migrations = new ArrayList<>();
-  DbMigratorImpl sut;
+  private MutableProcessingState mockProcessingState;
+  private MigrationTaskContextImpl context;
+  private final ArrayList<MigrationTask> migrations = new ArrayList<>();
+  private DbMigratorImpl sut;
 
   @BeforeEach
   public void setup() {
