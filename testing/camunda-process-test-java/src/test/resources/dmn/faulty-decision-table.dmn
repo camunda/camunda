@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:biodi="http://bpmn.io/schema/dmn/biodi/2.0" id="definition_complex" name="DRD" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Web Modeler" exporterVersion="1e1176c" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.7.0">
+  <decision id="decision_color_happiness" name="Color Happiness">
+    <decisionTable id="DecisionTable_1esy623">
+      <input id="Input_1" label="color">
+        <inputExpression id="InputExpression_1" typeRef="string">
+          <text>color</text>
+        </inputExpression>
+      </input>
+      <output id="Output_1" label="color_happiness" name="color_happiness" typeRef="number" />
+      <rule id="DecisionRule_11bo7x9">
+        <inputEntry id="UnaryTests_0x9mhws">
+          <text>"red"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1hhcg0b">
+          <text>15</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0zeptnx">
+        <inputEntry id="UnaryTests_0ebiywx">
+          <text>"green"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_13futrr">
+          <text>90</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_010pdj4">
+        <inputEntry id="UnaryTests_0ptat5a">
+          <text>"blue"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_102yfvl">
+          <text>50</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="decision_overall_happiness" name="Determine Overall Happiness">
+    <informationRequirement id="InformationRequirement_0182tof">
+      <requiredDecision href="#decision_color_happiness" />
+    </informationRequirement>
+    <informationRequirement id="InformationRequirement_1jlp6d0">
+      <requiredDecision href="#decision_language_happiness" />
+    </informationRequirement>
+    <decisionTable id="DecisionTable_1fnl378">
+      <input id="InputClause_010jomw" label="color_happiness">
+        <inputExpression id="LiteralExpression_1goujyk" typeRef="number">
+          <text>decision_color_happiness</text>
+        </inputExpression>
+      </input>
+      <input id="InputClause_05qpdtw" label="language_happiness">
+        <inputExpression id="LiteralExpression_0o941m6" typeRef="number">
+          <text>decision_language_happiness</text>
+        </inputExpression>
+      </input>
+      <output id="OutputClause_0nxcgzf" label="overall_happiness" name="overall_happiness" typeRef="string" />
+      <rule id="DecisionRule_0utdyd7">
+        <inputEntry id="UnaryTests_1yw9taa">
+          <text>15</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0w6vxab">
+          <text>10</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1tenict">
+          <text>"very unhappy"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_1rbszu2">
+        <inputEntry id="UnaryTests_1q6ddxa">
+          <text>15</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_1idb44b">
+          <text>80</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1hc5d8f">
+          <text>"kinda happy"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_00uvg8b">
+        <inputEntry id="UnaryTests_0gsxdc8">
+          <text>90</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0hr88wd">
+          <text>10</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1qybhya">
+          <text>"pretty happy"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_005mb3w">
+        <inputEntry id="UnaryTests_0oqira9">
+          <text>90</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_1y8gokf">
+          <text>80</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0t5tm81">
+          <text>"overwhelmingly happy"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_06vu0ot">
+        <inputEntry id="UnaryTests_0lyp7v7">
+          <text>50</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0t266du">
+          <text>10</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0ebpudg">
+          <text>"somewhat happy"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_00wuip7">
+        <inputEntry id="UnaryTests_1k9bxo3">
+          <text>50</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_10weehb">
+          <text>80</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_01ztkqu">
+          <text>"extremely happy"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="decision_language_happiness" name="Language Happiness">
+    <decisionTable id="DecisionTable_1grwo62">
+      <input id="InputClause_15uu868" label="language">
+        <inputExpression id="LiteralExpression_1rnnaqe" typeRef="string">
+          <text>language</text>
+        </inputExpression>
+      </input>
+      <output id="OutputClause_10ett6q" label="language_happiness" name="language_happiness" typeRef="number" biodi:width="192" />
+      <rule id="DecisionRule_1h5hb7v">
+        <inputEntry id="UnaryTests_0ki87j0">
+          <text>"german"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0iigyjx">
+          <text>10</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0zfesak">
+        <inputEntry id="UnaryTests_10zcglw">
+          <text>"english"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0mzaalu">
+          <text>80</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0pr78b3">
+        <inputEntry id="UnaryTests_1xmhdgb">
+          <text>"german"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0jtjwiu">
+          <text>10</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram>
+      <dmndi:DMNShape dmnElementRef="decision_color_happiness">
+        <dc:Bounds height="80" width="180" x="160" y="290" />
+      </dmndi:DMNShape>
+      <dmndi:DMNEdge id="DMNEdge_1149owv" dmnElementRef="InformationRequirement_0182tof">
+        <di:waypoint x="250" y="290" />
+        <di:waypoint x="370" y="180" />
+        <di:waypoint x="370" y="160" />
+      </dmndi:DMNEdge>
+      <dmndi:DMNEdge id="DMNEdge_00g50d4" dmnElementRef="InformationRequirement_1jlp6d0">
+        <di:waypoint x="540" y="290" />
+        <di:waypoint x="430" y="180" />
+        <di:waypoint x="430" y="160" />
+      </dmndi:DMNEdge>
+      <dmndi:DMNShape id="DMNShape_1nupidt" dmnElementRef="decision_overall_happiness">
+        <dc:Bounds height="80" width="180" x="310" y="80" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_08eihc8" dmnElementRef="decision_language_happiness">
+        <dc:Bounds height="80" width="180" x="450" y="290" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>
