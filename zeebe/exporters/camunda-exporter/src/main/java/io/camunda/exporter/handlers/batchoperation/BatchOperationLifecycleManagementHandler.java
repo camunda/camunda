@@ -29,7 +29,9 @@ public class BatchOperationLifecycleManagementHandler
 
   private static final Set<Intent> EXPORTABLE_INTENTS =
       Set.of(
-          BatchOperationIntent.CANCELED, BatchOperationIntent.PAUSED, BatchOperationIntent.RESUMED);
+          BatchOperationIntent.CANCELED,
+          BatchOperationIntent.SUSPENDED,
+          BatchOperationIntent.RESUMED);
   private final String indexName;
 
   public BatchOperationLifecycleManagementHandler(final String indexName) {
@@ -71,8 +73,8 @@ public class BatchOperationLifecycleManagementHandler
       entity
           .setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
           .setState(BatchOperationState.CANCELED);
-    } else if (record.getIntent().equals(BatchOperationIntent.PAUSED)) {
-      entity.setEndDate(null).setState(BatchOperationState.PAUSED);
+    } else if (record.getIntent().equals(BatchOperationIntent.SUSPENDED)) {
+      entity.setEndDate(null).setState(BatchOperationState.SUSPENDED);
     } else if (record.getIntent().equals(BatchOperationIntent.RESUMED)) {
       entity.setEndDate(null).setState(BatchOperationState.ACTIVE);
     }

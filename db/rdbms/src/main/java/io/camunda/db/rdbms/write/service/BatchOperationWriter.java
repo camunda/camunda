@@ -122,10 +122,10 @@ public class BatchOperationWriter {
         batchOperationId, BatchOperationItemState.ACTIVE, BatchOperationItemState.CANCELED);
   }
 
-  public void pause(final String batchOperationId) {
+  public void suspend(final String batchOperationId) {
     updateCompleted(
         batchOperationId,
-        new BatchOperationUpdateDto(batchOperationId, BatchOperationState.PAUSED, null));
+        new BatchOperationUpdateDto(batchOperationId, BatchOperationState.SUSPENDED, null));
   }
 
   public void resume(final String batchOperationId) {

@@ -254,7 +254,7 @@ public class BatchOperationEntity extends AbstractExporterEntity<BatchOperationE
   public enum BatchOperationState {
     CREATED,
     ACTIVE,
-    PAUSED,
+    SUSPENDED,
     COMPLETED,
     COMPLETED_WITH_ERRORS,
     CANCELED,

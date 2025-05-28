@@ -98,27 +98,27 @@ public final class BatchOperationMultiPartitionTest {
   }
 
   @Test
-  public void shouldPauseOnAllPartitions() {
+  public void shouldSuspendOnAllPartitions() {
     // given
     final long batchOperationKey = createDistributedBatchOperation();
 
     // when
-    engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).pause();
+    engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).suspend();
 
     assertThatCommandIsDistributedCorrectly(
         ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
-        BatchOperationIntent.PAUSE,
-        BatchOperationIntent.PAUSED);
+        BatchOperationIntent.SUSPEND,
+        BatchOperationIntent.SUSPENDED);
 
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       assertThat(
               RecordingExporter.batchOperationLifecycleRecords()
                   .withBatchOperationKey(batchOperationKey)
                   .withPartitionId(partitionId)
-                  .limit(record -> record.getIntent().equals(BatchOperationIntent.PAUSED))
+                  .limit(record -> record.getIntent().equals(BatchOperationIntent.SUSPENDED))
                   .collect(Collectors.toList()))
           .extracting(Record::getIntent)
-          .containsExactly(BatchOperationIntent.PAUSE, BatchOperationIntent.PAUSED);
+          .containsExactly(BatchOperationIntent.SUSPEND, BatchOperationIntent.SUSPENDED);
     }
   }
 
@@ -126,7 +126,7 @@ public final class BatchOperationMultiPartitionTest {
   public void shouldResumeOnAllPartitions() {
     // given
     final long batchOperationKey = createDistributedBatchOperation();
-    pauseDistributedBatchOperation(batchOperationKey);
+    suspendDistributedBatchOperation(batchOperationKey);
 
     // when
     engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).resume();
@@ -170,8 +170,8 @@ public final class BatchOperationMultiPartitionTest {
     return batchOperationKey;
   }
 
-  private void pauseDistributedBatchOperation(final long batchOperationKey) {
-    engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).pause();
+  private void suspendDistributedBatchOperation(final long batchOperationKey) {
+    engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).suspend();
 
     assertThat(
             RecordingExporter.records()

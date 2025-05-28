@@ -19,7 +19,7 @@ import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import org.immutables.value.Value;
 
-/** Will be used by lifecycle operations like cancel, pause and resume of batch operations. */
+/** Will be used by lifecycle operations like cancel, suspend and resume of batch operations. */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableBatchOperationLifecycleManagementRecordValue.Builder.class)
 public interface BatchOperationLifecycleManagementRecordValue

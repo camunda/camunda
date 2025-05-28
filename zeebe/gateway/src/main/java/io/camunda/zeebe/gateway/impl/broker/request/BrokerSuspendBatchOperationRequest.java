@@ -14,16 +14,16 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import org.agrona.DirectBuffer;
 
-public class BrokerPauseBatchOperationRequest
+public class BrokerSuspendBatchOperationRequest
     extends BrokerExecuteCommand<BatchOperationLifecycleManagementRecord> {
 
   BatchOperationExecutionRecord requestDto = new BatchOperationExecutionRecord();
 
-  public BrokerPauseBatchOperationRequest() {
-    super(ValueType.BATCH_OPERATION_EXECUTION, BatchOperationIntent.PAUSE);
+  public BrokerSuspendBatchOperationRequest() {
+    super(ValueType.BATCH_OPERATION_EXECUTION, BatchOperationIntent.SUSPEND);
   }
 
-  public BrokerPauseBatchOperationRequest setBatchOperationKey(final long batchOperationKey) {
+  public BrokerSuspendBatchOperationRequest setBatchOperationKey(final long batchOperationKey) {
     requestDto.setBatchOperationKey(batchOperationKey);
     return this;
   }

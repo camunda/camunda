@@ -89,8 +89,8 @@ public final class BatchOperationSetupProcessors {
                 keyGenerator))
         .onCommand(
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
-            BatchOperationIntent.PAUSE,
-            new BatchOperationPauseProcessor(
+            BatchOperationIntent.SUSPEND,
+            new BatchOperationSuspendProcessor(
                 writers,
                 commandDistributionBehavior,
                 processingState,

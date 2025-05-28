@@ -22,8 +22,8 @@ import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelBatchOperationRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerPauseBatchOperationRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerResumeBatchOperationRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerSuspendBatchOperationRequest;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
@@ -96,7 +96,7 @@ public final class BatchOperationServices
     LOGGER.debug("Suspending batch operation with id '{}'", batchOperationId);
 
     final var brokerRequest =
-        new BrokerPauseBatchOperationRequest()
+        new BrokerSuspendBatchOperationRequest()
             .setBatchOperationKey(getBatchOperationKey(batchOperationId));
 
     return sendBrokerRequest(brokerRequest);
