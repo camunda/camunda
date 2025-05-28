@@ -1,6 +1,7 @@
 zeebe:
   broker:
     experimental:
+      versionCheckRestrictionEnabled: false
       enablePriorityElection: true
       raft:
         requestTimeout: 10s

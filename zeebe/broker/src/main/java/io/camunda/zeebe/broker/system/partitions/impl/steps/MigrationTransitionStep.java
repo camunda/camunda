@@ -51,7 +51,10 @@ public class MigrationTransitionStep implements PartitionTransitionStep {
             InstantSource.system());
 
     final var dbMigrator =
-        new DbMigratorImpl(new ClusterContextImpl(context.getPartitionCount()), processingState);
+        new DbMigratorImpl(
+            context.getBrokerCfg().getExperimental().isVersionCheckRestrictionEnabled(),
+            new ClusterContextImpl(context.getPartitionCount()),
+            processingState);
     try {
       dbMigrator.runMigrations();
       zeebeDbContext.getCurrentTransaction().commit();
