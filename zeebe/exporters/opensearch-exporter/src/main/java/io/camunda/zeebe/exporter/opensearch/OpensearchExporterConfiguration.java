@@ -105,6 +105,7 @@ public class OpensearchExporterConfiguration {
       case COMPENSATION_SUBSCRIPTION -> index.compensationSubscription;
       case MESSAGE_CORRELATION -> index.messageCorrelation;
       case AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION -> index.adHocSubProcessActivityActivation;
+      case ASYNC_REQUEST_METADATA -> index.asyncRequestMetadata;
       default -> false;
     };
   }
@@ -205,6 +206,8 @@ public class OpensearchExporterConfiguration {
     public boolean batchOperationExecution = false;
     public boolean batchOperationLifecycleManagement = false;
     public boolean batchOperationPartitionLifecycle = false;
+
+    public boolean asyncRequestMetadata = false;
 
     // index settings
     private Integer numberOfShards = null;
@@ -312,6 +315,8 @@ public class OpensearchExporterConfiguration {
           + user
           + ", authorization="
           + authorization
+          + ", asyncRequestMetadata="
+          + asyncRequestMetadata
           + '}';
     }
   }
