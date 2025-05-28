@@ -7,11 +7,11 @@
  */
 package io.camunda.service;
 
+import com.jayway.jsonpath.JsonPath;
 import io.camunda.search.clients.MappingSearchClient;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.ErrorMessages;
-import io.camunda.search.filter.MappingFilter.Claim;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -118,25 +118,18 @@ public class MappingServices
     return sendBrokerRequest(new BrokerMappingDeleteRequest().setMappingId(mappingId));
   }
 
-  public List<MappingEntity> getMatchingMappings(final Map<String, Object> claims) {
-    final List<Claim> claimFilters =
-        claims.entrySet().stream()
-            .flatMap(
-                claimEntry ->
-                    flattenClaimValue(claimEntry.getValue())
-                        .map(value -> new Claim(claimEntry.getKey(), value)))
-            .toList();
-    return findAll(MappingQuery.of(q -> q.filter(f -> f.claims(claimFilters))));
-  }
-
-  private static Stream<String> flattenClaimValue(final Object value) {
-    if (value == null) {
-      return Stream.of();
-    }
-    if (value instanceof final Collection<?> collection) {
-      return collection.stream().flatMap(MappingServices::flattenClaimValue);
-    }
-    return Stream.of(String.valueOf(value));
+  public Stream<MappingEntity> getMatchingMappings(final Map<String, Object> claims) {
+    final var mappingRules = findAll(MappingQuery.of(q -> q));
+    return mappingRules.stream()
+        .filter(
+            mappingRule -> {
+              final var result = JsonPath.compile(mappingRule.claimName()).read(claims);
+              if (result instanceof final Collection<?> values) {
+                return values.contains(mappingRule.claimValue());
+              } else {
+                return mappingRule.claimValue().equals(result);
+              }
+            });
   }
 
   public record MappingDTO(String claimName, String claimValue, String name, String mappingId) {}
