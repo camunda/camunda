@@ -24,7 +24,8 @@ public class BatchOperationLifecycleManagementExportHandler
       Set.of(
           BatchOperationIntent.CANCELED,
           BatchOperationIntent.SUSPENDED,
-          BatchOperationIntent.RESUMED);
+          BatchOperationIntent.RESUMED,
+          BatchOperationIntent.COMPLETED);
 
   private final BatchOperationWriter batchOperationWriter;
 
@@ -48,6 +49,9 @@ public class BatchOperationLifecycleManagementExportHandler
           batchOperationId, DateUtil.toOffsetDateTime(record.getTimestamp()));
     } else if (record.getIntent().equals(BatchOperationIntent.SUSPENDED)) {
       batchOperationWriter.suspend(batchOperationId);
+    } else if (record.getIntent().equals(BatchOperationIntent.COMPLETED)) {
+      batchOperationWriter.finish(
+          batchOperationId, DateUtil.toOffsetDateTime(record.getTimestamp()));
     } else if (record.getIntent().equals(BatchOperationIntent.RESUMED)) {
       batchOperationWriter.resume(batchOperationId);
     }

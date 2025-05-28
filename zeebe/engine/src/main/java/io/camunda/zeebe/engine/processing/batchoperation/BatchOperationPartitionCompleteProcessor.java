@@ -15,9 +15,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.slf4j.Logger;
@@ -107,10 +106,10 @@ public final class BatchOperationPartitionCompleteProcessor
           LOGGER.debug(
               "All partitions completed, appending COMPLETED event for batch operation {}",
               batchOperationKey);
-          final var batchExecute = new BatchOperationExecutionRecord();
-          batchExecute.setBatchOperationKey(batchOperationKey);
+          final var batchComplete = new BatchOperationLifecycleManagementRecord();
+          batchComplete.setBatchOperationKey(batchOperationKey);
           stateWriter.appendFollowUpEvent(
-              batchOperationKey, BatchOperationExecutionIntent.COMPLETED, batchExecute);
+              batchOperationKey, BatchOperationIntent.COMPLETED, batchComplete);
         }
       }
     }

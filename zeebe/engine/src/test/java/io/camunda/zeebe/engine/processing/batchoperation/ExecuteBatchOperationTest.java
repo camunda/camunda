@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
@@ -28,22 +29,24 @@ public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest 
     final var batchOperationKey =
         createNewCancelProcessInstanceBatchOperation(processInstanceKeys, claims);
 
-    // then we have executed and completed event
+    // then we have a EXECUTED event and a and a follow-up command to execute again
     assertThat(
             RecordingExporter.batchOperationExecutionRecords()
+                .withBatchOperationKey(batchOperationKey))
+        .extracting(Record::getIntent)
+        .containsSequence(
+            BatchOperationExecutionIntent.EXECUTE,
+            BatchOperationExecutionIntent.EXECUTING,
+            BatchOperationExecutionIntent.EXECUTED,
+            BatchOperationExecutionIntent.EXECUTE);
+
+    // then we have completed event
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
                 .withBatchOperationKey(batchOperationKey)
                 .onlyEvents())
         .extracting(Record::getIntent)
-        .containsSequence(
-            BatchOperationExecutionIntent.EXECUTED, BatchOperationExecutionIntent.COMPLETED);
-
-    // and a follow op up command to execute again
-    assertThat(
-            RecordingExporter.batchOperationExecutionRecords()
-                .withBatchOperationKey(batchOperationKey)
-                .onlyCommands())
-        .extracting(Record::getIntent)
-        .containsSequence(BatchOperationExecutionIntent.EXECUTE);
+        .containsSequence(BatchOperationIntent.COMPLETED);
 
     // and we have several cancel process commands
     processInstanceKeys.forEach(
@@ -77,7 +80,6 @@ public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest 
             RecordingExporter.batchOperationExecutionRecords()
                 .withBatchOperationKey(batchOperationKey))
         .extracting(Record::getIntent)
-        .doesNotContain(
-            BatchOperationExecutionIntent.EXECUTED, BatchOperationExecutionIntent.COMPLETED);
+        .doesNotContain(BatchOperationExecutionIntent.EXECUTED);
   }
 }
