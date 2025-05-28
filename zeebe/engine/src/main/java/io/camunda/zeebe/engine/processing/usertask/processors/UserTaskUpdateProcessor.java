@@ -117,27 +117,27 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
               "No VariableDocumentState found for elementInstanceKey={} during task update. "
                   + "Skipping variable merge, only writing 'USER_TASK.UPDATED'.",
               userTaskRecord.getElementInstanceKey());
-
           stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
-        } else {
-          final var variableDocumentState = optionalVariableDocumentState.get();
-          final var variableDocumentRecord = variableDocumentState.getRecord();
-          mergeVariables(userTaskRecord, variableDocumentRecord);
-
-          // Write follow-up events
-          stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
-          final long variableDocumentKey = variableDocumentState.getKey();
-          stateWriter.appendFollowUpEvent(
-              variableDocumentKey, VariableDocumentIntent.UPDATED, variableDocumentRecord);
-
-          responseWriter.writeResponse(
-              variableDocumentKey,
-              VariableDocumentIntent.UPDATED,
-              variableDocumentRecord,
-              ValueType.VARIABLE_DOCUMENT,
-              metadata.getRequestId(),
-              metadata.getRequestStreamId());
+          return;
         }
+
+        final var variableDocumentState = optionalVariableDocumentState.get();
+        final var variableDocumentRecord = variableDocumentState.getRecord();
+        mergeVariables(userTaskRecord, variableDocumentRecord);
+
+        // Write follow-up events
+        stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
+        final long variableDocumentKey = variableDocumentState.getKey();
+        stateWriter.appendFollowUpEvent(
+            variableDocumentKey, VariableDocumentIntent.UPDATED, variableDocumentRecord);
+
+        responseWriter.writeResponse(
+            variableDocumentKey,
+            VariableDocumentIntent.UPDATED,
+            variableDocumentRecord,
+            ValueType.VARIABLE_DOCUMENT,
+            metadata.getRequestId(),
+            metadata.getRequestStreamId());
       }
       default ->
           throw new IllegalArgumentException(
