@@ -90,7 +90,7 @@ class ProcessCacheImplIT {
 
     // then
     final var expectedCachedProcessEntity =
-        new CachedProcessEntity("test", "v1", List.of("Banana", "Cherry", "apple"));
+        new CachedProcessEntity("test", "v1", null, List.of("Banana", "Cherry", "apple"));
     assertThat(process).isPresent().get().isEqualTo(expectedCachedProcessEntity);
   }
 

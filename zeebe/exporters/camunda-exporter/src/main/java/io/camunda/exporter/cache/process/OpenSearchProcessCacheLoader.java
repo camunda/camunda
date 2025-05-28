@@ -37,6 +37,7 @@ public class OpenSearchProcessCacheLoader implements CacheLoader<Long, CachedPro
       final var processEntity = response.source();
       return new CachedProcessEntity(
           processEntity.getName(),
+          Integer.toString(processEntity.getVersion()),
           processEntity.getVersionTag(),
           ProcessCacheUtil.extractCallActivityIdsFromDiagram(processEntity));
     } else {
