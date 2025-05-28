@@ -1,5 +1,5 @@
 # description: Visual regression tests for Operate
-# test location:
+# test location: operate/client/e2e-playwright
 # owner: Core Features
 name: "[Legacy] Operate / Visual Regression Tests"
 on:

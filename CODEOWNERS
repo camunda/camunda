@@ -90,6 +90,7 @@
 /.github/workflows/operate-ci-data-layer.yml        @camunda/data-layer
 /.github/workflows/operate-test-backup-restore.yml  @camunda/data-layer
 /.github/workflows/operate-test-importer.yml        @camunda/data-layer
+/.github/workflows/operate-run-tests.yml            @camunda/data-layer
 
 # Unit Test Suites
 /operate/common/src/test/java/io/camunda/operate/OperateDataLayersTestSuite.java    @camunda/data-layer
