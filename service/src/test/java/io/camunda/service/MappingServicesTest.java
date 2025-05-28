@@ -19,7 +19,6 @@ import io.camunda.search.clients.MappingSearchClient;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.MappingFilter;
-import io.camunda.search.filter.MappingFilter.Claim;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -211,12 +210,6 @@ public class MappingServicesTest {
     assertThat(query.filter().claimName()).isNull();
     assertThat(query.filter().claimValue()).isNull();
     assertThat(query.filter().name()).isNull();
-    assertThat(query.filter().claims())
-        .containsExactlyInAnyOrder(
-            new Claim("c1", "v1"),
-            new Claim("c2", "v2.1"),
-            new Claim("c2", "v2.2"),
-            new Claim("c3", "300"),
-            new Claim("c4", "true"));
+    assertThat(query.filter().claims()).isNull();
   }
 }

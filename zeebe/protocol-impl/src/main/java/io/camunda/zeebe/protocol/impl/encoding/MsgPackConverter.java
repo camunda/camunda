@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.StreamReadConstraints;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.MappingJsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.protocol.record.JsonSerializable;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -69,12 +70,13 @@ public final class MsgPackConverter {
           .setReuseResourceInParser(false)
           .setStreamReadConstraints(JSON_STREAM_CONSTRAINTS);
   private static final ObjectMapper MESSSAGE_PACK_OBJECT_MAPPER =
-      new ObjectMapper(MESSAGE_PACK_FACTORY);
+      new ObjectMapper(MESSAGE_PACK_FACTORY).registerModule(new JavaTimeModule());
   private static final JsonFactory JSON_FACTORY =
       new MappingJsonFactory()
           .configure(Feature.ALLOW_SINGLE_QUOTES, true)
           .setStreamReadConstraints(JSON_STREAM_CONSTRAINTS);
-  private static final ObjectMapper JSON_OBJECT_MAPPER = new ObjectMapper(JSON_FACTORY);
+  private static final ObjectMapper JSON_OBJECT_MAPPER =
+      new ObjectMapper(JSON_FACTORY).registerModule(new JavaTimeModule());
 
   // prevent instantiation
   private MsgPackConverter() {}

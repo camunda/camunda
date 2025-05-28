@@ -22,7 +22,6 @@ import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -69,9 +68,9 @@ public class CamundaOAuthPrincipalService {
 
   public OAuthContext loadOAuthContext(final Map<String, Object> claims)
       throws OAuth2AuthenticationException {
-    final List<MappingEntity> mappings = mappingServices.getMatchingMappings(claims);
+    final var mappings = mappingServices.getMatchingMappings(claims);
     final Set<String> mappingIds =
-        mappings.stream().map(MappingEntity::mappingId).collect(Collectors.toSet());
+        mappings.map(MappingEntity::mappingId).collect(Collectors.toSet());
     if (mappingIds.isEmpty()) {
       LOG.debug("No mappings found for these claims: {}", claims);
     }

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
+import java.util.Collection;
 import java.util.Optional;
 
 public interface MappingState {
@@ -15,4 +16,6 @@ public interface MappingState {
   Optional<PersistedMapping> get(final String mappingId);
 
   Optional<PersistedMapping> get(final String claimName, final String claimValue);
+
+  Collection<PersistedMapping> getAll();
 }

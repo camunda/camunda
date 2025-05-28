@@ -16,6 +16,8 @@ import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import java.util.Collection;
+import java.util.LinkedList;
 import java.util.Optional;
 
 public class DbMappingState implements MutableMappingState {
@@ -139,5 +141,12 @@ public class DbMappingState implements MutableMappingState {
     }
 
     return Optional.of(persistedMapping.copy());
+  }
+
+  @Override
+  public Collection<PersistedMapping> getAll() {
+    final var mappings = new LinkedList<PersistedMapping>();
+    mappingColumnFamily.forEach(mapping -> mappings.add(mapping.copy()));
+    return mappings;
   }
 }

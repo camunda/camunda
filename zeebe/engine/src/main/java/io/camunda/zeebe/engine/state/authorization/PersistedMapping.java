@@ -7,13 +7,15 @@
  */
 package io.camunda.zeebe.engine.state.authorization;
 
+import io.camunda.security.auth.MappingRuleMatcher;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
-public class PersistedMapping extends UnpackedObject implements DbValue {
+public class PersistedMapping extends UnpackedObject
+    implements DbValue, MappingRuleMatcher.MappingRule {
 
   private final LongProperty mappingKeyProp = new LongProperty("mappingKey", -1L);
   private final StringProperty claimNameProp = new StringProperty("claimName", "");
@@ -79,5 +81,20 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
   public PersistedMapping setMappingId(final String mappingId) {
     mappingIdProp.setValue(mappingId);
     return this;
+  }
+
+  @Override
+  public String mappingId() {
+    return getMappingId();
+  }
+
+  @Override
+  public String claimName() {
+    return getClaimName();
+  }
+
+  @Override
+  public String claimValue() {
+    return getClaimValue();
   }
 }

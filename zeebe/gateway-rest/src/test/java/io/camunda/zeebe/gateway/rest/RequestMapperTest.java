@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIM_PREFIX;
+import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -100,16 +100,17 @@ class RequestMapperTest {
     setJwtAuthenticationInContext(sub1, aud1);
 
     // when
-    final var claims = RequestMapper.getAuthentication().claims();
+    final var claims =
+        (Map<String, Object>) RequestMapper.getAuthentication().claims().get(USER_TOKEN_CLAIMS);
 
     // then
     assertNotNull(claims);
-    assertThat(claims).containsKey(USER_TOKEN_CLAIM_PREFIX + "sub");
-    assertThat(claims).containsKey(USER_TOKEN_CLAIM_PREFIX + "aud");
-    assertThat(claims).containsKey(USER_TOKEN_CLAIM_PREFIX + "groups");
-    assertThat(claims.get(USER_TOKEN_CLAIM_PREFIX + "sub")).isEqualTo(sub1);
-    assertThat(claims.get(USER_TOKEN_CLAIM_PREFIX + "aud")).isEqualTo(aud1);
-    assertThat(claims.get(USER_TOKEN_CLAIM_PREFIX + "groups")).isEqualTo(List.of("g1", "g2"));
+    assertThat(claims).containsKey("sub");
+    assertThat(claims).containsKey("aud");
+    assertThat(claims).containsKey("groups");
+    assertThat(claims.get("sub")).isEqualTo(sub1);
+    assertThat(claims.get("aud")).isEqualTo(aud1);
+    assertThat(claims.get("groups")).isEqualTo(List.of("g1", "g2"));
   }
 
   @Test

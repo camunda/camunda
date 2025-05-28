@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -200,7 +201,7 @@ public class CamundaOAuthPrincipalServiceTest {
               "group", "G1");
       when(mappingServices.getMatchingMappings(claims))
           .thenReturn(
-              List.of(
+              Stream.of(
                   new MappingEntity("test-id", 5L, "role", "R1", "role-r1"),
                   new MappingEntity("test-id-2", 7L, "group", "G1", "group-g1")));
 
@@ -246,7 +247,7 @@ public class CamundaOAuthPrincipalServiceTest {
       final var mapping1 = new MappingEntity("map-1", 1L, "role", "R1", "role-r1");
       final var mapping2 = new MappingEntity("map-2", 2L, "group", "G1", "group-g1");
 
-      when(mappingServices.getMatchingMappings(claims)).thenReturn(List.of(mapping1, mapping2));
+      when(mappingServices.getMatchingMappings(claims)).thenReturn(Stream.of(mapping1, mapping2));
 
       when(groupServices.getGroupsByMemberIds(Set.of("map-1", "map-2"), EntityType.MAPPING))
           .thenReturn(List.of(new GroupEntity(1L, "group-g1", "G1", "Group G1")));
