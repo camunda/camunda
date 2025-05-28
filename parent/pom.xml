@@ -136,6 +136,7 @@
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
     <version.jackson-annotations>2.18.3</version.jackson-annotations>
+    <version.json-path>2.9.0</version.json-path>
     <version.swagger-annotations>2.2.29</version.swagger-annotations>
     <version.checker-qual>3.49.1</version.checker-qual>
     <version.java-jwt>4.5.0</version.java-jwt>
@@ -1950,6 +1951,12 @@
         <groupId>org.apache.lucene</groupId>
         <artifactId>lucene-join</artifactId>
         <version>${version.lucene}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.jayway.jsonpath</groupId>
+        <artifactId>json-path</artifactId>
+        <version>${version.json-path}</version>
       </dependency>
 
       <dependency>

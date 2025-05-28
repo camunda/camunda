@@ -12,6 +12,7 @@ import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.security.auth.OidcPrincipalLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.AuthorizationServices;
@@ -23,7 +24,6 @@ import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -35,8 +35,6 @@ import org.springframework.stereotype.Service;
 @Service
 @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
 public class CamundaOAuthPrincipalService {
-  static final String CLAIM_NOT_STRING =
-      "Configured claim for %s (%s) is not a string. Please check your OIDC configuration.";
 
   private static final Logger LOG = LoggerFactory.getLogger(CamundaOAuthPrincipalService.class);
 
@@ -45,6 +43,7 @@ public class CamundaOAuthPrincipalService {
   private final RoleServices roleServices;
   private final GroupServices groupServices;
   private final AuthorizationServices authorizationServices;
+  private final OidcPrincipalLoader oidcPrincipalLoader;
   private final String usernameClaim;
   private final String clientIdClaim;
 
@@ -60,6 +59,10 @@ public class CamundaOAuthPrincipalService {
     this.roleServices = roleServices;
     this.groupServices = groupServices;
     this.authorizationServices = authorizationServices;
+    oidcPrincipalLoader =
+        new OidcPrincipalLoader(
+            securityConfiguration.getAuthentication().getOidc().getUsernameClaim(),
+            securityConfiguration.getAuthentication().getOidc().getClientIdClaim());
     usernameClaim = securityConfiguration.getAuthentication().getOidc().getUsernameClaim();
     clientIdClaim = securityConfiguration.getAuthentication().getOidc().getClientIdClaim();
   }
@@ -96,8 +99,9 @@ public class CamundaOAuthPrincipalService {
             .withGroups(groups.stream().toList())
             .withRoles(roles);
 
-    final var username = getUsernameFromClaims(claims);
-    final var clientId = getClientIdFromClaims(claims);
+    final var principals = oidcPrincipalLoader.load(claims);
+    final var username = principals.username();
+    final var clientId = principals.clientId();
 
     if (username == null && clientId == null) {
       throw new IllegalArgumentException(
@@ -105,41 +109,13 @@ public class CamundaOAuthPrincipalService {
               .formatted(usernameClaim, clientIdClaim));
     }
     if (username != null) {
-      authContextBuilder.withUsername(getUsernameFromClaims(claims));
+      authContextBuilder.withUsername(username);
     }
 
     if (clientId != null) {
-      authContextBuilder.withClientId(getClientIdFromClaims(claims));
+      authContextBuilder.withClientId(clientId);
     }
 
     return new OAuthContext(mappingIds, authContextBuilder.build());
-  }
-
-  private String getUsernameFromClaims(final Map<String, Object> claims) {
-    final var maybeUsername = Optional.ofNullable(claims.get(usernameClaim));
-
-    if (maybeUsername.isEmpty()) {
-      return null;
-    }
-
-    if (maybeUsername.get() instanceof final String username) {
-      return username;
-    } else {
-      throw new IllegalArgumentException(CLAIM_NOT_STRING.formatted("username", usernameClaim));
-    }
-  }
-
-  private String getClientIdFromClaims(final Map<String, Object> claims) {
-    final var maybeClientId = Optional.ofNullable(claims.get(clientIdClaim));
-
-    if (maybeClientId.isEmpty()) {
-      return null;
-    }
-
-    if (maybeClientId.get() instanceof final String clientId) {
-      return clientId;
-    } else {
-      throw new IllegalArgumentException(CLAIM_NOT_STRING.formatted("client", clientIdClaim));
-    }
   }
 }

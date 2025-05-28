@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.interceptors.impl;
 
 import static io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.CLIENT_ID;
-import static io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.Oidc.CONFIGURED_CLAIM_NOT_A_STRING;
 import static io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -263,7 +262,11 @@ public class AuthenticationInterceptorTest {
             status -> {
               assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode());
               assertThat(status.getDescription())
-                  .isEqualTo(CONFIGURED_CLAIM_NOT_A_STRING.formatted("username", "username"));
+                  .isEqualTo("Failed to load OIDC principals, see cause for details");
+              assertThat(status.getCause())
+                  .isInstanceOf(IllegalArgumentException.class)
+                  .hasMessageContaining(
+                      "Value for $['username'] is not a string. Please check your OIDC configuration.");
             });
   }
 
@@ -298,7 +301,11 @@ public class AuthenticationInterceptorTest {
             status -> {
               assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode());
               assertThat(status.getDescription())
-                  .isEqualTo(CONFIGURED_CLAIM_NOT_A_STRING.formatted("client id", "client_id"));
+                  .isEqualTo("Failed to load OIDC principals, see cause for details");
+              assertThat(status.getCause())
+                  .isInstanceOf(IllegalArgumentException.class)
+                  .hasMessageContaining(
+                      "Value for $['client_id'] is not a string. Please check your OIDC configuration.");
             });
   }
 
