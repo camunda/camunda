@@ -22,7 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Map;
 
-public abstract class SnapshotTransferUtil {
+public final class SnapshotTransferUtil {
 
   public static final Map<String, String> SNAPSHOT_FILE_CONTENTS =
       Map.of(
