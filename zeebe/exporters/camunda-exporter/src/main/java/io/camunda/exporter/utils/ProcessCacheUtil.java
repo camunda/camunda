@@ -85,7 +85,7 @@ public final class ProcessCacheUtil {
         Bpmn.readModelFromStream(
             new ByteArrayInputStream(bpmnXml.getBytes(StandardCharsets.UTF_8)));
 
-    return sortedFlowNodesMap(modelInstance.getModelElementsByType(FlowNode.class));
+    return getFlowNodesMap(modelInstance.getModelElementsByType(FlowNode.class));
   }
 
   /**
@@ -113,8 +113,8 @@ public final class ProcessCacheUtil {
     return Optional.of(cachedProcess.get().flowNodesMap().get(flowNodeId));
   }
 
-  public static Map<String, String> sortedFlowNodesMap(Collection<FlowNode> flowNodes) {
-    final Map<String, String> flowNodesMap = new TreeMap<>();
+  public static Map<String, String> getFlowNodesMap(Collection<FlowNode> flowNodes) {
+    final Map<String, String> flowNodesMap = new HashMap<>();
     for (FlowNode flowNode : flowNodes) {
       flowNodesMap.put(flowNode.getId(), flowNode.getName());
     }
@@ -122,8 +122,8 @@ public final class ProcessCacheUtil {
     return flowNodesMap;
   }
 
-  public static Map<String, String> sortedFlowNodesMap(List<ProcessFlowNodeEntity> flowNodes) {
-    final Map<String, String> flowNodesMap = new TreeMap<>();
+  public static Map<String, String> getFlowNodesMap(List<ProcessFlowNodeEntity> flowNodes) {
+    final Map<String, String> flowNodesMap = new HashMap<>();
     for (ProcessFlowNodeEntity flowNode : flowNodes) {
       flowNodesMap.put(flowNode.getId(), flowNode.getName());
     }

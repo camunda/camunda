@@ -169,6 +169,7 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
             .setType(FlowNodeType.SERVICE_TASK)
             .setState(FlowNodeState.ACTIVE)
             .setFlowNodeId("flowNode1")
+            .setFlowNodeName("flowNodeName")
             .setProcessDefinitionKey(222L)
             .setBpmnProcessId("bpmnId")
             .setTenantId("tenantId")
@@ -185,6 +186,8 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(FlowNodeInstanceTemplate.TYPE, inputEntity.getType());
     expectedUpdateFields.put(FlowNodeInstanceTemplate.STATE, inputEntity.getState());
     expectedUpdateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, inputEntity.getFlowNodeId());
+    expectedUpdateFields.put(
+        FlowNodeInstanceTemplate.FLOW_NODE_NAME, inputEntity.getFlowNodeName());
     expectedUpdateFields.put(
         FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, inputEntity.getProcessDefinitionKey());
     expectedUpdateFields.put(
@@ -213,6 +216,7 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
             .setType(FlowNodeType.SERVICE_TASK)
             .setState(FlowNodeState.ACTIVE)
             .setFlowNodeId("flowNode1")
+            .setFlowNodeId("flowNodeName")
             .setProcessDefinitionKey(222L)
             .setBpmnProcessId("bpmnId");
     final BatchRequest mockRequest = mock(BatchRequest.class);
@@ -223,6 +227,8 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(FlowNodeInstanceTemplate.TYPE, inputEntity.getType());
     expectedUpdateFields.put(FlowNodeInstanceTemplate.STATE, inputEntity.getState());
     expectedUpdateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, inputEntity.getFlowNodeId());
+    expectedUpdateFields.put(
+        FlowNodeInstanceTemplate.FLOW_NODE_NAME, inputEntity.getFlowNodeName());
     expectedUpdateFields.put(
         FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, inputEntity.getProcessDefinitionKey());
     expectedUpdateFields.put(
