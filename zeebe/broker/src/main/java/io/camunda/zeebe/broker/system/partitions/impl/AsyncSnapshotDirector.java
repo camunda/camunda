@@ -167,7 +167,7 @@ public final class AsyncSnapshotDirector extends Actor
    * @return A future that is completed successfully when the snapshot was taken. If the snapshot
    *     was skipped, the future is also completed successfully but with a null.
    */
-  public CompletableActorFuture<PersistedSnapshot> forceSnapshot() {
+  public ActorFuture<PersistedSnapshot> forceSnapshot() {
     final var newSnapshotFuture = new CompletableActorFuture<PersistedSnapshot>();
     actor.call(() -> trySnapshot().onComplete(newSnapshotFuture));
     return newSnapshotFuture;
