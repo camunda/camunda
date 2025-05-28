@@ -68,8 +68,13 @@ public class DbMigratorImpl implements DbMigrator {
   private final String currentVersion;
 
   public DbMigratorImpl(
-      final ClusterContext clusterContext, final MutableProcessingState processingState) {
-    this(new MigrationTaskContextImpl(clusterContext, processingState), MIGRATION_TASKS, null);
+      final ClusterContext clusterContext,
+      final MutableProcessingState processingState,
+      final String currentVersion) {
+    this(
+        new MigrationTaskContextImpl(clusterContext, processingState),
+        MIGRATION_TASKS,
+        currentVersion);
   }
 
   @VisibleForTesting
