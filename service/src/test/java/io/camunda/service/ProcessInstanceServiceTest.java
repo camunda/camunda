@@ -204,14 +204,6 @@ public final class ProcessInstanceServiceTest {
             MsgPackConverter.convertToObject(
                 enrichedRecord.getAuthenticationBuffer(), Authentication.class))
         .isEqualTo(authentication);
-
-    final var filterBuffer = enrichedRecord.getEntityFilterBuffer();
-    final var enhancedFilter =
-        MsgPackConverter.convertToObject(filterBuffer, ProcessInstanceFilter.class);
-    assertThat(enhancedFilter.parentProcessInstanceKeyOperations())
-        .containsExactly(Operation.exists(false));
-    assertThat(enhancedFilter.stateOperations())
-        .containsExactly(Operation.eq(ProcessInstanceState.ACTIVE.name()));
   }
 
   @Test

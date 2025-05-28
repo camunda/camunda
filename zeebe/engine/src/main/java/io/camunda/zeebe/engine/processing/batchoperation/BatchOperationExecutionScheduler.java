@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationItemProvider.Item;
@@ -178,16 +180,29 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         () -> !batchOperationState.exists(batchOperation.getKey());
 
     return switch (batchOperation.getBatchOperationType()) {
-      case CANCEL_PROCESS_INSTANCE, MIGRATE_PROCESS_INSTANCE, MODIFY_PROCESS_INSTANCE ->
+      case CANCEL_PROCESS_INSTANCE ->
           entityKeyProvider.fetchProcessInstanceItems(
               partitionId,
-              batchOperation.getEntityFilter(ProcessInstanceFilter.class),
+              batchOperation.getEntityFilter(ProcessInstanceFilter.class).toBuilder()
+                  .states(ProcessInstanceState.ACTIVE.name())
+                  .parentProcessInstanceKeyOperations(Operation.exists(false))
+                  .build(),
+              batchOperation.getAuthentication(),
+              abortCondition);
+      case MIGRATE_PROCESS_INSTANCE, MODIFY_PROCESS_INSTANCE ->
+          entityKeyProvider.fetchProcessInstanceItems(
+              partitionId,
+              batchOperation.getEntityFilter(ProcessInstanceFilter.class).toBuilder()
+                  .states(ProcessInstanceState.ACTIVE.name())
+                  .build(),
               batchOperation.getAuthentication(),
               abortCondition);
       case RESOLVE_INCIDENT ->
           entityKeyProvider.fetchIncidentItems(
               partitionId,
-              batchOperation.getEntityFilter(ProcessInstanceFilter.class),
+              batchOperation.getEntityFilter(ProcessInstanceFilter.class).toBuilder()
+                  .states(ProcessInstanceState.ACTIVE.name())
+                  .build(),
               batchOperation.getAuthentication(),
               abortCondition);
       default ->
