@@ -14,11 +14,11 @@ import {
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { Mapping } from "src/utility/api/mappings";
-import { unassignGroupMapping } from "src/utility/api/groups";
+import { MappingRule } from "src/utility/api/mappings";
+import { unassignGroupMappingRule } from "src/utility/api/groups";
 
 type RemoveGroupMappingModalProps = UseEntityModalCustomProps<
-  Mapping,
+  MappingRule,
   {
     groupId: string;
   }
@@ -34,13 +34,15 @@ const DeleteModal: FC<RemoveGroupMappingModalProps> = ({
   const { t, Translate } = useTranslate("groups");
   const { enqueueNotification } = useNotifications();
 
-  const [callUnassignMapping, { loading }] = useApiCall(unassignGroupMapping);
+  const [callUnassignMapping, { loading }] = useApiCall(
+    unassignGroupMappingRule,
+  );
 
   const handleSubmit = async () => {
     if (groupId && mapping) {
       const { success } = await callUnassignMapping({
         groupId,
-        mappingId: mapping.mappingId,
+        mappingRuleId: mapping.mappingRuleId,
       });
 
       if (success) {
@@ -66,10 +68,10 @@ const DeleteModal: FC<RemoveGroupMappingModalProps> = ({
       <p>
         <Translate
           i18nKey="removeMappingConfirmation"
-          values={{ mappingId: mapping.mappingId }}
+          values={{ mappingRuleId: mapping.mappingRuleId }}
         >
-          Are you sure you want to remove <strong>{mapping.mappingId}</strong>{" "}
-          from this group?
+          Are you sure you want to remove{" "}
+          <strong>{mapping.mappingRuleId}</strong> from this group?
         </Translate>
       </p>
     </Modal>
