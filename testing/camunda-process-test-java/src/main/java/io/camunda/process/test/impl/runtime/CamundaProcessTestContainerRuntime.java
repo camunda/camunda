@@ -15,6 +15,8 @@
  */
 package io.camunda.process.test.impl.runtime;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.ContainerFactory;
@@ -22,6 +24,7 @@ import io.camunda.process.test.impl.runtime.logging.CamundaLogEntry;
 import io.camunda.process.test.impl.runtime.logging.ConnectorsLogEntry;
 import io.camunda.process.test.impl.runtime.logging.LogEntry;
 import io.camunda.process.test.impl.runtime.logging.Slf4jJsonLogConsumer;
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -34,9 +37,11 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
-public class CamundaContainerRuntime implements AutoCloseable {
+public class CamundaProcessTestContainerRuntime
+    implements AutoCloseable, CamundaProcessTestRuntime {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(CamundaContainerRuntime.class);
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(CamundaProcessTestContainerRuntime.class);
 
   private static final String NETWORK_ALIAS_CAMUNDA = "camunda";
   private static final String NETWORK_ALIAS_ELASTICSEARCH = "elasticsearch";
@@ -50,6 +55,14 @@ public class CamundaContainerRuntime implements AutoCloseable {
   private static final String CAMUNDA_REST_API =
       "http://" + NETWORK_ALIAS_CAMUNDA + ":" + ContainerRuntimePorts.CAMUNDA_REST_API;
 
+  private static final URI DISABLED_CONNECTORS_ADDRESS =
+      URI.create(
+          "http://"
+              + NETWORK_ALIAS_CONNECTORS
+              + ":"
+              + ContainerRuntimePorts.CONNECTORS_REST_API
+              + "/disabled");
+
   private final ContainerFactory containerFactory;
 
   private final Network network;
@@ -58,8 +71,8 @@ public class CamundaContainerRuntime implements AutoCloseable {
 
   private final boolean connectorsEnabled;
 
-  CamundaContainerRuntime(
-      final CamundaContainerRuntimeBuilder builder, final ContainerFactory containerFactory) {
+  CamundaProcessTestContainerRuntime(
+      final CamundaProcessTestRuntimeBuilder builder, final ContainerFactory containerFactory) {
     this.containerFactory = containerFactory;
     connectorsEnabled = builder.isConnectorsEnabled();
     network = Network.newNetwork();
@@ -75,7 +88,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
    * {@see https://github.com/camunda/camunda/issues/29854}
    */
   private ElasticsearchContainer createElasticsearchContainer(
-      final Network network, final CamundaContainerRuntimeBuilder builder) {
+      final Network network, final CamundaProcessTestRuntimeBuilder builder) {
     final ElasticsearchContainer container =
         containerFactory
             .createElasticsearchContainer(
@@ -93,7 +106,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
   }
 
   private CamundaContainer createCamundaContainer(
-      final Network network, final CamundaContainerRuntimeBuilder builder) {
+      final Network network, final CamundaProcessTestRuntimeBuilder builder) {
     final CamundaContainer container =
         containerFactory
             .createCamundaContainer(
@@ -110,7 +123,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
   }
 
   private ConnectorsContainer createConnectorsContainer(
-      final Network network, final CamundaContainerRuntimeBuilder builder) {
+      final Network network, final CamundaProcessTestRuntimeBuilder builder) {
     final ConnectorsContainer container =
         containerFactory
             .createConnectorsContainer(
@@ -130,6 +143,7 @@ public class CamundaContainerRuntime implements AutoCloseable {
     return container;
   }
 
+  @Override
   public void start() {
     final List<GenericContainer<?>> containers = new ArrayList<>();
     containers.add(camundaContainer);
@@ -149,6 +163,39 @@ public class CamundaContainerRuntime implements AutoCloseable {
     final Instant endTime = Instant.now();
     final Duration startupTime = Duration.between(startTime, endTime);
     LOGGER.info("Camunda container runtime started in {}", startupTime);
+  }
+
+  @Override
+  public URI getCamundaRestApiAddress() {
+    return getCamundaContainer().getRestApiAddress();
+  }
+
+  @Override
+  public URI getCamundaGrpcApiAddress() {
+    return getCamundaContainer().getGrpcApiAddress();
+  }
+
+  @Override
+  public URI getCamundaMonitoringApiAddress() {
+    return getCamundaContainer().getMonitoringApiAddress();
+  }
+
+  @Override
+  public URI getConnectorsRestApiAddress() {
+    if (connectorsEnabled) {
+      return getConnectorsContainer().getRestApiAddress();
+    } else {
+      return DISABLED_CONNECTORS_ADDRESS;
+    }
+  }
+
+  @Override
+  public CamundaClientBuilderFactory getCamundaClientBuilderFactory() {
+    return () ->
+        CamundaClient.newClientBuilder()
+            .restAddress(getCamundaRestApiAddress())
+            .grpcAddress(getCamundaGrpcApiAddress())
+            .usePlaintext();
   }
 
   public CamundaContainer getCamundaContainer() {
@@ -187,11 +234,11 @@ public class CamundaContainerRuntime implements AutoCloseable {
     return new Slf4jJsonLogConsumer(logger, logEntryType);
   }
 
-  public static CamundaContainerRuntimeBuilder newBuilder() {
-    return new CamundaContainerRuntimeBuilder();
+  public static CamundaProcessTestRuntimeBuilder newBuilder() {
+    return new CamundaProcessTestRuntimeBuilder();
   }
 
-  public static CamundaContainerRuntime newDefaultRuntime() {
+  public static CamundaProcessTestRuntime newDefaultRuntime() {
     return newBuilder().build();
   }
 }

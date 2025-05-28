@@ -61,34 +61,34 @@ public final class ContainerRuntimePropertiesUtil {
         getLatestReleasedVersion(
             properties,
             PROPERTY_NAME_CAMUNDA_VERSION,
-            ContainerRuntimeDefaults.DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION);
+            CamundaProcessTestRuntimeDefaults.DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION);
     elasticsearchVersion =
         getPropertyOrDefault(
             properties,
             PROPERTY_NAME_ELASTICSEARCH_VERSION,
-            ContainerRuntimeDefaults.DEFAULT_ELASTICSEARCH_VERSION);
+            CamundaProcessTestRuntimeDefaults.DEFAULT_ELASTICSEARCH_VERSION);
 
     camundaDockerImageName =
         getPropertyOrDefault(
             properties,
             PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_NAME,
-            ContainerRuntimeDefaults.DEFAULT_CAMUNDA_DOCKER_IMAGE_NAME);
+            CamundaProcessTestRuntimeDefaults.DEFAULT_CAMUNDA_DOCKER_IMAGE_NAME);
     camundaDockerImageVersion =
         getLatestReleasedVersion(
             properties,
             PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_VERSION,
-            ContainerRuntimeDefaults.DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION);
+            CamundaProcessTestRuntimeDefaults.DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION);
 
     connectorsDockerImageName =
         getPropertyOrDefault(
             properties,
             PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_NAME,
-            ContainerRuntimeDefaults.DEFAULT_CONNECTORS_DOCKER_IMAGE_NAME);
+            CamundaProcessTestRuntimeDefaults.DEFAULT_CONNECTORS_DOCKER_IMAGE_NAME);
     connectorsDockerImageVersion =
         getLatestReleasedVersion(
             properties,
             PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_VERSION,
-            ContainerRuntimeDefaults.DEFAULT_CONNECTORS_DOCKER_IMAGE_VERSION);
+            CamundaProcessTestRuntimeDefaults.DEFAULT_CONNECTORS_DOCKER_IMAGE_VERSION);
   }
 
   private static String getLatestReleasedVersion(

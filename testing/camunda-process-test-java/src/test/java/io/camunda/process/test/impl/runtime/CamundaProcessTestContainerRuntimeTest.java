@@ -35,7 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class CamundaContainerRuntimeTest {
+public class CamundaProcessTestContainerRuntimeTest {
 
   private static final Map<String, String> ENV_VARS;
   private static final String ADDITIONAL_ENV_VAR_KEY = "env-3";
@@ -68,8 +68,11 @@ public class CamundaContainerRuntimeTest {
   @Test
   void shouldCreateContainers() {
     // given/when
-    final CamundaContainerRuntime runtime =
-        CamundaContainerRuntime.newBuilder().withContainerFactory(containerFactory).build();
+    final CamundaProcessTestContainerRuntime runtime =
+        (CamundaProcessTestContainerRuntime)
+            CamundaProcessTestContainerRuntime.newBuilder()
+                .withContainerFactory(containerFactory)
+                .build();
 
     // then
     assertThat(runtime).isNotNull();
@@ -83,8 +86,11 @@ public class CamundaContainerRuntimeTest {
   @Test
   void shouldStartAndStopContainers() throws Exception {
     // given
-    final CamundaContainerRuntime runtime =
-        CamundaContainerRuntime.newBuilder().withContainerFactory(containerFactory).build();
+    final CamundaProcessTestContainerRuntime runtime =
+        (CamundaProcessTestContainerRuntime)
+            CamundaProcessTestContainerRuntime.newBuilder()
+                .withContainerFactory(containerFactory)
+                .build();
 
     // when
     runtime.start();
@@ -104,17 +110,17 @@ public class CamundaContainerRuntimeTest {
   @Test
   void shouldCreateWithDefaults() {
     // given/when
-    CamundaContainerRuntime.newBuilder().withContainerFactory(containerFactory).build();
+    CamundaProcessTestContainerRuntime.newBuilder().withContainerFactory(containerFactory).build();
 
     // then
     verify(containerFactory)
         .createCamundaContainer(
-            ContainerRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME,
-            ContainerRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_VERSION);
+            CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME,
+            CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_VERSION);
     verify(containerFactory)
         .createConnectorsContainer(
-            ContainerRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_NAME,
-            ContainerRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_VERSION);
+            CamundaProcessTestRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_NAME,
+            CamundaProcessTestRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_VERSION);
   }
 
   @Test
@@ -124,7 +130,7 @@ public class CamundaContainerRuntimeTest {
     final String dockerImageVersion = "8.6.0-custom";
 
     // when
-    CamundaContainerRuntime.newBuilder()
+    CamundaProcessTestContainerRuntime.newBuilder()
         .withContainerFactory(containerFactory)
         .withCamundaDockerImageName(dockerImageName)
         .withCamundaDockerImageVersion(dockerImageVersion)
@@ -152,7 +158,7 @@ public class CamundaContainerRuntimeTest {
     final String dockerImageVersion = "8.13.0-custom";
 
     // when
-    CamundaContainerRuntime.newBuilder()
+    CamundaProcessTestContainerRuntime.newBuilder()
         .withContainerFactory(containerFactory)
         .withElasticsearchDockerImageName(dockerImageName)
         .withElasticsearchDockerImageVersion(dockerImageVersion)
@@ -170,11 +176,12 @@ public class CamundaContainerRuntimeTest {
   @Test
   void shouldEnableConnectors() throws Exception {
     // given
-    final CamundaContainerRuntime runtime =
-        CamundaContainerRuntime.newBuilder()
-            .withContainerFactory(containerFactory)
-            .withConnectorsEnabled(true)
-            .build();
+    final CamundaProcessTestContainerRuntime runtime =
+        (CamundaProcessTestContainerRuntime)
+            CamundaProcessTestContainerRuntime.newBuilder()
+                .withContainerFactory(containerFactory)
+                .withConnectorsEnabled(true)
+                .build();
 
     // when
     runtime.start();
@@ -206,7 +213,7 @@ public class CamundaContainerRuntimeTest {
     expectedConnectorSecrets.put(additionalConnectorSecretKey, additionalConnectorSecretValue);
 
     // when
-    CamundaContainerRuntime.newBuilder()
+    CamundaProcessTestContainerRuntime.newBuilder()
         .withContainerFactory(containerFactory)
         .withConnectorsDockerImageName(dockerImageName)
         .withConnectorsDockerImageVersion(dockerImageVersion)

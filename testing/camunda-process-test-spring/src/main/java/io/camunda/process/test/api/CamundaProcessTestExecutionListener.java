@@ -19,13 +19,15 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
-import io.camunda.process.test.impl.configuration.CamundaContainerRuntimeConfiguration;
+import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.ZeebeClientProxy;
-import io.camunda.process.test.impl.runtime.CamundaContainerRuntime;
-import io.camunda.process.test.impl.runtime.CamundaContainerRuntimeBuilder;
+import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
+import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
+import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
+import io.camunda.process.test.impl.runtime.CamundaSpringProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
 import io.camunda.process.test.impl.testresult.ProcessTestResult;
@@ -73,11 +75,11 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private static final Logger LOG =
       LoggerFactory.getLogger(CamundaProcessTestExecutionListener.class);
 
-  private final CamundaContainerRuntimeBuilder containerRuntimeBuilder;
+  private final CamundaProcessTestRuntimeBuilder containerRuntimeBuilder;
   private final CamundaProcessTestResultPrinter processTestResultPrinter;
   private final List<AutoCloseable> createdClients = new ArrayList<>();
 
-  private CamundaContainerRuntime containerRuntime;
+  private CamundaProcessTestRuntime runtime;
   private CamundaProcessTestResultCollector processTestResultCollector;
   private CamundaProcessTestContext camundaProcessTestContext;
   private CamundaManagementClient camundaManagementClient;
@@ -85,11 +87,11 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private ZeebeClient zeebeClient;
 
   public CamundaProcessTestExecutionListener() {
-    this(CamundaContainerRuntime.newBuilder(), System.err::println);
+    this(CamundaProcessTestContainerRuntime.newBuilder(), System.err::println);
   }
 
   CamundaProcessTestExecutionListener(
-      final CamundaContainerRuntimeBuilder containerRuntimeBuilder,
+      final CamundaProcessTestRuntimeBuilder containerRuntimeBuilder,
       final Consumer<String> testResultPrintStream) {
     this.containerRuntimeBuilder = containerRuntimeBuilder;
     processTestResultPrinter = new CamundaProcessTestResultPrinter(testResultPrintStream);
@@ -98,20 +100,15 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   @Override
   public void beforeTestClass(final TestContext testContext) {
     // create runtime
-    containerRuntime = buildRuntime(testContext);
-    containerRuntime.start();
+    runtime = buildRuntime(testContext);
+    runtime.start();
 
     camundaManagementClient =
         new CamundaManagementClient(
-            containerRuntime.getCamundaContainer().getMonitoringApiAddress(),
-            containerRuntime.getCamundaContainer().getRestApiAddress());
+            runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
 
     camundaProcessTestContext =
-        new CamundaProcessTestContextImpl(
-            containerRuntime.getCamundaContainer(),
-            containerRuntime.getConnectorsContainer(),
-            createdClients::add,
-            camundaManagementClient);
+        new CamundaProcessTestContextImpl(runtime, createdClients::add, camundaManagementClient);
   }
 
   @Override
@@ -143,7 +140,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   @Override
   public void afterTestMethod(final TestContext testContext) throws Exception {
-    if (containerRuntime == null) {
+    if (runtime == null) {
       // Skip if the runtime is not created.
       return;
     }
@@ -175,11 +172,11 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   @Override
   public void afterTestClass(final TestContext testContext) throws Exception {
-    if (containerRuntime == null) {
+    if (runtime == null) {
       // Skip if the runtime is not created.
       return;
     }
-    containerRuntime.close();
+    runtime.close();
   }
 
   private void printTestResults() {
@@ -221,27 +218,12 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     }
   }
 
-  private CamundaContainerRuntime buildRuntime(final TestContext testContext) {
-    final CamundaContainerRuntimeConfiguration runtimeConfiguration =
-        testContext.getApplicationContext().getBean(CamundaContainerRuntimeConfiguration.class);
+  private CamundaProcessTestRuntime buildRuntime(final TestContext testContext) {
+    final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
+        testContext.getApplicationContext().getBean(CamundaProcessTestRuntimeConfiguration.class);
 
-    containerRuntimeBuilder
-        .withCamundaDockerImageVersion(runtimeConfiguration.getCamundaVersion())
-        .withCamundaDockerImageName(runtimeConfiguration.getCamundaDockerImageName())
-        .withCamundaEnv(runtimeConfiguration.getCamundaEnvVars());
-
-    runtimeConfiguration
-        .getCamundaExposedPorts()
-        .forEach(containerRuntimeBuilder::withCamundaExposedPort);
-
-    containerRuntimeBuilder
-        .withConnectorsEnabled(runtimeConfiguration.isConnectorsEnabled())
-        .withConnectorsDockerImageName(runtimeConfiguration.getConnectorsDockerImageName())
-        .withConnectorsDockerImageVersion(runtimeConfiguration.getConnectorsDockerImageVersion())
-        .withConnectorsEnv(runtimeConfiguration.getConnectorsEnvVars())
-        .withConnectorsSecrets(runtimeConfiguration.getConnectorsSecrets());
-
-    return containerRuntimeBuilder.build();
+    return CamundaSpringProcessTestRuntimeBuilder.buildRuntime(
+        containerRuntimeBuilder, runtimeConfiguration);
   }
 
   private static CamundaClient createClient(
