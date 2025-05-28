@@ -24,6 +24,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
+    <docker.image.tag>SNAPSHOT</docker.image.tag>
 
     <!-- java version -->
     <version.java>21</version.java>
@@ -175,10 +176,10 @@
             <version>${plugin.version.jib}</version>
             <configuration>
               <from>
-                <image>eclipse-temurin:21</image>
+                <image>eclipse-temurin:21-jre-noble</image>
               </from>
               <to>
-                <image>gcr.io/zeebe-io/starter:SNAPSHOT</image>
+                <image>gcr.io/zeebe-io/starter:${docker.image.tag}</image>
               </to>
               <container>
                 <mainClass>io.camunda.zeebe.Starter</mainClass>
@@ -198,10 +199,10 @@
             <version>${plugin.version.jib}</version>
             <configuration>
               <from>
-                <image>eclipse-temurin:21</image>
+                <image>eclipse-temurin:21-jre-noble</image>
               </from>
               <to>
-                <image>gcr.io/zeebe-io/worker:SNAPSHOT</image>
+                <image>gcr.io/zeebe-io/worker:${docker.image.tag}</image>
               </to>
               <container>
                 <mainClass>io.camunda.zeebe.Worker</mainClass>
