@@ -27,6 +27,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -390,12 +391,13 @@ public final class AuthorizationCheckBehavior {
   }
 
   private Stream<PersistedMapping> getPersistedMappings(final TypedRecord<?> command) {
-    return command.getAuthorizations().entrySet().stream()
-        .filter(entry -> entry.getKey().startsWith(Authorization.USER_TOKEN_CLAIM_PREFIX))
+    final var claims =
+        (Map<String, Object>)
+            command.getAuthorizations().getOrDefault(Authorization.USER_TOKEN_CLAIMS, Map.of());
+    return claims.entrySet().stream()
         .flatMap(
             claimEntry -> {
-              final var claimName =
-                  claimEntry.getKey().substring(Authorization.USER_TOKEN_CLAIM_PREFIX.length());
+              final var claimName = claimEntry.getKey();
               final var claimValue = claimEntry.getValue();
               if (claimValue instanceof final Collection<?> collection) {
                 return collection.stream()

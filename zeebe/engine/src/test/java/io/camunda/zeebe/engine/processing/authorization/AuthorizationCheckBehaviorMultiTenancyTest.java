@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing.authorization;
 
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_ANONYMOUS_USER;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
-import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIM_PREFIX;
+import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -690,7 +690,7 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
   private TypedRecord<?> mockCommandWithMapping(final String claimName, final String claimValue) {
     final var command = mock(TypedRecord.class);
     when(command.getAuthorizations())
-        .thenReturn(Map.of(USER_TOKEN_CLAIM_PREFIX + claimName, claimValue));
+        .thenReturn(Map.of(USER_TOKEN_CLAIMS, Map.of(claimName, claimValue)));
     when(command.hasRequestMetadata()).thenReturn(true);
     return command;
   }
