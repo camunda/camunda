@@ -117,6 +117,11 @@ public final class BatchOperationSetupProcessors {
                 authorizationCheckBehavior,
                 keyGenerator))
         .onCommand(
+            ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
+            BatchOperationIntent.COMPLETE,
+            new BatchOperationCompleteProcessor(
+                writers, commandDistributionBehavior, processingState, keyGenerator))
+        .onCommand(
             ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
             BatchOperationIntent.COMPLETE_PARTITION,
             new BatchOperationPartitionCompleteProcessor(

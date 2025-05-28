@@ -286,6 +286,14 @@ public final class BatchOperationClient {
                     .getFirst();
 
     private static final Function<Long, Record<BatchOperationLifecycleManagementRecordValue>>
+        COMPLETE_SUCCESS_EXPECTATION =
+            (position) ->
+                RecordingExporter.batchOperationLifecycleRecords()
+                    .withIntent(BatchOperationIntent.COMPLETED)
+                    .withSourceRecordPosition(position)
+                    .getFirst();
+
+    private static final Function<Long, Record<BatchOperationLifecycleManagementRecordValue>>
         SUSPEND_SUCCESS_EXPECTATION =
             (position) ->
                 RecordingExporter.batchOperationLifecycleRecords()
@@ -363,6 +371,30 @@ public final class BatchOperationClient {
       return expectSuccess
           ? CANCEL_SUCCESS_EXPECTATION.apply(position)
           : CANCEL_REJECTION_EXPECTATION.apply(position);
+    }
+
+    public Record<BatchOperationLifecycleManagementRecordValue> complete() {
+      return complete(
+          AuthorizationUtil.getAuthInfoWithClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
+    }
+
+    public Record<BatchOperationLifecycleManagementRecordValue> complete(final String username) {
+      return complete(AuthorizationUtil.getAuthInfo(username));
+    }
+
+    public Record<BatchOperationLifecycleManagementRecordValue> complete(
+        final AuthInfo authorizations) {
+      final long position =
+          writer.writeCommandOnPartition(
+              partition,
+              r ->
+                  r.intent(BatchOperationIntent.COMPLETE)
+                      .event(batchOperationLifecycleManagementRecord)
+                      .authorizations(authorizations)
+                      .requestId(new Random().nextLong())
+                      .requestStreamId(new Random().nextInt()));
+
+      return COMPLETE_SUCCESS_EXPECTATION.apply(position);
     }
 
     public Record<BatchOperationLifecycleManagementRecordValue> suspend() {
