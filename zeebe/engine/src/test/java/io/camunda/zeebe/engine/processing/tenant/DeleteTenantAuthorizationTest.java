@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -53,6 +54,19 @@ public class DeleteTenantAuthorizationTest {
               });
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
+
+  @Test
+  public void shouldBeAuthorizedAsDefaultUserToDeleteDefaultTenant() {
+    // given
+    final var defaultUsername = DEFAULT_USER.getUsername();
+
+    // when
+    final var tenantRecord =
+        engine.tenant().deleteTenant(TenantOwned.DEFAULT_TENANT_IDENTIFIER).delete(defaultUsername);
+
+    // then
+    assertThat(tenantRecord).isNotNull();
+  }
 
   @Test
   public void shouldBeAuthorizedToDeleteAssignedTenantWithPermissions() {
