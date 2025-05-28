@@ -31,7 +31,7 @@ public class BatchOperationItemReader extends AbstractEntityReader<BatchOperatio
     final var dbSort =
         convertSort(
             query.sort(),
-            BatchOperationItemSearchColumn.BATCH_OPERATION_KEY,
+            BatchOperationItemSearchColumn.BATCH_OPERATION_ID,
             BatchOperationItemSearchColumn.ITEM_KEY);
     final var dbQuery =
         BatchOperationItemDbQuery.of(

@@ -76,14 +76,14 @@ public class BatchOperationItemSortIT {
 
     final var batchOperation = createAndSaveBatchOperation(rdbmsWriter, b -> b);
 
-    createAndSaveRandomBatchOperationItems(rdbmsWriter, batchOperation.batchOperationKey(), 20);
+    createAndSaveRandomBatchOperationItems(rdbmsWriter, batchOperation.batchOperationId(), 20);
 
     final var searchResult =
         reader
             .search(
                 new BatchOperationItemQuery(
                     new BatchOperationItemFilter.Builder()
-                        .batchOperationIds(batchOperation.batchOperationKey())
+                        .batchOperationIds(batchOperation.batchOperationId())
                         .build(),
                     BatchOperationItemSort.of(sortBuilder),
                     SearchQueryPage.of(b -> b)))

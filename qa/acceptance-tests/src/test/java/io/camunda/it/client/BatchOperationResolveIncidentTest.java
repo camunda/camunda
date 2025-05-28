@@ -108,16 +108,16 @@ public class BatchOperationResolveIncidentTest {
             .filter(f -> f.variables(getScopedVariables(testScopeId)))
             .send()
             .join();
-    final var batchOperationKey = result.getBatchOperationKey();
+    final var batchOperationId = result.getBatchOperationId();
 
     // then
     assertThat(result).isNotNull();
 
     // and wait if batch has correct amount of items. (To fail fast if not)
-    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationKey, 3);
+    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationId, 3);
 
     // and
-    waitForBatchOperationCompleted(camundaClient, batchOperationKey, 3, 0);
+    waitForBatchOperationCompleted(camundaClient, batchOperationId, 3, 0);
 
     // and
     waitUntilIncidentsAreResolved(camundaClient, activeIncidents.size());
@@ -126,7 +126,7 @@ public class BatchOperationResolveIncidentTest {
     final var itemsObj =
         camundaClient
             .newBatchOperationItemsSearchRequest()
-            .filter(f -> f.batchOperationId(Long.toString(batchOperationKey)))
+            .filter(f -> f.batchOperationId(batchOperationId))
             .send()
             .join();
     final var itemKeys = itemsObj.items().stream().map(BatchOperationItem::getItemKey).toList();

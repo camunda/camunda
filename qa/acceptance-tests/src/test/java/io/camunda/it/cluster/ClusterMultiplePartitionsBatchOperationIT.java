@@ -109,7 +109,7 @@ public class ClusterMultiplePartitionsBatchOperationIT {
             .filter(new ProcessInstanceFilterImpl())
             .send()
             .join();
-    final var batchOperationKey = result.getBatchOperationKey();
+    final var batchOperationKey = result.getBatchOperationId();
 
     // then
     assertThat(result).isNotNull();
@@ -145,7 +145,7 @@ public class ClusterMultiplePartitionsBatchOperationIT {
     final var itemsObj =
         camundaClient
             .newBatchOperationItemsSearchRequest()
-            .filter(f -> f.batchOperationId(Long.toString(batchOperationKey)))
+            .filter(f -> f.batchOperationId(batchOperationKey))
             .send()
             .join();
     final var itemKeys = itemsObj.items().stream().map(BatchOperationItem::getItemKey).toList();

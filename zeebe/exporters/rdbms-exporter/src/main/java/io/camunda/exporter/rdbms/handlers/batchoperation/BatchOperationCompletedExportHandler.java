@@ -33,8 +33,7 @@ public class BatchOperationCompletedExportHandler
   @Override
   public void export(final Record<BatchOperationExecutionRecordValue> record) {
     final var value = record.getValue();
-    final var batchOperationKey = String.valueOf(value.getBatchOperationKey());
-    batchOperationWriter.finish(
-        batchOperationKey, DateUtil.toOffsetDateTime(record.getTimestamp()));
+    final var batchOperationId = String.valueOf(value.getBatchOperationKey());
+    batchOperationWriter.finish(batchOperationId, DateUtil.toOffsetDateTime(record.getTimestamp()));
   }
 }
