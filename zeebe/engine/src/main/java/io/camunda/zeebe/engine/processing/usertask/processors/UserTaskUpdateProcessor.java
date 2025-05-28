@@ -87,8 +87,10 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
     final var recordRequestMetadata = userTaskState.findRecordRequestMetadata(userTaskKey);
     if (recordRequestMetadata.isEmpty()) {
       LOGGER.error(
-          "Bug: No request metadata found for userTaskKey='{}', writing 'USER_TASK.UPDATED' without response. "
-              + "This may indicate a problem with how the update was triggered. Please investigate.",
+          "No request metadata found for userTaskKey='{}', writing 'USER_TASK.UPDATED' without response. "
+              + "This may indicate a problem with how the update was triggered. "
+              + "If the update was triggered by a user task variables update, variables will not be merged. "
+              + "Please report this as a bug.",
           userTaskKey);
       stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
       return;
@@ -114,9 +116,10 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
             variableState.findVariableDocumentState(userTaskRecord.getElementInstanceKey());
         if (optionalVariableDocumentState.isEmpty()) {
           LOGGER.error(
-              "Bug: No VariableDocumentState found for elementInstanceKey='{}' during a task update triggered by user task variables update. "
+              "No variable document state found for elementInstanceKey='{}' during a task update triggered by a user task variables update. "
                   + "No variables will be merged, and only 'USER_TASK.UPDATED' will be written. "
-                  + "This may be caused by a corrupted or incomplete variable update request. Please investigate.",
+                  + "This may be caused by a corrupted or incomplete variable update request. "
+                  + "Please report this as a bug.",
               userTaskRecord.getElementInstanceKey());
           stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
           return;
