@@ -49,17 +49,13 @@ public enum ProcessInstanceSearchColumn implements SearchColumn<ProcessInstanceE
   }
 
   @Override
-  public Object getPropertyValue(final ProcessInstanceEntity entity) {
-    return propertyReader.apply(entity);
+  public String property() {
+    return property;
   }
 
   @Override
-  public Object convertSortOption(final Object object) {
-    if (object == null) {
-      return null;
-    }
-
-    return sortOptionConverter.apply(object);
+  public Class<ProcessInstanceEntity> getEntityClass() {
+    return ProcessInstanceEntity.class;
   }
 
   public static ProcessInstanceSearchColumn findByProperty(final String property) {

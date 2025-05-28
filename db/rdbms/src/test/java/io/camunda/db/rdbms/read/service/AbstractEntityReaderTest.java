@@ -24,7 +24,6 @@ import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.search.sort.SortOrder;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -92,8 +91,8 @@ class AbstractEntityReaderTest {
             222L,
             1231L,
             222L,
-            OffsetDateTime.now(ZoneOffset.UTC),
-            OffsetDateTime.now(ZoneOffset.UTC).plus(1, java.time.temporal.ChronoUnit.SECONDS),
+            OffsetDateTime.now(),
+            OffsetDateTime.now().plus(1, java.time.temporal.ChronoUnit.SECONDS),
             ProcessInstanceState.ACTIVE,
             false,
             "default",

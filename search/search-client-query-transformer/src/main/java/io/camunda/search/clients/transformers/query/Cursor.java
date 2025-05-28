@@ -8,12 +8,16 @@
 package io.camunda.search.clients.transformers.query;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DatabindContext;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
 import com.fasterxml.jackson.databind.jsontype.impl.TypeIdResolverBase;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import java.io.IOException;
 import java.util.Base64;
 
@@ -90,6 +94,31 @@ public class Cursor {
         default:
           throw new IllegalArgumentException("Unknown type id: " + id);
       }
+    }
+  }
+
+  public class LongWithTypeInfoSerializer extends StdSerializer<Long> {
+
+    public LongWithTypeInfoSerializer() {
+      super(Long.class);
+    }
+
+    @Override
+    public void serialize(final Long value, final JsonGenerator gen, final SerializerProvider provider) throws IOException {
+      gen.writeNumber(value); // used when no type info is needed
+    }
+
+    @Override
+    public void serializeWithType(
+        final Long value,
+        final JsonGenerator gen,
+        final SerializerProvider provider,
+        final TypeSerializer typeSer
+    ) throws IOException {
+      // This is crucial for WRAPPER_ARRAY style!
+      typeSer.writeTypePrefixForScalar(value, gen);
+      gen.writeNumber(value);
+      typeSer.writeTypeSuffixForScalar(value, gen);
     }
   }
 }

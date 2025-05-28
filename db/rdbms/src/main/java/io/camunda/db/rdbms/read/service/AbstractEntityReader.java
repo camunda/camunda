@@ -100,8 +100,7 @@ abstract class AbstractEntityReader<T> {
       for (int j = 0; j < i; j++) {
         final SearchColumn<?> sortColumn = sort.orderings().get(j).column();
         fieldEntries.add(
-            new KeySetPaginationFieldEntry(
-                sortColumn.name(), Operator.EQUALS, sortColumn.convertSortOption(sortValues[j])));
+            new KeySetPaginationFieldEntry(sortColumn.name(), Operator.EQUALS, sortValues[j]));
       }
 
       // add comparator entry
@@ -110,7 +109,7 @@ abstract class AbstractEntityReader<T> {
           new KeySetPaginationFieldEntry(
               sorting.column().name(),
               determineOperator(sorting.order(), isSearchAfter),
-              sorting.column().convertSortOption(sortValues[i])));
+              sortValues[i]));
       keySetPagination.add(new KeySetPagination(fieldEntries));
     }
 
