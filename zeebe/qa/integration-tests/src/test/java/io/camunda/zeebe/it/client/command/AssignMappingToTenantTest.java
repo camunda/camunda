@@ -37,7 +37,7 @@ class AssignMappingToTenantTest {
 
   @AutoClose private CamundaClient client;
 
-  private String mappingId;
+  private String mappingRuleId;
 
   @BeforeEach
   void initClientAndInstances() {
@@ -56,13 +56,13 @@ class AssignMappingToTenantTest {
         .mappingRuleId(ID)
         .send()
         .join();
-    mappingId = ID;
+    mappingRuleId = ID;
   }
 
   @Test
   void shouldAssignMappingToTenant() {
     // When
-    client.newAssignMappingToTenantCommand(TENANT_ID).mappingId(ID).send().join();
+    client.newAssignMappingRuleToTenantCommand(TENANT_ID).mappingRuleId(ID).send().join();
 
     // Then
     ZeebeAssertHelper.assertEntityAssignedToTenant(
@@ -83,8 +83,8 @@ class AssignMappingToTenantTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToTenantCommand(invalidTenantId)
-                    .mappingId(mappingId)
+                    .newAssignMappingRuleToTenantCommand(invalidTenantId)
+                    .mappingRuleId(mappingRuleId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -103,8 +103,8 @@ class AssignMappingToTenantTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToTenantCommand(TENANT_ID)
-                    .mappingId(invalidMappingId)
+                    .newAssignMappingRuleToTenantCommand(TENANT_ID)
+                    .mappingRuleId(invalidMappingId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -117,11 +117,16 @@ class AssignMappingToTenantTest {
   @Test
   void shouldRejectAssignIfTenantAlreadyAssignedToMapping() {
     // given
-    client.newAssignMappingToTenantCommand(TENANT_ID).mappingId(ID).send().join();
+    client.newAssignMappingRuleToTenantCommand(TENANT_ID).mappingRuleId(ID).send().join();
 
     // When / Then
     assertThatThrownBy(
-            () -> client.newAssignMappingToTenantCommand(TENANT_ID).mappingId(ID).send().join())
+            () ->
+                client
+                    .newAssignMappingRuleToTenantCommand(TENANT_ID)
+                    .mappingRuleId(ID)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'")
         .hasMessageContaining(
