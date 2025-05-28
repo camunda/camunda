@@ -10,42 +10,22 @@ package io.camunda.security.auth;
 import static java.util.Collections.unmodifiableList;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Function;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-public final class Authentication {
-  private final String authenticatedUsername;
-  private final String authenticatedClientId;
-  private final List<String> authenticatedGroupIds;
-  private final List<String> authenticatedRoleIds;
-  private final List<String> authenticatedTenantIds;
-  private final List<String> authenticatedMappingIds;
-  private final Map<String, Object> claims;
-
-  @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-  public Authentication(
-      final @JsonProperty("authenticated_username") String authenticatedUsername,
-      final @JsonProperty("authenticated_client_id") String authenticatedClientId,
-      final @JsonProperty("authenticated_group_ids") List<String> authenticatedGroupIds,
-      final @JsonProperty("authenticated_role_ids") List<String> authenticatedRoleIds,
-      final @JsonProperty("authenticated_tenant_ids") List<String> authenticatedTenantIds,
-      final @JsonProperty("authenticated_mapping_ids") List<String> authenticatedMappingIds,
-      final @JsonProperty("claims") Map<String, Object> claims) {
-    this.authenticatedUsername = authenticatedUsername;
-    this.authenticatedClientId = authenticatedClientId;
-    this.authenticatedGroupIds = authenticatedGroupIds;
-    this.authenticatedRoleIds = authenticatedRoleIds;
-    this.authenticatedTenantIds = authenticatedTenantIds;
-    this.authenticatedMappingIds = authenticatedMappingIds;
-    this.claims = claims;
-  }
+public record Authentication(
+    @JsonProperty("authenticated_username") String authenticatedUsername,
+    @JsonProperty("authenticated_client_id") String authenticatedClientId,
+    @JsonProperty("authenticated_group_ids") List<String> authenticatedGroupIds,
+    @JsonProperty("authenticated_role_ids") List<String> authenticatedRoleIds,
+    @JsonProperty("authenticated_tenant_ids") List<String> authenticatedTenantIds,
+    @JsonProperty("authenticated_mapping_ids") List<String> authenticatedMappingIds,
+    @JsonProperty("claims") Map<String, Object> claims) {
 
   public static Authentication none() {
     return new Builder().build();
@@ -53,89 +33,6 @@ public final class Authentication {
 
   public static Authentication of(final Function<Builder, Builder> builderFunction) {
     return builderFunction.apply(new Builder()).build();
-  }
-
-  public String authenticatedUsername() {
-    return authenticatedUsername;
-  }
-
-  public String authenticatedClientId() {
-    return authenticatedClientId;
-  }
-
-  public List<String> authenticatedGroupIds() {
-    return authenticatedGroupIds;
-  }
-
-  public List<String> authenticatedRoleIds() {
-    return authenticatedRoleIds;
-  }
-
-  public List<String> authenticatedTenantIds() {
-    return authenticatedTenantIds;
-  }
-
-  public List<String> authenticatedMappingIds() {
-    return authenticatedMappingIds;
-  }
-
-  public Map<String, Object> claims() {
-    return claims;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        authenticatedUsername,
-        authenticatedGroupIds,
-        authenticatedRoleIds,
-        authenticatedTenantIds,
-        authenticatedMappingIds,
-        claims);
-  }
-
-  @Override
-  public boolean equals(final Object obj) {
-    if (obj == this) {
-      return true;
-    }
-    if (obj == null || obj.getClass() != getClass()) {
-      return false;
-    }
-    final Authentication that = (Authentication) obj;
-    return Objects.equals(authenticatedUsername, that.authenticatedUsername)
-        && Objects.equals(authenticatedClientId, that.authenticatedClientId)
-        && Objects.equals(authenticatedGroupIds, that.authenticatedGroupIds)
-        && Objects.equals(authenticatedRoleIds, that.authenticatedRoleIds)
-        && Objects.equals(authenticatedTenantIds, that.authenticatedTenantIds)
-        && Objects.equals(authenticatedMappingIds, that.authenticatedMappingIds)
-        && Objects.equals(claims, that.claims);
-  }
-
-  @Override
-  public String toString() {
-    return "Authentication["
-        + "authenticatedUsername="
-        + authenticatedUsername
-        + ", "
-        + "authenticatedClientId="
-        + authenticatedClientId
-        + ", "
-        + "authenticatedGroupIds="
-        + authenticatedGroupIds
-        + ", "
-        + "authenticatedRoleIds="
-        + authenticatedRoleIds
-        + ", "
-        + "authenticatedTenantIds="
-        + authenticatedTenantIds
-        + ", "
-        + "authenticatedMappingIds="
-        + authenticatedMappingIds
-        + ", "
-        + "claims="
-        + claims
-        + ']';
   }
 
   public static final class Builder {

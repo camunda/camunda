@@ -27,8 +27,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-security-core</artifactId>
-      <version>8.8.0-SNAPSHOT</version>
+      <artifactId>camunda-security-protocol</artifactId>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
