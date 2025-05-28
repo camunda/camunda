@@ -17,7 +17,7 @@ import { documentationHref } from "src/components/documentation";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "src/pages/mappings/modals/AddModal";
-import { searchMapping } from "src/utility/api/mappings";
+import { searchMappingRule } from "src/utility/api/mappings";
 import DeleteModal from "src/pages/mappings/modals/DeleteModal";
 import EditModal from "src/pages/mappings/modals/EditModal";
 
@@ -28,7 +28,7 @@ const List: FC = () => {
     loading,
     reload,
     success,
-  } = useApi(searchMapping);
+  } = useApi(searchMappingRule);
 
   const [addMapping, addMappingModal] = useModal(AddModal, reload);
   const [editMapping, editMappingModal] = useEntityModal(EditModal, reload);
@@ -73,7 +73,7 @@ const List: FC = () => {
       <EntityList
         data={mappingSearchResults == null ? [] : mappingSearchResults.items}
         headers={[
-          { header: t("mappingId"), key: "mappingId" },
+          { header: t("mappingId"), key: "mappingRuleId" },
           { header: t("mappingName"), key: "name" },
           { header: t("claimName"), key: "claimName" },
           { header: t("claimValue"), key: "claimValue" },

@@ -12,7 +12,7 @@ import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import { FormModal, UseModalProps } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { createMapping } from "src/utility/api/mappings";
+import { createMappingRule } from "src/utility/api/mappings";
 import {
   CustomStack,
   EqualSignContainer,
@@ -24,7 +24,7 @@ import { Stack } from "@carbon/react";
 const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("mappingRules");
   const { enqueueNotification } = useNotifications();
-  const [apiCall, { loading, error }] = useApiCall(createMapping, {
+  const [apiCall, { loading, error }] = useApiCall(createMappingRule, {
     suppressErrorNotification: true,
   });
   const [mappingId, setMappingId] = useState("");
@@ -36,7 +36,7 @@ const AddMappingModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
 
   const handleSubmit = async () => {
     const { success } = await apiCall({
-      mappingId: mappingId,
+      mappingRuleId: mappingId,
       name: mappingName,
       claimName,
       claimValue,
