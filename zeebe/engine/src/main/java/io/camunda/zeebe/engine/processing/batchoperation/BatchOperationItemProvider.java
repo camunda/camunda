@@ -130,7 +130,7 @@ public class BatchOperationItemProvider {
       final Supplier<Boolean> shouldAbort) {
     final var items = new LinkedHashSet<Item>();
 
-    Object[] searchValues = null;
+    String searchValues = null;
     while (true) {
       // Check if the batch operation is still present, could be canceled in the meantime
       if (shouldAbort.get()) {
@@ -180,7 +180,7 @@ public class BatchOperationItemProvider {
    * @param lastSortValues the last sortValues for pagination
    * @param total the total amount of found items
    */
-  private record ItemPage(List<Item> items, Object[] lastSortValues, long total) {}
+  private record ItemPage(List<Item> items, String lastSortValues, long total) {}
 
   /**
    * Internal abstraction interface to get a single page of entity items of a specific type. This is
@@ -198,7 +198,7 @@ public class BatchOperationItemProvider {
      * @param sortValues the current sortValues
      * @return the fetched items and pagination information
      */
-    ItemPage fetchItems(F filter, Object[] sortValues, Authentication authentication);
+    ItemPage fetchItems(F filter, String sortValues, Authentication authentication);
 
     /**
      * Creates a security context for the given authentication and authorization.
@@ -219,7 +219,7 @@ public class BatchOperationItemProvider {
     @Override
     public ItemPage fetchItems(
         final ProcessInstanceFilter filter,
-        final Object[] sortValues,
+        final String sortValues,
         final Authentication authentication) {
       final var securityContext =
           createSecurityContext(
@@ -248,9 +248,7 @@ public class BatchOperationItemProvider {
   private final class IncidentPageFetcher implements ItemPageFetcher<IncidentFilter> {
     @Override
     public ItemPage fetchItems(
-        final IncidentFilter filter,
-        final Object[] sortValues,
-        final Authentication authentication) {
+        final IncidentFilter filter, final String sortValues, final Authentication authentication) {
       final var securityContext =
           createSecurityContext(
               authentication, Authorization.of(a -> a.processDefinition().readProcessInstance()));

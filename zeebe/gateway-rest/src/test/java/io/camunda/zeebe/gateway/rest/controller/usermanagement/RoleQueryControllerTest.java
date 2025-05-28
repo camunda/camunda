@@ -118,8 +118,8 @@ public class RoleQueryControllerTest extends RestControllerTest {
         .thenReturn(
             new SearchQueryResult.Builder<RoleEntity>()
                 .total(3)
-                .firstSortValues(new Object[] {"f"})
-                .lastSortValues(new Object[] {"v"})
+                .firstSortValues("f")
+                .lastSortValues("v")
                 .items(
                     List.of(
                         new RoleEntity(100L, "role1", "Role 1", "description 1"),

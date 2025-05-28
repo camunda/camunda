@@ -36,7 +36,6 @@ import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.List;
-import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
@@ -148,7 +147,7 @@ public class UserTaskServiceTest {
     // given
     final var entity = mock(UserTaskEntity.class);
     when(entity.processDefinitionId()).thenReturn("bpid");
-    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array(), Arrays.array());
+    final var result = new SearchQueryResult<>(1, List.of(entity), null, null);
     when(client.searchUserTasks(any())).thenReturn(result);
     authorizeReadUserTasksForProcess(false, "bpid");
 
@@ -168,7 +167,7 @@ public class UserTaskServiceTest {
     // given
     final var entity = mock(UserTaskEntity.class);
     when(entity.processDefinitionId()).thenReturn("bpid");
-    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array(), Arrays.array());
+    final var result = new SearchQueryResult<>(1, List.of(entity), null, null);
     when(client.searchUserTasks(any())).thenReturn(result);
     authorizeReadUserTasksForProcess(false, "bpid");
 
@@ -221,7 +220,6 @@ public class UserTaskServiceTest {
   }
 
   private <T> SearchQueryResult<T> wrapWithSearchQueryResult(final T... entities) {
-    return new SearchQueryResult<>(
-        entities.length, List.of(entities), Arrays.array(), Arrays.array());
+    return new SearchQueryResult<>(entities.length, List.of(entities), null, null);
   }
 }

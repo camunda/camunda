@@ -240,16 +240,7 @@ public class ElementInstanceIT {
                 b ->
                     b.filter(f -> f.processDefinitionIds(processDefinition.processDefinitionId()))
                         .sort(sort)
-                        .page(
-                            p ->
-                                p.size(5)
-                                    .searchAfter(
-                                        new Object[] {
-                                          instanceAfter.type(),
-                                          instanceAfter.tenantId(),
-                                          instanceAfter.startDate(),
-                                          instanceAfter.flowNodeInstanceKey()
-                                        }))));
+                        .page(p -> p.size(5).searchAfter(searchResult.lastSortValues()))));
 
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);

@@ -92,21 +92,6 @@ public class DecisionInstanceIT {
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(20);
     assertThat(searchResult.items()).hasSize(5);
-
-    final var firstInstance = searchResult.items().getFirst();
-    assertThat(searchResult.firstSortValues()).hasSize(3);
-    assertThat(searchResult.firstSortValues())
-        .containsExactly(
-            firstInstance.evaluationDate(),
-            firstInstance.decisionDefinitionName(),
-            firstInstance.decisionInstanceId());
-    final var lastInstance = searchResult.items().getLast();
-    assertThat(searchResult.lastSortValues()).hasSize(3);
-    assertThat(searchResult.lastSortValues())
-        .containsExactly(
-            lastInstance.evaluationDate(),
-            lastInstance.decisionDefinitionName(),
-            lastInstance.decisionInstanceId());
   }
 
   @TestTemplate
@@ -192,16 +177,7 @@ public class DecisionInstanceIT {
                     b.filter(
                             f -> f.decisionDefinitionIds(decisionDefinition.decisionDefinitionId()))
                         .sort(sort)
-                        .page(
-                            p ->
-                                p.size(5)
-                                    .searchAfter(
-                                        new Object[] {
-                                          instanceAfter.decisionDefinitionName(),
-                                          instanceAfter.decisionDefinitionVersion(),
-                                          instanceAfter.evaluationDate(),
-                                          instanceAfter.decisionInstanceId()
-                                        }))));
+                        .page(p -> p.size(5).searchAfter(searchResult.lastSortValues()))));
 
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);

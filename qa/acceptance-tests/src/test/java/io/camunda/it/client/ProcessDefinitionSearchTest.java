@@ -19,7 +19,6 @@ import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -550,17 +549,17 @@ public class ProcessDefinitionSearchTest {
     final var resultAfter =
         camundaClient
             .newProcessDefinitionSearchRequest()
-            .page(p -> p.searchAfter(Collections.singletonList(key)))
+            .page(p -> p.searchAfter(result.page().lastSortValues()))
             .send()
             .join();
 
-    assertThat(resultAfter.items().size()).isEqualTo(3);
-    final var keyAfter = resultAfter.items().getFirst().getProcessDefinitionKey();
+    assertThat(resultAfter.items().size()).isEqualTo(2);
+
     // apply searchBefore
     final var resultBefore =
         camundaClient
             .newProcessDefinitionSearchRequest()
-            .page(p -> p.searchBefore(Collections.singletonList(keyAfter)))
+            .page(p -> p.searchBefore(resultAfter.page().firstSortValues()))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(2);

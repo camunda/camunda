@@ -14,25 +14,24 @@ import io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPagination;
 import io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPaginationFieldEntry;
 import io.camunda.db.rdbms.read.domain.DbQueryPage.Operator;
 import io.camunda.db.rdbms.read.domain.DbQuerySorting;
-import io.camunda.db.rdbms.read.domain.DbQuerySorting.SortingEntry;
 import io.camunda.db.rdbms.sql.columns.SearchColumn;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.search.sort.SortOrder;
-import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Function;
 
 abstract class AbstractEntityReader<T> {
 
   private final SearchColumnFinder<T> searchColumnFinder;
+  private final Cursor cursor;
 
   public AbstractEntityReader(final SearchColumnFinder<T> searchColumnFinder) {
     this.searchColumnFinder = searchColumnFinder;
+    cursor = new Cursor();
   }
 
   @SafeVarargs
@@ -59,8 +58,7 @@ abstract class AbstractEntityReader<T> {
     return builder.build();
   }
 
-  public static DbQueryPage convertPaging(
-      final DbQuerySorting<?> sort, final SearchQueryPage page) {
+  public DbQueryPage convertPaging(final DbQuerySorting<T> sort, final SearchQueryPage page) {
     List<KeySetPagination> keySetPagination = new ArrayList<>();
     if (page.searchAfter() != null || page.searchBefore() != null) {
       keySetPagination = createKeySetPagination(sort, page);
@@ -89,13 +87,11 @@ abstract class AbstractEntityReader<T> {
    * This method takes the sortOrder and the sortValues (before or after) and creates a list grouped
    * expressions. We do this in Java and not in MyBatis because it is easier to program and to test
    */
-  private static List<KeySetPagination> createKeySetPagination(
-      final DbQuerySorting<?> sort, final SearchQueryPage page) {
+  private List<KeySetPagination> createKeySetPagination(
+      final DbQuerySorting<T> sort, final SearchQueryPage page) {
     final boolean isSearchAfter = page.searchAfter() != null;
-    // TODO get sort fields and their types to correctly decode the cursor, or write the type into
-    // the cursor while encoding
-    final Object[] sortValues =
-        decodeCursor(page.searchAfter() != null ? page.searchAfter() : page.searchBefore());
+    final var cursorValue = isSearchAfter ? page.searchAfter() : page.searchBefore();
+    final Object[] sortValues = cursor.decode(cursorValue, sort.columns());
     final List<KeySetPagination> keySetPagination = new ArrayList<>();
 
     for (int i = 0; i < sort.orderings().size(); i++) {
@@ -121,48 +117,17 @@ abstract class AbstractEntityReader<T> {
     return keySetPagination;
   }
 
-  private Object[] decodeCursor(final String cursor) {
-    return new Object[] {};
-  }
-
-  private String encodeCursor(final Object[] sortValues) {
-    // TODO implement encoding of sort values to a string
-    return "";
-  }
-
   protected final SearchQueryResult<T> buildSearchQueryResult(
       final long totalHits, final List<T> hits, final DbQuerySorting<T> dbSort) {
-    return new SearchQueryResult.Builder<T>()
-        .total(totalHits)
-        .items(hits)
-        .firstSortValues(encodeCursor(extractFirstSortValues(hits, dbSort)))
-        .lastSortValues(encodeCursor(extractLastSortValues(hits, dbSort)))
-        .build();
-  }
+    final var result = new SearchQueryResult.Builder<T>().total(totalHits).items(hits);
 
-  @VisibleForTesting
-  Object[] extractFirstSortValues(final List<T> hits, final DbQuerySorting<T> sort) {
-    return extractSortValues(hits, sort, List::getFirst);
-  }
-
-  @VisibleForTesting
-  Object[] extractLastSortValues(final List<T> hits, final DbQuerySorting<T> sort) {
-    return extractSortValues(hits, sort, List::getLast);
-  }
-
-  private Object[] extractSortValues(
-      final List<T> hits,
-      final DbQuerySorting<T> sort,
-      final Function<List<T>, T> firstOrLastGetter) {
-    if (hits.isEmpty() || sort.orderings().isEmpty()) {
-      return new Object[0];
-    }
-    final T firstOrLast = firstOrLastGetter.apply(hits);
-    final List<Object> sortOptions = new ArrayList<>();
-    for (final SortingEntry<T> fieldSorting : sort.orderings()) {
-      sortOptions.add(fieldSorting.column().getPropertyValue(firstOrLast));
+    if (!hits.isEmpty()) {
+      final var columns = dbSort.columns();
+      result
+          .firstSortValues(cursor.encode(hits.getFirst(), columns))
+          .lastSortValues(cursor.encode(hits.getLast(), columns));
     }
 
-    return sortOptions.toArray();
+    return result.build();
   }
 }

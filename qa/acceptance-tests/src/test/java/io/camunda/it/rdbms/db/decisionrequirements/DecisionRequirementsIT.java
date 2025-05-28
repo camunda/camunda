@@ -189,16 +189,7 @@ public class DecisionRequirementsIT {
                 b ->
                     b.filter(f -> f.tenantIds("search-after-123456"))
                         .sort(sort)
-                        .page(
-                            p ->
-                                p.size(5)
-                                    .searchAfter(
-                                        new Object[] {
-                                          instanceAfter.name(),
-                                          instanceAfter.version(),
-                                          instanceAfter.tenantId(),
-                                          instanceAfter.decisionRequirementsKey()
-                                        }))));
+                        .page(p -> p.size(5).searchAfter(searchResult.lastSortValues()))));
 
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);

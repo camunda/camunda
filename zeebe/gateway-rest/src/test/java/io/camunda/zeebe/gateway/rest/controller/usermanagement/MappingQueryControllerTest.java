@@ -107,8 +107,8 @@ public class MappingQueryControllerTest extends RestControllerTest {
         .thenReturn(
             new SearchQueryResult.Builder<MappingEntity>()
                 .total(3)
-                .firstSortValues(new Object[] {"f"})
-                .lastSortValues(new Object[] {"v"})
+                .firstSortValues("f")
+                .lastSortValues("v")
                 .items(
                     List.of(
                         new MappingEntity("id1", 100L, "Claim Name1", "Claim Value1", "Map Name1"),

@@ -189,22 +189,13 @@ public class GroupIT {
             GroupQuery.of(
                 b -> b.filter(f -> f.name("Alice Doe")).sort(sort).page(p -> p.from(0).size(20))));
 
-    final var instanceAfter = searchResult.items().get(9);
     final var nextPage =
         groupReader.search(
             GroupQuery.of(
                 b ->
                     b.filter(f -> f.name("Alice Doe"))
                         .sort(sort)
-                        .page(
-                            p ->
-                                p.size(5)
-                                    .searchAfter(
-                                        new Object[] {
-                                          instanceAfter.name(),
-                                          instanceAfter.groupId(),
-                                          instanceAfter.groupKey()
-                                        }))));
+                        .page(p -> p.size(5).searchAfter(searchResult.lastSortValues()))));
 
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);

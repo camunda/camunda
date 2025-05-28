@@ -101,8 +101,8 @@ public class VariablesQueryControllerTest extends RestControllerTest {
               List.of(
                   new VariableEntity(0L, "n", "v", null, false, 2L, 3L, "bpid", "<default>"),
                   new VariableEntity(1L, "ne", "v", "ve", true, 2L, 3L, "bpid", "<default>")))
-          .firstSortValues(new Object[] {"0"})
-          .lastSortValues(new Object[] {"1"})
+          .firstSortValues("0")
+          .lastSortValues("1")
           .build();
   @MockBean VariableServices variableServices;
   @Captor ArgumentCaptor<VariableQuery> variableQueryCaptor;

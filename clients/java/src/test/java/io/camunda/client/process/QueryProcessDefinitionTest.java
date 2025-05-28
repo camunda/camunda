@@ -158,12 +158,7 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
     // when
     client
         .newProcessDefinitionSearchRequest()
-        .page(
-            p ->
-                p.from(23)
-                    .limit(5)
-                    .searchBefore(Collections.singletonList("b"))
-                    .searchAfter(Collections.singletonList("a")))
+        .page(p -> p.from(23).limit(5).searchBefore("b").searchAfter("a"))
         .send()
         .join();
 

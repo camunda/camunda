@@ -73,8 +73,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                       ResourceTypeEnum.PROCESS_DEFINITION.getValue(),
                       "2",
                       Set.of(PermissionType.CREATE))))
-          .firstSortValues(new Object[] {"f"})
-          .lastSortValues(new Object[] {"v"})
+          .firstSortValues("f")
+          .lastSortValues("v")
           .build();
 
   @MockitoBean private AuthorizationServices authorizationServices;

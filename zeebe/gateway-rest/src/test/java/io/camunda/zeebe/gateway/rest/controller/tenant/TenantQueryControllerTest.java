@@ -308,8 +308,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .thenReturn(
             new SearchQueryResult.Builder<TenantEntity>()
                 .total(3)
-                .firstSortValues(new Object[] {"f"})
-                .lastSortValues(new Object[] {"v"})
+                .firstSortValues("f")
+                .lastSortValues("v")
                 .items(TENANT_ENTITIES)
                 .build());
 
@@ -339,8 +339,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
             new SearchQueryResult.Builder<TenantEntity>()
                 .total(TENANT_ENTITIES.size())
                 .items(TENANT_ENTITIES)
-                .firstSortValues(new Object[] {"f"})
-                .lastSortValues(new Object[] {"v"})
+                .firstSortValues("f")
+                .lastSortValues("v")
                 .build());
 
     // when / then
@@ -378,8 +378,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
             new SearchQueryResult.Builder<MappingEntity>()
                 .total(MAPPING_ENTITIES.size())
                 .items(MAPPING_ENTITIES)
-                .firstSortValues(new Object[] {"f"})
-                .lastSortValues(new Object[] {"v"})
+                .firstSortValues("f")
+                .lastSortValues("v")
                 .build());
 
     // when / then
@@ -411,8 +411,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
             new SearchQueryResult.Builder<MappingEntity>()
                 .total(MAPPING_ENTITIES.size())
                 .items(MAPPING_ENTITIES)
-                .firstSortValues(new Object[] {"f"})
-                .lastSortValues(new Object[] {"v"})
+                .firstSortValues("f")
+                .lastSortValues("v")
                 .build());
 
     // when / then
@@ -443,8 +443,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
             new SearchQueryResult.Builder<GroupEntity>()
                 .total(GROUP_ENTITIES.size())
                 .items(GROUP_ENTITIES)
-                .firstSortValues(new Object[] {"f"})
-                .lastSortValues(new Object[] {"v"})
+                .firstSortValues("f")
+                .lastSortValues("v")
                 .build());
 
     // when / then
@@ -476,8 +476,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
             new SearchQueryResult.Builder<GroupEntity>()
                 .total(GROUP_ENTITIES.size())
                 .items(GROUP_ENTITIES)
-                .firstSortValues(new Object[] {"f"})
-                .lastSortValues(new Object[] {"v"})
+                .firstSortValues("f")
+                .lastSortValues("v")
                 .build());
 
     // when / then
@@ -508,8 +508,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
             new SearchQueryResult.Builder<RoleEntity>()
                 .total(ROLE_ENTITIES.size())
                 .items(ROLE_ENTITIES)
-                .firstSortValues(new Object[] {"f"})
-                .lastSortValues(new Object[] {"v"})
+                .firstSortValues("f")
+                .lastSortValues("v")
                 .build());
 
     // when / then
@@ -541,8 +541,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
             new SearchQueryResult.Builder<RoleEntity>()
                 .total(ROLE_ENTITIES.size())
                 .items(ROLE_ENTITIES)
-                .firstSortValues(new Object[] {"f"})
-                .lastSortValues(new Object[] {"v"})
+                .firstSortValues("f")
+                .lastSortValues("v")
                 .build());
 
     // when / then

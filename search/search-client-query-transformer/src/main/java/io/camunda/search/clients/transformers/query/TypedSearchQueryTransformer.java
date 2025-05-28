@@ -60,9 +60,7 @@ public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOpt
 
     final var searchAfter = page.startNextPageAfter();
     if (searchAfter != null) {
-      final Object[] decodedSearchAfter = decodeCursor(searchAfter);
-
-      builder.searchAfter(decodedSearchAfter);
+      builder.searchAfter(Cursor.decode(searchAfter));
     }
 
     final var resultConfig = query.resultConfig();

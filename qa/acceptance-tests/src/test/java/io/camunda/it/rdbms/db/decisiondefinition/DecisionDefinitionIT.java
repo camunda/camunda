@@ -193,23 +193,13 @@ public class DecisionDefinitionIT {
                         .sort(sort)
                         .page(p -> p.from(0).size(20))));
 
-    final var instanceAfter = searchResult.items().get(9);
     final var nextPage =
         decisionDefinitionReader.search(
             DecisionDefinitionQuery.of(
                 b ->
                     b.filter(f -> f.tenantIds("search-after-123456"))
                         .sort(sort)
-                        .page(
-                            p ->
-                                p.size(5)
-                                    .searchAfter(
-                                        new Object[] {
-                                          instanceAfter.name(),
-                                          instanceAfter.version(),
-                                          instanceAfter.tenantId(),
-                                          instanceAfter.decisionDefinitionKey()
-                                        }))));
+                        .page(p -> p.size(5).searchAfter(searchResult.lastSortValues()))));
 
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);

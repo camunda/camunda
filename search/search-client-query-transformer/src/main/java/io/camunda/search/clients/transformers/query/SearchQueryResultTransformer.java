@@ -13,7 +13,6 @@ import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.TypedSearchQuery;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -52,17 +51,10 @@ public final class SearchQueryResultTransformer<T, R> {
 
     return new Builder<R>()
         .total(value.totalHits())
-        .firstSortValues(encodeCursor(firstSortValues))
-        .lastSortValues(encodeCursor(lastSortValues))
+        .firstSortValues(Cursor.encode(firstSortValues))
+        .lastSortValues(Cursor.encode(lastSortValues))
         .items(items.stream().map(documentToEntityMapper::apply).toList())
         .build();
-  }
-
-  private String encodeCursor(final Object[] sortValues) {
-    if (sortValues == null || sortValues.length == 0) {
-      return null;
-    }
-    return String.join(",", Arrays.stream(sortValues).map(Object::toString).toArray(String[]::new));
   }
 
   private List<T> of(final List<SearchQueryHit<T>> values) {

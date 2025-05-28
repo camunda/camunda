@@ -289,12 +289,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     // when
     client
         .newProcessInstanceSearchRequest()
-        .page(
-            p ->
-                p.from(23)
-                    .limit(5)
-                    .searchBefore(Collections.singletonList("b"))
-                    .searchAfter(Collections.singletonList("a")))
+        .page(p -> p.from(23).limit(5).searchBefore("b").searchAfter("a"))
         .send()
         .join();
 

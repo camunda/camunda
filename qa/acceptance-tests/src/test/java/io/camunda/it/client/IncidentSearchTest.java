@@ -27,7 +27,6 @@ import io.camunda.client.api.search.response.Incident;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.webapps.schema.entities.incident.ErrorType;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -532,7 +531,7 @@ class IncidentSearchTest {
     final var resultSearchAfter =
         camundaClient
             .newIncidentSearchRequest()
-            .page(p -> p.limit(2).searchAfter(Collections.singletonList(secondIncidentKey)))
+            .page(p -> p.limit(2).searchAfter(resultAll.page().lastSortValues()))
             .send()
             .join();
 
@@ -552,7 +551,7 @@ class IncidentSearchTest {
     final var resultSearchBefore =
         camundaClient
             .newIncidentSearchRequest()
-            .page(p -> p.limit(2).searchBefore(Collections.singletonList(secondIncidentKey)))
+            .page(p -> p.limit(2).searchBefore(resultAll.page().lastSortValues()))
             .send()
             .join();
 

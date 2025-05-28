@@ -1034,7 +1034,7 @@ public class ProcessInstanceAndElementInstanceSearchTest {
     final var resultAfter =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .page(p -> p.searchAfter(Collections.singletonList(key)))
+            .page(p -> p.searchAfter(result.page().lastSortValues()))
             .send()
             .join();
 
@@ -1044,7 +1044,7 @@ public class ProcessInstanceAndElementInstanceSearchTest {
     final var resultBefore =
         camundaClient
             .newProcessInstanceSearchRequest()
-            .page(p -> p.searchBefore(Collections.singletonList(keyAfter)))
+            .page(p -> p.searchBefore(resultAfter.page().firstSortValues()))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(2);
@@ -1061,7 +1061,7 @@ public class ProcessInstanceAndElementInstanceSearchTest {
     final var resultAfter =
         camundaClient
             .newElementInstanceSearchRequest()
-            .page(p -> p.searchAfter(Collections.singletonList(key)))
+            .page(p -> p.searchAfter(result.page().lastSortValues()))
             .send()
             .join();
 
@@ -1071,7 +1071,7 @@ public class ProcessInstanceAndElementInstanceSearchTest {
     final var resultBefore =
         camundaClient
             .newElementInstanceSearchRequest()
-            .page(p -> p.searchBefore(Collections.singletonList(keyAfter)))
+            .page(p -> p.searchBefore(resultAfter.page().firstSortValues()))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(2);
@@ -1415,7 +1415,7 @@ public class ProcessInstanceAndElementInstanceSearchTest {
     final var resultAfter =
         camundaClient
             .newElementInstanceSearchRequest()
-            .page(p -> p.searchAfter(Collections.singletonList(key)))
+            .page(p -> p.searchAfter(result.page().lastSortValues()))
             .send()
             .join();
 
@@ -1425,7 +1425,7 @@ public class ProcessInstanceAndElementInstanceSearchTest {
     final var resultBefore =
         camundaClient
             .newElementInstanceSearchRequest()
-            .page(p -> p.searchBefore(Collections.singletonList(keyAfter)))
+            .page(p -> p.searchBefore(resultAfter.page().firstSortValues()))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(2);

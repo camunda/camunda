@@ -615,22 +615,14 @@ public class UserTaskIT {
 
     assertThat(searchResult.items())
         .isSortedAccordingTo(Comparator.comparing(UserTaskEntity::priority));
-    final var instanceAfter = searchResult.items().get(9);
+
     final var nextPage =
         reader.search(
             UserTaskQuery.of(
                 b ->
                     b.filter(f -> f.tenantIds("tenant-1337"))
                         .sort(sort)
-                        .page(
-                            p ->
-                                p.size(5)
-                                    .searchAfter(
-                                        new Object[] {
-                                          instanceAfter.priority(),
-                                          instanceAfter.completionDate(),
-                                          instanceAfter.userTaskKey()
-                                        }))));
+                        .page(p -> p.size(5).searchAfter(searchResult.lastSortValues()))));
 
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);

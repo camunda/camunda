@@ -150,12 +150,7 @@ public class SearchIncidentTest extends ClientRestTest {
     // when
     client
         .newIncidentSearchRequest()
-        .page(
-            p ->
-                p.from(23)
-                    .limit(5)
-                    .searchBefore(Arrays.asList("b"))
-                    .searchAfter(Arrays.asList("a")))
+        .page(p -> p.from(23).limit(5).searchBefore("b").searchAfter("a"))
         .send()
         .join();
 
