@@ -26,7 +26,6 @@ import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -181,13 +180,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
     stateWriter.appendFollowUpEvent(
         distributionKey, CommandDistributionIntent.STARTED, distributionRecord);
 
-    final var allPartitions = new HashSet<>(partitions);
-    if (partitions.equals(routingInfo.partitions())) {
-      // If the distribution targets all active partitions, include any potential scaling partitions
-      allPartitions.addAll(routingInfo.desiredPartitions());
-    }
-
-    allPartitions.stream()
+    partitions.stream()
         .filter(partition -> partition != currentPartitionId)
         .forEach(
             partition -> distributeToPartition(partition, distributionRecord, distributionKey));
@@ -480,7 +473,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
       implements RequestBuilder, DistributionRequestBuilder, ContinuationRequestBuilder {
     final long key;
     String queue;
-    Set<Integer> partitions = routingInfo.partitions();
+    Set<Integer> partitions = routingInfo.desiredPartitions();
 
     public DistributionRequest(final long key) {
       this.key = key;
@@ -518,7 +511,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
 
     @Override
     public DistributionRequestBuilder forOtherPartitions() {
-      partitions = routingInfo.partitions();
+      partitions = routingInfo.desiredPartitions();
       return this;
     }
 
