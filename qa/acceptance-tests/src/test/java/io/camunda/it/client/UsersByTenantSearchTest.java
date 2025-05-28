@@ -86,6 +86,7 @@ public class UsersByTenantSearchTest {
           List.of(
               new Permissions(ResourceType.TENANT, PermissionType.READ, List.of("*")),
               new Permissions(ResourceType.TENANT, PermissionType.UPDATE, List.of("*")),
+              new Permissions(ResourceType.USER, PermissionType.READ, List.of("*")),
               new Permissions(ResourceType.APPLICATION, PermissionType.ACCESS, List.of("*")),
               new Permissions(ResourceType.RESOURCE, PermissionType.READ, List.of("*"))));
 
@@ -112,6 +113,13 @@ public class UsersByTenantSearchTest {
   void shouldReturnUsersByGroup(@Authenticated(SEARCH_USERNAME) final CamundaClient camundaClient)
       throws URISyntaxException, IOException, InterruptedException {
     assignUserToTenant(camundaClient, SEARCH_USERNAME, TENANT_ID);
+    assertThat(
+            RecordingExporter.tenantRecords()
+                .withTenantId(TENANT_ID)
+                .withIntent(TenantIntent.ENTITY_ADDED)
+                .withEntityId(SEARCH_USERNAME)
+                .count())
+        .isEqualTo(1L);
     final var users = searchForUsersByTenant(camundaClient, TENANT_ID, ADMIN_USER_NAME);
 
     assertThat(users.statusCode()).isEqualTo(200);
