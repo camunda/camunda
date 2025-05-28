@@ -322,7 +322,8 @@ public final class EngineProcessors {
         searchClientsProxy,
         processingState,
         config,
-        partitionId);
+        partitionId,
+        routingInfo);
 
     return typedRecordProcessors;
   }

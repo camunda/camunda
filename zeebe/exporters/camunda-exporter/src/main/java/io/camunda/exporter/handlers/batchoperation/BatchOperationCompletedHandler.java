@@ -20,9 +20,13 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BatchOperationCompletedHandler
     implements ExportHandler<BatchOperationEntity, BatchOperationExecutionRecordValue> {
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(BatchOperationCompletedHandler.class);
 
   private final String indexName;
 
@@ -64,6 +68,9 @@ public class BatchOperationCompletedHandler
   @Override
   public void flush(final BatchOperationEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
+    LOGGER.trace(
+        "Updating batch operation {} to be COMPLETED on index {}", entity.getId(), indexName);
+
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(BatchOperationTemplate.STATE, entity.getState());
     batchRequest.update(indexName, entity.getId(), updateFields);

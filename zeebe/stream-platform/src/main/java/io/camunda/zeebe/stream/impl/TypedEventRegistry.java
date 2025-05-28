@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
@@ -130,6 +131,9 @@ public final class TypedEventRegistry {
     registry.put(
         ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
         BatchOperationLifecycleManagementRecord.class);
+    registry.put(
+        ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
+        BatchOperationPartitionLifecycleRecord.class);
 
     EVENT_REGISTRY = Collections.unmodifiableMap(registry);
 

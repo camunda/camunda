@@ -204,6 +204,7 @@ public class OpensearchExporterConfiguration {
     public boolean batchOperationChunk = false;
     public boolean batchOperationExecution = false;
     public boolean batchOperationLifecycleManagement = false;
+    public boolean batchOperationPartitionLifecycle = false;
 
     // index settings
     private Integer numberOfShards = null;
