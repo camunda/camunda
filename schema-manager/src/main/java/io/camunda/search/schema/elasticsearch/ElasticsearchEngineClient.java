@@ -63,6 +63,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       new SuppressLogger(LoggerFactory.getLogger(ElasticsearchEngineClient.class));
   private static final Slices AUTO_SLICES =
       Slices.of(slices -> slices.computed(SlicesCalculation.Auto));
+  private static final String DEFAULT_ROLLOVER_INTERVAL = "1d";
   private final ElasticsearchClient client;
   private final SearchEngineClientUtils utils;
   private final ObjectMapper mapper;
@@ -344,16 +345,30 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   public PutLifecycleRequest putLifecycleRequest(
       final String policyName, final String deletionMinAge) {
+    return putLifecycleRequest(policyName, deletionMinAge, DEFAULT_ROLLOVER_INTERVAL);
+  }
+
+  public PutLifecycleRequest putLifecycleRequest(
+      final String policyName, final String deletionMinAge, final String rolloverInterval) {
     return new PutLifecycleRequest.Builder()
         .name(policyName)
         .policy(
             policy ->
                 policy.phases(
-                    phase ->
-                        phase.delete(
-                            del ->
-                                del.minAge(m -> m.time(deletionMinAge))
-                                    .actions(a -> a.delete(DeleteAction.of(d -> d))))))
+                    phases ->
+                        phases
+                            .delete(
+                                del ->
+                                    del.minAge(m -> m.time(deletionMinAge))
+                                        .actions(a -> a.delete(DeleteAction.of(d -> d))))
+                            .hot(
+                                hot ->
+                                    hot.actions(
+                                        actions ->
+                                            actions.rollover(
+                                                rollover ->
+                                                    rollover.maxAge(
+                                                        Time.of(t -> t.time(rolloverInterval))))))))
         .build();
   }
 
