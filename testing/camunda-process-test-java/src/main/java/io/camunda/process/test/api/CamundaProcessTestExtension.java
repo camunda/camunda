@@ -210,8 +210,9 @@ public class CamundaProcessTestExtension
     }
     CamundaAssert.reset();
     closeCreatedClients();
-    // final step: delete data
+    // final steps: delete data and reset the time
     deleteRuntimeData();
+    resetRuntimeClock();
   }
 
   private void printTestResults() {
@@ -238,6 +239,19 @@ public class CamundaProcessTestExtension
     } catch (final Throwable t) {
       LOG.warn(
           "Failed to delete the runtime data, skipping. Check the runtime for details. "
+              + "Note that a dirty runtime may cause failures in other test cases.",
+          t);
+    }
+  }
+
+  private void resetRuntimeClock() {
+    try {
+      LOG.debug("Resetting the time");
+      camundaManagementClient.resetTime();
+      LOG.debug("Time reset");
+    } catch (final Throwable t) {
+      LOG.warn(
+          "Failed to reset the time, skipping. Check the runtime for details. "
               + "Note that a dirty runtime may cause failures in other test cases.",
           t);
     }

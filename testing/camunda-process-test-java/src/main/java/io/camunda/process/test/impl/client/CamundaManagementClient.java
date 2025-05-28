@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import org.apache.hc.client5.http.classic.methods.HttpDelete;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
 import org.apache.hc.client5.http.classic.methods.HttpPost;
 import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
@@ -57,7 +58,6 @@ public class CamundaManagementClient {
   }
 
   public Instant getCurrentTime() {
-
     try {
       final HttpGet request = new HttpGet(camundaManagementApi + CLOCK_ENDPOINT);
       final CamundaClockResponseDto clockResponseDto =
@@ -70,7 +70,6 @@ public class CamundaManagementClient {
   }
 
   public void increaseTime(final Duration timeToAdd) {
-
     final HttpPost request = new HttpPost(camundaManagementApi + CLOCK_ADD_ENDPOINT);
 
     final CamundaAddClockRequestDto requestDto = new CamundaAddClockRequestDto();
@@ -81,9 +80,18 @@ public class CamundaManagementClient {
       request.setEntity(HttpEntities.create(requestBody, ContentType.APPLICATION_JSON));
 
       sendRequest(request);
-
     } catch (final Exception e) {
       throw new RuntimeException("Failed to increase the time", e);
+    }
+  }
+
+  public void resetTime() {
+    final HttpDelete request = new HttpDelete(camundaManagementApi + CLOCK_ENDPOINT);
+
+    try {
+      sendRequest(request);
+    } catch (final Exception e) {
+      throw new RuntimeException("Failed to reset the time", e);
     }
   }
 
