@@ -30,8 +30,8 @@ public final class OidcPrincipalLoader {
   private final JsonPath clientIdPath;
 
   public OidcPrincipalLoader(final String usernameClaim, final String clientIdClaim) {
-    usernamePath = JsonPath.compile(usernameClaim);
-    clientIdPath = JsonPath.compile(clientIdClaim);
+    usernamePath = usernameClaim != null ? JsonPath.compile(usernameClaim) : null;
+    clientIdPath = clientIdClaim != null ? JsonPath.compile(clientIdClaim) : null;
   }
 
   public OidcPrincipals load(final Map<String, Object> claims) {
@@ -40,6 +40,9 @@ public final class OidcPrincipalLoader {
   }
 
   private static String tryReadJsonPath(final Map<String, Object> claims, final JsonPath path) {
+    if (path == null) {
+      return null;
+    }
     try {
       return path.read(claims, CONFIGURATION);
     } catch (final JsonPathException e) {

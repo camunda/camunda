@@ -15,6 +15,25 @@ import org.junit.jupiter.api.Test;
 final class OidcPrincipalLoaderTest {
 
   @Test
+  void shouldIgnoreMissingConfig() {
+    // given
+    final var claims =
+        Map.<String, Object>of(
+            "username", "testuser",
+            "client_id", "testclient",
+            "other_claim", "other_value");
+
+    final var loader = new OidcPrincipalLoader(null, null);
+
+    // when
+    final var principals = loader.load(claims);
+
+    // then
+    assertThat(principals.username()).isNull();
+    assertThat(principals.clientId()).isNull();
+  }
+
+  @Test
   void shouldLoadUsernameAndClientIdWithSimpleExpression() {
     // given
     final var claims =
