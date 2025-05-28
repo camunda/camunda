@@ -37,67 +37,61 @@ public class BrokerAdminServiceEndpointTest {
   private static final String EXPECTED_PARTITIONS_JSON =
       // language=JSON
       """
-          {
-            "1": {
-              "role": "LEADER",
-              "processedPosition": -1,
-              "snapshotId": null,
-              "processedPositionInSnapshot": null,
-              "streamProcessorPhase": "PROCESSING",
-              "exporterPhase": "EXPORTING",
-              "exportedPosition": -1,
-              "clock": {
-                "instant": "2024-10-29T07:10:02.688Z",
-                "modificationType": "None",
-                "modification": {}
-              },
-              "health": {
-                "id": "Partition-1",
-                "name": "Partition-1",
-                "status": "HEALTHY",
-                "componentsState": "HEALTHY",
-                "children": [
-                    {
-                     "id": "SnapshotDirector-1",
-                     "name": "SnapshotDirector-1",
-                     "status": "HEALTHY",
-                     "children": []
-                   },
-                   {
-                     "id": "ZeebePartitionHealth-1",
-                     "name": "ZeebePartitionHealth-1",
-                     "status": "HEALTHY",
-                     "children": []
-                   },
-                   {
-                     "id": "StreamProcessor-1",
-                     "name": "StreamProcessor-1",
-                     "status": "HEALTHY",
-                     "children": []
-                   },
-                   {
-                     "id": "Exporter-1",
-                     "name": "Exporter-1",
-                     "status": "HEALTHY",
-                     "children": []
-                   },
-                   {
-                      "id": "MigrationSnapshotDirector",
-                      "name": "MigrationSnapshotDirector",
-                      "status": "HEALTHY",
-                      "children":[]
-                   },
-                   {
-                     "id": "RaftPartition-1",
-                     "name": "RaftPartition-1",
-                     "status": "HEALTHY",
-                     "children": []
-                   }
-                 ]
+      {
+        "1": {
+          "role": "LEADER",
+          "processedPosition": -1,
+          "snapshotId": null,
+          "processedPositionInSnapshot": null,
+          "streamProcessorPhase": "PROCESSING",
+          "exporterPhase": "EXPORTING",
+          "exportedPosition": -1,
+          "clock": {
+            "instant": "2024-10-29T07:10:02.688Z",
+            "modificationType": "None",
+            "modification": {}
+          },
+          "health": {
+            "id": "Partition-1",
+            "name": "Partition-1",
+            "status": "HEALTHY",
+            "componentsState": "HEALTHY",
+            "children": [
+                {
+                 "id": "SnapshotDirector-1",
+                 "name": "SnapshotDirector-1",
+                 "status": "HEALTHY",
+                 "children": []
+               },
+               {
+                 "id": "ZeebePartitionHealth-1",
+                 "name": "ZeebePartitionHealth-1",
+                 "status": "HEALTHY",
+                 "children": []
+               },
+               {
+                 "id": "StreamProcessor-1",
+                 "name": "StreamProcessor-1",
+                 "status": "HEALTHY",
+                 "children": []
+               },
+               {
+                 "id": "Exporter-1",
+                 "name": "Exporter-1",
+                 "status": "HEALTHY",
+                 "children": []
+               },
+               {
+                 "id": "RaftPartition-1",
+                 "name": "RaftPartition-1",
+                 "status": "HEALTHY",
+                 "children": []
                }
-            }
-          }
-          """;
+             ]
+           }
+        }
+      }
+      """;
   private static final String EXPECTED_PARTITION_JSON =
       // language=JSON
       """
@@ -143,12 +137,6 @@ public class BrokerAdminServiceEndpointTest {
                  "name": "Exporter-1",
                  "status": "HEALTHY",
                  "children": []
-               },
-               {
-                  "id": "MigrationSnapshotDirector",
-                  "name": "MigrationSnapshotDirector",
-                  "status": "HEALTHY",
-                  "children":[]
                },
                {
                  "id": "RaftPartition-1",
