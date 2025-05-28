@@ -598,7 +598,7 @@ public class ProcessInstanceAssertTest {
     @Test
     void shouldAssertStateAndVariables() {
       // given
-      when(camundaDataSource.findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Collections.singletonList(variable));
 
       // when
@@ -624,7 +624,7 @@ public class ProcessInstanceAssertTest {
     @Test
     void shouldAssertVariablesAndState() {
       // given
-      when(camundaDataSource.findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Collections.singletonList(variable));
 
       // when
@@ -640,7 +640,7 @@ public class ProcessInstanceAssertTest {
       when(camundaDataSource.findElementInstances(any()))
           .thenReturn(Collections.singletonList(activeElementInstance));
 
-      when(camundaDataSource.findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Collections.singletonList(variable));
 
       // when
@@ -656,7 +656,7 @@ public class ProcessInstanceAssertTest {
       when(camundaDataSource.findElementInstances(any()))
           .thenReturn(Collections.singletonList(activeElementInstance));
 
-      when(camundaDataSource.findVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
+      when(camundaDataSource.findGlobalVariablesByProcessInstanceKey(PROCESS_INSTANCE_KEY))
           .thenReturn(Collections.singletonList(variable));
 
       // when

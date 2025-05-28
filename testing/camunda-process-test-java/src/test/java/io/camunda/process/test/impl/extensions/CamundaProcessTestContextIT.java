@@ -82,7 +82,10 @@ public class CamundaProcessTestContextIT {
 
     // Then
     assertThat(processInstanceEvent).hasCompletedElements("error-end");
-    assertThat(processInstanceEvent).hasVariables(variables);
+
+    final Map<String, Object> expectedVariables = new HashMap<>();
+    expectedVariables.put("error_code", 123);
+    assertThat(processInstanceEvent).hasVariables(expectedVariables);
   }
 
   @Test
@@ -221,7 +224,10 @@ public class CamundaProcessTestContextIT {
     // Then
     assertThat(processInstanceEvent).isCompleted();
     assertThat(processInstanceEvent).hasCompletedElements("error-end");
-    assertThat(processInstanceEvent).hasVariables(variables);
+
+    final Map<String, Object> expectedVariables = new HashMap<>();
+    expectedVariables.put("error_code", 123);
+    assertThat(processInstanceEvent).hasVariables(expectedVariables);
   }
 
   @Test
@@ -764,6 +770,7 @@ public class CamundaProcessTestContextIT {
         .zeebeJobType("test")
         .boundaryEvent("error-boundary-event")
         .error("bpmn-error")
+        .zeebeOutputExpression("abc", "error_code")
         .endEvent("error-end")
         .moveToActivity("service-task-1")
         .endEvent("success-end")

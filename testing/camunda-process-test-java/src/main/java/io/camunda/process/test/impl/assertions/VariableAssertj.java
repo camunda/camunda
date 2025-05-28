@@ -173,7 +173,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
   }
 
   private Map<String, String> getProcessInstanceVariables(final long processInstanceKey) {
-    return dataSource.findVariablesByProcessInstanceKey(processInstanceKey).stream()
+    return dataSource.findGlobalVariablesByProcessInstanceKey(processInstanceKey).stream()
         // We're deliberately switching from the Collectors.toMap collector to a custom
         // implementation because it's allowed to have Camunda Variables with null values
         // However, the toMap collector does not allow null values and would throw an exception.
