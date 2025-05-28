@@ -1,7 +1,7 @@
 # description: Runs integration tests CI tests owned by Core Features
 # test location: operate/qa/integration-tests
 # owner: Core Features
-name: "[Legacy] Operate"
+name: "[Legacy] Operate / [IT] Core Features"
 on:
   workflow_dispatch:
   push:
@@ -42,7 +42,7 @@ concurrency:
 jobs:
   # over 10min run time
   run-core-features-integration-tests:
-    name: "[IT] Core Features"
+    name: "Test"
     uses: ./.github/workflows/operate-ci-test-reusable.yml
     secrets: inherit
     with:
