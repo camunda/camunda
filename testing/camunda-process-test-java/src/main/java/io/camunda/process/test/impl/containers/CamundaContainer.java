@@ -45,7 +45,10 @@ import org.testcontainers.utility.DockerImageName;
 public class CamundaContainer extends GenericContainer<CamundaContainer> {
 
   private static final Duration DEFAULT_STARTUP_TIMEOUT = Duration.ofMinutes(1);
-  private static final String READY_ENDPOINT = "/actuator/health";
+  private static final Duration DEFAULT_READINESS_TIMEOUT = Duration.ofSeconds(10);
+
+  private static final String READY_ENDPOINT = "/actuator/health/status";
+  private static final String TOPOLOGY_ENDPOINT = "/v2/topology";
 
   private static final String ACTIVE_SPRING_PROFILES = "broker,consolidated-auth";
   private static final String LOG_APPENDER_STACKDRIVER = "Stackdriver";
@@ -122,13 +125,29 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
         .forPath(READY_ENDPOINT)
         .forPort(ContainerRuntimePorts.CAMUNDA_MONITORING_API)
         .forStatusCodeMatching(status -> status >= 200 && status < 300)
-        .withReadTimeout(Duration.ofSeconds(10));
+        .withReadTimeout(DEFAULT_READINESS_TIMEOUT);
+  }
+
+  public static HttpWaitStrategy newDefaultTopologyReadyCheck() {
+    return new HttpWaitStrategy()
+        .forPath(TOPOLOGY_ENDPOINT)
+        .forPort(ContainerRuntimePorts.CAMUNDA_REST_API)
+        .forStatusCodeMatching(status -> status >= 200 && status < 300)
+        .forResponsePredicate(CamundaContainer::isPartitionReady)
+        .withReadTimeout(DEFAULT_READINESS_TIMEOUT);
+  }
+
+  private static boolean isPartitionReady(String response) {
+    return response.matches(".*\"partitionId\"\\s*:\\s*1.*")
+        && response.matches(".*\"role\"\\s*:\\s*\"leader\".*")
+        && response.matches(".*\"health\"\\s*:\\s*\"healthy\".*");
   }
 
   private WaitAllStrategy newDefaultWaitStrategy() {
     return new WaitAllStrategy(Mode.WITH_OUTER_TIMEOUT)
         .withStrategy(new HostPortWaitStrategy())
         .withStrategy(newDefaultBrokerReadyCheck())
+        .withStrategy(newDefaultTopologyReadyCheck())
         .withStartupTimeout(DEFAULT_STARTUP_TIMEOUT);
   }
 
