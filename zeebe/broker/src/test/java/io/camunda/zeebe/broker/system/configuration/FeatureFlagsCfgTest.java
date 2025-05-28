@@ -195,4 +195,17 @@ final class FeatureFlagsCfgTest {
     // then
     assertThat(featureFlagsCfg.isEnablePartitionScaling()).isFalse();
   }
+
+  @Test
+  void shouldSetEnableMessageBodyOnExpiredFromConfig() {
+    // given
+    environment.put("zeebe.broker.experimental.features.enableMessageBodyOnExpired", "true");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEnableMessageBodyOnExpired()).isTrue();
+  }
 }
