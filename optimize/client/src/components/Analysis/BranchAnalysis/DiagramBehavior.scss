@@ -16,14 +16,14 @@
   opacity: 1;
 }
 
-.DiagramBehavior__highlight .djs-outline {
+.DiagramBehavior__highlight .djs-visual > :nth-child(1) {
   stroke-width: 2px !important;
   stroke: var(--blue-darken-62) !important;
   fill: var(--silver-darken-80) !important;
   fill-opacity: 0.4;
 }
 
-.DiagramBehavior__selected .djs-outline {
+.DiagramBehavior__selected .djs-visual > :nth-child(1) {
   visibility: visible;
   shape-rendering: initial !important;
   stroke-dasharray: none !important;
@@ -33,7 +33,7 @@
   fill-opacity: 0.6;
 }
 
-.DiagramBehavior__selected.hover .djs-outline {
+.DiagramBehavior__selected.hover .djs-visual > :nth-child(1) {
   stroke-width: 2px !important;
   stroke: var(--blue-darken-55) !important;
   fill: var(--blue-darken-48) !important;
