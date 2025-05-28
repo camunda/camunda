@@ -34,6 +34,7 @@ import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -144,6 +145,63 @@ public class BatchOperationMigrateProcessInstanceTest {
       processInstanceHasVariables(
           client, processInstanceKey, Map.of("foo", v -> v.getValue().equals("\"bar\"")));
     }
+  }
+
+  @Test
+  void shouldMigrateProcessInstancesWithFailuresWithBatch(final TestInfo testInfo) {
+    // given
+    final String testScopeId =
+        testInfo.getTestMethod().map(Method::toString).orElse(UUID.randomUUID().toString());
+
+    final long sourceProcessDefinitionKey =
+        deployProcessAndWaitForIt(
+                client,
+                Bpmn.createExecutableProcess("sourceProcess")
+                    .startEvent()
+                    .exclusiveGateway()
+                    .conditionExpression("canBeMigrated")
+                    .userTask("userTaskA")
+                    .moveToLastExclusiveGateway()
+                    .defaultFlow()
+                    .userTask("willNotBeMigrated")
+                    .done(),
+                "source-process.bpmn")
+            .getProcessDefinitionKey();
+
+    final var targetProcessDefinitionKey =
+        deployProcessAndWaitForIt(
+                client,
+                Bpmn.createExecutableProcess("process2").startEvent().userTask("userTaskB").done(),
+                "target-process.bpmn")
+            .getProcessDefinitionKey();
+
+    // start 10 process instances, 5 of them can be migrated and 5 cannot
+    final List<Long> processInstances = new ArrayList<>();
+    IntStream.rangeClosed(0, 9)
+        .forEach(
+            i ->
+                processInstances.add(
+                    startScopedProcessInstance(
+                            client,
+                            sourceProcessDefinitionKey,
+                            testScopeId,
+                            Map.of("canBeMigrated", i % 2 == 0))
+                        .getProcessInstanceKey()));
+
+    waitForScopedProcessInstancesToStart(client, testScopeId, processInstances.size());
+    // when
+    final var batchCreated =
+        batchMigrateProcessInstance(
+            client,
+            testScopeId,
+            sourceProcessDefinitionKey,
+            MigrationPlan.newBuilder()
+                .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+                .addMappingInstruction("userTaskA", "userTaskB")
+                .build());
+
+    // and wait for the batch operation to complete
+    waitForBatchOperationCompleted(client, batchCreated.getBatchOperationId(), 5, 5);
   }
 
   public CreateBatchOperationResponse batchMigrateProcessInstance(
