@@ -305,7 +305,7 @@ public class CamundaMultiDBExtension
       manageApplicationUnderTest();
     }
 
-    authenticatedClientFactory = new CamundaClientTestFactory(applicationUnderTest);
+    authenticatedClientFactory = new BasicAuthCamundaClientTestFactory(applicationUnderTest);
     entityManager = new EntityManager(authenticatedClientFactory.getDefaultUserCamundaClient());
     createEntities(testClass);
     // we support only static fields for now - to make sure test setups are build in a way
@@ -440,7 +440,7 @@ public class CamundaMultiDBExtension
   }
 
   @Override
-  public void afterAll(final ExtensionContext context) {
+  public void afterAll(final ExtensionContext context) throws Exception {
     CloseHelper.quietCloseAll(closeables);
     authenticatedClientFactory.close();
   }
