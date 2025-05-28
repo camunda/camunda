@@ -8,8 +8,9 @@
 package io.camunda.exporter.cache.process;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
-import io.camunda.exporter.utils.ProcessCacheUtil;
 import io.camunda.webapps.schema.entities.ProcessEntity;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import java.io.IOException;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;

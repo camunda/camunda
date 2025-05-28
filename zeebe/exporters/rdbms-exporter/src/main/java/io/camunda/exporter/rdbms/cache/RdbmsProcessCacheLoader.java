@@ -9,9 +9,10 @@ package io.camunda.exporter.rdbms.cache;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
-import io.camunda.exporter.rdbms.utils.ProcessCacheUtil;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.query.ProcessDefinitionQuery;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;

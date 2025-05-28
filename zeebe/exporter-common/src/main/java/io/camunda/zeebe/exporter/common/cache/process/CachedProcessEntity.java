@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.cache.process;
+package io.camunda.zeebe.exporter.common.cache.process;
 
 import java.util.List;
 import java.util.Map;

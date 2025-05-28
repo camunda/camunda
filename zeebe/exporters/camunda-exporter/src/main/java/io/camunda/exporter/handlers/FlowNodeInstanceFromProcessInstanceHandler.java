@@ -14,14 +14,14 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_MIGRATED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
-import io.camunda.exporter.cache.ExporterEntityCache;
-import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.exporter.utils.ProcessCacheUtil;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;

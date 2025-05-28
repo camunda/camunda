@@ -10,8 +10,6 @@ package io.camunda.exporter.rdbms;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
-import io.camunda.exporter.rdbms.cache.CachedProcessEntity;
-import io.camunda.exporter.rdbms.cache.ExporterEntityCache;
 import io.camunda.exporter.rdbms.cache.RdbmsProcessCacheLoader;
 import io.camunda.exporter.rdbms.handlers.DecisionDefinitionExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionInstanceExportHandler;
@@ -42,6 +40,9 @@ import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceModifica
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
@@ -92,7 +93,7 @@ public class RdbmsExporterWrapper implements Exporter {
             .rdbmsWriter(rdbmsWriter);
 
     processCache =
-        new ExporterEntityCache<>(
+        new ExporterEntityCacheImpl<>(
             readMaxCacheSize(context),
             new RdbmsProcessCacheLoader(rdbmsService.getProcessDefinitionReader()),
             new CaffeineCacheStatsCounter(NAMESPACE, "process", context.getMeterRegistry()));

@@ -5,8 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.cache;
+package io.camunda.zeebe.exporter.common.cache;
 
+import java.util.Map;
 import java.util.Optional;
 
 public interface ExporterEntityCache<K, T> {
@@ -21,6 +22,13 @@ public interface ExporterEntityCache<K, T> {
    * @throws {@link CacheLoaderFailedException}
    */
   Optional<T> get(K entityKey);
+
+  /**
+   * Get cached entities for the given keys.
+   *
+   * @param keys key of the entity
+   */
+  Map<K, T> getAll(final Iterable<K> keys);
 
   /**
    * Put entity into the cache.

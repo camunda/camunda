@@ -5,12 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.utils;
+package io.camunda.zeebe.exporter.common.utils;
 
-import io.camunda.exporter.cache.ExporterEntityCache;
-import io.camunda.exporter.cache.process.CachedProcessEntity;
+import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.ProcessFlowNodeEntity;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.BaseElement;
@@ -54,15 +55,50 @@ public final class ProcessCacheUtil {
   }
 
   /**
+   * Returns callActivityIds from process cache.
+   *
+   * @param processCache
+   * @param processDefinitionKeys
+   * @return
+   */
+  public static List<List<String>> getCallActivityIds(
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final List<Long> processDefinitionKeys) {
+    if (processDefinitionKeys == null) {
+      return List.of();
+    }
+
+    return processCache.getAll(processDefinitionKeys).values().stream()
+        .map(CachedProcessEntity::callElementIds)
+        .toList();
+  }
+
+  /**
    * Returns all call activity ids from the Process sorted lexicographically.
    *
    * @param processEntity
    * @return
    */
   public static List<String> extractCallActivityIdsFromDiagram(final ProcessEntity processEntity) {
-    final String bpmnXml = processEntity.getBpmnXml();
-    return ProcessModelReader.of(
-            bpmnXml.getBytes(StandardCharsets.UTF_8), processEntity.getBpmnProcessId())
+    return extractCallActivityIdsFromDiagram(
+        processEntity.getBpmnXml(), processEntity.getBpmnProcessId());
+  }
+
+  /**
+   * Returns all call activity ids from the Process sorted lexicographically.
+   *
+   * @param processDefinitionEntity
+   * @return
+   */
+  public static List<String> extractCallActivityIdsFromDiagram(
+      final ProcessDefinitionEntity processDefinitionEntity) {
+    return extractCallActivityIdsFromDiagram(
+        processDefinitionEntity.bpmnXml(), processDefinitionEntity.processDefinitionId());
+  }
+
+  public static List<String> extractCallActivityIdsFromDiagram(
+      String bpmnXml, String bpmnProcessId) {
+    return ProcessModelReader.of(bpmnXml.getBytes(StandardCharsets.UTF_8), bpmnProcessId)
         .map(reader -> sortedCallActivityIds(reader.extractCallActivities()))
         .orElseGet(ArrayList::new);
   }
@@ -80,6 +116,23 @@ public final class ProcessCacheUtil {
   public static Map<String, String> extractFlowNodesMapFromDiagram(
       final ProcessEntity processEntity) {
     final String bpmnXml = processEntity.getBpmnXml();
+
+    final BpmnModelInstance modelInstance =
+        Bpmn.readModelFromStream(
+            new ByteArrayInputStream(bpmnXml.getBytes(StandardCharsets.UTF_8)));
+
+    return getFlowNodesMap(modelInstance.getModelElementsByType(FlowNode.class));
+  }
+
+  /**
+   * Returns all flow nodes from the Process diagram
+   *
+   * @param processEntity processEntity
+   * @return Map where key is flowNodeId, and value is flowNodeName
+   */
+  public static Map<String, String> extractFlowNodesMapFromDiagram(
+      final ProcessDefinitionEntity processEntity) {
+    final String bpmnXml = processEntity.bpmnXml();
 
     final BpmnModelInstance modelInstance =
         Bpmn.readModelFromStream(
