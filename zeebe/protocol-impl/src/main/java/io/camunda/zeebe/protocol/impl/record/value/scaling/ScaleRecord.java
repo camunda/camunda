@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record.value.scaling;
 
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
@@ -27,11 +28,14 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
   private final ArrayProperty<IntegerValue> relocatedPartitions =
       new ArrayProperty<>("relocatedPartitions", IntegerValue::new);
 
+  private final LongProperty bootstrappedAt = new LongProperty("bootstrappedAt", -1L);
+
   public ScaleRecord() {
-    super(3);
+    super(4);
     declareProperty(desiredPartitionCountProp)
         .declareProperty(redistributedPartitions)
-        .declareProperty(relocatedPartitions);
+        .declareProperty(relocatedPartitions)
+        .declareProperty(bootstrappedAt);
   }
 
   @Override
@@ -59,6 +63,16 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
     for (final int partition : partitions) {
       relocatedPartitions.add().setValue(partition);
     }
+    return this;
+  }
+
+  @Override
+  public long getBootstrappedAt() {
+    return bootstrappedAt.getValue();
+  }
+
+  public ScaleRecord setBootstrappedAt(final long bootstrappedAt) {
+    this.bootstrappedAt.setValue(bootstrappedAt);
     return this;
   }
 

@@ -81,7 +81,7 @@ public class CommandDistributionScalingTest {
 
     // given a scale operation ongoing to transition to 3 partitions
     state.getRoutingState().initializeRoutingInfo(2);
-    state.getRoutingState().setDesiredPartitions(Set.of(1, 2, 3));
+    state.getRoutingState().setDesiredPartitions(Set.of(1, 2, 3), 1L);
     behavior =
         new CommandDistributionBehavior(
             distributionState,

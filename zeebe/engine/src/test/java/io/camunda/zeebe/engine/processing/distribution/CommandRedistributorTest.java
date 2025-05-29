@@ -131,7 +131,7 @@ public class CommandRedistributorTest {
     @BeforeEach
     void setUp() {
       // Simulate scaling up partition 3
-      routingState.setDesiredPartitions(Set.of(1, 2, 3));
+      routingState.setDesiredPartitions(Set.of(1, 2, 3), 111L);
 
       distributionState.addRetriableDistribution(distributionKey, 3);
     }

@@ -28,4 +28,6 @@ public interface ScaleRecordValue extends RecordValue {
   Collection<Integer> getRedistributedPartitions();
 
   Collection<Integer> getRelocatedPartitions();
+
+  long getBootstrappedAt();
 }
