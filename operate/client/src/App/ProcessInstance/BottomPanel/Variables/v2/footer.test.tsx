@@ -6,12 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  render,
-  screen,
-  waitFor,
-  waitForElementToBeRemoved,
-} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import Variables from './index';
@@ -37,10 +32,13 @@ const instanceMock = createInstance({id: '1'});
 
 describe('Footer', () => {
   beforeEach(() => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
     mockProcessInstanceDeprecated().withSuccess(instanceMock);
+    mockProcessInstanceDeprecated().withSuccess(instanceMock);
+    mockFetchVariables().withSuccess(mockVariables);
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
@@ -97,8 +95,6 @@ describe('Footer', () => {
 
     render(<Variables />, {wrapper: getWrapper()});
 
-    expect(screen.getByRole('button', {name: /add variable/i})).toBeDisabled();
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
     await waitFor(() =>
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled(),
     );
@@ -123,7 +119,6 @@ describe('Footer', () => {
     });
 
     render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     await waitFor(() =>
       expect(
@@ -150,7 +145,9 @@ describe('Footer', () => {
     });
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
     await waitFor(() =>
@@ -205,7 +202,6 @@ describe('Footer', () => {
     );
 
     render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     await waitFor(() =>
       expect(

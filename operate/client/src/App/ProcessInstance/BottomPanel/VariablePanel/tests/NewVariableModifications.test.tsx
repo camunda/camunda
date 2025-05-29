@@ -32,6 +32,11 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 
+jest.mock('modules/feature-flags', () => ({
+  ...jest.requireActual('modules/feature-flags'),
+  IS_PROCESS_INSTANCE_V2_ENABLED: false,
+}));
+
 const editNameFromTextfieldAndBlur = async (user: UserEvent, value: string) => {
   const [nameField] = screen.getAllByTestId('new-variable-name');
 

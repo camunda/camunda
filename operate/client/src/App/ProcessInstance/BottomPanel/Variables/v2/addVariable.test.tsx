@@ -6,13 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  render,
-  screen,
-  within,
-  waitFor,
-  waitForElementToBeRemoved,
-} from 'modules/testing-library';
+import {render, screen, within, waitFor} from 'modules/testing-library';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import Variables from './index';
@@ -49,7 +43,7 @@ describe('Add variable', () => {
     });
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
 
     expect(
       screen.queryByRole('textbox', {
@@ -103,7 +97,7 @@ describe('Add variable', () => {
     });
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
 
@@ -151,7 +145,7 @@ describe('Add variable', () => {
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
 
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
 
@@ -252,7 +246,7 @@ describe('Add variable', () => {
     });
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
 
@@ -342,7 +336,7 @@ describe('Add variable', () => {
     });
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
 
@@ -405,7 +399,7 @@ describe('Add variable', () => {
     variablesStore.fetchVariables('1');
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
 
     mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(screen.getByRole('button', {name: /add variable/i}));
@@ -432,7 +426,7 @@ describe('Add variable', () => {
     });
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
 
     expect(
       screen.queryByRole('textbox', {
@@ -486,7 +480,7 @@ describe('Add variable', () => {
     });
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
     expect(
@@ -514,7 +508,7 @@ describe('Add variable', () => {
     });
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
 
     expect(
       await screen.findByRole('button', {name: /add variable/i}),

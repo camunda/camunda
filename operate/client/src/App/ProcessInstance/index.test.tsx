@@ -28,6 +28,10 @@ import {getProcessName} from 'modules/utils/instance';
 import {getWrapper, mockRequests, waitForPollingsToBeComplete} from './mocks';
 
 jest.mock('modules/utils/bpmn');
+jest.mock('modules/feature-flags', () => ({
+  ...jest.requireActual('modules/feature-flags'),
+  IS_PROCESS_INSTANCE_V2_ENABLED: false,
+}));
 
 const clearPollingStates = () => {
   variablesStore.isPollRequestRunning = false;
