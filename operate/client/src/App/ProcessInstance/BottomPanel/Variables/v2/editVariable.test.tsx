@@ -60,7 +60,7 @@ describe('Edit variable', () => {
     });
 
     render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
 
     const [activeOperationVariable] = variablesStore.state.items.filter(
       ({hasActiveOperation}) => hasActiveOperation,
@@ -99,7 +99,7 @@ describe('Edit variable', () => {
     });
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
 
     expect(screen.queryByTestId('add-variable-value')).not.toBeInTheDocument();
 
@@ -149,7 +149,7 @@ describe('Edit variable', () => {
     });
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
 
     expect(screen.queryByTestId('add-variable-value')).not.toBeInTheDocument();
 
@@ -189,7 +189,7 @@ describe('Edit variable', () => {
     });
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
 
     expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
 
@@ -246,7 +246,7 @@ describe('Edit variable', () => {
     });
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
 
     expect(screen.getByText('"value-preview"')).toBeInTheDocument();
 
@@ -301,7 +301,7 @@ describe('Edit variable', () => {
     });
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
 
     expect(screen.getByText('"value-preview"')).toBeInTheDocument();
 
@@ -342,7 +342,7 @@ describe('Edit variable', () => {
     });
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
 
     expect(screen.getByText('"full-value"')).toBeInTheDocument();
 
@@ -385,7 +385,7 @@ describe('Edit variable', () => {
     const {user} = render(<Variables isVariableModificationAllowed />, {
       wrapper: getWrapper(),
     });
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
 
     expect(screen.getByTestId('edit-variable-value')).toHaveValue('123');
 
@@ -427,7 +427,7 @@ describe('Edit variable', () => {
     const {user} = render(<Variables isVariableModificationAllowed />, {
       wrapper: getWrapper(),
     });
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
 
     expect(screen.getByTestId('edit-variable-value')).toHaveValue('123');
 
@@ -458,7 +458,7 @@ describe('Edit variable', () => {
     });
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
 
     expect(await screen.findByRole('button', {name: /edit variable/i}));
     mockFetchProcessDefinitionXml().withSuccess('');
