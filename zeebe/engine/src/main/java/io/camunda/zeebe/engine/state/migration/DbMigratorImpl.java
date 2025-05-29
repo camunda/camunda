@@ -62,41 +62,62 @@ public class DbMigratorImpl implements DbMigrator {
 
   private final MutableProcessingState processingState;
   private final List<MigrationTask> migrationTasks;
+  private final String currentVersion;
 
   public DbMigratorImpl(final MutableProcessingState processingState) {
-    this(processingState, MIGRATION_TASKS);
+    this(processingState, MIGRATION_TASKS, null);
   }
 
   public DbMigratorImpl(
-      final MutableProcessingState processingState, final List<MigrationTask> migrationTasks) {
+      final MutableProcessingState processingState,
+      final List<MigrationTask> migrationTasks,
+      final String currentVersion) {
     this.processingState = processingState;
     this.migrationTasks = migrationTasks;
+    this.currentVersion = currentVersion != null ? currentVersion : VersionUtil.getVersion();
   }
 
   @Override
   public void runMigrations() {
-    if (checkVersionCompatibility() instanceof Compatible.SameVersion) {
-      LOGGER.info("No migrations to run, snapshot is the same as current version");
-      return;
+    var initializationOnly = false;
+    switch (checkVersionCompatibility()) {
+      case final Indeterminate.PreviousVersionUnknown unknown:
+        LOGGER.debug("Snapshot is empty, no migrations to run");
+        initializationOnly = true;
+        break;
+      case final Compatible.SameVersion compatible:
+        LOGGER.info("No migrations to run, snapshot is the same as current version");
+        return;
+      default:
+        break;
     }
     logPreview(migrationTasks);
 
-    final var executedMigrations = new ArrayList<MigrationTask>();
-    for (int index = 1; index <= migrationTasks.size(); index++) {
-      // one based index looks nicer in logs
-      final var migration = migrationTasks.get(index - 1);
-      final var executed = handleMigrationTask(migration, index, migrationTasks.size());
-      if (executed) {
-        executedMigrations.add(migration);
-      }
-    }
+    final var executedMigrations = runMigrations(initializationOnly);
+
     markMigrationsAsCompleted();
     logSummary(executedMigrations);
   }
 
+  private List<MigrationTask> runMigrations(final boolean initializationOnly) {
+    final var executedMigrations = new ArrayList<MigrationTask>();
+    var migrationsToRun = migrationTasks; // no copy is needed
+    if (initializationOnly) {
+      migrationsToRun = migrationsToRun.stream().filter(MigrationTask::isInitialization).toList();
+    }
+    for (int index = 1; index <= migrationsToRun.size(); index++) {
+      // one based index looks nicer in logs
+      final var migration = migrationsToRun.get(index - 1);
+      final var executed = handleMigrationTask(migration, index, migrationsToRun.size());
+      if (executed) {
+        executedMigrations.add(migration);
+      }
+    }
+    return executedMigrations;
+  }
+
   private VersionCompatibilityCheck.CheckResult checkVersionCompatibility() {
     final var migratedByVersion = processingState.getMigrationState().getMigratedByVersion();
-    final var currentVersion = VersionUtil.getVersion();
     final CheckResult checkResult =
         VersionCompatibilityCheck.check(migratedByVersion, currentVersion);
     switch (checkResult) {
@@ -122,12 +143,13 @@ public class DbMigratorImpl implements DbMigrator {
   }
 
   private void markMigrationsAsCompleted() {
-    processingState.getMigrationState().setMigratedByVersion(VersionUtil.getVersion());
+    processingState.getMigrationState().setMigratedByVersion(currentVersion);
   }
 
   private void logPreview(final List<MigrationTask> migrationTasks) {
     LOGGER.info(
-        "Starting processing of migration tasks (use LogLevel.DEBUG for more details) ... ");
+        "Starting processing {} migration tasks (use LogLevel.DEBUG for more details) ... ",
+        migrationTasks.size());
     LOGGER.debug(
         "Found {} migration tasks: {}",
         migrationTasks.size(),

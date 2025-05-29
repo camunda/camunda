@@ -60,6 +60,14 @@ public interface MigrationTask {
   boolean needsToRun(final ProcessingState processingState);
 
   /**
+   * Returns whether the migration is an initialization task, that must be executed even when the
+   * database is empty.
+   */
+  default boolean isInitialization() {
+    return false;
+  }
+
+  /**
    * Implementations of this method perform the actual migration
    *
    * @param processingState the mutable Zeebe state
