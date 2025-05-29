@@ -189,6 +189,7 @@ const orderProcessInstance: {
       tenantId: '<default>',
       hasIncident: true,
     },
+    callHierarchy: [],
     flowNodeInstances: {
       '2251799813725328': {
         children: [
@@ -417,6 +418,7 @@ const orderProcessInstance: {
       tenantId: '<default>',
       hasIncident: false,
     },
+    callHierarchy: [],
     flowNodeInstances: {
       '2251799813725328': {
         children: [
@@ -637,6 +639,7 @@ const orderProcessInstance: {
       tenantId: '<default>',
       hasIncident: false,
     },
+    callHierarchy: [],
     flowNodeInstances: {
       '2251799813725328': {
         children: [
