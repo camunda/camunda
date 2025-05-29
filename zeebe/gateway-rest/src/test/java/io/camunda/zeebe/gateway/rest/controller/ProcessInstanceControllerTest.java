@@ -18,6 +18,8 @@ import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
@@ -1563,25 +1565,34 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   public void shouldGetProcessInstanceIncidents() {
     // given
     final long processInstanceKey = 1L;
-    final var incidents =
-        List.of(
-            new IncidentEntity(
-                2251799814751259L,
-                2251799814751221L,
-                "def_id",
-                2251799814751255L,
-                ErrorType.FORM_NOT_FOUND,
-                "Form not found",
-                "Activity_07rrek1",
-                2251799814751258L,
-                OffsetDateTime.parse("2025-05-23T17:41:24.406Z"),
-                IncidentState.ACTIVE,
-                1L,
-                "<default>"));
-    when(processInstanceServices.incidents(processInstanceKey)).thenReturn(incidents);
-    final var response =
+    final var queryResult =
+        new SearchQueryResult.Builder<IncidentEntity>()
+            .total(1)
+            .items(
+                List.of(
+                    new IncidentEntity(
+                        2251799814751259L,
+                        2251799814751221L,
+                        "def_id",
+                        2251799814751255L,
+                        ErrorType.FORM_NOT_FOUND,
+                        "Form not found",
+                        "Activity_07rrek1",
+                        2251799814751258L,
+                        OffsetDateTime.parse("2025-05-23T17:41:24.406Z"),
+                        IncidentState.ACTIVE,
+                        1L,
+                        "<default>")))
+            .firstSortValues(new Object[] {2251799814751259L})
+            .lastSortValues(new Object[] {2251799814751259L})
+            .build();
+    final var query = new IncidentQuery.Builder().build();
+    when(processInstanceServices.searchIncidents(processInstanceKey, query))
+        .thenReturn(queryResult);
+    final var expectedResponse =
         """
-        [
+    {
+        "items": [
             {
                 "processDefinitionId": "def_id",
                 "errorType": "FORM_NOT_FOUND",
@@ -1596,13 +1607,20 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                 "elementInstanceKey": "2251799814751258",
                 "jobKey": "1"
             }
-        ]
-        """;
+        ],
+        "page": {
+            "totalItems": 1,
+            "firstSortValues": [2251799814751259],
+            "lastSortValues": [
+                2251799814751259
+            ]
+        }
+    }""";
 
     // when / then
     webClient
-        .get()
-        .uri("%s/%d/incidents".formatted(PROCESS_INSTANCES_START_URL, processInstanceKey))
+        .post()
+        .uri("%s/%d/incidents/search".formatted(PROCESS_INSTANCES_START_URL, processInstanceKey))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -1610,8 +1628,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(response);
+        .json(expectedResponse);
 
-    verify(processInstanceServices).incidents(processInstanceKey);
+    verify(processInstanceServices).searchIncidents(processInstanceKey, query);
   }
 }
