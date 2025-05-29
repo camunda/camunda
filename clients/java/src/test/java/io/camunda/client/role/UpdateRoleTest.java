@@ -18,7 +18,7 @@ package io.camunda.client.role;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.client.protocol.rest.GroupUpdateRequest;
+import io.camunda.client.protocol.rest.RoleUpdateRequest;
 import io.camunda.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
 
@@ -38,7 +38,7 @@ public class UpdateRoleTest extends ClientRestTest {
         .join();
 
     // then
-    final GroupUpdateRequest request = gatewayService.getLastRequest(GroupUpdateRequest.class);
+    final RoleUpdateRequest request = gatewayService.getLastRequest(RoleUpdateRequest.class);
     assertThat(request.getName()).isEqualTo(UPDATED_NAME);
     assertThat(request.getDescription()).isEqualTo(UPDATED_DESCRIPTION);
   }
