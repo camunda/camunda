@@ -204,7 +204,7 @@ const ProcessInstance: React.FC = observer(() => {
             breadcrumb={
               isBreadcrumbVisible && callHierarchy ? (
                 <Breadcrumb
-                  callHierarchy={callHierarchy}
+                  callHierarchy={callHierarchy.slice(0, -1)}
                   processInstance={processInstance}
                 />
               ) : undefined

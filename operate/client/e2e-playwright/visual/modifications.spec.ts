@@ -41,6 +41,8 @@ test.describe('modifications', () => {
         URL_API_PATTERN,
         mockResponses({
           processInstanceDetail: runningInstance.detail,
+          processInstanceDetailV2: runningInstance.detailV2,
+          callHierarchy: runningInstance.callHierarchy,
           flowNodeInstances: runningInstance.flowNodeInstances,
           statisticsV2: runningInstance.statisticsV2,
           sequenceFlows: runningInstance.sequenceFlows,
@@ -77,6 +79,8 @@ test.describe('modifications', () => {
         URL_API_PATTERN,
         mockResponses({
           processInstanceDetail: runningInstance.detail,
+          processInstanceDetailV2: runningInstance.detailV2,
+          callHierarchy: runningInstance.callHierarchy,
           flowNodeInstances: runningInstance.flowNodeInstances,
           statisticsV2: runningInstance.statisticsV2,
           sequenceFlows: runningInstance.sequenceFlows,
@@ -121,6 +125,8 @@ test.describe('modifications', () => {
         URL_API_PATTERN,
         mockResponses({
           processInstanceDetail: instanceWithIncident.detail,
+          processInstanceDetailV2: instanceWithIncident.detailV2,
+          callHierarchy: instanceWithIncident.callHierarchy,
           flowNodeInstances: instanceWithIncident.flowNodeInstances,
           statisticsV2: instanceWithIncident.statisticsV2,
           sequenceFlows: instanceWithIncident.sequenceFlows,
@@ -189,6 +195,8 @@ test.describe('modifications', () => {
         URL_API_PATTERN,
         mockResponses({
           processInstanceDetail: instanceWithIncident.detail,
+          processInstanceDetailV2: instanceWithIncident.detailV2,
+          callHierarchy: instanceWithIncident.callHierarchy,
           flowNodeInstances: instanceWithIncident.flowNodeInstances,
           statisticsV2: instanceWithIncident.statisticsV2,
           sequenceFlows: instanceWithIncident.sequenceFlows,

@@ -22,9 +22,9 @@ import {useProcessInstancePageParams} from '../../../useProcessInstancePageParam
 import {Edit} from '@carbon/react/icons';
 import {VariableFormValues} from 'modules/types/variables';
 import {EditButtons} from '../EditButtons';
-import {ExistingVariableValue} from '../ExistingVariableValue';
-import {Name} from '../NewVariableModification/Name';
-import {Value} from '../NewVariableModification/Value';
+import {ExistingVariableValue} from './ExistingVariableValue';
+import {Name} from '../NewVariableModification/v2/Name';
+import {Value} from '../NewVariableModification/v2/Value';
 import {Operation as OperationV2} from '../NewVariableModification/v2/Operation';
 import {ViewFullVariableButton} from '../ViewFullVariableButton';
 import {MAX_VARIABLES_STORED} from 'modules/constants/variables';

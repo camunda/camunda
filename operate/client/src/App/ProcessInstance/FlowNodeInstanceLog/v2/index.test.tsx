@@ -47,7 +47,7 @@ const mockProcessInstance: ProcessInstance = {
   processDefinitionId: 'processName',
   tenantId: '<default>',
   processDefinitionName: 'Multi-Instance Process',
-  hasIncident: true,
+  hasIncident: false,
 };
 const mockDeprecatedProcessInstance = createInstance({
   id: '1',

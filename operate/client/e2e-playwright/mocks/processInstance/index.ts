@@ -9,6 +9,7 @@
 import {Route} from '@playwright/test';
 import {
   GetProcessDefinitionStatisticsResponseBody,
+  GetProcessInstanceCallHierarchyResponseBody,
   GetProcessSequenceFlowsResponseBody,
   ProcessInstance,
 } from '@vzeta/camunda-api-zod-schemas/operate';
@@ -24,6 +25,7 @@ type InstanceMock = {
   xml: string;
   detail: ProcessInstanceEntity;
   detailV2: ProcessInstance;
+  callHierarchy: GetProcessInstanceCallHierarchyResponseBody;
   flowNodeInstances: FlowNodeInstancesDto<FlowNodeInstanceDto>;
   statisticsV2: GetProcessDefinitionStatisticsResponseBody;
   sequenceFlows: SequenceFlowsDto;
@@ -36,6 +38,7 @@ type InstanceMock = {
 function mockResponses({
   processInstanceDetail,
   processInstanceDetailV2,
+  callHierarchy,
   flowNodeInstances,
   statisticsV2,
   sequenceFlows,
@@ -47,6 +50,7 @@ function mockResponses({
 }: {
   processInstanceDetail?: ProcessInstanceEntity;
   processInstanceDetailV2?: ProcessInstance;
+  callHierarchy?: GetProcessInstanceCallHierarchyResponseBody;
   flowNodeInstances?: FlowNodeInstancesDto<FlowNodeInstanceDto>;
   statisticsV2?: GetProcessDefinitionStatisticsResponseBody;
   sequenceFlows?: SequenceFlowsDto;
@@ -163,6 +167,16 @@ function mockResponses({
       return route.fulfill({
         status: metaData === undefined ? 400 : 200,
         body: JSON.stringify(metaData),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('call-hierarchy')) {
+      return route.fulfill({
+        status: callHierarchy === undefined ? 400 : 200,
+        body: JSON.stringify(callHierarchy),
         headers: {
           'content-type': 'application/json',
         },

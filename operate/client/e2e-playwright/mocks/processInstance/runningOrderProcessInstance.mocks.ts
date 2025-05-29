@@ -24,6 +24,7 @@ const runningOrderProcessInstance: InstanceMock = {
     processDefinitionName: 'Order process',
     processDefinitionId: 'orderProcess',
   },
+  callHierarchy: [],
   xml: open('orderProcess.bpmn'),
   statisticsV2: {
     items: [
