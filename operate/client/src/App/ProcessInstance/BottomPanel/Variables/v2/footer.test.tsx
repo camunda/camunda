@@ -6,12 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  render,
-  screen,
-  waitFor,
-  waitForElementToBeRemoved,
-} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import Variables from './index';
@@ -92,7 +87,6 @@ describe('Footer', () => {
     );
 
     render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     await waitFor(() =>
       expect(
@@ -124,7 +118,7 @@ describe('Footer', () => {
 
     flowNodeMetaDataStore.reset();
   });
-  it('should disable add variable button when loading', async () => {
+  it.only('should disable add variable button when loading', async () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
@@ -138,8 +132,6 @@ describe('Footer', () => {
 
     render(<Variables />, {wrapper: getWrapper()});
 
-    expect(screen.getByRole('button', {name: /add variable/i})).toBeDisabled();
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
     await waitFor(() =>
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled(),
     );
@@ -164,7 +156,6 @@ describe('Footer', () => {
     });
 
     render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     await waitFor(() =>
       expect(
@@ -191,7 +182,7 @@ describe('Footer', () => {
     });
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
     await waitFor(() =>

@@ -6,12 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  render,
-  screen,
-  within,
-  waitForElementToBeRemoved,
-} from 'modules/testing-library';
+import {render, screen, within} from 'modules/testing-library';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import Variables from './index';
@@ -21,18 +16,23 @@ import {createInstance, createVariable} from 'modules/testUtils';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {getWrapper, mockProcessInstance} from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance as mockProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 const instanceMock = createInstance({id: '1'});
 
 describe('Variables', () => {
   beforeEach(() => {
     flowNodeSelectionStore.init();
+
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockProcessInstanceDeprecated().withSuccess(instanceMock);
+    mockFetchProcessDefinitionXml().withSuccess('');
   });
 
   describe('Variables', () => {
     it('should render variables table', async () => {
       processInstanceDetailsStore.setProcessInstance(instanceMock);
-
       mockFetchVariables().withSuccess(mockVariables);
 
       variablesStore.fetchVariables({
@@ -42,7 +42,7 @@ describe('Variables', () => {
       });
 
       render(<Variables />, {wrapper: getWrapper()});
-      await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+      expect(await screen.findByTestId('variables-list')).toBeTruthy();
 
       expect(screen.getByText('Name')).toBeInTheDocument();
       expect(screen.getByText('Value')).toBeInTheDocument();
@@ -70,7 +70,7 @@ describe('Variables', () => {
       });
 
       render(<Variables />, {wrapper: getWrapper()});
-      await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+      expect(await screen.findByTestId('variables-list')).toBeTruthy();
       const {items} = variablesStore.state;
       const [activeOperationVariable] = items.filter(
         ({hasActiveOperation}) => hasActiveOperation,
@@ -114,10 +114,7 @@ describe('Variables', () => {
       });
 
       render(<Variables />, {wrapper: getWrapper()});
-
-      await waitForElementToBeRemoved(() =>
-        screen.getByTestId('variables-skeleton'),
-      );
+      expect(await screen.findByTestId('variables-list')).toBeTruthy();
 
       expect(
         screen.getByRole('button', {

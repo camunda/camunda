@@ -38,6 +38,10 @@ jest.mock('modules/stores/notifications', () => ({
     displayNotification: jest.fn(() => () => {}),
   },
 }));
+jest.mock('modules/feature-flags', () => ({
+  ...jest.requireActual('modules/feature-flags'),
+  IS_PROCESS_INSTANCE_V2_ENABLED: false,
+}));
 
 const getWrapper = (
   initialEntries: React.ComponentProps<
