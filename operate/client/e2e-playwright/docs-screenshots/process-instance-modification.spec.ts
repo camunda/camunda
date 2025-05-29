@@ -30,6 +30,8 @@ test.describe('process instance modification', () => {
       URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: eventBasedGatewayProcessInstance.detail,
+        processInstanceDetailV2: eventBasedGatewayProcessInstance.detailV2,
+        callHierarchy: eventBasedGatewayProcessInstance.callHierarchy,
         flowNodeInstances: eventBasedGatewayProcessInstance.flowNodeInstances,
         statisticsV2: eventBasedGatewayProcessInstance.statisticsV2,
         sequenceFlows: eventBasedGatewayProcessInstance.sequenceFlows,
@@ -132,6 +134,8 @@ test.describe('process instance modification', () => {
       URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: eventBasedGatewayProcessInstance.detail,
+        processInstanceDetailV2: eventBasedGatewayProcessInstance.detailV2,
+        callHierarchy: eventBasedGatewayProcessInstance.callHierarchy,
         flowNodeInstances: eventBasedGatewayProcessInstance.flowNodeInstances,
         statisticsV2: eventBasedGatewayProcessInstance.statisticsV2,
         sequenceFlows: eventBasedGatewayProcessInstance.sequenceFlows,
@@ -250,6 +254,8 @@ test.describe('process instance modification', () => {
       URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: eventBasedGatewayProcessInstance.detail,
+        processInstanceDetailV2: eventBasedGatewayProcessInstance.detailV2,
+        callHierarchy: eventBasedGatewayProcessInstance.callHierarchy,
         flowNodeInstances: eventBasedGatewayProcessInstance.flowNodeInstances,
         statisticsV2: eventBasedGatewayProcessInstance.statisticsV2,
         sequenceFlows: eventBasedGatewayProcessInstance.sequenceFlows,
@@ -392,6 +398,8 @@ test.describe('process instance modification', () => {
       URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: eventBasedGatewayProcessInstance.detail,
+        processInstanceDetailV2: eventBasedGatewayProcessInstance.detailV2,
+        callHierarchy: eventBasedGatewayProcessInstance.callHierarchy,
         flowNodeInstances: eventBasedGatewayProcessInstance.flowNodeInstances,
         statisticsV2: eventBasedGatewayProcessInstance.statisticsV2,
         sequenceFlows: eventBasedGatewayProcessInstance.sequenceFlows,

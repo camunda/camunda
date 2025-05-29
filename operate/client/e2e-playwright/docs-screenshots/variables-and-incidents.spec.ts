@@ -106,6 +106,8 @@ test.describe('variables and incidents', () => {
       URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: orderProcessInstance.incidentState.detail,
+        processInstanceDetailV2: orderProcessInstance.incidentState.detailV2,
+        callHierarchy: orderProcessInstance.incidentState.callHierarchy,
         flowNodeInstances: orderProcessInstance.incidentState.flowNodeInstances,
         statisticsV2: orderProcessInstance.incidentState.statisticsV2,
         sequenceFlows: orderProcessInstance.incidentState.sequenceFlows,
@@ -186,6 +188,8 @@ test.describe('variables and incidents', () => {
       URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: orderProcessInstance.incidentState.detail,
+        processInstanceDetailV2: orderProcessInstance.incidentState.detailV2,
+        callHierarchy: orderProcessInstance.incidentState.callHierarchy,
         flowNodeInstances: orderProcessInstance.incidentState.flowNodeInstances,
         statisticsV2: orderProcessInstance.incidentState.statisticsV2,
         sequenceFlows: orderProcessInstance.incidentState.sequenceFlows,
@@ -247,6 +251,9 @@ test.describe('variables and incidents', () => {
       mockProcessDetailResponses({
         processInstanceDetail:
           orderProcessInstance.incidentResolvedState.detail,
+        processInstanceDetailV2:
+          orderProcessInstance.incidentResolvedState.detailV2,
+        callHierarchy: orderProcessInstance.incidentResolvedState.callHierarchy,
         flowNodeInstances:
           orderProcessInstance.incidentResolvedState.flowNodeInstances,
         statisticsV2: orderProcessInstance.incidentResolvedState.statisticsV2,
@@ -273,6 +280,8 @@ test.describe('variables and incidents', () => {
       URL_API_PATTERN,
       mockProcessDetailResponses({
         processInstanceDetail: orderProcessInstance.completedState.detail,
+        processInstanceDetailV2: orderProcessInstance.completedState.detailV2,
+        callHierarchy: orderProcessInstance.completedState.callHierarchy,
         flowNodeInstances:
           orderProcessInstance.completedState.flowNodeInstances,
         statisticsV2: orderProcessInstance.completedState.statisticsV2,
