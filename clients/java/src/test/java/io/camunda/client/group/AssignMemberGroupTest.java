@@ -35,7 +35,7 @@ public class AssignMemberGroupTest extends ClientRestTest {
   @Test
   void shouldAssignUserToGroup() {
     // when
-    client.newAssignUserToGroupCommand(GROUP_ID).username(USERNAME).send().join();
+    client.newAssignUserToGroupCommand().username(USERNAME).groupId(GROUP_ID).send().join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
@@ -50,7 +50,13 @@ public class AssignMemberGroupTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToGroupCommand(GROUP_ID).username(USERNAME).send().join())
+            () ->
+                client
+                    .newAssignUserToGroupCommand()
+                    .username(USERNAME)
+                    .groupId(GROUP_ID)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -63,7 +69,13 @@ public class AssignMemberGroupTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToGroupCommand(GROUP_ID).username(USERNAME).send().join())
+            () ->
+                client
+                    .newAssignUserToGroupCommand()
+                    .username(USERNAME)
+                    .groupId(GROUP_ID)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'");
   }
@@ -76,7 +88,13 @@ public class AssignMemberGroupTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToGroupCommand(GROUP_ID).username(USERNAME).send().join())
+            () ->
+                client
+                    .newAssignUserToGroupCommand()
+                    .username(USERNAME)
+                    .groupId(GROUP_ID)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'");
   }

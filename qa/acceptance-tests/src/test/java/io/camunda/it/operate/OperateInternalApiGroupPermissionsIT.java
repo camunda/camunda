@@ -196,7 +196,7 @@ public class OperateInternalApiGroupPermissionsIT {
 
   private static void addUserToGroup(
       final CamundaClient client, final String groupId, final String userId) {
-    client.newAssignUserToGroupCommand(groupId).username(userId).send().join();
+    client.newAssignUserToGroupCommand().username(userId).groupId(groupId).send().join();
   }
 
   private ResponseCount searchRunningProcessInstances(
@@ -211,7 +211,7 @@ public class OperateInternalApiGroupPermissionsIT {
             .uri(new URI(url))
             .POST(
                 HttpRequest.BodyPublishers.ofString(
-                    """
+                        """
               {
                 "query": {
                   "bpmnProcessId": "%s",
@@ -265,7 +265,7 @@ public class OperateInternalApiGroupPermissionsIT {
             .uri(new URI(url))
             .POST(
                 HttpRequest.BodyPublishers.ofString(
-                    """
+                        """
               {
                 "operationType": "ADD_VARIABLE",
                 "name": "addVariable",

@@ -204,7 +204,7 @@ public class TasklistV1ApiGroupPermissionsIT {
 
   private static void addUserToGroup(
       final CamundaClient client, final String groupId, final String userId) {
-    client.newAssignUserToGroupCommand(groupId).username(userId).send().join();
+    client.newAssignUserToGroupCommand().username(userId).groupId(groupId).send().join();
   }
 
   private int getRunningProcessInstance(
@@ -241,7 +241,7 @@ public class TasklistV1ApiGroupPermissionsIT {
             .method(
                 "PATCH",
                 BodyPublishers.ofString(
-                    """
+                        """
                           {
                             "assignee": "%s",
                             "allowOverrideAssignment": true
