@@ -1,0 +1,41 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.camunda.client.user;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.camunda.client.protocol.rest.UserUpdateRequest;
+import io.camunda.client.util.ClientRestTest;
+import org.junit.jupiter.api.Test;
+
+public class UpdateUserTest extends ClientRestTest {
+  private static final String USERNAME = "username";
+  private static final String NAME = "updated user name";
+  private static final String EMAIL = "updated_email@email.com";
+  private static final String PASSWORD = "updated password";
+
+  @Test
+  void shouldUpdateUser() {
+    // when
+    client.newUpdateUserCommand(USERNAME).name(NAME).email(EMAIL).password(PASSWORD).send().join();
+
+    // then
+    final UserUpdateRequest request = gatewayService.getLastRequest(UserUpdateRequest.class);
+    assertThat(request.getName()).isEqualTo(NAME);
+    assertThat(request.getEmail()).isEqualTo(EMAIL);
+    assertThat(request.getPassword()).isEqualTo(PASSWORD);
+  }
+}
