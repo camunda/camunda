@@ -72,6 +72,7 @@ public final class DbRoutingState implements MutableRoutingState {
     currentRoutingInfo.setPartitions(partitions);
     currentRoutingInfo.setMessageCorrelation(new MessageCorrelation.HashMod(partitionCount));
     columnFamily.insert(key, currentRoutingInfo);
+    setDesiredPartitions(partitions);
   }
 
   @Override
