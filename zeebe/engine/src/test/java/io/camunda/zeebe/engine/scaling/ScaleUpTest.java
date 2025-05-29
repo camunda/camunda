@@ -162,7 +162,7 @@ public class ScaleUpTest {
     // given - a scale up from 1 to 3 was already requested
     ((MutableRoutingState) engine.getProcessingState(1).getRoutingState()).initializeRoutingInfo(1);
     ((MutableRoutingState) engine.getProcessingState(1).getRoutingState())
-        .setDesiredPartitions(Set.of(1, 2, 3));
+        .setDesiredPartitions(Set.of(1, 2, 3), 999L);
 
     // when
     engine.writeRecords(
@@ -224,7 +224,7 @@ public class ScaleUpTest {
                     .setDesiredPartitionCount(4)
                     .setRedistributedPartitions(List.of(4)));
     // when
-    engine.writeRecords(scaleUpCommand, getStatusCommand);
+    final var key = engine.writeRecords(scaleUpCommand, getStatusCommand);
 
     // then
 
@@ -237,6 +237,7 @@ public class ScaleUpTest {
         // In the future, the expected number of partitions should be (1,2,3)
         // until redistribution is completed
         .containsExactlyInAnyOrder(1, 2, 3, 4);
+    assertThat(record.getValue().getBootstrappedAt()).isGreaterThanOrEqualTo(key);
   }
 
   private void initRoutingState() {

@@ -62,7 +62,7 @@ public class DeploymentRedistributorTest {
     final var deploymentState = processingState.getDeploymentState();
     routingState = processingState.getRoutingState();
     routingState.initializeRoutingInfo(2);
-    routingState.setDesiredPartitions(Set.of(1, 2, 3));
+    routingState.setDesiredPartitions(Set.of(1, 2, 3), 239123L);
 
     final RoutingInfo routingInfo =
         RoutingInfo.dynamic(routingState, new StaticRoutingInfo(Set.of(1, 2), 2));
