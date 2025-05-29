@@ -56,7 +56,7 @@ class UnassignGroupFromTenantTest {
             .getGroupId();
 
     // Assign group to tenant to set up test scenario
-    client.newAssignGroupToTenantCommand(tenantId).groupId(groupId).send().join();
+    client.newAssignGroupToTenantCommand().groupId(groupId).tenantId(tenantId).send().join();
   }
 
   @Test
