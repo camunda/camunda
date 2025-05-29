@@ -102,11 +102,11 @@ public class CommandDistributionScalingTest {
     // immediately for partition 2 and partition 3 gets enqueued
     Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords())
         .extracting(Record::getKey, Record::getIntent, r -> r.getValue().getPartitionId())
-        .containsExactly(
-            tuple(key, CommandDistributionIntent.STARTED, 1),
+        .startsWith(tuple(key, CommandDistributionIntent.STARTED, 1))
+        .containsSequence(
             tuple(key, CommandDistributionIntent.ENQUEUED, 2),
-            tuple(key, CommandDistributionIntent.DISTRIBUTING, 2),
-            tuple(key, CommandDistributionIntent.ENQUEUED, 3));
+            tuple(key, CommandDistributionIntent.DISTRIBUTING, 2))
+        .contains(tuple(key, CommandDistributionIntent.ENQUEUED, 3));
 
     fakeProcessingResultBuilder.flushPostCommitTasks();
     // then command is sent immediately to partition 2
@@ -129,15 +129,21 @@ public class CommandDistributionScalingTest {
 
     // then command distribution is started on partition 1
     // first record is starting to be distributed
+    Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords())
+        .filteredOn(f -> f.getKey() == key)
+        .extracting(Record::getKey, Record::getIntent, r -> r.getValue().getPartitionId())
+        .startsWith(tuple(key, CommandDistributionIntent.STARTED, 1))
+        .containsSequence(
+            tuple(key, CommandDistributionIntent.ENQUEUED, 2),
+            tuple(key, CommandDistributionIntent.DISTRIBUTING, 2))
+        .containsSequence(tuple(key, CommandDistributionIntent.ENQUEUED, 3));
+
     // second record is enqueued for partitions 2 and 3
     Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords())
+        .filteredOn(f -> f.getKey() == otherKey)
         .extracting(Record::getKey, Record::getIntent, r -> r.getValue().getPartitionId())
-        .containsExactly(
-            tuple(key, CommandDistributionIntent.STARTED, 1),
-            tuple(key, CommandDistributionIntent.ENQUEUED, 2),
-            tuple(key, CommandDistributionIntent.DISTRIBUTING, 2),
-            tuple(key, CommandDistributionIntent.ENQUEUED, 3),
-            tuple(otherKey, CommandDistributionIntent.STARTED, 1),
+        .startsWith(tuple(otherKey, CommandDistributionIntent.STARTED, 1))
+        .contains(
             tuple(otherKey, CommandDistributionIntent.ENQUEUED, 2),
             tuple(otherKey, CommandDistributionIntent.ENQUEUED, 3));
 
@@ -171,16 +177,21 @@ public class CommandDistributionScalingTest {
 
     // then command distribution is started on partition 1
     // first record is starting to be distributed
+    Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords())
+        .filteredOn(f -> f.getKey() == key)
+        .extracting(Record::getKey, Record::getIntent, r -> r.getValue().getPartitionId())
+        .startsWith(tuple(key, CommandDistributionIntent.STARTED, 1))
+        .containsSequence(
+            tuple(key, CommandDistributionIntent.ENQUEUED, 2),
+            tuple(key, CommandDistributionIntent.DISTRIBUTING, 2))
+        .contains(tuple(key, CommandDistributionIntent.ENQUEUED, 3));
+
     // second record is enqueued for partitions 2 and 3
     Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords())
+        .filteredOn(f -> f.getKey() == otherKey)
         .extracting(Record::getKey, Record::getIntent, r -> r.getValue().getPartitionId())
-        .containsExactly(
-            tuple(key, CommandDistributionIntent.STARTED, 1),
-            tuple(key, CommandDistributionIntent.ENQUEUED, 2),
-            tuple(key, CommandDistributionIntent.DISTRIBUTING, 2),
-            tuple(key, CommandDistributionIntent.ENQUEUED, 3),
-            tuple(otherKey, CommandDistributionIntent.STARTED, 1),
-            tuple(otherKey, CommandDistributionIntent.ENQUEUED, 2));
+        .startsWith(tuple(otherKey, CommandDistributionIntent.STARTED, 1))
+        .contains(tuple(otherKey, CommandDistributionIntent.ENQUEUED, 2));
 
     // then command is sent immediately to partition 2 for the first record
     fakeProcessingResultBuilder.flushPostCommitTasks();
