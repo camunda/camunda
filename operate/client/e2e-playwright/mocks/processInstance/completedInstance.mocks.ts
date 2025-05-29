@@ -38,6 +38,7 @@ const completedInstance: InstanceMock = {
     tenantId: '<default>',
     hasIncident: false,
   },
+  callHierarchy: [],
   flowNodeInstances: {
     '2551799813954282': {
       children: [
