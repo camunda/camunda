@@ -82,6 +82,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private ControllableStreamClock clock;
   private MeterRegistry partitionMeterRegistry;
   private MeterRegistry transitionMeterRegistry;
+  private String brokerVersion = PartitionTransitionContext.super.getBrokerVersion();
 
   public TestPartitionTransitionContext() {
     transitionMeterRegistry = MicrometerUtil.wrap(startupMeterRegistry, PartitionKeyNames.tags(1));
@@ -193,6 +194,15 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public int getPartitionCount() {
     return 1;
+  }
+
+  @Override
+  public String getBrokerVersion() {
+    return brokerVersion;
+  }
+
+  public void setBrokerVersion(final String version) {
+    brokerVersion = version;
   }
 
   @Override
