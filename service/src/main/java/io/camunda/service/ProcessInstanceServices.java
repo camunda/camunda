@@ -301,7 +301,8 @@ public final class ProcessInstanceServices
     return sendBrokerRequest(brokerRequest);
   }
 
-  public List<IncidentEntity> incidents(final long processInstanceKey) {
+  public SearchQueryResult<IncidentEntity> searchIncidents(
+      final long processInstanceKey, final IncidentQuery query) {
     final var processInstance = getByKey(processInstanceKey);
     final var treePath = processInstance.treePath();
 
@@ -311,9 +312,10 @@ public final class ProcessInstanceServices
                 authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
         .searchIncidents(
             new IncidentQuery.Builder()
-                .filter(new IncidentFilter.Builder().treePaths(treePath).build())
-                .build())
-        .items();
+                .filter(new IncidentFilter.Builder().treePath(treePath).build())
+                .page(query.page())
+                .sort(query.sort())
+                .build());
   }
 
   public record ProcessInstanceCreateRequest(
