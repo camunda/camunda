@@ -34,7 +34,7 @@ const useInstanceExecutionHistory = (): FlowNodeInstance | null => {
   return {
     id: processInstance.processInstanceKey,
     type: 'PROCESS',
-    state: processInstance.state,
+    state: processInstance.hasIncident ? 'INCIDENT' : processInstance.state,
     treePath: processInstance.processInstanceKey,
     endDate: null,
     startDate: '',
