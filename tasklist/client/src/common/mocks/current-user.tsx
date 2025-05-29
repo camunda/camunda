@@ -17,7 +17,7 @@ const currentUser: CurrentUser = {
   tenants: [],
   groups: [],
   canLogout: true,
-  authorizedApplications: ['*'],
+  authorizedComponents: ['*'],
   apiUser: false,
   userKey: 2251799813685250,
 };
@@ -52,7 +52,7 @@ const currentUserWithC8Links: CurrentUser = {
   tenants: [],
   groups: [],
   canLogout: true,
-  authorizedApplications: ['*'],
+  authorizedComponents: ['*'],
   apiUser: false,
   userKey: 2251799813685250,
 };
@@ -75,7 +75,7 @@ const currentUserWithTenants: CurrentUser = {
   ],
   groups: [],
   canLogout: true,
-  authorizedApplications: ['*'],
+  authorizedComponents: ['*'],
   apiUser: false,
   userKey: 2251799813685250,
 };
@@ -89,7 +89,7 @@ const currentUserWithGroups: CurrentUser = {
   tenants: [],
   groups: ['admin', 'customer-support', 'guest'],
   canLogout: true,
-  authorizedApplications: ['*'],
+  authorizedComponents: ['*'],
   apiUser: false,
   userKey: 2251799813685250,
 };
@@ -103,7 +103,7 @@ const currentUnauthorizedUser: CurrentUser = {
   tenants: [],
   groups: ['admin', 'customer-support', 'guest'],
   canLogout: true,
-  authorizedApplications: ['operate'],
+  authorizedComponents: ['operate'],
   apiUser: false,
   userKey: 2251799813685250,
 };

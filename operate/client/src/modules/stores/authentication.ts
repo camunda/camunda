@@ -30,7 +30,7 @@ type State = {
   roles: ReadonlyArray<string> | null;
   c8Links: MeDto['c8Links'];
   tenants: MeDto['tenants'];
-  authorizedApplications: MeDto['authorizedApplications'];
+  authorizedComponents: MeDto['authorizedComponents'];
 };
 
 const DEFAULT_STATE: State = {
@@ -42,7 +42,7 @@ const DEFAULT_STATE: State = {
   roles: [],
   c8Links: {},
   tenants: null,
-  authorizedApplications: ['*'],
+  authorizedComponents: ['*'],
 };
 
 class Authentication {
@@ -164,7 +164,7 @@ class Authentication {
     roles,
     c8Links,
     tenants,
-    authorizedApplications,
+    authorizedComponents,
   }: MeDto) => {
     storeStateLocally({
       wasReloaded: false,
@@ -178,7 +178,7 @@ class Authentication {
     this.state.roles = roles ?? [];
     this.state.c8Links = c8Links;
     this.state.tenants = tenants;
-    this.state.authorizedApplications = authorizedApplications;
+    this.state.authorizedComponents = authorizedComponents;
   };
 
   handleLogout = async () => {
@@ -214,7 +214,7 @@ class Authentication {
   resetUser = () => {
     this.state.displayName = DEFAULT_STATE.displayName;
     this.state.canLogout = DEFAULT_STATE.canLogout;
-    this.state.authorizedApplications = DEFAULT_STATE.authorizedApplications;
+    this.state.authorizedComponents = DEFAULT_STATE.authorizedComponents;
   };
 
   reset = () => {
@@ -223,9 +223,9 @@ class Authentication {
 
   isForbidden = () => {
     return (
-      Array.isArray(this.state.authorizedApplications) &&
-      !this.state.authorizedApplications.includes('operate') &&
-      !this.state.authorizedApplications.includes('*')
+      Array.isArray(this.state.authorizedComponents) &&
+      !this.state.authorizedComponents.includes('operate') &&
+      !this.state.authorizedComponents.includes('*')
     );
   };
 }

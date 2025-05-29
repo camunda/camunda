@@ -1,5 +1,5 @@
 {
-  "APPLICATION": "Application",
+  "COMPONENT": "Component",
   "AUTHORIZATION": "Authorization",
   "BATCH": "Batch",
   "DECISION_DEFINITION": "Decision definition",

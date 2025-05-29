@@ -41,7 +41,7 @@ describe('<AuthorizationCheck />', () => {
   });
 
   it('should render children when user is authorized', async () => {
-    mockMe().withSuccess(createUser({authorizedApplications: ['operate']}));
+    mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
     await authenticationStore.authenticate();
 
     render(
@@ -56,7 +56,7 @@ describe('<AuthorizationCheck />', () => {
   });
 
   it('should redirect when user is not authorized', async () => {
-    mockMe().withSuccess(createUser({authorizedApplications: ['tasklist']}));
+    mockMe().withSuccess(createUser({authorizedComponents: ['tasklist']}));
     await authenticationStore.authenticate();
 
     render(
