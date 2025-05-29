@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.migration.DbMigratorImpl;
 import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender.CommandInterceptor;
 import io.camunda.zeebe.engine.util.client.AdHocSubProcessActivityClient;
 import io.camunda.zeebe.engine.util.client.AuthorizationClient;
@@ -64,6 +65,7 @@ import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.stream.impl.StreamProcessorListener;
@@ -102,6 +104,7 @@ public final class EngineRule extends ExternalResource {
       new RecordingExporterTestWatcher();
   private final int partitionCount;
   private boolean awaitIdentitySetup = false;
+  private boolean initializeRoutingState = true;
 
   private Consumer<TypedRecord> onProcessedCallback = record -> {};
   private Consumer<LoggedEvent> onSkippedCallback = record -> {};
@@ -211,6 +214,11 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
+  public EngineRule withInitializeRoutingState(final boolean initializeRoutingState) {
+    this.initializeRoutingState = initializeRoutingState;
+    return this;
+  }
+
   private void startProcessors(final StreamProcessorMode mode, final boolean awaitOpening) {
     interPartitionCommandSenders = new ArrayList<>();
 
@@ -222,6 +230,17 @@ public final class EngineRule extends ExternalResource {
           environmentRule.startTypedStreamProcessor(
               partitionId,
               (recordProcessorContext) -> {
+                if (initializeRoutingState) {
+                  final DbMigratorImpl migrator =
+                      new DbMigratorImpl(
+                          false,
+                          new ClusterContextImpl(partitionCount),
+                          recordProcessorContext.getProcessingState(),
+                          null);
+
+                  migrator.runMigrations();
+                }
+
                 securityConfigModifier.accept(recordProcessorContext.getSecurityConfig());
                 engineConfigModifier.accept(recordProcessorContext.getConfig());
                 return EngineProcessors.createEngineProcessors(
