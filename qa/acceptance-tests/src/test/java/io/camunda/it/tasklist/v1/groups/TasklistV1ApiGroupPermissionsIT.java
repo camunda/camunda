@@ -241,7 +241,7 @@ public class TasklistV1ApiGroupPermissionsIT {
             .method(
                 "PATCH",
                 BodyPublishers.ofString(
-                        """
+                    """
                           {
                             "assignee": "%s",
                             "allowOverrideAssignment": true

@@ -211,7 +211,7 @@ public class OperateInternalApiGroupPermissionsIT {
             .uri(new URI(url))
             .POST(
                 HttpRequest.BodyPublishers.ofString(
-                        """
+                    """
               {
                 "query": {
                   "bpmnProcessId": "%s",
@@ -265,7 +265,7 @@ public class OperateInternalApiGroupPermissionsIT {
             .uri(new URI(url))
             .POST(
                 HttpRequest.BodyPublishers.ofString(
-                        """
+                    """
               {
                 "operationType": "ADD_VARIABLE",
                 "name": "addVariable",
