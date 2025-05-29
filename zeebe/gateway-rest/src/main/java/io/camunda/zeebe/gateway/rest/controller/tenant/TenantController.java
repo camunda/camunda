@@ -34,8 +34,8 @@ import io.camunda.zeebe.gateway.protocol.rest.TenantResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateRequest;
-import io.camunda.zeebe.gateway.protocol.rest.TenantUserSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUserSearchResult;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResult;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
@@ -118,13 +118,13 @@ public class TenantController {
   }
 
   @CamundaPostMapping(path = "/{tenantId}/users/search")
-  public ResponseEntity<TenantUserSearchResult> searchUsersInTenant(
+  public ResponseEntity<UserSearchResult> searchUsersInTenant(
       @PathVariable final String tenantId,
-      @RequestBody(required = false) final TenantUserSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toTenantQuery(query)
+      @RequestBody(required = false) final UserSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toUserQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            tenantQuery -> searchUsersInTenant(tenantId, tenantQuery));
+            userQuery -> searchUsersInTenant(tenantId, userQuery));
   }
 
   @CamundaPutMapping(path = "/{tenantId}/clients/{clientId}")
