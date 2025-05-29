@@ -59,34 +59,6 @@ defaults:
     shell: bash
 
 jobs:
-  init:
-    name: Create C8Run tag/release
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - name: ℹ️ Print workflow inputs ℹ️
-        env:
-          WORKFLOW_INPUTS: ${{ toJson(inputs) }}
-        run: |
-          echo "Action Inputs:"
-          echo "${WORKFLOW_INPUTS}"
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.branch }}
-      - name: Create the release if needed
-        env:
-          GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-        run: |
-          gh release view ${{ env.CAMUNDA_RUN_NAME }} ||
-            gh release create ${{ env.CAMUNDA_RUN_NAME }} --title ${{ env.CAMUNDA_RUN_NAME }} \
-              --target ${{ inputs.branch }} --notes "${{ env.CAMUNDA_RUN_NAME }}"
-      - name: Update release tag
-        run: |
-          git tag --force ${{ env.CAMUNDA_RUN_NAME }}
-          git push --force origin ${{ env.CAMUNDA_RUN_NAME }}
-        env:
-          GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-
   release:
     name: C8Run - ${{ matrix.os.name }}
     runs-on: ${{ matrix.os.id }}
@@ -268,15 +240,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: GitHub - C8Run artifacts in Camunda apps release
-        if: inputs.publishToCamundaAppsRelease
-        run: |
-          app_release_url_gh="https://github.com/camunda/camunda/releases/tag/${{ inputs.camundaAppsRelease }}"
-          cat << EOF >> "$GITHUB_STEP_SUMMARY"
-          ⭐ GitHub - C8Run artifacts in Camunda apps release ⭐
-          - Release URL: ${app_release_url_gh}
-          EOF
-
       - name: Camunda Download Center - C8Run artifacts in own release
         if: inputs.publishToCamundaDownloadCenter
         run: |
