@@ -145,13 +145,13 @@ public class PartitionReassignRequestTransformer implements ConfigurationChangeR
     final var hasNewPartitions = !newPartitions.isEmpty();
 
     if (hasNewPartitions) {
+      operations.add(new StartPartitionScaleUp(coordinatorNodeId, newPartitionCount.get()));
       for (final PartitionId partition : newPartitions) {
         final var newMetadata = newDistribution.get(partition);
         operations.addAll(addPartition(newMetadata));
       }
       operations.addAll(
           List.of(
-              new StartPartitionScaleUp(coordinatorNodeId, newPartitionCount.get()),
               new AwaitRedistributionCompletion(
                   coordinatorNodeId,
                   newPartitionCount.get(),

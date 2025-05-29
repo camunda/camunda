@@ -73,7 +73,7 @@ final class StartPartitionScaleUpApplierTest {
     assertThat(initialConfiguration).returns(Optional.empty(), ClusterConfiguration::routingState);
 
     // when - trying to init the operation
-    final var result = new StartPartitionScaleUpApplier(executor, 3).init(initialConfiguration);
+    final var result = new StartPartitionScaleUpApplier(executor, 4).init(initialConfiguration);
 
     // then - init fails with a useful exception
     EitherAssert.assertThat(result)
@@ -83,18 +83,19 @@ final class StartPartitionScaleUpApplierTest {
   }
 
   @Test
-  void shouldFailWhenPartitionsAreNotAvailable() {
+  void shouldFailWhenDesiredPartitionCountIsLowerThanCurrentPartitionCount() {
     // given - cluster does not contain partition 4
-    assertThat(initialConfiguration.hasPartition(4)).isFalse();
+    assertThat(initialConfiguration.partitionCount()).isEqualTo(3);
 
     // when - trying to init the operation to scale up to 4 partitions
-    final var result = new StartPartitionScaleUpApplier(executor, 4).init(initialConfiguration);
+    final var result = new StartPartitionScaleUpApplier(executor, 2).init(initialConfiguration);
 
     // then - init fails with a useful exception
     EitherAssert.assertThat(result)
         .left()
         .asInstanceOf(InstanceOfAssertFactories.throwable(IllegalStateException.class))
-        .hasMessageContaining("Partition 4 is not known");
+        .hasMessageContaining(
+            "Desired partition count (2) must be greater than current partition count(3)");
   }
 
   @Test
@@ -111,7 +112,7 @@ final class StartPartitionScaleUpApplierTest {
             Optional.of(routingState));
 
     // when - trying to init the operation to scale up
-    final var result = new StartPartitionScaleUpApplier(executor, 3).init(configuration);
+    final var result = new StartPartitionScaleUpApplier(executor, 4).init(configuration);
 
     // then - init fails with a useful exception
     EitherAssert.assertThat(result)
@@ -140,7 +141,8 @@ final class StartPartitionScaleUpApplierTest {
     EitherAssert.assertThat(result)
         .left()
         .asInstanceOf(InstanceOfAssertFactories.throwable(IllegalStateException.class))
-        .hasMessageContaining("Already routing to 3 partitions, can't scale down to 2");
+        .hasMessageContaining(
+            "Desired partition count (2) must be greater than current partition count(3)");
   }
 
   @Test
@@ -171,7 +173,7 @@ final class StartPartitionScaleUpApplierTest {
   @Test
   void shouldCallExecutorWithDesiredPartitionCount() {
     // given - routing state is stable, pointing at just one partition
-    final var routingState = new RoutingState(1, new AllPartitions(1), new HashMod(1));
+    final var routingState = new RoutingState(1, new AllPartitions(3), new HashMod(1));
     final var configuration =
         new ClusterConfiguration(
             initialConfiguration.version(),
@@ -183,16 +185,16 @@ final class StartPartitionScaleUpApplierTest {
     // when - applying the operation to scale up to three once
     when(executor.initiateScaleUp(anyInt())).thenReturn(CompletableActorFuture.completed(null));
     final var updatedConfiguration =
-        runApplier(new StartPartitionScaleUpApplier(executor, 3), configuration);
+        runApplier(new StartPartitionScaleUpApplier(executor, 4), configuration);
 
     // then - executor is called
-    verify(executor).initiateScaleUp(3);
+    verify(executor).initiateScaleUp(4);
   }
 
   @Test
   void shouldUpdateRoutingState() {
     // given - routing state is stable, pointing at just one partition
-    final var routingState = new RoutingState(1, new AllPartitions(1), new HashMod(1));
+    final var routingState = new RoutingState(1, new AllPartitions(3), new HashMod(3));
     final var configuration =
         new ClusterConfiguration(
             initialConfiguration.version(),
@@ -204,20 +206,21 @@ final class StartPartitionScaleUpApplierTest {
     // when - applying the operation to scale up to three once
     when(executor.initiateScaleUp(anyInt())).thenReturn(CompletableActorFuture.completed(null));
     final var updatedConfiguration =
-        runApplier(new StartPartitionScaleUpApplier(executor, 3), configuration);
+        runApplier(new StartPartitionScaleUpApplier(executor, 4), configuration);
 
     // then - routing state is updated
     ClusterConfigurationAssert.assertThatClusterTopology(updatedConfiguration)
         .routingState()
         .hasVersion(2)
-        .hasActivatedPartitions(1)
-        .hasRequestHandling(new ActivePartitions(1, Set.of(), Set.of(2, 3)));
+        .hasActivatedPartitions(3)
+        .hasRequestHandling(new ActivePartitions(3, Set.of(), Set.of(4)));
   }
 
   private static ClusterConfiguration runApplier(
       final ClusterOperationApplier applier, final ClusterConfiguration initialConfiguration) {
-    final var initializedConfiguration =
-        applier.init(initialConfiguration).get().apply(initialConfiguration);
+    final var initResult = applier.init(initialConfiguration);
+    EitherAssert.assertThat(initResult).isRight();
+    final var initializedConfiguration = initResult.get().apply(initialConfiguration);
     final var updater = applier.apply().join();
     return updater.apply(initializedConfiguration);
   }
