@@ -1,3 +1,6 @@
+# description: Visual regression tests for Operate
+# test location: operate/client/e2e-playwright
+# owner: Core Features
 name: "[Legacy] Operate / Visual Regression Tests"
 on:
   push:
@@ -12,6 +15,7 @@ on:
     paths:
       - '.github/workflows/operate-playwright.yml'
       - 'operate/client/**'
+      - ".github/workflows/operate-*"
 
 # Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
 # Exception for main branch: complete builds for every commit needed for confidenence
