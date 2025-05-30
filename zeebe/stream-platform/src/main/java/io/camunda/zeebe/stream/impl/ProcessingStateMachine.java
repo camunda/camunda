@@ -410,7 +410,8 @@ public final class ProcessingStateMachine {
               var toWriteEntry = entry;
               final int potentialBatchSize = currentBatchSize + commandsToProcess.size();
               if (entry.recordMetadata().getRecordType() == RecordType.COMMAND
-                  && potentialBatchSize < currentProcessingBatchLimit) {
+                  && potentialBatchSize < currentProcessingBatchLimit
+                  && processingResult.shouldContinueProcessingInCurrentTransaction()) {
                 commandsToProcess.add(
                     new UnwrittenRecord(
                         entry.key(),

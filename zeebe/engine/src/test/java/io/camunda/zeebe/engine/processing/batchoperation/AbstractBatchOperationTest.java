@@ -87,7 +87,7 @@ abstract class AbstractBatchOperationTest {
     final var result =
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(
-                itemKeys.stream().map(this::mockProcessInstanceEntity).collect(Collectors.toList()))
+                itemKeys.stream().map(this::fakeProcessInstanceEntity).collect(Collectors.toList()))
             .total(itemKeys.size())
             .build();
 
@@ -121,7 +121,7 @@ abstract class AbstractBatchOperationTest {
     final var result =
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(
-                itemKeys.stream().map(this::mockProcessInstanceEntity).collect(Collectors.toList()))
+                itemKeys.stream().map(this::fakeProcessInstanceEntity).collect(Collectors.toList()))
             .total(itemKeys.size())
             .build();
 
@@ -177,7 +177,7 @@ abstract class AbstractBatchOperationTest {
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(
                 piAndIncidentKeys.keySet().stream()
-                    .map(this::mockProcessInstanceEntity)
+                    .map(this::fakeProcessInstanceEntity)
                     .collect(Collectors.toList()))
             .total(piAndIncidentKeys.size())
             .build();
@@ -213,14 +213,13 @@ abstract class AbstractBatchOperationTest {
   }
 
   protected long createNewMigrateProcessesBatchOperation(
-      final Set<Long> itemKeys,
+      final List<Long> itemKeys,
       final long targetProcessDefinitionId,
       final Map<String, String> mappingInstructions,
       final Map<String, Object> claims) {
     final var result =
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
-            .items(
-                itemKeys.stream().map(this::mockProcessInstanceEntity).collect(Collectors.toList()))
+            .items(itemKeys.stream().map(this::fakeProcessInstanceEntity).toList())
             .total(itemKeys.size())
             .build();
     when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
@@ -261,10 +260,22 @@ abstract class AbstractBatchOperationTest {
     return new UnsafeBuffer(MsgPackConverter.convertToMsgPack(object));
   }
 
-  protected ProcessInstanceEntity mockProcessInstanceEntity(final long processInstanceKey) {
-    final var entity = mock(ProcessInstanceEntity.class);
-    when(entity.processInstanceKey()).thenReturn(processInstanceKey);
-    return entity;
+  protected ProcessInstanceEntity fakeProcessInstanceEntity(final long processInstanceKey) {
+    return new ProcessInstanceEntity(
+        processInstanceKey,
+        null,
+        null,
+        -1,
+        null,
+        -1L,
+        -1L,
+        -1L,
+        null,
+        null,
+        null,
+        false,
+        null,
+        null);
   }
 
   protected IncidentEntity mockIncidentEntity(final long incidentKey) {
@@ -293,6 +304,19 @@ abstract class AbstractBatchOperationTest {
         .withOwnerId(user.getUsername())
         .withOwnerType(AuthorizationOwnerType.USER)
         .withResourceType(AuthorizationResourceType.BATCH_OPERATION)
+        .withResourceId("*")
+        .create(DEFAULT_USER.getUsername());
+  }
+
+  protected void addProcessDefinitionPermissionsToUser(
+      final UserRecordValue user, final PermissionType permissionType) {
+    engine
+        .authorization()
+        .newAuthorization()
+        .withPermissions(permissionType)
+        .withOwnerId(user.getUsername())
+        .withOwnerType(AuthorizationOwnerType.USER)
+        .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
         .withResourceId("*")
         .create(DEFAULT_USER.getUsername());
   }
