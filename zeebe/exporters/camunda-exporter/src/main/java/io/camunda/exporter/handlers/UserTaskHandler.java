@@ -49,7 +49,10 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
           UserTaskIntent.ASSIGNING,
           UserTaskIntent.ASSIGNED,
           UserTaskIntent.UPDATING,
-          UserTaskIntent.UPDATED);
+          UserTaskIntent.UPDATED,
+          UserTaskIntent.ASSIGNMENT_DENIED,
+          UserTaskIntent.UPDATE_DENIED,
+          UserTaskIntent.COMPLETION_DENIED);
   private static final String UNMAPPED_USER_TASK_ATTRIBUTE_WARNING =
       "Attribute update not mapped while importing ZEEBE_USER_TASKS: {}";
 
@@ -107,7 +110,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     entity.setAction(record.getValue().getAction());
     entity.setKey(record.getKey());
 
-    switch (record.getIntent()) {
+    switch ((UserTaskIntent) record.getIntent()) {
       case UserTaskIntent.CREATING -> createTaskEntity(entity, record);
       case UserTaskIntent.CREATED -> handleCreated(record, entity);
       case UserTaskIntent.ASSIGNED, UserTaskIntent.UPDATED ->
@@ -120,6 +123,8 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
       case UserTaskIntent.UPDATING -> entity.setState(TaskState.UPDATING);
       case UserTaskIntent.COMPLETING -> entity.setState(TaskState.COMPLETING);
       case UserTaskIntent.CANCELING -> entity.setState(TaskState.CANCELING);
+      case UserTaskIntent.ASSIGNMENT_DENIED, UPDATE_DENIED, COMPLETION_DENIED ->
+          entity.setState(TaskState.CREATED);
       default -> {}
     }
 
