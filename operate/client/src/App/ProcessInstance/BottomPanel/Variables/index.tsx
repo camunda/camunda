@@ -25,6 +25,7 @@ import {Footer} from './Footer';
 import {Skeleton} from './Skeleton';
 import {useDisplayStatus} from 'modules/hooks/variables';
 import {useNewScopeIdForFlowNode} from 'modules/hooks/modifications';
+import {getScopeId} from 'modules/utils/variables';
 
 type Props = {
   isVariableModificationAllowed?: boolean;
@@ -40,7 +41,7 @@ const Variables: React.FC<Props> = observer(
       state: {pendingItem, loadingItemId, status},
     } = variablesStore;
 
-    const scopeId = variablesStore.scopeId ?? newScopeIdForFlowNode;
+    const scopeId = getScopeId() ?? newScopeIdForFlowNode;
 
     const {isModificationModeEnabled} = modificationsStore;
 
