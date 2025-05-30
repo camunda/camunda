@@ -255,7 +255,7 @@ public class UserTaskHandlerTest {
   }
 
   @Test
-  void shouldUpdateEntityFromRecord() {
+  void shouldCreateEntityFromRecord() {
     // given
     final long processInstanceKey = 123;
     final long flowNodeInstanceKey = 456;
@@ -275,11 +275,11 @@ public class UserTaskHandlerTest {
             .withFormKey(formKey)
             .build();
 
-    final Record<UserTaskRecordValue> taskRecord =
+    final Record<UserTaskRecordValue> taskCreatingRecord =
         factory.generateRecord(
             ValueType.USER_TASK,
             r ->
-                r.withIntent(UserTaskIntent.CREATED)
+                r.withIntent(UserTaskIntent.CREATING)
                     .withKey(recordKey)
                     .withValue(taskRecordValue)
                     .withTimestamp(System.currentTimeMillis()));
@@ -289,15 +289,25 @@ public class UserTaskHandlerTest {
     // when
     final TaskEntity taskEntity =
         new TaskEntity().setId(String.valueOf(taskRecordValue.getElementInstanceKey()));
-    underTest.updateEntity(taskRecord, taskEntity);
+    underTest.updateEntity(taskCreatingRecord, taskEntity);
+
+    final Record<UserTaskRecordValue> taskCreatedRecord =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withIntent(UserTaskIntent.CREATED)
+                    .withKey(recordKey)
+                    .withValue(taskRecordValue)
+                    .withTimestamp(System.currentTimeMillis()));
+    underTest.updateEntity(taskCreatedRecord, taskEntity);
 
     // then
     assertThat(taskEntity.getId())
         .isEqualTo(String.valueOf(taskRecordValue.getElementInstanceKey()));
-    assertThat(taskEntity.getKey()).isEqualTo(taskRecord.getKey());
+    assertThat(taskEntity.getKey()).isEqualTo(taskCreatingRecord.getKey());
     assertThat(taskEntity.getTenantId()).isEqualTo(taskRecordValue.getTenantId());
-    assertThat(taskEntity.getPartitionId()).isEqualTo(taskRecord.getPartitionId());
-    assertThat(taskEntity.getPosition()).isEqualTo(taskRecord.getPosition());
+    assertThat(taskEntity.getPartitionId()).isEqualTo(taskCreatingRecord.getPartitionId());
+    assertThat(taskEntity.getPosition()).isEqualTo(taskCreatingRecord.getPosition());
     assertThat(taskEntity.getProcessInstanceId()).isEqualTo(String.valueOf(processInstanceKey));
     assertThat(taskEntity.getFlowNodeBpmnId()).isEqualTo(taskRecordValue.getElementId());
     assertThat(taskEntity.getBpmnProcessId()).isEqualTo(taskRecordValue.getBpmnProcessId());
@@ -326,7 +336,8 @@ public class UserTaskHandlerTest {
     assertThat(taskEntity.getState()).isEqualTo(TaskState.CREATED);
     assertThat(taskEntity.getCreationTime())
         .isEqualTo(
-            ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(taskRecord.getTimestamp())));
+            ExporterUtil.toZonedOffsetDateTime(
+                Instant.ofEpochMilli(taskCreatingRecord.getTimestamp())));
     assertThat(taskEntity.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
   }
 
