@@ -7,7 +7,10 @@
  */
 package io.camunda.zeebe.snapshots;
 
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
+import java.nio.file.Path;
+import java.util.function.BiConsumer;
 
 /** A persisted snapshot store than can create a new snapshot and persists it. */
 public interface ConstructableSnapshotStore extends PersistedSnapshotStore {
@@ -23,4 +26,19 @@ public interface ConstructableSnapshotStore extends PersistedSnapshotStore {
    */
   Either<SnapshotException, TransientSnapshot> newTransientSnapshot(
       long index, long term, long processedPosition, long exportedPosition);
+
+  /**
+   * Makes a copy of the given snapshot to the given destination folder, keeping only the columns
+   * needed for the bootstrap process of a new partition. Anything raft related data is removed.
+   *
+   * @param processPosition the position of the last processed event
+   * @param persistedSnapshot the persisted snapshot to copy
+   * @param copySnapshot the consumer which copies the snapshot to the destination folder. The first
+   *     argument is the path of the source snapshot and the second argument is the destination
+   *     folder
+   */
+  ActorFuture<PersistedSnapshot> copyForBootstrap(
+      long processPosition,
+      PersistedSnapshot persistedSnapshot,
+      BiConsumer<Path, Path> copySnapshot);
 }

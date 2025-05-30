@@ -43,18 +43,21 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   private MutableChecksumsSFV checksum;
   private final CRC32CChecksumProvider checksumProvider;
   private long lastFollowupEventPosition = Long.MAX_VALUE;
+  private final boolean isBootstrap;
 
   FileBasedTransientSnapshot(
       final FileBasedSnapshotId snapshotId,
       final Path directory,
       final FileBasedSnapshotStoreImpl snapshotStore,
       final ConcurrencyControl actor,
-      final CRC32CChecksumProvider checksumProvider) {
+      final CRC32CChecksumProvider checksumProvider,
+      final boolean isBootstrap) {
     this.snapshotId = snapshotId;
     this.snapshotStore = snapshotStore;
     this.directory = directory;
     this.actor = actor;
     this.checksumProvider = checksumProvider;
+    this.isBootstrap = isBootstrap;
   }
 
   @Override
@@ -132,6 +135,12 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
     return directory;
   }
 
+  ActorFuture<PersistedSnapshot> persistInternal() {
+    final CompletableActorFuture<PersistedSnapshot> fut = new CompletableActorFuture<>();
+    persistInternal(fut);
+    return fut;
+  }
+
   private void persistInternal(final CompletableActorFuture<PersistedSnapshot> future) {
     if (snapshot != null) {
       future.complete(snapshot);
@@ -155,7 +164,8 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
               FileBasedSnapshotStoreImpl.VERSION,
               snapshotId.getProcessedPosition(),
               snapshotId.getExportedPosition(),
-              lastFollowupEventPosition);
+              lastFollowupEventPosition,
+              isBootstrap);
       writeMetadataAndUpdateChecksum(metadata);
       snapshot = snapshotStore.persistNewSnapshot(snapshotId, checksum, metadata);
       future.complete(snapshot);
