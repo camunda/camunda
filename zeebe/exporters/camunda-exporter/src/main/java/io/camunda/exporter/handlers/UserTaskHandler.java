@@ -204,9 +204,6 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     entity
         .setImplementation(TaskImplementation.ZEEBE_USER_TASK)
         .setState(TaskState.CREATING)
-        .setAssignee(getAssigneeOrNull(record))
-        .setDueDate(ExporterUtil.toOffsetDateTime(record.getValue().getDueDate()))
-        .setFollowUpDate(ExporterUtil.toOffsetDateTime(record.getValue().getFollowUpDate()))
         .setFlowNodeInstanceId(String.valueOf(record.getValue().getElementInstanceKey()))
         .setProcessInstanceId(String.valueOf(record.getValue().getProcessInstanceKey()))
         .setFlowNodeBpmnId(record.getValue().getElementId())
@@ -225,7 +222,6 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
                 ? null
                 : record.getValue().getExternalFormReference())
         .setCustomHeaders(record.getValue().getCustomHeaders())
-        .setPriority(record.getValue().getPriority())
         .setPartitionId(record.getPartitionId())
         .setTenantId(record.getValue().getTenantId())
         .setPosition(record.getPosition())
@@ -235,14 +231,6 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
                 : record.getValue().getAction())
         .setCreationTime(
             ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-
-    if (!record.getValue().getCandidateGroupsList().isEmpty()) {
-      entity.setCandidateGroups(record.getValue().getCandidateGroupsList().toArray(new String[0]));
-    }
-
-    if (!record.getValue().getCandidateUsersList().isEmpty()) {
-      entity.setCandidateUsers(record.getValue().getCandidateUsersList().toArray(new String[0]));
-    }
 
     if (!ExporterUtil.isEmpty(formKey)) {
       formCache
@@ -300,7 +288,20 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
   }
 
   private void handleCreated(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
-    entity.setState(TaskState.CREATED);
+    entity
+        .setState(TaskState.CREATED)
+        .setAssignee(getAssigneeOrNull(record))
+        .setDueDate(ExporterUtil.toOffsetDateTime(record.getValue().getDueDate()))
+        .setFollowUpDate(ExporterUtil.toOffsetDateTime(record.getValue().getFollowUpDate()))
+        .setPriority(record.getValue().getPriority());
+
+    if (!record.getValue().getCandidateGroupsList().isEmpty()) {
+      entity.setCandidateGroups(record.getValue().getCandidateGroupsList().toArray(new String[0]));
+    }
+
+    if (!record.getValue().getCandidateUsersList().isEmpty()) {
+      entity.setCandidateUsers(record.getValue().getCandidateUsersList().toArray(new String[0]));
+    }
   }
 
   private void handleCompletion(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
