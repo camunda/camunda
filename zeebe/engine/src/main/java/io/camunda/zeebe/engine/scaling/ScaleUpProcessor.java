@@ -102,7 +102,7 @@ public class ScaleUpProcessor implements TypedRecordProcessor<ScaleRecord> {
               RejectionType.ALREADY_EXISTS, "The desired partition count was already requested"));
     }
 
-    if (!desiredPartitionsInRoutingState.isEmpty()) {
+    if (!desiredPartitionsInRoutingState.equals(currentPartitionsInRoutingState)) {
       return Optional.of(
           new Rejection(
               RejectionType.INVALID_STATE,

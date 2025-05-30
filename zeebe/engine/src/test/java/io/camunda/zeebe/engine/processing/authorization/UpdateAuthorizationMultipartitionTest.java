@@ -137,7 +137,7 @@ public class UpdateAuthorizationMultipartitionTest {
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // given the user creation distribution is intercepted
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
-      interceptAuthorizationCreateForPartition(partitionId);
+      engine.interceptInterPartitionIntent(partitionId, AuthorizationIntent.CREATE);
     }
     final var key =
         engine

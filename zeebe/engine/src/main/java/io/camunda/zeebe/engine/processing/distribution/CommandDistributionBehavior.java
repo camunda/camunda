@@ -180,13 +180,10 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
     stateWriter.appendFollowUpEvent(
         distributionKey, CommandDistributionIntent.STARTED, distributionRecord);
 
-    partitions.forEach(
-        (partition) -> {
-          if (partition == currentPartitionId) {
-            return;
-          }
-          distributeToPartition(partition, distributionRecord, distributionKey);
-        });
+    partitions.stream()
+        .filter(partition -> partition != currentPartitionId)
+        .forEach(
+            partition -> distributeToPartition(partition, distributionRecord, distributionKey));
 
     getMetrics().startedDistribution();
     getMetrics().addActiveDistribution();
@@ -197,7 +194,14 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
       final CommandDistributionRecord distributionRecord,
       final long distributionKey) {
     final var distributionQueue = Optional.ofNullable(distributionRecord.getQueueId());
-    distributionQueue.ifPresent(queue -> enqueueDistribution(queue, partition, distributionKey));
+    distributionQueue.ifPresentOrElse(
+        queue -> enqueueDistribution(queue, partition, distributionKey),
+        () -> getMetrics().addPendingDistribution(partition));
+
+    if (routingInfo.isPartitionScaling(partition)) {
+      // If the partition is currently being scaled up, we don't want to distribute the command yet.
+      return;
+    }
 
     final var canDistributeImmediately =
         distributionQueue
@@ -211,8 +215,6 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
     if (canDistributeImmediately) {
       startDistributing(partition, distributionRecord, distributionKey);
     }
-
-    getMetrics().addPendingDistribution(partition);
   }
 
   private void enqueueDistribution(
@@ -222,6 +224,8 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
         distributionKey,
         CommandDistributionIntent.ENQUEUED,
         commandDistributionEnqueued.setQueueId(queue).setPartitionId(partition));
+
+    getMetrics().addPendingDistribution(partition);
   }
 
   /**
@@ -471,7 +475,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
       implements RequestBuilder, DistributionRequestBuilder, ContinuationRequestBuilder {
     final long key;
     String queue;
-    Set<Integer> partitions = routingInfo.partitions();
+    Set<Integer> partitions = routingInfo.desiredPartitions();
 
     public DistributionRequest(final long key) {
       this.key = key;
@@ -509,7 +513,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
 
     @Override
     public DistributionRequestBuilder forOtherPartitions() {
-      partitions = routingInfo.partitions();
+      partitions = routingInfo.desiredPartitions();
       return this;
     }
 

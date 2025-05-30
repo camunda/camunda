@@ -22,7 +22,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
@@ -111,7 +110,7 @@ public class DeleteGroupMultiPartitionTest {
     // when
     final var name = UUID.randomUUID().toString();
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
-      interceptGroupCreateForPartition(partitionId);
+      engine.interceptInterPartitionIntent(partitionId, GroupIntent.CREATE);
     }
     final var groupId = UUID.randomUUID().toString();
     engine.group().newGroup(groupId).withName(name).create();
@@ -127,17 +126,5 @@ public class DeleteGroupMultiPartitionTest {
         .extracting(r -> r.getValue().getValueType(), r -> r.getValue().getIntent())
         .containsExactly(
             tuple(ValueType.GROUP, GroupIntent.CREATE), tuple(ValueType.GROUP, GroupIntent.DELETE));
-  }
-
-  private void interceptGroupCreateForPartition(final int partitionId) {
-    final var hasInterceptedPartition = new AtomicBoolean(false);
-    engine.interceptInterPartitionCommands(
-        (receiverPartitionId, valueType, intent, recordKey, command) -> {
-          if (hasInterceptedPartition.get()) {
-            return true;
-          }
-          hasInterceptedPartition.set(true);
-          return !(receiverPartitionId == partitionId && intent == GroupIntent.CREATE);
-        });
   }
 }
