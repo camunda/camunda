@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -40,9 +41,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.assertj.core.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class UserTaskHandlerTest {
   private static final Set<UserTaskIntent> SUPPORTED_INTENTS =
       EnumSet.of(
@@ -52,6 +61,8 @@ public class UserTaskHandlerTest {
           UserTaskIntent.MIGRATED,
           UserTaskIntent.ASSIGNED,
           UserTaskIntent.UPDATED);
+
+  @Captor private ArgumentCaptor<Map<String, Object>> updateFieldsCaptor;
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-tasklist-task";
@@ -919,5 +930,82 @@ public class UserTaskHandlerTest {
     verify(mockRequest, times(1))
         .upsertWithRouting(
             indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
+  }
+
+  @ParameterizedTest
+  @EnumSource(value = UserTaskIntent.class)
+  void flushedEntityShouldContainPartialStates(final UserTaskIntent intent) {
+    Assumptions.assumeThat(intent.isEvent())
+        .describedAs("Only relevant for handled events")
+        .isTrue();
+
+    // given
+    final Record<UserTaskRecordValue> taskRecord =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withIntent(intent)
+                    .withKey(111)
+                    .withValue(ImmutableUserTaskRecordValue.builder().build())
+                    .withTimestamp(System.currentTimeMillis()));
+
+    final TaskEntity taskEntity = underTest.createNewEntity(String.valueOf(111));
+    underTest.updateEntity(taskRecord, taskEntity);
+
+    // when
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+    underTest.flush(taskEntity, mockRequest);
+
+    // then
+    verify(mockRequest)
+        .upsertWithRouting(
+            eq(indexName),
+            eq(taskEntity.getId()),
+            eq(taskEntity),
+            updateFieldsCaptor.capture(),
+            eq(taskEntity.getId()));
+
+    final var expectedState = mapIntentToExpectedState(intent);
+    if (expectedState == null) {
+      assertThat(updateFieldsCaptor.getValue())
+          .describedAs("Expect state to not be updated")
+          .doesNotContainKey(TaskTemplate.STATE);
+    } else {
+      assertThat(updateFieldsCaptor.getValue())
+          .describedAs("Expect state to be updated to {}", expectedState)
+          .containsEntry(TaskTemplate.STATE, expectedState);
+    }
+  }
+
+  /**
+   * Maps a given {@link UserTaskIntent} to the expected {@link TaskState} that the user task should
+   * be updated to, or returns {@code null} if the intent should not result in a state update.
+   */
+  private TaskState mapIntentToExpectedState(final UserTaskIntent intent) {
+    return switch (intent) {
+      case CREATED -> TaskState.CREATED;
+      case COMPLETED -> TaskState.COMPLETED;
+      case CANCELED -> TaskState.CANCELED;
+      case CREATING,
+          CANCELING,
+          COMPLETING,
+          UPDATING,
+          ASSIGNING,
+          CLAIMING,
+          ASSIGNED,
+          CORRECTED,
+          MIGRATED,
+          UPDATED,
+          ASSIGNMENT_DENIED,
+          COMPLETION_DENIED,
+          UPDATE_DENIED ->
+          /* doesn't affect the state */ null;
+      default ->
+          throw new IllegalArgumentException(
+              """
+              Not yet supported intent! \
+              Please consider whether this intent should update the task's state \
+              and add a case for it""");
+    };
   }
 }
