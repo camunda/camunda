@@ -55,11 +55,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class UserTaskHandlerTest {
   private static final Set<UserTaskIntent> SUPPORTED_INTENTS =
       EnumSet.of(
+          UserTaskIntent.CREATING,
           UserTaskIntent.CREATED,
+          UserTaskIntent.COMPLETING,
           UserTaskIntent.COMPLETED,
+          UserTaskIntent.CANCELING,
           UserTaskIntent.CANCELED,
           UserTaskIntent.MIGRATED,
+          UserTaskIntent.ASSIGNING,
           UserTaskIntent.ASSIGNED,
+          UserTaskIntent.UPDATING,
           UserTaskIntent.UPDATED);
 
   @Captor private ArgumentCaptor<Map<String, Object>> updateFieldsCaptor;
@@ -987,16 +992,15 @@ public class UserTaskHandlerTest {
    */
   private TaskState mapIntentToExpectedState(final UserTaskIntent intent) {
     return switch (intent) {
+      case CREATING -> TaskState.CREATING;
       case CREATED -> TaskState.CREATED;
+      case ASSIGNING, CLAIMING -> TaskState.ASSIGNING;
+      case UPDATING -> TaskState.UPDATING;
+      case COMPLETING -> TaskState.COMPLETING;
       case COMPLETED -> TaskState.COMPLETED;
+      case CANCELING -> TaskState.CANCELING;
       case CANCELED -> TaskState.CANCELED;
-      case CREATING,
-          CANCELING,
-          COMPLETING,
-          UPDATING,
-          ASSIGNING,
-          CLAIMING,
-          ASSIGNED,
+      case ASSIGNED,
           CORRECTED,
           MIGRATED,
           UPDATED,
