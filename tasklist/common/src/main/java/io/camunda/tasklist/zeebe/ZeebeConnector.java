@@ -38,14 +38,14 @@ public class ZeebeConnector {
   public CamundaClient newCamundaClient(final ZeebeProperties zeebeProperties) {
     LOGGER.info(
         "Zeebe Client - Using REST Configuration: {}",
-        getURIFromSaaSOrProperties(zeebeProperties.getRestAddress()));
+        getURIFromSaaSOrProperties(zeebeProperties.getRestAddress(), zeebeProperties.isSecure()));
     LOGGER.info(
         "Zeebe Client - Using Gateway Configuration: {}", zeebeProperties.getGatewayAddress());
     final CamundaClientBuilder builder =
         CamundaClient.newClientBuilder()
             .gatewayAddress(zeebeProperties.getGatewayAddress())
             // .restAddress(getURIFromString(zeebeProperties.getRestAddress()))
-            .restAddress(getURIFromSaaSOrProperties(zeebeProperties.getRestAddress()))
+            .restAddress(getURIFromSaaSOrProperties(zeebeProperties.getRestAddress(), zeebeProperties.isSecure()))
             .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE);
     if (zeebeProperties.isSecure()) {
       builder.caCertificatePath(zeebeProperties.getCertificatePath());
@@ -66,11 +66,12 @@ public class ZeebeConnector {
     }
   }
 
-  private URI getURIFromSaaSOrProperties(final String uri) {
+  private URI getURIFromSaaSOrProperties(final String uri, final boolean isSecure) {
     try {
+      String scheme = isSecure ? "https" : "http";
       if (tasklistProperties.getClient().getClusterId() != null) {
         return new URI(
-            "http://zeebe-service:8080/" + tasklistProperties.getClient().getClusterId());
+            scheme + "://zeebe-service:8080/" + tasklistProperties.getClient().getClusterId());
       } else {
         return getURIFromString(uri);
       }
