@@ -14,6 +14,7 @@ import {variablesStore} from 'modules/stores/variables';
 import {isInstanceRunning, isRunning} from './instance';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
+import {applyOperation} from 'modules/api/processInstances/operations';
 
 const init = (processInstance?: ProcessInstance) => {
   variablesStore.instanceId = processInstance?.processInstanceKey || null;
@@ -101,4 +102,79 @@ const getScopeId = () => {
   return selection?.flowNodeInstanceId ?? metaData?.flowNodeInstanceId ?? null;
 };
 
-export {init, startPolling, getScopeId};
+const addVariable = async ({
+  id,
+  name,
+  value,
+  invalidateQueries,
+  onSuccess,
+  onError,
+}: {
+  id: string;
+  name: string;
+  value: string;
+  invalidateQueries: () => void;
+  onSuccess: () => void;
+  onError: (statusCode: number) => void;
+}) => {
+  variablesStore.setPendingItem({
+    name,
+    value,
+    hasActiveOperation: true,
+    isFirst: false,
+    sortValues: null,
+    isPreview: false,
+  });
+
+  const response = await applyOperation(id, {
+    operationType: 'ADD_VARIABLE',
+    variableScopeId: getScopeId() || undefined,
+    variableName: name,
+    variableValue: value,
+  });
+
+  invalidateQueries();
+
+  if (response.isSuccess) {
+    const {id} = response.data;
+    variablesStore.startPollingOperation({operationId: id, onSuccess, onError});
+    return 'SUCCESSFUL';
+  } else {
+    variablesStore.setPendingItem(null);
+    if (response.statusCode === 400) {
+      return 'VALIDATION_ERROR';
+    }
+
+    onError(response.statusCode);
+    return 'FAILED';
+  }
+};
+
+const updateVariable = async ({
+  id,
+  name,
+  value,
+  invalidateQueries,
+  onError,
+}: {
+  id: string;
+  name: string;
+  value: string;
+  invalidateQueries: () => void;
+  onError: (statusCode: number) => void;
+}) => {
+  const response = await applyOperation(id, {
+    operationType: 'UPDATE_VARIABLE',
+    variableScopeId: getScopeId() || undefined,
+    variableName: name,
+    variableValue: value,
+  });
+
+  invalidateQueries();
+
+  if (!response.isSuccess) {
+    onError(response.statusCode);
+  }
+};
+
+export {init, startPolling, getScopeId, addVariable, updateVariable};

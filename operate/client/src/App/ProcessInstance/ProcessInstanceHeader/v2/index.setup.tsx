@@ -8,7 +8,6 @@
 
 import {authenticationStore} from 'modules/stores/authentication';
 import {operationsStore} from 'modules/stores/operations';
-import {variablesStore} from 'modules/stores/variables';
 import {createBatchOperation, createInstance} from 'modules/testUtils';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
@@ -72,7 +71,6 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
     return () => {
       operationsStore.reset();
-      variablesStore.reset();
       authenticationStore.reset();
     };
   }, []);
