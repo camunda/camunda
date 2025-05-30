@@ -175,7 +175,8 @@ public final class PartitionManagerImpl
             brokerCfg,
             initialPartitionConfig,
             initializeFromSnapshot,
-            brokerMeterRegistry);
+            brokerMeterRegistry,
+            brokerClient);
     final var partition = Partition.bootstrapping(context);
     partitions.put(id, partition);
 
@@ -203,7 +204,8 @@ public final class PartitionManagerImpl
             brokerCfg,
             initialPartitionConfig,
             false,
-            brokerMeterRegistry);
+            brokerMeterRegistry,
+            brokerClient);
     final var partition = Partition.joining(context);
     final var previousPartition = partitions.putIfAbsent(id, partition);
     if (previousPartition != null) {
