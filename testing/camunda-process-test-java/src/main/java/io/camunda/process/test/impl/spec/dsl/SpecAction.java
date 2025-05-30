@@ -13,17 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda;
+package io.camunda.process.test.impl.spec.dsl;
 
-import io.camunda.spring.client.annotation.Deployment;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import io.camunda.process.test.api.CamundaProcessTestContext;
+import io.camunda.process.test.impl.spec.SpecTestContext;
 
-@SpringBootApplication
-@Deployment(resources = "classpath*:/bpmn/**/*.bpmn")
-public class MySpringBootApplication {
+public interface SpecAction extends SpecInstruction {
 
-  public static void main(final String[] args) {
-    SpringApplication.run(MySpringBootApplication.class, args);
-  }
+  void execute(SpecTestContext testContext, CamundaProcessTestContext processTestContext);
 }

@@ -44,6 +44,12 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -60,6 +66,7 @@
               <dependency>io.camunda:camunda-client-java</dependency>
               <dependency>org.assertj:assertj-core</dependency>
               <dependency>org.junit.jupiter:junit-jupiter-api</dependency>
+              <dependency>org.springframework.boot:spring-boot</dependency>
               <dependency>org.springframework.boot:spring-boot-autoconfigure</dependency>
               <dependency>org.springframework.boot:spring-boot-test</dependency>
               <dependency>org.springframework:spring-beans</dependency>

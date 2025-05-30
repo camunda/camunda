@@ -13,17 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda;
+package io.camunda.process.test.services;
 
-import io.camunda.spring.client.annotation.Deployment;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import io.camunda.process.test.impl.spec.ProcessSpecResult;
+import io.camunda.process.test.impl.spec.ProcessSpecRunner;
+import io.camunda.process.test.impl.spec.dsl.ProcessSpec;
+import org.springframework.stereotype.Service;
 
-@SpringBootApplication
-@Deployment(resources = "classpath*:/bpmn/**/*.bpmn")
-public class MySpringBootApplication {
+@Service
+public class ProcessTestService {
 
-  public static void main(final String[] args) {
-    SpringApplication.run(MySpringBootApplication.class, args);
+  private final ProcessSpecRunner processSpecRunner;
+
+  public ProcessTestService(final ProcessSpecRunner processSpecRunner) {
+    this.processSpecRunner = processSpecRunner;
+  }
+
+  public ProcessSpecResult executeTests(final ProcessSpec testSpecification) {
+    return processSpecRunner.runSpec(testSpecification);
   }
 }

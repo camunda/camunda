@@ -1,0 +1,61 @@
+{
+  "passesTestCases": 1,
+  "totalTestCases": 2,
+  "totalTestDuration": "PT9.383967547S",
+  "testResults": [
+    {
+      "name": "should pass",
+      "success": true,
+      "failedInstruction": null,
+      "failureMessage": null,
+      "testDuration": "PT2.320512824S",
+      "testOutput": null
+    },
+    {
+      "name": "should fail",
+      "success": false,
+      "failedInstruction": {
+        "name": "verify-process-instance-state",
+        "processInstanceAlias": "process-instance",
+        "state": "COMPLETED"
+      },
+      "failureMessage": "Process instance [key: 2251799813685281] should be completed but was active.",
+      "testDuration": "PT6.961815187S",
+      "testOutput": [
+        {
+          "processInstanceKey": 2251799813685270,
+          "processId": "process",
+          "variables": {
+            "x": "100"
+          },
+          "openIncidents": [],
+          "activeFlowNodeInstances": []
+        },
+        {
+          "processInstanceKey": 2251799813685281,
+          "processId": "process",
+          "variables": {},
+          "openIncidents": [],
+          "activeFlowNodeInstances": [
+            {
+              "key": 2251799813685285,
+              "processInstanceKey": 2251799813685281,
+              "processDefinitionKey": 2251799813685269,
+              "startDate": "2025-02-21T13:52:03.543+0000",
+              "endDate": null,
+              "flowNodeId": "A",
+              "flowNodeName": "A",
+              "incidentKey": 0,
+              "type": "SERVICE_TASK",
+              "state": "ACTIVE",
+              "incident": false,
+              "tenantId": "<default>",
+              "flowNodeInstanceKey": 2251799813685285,
+              "processDefinitionId": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
