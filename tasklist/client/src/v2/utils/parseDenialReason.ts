@@ -11,7 +11,6 @@ export const parseDenialReason = async (
   type: 'assignment' | 'unassignment' | 'completion',
 ): Promise<string | undefined> => {
   const response = (error as {response?: Response})?.response;
-
   if (!response || response.status !== 409) return undefined;
 
   const responseJson = await response?.json();
@@ -20,7 +19,7 @@ export const parseDenialReason = async (
   let deniedReason: string = `The task ${type} was rejected by the system.`;
   const match = detail.match(/Reason to deny:\s*(.*)/i);
   if (match && match[1]) {
-    deniedReason = match[1].trim();
+    deniedReason = match[1].trim().replace(/^["'](.*)["']$/, '$1');
   }
 
   return deniedReason;
