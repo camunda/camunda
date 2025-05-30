@@ -5,12 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.cache;
+package io.camunda.zeebe.exporter.common.cache;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
+import java.util.Map;
 import java.util.Optional;
 
 public class ExporterEntityCacheImpl<K, T> implements ExporterEntityCache<K, T> {
@@ -38,6 +39,11 @@ public class ExporterEntityCacheImpl<K, T> implements ExporterEntityCache<K, T> 
   @Override
   public Optional<T> get(final K entityKey) {
     return Optional.ofNullable(cache.get(entityKey));
+  }
+
+  @Override
+  public Map<K, T> getAll(final Iterable<K> keys) {
+    return cache.getAll(keys);
   }
 
   @Override

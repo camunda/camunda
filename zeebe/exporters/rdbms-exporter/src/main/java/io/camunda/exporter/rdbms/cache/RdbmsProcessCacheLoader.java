@@ -9,9 +9,10 @@ package io.camunda.exporter.rdbms.cache;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
-import io.camunda.exporter.rdbms.utils.ProcessCacheUtil;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.query.ProcessDefinitionQuery;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,7 +38,8 @@ public class RdbmsProcessCacheLoader implements CacheLoader<Long, CachedProcessE
       return new CachedProcessEntity(
           processDefinitionEntity.name(),
           processDefinitionEntity.versionTag(),
-          ProcessCacheUtil.extractCallActivityIdsFromDiagram(processDefinitionEntity));
+          ProcessCacheUtil.extractCallActivityIdsFromDiagram(processDefinitionEntity),
+          ProcessCacheUtil.extractFlowNodesMapFromDiagram(processDefinitionEntity));
     }
     LOG.debug("Process '{}' not found in RDBMS", key);
     return null;
@@ -57,6 +59,7 @@ public class RdbmsProcessCacheLoader implements CacheLoader<Long, CachedProcessE
                     new CachedProcessEntity(
                         pde.name(),
                         pde.versionTag(),
-                        ProcessCacheUtil.extractCallActivityIdsFromDiagram(pde))));
+                        ProcessCacheUtil.extractCallActivityIdsFromDiagram(pde),
+                        ProcessCacheUtil.extractFlowNodesMapFromDiagram(pde))));
   }
 }

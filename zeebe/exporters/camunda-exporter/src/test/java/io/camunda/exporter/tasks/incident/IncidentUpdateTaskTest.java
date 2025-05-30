@@ -15,7 +15,6 @@ import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.ExporterMetadata;
-import io.camunda.exporter.cache.ExporterEntityCache;
 import io.camunda.exporter.config.ExporterConfiguration.IncidentNotifierConfiguration;
 import io.camunda.exporter.notifier.IncidentNotifier;
 import io.camunda.exporter.notifier.M2mTokenManager;
@@ -34,6 +33,7 @@ import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.webapps.schema.entities.incident.IncidentState;
 import io.camunda.zeebe.exporter.api.ExporterException;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.ArrayList;

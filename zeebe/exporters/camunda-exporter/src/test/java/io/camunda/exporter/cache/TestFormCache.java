@@ -8,7 +8,9 @@
 package io.camunda.exporter.cache;
 
 import io.camunda.exporter.cache.form.CachedFormEntity;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 public class TestFormCache implements ExporterEntityCache<String, CachedFormEntity> {
@@ -18,6 +20,13 @@ public class TestFormCache implements ExporterEntityCache<String, CachedFormEnti
   @Override
   public Optional<CachedFormEntity> get(final String entityKey) {
     return Optional.ofNullable(cache.get(entityKey));
+  }
+
+  @Override
+  public Map<String, CachedFormEntity> getAll(Iterable<String> keys) {
+    final Map<String, CachedFormEntity> map = new HashMap<>();
+    keys.forEach(k -> map.put(k, get(k).orElse(null)));
+    return map;
   }
 
   @Override

@@ -15,6 +15,9 @@ import io.camunda.db.rdbms.write.service.FlowNodeInstanceWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -42,9 +45,13 @@ public class FlowNodeExportHandler implements RdbmsExportHandler<ProcessInstance
       Set.of(BpmnElementType.PROCESS, BpmnElementType.SEQUENCE_FLOW);
 
   private final FlowNodeInstanceWriter flowNodeInstanceWriter;
+  private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
 
-  public FlowNodeExportHandler(final FlowNodeInstanceWriter flowNodeInstanceWriter) {
+  public FlowNodeExportHandler(
+      final FlowNodeInstanceWriter flowNodeInstanceWriter,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
     this.flowNodeInstanceWriter = flowNodeInstanceWriter;
+    this.processCache = processCache;
   }
 
   @Override
@@ -75,11 +82,16 @@ public class FlowNodeExportHandler implements RdbmsExportHandler<ProcessInstance
     }
   }
 
-  private static FlowNodeInstanceDbModel map(
+  private FlowNodeInstanceDbModel map(
       final Record<ProcessInstanceRecordValue> record, final ProcessInstanceRecordValue value) {
+    final var processDefinitionKey = value.getProcessDefinitionKey();
     return new FlowNodeInstanceDbModelBuilder()
         .flowNodeInstanceKey(record.getKey())
         .flowNodeId(value.getElementId())
+        .flowNodeName(
+            ProcessCacheUtil.getFlowNodeName(
+                    processCache, processDefinitionKey, value.getElementId())
+                .orElse(null))
         .processInstanceKey(value.getProcessInstanceKey())
         .processDefinitionKey(value.getProcessDefinitionKey())
         .processDefinitionId(value.getBpmnProcessId())

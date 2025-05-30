@@ -14,7 +14,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatException;
 
 import io.camunda.exporter.DefaultExporterResourceProvider;
-import io.camunda.exporter.cache.ExporterEntityCache.CacheLoaderFailedException;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.cache.form.ElasticSearchFormCacheLoader;
 import io.camunda.exporter.cache.form.OpenSearchFormCacheLoader;
@@ -23,6 +22,8 @@ import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.webapps.schema.entities.form.FormEntity;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -94,7 +95,7 @@ class FormCacheIT {
     // when - then
     assertThatException()
         .isThrownBy(() -> failingFormCache.get("1"))
-        .isInstanceOf(CacheLoaderFailedException.class);
+        .isInstanceOf(ExporterEntityCache.CacheLoaderFailedException.class);
   }
 
   static Stream<Arguments> provideFormCache() {

@@ -7,13 +7,13 @@
  */
 package io.camunda.exporter.handlers;
 
-import io.camunda.exporter.cache.ExporterEntityCache;
-import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
-import io.camunda.exporter.utils.ProcessCacheUtil;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.ProcessFlowNodeEntity;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
@@ -86,7 +86,10 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
     // record handler
     final var cachedProcessEntity =
         new CachedProcessEntity(
-            entity.getName(), entity.getVersionTag(), entity.getCallActivityIds());
+            entity.getName(),
+            entity.getVersionTag(),
+            entity.getCallActivityIds(),
+            ProcessCacheUtil.getFlowNodesMap(entity.getFlowNodes()));
     processCache.put(process.getProcessDefinitionKey(), cachedProcessEntity);
   }
 

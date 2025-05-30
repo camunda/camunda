@@ -8,8 +8,9 @@
 package io.camunda.exporter.cache.process;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
-import io.camunda.exporter.utils.ProcessCacheUtil;
 import io.camunda.webapps.schema.entities.ProcessEntity;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import java.io.IOException;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
@@ -38,7 +39,8 @@ public class OpenSearchProcessCacheLoader implements CacheLoader<Long, CachedPro
       return new CachedProcessEntity(
           processEntity.getName(),
           processEntity.getVersionTag(),
-          ProcessCacheUtil.extractCallActivityIdsFromDiagram(processEntity));
+          ProcessCacheUtil.extractCallActivityIdsFromDiagram(processEntity),
+          ProcessCacheUtil.extractFlowNodesMapFromDiagram(processEntity));
     } else {
       // This should only happen if the process was deleted from OpenSearch which should never
       // happen. Normally, the process is exported before the process instance is exporter. So the

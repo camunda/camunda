@@ -21,6 +21,7 @@ public record FlowNodeInstanceDbModel(
     OffsetDateTime startDate,
     OffsetDateTime endDate,
     String flowNodeId,
+    String flowNodeName,
     String treePath,
     FlowNodeType type,
     FlowNodeState state,
@@ -45,6 +46,7 @@ public record FlowNodeInstanceDbModel(
                 .startDate(startDate)
                 .endDate(endDate)
                 .flowNodeId(flowNodeId)
+                .flowNodeName(flowNodeName)
                 .treePath(treePath)
                 .type(type)
                 .state(state)
@@ -66,6 +68,7 @@ public record FlowNodeInstanceDbModel(
     private OffsetDateTime startDate;
     private OffsetDateTime endDate;
     private String flowNodeId;
+    private String flowNodeName;
     private String treePath;
     private FlowNodeType type;
     private FlowNodeState state;
@@ -106,6 +109,11 @@ public record FlowNodeInstanceDbModel(
 
     public FlowNodeInstanceDbModelBuilder flowNodeId(final String flowNodeId) {
       this.flowNodeId = flowNodeId;
+      return this;
+    }
+
+    public FlowNodeInstanceDbModelBuilder flowNodeName(final String flowNodeName) {
+      this.flowNodeName = flowNodeName;
       return this;
     }
 
@@ -169,6 +177,7 @@ public record FlowNodeInstanceDbModel(
           startDate,
           endDate,
           flowNodeId,
+          flowNodeName,
           treePath,
           type,
           state,
