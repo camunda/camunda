@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.filter;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
+import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.ID;
 import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.OWNER_ID;
 import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.OWNER_TYPE;
 import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.PERMISSIONS_TYPES;
@@ -30,6 +31,7 @@ public final class AuthorizationFilterTransformer
   @Override
   public SearchQuery toSearchQuery(final AuthorizationFilter filter) {
     return and(
+        filter.authorizationKey() == null ? null : term(ID, filter.authorizationKey()),
         stringTerms(OWNER_ID, filter.ownerIds()),
         filter.ownerType() == null ? null : term(OWNER_TYPE, filter.ownerType()),
         stringTerms(RESOURCE_ID, filter.resourceIds()),
