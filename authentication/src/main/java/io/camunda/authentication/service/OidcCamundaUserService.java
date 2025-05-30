@@ -10,6 +10,7 @@ package io.camunda.authentication.service;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.entity.AuthenticationContext;
 import io.camunda.authentication.entity.CamundaOAuthPrincipal;
+import io.camunda.authentication.entity.CamundaOidcUser;
 import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.entity.AuthenticationMethod;
@@ -61,6 +62,12 @@ public class OidcCamundaUserService implements CamundaUserService {
 
   @Override
   public String getUserToken() {
-    return "";
+    return getCamundaUser()
+        .map(
+            user -> {
+              final var oidcUser = (CamundaOidcUser) user;
+              return oidcUser.getIdToken().getTokenValue();
+            })
+        .orElse(null);
   }
 }
