@@ -9,10 +9,12 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.AuthorizationEntity;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
@@ -83,6 +85,79 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
   void setup() {
     when(authorizationServices.withAuthentication(any(Authentication.class)))
         .thenReturn(authorizationServices);
+  }
+
+  @Test
+  void getAuthorizationShouldReturnOk() {
+    // given
+    final AuthorizationEntity authorizationEntity =
+        new AuthorizationEntity(
+            100L,
+            "ownerId",
+            OwnerTypeEnum.USER.getValue(),
+            ResourceTypeEnum.PROCESS_DEFINITION.getValue(),
+            "resourceId",
+            Set.of(PermissionType.CREATE));
+
+    final Long authorizationKey = authorizationEntity.authorizationKey();
+    when(authorizationServices.getAuthorization(authorizationKey)).thenReturn(authorizationEntity);
+
+    // when
+    webClient
+        .get()
+        .uri("%s/%d".formatted("/v2/authorizations", authorizationKey))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+                {
+                  "authorizationKey": "100",
+                  "ownerId": "ownerId",
+                  "ownerType": "USER",
+                  "resourceId": "resourceId",
+                  "resourceType": "PROCESS_DEFINITION",
+                  "permissionTypes": ["CREATE"]
+                }""");
+
+    // then
+    verify(authorizationServices, times(1)).getAuthorization(authorizationKey);
+  }
+
+  @Test
+  void getNonExistingRoleShouldReturnNotFound() {
+    // given
+    final var authorizationKey = 100L;
+    final var path = "%s/%s".formatted("/v2/authorizations", authorizationKey);
+    when(authorizationServices.getAuthorization(authorizationKey))
+        .thenThrow(
+            new CamundaSearchException(
+                "authorization not found", CamundaSearchException.Reason.NOT_FOUND));
+
+    // when
+    webClient
+        .get()
+        .uri(path)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "NOT_FOUND",
+              "status": 404,
+              "detail": "authorization not found",
+              "instance": "%s"
+            }"""
+                .formatted(path));
+
+    // then
+    verify(authorizationServices, times(1)).getAuthorization(authorizationKey);
   }
 
   @Test
