@@ -16,6 +16,8 @@
 package io.camunda.client.impl.oauth;
 
 import static io.camunda.client.impl.BuilderUtils.applyEnvironmentValueIfNotNull;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.ENTRA_ENV_CERTIFICATE_PASSWORD;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.ENTRA_ENV_CERTIFICATE_PATH;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_AUTHORIZATION_SERVER;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CACHE_PATH;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_ID;
@@ -34,8 +36,13 @@ import io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 import java.time.Duration;
 import java.util.Objects;
 
@@ -61,6 +68,8 @@ public final class OAuthCredentialsProviderBuilder {
   private Duration connectTimeout;
   private Duration readTimeout;
   private boolean applyEnvironmentOverrides = true;
+  private Path entraCertificatePath;
+  private String entraCertificatePassword;
 
   /** Client id to be used when requesting access token from OAuth authorization server. */
   public OAuthCredentialsProviderBuilder clientId(final String clientId) {
@@ -269,6 +278,34 @@ public final class OAuthCredentialsProviderBuilder {
     return readTimeout;
   }
 
+  public OAuthCredentialsProviderBuilder entraCertificatePath(final String entraCertificatePath) {
+    if (entraCertificatePath != null) {
+      this.entraCertificatePath = Paths.get(entraCertificatePath);
+    }
+    return this;
+  }
+
+  public Path getEntraCertificatePath() {
+    return entraCertificatePath;
+  }
+
+  public OAuthCredentialsProviderBuilder entraCertificatePassword(
+      final String entraCertificatePassword) {
+    this.entraCertificatePassword = entraCertificatePassword;
+    return this;
+  }
+
+  public String getEntraCertificatePassword() {
+    return entraCertificatePassword;
+  }
+
+  public boolean entraConfigurationProvided() {
+    return entraCertificatePassword != null
+        && !entraCertificatePassword.isEmpty()
+        && entraCertificatePath != null
+        && entraCertificatePath.toFile().exists();
+  }
+
   public OAuthCredentialsProviderBuilder applyEnvironmentOverrides(
       final boolean applyEnvironmentOverrides) {
     this.applyEnvironmentOverrides = applyEnvironmentOverrides;
@@ -283,9 +320,15 @@ public final class OAuthCredentialsProviderBuilder {
       checkEnvironmentOverrides();
     }
     applyDefaults();
+    applyMSEntraConfiguration();
 
     validate();
     return new OAuthCredentialsProvider(this);
+  }
+
+  private void applyMSEntraConfiguration() {
+    applyEnvironmentValueIfNotNull(this::entraCertificatePath, ENTRA_ENV_CERTIFICATE_PATH);
+    applyEnvironmentValueIfNotNull(this::entraCertificatePassword, ENTRA_ENV_CERTIFICATE_PASSWORD);
   }
 
   private void checkEnvironmentOverrides() {
@@ -363,7 +406,15 @@ public final class OAuthCredentialsProviderBuilder {
   private void validate() {
     try {
       Objects.requireNonNull(clientId, String.format(INVALID_ARGUMENT_MSG, "client id"));
-      Objects.requireNonNull(clientSecret, String.format(INVALID_ARGUMENT_MSG, "client secret"));
+      if (entraConfigurationProvided()) {
+        // loading the certificate from the provided path to ensure it exists and is valid
+        final KeyStore keyStore = KeyStore.getInstance("PKCS12");
+        keyStore.load(
+            Files.newInputStream(Paths.get(entraCertificatePath.toAbsolutePath().toString())),
+            entraCertificatePassword.toCharArray());
+      } else {
+        Objects.requireNonNull(clientSecret, String.format(INVALID_ARGUMENT_MSG, "client secret"));
+      }
       Objects.requireNonNull(audience, String.format(INVALID_ARGUMENT_MSG, "audience"));
       Objects.requireNonNull(
           authorizationServerUrl, String.format(INVALID_ARGUMENT_MSG, "authorization server URL"));
@@ -386,7 +437,11 @@ public final class OAuthCredentialsProviderBuilder {
       }
       validateTimeout(connectTimeout, "ConnectTimeout");
       validateTimeout(readTimeout, "ReadTimeout");
-    } catch (final NullPointerException | IOException e) {
+    } catch (final NullPointerException
+        | IOException
+        | KeyStoreException
+        | NoSuchAlgorithmException
+        | CertificateException e) {
       throw new IllegalArgumentException(e);
     }
   }
