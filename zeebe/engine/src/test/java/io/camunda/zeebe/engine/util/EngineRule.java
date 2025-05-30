@@ -56,6 +56,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -84,6 +85,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -581,6 +583,18 @@ public final class EngineRule extends ExternalResource {
   public EngineRule maxCommandsInBatch(final int maxCommandsInBatch) {
     environmentRule.maxCommandsInBatch(maxCommandsInBatch);
     return this;
+  }
+
+  public void interceptInterPartitionIntent(final int partitionId, final Intent targetIntent) {
+    final var hasInterceptedPartition = new AtomicBoolean(false);
+    interceptInterPartitionCommands(
+        (receiverPartitionId, valueType, intent, recordKey, command) -> {
+          if (hasInterceptedPartition.get()) {
+            return true;
+          }
+          hasInterceptedPartition.set(true);
+          return !(receiverPartitionId == partitionId && intent == targetIntent);
+        });
   }
 
   public void interceptInterPartitionCommands(final CommandInterceptor interceptor) {

@@ -24,7 +24,6 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
@@ -136,9 +135,11 @@ public class DeleteAuthorizationMultipartitionTest {
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // given the user creation distribution is intercepted
-    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
-      interceptAuthorizationCreateForPartition(partitionId);
-    }
+    engine.getProcessingState().getRoutingState().currentPartitions().stream()
+        .skip(1)
+        .forEach(
+            partition ->
+                engine.interceptInterPartitionIntent(partition, AuthorizationIntent.CREATE));
     final var key =
         engine
             .authorization()
@@ -165,17 +166,5 @@ public class DeleteAuthorizationMultipartitionTest {
         .containsExactly(
             tuple(ValueType.AUTHORIZATION, AuthorizationIntent.CREATE),
             tuple(ValueType.AUTHORIZATION, AuthorizationIntent.DELETE));
-  }
-
-  private void interceptAuthorizationCreateForPartition(final int partitionId) {
-    final var hasInterceptedPartition = new AtomicBoolean(false);
-    engine.interceptInterPartitionCommands(
-        (receiverPartitionId, valueType, intent, recordKey, command) -> {
-          if (hasInterceptedPartition.get()) {
-            return true;
-          }
-          hasInterceptedPartition.set(true);
-          return !(receiverPartitionId == partitionId && intent == AuthorizationIntent.CREATE);
-        });
   }
 }

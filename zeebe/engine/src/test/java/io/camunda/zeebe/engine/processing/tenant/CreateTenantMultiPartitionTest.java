@@ -23,7 +23,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
@@ -102,9 +101,9 @@ public class CreateTenantMultiPartitionTest {
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // given the user creation distribution is intercepted
-    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
-      interceptTenantCreateForPartition(partitionId);
-    }
+    engine.getProcessingState().getRoutingState().currentPartitions().stream()
+        .skip(1)
+        .forEach(partition -> engine.interceptInterPartitionIntent(partition, RoleIntent.CREATE));
 
     // Create a role to ensure proper order
     final var roleName = UUID.randomUUID().toString();
@@ -123,17 +122,5 @@ public class CreateTenantMultiPartitionTest {
         .extracting(r -> r.getValue().getValueType(), r -> r.getValue().getIntent())
         .containsExactly(
             tuple(ValueType.ROLE, RoleIntent.CREATE), tuple(ValueType.TENANT, TenantIntent.CREATE));
-  }
-
-  private void interceptTenantCreateForPartition(final int partitionId) {
-    final var hasInterceptedPartition = new AtomicBoolean(false);
-    engine.interceptInterPartitionCommands(
-        (receiverPartitionId, valueType, intent, recordKey, command) -> {
-          if (hasInterceptedPartition.get()) {
-            return true;
-          }
-          hasInterceptedPartition.set(true);
-          return !(receiverPartitionId == partitionId && intent == RoleIntent.CREATE);
-        });
   }
 }

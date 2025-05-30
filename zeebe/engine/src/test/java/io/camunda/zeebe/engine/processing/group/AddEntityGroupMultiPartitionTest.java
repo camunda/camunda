@@ -18,7 +18,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -27,7 +26,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
@@ -133,9 +131,9 @@ public class AddEntityGroupMultiPartitionTest {
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // given the group creation distribution is intercepted
-    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
-      interceptGroupCommandForPartition(partitionId, GroupIntent.CREATE);
-    }
+    engine.getProcessingState().getRoutingState().currentPartitions().stream()
+        .skip(1)
+        .forEach(partition -> engine.interceptInterPartitionIntent(partition, GroupIntent.CREATE));
     final var username =
         engine
             .user()
@@ -166,18 +164,5 @@ public class AddEntityGroupMultiPartitionTest {
             tuple(ValueType.AUTHORIZATION, AuthorizationIntent.CREATE),
             tuple(ValueType.GROUP, GroupIntent.CREATE),
             tuple(ValueType.GROUP, GroupIntent.ADD_ENTITY));
-  }
-
-  private void interceptGroupCommandForPartition(
-      final int partitionId, final Intent commandIntent) {
-    final var hasInterceptedPartition = new AtomicBoolean(false);
-    engine.interceptInterPartitionCommands(
-        (receiverPartitionId, valueType, intent, recordKey, command) -> {
-          if (hasInterceptedPartition.get()) {
-            return true;
-          }
-          hasInterceptedPartition.set(true);
-          return !(receiverPartitionId == partitionId && intent == commandIntent);
-        });
   }
 }

@@ -25,7 +25,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
@@ -126,9 +125,9 @@ public class RemoveEntityTenantMultiPartitionTest {
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // given the user creation distribution is intercepted
-    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
-      interceptUserCreateForPartition(partitionId);
-    }
+    engine.getProcessingState().getRoutingState().currentPartitions().stream()
+        .skip(1)
+        .forEach(partition -> engine.interceptInterPartitionIntent(partition, UserIntent.CREATE));
     setupTenantWithUserAndRemoveEntity();
     // Increase time to trigger a redistribution
     engine.increaseTime(Duration.ofMinutes(1));
@@ -144,17 +143,5 @@ public class RemoveEntityTenantMultiPartitionTest {
             tuple(ValueType.TENANT, TenantIntent.CREATE),
             tuple(ValueType.TENANT, TenantIntent.ADD_ENTITY),
             tuple(ValueType.TENANT, TenantIntent.REMOVE_ENTITY));
-  }
-
-  private void interceptUserCreateForPartition(final int partitionId) {
-    final var hasInterceptedPartition = new AtomicBoolean(false);
-    engine.interceptInterPartitionCommands(
-        (receiverPartitionId, valueType, intent, recordKey, command) -> {
-          if (hasInterceptedPartition.get()) {
-            return true;
-          }
-          hasInterceptedPartition.set(true);
-          return !(receiverPartitionId == partitionId && intent == UserIntent.CREATE);
-        });
   }
 }

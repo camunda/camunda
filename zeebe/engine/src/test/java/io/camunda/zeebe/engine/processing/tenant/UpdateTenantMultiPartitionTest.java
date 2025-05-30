@@ -22,7 +22,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
@@ -119,9 +118,9 @@ public class UpdateTenantMultiPartitionTest {
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // when
-    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
-      interceptTenantCreateForPartition(partitionId);
-    }
+    engine.getProcessingState().getRoutingState().currentPartitions().stream()
+        .skip(1)
+        .forEach(partition -> engine.interceptInterPartitionIntent(partition, TenantIntent.CREATE));
     final var tenantId = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
     engine
@@ -145,17 +144,5 @@ public class UpdateTenantMultiPartitionTest {
         .containsExactly(
             tuple(ValueType.TENANT, TenantIntent.CREATE),
             tuple(ValueType.TENANT, TenantIntent.UPDATE));
-  }
-
-  private void interceptTenantCreateForPartition(final int partitionId) {
-    final var hasInterceptedPartition = new AtomicBoolean(false);
-    engine.interceptInterPartitionCommands(
-        (receiverPartitionId, valueType, intent, recordKey, command) -> {
-          if (hasInterceptedPartition.get()) {
-            return true;
-          }
-          hasInterceptedPartition.set(true);
-          return !(receiverPartitionId == partitionId && intent == TenantIntent.CREATE);
-        });
   }
 }
