@@ -88,6 +88,7 @@ import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.client.api.command.UpdateRoleCommandStep1;
 import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
+import io.camunda.client.api.command.UpdateUserCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.client.api.fetch.BatchOperationGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetRequest;
@@ -201,6 +202,7 @@ import io.camunda.client.impl.command.UpdateAuthorizationCommandImpl;
 import io.camunda.client.impl.command.UpdateGroupCommandImpl;
 import io.camunda.client.impl.command.UpdateRoleCommandImpl;
 import io.camunda.client.impl.command.UpdateTenantCommandImpl;
+import io.camunda.client.impl.command.UpdateUserCommandImpl;
 import io.camunda.client.impl.command.UpdateUserTaskCommandImpl;
 import io.camunda.client.impl.fetch.BatchOperationGetRequestImpl;
 import io.camunda.client.impl.fetch.DecisionDefinitionGetRequestImpl;
@@ -959,6 +961,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public CreateUserCommandStep1 newUserCreateCommand() {
     return new CreateUserCommandImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public UpdateUserCommandStep1 newUpdateUserCommand(final String username) {
+    return new UpdateUserCommandImpl(httpClient, username, jsonMapper);
   }
 
   @Override
