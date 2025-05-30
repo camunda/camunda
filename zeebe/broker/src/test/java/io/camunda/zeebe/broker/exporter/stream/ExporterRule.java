@@ -31,6 +31,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
@@ -107,6 +108,13 @@ public final class ExporterRule implements TestRule {
 
   public void startExporterDirector(
       final List<ExporterDescriptor> exporterDescriptors, final ExporterPhase phase) {
+    startExporterDirector(exporterDescriptors, phase, Function.identity());
+  }
+
+  public void startExporterDirector(
+      final List<ExporterDescriptor> exporterDescriptors,
+      final ExporterPhase phase,
+      final Function<RecordExporter, RecordExporter> recordExporter) {
     final var stream = streams.getLogStream(STREAM_NAME);
     final var runtimeFolder = streams.createRuntimeFolder(stream);
     capturedZeebeDb = spy(zeebeDbFactory.createDb(runtimeFolder.toFile()));
@@ -132,7 +140,7 @@ public final class ExporterRule implements TestRule {
             .meterRegistry(new SimpleMeterRegistry())
             .positionsToSkipFilter(positionsToSkipFilter);
 
-    director = new ExporterDirector(context, phase);
+    director = new ExporterDirector(context, phase, recordExporter);
     director.startAsync(actorSchedulerRule.get()).join();
   }
 

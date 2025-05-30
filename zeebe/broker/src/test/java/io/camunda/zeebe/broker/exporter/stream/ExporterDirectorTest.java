@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.exporter.stream;
 import static io.camunda.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -18,6 +19,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.util.ControlledTestExporter;
@@ -46,6 +48,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.Before;
@@ -483,6 +486,25 @@ public final class ExporterDirectorTest {
   }
 
   @Test
+  public void shouldNotRetryExportingOnDeserializationException() {
+    final var recordExporterRef = new AtomicReference<RecordExporter>();
+    rule.startExporterDirector(
+        exporterDescriptors,
+        ExporterPhase.EXPORTING,
+        recordExporter -> failingRecordExporter(recordExporter, recordExporterRef));
+    Awaitility.await("exporter director has started")
+        .untilAsserted(() -> assertThat(recordExporterRef.get()).isNotNull());
+    final var recordExporter = recordExporterRef.get();
+    doThrow(new RuntimeException("deserialization exception")).when(recordExporter).wrap(any());
+
+    final long eventPosition1 = writeEvent();
+
+    verify(recordExporter, timeout(10000))
+        .wrap(argThat(evt -> evt.getPosition() == eventPosition1));
+    verifyNoMoreInteractions(recordExporter);
+  }
+
+  @Test
   public void shouldExecuteScheduledTask() throws Exception {
     // given
     final CountDownLatch timerTriggerLatch = new CountDownLatch(1);
@@ -810,5 +832,10 @@ public final class ExporterDirectorTest {
     startExporterDirector(List.of(descriptor));
 
     return exporter;
+  }
+
+  private RecordExporter failingRecordExporter(
+      final RecordExporter recordExporter, final AtomicReference<RecordExporter> exporterRef) {
+    return exporterRef.updateAndGet(ignored -> spy(recordExporter));
   }
 }
