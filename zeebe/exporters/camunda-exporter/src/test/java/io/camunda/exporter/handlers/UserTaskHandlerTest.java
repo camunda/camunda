@@ -65,7 +65,10 @@ public class UserTaskHandlerTest {
           UserTaskIntent.ASSIGNING,
           UserTaskIntent.ASSIGNED,
           UserTaskIntent.UPDATING,
-          UserTaskIntent.UPDATED);
+          UserTaskIntent.UPDATED,
+          UserTaskIntent.ASSIGNMENT_DENIED,
+          UserTaskIntent.UPDATE_DENIED,
+          UserTaskIntent.COMPLETION_DENIED);
 
   @Captor private ArgumentCaptor<Map<String, Object>> updateFieldsCaptor;
 
@@ -1015,21 +1018,14 @@ public class UserTaskHandlerTest {
   private TaskState mapIntentToExpectedState(final UserTaskIntent intent) {
     return switch (intent) {
       case CREATING -> TaskState.CREATING;
-      case CREATED -> TaskState.CREATED;
+      case CREATED, ASSIGNMENT_DENIED, COMPLETION_DENIED, UPDATE_DENIED -> TaskState.CREATED;
       case ASSIGNING, CLAIMING -> TaskState.ASSIGNING;
       case UPDATING -> TaskState.UPDATING;
       case COMPLETING -> TaskState.COMPLETING;
       case COMPLETED -> TaskState.COMPLETED;
       case CANCELING -> TaskState.CANCELING;
       case CANCELED -> TaskState.CANCELED;
-      case ASSIGNED,
-          CORRECTED,
-          MIGRATED,
-          UPDATED,
-          ASSIGNMENT_DENIED,
-          COMPLETION_DENIED,
-          UPDATE_DENIED ->
-          /* doesn't affect the state */ null;
+      case ASSIGNED, CORRECTED, MIGRATED, UPDATED -> /* doesn't affect the state */ null;
       default ->
           throw new IllegalArgumentException(
               """
