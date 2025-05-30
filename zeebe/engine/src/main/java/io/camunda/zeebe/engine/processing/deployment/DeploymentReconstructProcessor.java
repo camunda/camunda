@@ -317,10 +317,12 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
       case ProcessResource(final var process) -> {
         final var metadata = deploymentRecord.processesMetadata().add();
         resourceUtil.applyProcessMetadata(process, metadata);
+        process.addToDeployment(deploymentRecord);
       }
       case FormResource(final var form) -> {
         final var metadata = deploymentRecord.formMetadata().add();
         resourceUtil.applyFormMetadata(form, metadata);
+        form.addToDeployment(deploymentRecord);
       }
       case DecisionRequirementsResource(
               final var deploymentKey,
@@ -328,6 +330,7 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
               final var decisions) -> {
         final var requirementsMetadata = deploymentRecord.decisionRequirementsMetadata().add();
         resourceUtil.applyDecisionRequirementsMetadata(decisionRequirements, requirementsMetadata);
+        decisionRequirements.addToDeployment(deploymentRecord);
         decisions.forEach(
             decision -> {
               final var decisionMetadata = deploymentRecord.decisionsMetadata().add();
