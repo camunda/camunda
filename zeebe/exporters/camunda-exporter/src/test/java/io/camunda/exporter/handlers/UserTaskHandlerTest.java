@@ -644,7 +644,13 @@ public class UserTaskHandlerTest {
     // given
     final long processInstanceKey = 123;
     final UserTaskRecordValue taskRecordValue =
-        ImmutableUserTaskRecordValue.builder().withProcessInstanceKey(processInstanceKey).build();
+        ImmutableUserTaskRecordValue.builder()
+            .withProcessInstanceKey(processInstanceKey)
+            .withProcessDefinitionKey(456L)
+            .withBpmnProcessId("ID")
+            .withProcessDefinitionVersion(2)
+            .withElementId("New_Element_ID")
+            .build();
 
     final Record<UserTaskRecordValue> taskRecord =
         factory.generateRecord(
@@ -659,7 +665,10 @@ public class UserTaskHandlerTest {
     underTest.updateEntity(taskRecord, taskEntity);
 
     // then
-    assertThat(taskEntity.getState()).isEqualTo(TaskState.CREATED);
+    assertThat(taskEntity.getProcessDefinitionId()).isEqualTo("456");
+    assertThat(taskEntity.getBpmnProcessId()).isEqualTo("ID");
+    assertThat(taskEntity.getProcessDefinitionVersion()).isEqualTo(2);
+    assertThat(taskEntity.getFlowNodeBpmnId()).isEqualTo("New_Element_ID");
   }
 
   @Test
@@ -671,6 +680,7 @@ public class UserTaskHandlerTest {
             .withElementId("elementId")
             .withBpmnProcessId("bpmnProcessId")
             .withProcessInstanceKey(processInstanceKey)
+            .withProcessDefinitionVersion(2)
             .build();
 
     final Record<UserTaskRecordValue> taskRecord =
@@ -694,7 +704,8 @@ public class UserTaskHandlerTest {
     expectedUpdates.put(TaskTemplate.PROCESS_DEFINITION_ID, taskEntity.getProcessDefinitionId());
     expectedUpdates.put(TaskTemplate.BPMN_PROCESS_ID, taskEntity.getBpmnProcessId());
     expectedUpdates.put(TaskTemplate.FLOW_NODE_BPMN_ID, taskEntity.getFlowNodeBpmnId());
-    expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATED);
+    expectedUpdates.put(
+        TaskTemplate.PROCESS_DEFINITION_VERSION, taskEntity.getProcessDefinitionVersion());
 
     // then
     assertThat(taskEntity.getProcessDefinitionId())
