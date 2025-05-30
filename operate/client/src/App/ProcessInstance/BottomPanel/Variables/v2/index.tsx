@@ -45,7 +45,7 @@ const Variables: React.FC<Props> = observer(
     const {data: permissions} = usePermissions();
     const isRootNodeSelected = useIsRootNodeSelected();
     const {
-      state: {pendingItem, loadingItemId, status},
+      state: {pendingItem, status},
     } = variablesStore;
     const [footerVariant, setFooterVariant] =
       useState<FooterVariant>('initial');
@@ -101,8 +101,7 @@ const Variables: React.FC<Props> = observer(
       if (
         status === 'first-fetch' ||
         !isViewMode ||
-        (!isRootNodeSelected && !isSelectedInstanceRunning) ||
-        loadingItemId !== null
+        (!isRootNodeSelected && !isSelectedInstanceRunning)
       ) {
         setFooterVariant('disabled');
         return;
@@ -115,7 +114,6 @@ const Variables: React.FC<Props> = observer(
       initialValues,
       status,
       isViewMode,
-      loadingItemId,
       isRootNodeSelected,
     ]);
 
