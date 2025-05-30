@@ -31,7 +31,9 @@ public enum BatchOperationIntent implements Intent {
   COMPLETE((short) 12),
   COMPLETED((short) 13),
   COMPLETE_PARTITION((short) 14),
-  PARTITION_COMPLETED((short) 15);
+  PARTITION_COMPLETED((short) 15),
+  FAIL_PARTITION((short) 16),
+  PARTITION_FAILED((short) 17);
 
   private final short value;
 
@@ -77,6 +79,10 @@ public enum BatchOperationIntent implements Intent {
         return COMPLETE_PARTITION;
       case 15:
         return PARTITION_COMPLETED;
+      case 16:
+        return FAIL_PARTITION;
+      case 17:
+        return PARTITION_FAILED;
       default:
         return Intent.UNKNOWN;
     }
@@ -98,6 +104,7 @@ public enum BatchOperationIntent implements Intent {
       case RESUMED:
       case COMPLETED:
       case PARTITION_COMPLETED:
+      case PARTITION_FAILED:
         return true;
       default:
         return false;
