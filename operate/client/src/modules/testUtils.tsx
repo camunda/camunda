@@ -158,6 +158,20 @@ const createVariable = (
   };
 };
 
+const createVariableV2 = (options: Partial<Variable> = {}): Variable => {
+  const name = options.name ?? 'testVariableName';
+  return {
+    variableKey: `2251799813725337-${name}`,
+    name,
+    value: '1',
+    isTruncated: false,
+    tenantId: '<default>',
+    processInstanceKey: '2251799813725337',
+    scopeKey: '2251799813725337',
+    ...options,
+  };
+};
+
 const createUser = (options: Partial<MeDto> = {}): MeDto => ({
   userId: 'demo',
   displayName: 'firstname lastname',
@@ -1215,6 +1229,7 @@ export const createEventSubProcessFlowNodeInstances = (
 
 export {
   createVariable,
+  createVariableV2,
   createBatchOperation,
   createUser,
   createProcessInstance,

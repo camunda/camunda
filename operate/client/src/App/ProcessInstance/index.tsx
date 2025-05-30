@@ -16,7 +16,6 @@ import {useLocation, useNavigate} from 'react-router-dom';
 import {useEffect} from 'react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {reaction, when} from 'mobx';
-import {variablesStore} from 'modules/stores/variables';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
@@ -41,7 +40,6 @@ import {processInstanceListenersStore} from 'modules/stores/processInstanceListe
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 
 const startPolling = (processInstanceId: ProcessInstanceEntity['id']) => {
-  variablesStore.startPolling(processInstanceId, {runImmediately: true});
   processInstanceDetailsStore.startPolling(processInstanceId, {
     runImmediately: true,
   });
@@ -52,7 +50,6 @@ const startPolling = (processInstanceId: ProcessInstanceEntity['id']) => {
 };
 
 const stopPolling = () => {
-  variablesStore.stopPolling();
   processInstanceDetailsStore.stopPolling();
   incidentsStore.stopPolling();
   flowNodeInstanceStore.stopPolling();
