@@ -11,6 +11,7 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.service.IncidentServices;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentResolutionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResult;
@@ -40,14 +41,17 @@ public class IncidentController {
 
   @CamundaPostMapping(path = "/{incidentKey}/resolution")
   public CompletableFuture<ResponseEntity<Object>> incidentResolution(
-      @PathVariable final long incidentKey) {
+      @PathVariable final long incidentKey,
+      @RequestBody(required = false) final IncidentResolutionRequest incidentResolutionRequest) {
+    final Long operationReference =
+        incidentResolutionRequest == null
+            ? null
+            : incidentResolutionRequest.getOperationReference();
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             incidentServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                // TODO: provide operation reference:
-                // https://github.com/camunda/camunda/issues/32270
-                .resolveIncident(incidentKey, null));
+                .resolveIncident(incidentKey, operationReference));
   }
 
   @CamundaPostMapping(path = "/search")
