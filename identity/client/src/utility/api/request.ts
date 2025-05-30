@@ -95,6 +95,12 @@ export function removeHandler(fct: Handler) {
 const apiRequest: <R, P>(
   options: ApiRequestParams<P>,
 ) => ApiPromise<R> = async ({ url, method, headers, params, baseUrl }) => {
+  const csrfToken = sessionStorage.getItem("X-CSRF-TOKEN");
+  const hasCsrfToken =
+    csrfToken !== null &&
+    method !== undefined &&
+    ["POST", "PUT", "PATCH", "DELETE"].includes(method.toUpperCase());
+
   const hasBody =
     !!params &&
     ["PUT", "POST", "DELETE", "PATCH"].includes(method.toUpperCase());
@@ -118,7 +124,10 @@ const apiRequest: <R, P>(
       {
         method,
         body,
-        headers,
+        headers: {
+          ...(hasCsrfToken ? { "X-CSRF-TOKEN": csrfToken } : {}),
+          ...headers,
+        },
         credentials: "include",
         redirect: "manual",
       },
@@ -136,6 +145,10 @@ const apiRequest: <R, P>(
     }
 
     if (response.ok) {
+      const csrfToken = response.headers.get("X-CSRF-TOKEN");
+      if (csrfToken !== null) {
+        sessionStorage.setItem("X-CSRF-TOKEN", csrfToken);
+      }
       return {
         data: data,
         error: null,
