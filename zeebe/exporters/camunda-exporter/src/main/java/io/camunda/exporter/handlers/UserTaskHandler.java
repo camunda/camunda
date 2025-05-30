@@ -193,6 +193,10 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     if (entity.getBpmnProcessId() != null) {
       updateFields.put(TaskTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
     }
+    if (entity.getProcessDefinitionVersion() != null) {
+      updateFields.put(
+          TaskTemplate.PROCESS_DEFINITION_VERSION, entity.getProcessDefinitionVersion());
+    }
 
     return updateFields;
   }
@@ -330,6 +334,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
                     record.getValue().getElementId())
                 .orElse(null))
         .setBpmnProcessId(record.getValue().getBpmnProcessId())
-        .setProcessDefinitionId(String.valueOf(record.getValue().getProcessDefinitionKey()));
+        .setProcessDefinitionId(String.valueOf(record.getValue().getProcessDefinitionKey()))
+        .setProcessDefinitionVersion(record.getValue().getProcessDefinitionVersion());
   }
 }
