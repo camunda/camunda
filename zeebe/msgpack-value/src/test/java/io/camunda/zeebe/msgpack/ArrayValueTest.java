@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
@@ -399,6 +400,58 @@ public final class ArrayValueTest {
 
     // then - fails because it's not flushed
     assertThat((Object) other).hasSameHashCodeAs(array);
+  }
+
+  @Test
+  void shouldRemoveSetOfItems() {
+    // given
+    final var array = new ArrayValue<>(IntegerValue::new);
+    addIntValues(array, 1, 2, 3, 4, 5);
+
+    // when
+    array.remove(Set.of(new IntegerValue(2), new IntegerValue(4)));
+
+    // then
+    assertIntValues(array, 1, 3, 5);
+  }
+
+  @Test
+  void shouldRemoveAllItems() {
+    // given
+    final var array = new ArrayValue<>(IntegerValue::new);
+    addIntValues(array, 1, 2, 3);
+
+    // when
+    array.remove(Set.of(new IntegerValue(1), new IntegerValue(2), new IntegerValue(3)));
+
+    // then
+    assertThat(array.isEmpty()).isTrue();
+  }
+
+  @Test
+  void shouldNotRemoveAnyItemsIfSetIsEmpty() {
+    // given
+    final var array = new ArrayValue<>(IntegerValue::new);
+    addIntValues(array, 1, 2, 3);
+
+    // when
+    array.remove(Set.of());
+
+    // then
+    assertIntValues(array, 1, 2, 3);
+  }
+
+  @Test
+  void shouldHandleRemovingNonExistentItems() {
+    // given
+    final var array = new ArrayValue<>(IntegerValue::new);
+    addIntValues(array, 1, 2, 3);
+
+    // when
+    array.remove(Set.of(new IntegerValue(4), new IntegerValue(5)));
+
+    // then
+    assertIntValues(array, 1, 2, 3);
   }
 
   // Helpers
