@@ -58,7 +58,9 @@ function setSearchParam(
 const DiagramPanel: React.FC = observer(() => {
   const navigate = useNavigate();
   const location = useLocation();
-  const {version, flowNodeId} = getProcessInstanceFilters(location.search);
+  const {version, flowNodeId, tenant} = getProcessInstanceFilters(
+    location.search,
+  );
 
   const isVersionSelected = version !== undefined && version !== 'all';
 
@@ -150,6 +152,7 @@ const DiagramPanel: React.FC = observer(() => {
         processDefinitionId={processId}
         isVersionSelected={isVersionSelected}
         panelHeaderRef={panelHeaderRef}
+        tenant={tenant}
       />
       <DiagramShell
         status={getStatus()}
