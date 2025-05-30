@@ -8,7 +8,7 @@
 package io.camunda.unifiedconfig;
 
 public class Data {
-  private Database database;
+  private Database database = new Database();
 
   public Database getDatabase() {
     return database;

@@ -11,7 +11,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "camunda")
 public class CamundaConfiguration {
-  private Data data;
+  private Data data = new Data();
 
   public Data getData() {
     return data;
