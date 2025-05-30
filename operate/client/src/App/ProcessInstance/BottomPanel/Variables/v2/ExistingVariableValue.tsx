@@ -15,7 +15,6 @@ import {observer} from 'mobx-react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {createVariableFieldName} from '../createVariableFieldName';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
-import {variablesStore} from 'modules/stores/variables';
 import {Popup} from '@carbon/react/icons';
 import {LoadingTextfield} from '../LoadingTextField';
 import {Layer} from '@carbon/react';
@@ -23,7 +22,7 @@ import {useSelectedFlowNodeName} from 'modules/hooks/flowNodeSelection';
 import {getScopeId} from 'modules/utils/variables';
 
 type Props = {
-  id?: string;
+  isLoading: boolean;
   variableName: string;
   variableValue: string;
   pauseValidation?: boolean;
@@ -84,9 +83,14 @@ const createModification = ({
 };
 
 const ExistingVariableValue: React.FC<Props> = observer(
-  ({id, variableName, variableValue, pauseValidation = false, onFocus}) => {
+  ({
+    isLoading,
+    variableName,
+    variableValue,
+    pauseValidation = false,
+    onFocus,
+  }) => {
     const {isModificationModeEnabled} = modificationsStore;
-    const {loadingItemId} = variablesStore.state;
     const formState = useFormState();
     const selectedFlowNodeName = useSelectedFlowNodeName() || '';
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -147,7 +151,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
               }}
               Icon={Popup}
               autoFocus={!isModificationModeEnabled || meta.active}
-              isLoading={loadingItemId === id}
+              isLoading={isLoading}
               onFocus={(event) => {
                 if (!meta.active) {
                   onFocus?.();

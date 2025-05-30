@@ -17,7 +17,11 @@ import {searchVariables} from 'modules/api/v2/variables/searchVariables';
 const VARIABLES_SEARCH_QUERY_KEY = 'variablesSearch';
 
 function getQueryKey(payload: QueryVariablesRequestBody) {
-  return [VARIABLES_SEARCH_QUERY_KEY, ...Object.values(payload)];
+  return [
+    VARIABLES_SEARCH_QUERY_KEY,
+    payload.filter?.processInstanceKey,
+    ...Object.values(payload),
+  ];
 }
 
 function useVariables<T = QueryVariablesResponseBody>(
