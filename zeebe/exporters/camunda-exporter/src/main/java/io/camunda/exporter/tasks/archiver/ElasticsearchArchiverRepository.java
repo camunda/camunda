@@ -14,6 +14,8 @@ import co.elastic.clients.elasticsearch._types.Slices;
 import co.elastic.clients.elasticsearch._types.SlicesCalculation;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.Time;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.AggregationBuilders;
 import co.elastic.clients.elasticsearch._types.aggregations.CalendarInterval;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
@@ -47,7 +49,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     implements ArchiverRepository {
   private static final String ALL_INDICES = "*";
   private static final String INDEX_WILDCARD = ".+-\\d+\\.\\d+\\.\\d+_.+$";
-
+  private static final String DATES_AGG = "datesAgg";
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final Slices AUTO_SLICES =
       Slices.of(slices -> slices.computed(SlicesCalculation.Auto));
@@ -59,6 +61,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private final String processInstanceIndex;
   private final String batchOperationIndex;
   private final CamundaExporterMetrics metrics;
+  private final CalendarInterval rolloverInterval;
 
   public ElasticsearchArchiverRepository(
       final int partitionId,
@@ -79,6 +82,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     this.processInstanceIndex = processInstanceIndex;
     this.batchOperationIndex = batchOperationIndex;
     this.metrics = metrics;
+    rolloverInterval = mapCalendarInterval(config.getRolloverInterval());
   }
 
   @Override
@@ -255,6 +259,17 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .orElseThrow();
   }
 
+  private Aggregation createDateAggregation(final String endDate) {
+    final var dateAggregation =
+        AggregationBuilders.dateHistogram()
+            .field(endDate)
+            .calendarInterval(rolloverInterval)
+            .format(config.getElsRolloverDateFormat())
+            .keyed(false) // get result as an array (not a map)
+            .build();
+    return new Aggregation.Builder().dateHistogram(dateAggregation).build();
+  }
+
   private SearchRequest createFinishedBatchOperationsSearchRequest() {
     final var endDateQ =
         QueryBuilders.range(
@@ -282,6 +297,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .ignoreUnavailable(true)
         .source(source -> source.fetch(false))
         .fields(fields -> fields.field(sortField).format(config.getElsRolloverDateFormat()))
+        .aggregations(DATES_AGG, createDateAggregation(sortField))
         .query(query -> query.bool(q -> q.filter(filterQuery)))
         .sort(sort -> sort.field(field -> field.field(sortField).order(SortOrder.Asc)))
         .size(config.getRolloverBatchSize())
