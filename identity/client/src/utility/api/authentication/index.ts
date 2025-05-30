@@ -23,7 +23,7 @@ export interface CamundaUser {
   userKey: number;
   displayName: string;
   email: string;
-  authorizedApplications: readonly string[];
+  authorizedComponents: readonly string[];
   tenants: readonly TenantInfo[];
   groups: readonly string[];
   roles: readonly string[];

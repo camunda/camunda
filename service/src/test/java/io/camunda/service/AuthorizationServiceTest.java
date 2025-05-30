@@ -60,26 +60,26 @@ public class AuthorizationServiceTest {
   }
 
   @Test
-  public void noApplicationAuthorizationWhenAuthorizationsEnabled() {
+  public void noComponentAuthorizationWhenAuthorizationsEnabled() {
     // given
     securityConfiguration.getAuthorizations().setEnabled(true);
 
     // when
-    final var authorizedApplications = services.getAuthorizedApplications(Set.of());
+    final var authorizedComponents = services.getAuthorizedComponents(Set.of());
 
     // then
-    assertThat(authorizedApplications).isEmpty();
+    assertThat(authorizedComponents).isEmpty();
   }
 
   @Test
-  public void wildcardApplicationAuthorizationWhenAuthorizationsDisabled() {
+  public void wildcardComponentAuthorizationWhenAuthorizationsDisabled() {
     // given
     securityConfiguration.getAuthorizations().setEnabled(false);
 
     // when
-    final var authorizedApplications = services.getAuthorizedApplications(Set.of());
+    final var authorizedComponents = services.getAuthorizedComponents(Set.of());
 
     // then
-    assertThat(authorizedApplications).containsExactly("*");
+    assertThat(authorizedComponents).containsExactly("*");
   }
 }

@@ -73,8 +73,8 @@ public class WebApplicationAuthorizationCheckFilter extends OncePerRequestFilter
 
     final CamundaPrincipal principal = findCurrentCamundaPrincipal();
     return principal == null
-        || principal.getAuthenticationContext().authorizedApplications().contains(application)
-        || principal.getAuthenticationContext().authorizedApplications().contains("*");
+        || principal.getAuthenticationContext().authorizedComponents().contains(application)
+        || principal.getAuthenticationContext().authorizedComponents().contains("*");
   }
 
   private boolean isStaticResource(final HttpServletRequest request) {

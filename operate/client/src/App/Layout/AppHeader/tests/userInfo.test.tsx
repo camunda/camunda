@@ -221,7 +221,7 @@ describe('User info', () => {
     const mockUser = createUser({
       displayName: 'Franz Kafka',
       canLogout: true,
-      authorizedApplications: ['tasklist'],
+      authorizedComponents: ['tasklist'],
     });
 
     mockMe().withSuccess(mockUser);

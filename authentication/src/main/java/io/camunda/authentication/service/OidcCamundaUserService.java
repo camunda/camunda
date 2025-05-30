@@ -48,7 +48,7 @@ public class OidcCamundaUserService implements CamundaUserService {
                   user.getDisplayName(),
                   auth.username(),
                   user.getEmail(),
-                  auth.authorizedApplications(),
+                  auth.authorizedComponents(),
                   auth.tenants(),
                   auth.groups(),
                   auth.roles().stream().map(RoleEntity::name).toList(),
