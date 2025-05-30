@@ -93,7 +93,9 @@ public class UserTaskHandlerTest {
           final Record<UserTaskRecordValue> userTaskRecord =
               factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(intent));
           // when - then
-          assertThat(underTest.handlesRecord(userTaskRecord)).isTrue();
+          assertThat(underTest.handlesRecord(userTaskRecord))
+              .describedAs("Expect to handle intent %s", intent)
+              .isTrue();
         });
   }
 
@@ -107,7 +109,9 @@ public class UserTaskHandlerTest {
               final Record<UserTaskRecordValue> variableRecord =
                   factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(intent));
               // when - then
-              assertThat(underTest.handlesRecord(variableRecord)).isFalse();
+              assertThat(underTest.handlesRecord(variableRecord))
+                  .describedAs("Expect not to handle intent %s", intent)
+                  .isFalse();
             });
   }
 
