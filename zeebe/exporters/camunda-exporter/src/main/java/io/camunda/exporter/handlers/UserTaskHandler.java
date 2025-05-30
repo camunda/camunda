@@ -40,10 +40,14 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
   private static final Set<UserTaskIntent> SUPPORTED_INTENTS =
       EnumSet.of(
           UserTaskIntent.CREATED,
+          UserTaskIntent.COMPLETING,
           UserTaskIntent.COMPLETED,
+          UserTaskIntent.CANCELING,
           UserTaskIntent.CANCELED,
           UserTaskIntent.MIGRATED,
+          UserTaskIntent.ASSIGNING,
           UserTaskIntent.ASSIGNED,
+          UserTaskIntent.UPDATING,
           UserTaskIntent.UPDATED);
   private static final String UNMAPPED_USER_TASK_ATTRIBUTE_WARNING =
       "Attribute update not mapped while importing ZEEBE_USER_TASKS: {}";
@@ -109,6 +113,11 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
       case UserTaskIntent.COMPLETED -> handleCompletion(record, entity);
       case UserTaskIntent.CANCELED -> handleCancellation(record, entity);
       case UserTaskIntent.MIGRATED -> handleMigration(record, entity);
+      case UserTaskIntent.ASSIGNING, UserTaskIntent.CLAIMING ->
+          entity.setState(TaskState.ASSIGNING);
+      case UserTaskIntent.UPDATING -> entity.setState(TaskState.UPDATING);
+      case UserTaskIntent.COMPLETING -> entity.setState(TaskState.COMPLETING);
+      case UserTaskIntent.CANCELING -> entity.setState(TaskState.CANCELING);
       default -> {}
     }
 
