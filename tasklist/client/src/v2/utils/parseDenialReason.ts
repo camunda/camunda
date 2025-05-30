@@ -14,7 +14,9 @@ export const parseDenialReason = async (
   if (!response || response.status !== 409) return undefined;
 
   const responseJson = await response?.json();
-  const detail = responseJson?.detail as string;
+
+  const detail =
+    typeof responseJson?.detail === 'string' ? responseJson?.detail : '';
 
   let deniedReason: string = `The task ${type} was rejected by the system.`;
   const match = detail.match(/Reason to deny:\s*(.*)/i);

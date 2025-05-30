@@ -16,6 +16,7 @@ import {useAssignTask} from 'v2/api/useAssignTask.mutation';
 import {useUnassignTask} from 'v2/api/useUnassignTask.mutation';
 import {usePollForAssignmentResult} from 'v2/api/usePollForAssignmentResult.mutation';
 import {parseDenialReason} from 'v2/utils/parseDenialReason';
+import {isRequestError} from 'common/api/request';
 
 type AssignmentStatus =
   | 'off'
@@ -73,7 +74,11 @@ const AssignButton: React.FC<Props> = ({id, assignee, currentUser}) => {
       setAssignmentStatus('assignmentSuccessful');
       tracking.track({eventName: 'task-assigned'});
     } catch (error) {
-      const denialReason = await parseDenialReason(error, 'assignment');
+      let denialReason: string | undefined = undefined;
+
+      if (!isRequestError(error)) {
+        denialReason = await parseDenialReason(error, 'assignment');
+      }
 
       notificationsStore.displayNotification({
         kind: 'error',
@@ -97,7 +102,11 @@ const AssignButton: React.FC<Props> = ({id, assignee, currentUser}) => {
       setAssignmentStatus('unassignmentSuccessful');
       tracking.track({eventName: 'task-unassigned'});
     } catch (error) {
-      const denialReason = await parseDenialReason(error, 'unassignment');
+      let denialReason: string | undefined = undefined;
+
+      if (!isRequestError(error)) {
+        denialReason = await parseDenialReason(error, 'unassignment');
+      }
 
       notificationsStore.displayNotification({
         kind: 'error',
