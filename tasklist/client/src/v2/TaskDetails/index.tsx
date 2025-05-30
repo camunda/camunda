@@ -22,6 +22,8 @@ import type {OutletContext} from 'v2/TaskDetailsLayout';
 import {Variables} from './Variables';
 import {FormJS} from './FormJS';
 import {useUploadDocuments} from 'common/api/useUploadDocuments.mutation';
+import {parseDenialReason} from 'v2/utils/parseDenialReason';
+import {isRequestError} from 'common/api/request';
 
 const TaskDetails: React.FC = observer(() => {
   const {task, currentUser} = useOutletContext<OutletContext>();
@@ -90,10 +92,17 @@ const TaskDetails: React.FC = observer(() => {
     }
   }
 
-  function handleSubmissionFailure() {
+  async function handleSubmissionFailure(error: unknown) {
+    let denialReason: string | undefined = undefined;
+
+    if (!isRequestError(error)) {
+      denialReason = await parseDenialReason(error, 'completion');
+    }
+
     notificationsStore.displayNotification({
       kind: 'error',
       title: t('taskCouldNotBeCompletedNotification'),
+      subtitle: denialReason,
       isDismissable: true,
     });
   }
