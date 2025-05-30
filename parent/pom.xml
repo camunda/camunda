@@ -2731,10 +2731,18 @@
             <generateApiTests>false</generateApiTests>
             <generateSupportingFiles>false</generateSupportingFiles>
             <generateModels>true</generateModels>
+            <generateModelDocumentation>false</generateModelDocumentation>
+            <generateModelTests>false</generateModelTests>
+            <skipValidateSpec>false</skipValidateSpec>
             <configOptions>
+              <library>spring-boot</library>
+              <serializationLibrary>jackson</serializationLibrary>
               <sourceFolder>src/main</sourceFolder>
               <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
               <useSpringBoot3>true</useSpringBoot3>
+              <jdk8>true</jdk8>
+              <openApiNullable>false</openApiNullable>
+              <useEnumCaseInsensitive>true</useEnumCaseInsensitive>
             </configOptions>
           </configuration>
         </plugin>
