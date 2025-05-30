@@ -17,6 +17,7 @@ package io.camunda.client;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
+import static com.github.tomakehurst.wiremock.client.WireMock.notMatching;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -68,6 +69,7 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
@@ -108,8 +110,12 @@ public final class OAuthCredentialsProviderTest {
           .getResource("idp-ssl/localhost.p12")
           .getPath();
 
+  private static final String ENTRA_KEYSTORE_PATH =
+      OAuthCredentialsProviderTest.class.getClassLoader().getResource("oauth/entra.jks").getPath();
+
   private static final String TRUSTSTORE_PASSWORD = "password";
   private static final String KEYSTORE_PASSWORD = "password";
+  private static final String ENTRA_KEYSTORE_PASSWORD = "mstest";
 
   @RegisterExtension
   static WireMockExtension httpsWiremock =
@@ -132,6 +138,8 @@ public final class OAuthCredentialsProviderTest {
   private static final ZonedDateTime EXPIRY =
       ZonedDateTime.of(3020, 1, 1, 0, 0, 0, 0, ZoneId.of("Z"));
   private static final String SECRET = "secret";
+  private static final String JWT_ASSERTION_TYPE =
+      "urn:ietf:params:oauth:client-assertion-type:jwt-bearer";
   private static final String AUDIENCE = "endpoint";
   private static final String SCOPE = "721aa3ee-24c9-4ab5-95bc-d921ecafdd6d/.default";
   private static final String ACCESS_TOKEN = "someToken";
@@ -448,7 +456,41 @@ public final class OAuthCredentialsProviderTest {
                   .willReturn(
                       WireMock.aResponse().withBody(body).withFixedDelay(0).withStatus(200)));
     } catch (final JsonProcessingException e) {
-      // Turn into a runtime exception so we don't have to add it to all test cases.
+      throw new RuntimeException(e);
+    }
+  }
+
+  private void mockTokenRequest(boolean withAssertion) {
+    final String assertionRegex = ".*client_assertion\\=[\\._\\-A-Za-z0-9]{400,500}.*";
+    final String assertionTypeRegex = ".*client_assertion_type.*";
+    final String clientSecret = ".*client_secret.*";
+    final HashMap<String, String> map = new HashMap<>();
+    map.put("access_token", ACCESS_TOKEN);
+    map.put("token_type", TOKEN_TYPE);
+    map.put("expires_in", "3600");
+
+    try {
+      currentWiremockRuntimeInfo
+          .getWireMock()
+          .register(
+              WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
+                  .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
+                  .withHeader("Accept", equalTo("application/json"))
+                  .withHeader("User-Agent", matching("camunda-client-java/\\d+\\.\\d+\\.\\d+.*"))
+                  .withRequestBody(
+                      withAssertion ? matching(assertionRegex) : notMatching(assertionRegex))
+                  .withRequestBody(
+                      withAssertion
+                          ? matching(assertionTypeRegex)
+                          : notMatching(assertionTypeRegex))
+                  .withRequestBody(
+                      !withAssertion ? matching(clientSecret) : notMatching(clientSecret))
+                  .willReturn(
+                      WireMock.aResponse()
+                          .withBody(jsonMapper.writeValueAsString(map))
+                          .withHeader("Content-Type", "application/json")
+                          .withStatus(200)));
+    } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
   }
@@ -659,6 +701,80 @@ public final class OAuthCredentialsProviderTest {
                   .authorizationServerUrl(tokenUrlString())
                   .credentialsCachePath(cacheFilePath.toString())
                   .build());
+    }
+  }
+
+  @Nested
+  final class EntraTests {
+
+    @Test
+    void shouldUseEntraCredentialsWhenProvidedBoth() throws IOException {
+      currentWiremockRuntimeInfo = httpsWiremock.getRuntimeInfo();
+
+      final OAuthCredentialsProvider provider =
+          initializeCredentialsProviderBuilder(true, true).build();
+      mockTokenRequest(true);
+
+      provider.applyCredentials(applier);
+
+      final List<Credential> credentials = applier.getCredentials();
+      assertThat(credentials)
+          .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+    }
+
+    @Test
+    void shouldUseEntraCredentialsWhenProvidedOnlyAssertion() throws IOException {
+      currentWiremockRuntimeInfo = httpsWiremock.getRuntimeInfo();
+
+      final OAuthCredentialsProvider provider =
+          initializeCredentialsProviderBuilder(true, false).build();
+      mockTokenRequest(true);
+
+      provider.applyCredentials(applier);
+
+      final List<Credential> credentials = applier.getCredentials();
+      assertThat(credentials)
+          .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+    }
+
+    @Test
+    void shouldUseClientSecretWhenNoAssertionProvided() throws IOException {
+      currentWiremockRuntimeInfo = httpsWiremock.getRuntimeInfo();
+
+      final OAuthCredentialsProvider provider =
+          initializeCredentialsProviderBuilder(false, true).build();
+      mockTokenRequest(false);
+
+      provider.applyCredentials(applier);
+
+      final List<Credential> credentials = applier.getCredentials();
+      assertThat(credentials)
+          .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+    }
+
+    private OAuthCredentialsProviderBuilder initializeCredentialsProviderBuilder(
+        boolean withAssertion, boolean withClientSecret) {
+      OAuthCredentialsProviderBuilder builder =
+          new OAuthCredentialsProviderBuilder()
+              .clientId(CLIENT_ID)
+              .keystorePath(Paths.get(VALID_CLIENT_PATH))
+              .keystorePassword(KEYSTORE_PASSWORD)
+              .keystoreKeyPassword(KEYSTORE_MATERIAL_PASSWORD)
+              .truststorePath(Paths.get(VALID_TRUSTSTORE_PATH))
+              .truststorePassword(TRUSTSTORE_PASSWORD)
+              .audience(AUDIENCE)
+              .authorizationServerUrl(tokenHttpsUrlString())
+              .credentialsCachePath(cacheFilePath.toString());
+      if (withAssertion) {
+        builder =
+            builder
+                .entraCertificatePath(ENTRA_KEYSTORE_PATH)
+                .entraCertificatePassword(ENTRA_KEYSTORE_PASSWORD);
+      }
+      if (withClientSecret) {
+        builder = builder.clientSecret(SECRET);
+      }
+      return builder;
     }
   }
 
