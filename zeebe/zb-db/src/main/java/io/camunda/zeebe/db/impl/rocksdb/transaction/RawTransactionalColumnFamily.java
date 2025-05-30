@@ -10,7 +10,9 @@ package io.camunda.zeebe.db.impl.rocksdb.transaction;
 import static io.camunda.zeebe.util.buffer.BufferUtil.startsWith;
 
 import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.impl.DbBytes;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksIterator;
 import org.slf4j.Logger;
@@ -55,24 +57,30 @@ public class RawTransactionalColumnFamily {
                       iterator.isValid() && shouldVisitNext;
                       iterator.next()) {
                     final int keyLen = iterator.key(keyBytes, 0, keyBytes.length);
+                    // RocksDB reports the key length of the key, even if it exceeds the provided
+                    // buffer
                     if (keyLen > keyBytes.length) {
-                      final var previousLen = keyBytes.length;
                       keyBytes = iterator.key();
-                      LOG.debug(
-                          "Reallocating keyBytes from {} to {}", previousLen, keyBytes.length);
                     }
                     final int valueLen = iterator.value(valueBytes, 0, valueBytes.length);
+                    // same as above
                     if (valueLen > valueBytes.length) {
-                      final var previousLen = valueBytes.length;
                       valueBytes = iterator.value();
-                      LOG.debug(
-                          "Reallocating valueBytes from {} to {}", previousLen, valueBytes.length);
                     }
 
                     if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyLen)) {
                       break;
                     }
-                    shouldVisitNext = visitor.visit(keyBytes, 0, keyLen, valueBytes, 0, valueLen);
+                    try {
+                      shouldVisitNext = visitor.visit(keyBytes, 0, keyLen, valueBytes, 0, valueLen);
+                    } catch (final Exception e) {
+                      LOG.error(
+                          "Error visiting key {} in column family {}",
+                          new String(keyBytes),
+                          columnFamily,
+                          e);
+                      shouldVisitNext = false;
+                    }
                   }
                 }
               });
@@ -80,6 +88,30 @@ public class RawTransactionalColumnFamily {
   }
 
   public void put(
+      final ZeebeTransaction transaction,
+      final byte[] key,
+      final int keyOffset,
+      final int keyLen,
+      final byte[] value,
+      final int valueOffset,
+      final int valueLen)
+      throws Exception {
+    final var dbBytes = new DbBytes();
+    final var buffer = new UnsafeBuffer(key, keyOffset, keyLen);
+    dbBytes.wrap(buffer, 0, buffer.capacity());
+    columnFamilyContext.withPrefixKey(
+        dbBytes,
+        (wrappedKey, wrappedLength) -> {
+          try {
+            rawPut(transaction, wrappedKey, 0, wrappedLength, value, valueOffset, valueLen);
+          } catch (final Exception e) {
+            throw new RuntimeException(e);
+          }
+        });
+  }
+
+  /** Raw put into the DB ignoring the prefix key and "virtual" column family. */
+  public void rawPut(
       final ZeebeTransaction transaction,
       final byte[] key,
       final int keyOffset,

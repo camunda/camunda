@@ -7,11 +7,23 @@
  */
 package io.camunda.zeebe.db;
 
+import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
 import io.camunda.zeebe.protocol.ColumnFamilyScope;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.nio.file.Path;
 import java.util.Set;
 
 public interface SnapshotCopy {
-  void copySnapshot(Path fromPath, Path toPath, Path toSnapshotPath, Set<ColumnFamilyScope> scope)
-      throws Exception;
+
+  void withContexts(final Path fromPath, final Path toDBPath, final CopyContextConsumer consumer);
+
+  void copySnapshot(Path fromPath, Path toPath, Set<ColumnFamilyScope> scope) throws Exception;
+
+  interface CopyContextConsumer {
+    void accept(
+        ZeebeTransactionDb<ZbColumnFamilies> fromDB,
+        TransactionContext fromCtx,
+        ZeebeTransactionDb<ZbColumnFamilies> toDB,
+        TransactionContext toCtx);
+  }
 }

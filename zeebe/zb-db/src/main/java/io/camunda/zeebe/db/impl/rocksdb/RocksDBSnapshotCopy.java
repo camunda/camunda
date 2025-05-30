@@ -8,6 +8,7 @@
 package io.camunda.zeebe.db.impl.rocksdb;
 
 import io.camunda.zeebe.db.SnapshotCopy;
+import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.RawTransactionalColumnFamily;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransaction;
@@ -30,51 +31,65 @@ public class RocksDBSnapshotCopy implements SnapshotCopy {
   }
 
   @Override
-  public void copySnapshot(
-      final Path fromPath,
-      final Path toDBPath,
-      final Path toSnapshotPath,
-      final Set<ColumnFamilyScope> scopes) {
-
+  public void withContexts(
+      final Path fromPath, final Path toDBPath, final CopyContextConsumer consumer) {
     try (final var toDB =
         (ZeebeTransactionDb<ZbColumnFamilies>) factory.createDb(toDBPath.toFile())) {
       try (final var fromDB =
           (ZeebeTransactionDb<ZbColumnFamilies>) factory.createDb(fromPath.toFile())) {
         final var fromCtx = fromDB.createContext();
         final var toCtx = toDB.createContext();
-        final var abort = new AtomicBoolean(false);
-        toCtx.runInTransaction(
-            () -> {
-              final var toTransaction = (ZeebeTransaction) toCtx.getCurrentTransaction();
-              for (final var cf : ZbColumnFamilies.values()) {
-                if (!scopes.contains(cf.partitionScope()) || abort.get()) {
-                  continue;
-                }
-                LOG.debug("Copying column family '{}'", cf);
-                final var fromCf = new RawTransactionalColumnFamily(fromDB, cf, fromCtx);
-                final var toCf = new RawTransactionalColumnFamily(toDB, cf, toCtx);
-                fromCf.forEach(
-                    (key, keyOffset, keyLen, value, valueOffset, valueLen) -> {
-                      try {
-                        toCf.put(
-                            toTransaction, key, keyOffset, keyLen, value, valueOffset, valueLen);
-                        return true;
-                      } catch (final Exception e) {
-                        LOG.error(
-                            "Failed to copy column family '{}' on key {} and value with length {} terminating.",
-                            cf,
-                            new String(key),
-                            value.length);
-                        LOG.error("Exception", e);
-                        abort.set(true);
-                        return false;
-                      }
-                    });
-              }
-              toTransaction.commit();
-            });
+        consumer.accept(fromDB, fromCtx, toDB, toCtx);
       }
-      toDB.createSnapshot(toSnapshotPath.toFile());
+    }
+  }
+
+  @Override
+  public void copySnapshot(
+      final Path fromPath, final Path toDBPath, final Set<ColumnFamilyScope> scopes) {
+    withContexts(fromPath, toDBPath, new ScopedCopyContextConsumer(scopes));
+  }
+
+  record ScopedCopyContextConsumer(Set<ColumnFamilyScope> scopes) implements CopyContextConsumer {
+
+    @Override
+    public void accept(
+        final ZeebeTransactionDb<ZbColumnFamilies> fromDB,
+        final TransactionContext fromCtx,
+        final ZeebeTransactionDb<ZbColumnFamilies> toDB,
+        final TransactionContext toCtx) {
+
+      final var abort = new AtomicBoolean(false);
+      toCtx.runInTransaction(
+          () -> {
+            final var toTransaction = (ZeebeTransaction) toCtx.getCurrentTransaction();
+            for (final var cf : ZbColumnFamilies.values()) {
+              if (!scopes.contains(cf.partitionScope()) || abort.get()) {
+                continue;
+              }
+              LOG.debug("Copying column family '{}'", cf);
+              final var fromCf = new RawTransactionalColumnFamily(fromDB, cf, fromCtx);
+              final var toCf = new RawTransactionalColumnFamily(toDB, cf, toCtx);
+              fromCf.forEach(
+                  (key, keyOffset, keyLen, value, valueOffset, valueLen) -> {
+                    try {
+                      toCf.rawPut(
+                          toTransaction, key, keyOffset, keyLen, value, valueOffset, valueLen);
+                      return true;
+                    } catch (final Exception e) {
+                      LOG.error(
+                          "Failed to copy column family '{}' on key {} and value with length {} terminating.",
+                          cf,
+                          new String(key),
+                          value.length);
+                      LOG.error("Exception", e);
+                      abort.set(true);
+                      return false;
+                    }
+                  });
+            }
+            toTransaction.commit();
+          });
     }
   }
 }
