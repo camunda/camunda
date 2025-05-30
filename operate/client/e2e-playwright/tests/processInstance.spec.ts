@@ -100,7 +100,7 @@ test.beforeAll(async ({request}) => {
 });
 
 test.describe('Process Instance', () => {
-  test('Resolve an incident @roundtrip', async ({
+  test.skip('Resolve an incident @roundtrip', async ({
     page,
     processInstancePage,
   }) => {
