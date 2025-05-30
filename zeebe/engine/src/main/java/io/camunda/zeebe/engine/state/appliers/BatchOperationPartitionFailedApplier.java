@@ -12,12 +12,12 @@ import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 
-public class BatchOperationPartitionCompletedApplier
+public class BatchOperationPartitionFailedApplier
     implements TypedEventApplier<BatchOperationIntent, BatchOperationPartitionLifecycleRecord> {
 
   private final MutableBatchOperationState batchOperationState;
 
-  public BatchOperationPartitionCompletedApplier(
+  public BatchOperationPartitionFailedApplier(
       final MutableBatchOperationState batchOperationState) {
     this.batchOperationState = batchOperationState;
   }

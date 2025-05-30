@@ -73,7 +73,7 @@ public final class BatchOperationPartitionCompleteProcessor
     final var oBatchOperation = batchOperationState.get(batchOperationKey);
     if (oBatchOperation.isPresent()) {
       final var bo = oBatchOperation.get();
-      if (bo.getCompletedPartitions().contains(command.getValue().getSourcePartitionId())) {
+      if (bo.getFinishedPartitions().contains(command.getValue().getSourcePartitionId())) {
         LOGGER.debug(
             "Batch operation {} already contains partition {}, ignoring command",
             batchOperationKey,
@@ -83,7 +83,7 @@ public final class BatchOperationPartitionCompleteProcessor
         stateWriter.appendFollowUpEvent(
             batchOperationKey, BatchOperationIntent.COMPLETED_PARTITION, command.getValue());
 
-        if (bo.getCompletedPartitions().size() == bo.getPartitions().size()) {
+        if (bo.getFinishedPartitions().size() == bo.getPartitions().size()) {
           LOGGER.debug(
               "All partitions completed, appending COMPLETED event for batch operation {}",
               batchOperationKey);
