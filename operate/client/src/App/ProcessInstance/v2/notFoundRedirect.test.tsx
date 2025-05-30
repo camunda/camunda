@@ -6,19 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {ProcessInstance} from '.';
-import {getWrapper, mockRequests} from './mocks';
+import {getWrapper} from './mocks';
 import {Paths} from 'modules/Routes';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {notificationsStore} from 'modules/stores/notifications';
-
-const handleRefetchSpy = jest.spyOn(
-  processInstanceDetailsStore,
-  'handleRefetch',
-);
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -26,12 +20,8 @@ jest.mock('modules/stores/notifications', () => ({
   },
 }));
 
-describe.skip('Redirect to process instances page', () => {
-  beforeEach(() => {
-    mockRequests();
-  });
-
-  it('should poll 3 times for not found instance, then redirect to instances page and display notification', async () => {
+describe('Redirect to process instances page', () => {
+  it('should redirect to instances page and display notification if instance is not found (404)', async () => {
     jest.useFakeTimers();
 
     mockFetchProcessDefinitionXml().withServerError();
@@ -43,40 +33,16 @@ describe.skip('Redirect to process instances page', () => {
       }),
     });
 
-    expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
-    expect(screen.getByTestId('instance-history-skeleton')).toBeInTheDocument();
-    expect(screen.getByTestId('variables-skeleton')).toBeInTheDocument();
-
-    mockFetchProcessInstance().withServerError(404);
-    jest.runOnlyPendingTimers();
-    await waitFor(() =>
-      expect(processInstanceDetailsStore.state.status).toBe('fetching'),
-    );
-
-    expect(handleRefetchSpy).toHaveBeenCalledTimes(1);
-
-    mockFetchProcessInstance().withServerError(404);
-    jest.runOnlyPendingTimers();
-    await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(2));
-
-    mockFetchProcessInstance().withServerError(404);
-    jest.runOnlyPendingTimers();
-    await waitFor(() => expect(handleRefetchSpy).toHaveBeenCalledTimes(3));
-
     await waitFor(() => {
       expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
       expect(screen.getByTestId('search')).toHaveTextContent(
         /^\?active=true&incidents=true$/,
       );
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'error',
+        title: 'Instance 123 could not be found',
+        isDismissable: true,
+      });
     });
-
-    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-      kind: 'error',
-      title: 'Instance 123 could not be found',
-      isDismissable: true,
-    });
-
-    jest.clearAllTimers();
-    jest.useRealTimers();
   });
 });

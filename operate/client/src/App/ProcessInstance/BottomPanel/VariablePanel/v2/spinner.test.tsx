@@ -42,7 +42,7 @@ import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'mo
 
 jest.mock('modules/feature-flags', () => ({
   ...jest.requireActual('modules/feature-flags'),
-  IS_FLOWNODE_INSTANCE_STATISTICS_V2_ENABLED: true,
+  IS_PROCESS_INSTANCE_V2_ENABLED: true,
 }));
 
 jest.mock('modules/stores/notifications', () => ({
@@ -82,7 +82,7 @@ const getWrapper = (
   return Wrapper;
 };
 
-describe.skip('VariablePanel spinner', () => {
+describe('VariablePanel spinner', () => {
   beforeEach(() => {
     const mockProcessInstance: ProcessInstance = {
       processInstanceKey: 'instance_id',
@@ -140,6 +140,8 @@ describe.skip('VariablePanel spinner', () => {
     });
 
     mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchVariables().withSuccess([createVariable()]);
+
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
@@ -164,8 +166,8 @@ describe.skip('VariablePanel spinner', () => {
 
   it('should display spinner for variables tab when switching between tabs', async () => {
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
-    expect(screen.getByText('testVariableName')).toBeInTheDocument();
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchVariables().withDelay([createVariable({name: 'test2'})]);
@@ -191,8 +193,7 @@ describe.skip('VariablePanel spinner', () => {
 
   it('should display spinner on second variable fetch', async () => {
     render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
-
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
     mockFetchVariables().withDelay([createVariable()]);
 
     act(() => {
@@ -214,9 +215,8 @@ describe.skip('VariablePanel spinner', () => {
     modificationsStore.enableModificationMode();
 
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
-
-    expect(screen.getByText('testVariableName')).toBeInTheDocument();
+    expect(await screen.findByTestId('variables-list')).toBeTruthy();
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     act(() => {

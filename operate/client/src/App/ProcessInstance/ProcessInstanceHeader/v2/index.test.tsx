@@ -238,7 +238,7 @@ describe('InstanceHeader', () => {
     jest.useRealTimers();
   });
 
-  it.skip('should show spinner when operation is applied', async () => {
+  it('should show spinner when operation is applied', async () => {
     mockFetchCallHierarchy().withSuccess([]);
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
@@ -263,6 +263,7 @@ describe('InstanceHeader', () => {
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
     mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
+    mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
     await user.click(screen.getByRole('button', {name: /Cancel Instance/}));
     await user.click(screen.getByRole('button', {name: 'Apply'}));
 
@@ -276,7 +277,7 @@ describe('InstanceHeader', () => {
     jest.useRealTimers();
   });
 
-  it.skip('should show spinner when variables is added', async () => {
+  it('should show spinner when variables is added', async () => {
     jest.useFakeTimers();
     const mockVariable = createVariable();
 
@@ -329,7 +330,7 @@ describe('InstanceHeader', () => {
     jest.useRealTimers();
   });
 
-  it.skip('should remove spinner when operation fails', async () => {
+  it('should remove spinner when operation fails', async () => {
     mockFetchCallHierarchy().withSuccess([]);
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
@@ -344,6 +345,9 @@ describe('InstanceHeader', () => {
       />,
       {wrapper: Wrapper},
     );
+
+    jest.useFakeTimers();
+
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton'),
     );
@@ -359,6 +363,9 @@ describe('InstanceHeader', () => {
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
     mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
     await waitForElementToBeRemoved(screen.getByTestId('operation-spinner'));
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should display error notification when operation fails', async () => {
