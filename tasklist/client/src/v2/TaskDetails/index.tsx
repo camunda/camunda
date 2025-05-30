@@ -23,6 +23,7 @@ import {Variables} from './Variables';
 import {FormJS} from './FormJS';
 import {useUploadDocuments} from 'common/api/useUploadDocuments.mutation';
 import {parseDenialReason} from 'v2/utils/parseDenialReason';
+import {isRequestError} from 'common/api/request';
 
 const TaskDetails: React.FC = observer(() => {
   const {task, currentUser} = useOutletContext<OutletContext>();
@@ -92,7 +93,11 @@ const TaskDetails: React.FC = observer(() => {
   }
 
   async function handleSubmissionFailure(error: unknown) {
-    const denialReason = await parseDenialReason(error, 'completion');
+    let denialReason: string | undefined = undefined;
+
+    if (!isRequestError(error)) {
+      denialReason = await parseDenialReason(error, 'completion');
+    }
 
     notificationsStore.displayNotification({
       kind: 'error',
