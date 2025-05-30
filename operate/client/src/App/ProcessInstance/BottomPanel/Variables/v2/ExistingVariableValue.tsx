@@ -8,7 +8,7 @@
 
 import {validateValueComplete, validateValueValid} from '../validators';
 import {Field, useField, useForm, useFormState} from 'react-final-form';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {tracking} from 'modules/tracking';
 import {observer} from 'mobx-react';
@@ -20,13 +20,14 @@ import {LoadingTextfield} from '../LoadingTextField';
 import {Layer} from '@carbon/react';
 import {useSelectedFlowNodeName} from 'modules/hooks/flowNodeSelection';
 import {getScopeId} from 'modules/utils/variables';
+import {Variable} from '@vzeta/camunda-api-zod-schemas/process-management';
+import {useVariable} from 'modules/queries/variables/useVariable';
+import {notificationsStore} from 'modules/stores/notifications';
 
 type Props = {
-  isLoading: boolean;
+  id?: string;
   variableName: string;
-  variableValue: string;
-  pauseValidation?: boolean;
-  onFocus?: () => void;
+  isPreview?: boolean;
 };
 
 const createModification = ({
@@ -83,18 +84,23 @@ const createModification = ({
 };
 
 const ExistingVariableValue: React.FC<Props> = observer(
-  ({
-    isLoading,
-    variableName,
-    variableValue,
-    pauseValidation = false,
-    onFocus,
-  }) => {
+  ({id, variableName, isPreview}) => {
     const {isModificationModeEnabled} = modificationsStore;
     const formState = useFormState();
     const selectedFlowNodeName = useSelectedFlowNodeName() || '';
     const [isModalVisible, setIsModalVisible] = useState(false);
     const form = useForm();
+    const {data: variable, isLoading, error} = useVariable({variableKey: id});
+
+    useEffect(() => {
+      if (error) {
+        notificationsStore.displayNotification({
+          kind: 'error',
+          title: 'Variable could not be fetched',
+          isDismissable: true,
+        });
+      }
+    }, [error]);
 
     const fieldName = isModificationModeEnabled
       ? createVariableFieldName(variableName)
@@ -112,101 +118,104 @@ const ExistingVariableValue: React.FC<Props> = observer(
       'EDIT_VARIABLE',
     );
 
-    const initialValue =
+    const getInitialValue = (variableValue: Variable) =>
       lastEditModification !== undefined
         ? lastEditModification?.newValue
-        : variableValue;
+        : variableValue.value;
+
+    const isVariableValueUndefined = variable?.value === undefined;
+    const pauseValidation = isPreview && isVariableValueUndefined;
 
     return (
-      <Layer>
-        <Field
-          name={fieldName}
-          initialValue={initialValue}
-          validate={
-            pauseValidation
-              ? () => undefined
-              : mergeValidators(validateValueComplete, validateValueValid)
-          }
-          parse={(value) => value}
-        >
-          {({input, meta}) => (
-            <LoadingTextfield
-              {...input}
-              size="sm"
-              type="text"
-              id={fieldName}
-              hideLabel
-              labelText="Value"
-              placeholder="Value"
-              data-testid="edit-variable-value"
-              buttonLabel="Open JSON editor modal"
-              tooltipPosition="left"
-              onIconClick={() => {
-                onFocus?.();
-                setIsModalVisible(true);
+      variable && (
+        <Layer>
+          <Field
+            name={fieldName}
+            initialValue={getInitialValue(variable)}
+            validate={
+              pauseValidation
+                ? () => undefined
+                : mergeValidators(validateValueComplete, validateValueValid)
+            }
+            parse={(value) => value}
+          >
+            {({input, meta}) => (
+              <LoadingTextfield
+                {...input}
+                size="sm"
+                type="text"
+                id={fieldName}
+                hideLabel
+                labelText="Value"
+                placeholder="Value"
+                data-testid="edit-variable-value"
+                buttonLabel="Open JSON editor modal"
+                tooltipPosition="left"
+                onIconClick={() => {
+                  setIsModalVisible(true);
+                  tracking.track({
+                    eventName: 'json-editor-opened',
+                    variant: 'edit-variable',
+                  });
+                }}
+                Icon={Popup}
+                autoFocus={!isModificationModeEnabled || meta.active}
+                isLoading={isLoading}
+                onFocus={(event) => {
+                  if (!meta.active) {
+                    input.onFocus(event);
+                  }
+                }}
+                onBlur={(event) => {
+                  createModification({
+                    scopeId: getScopeId(),
+                    name: variableName,
+                    oldValue: variable.value,
+                    newValue: input.value ?? '',
+                    isDirty: variable.value !== input.value,
+                    isValid: isValid ?? false,
+                    selectedFlowNodeName,
+                  });
+
+                  input.onBlur(event);
+                }}
+              />
+            )}
+          </Field>
+          {isModalVisible && (
+            <JSONEditorModal
+              isVisible={isModalVisible}
+              title={`Edit Variable "${variableName}"`}
+              value={formState.values?.[fieldName]}
+              onClose={() => {
+                setIsModalVisible(false);
                 tracking.track({
-                  eventName: 'json-editor-opened',
+                  eventName: 'json-editor-closed',
                   variant: 'edit-variable',
                 });
               }}
-              Icon={Popup}
-              autoFocus={!isModificationModeEnabled || meta.active}
-              isLoading={isLoading}
-              onFocus={(event) => {
-                if (!meta.active) {
-                  onFocus?.();
-                  input.onFocus(event);
-                }
-              }}
-              onBlur={(event) => {
+              onApply={(value) => {
+                form.change(fieldName, value);
+                setIsModalVisible(false);
+                tracking.track({
+                  eventName: 'json-editor-saved',
+                  variant: 'edit-variable',
+                });
+
                 createModification({
                   scopeId: getScopeId(),
                   name: variableName,
-                  oldValue: variableValue,
-                  newValue: input.value ?? '',
-                  isDirty: variableValue !== input.value,
+                  oldValue: variable.value,
+                  newValue: value ?? '',
+                  isDirty: getInitialValue(variable) !== value,
                   isValid: isValid ?? false,
                   selectedFlowNodeName,
                 });
-
-                input.onBlur(event);
               }}
             />
           )}
-        </Field>
-        {isModalVisible && (
-          <JSONEditorModal
-            isVisible={isModalVisible}
-            title={`Edit Variable "${variableName}"`}
-            value={formState.values?.[fieldName]}
-            onClose={() => {
-              setIsModalVisible(false);
-              tracking.track({
-                eventName: 'json-editor-closed',
-                variant: 'edit-variable',
-              });
-            }}
-            onApply={(value) => {
-              form.change(fieldName, value);
-              setIsModalVisible(false);
-              tracking.track({
-                eventName: 'json-editor-saved',
-                variant: 'edit-variable',
-              });
-
-              createModification({
-                scopeId: getScopeId(),
-                name: variableName,
-                oldValue: variableValue,
-                newValue: value ?? '',
-                isDirty: initialValue !== value,
-                isValid: isValid ?? false,
-                selectedFlowNodeName,
-              });
-            }}
-          />
-        )}
-      </Layer>
+        </Layer>
+      )
     );
   },
 );
