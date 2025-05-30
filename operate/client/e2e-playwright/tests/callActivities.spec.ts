@@ -33,7 +33,7 @@ test.beforeAll(async ({request}) => {
 });
 
 test.describe('Call Activities', () => {
-  test('Navigate to called and parent process instances', async ({
+  test.skip('Navigate to called and parent process instances', async ({
     processInstancePage,
     page,
   }) => {

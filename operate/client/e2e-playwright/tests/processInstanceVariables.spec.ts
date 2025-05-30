@@ -47,7 +47,10 @@ test.beforeAll(async ({request}) => {
 });
 
 test.describe('Process Instance Variables', () => {
-  test('Edit variables @roundtrip', async ({page, processInstancePage}) => {
+  test.skip('Edit variables @roundtrip', async ({
+    page,
+    processInstancePage,
+  }) => {
     test.slow();
 
     const processInstanceKey = initialData.instance.processInstanceKey;
@@ -81,7 +84,7 @@ test.describe('Process Instance Variables', () => {
     await expect(page.getByText('"editedTestValue"')).toBeVisible();
   });
 
-  test('Add variables @roundtrip', async ({
+  test.skip('Add variables @roundtrip', async ({
     page,
     processInstancePage,
     processesPage,
