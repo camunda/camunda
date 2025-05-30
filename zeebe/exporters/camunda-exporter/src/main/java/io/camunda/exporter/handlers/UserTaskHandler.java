@@ -39,6 +39,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
   private static final Logger LOGGER = LoggerFactory.getLogger(UserTaskHandler.class);
   private static final Set<UserTaskIntent> SUPPORTED_INTENTS =
       EnumSet.of(
+          UserTaskIntent.CREATING,
           UserTaskIntent.CREATED,
           UserTaskIntent.COMPLETING,
           UserTaskIntent.COMPLETED,
@@ -107,7 +108,8 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     entity.setKey(record.getKey());
 
     switch (record.getIntent()) {
-      case UserTaskIntent.CREATED -> createTaskEntity(entity, record);
+      case UserTaskIntent.CREATING -> createTaskEntity(entity, record);
+      case UserTaskIntent.CREATED -> handleCreated(record, entity);
       case UserTaskIntent.ASSIGNED, UserTaskIntent.UPDATED ->
           updateChangedAttributes(record, entity);
       case UserTaskIntent.COMPLETED -> handleCompletion(record, entity);
@@ -201,7 +203,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
 
     entity
         .setImplementation(TaskImplementation.ZEEBE_USER_TASK)
-        .setState(TaskState.CREATED)
+        .setState(TaskState.CREATING)
         .setAssignee(getAssigneeOrNull(record))
         .setDueDate(ExporterUtil.toOffsetDateTime(record.getValue().getDueDate()))
         .setFollowUpDate(ExporterUtil.toOffsetDateTime(record.getValue().getFollowUpDate()))
@@ -295,6 +297,10 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
         default -> LOGGER.warn(UNMAPPED_USER_TASK_ATTRIBUTE_WARNING, attribute);
       }
     }
+  }
+
+  private void handleCreated(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
+    entity.setState(TaskState.CREATED);
   }
 
   private void handleCompletion(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
