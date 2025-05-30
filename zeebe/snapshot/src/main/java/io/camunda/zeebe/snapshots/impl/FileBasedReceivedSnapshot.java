@@ -270,10 +270,12 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
                 FileBasedSnapshotStoreImpl.VERSION,
                 snapshotId.getProcessedPosition(),
                 snapshotId.getExportedPosition(),
-                Long.MAX_VALUE);
+                Long.MAX_VALUE,
+                false);
       }
       final PersistedSnapshot value =
-          snapshotStore.persistNewSnapshot(snapshotId, checksumCollection, metadata);
+          snapshotStore.persistNewSnapshot(
+              snapshotId, checksumCollection, metadata, metadata.isBootstrap());
       future.complete(value);
     } catch (final Exception e) {
       future.completeExceptionally(e);

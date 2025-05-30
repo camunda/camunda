@@ -22,5 +22,5 @@ public interface RestorableSnapshotStore {
    * @param snapshotFiles
    * @throws IOException
    */
-  void restore(String snapshotId, Map<String, Path> snapshotFiles) throws IOException;
+  void restore(final String snapshotId, final Map<String, Path> snapshotFiles) throws IOException;
 }

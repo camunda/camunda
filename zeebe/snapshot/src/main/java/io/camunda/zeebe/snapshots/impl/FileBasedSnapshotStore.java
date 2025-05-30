@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 public final class FileBasedSnapshotStore extends Actor
     implements ConstructableSnapshotStore, ReceivableSnapshotStore, RestorableSnapshotStore {
@@ -131,6 +132,14 @@ public final class FileBasedSnapshotStore extends Actor
       final long processedPosition,
       final long exportedPosition) {
     return snapshotStore.newTransientSnapshot(index, term, processedPosition, exportedPosition);
+  }
+
+  @Override
+  public ActorFuture<PersistedSnapshot> copyForBootstrap(
+      final long processPosition,
+      final PersistedSnapshot persistedSnapshot,
+      final BiConsumer<Path, Path> copySnapshot) {
+    return snapshotStore.copyForBootstrap(processPosition, persistedSnapshot, copySnapshot);
   }
 
   @Override
