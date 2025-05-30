@@ -4404,6 +4404,39 @@ paths:
           $ref: "#/components/responses/InternalServerError"
 
   /users/{username}:
+    get:
+      tags:
+        - User
+      operationId: getUser
+      summary: Get user
+      description: |
+        Get a user by its username.
+      parameters:
+        - name: username
+          in: path
+          required: true
+          description: The username of the user.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The user is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The user with the given username was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
     delete:
       tags:
         - User
