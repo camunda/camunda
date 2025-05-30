@@ -103,10 +103,9 @@ public class UpdateMappingMultiPartitionTest {
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // given the role creation distribution is intercepted
-    engine.getProcessingState().getRoutingState().currentPartitions().stream()
-        .skip(1)
-        .forEach(
-            partition -> engine.interceptInterPartitionIntent(partition, MappingIntent.CREATE));
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
+      engine.interceptInterPartitionIntent(partitionId, MappingIntent.CREATE);
+    }
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();

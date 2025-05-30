@@ -108,9 +108,9 @@ public class UpdateRoleMultiPartitionTest {
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // when
-    engine.getProcessingState().getRoutingState().currentPartitions().stream()
-        .skip(1)
-        .forEach(partition -> engine.interceptInterPartitionIntent(partition, RoleIntent.CREATE));
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
+      engine.interceptInterPartitionIntent(partitionId, RoleIntent.CREATE);
+    }
     final var roleId = UUID.randomUUID().toString();
     engine.role().newRole(roleId).withName("created").create();
     engine.role().updateRole(roleId).withName("updated").update();

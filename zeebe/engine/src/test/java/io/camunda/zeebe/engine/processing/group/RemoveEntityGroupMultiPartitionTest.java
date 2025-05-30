@@ -142,9 +142,9 @@ public class RemoveEntityGroupMultiPartitionTest {
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // given the user creation distribution is intercepted
-    engine.getProcessingState().getRoutingState().currentPartitions().stream()
-        .skip(1)
-        .forEach(partition -> engine.interceptInterPartitionIntent(partition, UserIntent.CREATE));
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
+      engine.interceptInterPartitionIntent(partitionId, UserIntent.CREATE);
+    }
     final var username =
         engine
             .user()

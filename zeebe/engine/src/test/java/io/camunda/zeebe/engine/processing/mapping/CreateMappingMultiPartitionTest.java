@@ -113,9 +113,9 @@ public class CreateMappingMultiPartitionTest {
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // given the role creation distribution is intercepted
-    engine.getProcessingState().getRoutingState().currentPartitions().stream()
-        .skip(1)
-        .forEach(partition -> engine.interceptInterPartitionIntent(partition, RoleIntent.CREATE));
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
+      engine.interceptInterPartitionIntent(partitionId, RoleIntent.CREATE);
+    }
 
     final var roleName = UUID.randomUUID().toString();
     engine.role().newRole(roleName).create();

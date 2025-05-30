@@ -109,9 +109,9 @@ public class DeleteGroupMultiPartitionTest {
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // when
     final var name = UUID.randomUUID().toString();
-    engine.getProcessingState().getRoutingState().currentPartitions().stream()
-        .skip(1)
-        .forEach(partition -> engine.interceptInterPartitionIntent(partition, GroupIntent.CREATE));
+    for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
+      engine.interceptInterPartitionIntent(partitionId, GroupIntent.CREATE);
+    }
     final var groupId = UUID.randomUUID().toString();
     engine.group().newGroup(groupId).withName(name).create();
     engine.group().deleteGroup(groupId).delete();
