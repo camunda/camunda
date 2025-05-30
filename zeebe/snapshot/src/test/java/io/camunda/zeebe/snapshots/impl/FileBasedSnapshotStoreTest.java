@@ -18,13 +18,17 @@ import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.zip.CRC32C;
 import org.junit.Before;
@@ -407,6 +411,62 @@ public class FileBasedSnapshotStoreTest {
         .describedAs(
             "The latest snapshot is not detected as corrupted and should be loaded after restart")
         .hasValueSatisfying(s -> assertThat(s.getId()).isEqualTo(persistedSnapshot.getId()));
+  }
+
+  @Test
+  public void shouldCopyAPersistedSnapshotIntoAnotherFolderCorrectly() throws IOException {
+    // given
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1, 1, 123L, 0).get();
+
+    final var snapshotFileNames =
+        List.of("zeebe.metadata", "table-0.sst", "table-1.sst", "table-2.sst");
+    transientSnapshot
+        .take(
+            path -> {
+              try {
+                FileUtil.ensureDirectoryExists(path);
+                for (final var filename : snapshotFileNames) {
+                  final var file = new File(path.toString(), filename);
+                  file.createNewFile();
+                  try (final var fos = new FileOutputStream(file)) {
+                    fos.write("test".getBytes());
+                  }
+                }
+              } catch (final IOException e) {
+                throw new RuntimeException(e);
+              }
+            })
+        .join();
+    final var persistedSnapshot = transientSnapshot.persist().join();
+
+    // when
+    final var copiedSnapshot =
+        snapshotStore
+            .copyForBootstrap(
+                123L,
+                persistedSnapshot,
+                (source, target) -> {
+                  try (final var stream = Files.walk(source)) {
+                    stream.forEach(
+                        path -> {
+                          if (!source.equals(path)) {
+                            try {
+                              final var relativePath = source.relativize(path);
+                              final var targetPath = target.resolve(relativePath);
+                              Files.copy(path, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                            } catch (final IOException e) {
+                              throw new UncheckedIOException(e);
+                            }
+                          }
+                        });
+                  } catch (final IOException e) {
+                    throw new RuntimeException(e);
+                  }
+                })
+            .join();
+
+    final var files = copiedSnapshot.files();
+    snapshotStore.restore(copiedSnapshot.getId(), files);
   }
 
   private boolean createSnapshotDir(final Path path) {
