@@ -153,36 +153,6 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
   }
 
   @Test
-  public void shouldRejectPauseBatchOperationIfInvalidState() {
-    // given a failed batch operation
-    final var batchOperationKey = createNewFailedCancelProcessInstanceBatchOperation();
-
-    // when we pause the batch operation which does not exist
-    engine
-        .batchOperation()
-        .newLifecycle()
-        .withBatchOperationKey(batchOperationKey)
-        .pauseWithoutExpectations();
-
-    // then we have a rejected command
-    assertThat(
-            RecordingExporter.batchOperationLifecycleRecords()
-                .withBatchOperationKey(batchOperationKey)
-                .withRejectionType(RejectionType.INVALID_STATE)
-                .onlyCommandRejections())
-        .extracting(Record::getIntent)
-        .containsSequence(BatchOperationIntent.PAUSE);
-
-    // and no follow-up command to execute again
-    assertThat(
-            RecordingExporter.batchOperationExecutionRecords()
-                .withBatchOperationKey(batchOperationKey)
-                .onlyCommands())
-        .extracting(Record::getIntent)
-        .doesNotContain(BatchOperationExecutionIntent.EXECUTE);
-  }
-
-  @Test
   public void shouldResumeBatchOperation() {
     // given
     final var processInstanceKeys = Set.of(1L, 2L, 3L);

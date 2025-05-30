@@ -69,6 +69,14 @@ public final class BatchOperationClient {
                     .withSourceRecordPosition(position)
                     .getFirst();
 
+    private static final Function<Long, Record<BatchOperationCreationRecordValue>>
+        FAIL_SUCCESS_EXPECTATION =
+            (position) ->
+                RecordingExporter.batchOperationCreationRecords()
+                    .withIntent(BatchOperationIntent.FAILED)
+                    .withSourceRecordPosition(position)
+                    .getFirst();
+
     private final CommandWriter writer;
     private final BatchOperationCreationRecord batchOperationCreationRecord;
     private int partition = DEFAULT_PARTITION;
@@ -110,6 +118,11 @@ public final class BatchOperationClient {
     public BatchOperationCreationClient withModificationPlan(
         final BatchOperationProcessInstanceModificationPlan modificationPlan) {
       batchOperationCreationRecord.setModificationPlan(modificationPlan);
+      return this;
+    }
+
+    public BatchOperationCreationClient withBatchOperationKey(final long batchOperationKey) {
+      batchOperationCreationRecord.setBatchOperationKey(batchOperationKey);
       return this;
     }
 
@@ -157,6 +170,29 @@ public final class BatchOperationClient {
       }
 
       return resultingRecord;
+    }
+
+    public Record<BatchOperationCreationRecordValue> fail() {
+      return fail(
+          AuthorizationUtil.getAuthInfoWithClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
+    }
+
+    public Record<BatchOperationCreationRecordValue> fail(final String username) {
+      return fail(AuthorizationUtil.getAuthInfo(username));
+    }
+
+    public Record<BatchOperationCreationRecordValue> fail(final AuthInfo authorizations) {
+      final long position =
+          writer.writeCommandOnPartition(
+              partition,
+              r ->
+                  r.intent(BatchOperationIntent.FAIL)
+                      .event(batchOperationCreationRecord)
+                      .authorizations(authorizations)
+                      .requestId(new Random().nextLong())
+                      .requestStreamId(new Random().nextInt()));
+
+      return FAIL_SUCCESS_EXPECTATION.apply(position);
     }
 
     public BatchOperationCreationClient expectRejection() {

@@ -23,18 +23,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ExcludeAuthorizationCheck
-public final class BatchOperationPartitionCompleteProcessor
+public final class BatchOperationPartitionFailProcessor
     implements DistributedTypedRecordProcessor<BatchOperationPartitionLifecycleRecord> {
 
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(BatchOperationPartitionCompleteProcessor.class);
+      LoggerFactory.getLogger(BatchOperationPartitionFailProcessor.class);
 
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final BatchOperationState batchOperationState;
   private final CommandDistributionBehavior commandDistributionBehavior;
 
-  public BatchOperationPartitionCompleteProcessor(
+  public BatchOperationPartitionFailProcessor(
       final Writers writers,
       final ProcessingState processingState,
       final CommandDistributionBehavior commandDistributionBehavior) {
@@ -45,28 +45,26 @@ public final class BatchOperationPartitionCompleteProcessor
   }
 
   /**
-   * Processes a non-distributed command to mark a partition of a batch operation as completed. This
-   * occurs, when the p
+   * Processes a non-distributed command to mark a partition of a batch operation as failed.
    *
    * @param command the not yet distributed command to process
    */
   @Override
   public void processNewCommand(final TypedRecord<BatchOperationPartitionLifecycleRecord> command) {
-    doProcessRecord(command, false);
+    doProcessRecord(command);
   }
 
   @Override
   public void processDistributedCommand(
       final TypedRecord<BatchOperationPartitionLifecycleRecord> command) {
-    doProcessRecord(command, true);
+    doProcessRecord(command);
+    commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private void doProcessRecord(
-      final TypedRecord<BatchOperationPartitionLifecycleRecord> command,
-      final boolean isDistributed) {
+  private void doProcessRecord(final TypedRecord<BatchOperationPartitionLifecycleRecord> command) {
     final var batchOperationKey = command.getValue().getBatchOperationKey();
     LOGGER.debug(
-        "Processing command from partition {} to mark batch operation {} as completed",
+        "Processing command from partition {} to mark batch operation {} as failed",
         command.getValue().getSourcePartitionId(),
         command.getValue().getBatchOperationKey());
 
@@ -75,28 +73,24 @@ public final class BatchOperationPartitionCompleteProcessor
       final var bo = oBatchOperation.get();
       if (bo.getFinishedPartitions().contains(command.getValue().getSourcePartitionId())) {
         LOGGER.debug(
-            "Batch operation {} already contains partition {}, ignoring command",
+            "Batch operation {} already contains partition {} as finished, ignoring command",
             batchOperationKey,
             command.getValue().getSourcePartitionId());
       } else {
 
         stateWriter.appendFollowUpEvent(
-            batchOperationKey, BatchOperationIntent.COMPLETED_PARTITION, command.getValue());
+            batchOperationKey, BatchOperationIntent.FAILED_PARTITION, command.getValue());
 
         if (bo.getFinishedPartitions().size() == bo.getPartitions().size()) {
           LOGGER.debug(
-              "All partitions completed, appending COMPLETED event for batch operation {}",
+              "All partitions finished, appending COMPLETE command for batch operation {}",
               batchOperationKey);
-          final var batchComplete = new BatchOperationLifecycleManagementRecord();
-          batchComplete.setBatchOperationKey(batchOperationKey);
+          final var batchFinished = new BatchOperationLifecycleManagementRecord();
+          batchFinished.setBatchOperationKey(batchOperationKey);
           commandWriter.appendFollowUpCommand(
-              batchOperationKey, BatchOperationIntent.COMPLETE, batchComplete);
+              batchOperationKey, BatchOperationIntent.COMPLETE, batchFinished);
         }
       }
-    }
-
-    if (isDistributed) {
-      commandDistributionBehavior.acknowledgeCommand(command);
     }
   }
 }

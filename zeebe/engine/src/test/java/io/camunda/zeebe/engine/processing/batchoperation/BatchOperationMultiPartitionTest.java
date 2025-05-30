@@ -117,6 +117,59 @@ public final class BatchOperationMultiPartitionTest {
   }
 
   @Test
+  public void shouldTreatFailedAsFinished() {
+    // given
+    final long batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+            .withFilter(new UnsafeBuffer("{\"hasIncident\": false}".getBytes()))
+            .create()
+            .getValue()
+            .getBatchOperationKey();
+
+    // when
+    // fail one partition and complete the others
+    engine
+        .batchOperation()
+        .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+        .withBatchOperationKey(batchOperationKey)
+        .onPartition(1)
+        .fail();
+    for (int i = 2; i <= PARTITION_COUNT; i++) {
+      engine
+          .batchOperation()
+          .newExecution()
+          .onPartition(i)
+          .withBatchOperationKey(batchOperationKey)
+          .execute();
+    }
+
+    // then
+    assertThat(
+            RecordingExporter.batchOperationPartitionLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .withPartitionId(1)
+                .collect(Collectors.toList()))
+        .extracting(Record::getIntent)
+        .containsExactlyInAnyOrder(
+            BatchOperationIntent.FAIL_PARTITION,
+            BatchOperationIntent.COMPLETE_PARTITION,
+            BatchOperationIntent.COMPLETE_PARTITION,
+            BatchOperationIntent.FAILED_PARTITION,
+            BatchOperationIntent.COMPLETED_PARTITION,
+            BatchOperationIntent.COMPLETED_PARTITION);
+
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .withPartitionId(1)
+                .collect(Collectors.toList()))
+        .extracting(Record::getIntent)
+        .contains(BatchOperationIntent.COMPLETED);
+  }
+
+  @Test
   public void shouldCancelOnAllPartitions() {
     // given
     final long batchOperationKey = createDistributedBatchOperation();
