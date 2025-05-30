@@ -294,7 +294,6 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     entity
         .setFlowNodeBpmnId(record.getValue().getElementId())
         .setBpmnProcessId(record.getValue().getBpmnProcessId())
-        .setProcessDefinitionId(String.valueOf(record.getValue().getProcessDefinitionKey()))
-        .setState(TaskState.CREATED);
+        .setProcessDefinitionId(String.valueOf(record.getValue().getProcessDefinitionKey()));
   }
 }
