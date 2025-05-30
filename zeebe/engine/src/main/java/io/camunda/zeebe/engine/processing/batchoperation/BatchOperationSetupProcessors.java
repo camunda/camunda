@@ -74,7 +74,8 @@ public final class BatchOperationSetupProcessors {
         .onCommand(
             ValueType.BATCH_OPERATION_CREATION,
             BatchOperationIntent.FAIL,
-            new BatchOperationFailProcessor(writers))
+            new BatchOperationFailProcessor(
+                writers, commandDistributionBehavior, keyGenerator, partitionId))
         .onCommand(
             ValueType.BATCH_OPERATION_CHUNK,
             BatchOperationChunkIntent.CREATE,
@@ -121,6 +122,11 @@ public final class BatchOperationSetupProcessors {
             BatchOperationIntent.COMPLETE_PARTITION,
             new BatchOperationPartitionCompleteProcessor(
                 writers, processingState, commandDistributionBehavior, partitionId))
+        .onCommand(
+            ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
+            BatchOperationIntent.FAIL_PARTITION,
+            new BatchOperationPartitionFailProcessor(
+                writers, processingState, commandDistributionBehavior))
         .withListener(
             new BatchOperationExecutionScheduler(
                 scheduledTaskStateFactory,
