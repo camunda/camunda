@@ -47,7 +47,8 @@ public class ScaleUpStatusProcessor implements TypedRecordProcessor<ScaleRecord>
       final var response = new ScaleRecord();
       response
           .setDesiredPartitionCount(desiredPartitions.size())
-          .setRedistributedPartitions(routingState.currentPartitions());
+          .setRedistributedPartitions(routingState.currentPartitions())
+          .setBootstrappedAt(routingState.bootstrappedAt(request.getDesiredPartitionCount()));
       writers.state().appendFollowUpEvent(key, ScaleIntent.STATUS_RESPONSE, response);
       writers.response().writeEventOnCommand(key, ScaleIntent.STATUS_RESPONSE, response, command);
     }
