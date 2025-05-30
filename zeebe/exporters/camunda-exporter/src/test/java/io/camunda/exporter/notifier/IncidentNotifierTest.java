@@ -99,7 +99,7 @@ class IncidentNotifierTest {
             null,
             TestObjectMapper.objectMapper());
     when(processCache.get(any()))
-        .thenReturn(Optional.of(new CachedProcessEntity(processName, processVersion, null)));
+        .thenReturn(Optional.of(new CachedProcessEntity(processName, processVersion, null, null)));
   }
 
   @Test

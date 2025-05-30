@@ -288,10 +288,11 @@ public class IncidentHandlerTest {
 
     processCache.put(
         processDefinitionKey1,
-        new CachedProcessEntity(null, null, List.of("0", "1", "2", callActivityId1)));
+        new CachedProcessEntity(null, null, null, List.of("0", "1", "2", callActivityId1)));
 
     processCache.put(
-        processDefinitionKey2, new CachedProcessEntity(null, null, List.of("0", callActivityId2)));
+        processDefinitionKey2,
+        new CachedProcessEntity(null, null, null, List.of("0", callActivityId2)));
 
     // when
     final IncidentEntity incidentEntity = new IncidentEntity();
