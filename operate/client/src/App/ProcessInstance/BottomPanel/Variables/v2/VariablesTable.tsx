@@ -28,7 +28,6 @@ import {Value} from '../NewVariableModification/v2/Value';
 import {Operation as OperationV2} from '../NewVariableModification/v2/Operation';
 import {ViewFullVariableButton} from '../ViewFullVariableButton';
 import {MAX_VARIABLES_STORED} from 'modules/constants/variables';
-import {notificationsStore} from 'modules/stores/notifications';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {usePermissions} from 'modules/queries/permissions/usePermissions';
 
@@ -54,29 +53,6 @@ const VariablesTable: React.FC<Props> = observer(
     const {processInstanceId = ''} = useProcessInstancePageParams();
     const {initialValues} = useFormState();
     const variableNameRef = useRef<HTMLDivElement>(null);
-
-    function fetchFullVariable({
-      processInstanceId,
-      variableId,
-      enableLoading = true,
-    }: {
-      processInstanceId: ProcessInstanceEntity['id'];
-      variableId: VariableEntity['id'];
-      enableLoading?: boolean;
-    }) {
-      return variablesStore.fetchVariable({
-        processInstanceId,
-        variableId,
-        onError: () => {
-          notificationsStore.displayNotification({
-            kind: 'error',
-            title: 'Variable could not be fetched',
-            isDismissable: true,
-          });
-        },
-        enableLoading,
-      });
-    }
 
     const isEditMode = (variableName: string) =>
       (initialValues?.name === variableName && isProcessInstanceRunning) ||
@@ -202,37 +178,7 @@ const VariablesTable: React.FC<Props> = observer(
                   <ExistingVariableValue
                     id={id}
                     variableName={variableName}
-                    variableValue={
-                      variablesStore.getFullVariableValue(id) ?? variableValue
-                    }
-                    pauseValidation={
-                      isPreview &&
-                      variablesStore.getFullVariableValue(id) === undefined
-                    }
-                    onFocus={() => {
-                      if (
-                        isPreview &&
-                        variablesStore.getFullVariableValue(id) === undefined
-                      ) {
-                        variablesStore.fetchVariable({
-                          processInstanceId,
-                          variableId: id,
-                          onSuccess: (variable: VariableEntity) => {
-                            variablesStore.setFullVariableValue(
-                              id,
-                              variable.value,
-                            );
-                          },
-                          onError: () => {
-                            notificationsStore.displayNotification({
-                              kind: 'error',
-                              title: 'Variable could not be fetched',
-                              isDismissable: true,
-                            });
-                          },
-                        });
-                      }
-                    }}
+                    isPreview={isPreview}
                   />
                 ) : (
                   <VariableValue $hasBackdrop={true}>
@@ -263,15 +209,6 @@ const VariablesTable: React.FC<Props> = observer(
                           return (
                             <ViewFullVariableButton
                               variableName={variableName}
-                              onClick={async () => {
-                                const variable = await fetchFullVariable({
-                                  processInstanceId,
-                                  variableId: id,
-                                  enableLoading: false,
-                                });
-
-                                return variable?.value ?? null;
-                              }}
                             />
                           );
                         }
@@ -280,13 +217,7 @@ const VariablesTable: React.FC<Props> = observer(
                       }
 
                       if (initialValues?.name === variableName) {
-                        return (
-                          <EditButtons
-                            onExitEditMode={() =>
-                              variablesStore.deleteFullVariableValue(id)
-                            }
-                          />
-                        );
+                        return <EditButtons />;
                       }
 
                       if (!hasActiveOperation) {
@@ -300,15 +231,6 @@ const VariablesTable: React.FC<Props> = observer(
                               isPreview ? (
                                 <ViewFullVariableButton
                                   variableName={variableName}
-                                  onClick={async () => {
-                                    const variable = await fetchFullVariable({
-                                      processInstanceId,
-                                      variableId: id,
-                                      enableLoading: false,
-                                    });
-
-                                    return variable?.value ?? null;
-                                  }}
                                 />
                               ) : null
                             }
@@ -323,23 +245,6 @@ const VariablesTable: React.FC<Props> = observer(
                               }
                               onClick={async () => {
                                 let value = variableValue;
-                                if (isPreview) {
-                                  const variable = await fetchFullVariable({
-                                    processInstanceId,
-                                    variableId: id,
-                                  });
-
-                                  if (variable === null) {
-                                    return;
-                                  }
-
-                                  variablesStore.setFullVariableValue(
-                                    id,
-                                    variable.value,
-                                  );
-
-                                  value = variable.value;
-                                }
 
                                 form.reset({
                                   name: variableName,
