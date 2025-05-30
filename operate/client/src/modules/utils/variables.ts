@@ -12,6 +12,8 @@ import {MAX_VARIABLES_PER_REQUEST} from 'modules/constants/variables';
 import {modificationsStore} from 'modules/stores/modifications';
 import {variablesStore} from 'modules/stores/variables';
 import {isInstanceRunning, isRunning} from './instance';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 
 const init = (processInstance?: ProcessInstance) => {
   variablesStore.instanceId = processInstance?.processInstanceKey || null;
@@ -25,7 +27,7 @@ const init = (processInstance?: ProcessInstance) => {
     if (
       processInstance &&
       isRunning(processInstance) &&
-      variablesStore.scopeId !== null
+      getScopeId() !== null
     ) {
       if (
         variablesStore.intervalId === null &&
@@ -39,7 +41,7 @@ const init = (processInstance?: ProcessInstance) => {
   });
 
   variablesStore.fetchVariablesDisposer = reaction(
-    () => variablesStore.scopeId,
+    () => getScopeId(),
     (scopeId) => {
       variablesStore.clearItems();
 
@@ -92,4 +94,11 @@ const startPolling = async (
   }, 5000);
 };
 
-export {init, startPolling};
+const getScopeId = () => {
+  const {selection} = flowNodeSelectionStore.state;
+  const {metaData} = flowNodeMetaDataStore.state;
+
+  return selection?.flowNodeInstanceId ?? metaData?.flowNodeInstanceId ?? null;
+};
+
+export {init, startPolling, getScopeId};

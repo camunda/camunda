@@ -27,6 +27,7 @@ import {usePermissions} from 'modules/queries/permissions/usePermissions';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
+import {getScopeId} from 'modules/utils/variables';
 
 type Props = {
   isVariableModificationAllowed?: boolean;
@@ -49,7 +50,7 @@ const Variables: React.FC<Props> = observer(
     const [footerVariant, setFooterVariant] =
       useState<FooterVariant>('initial');
 
-    const scopeId = variablesStore.scopeId ?? newScopeIdForFlowNode;
+    const scopeId = getScopeId() ?? newScopeIdForFlowNode;
 
     const {isModificationModeEnabled} = modificationsStore;
 

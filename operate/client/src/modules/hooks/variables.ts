@@ -17,6 +17,7 @@ import {
 } from './flowNodeSelection';
 import {useHasMultipleInstances} from './flowNodeMetadata';
 import {IS_PROCESS_INSTANCE_V2_ENABLED} from 'modules/feature-flags';
+import {getScopeId} from 'modules/utils/variables';
 
 const useHasNoContent = () => {
   const newTokenCountForSelectedNode = useNewTokenCountForSelectedNode();
@@ -62,13 +63,10 @@ const useDisplayStatus = () => {
     return variablesStore.areVariablesLoadedOnce ? 'spinner' : 'skeleton';
   }
 
-  if (
-    modificationsStore.isModificationModeEnabled &&
-    variablesStore.scopeId === null
-  ) {
+  if (modificationsStore.isModificationModeEnabled && getScopeId() === null) {
     return 'no-variables';
   }
-  if (status === 'fetching' || variablesStore.scopeId === null) {
+  if (status === 'fetching' || getScopeId() === null) {
     return 'spinner';
   }
   if (variablesStore.hasNoVariables) {

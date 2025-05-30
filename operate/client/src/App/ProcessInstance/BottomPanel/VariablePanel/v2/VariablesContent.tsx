@@ -20,6 +20,7 @@ import {VariablesForm} from './VariablesForm';
 import {notificationsStore} from 'modules/stores/notifications';
 import {useDisplayStatus} from 'modules/hooks/variables';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
+import {getScopeId} from 'modules/utils/variables';
 
 const VariablesContent: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
@@ -58,7 +59,7 @@ const VariablesContent: React.FC = observer(() => {
             });
           },
         }}
-        key={variablesStore.scopeId}
+        key={getScopeId()}
         render={(props) => <VariablesForm {...props} />}
         onSubmit={async (values, form) => {
           const {initialValues} = form.getState();
