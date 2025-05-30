@@ -11,10 +11,13 @@ import {render, screen, type UserEvent, waitFor} from 'modules/testing-library';
 
 import {LastModification} from 'App/ProcessInstance/LastModification';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {variablesStore} from 'modules/stores/variables';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {createInstance, createVariable} from 'modules/testUtils';
+import {
+  createInstance,
+  createVariable,
+  createVariableV2,
+} from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
@@ -31,23 +34,39 @@ import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 
-const editNameFromTextfieldAndBlur = async (user: UserEvent, value: string) => {
-  const [nameField] = screen.getAllByTestId('new-variable-name');
+const editNameFromTextfieldAndBlur = async (
+  user: UserEvent,
+  value: string,
+  index: number = 0,
+) => {
+  const nameFields = screen.getAllByTestId('new-variable-name');
+  const nameField = nameFields[index];
 
-  await user.click(nameField!);
-  await user.type(nameField!, value);
+  if (!nameField) {
+    throw new Error(`No name field found at index ${index}`);
+  }
+
+  await user.click(nameField);
+  await user.type(nameField, value);
   await user.tab();
 };
 
 const editValueFromTextfieldAndBlur = async (
   user: UserEvent,
   value: string,
+  index: number = 0,
 ) => {
-  const [valueField] = screen.getAllByTestId('new-variable-value');
+  const valueFields = screen.getAllByTestId('new-variable-value');
+  const valueField = valueFields[index];
 
-  await user.click(valueField!);
-  await user.type(valueField!, value);
+  if (!valueField) {
+    throw new Error(`No value field found at index ${index}`);
+  }
+
+  await user.click(valueField);
+  await user.type(valueField, value);
   await user.tab();
 };
 
@@ -59,7 +78,6 @@ const getWrapper = (
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
-        variablesStore.reset();
         flowNodeSelectionStore.reset();
         flowNodeMetaDataStore.reset();
         modificationsStore.reset();
@@ -115,6 +133,12 @@ describe('New Variable Modifications', () => {
       items: statisticsData,
     });
     mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
@@ -203,6 +227,18 @@ describe('New Variable Modifications', () => {
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchVariables().withSuccess([createVariable()]);
     mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -233,6 +269,17 @@ describe('New Variable Modifications', () => {
         payload: {
           flowNodeName: 'someProcessName',
           id: expect.any(String),
+          name: 'testVariableName',
+          newValue: '123',
+          operation: 'ADD_VARIABLE',
+          scopeId: 'instance_id',
+        },
+        type: 'variable',
+      },
+      {
+        payload: {
+          flowNodeName: 'someProcessName',
+          id: expect.any(String),
           name: 'test2',
           newValue: '123',
           operation: 'ADD_VARIABLE',
@@ -249,6 +296,17 @@ describe('New Variable Modifications', () => {
       await screen.findByText(/Name should be unique/i),
     ).toBeInTheDocument();
     expect(modificationsStore.state.modifications).toEqual([
+      {
+        payload: {
+          flowNodeName: 'someProcessName',
+          id: expect.any(String),
+          name: 'testVariableName',
+          newValue: '123',
+          operation: 'ADD_VARIABLE',
+          scopeId: 'instance_id',
+        },
+        type: 'variable',
+      },
       {
         payload: {
           flowNodeName: 'someProcessName',
@@ -564,6 +622,12 @@ describe('New Variable Modifications', () => {
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -586,26 +650,8 @@ describe('New Variable Modifications', () => {
     await user.click(screen.getByRole('button', {name: /add variable/i}));
     expect(await screen.findAllByTestId('new-variable-name')).toHaveLength(2);
 
-    await editNameFromTextfieldAndBlur(user, 'test2');
-    await editValueFromTextfieldAndBlur(user, '456');
-
-    expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
-
-    mockFetchVariables().withSuccess([]);
-
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-
-    act(() => {
-      selectFlowNode(
-        {},
-        {
-          flowNodeId: 'someProcessName',
-          flowNodeInstanceId: 'test',
-        },
-      );
-    });
-
-    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
+    await editNameFromTextfieldAndBlur(user, 'test2', 1);
+    await editValueFromTextfieldAndBlur(user, '456', 1);
 
     mockFetchVariables().withSuccess([]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
@@ -620,9 +666,7 @@ describe('New Variable Modifications', () => {
       );
     });
 
-    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
-
-    const [, deleteFirstAddedVariable] = screen.getAllByRole('button', {
+    const [deleteFirstAddedVariable] = screen.getAllByRole('button', {
       name: /delete variable/i,
     });
     await user.click(deleteFirstAddedVariable!);
@@ -691,21 +735,12 @@ describe('New Variable Modifications', () => {
     expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
 
     mockFetchVariables().withSuccess([]);
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-
-    act(() => {
-      selectFlowNode(
-        {},
-        {
-          flowNodeId: 'someProcessName',
-          flowNodeInstanceId: 'test',
-        },
-      );
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
     });
-
-    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
-
-    mockFetchVariables().withSuccess([]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     act(() => {
@@ -716,8 +751,6 @@ describe('New Variable Modifications', () => {
         },
       );
     });
-
-    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
 
     expect(await screen.findByDisplayValue('test1')).toBeInTheDocument();
     expect(screen.getByDisplayValue('123')).toBeInTheDocument();

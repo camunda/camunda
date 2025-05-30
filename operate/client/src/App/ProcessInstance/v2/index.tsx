@@ -14,7 +14,6 @@ import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
 import {useEffect, useRef, useState} from 'react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {reaction, when} from 'mobx';
-import {variablesStore} from 'modules/stores/variables';
 import {incidentsStore} from 'modules/stores/incidents';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
@@ -43,7 +42,6 @@ import {
   init as initFlowNodeInstance,
   startPolling as startPollingFlowNodeInstance,
 } from 'modules/utils/flowNodeInstance';
-import {startPolling as startPollingVariables} from 'modules/utils/variables';
 import {init as initFlowNodeSelection} from 'modules/utils/flowNodeSelection';
 import {type ProcessInstance as ProcessInstanceT} from '@vzeta/camunda-api-zod-schemas';
 import {
@@ -55,7 +53,6 @@ import {useNavigate} from 'react-router-dom';
 import {Locations} from 'modules/Routes';
 
 const startPolling = (processInstance?: ProcessInstanceT) => {
-  startPollingVariables(processInstance, {runImmediately: true});
   startPollingIncidents(processInstance, {
     runImmediately: true,
   });
@@ -63,7 +60,6 @@ const startPolling = (processInstance?: ProcessInstanceT) => {
 };
 
 const stopPolling = () => {
-  variablesStore.stopPolling();
   incidentsStore.stopPolling();
   flowNodeInstanceStore.stopPolling();
 };

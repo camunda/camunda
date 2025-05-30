@@ -11,10 +11,10 @@ import {Field, useForm, useFormState} from 'react-final-form';
 import {Layer} from './styled';
 import {
   validateNameCharacters,
-  validateNameComplete,
-  validateNameNotDuplicate,
   validateValueValid,
   validateValueComplete,
+  validateNameComplete,
+  validateNameNotDuplicate,
 } from '../validators';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
@@ -24,11 +24,16 @@ import {IconTextInputField} from 'modules/components/IconTextInputField';
 import {Popup} from '@carbon/react/icons';
 import {Operations} from '../Operations';
 import {EditButtons} from '../EditButtons';
+import {useVariablesContext} from '../../VariablePanel/v2/VariablesContext';
 
 const NewVariable: React.FC = () => {
   const formState = useFormState();
   const form = useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const {variablesData} = useVariablesContext();
+  const allVariables =
+    variablesData?.pages.flatMap((page) => (page.items ? page.items : [])) ??
+    [];
 
   return (
     <>
@@ -37,8 +42,8 @@ const NewVariable: React.FC = () => {
           name="name"
           validate={mergeValidators(
             validateNameCharacters,
-            validateNameComplete,
-            validateNameNotDuplicate,
+            validateNameComplete(allVariables),
+            validateNameNotDuplicate(allVariables),
           )}
           allowNull={false}
           parse={(value) => value}

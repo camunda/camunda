@@ -10,7 +10,6 @@ import isNil from 'lodash/isNil';
 import {formatDate} from 'modules/utils/date';
 import {Operations} from 'modules/components/Operations/v2';
 import {getProcessDefinitionName} from 'modules/utils/instance';
-import {variablesStore} from 'modules/stores/variables';
 import {Link} from 'modules/components/Link';
 import {Locations, Paths} from 'modules/Routes';
 import {Restricted} from 'modules/components/Restricted';
@@ -325,11 +324,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
                   });
                 }
               }}
-              forceSpinner={
-                variablesStore.hasActiveOperation ||
-                hasActiveOperation ||
-                cancellation.isPending
-              }
+              forceSpinner={hasActiveOperation || cancellation.isPending}
               isInstanceModificationVisible={
                 !modificationsStore.isModificationModeEnabled
               }

@@ -21,12 +21,13 @@ import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {VariablesTable} from './VariablesTable';
 import {Footer} from '../Footer';
 import {Skeleton} from '../Skeleton';
-import {useDisplayStatus} from 'modules/hooks/variables';
 import {useNewScopeIdForFlowNode} from 'modules/hooks/modifications';
 import {usePermissions} from 'modules/queries/permissions/usePermissions';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
+import {getScopeId} from 'modules/utils/variables';
+import {useVariablesContext} from '../../VariablePanel/v2/VariablesContext';
 
 type Props = {
   isVariableModificationAllowed?: boolean;
@@ -36,7 +37,7 @@ type FooterVariant = React.ComponentProps<typeof Footer>['variant'];
 
 const Variables: React.FC<Props> = observer(
   ({isVariableModificationAllowed = false}) => {
-    const displayStatus = useDisplayStatus();
+    const {status: displayStatus} = useVariablesContext();
     const newScopeIdForFlowNode = useNewScopeIdForFlowNode(
       flowNodeSelectionStore.state.selection?.flowNodeId,
     );
@@ -44,12 +45,12 @@ const Variables: React.FC<Props> = observer(
     const {data: permissions} = usePermissions();
     const isRootNodeSelected = useIsRootNodeSelected();
     const {
-      state: {pendingItem, loadingItemId, status},
+      state: {pendingItem},
     } = variablesStore;
     const [footerVariant, setFooterVariant] =
       useState<FooterVariant>('initial');
 
-    const scopeId = variablesStore.scopeId ?? newScopeIdForFlowNode;
+    const scopeId = getScopeId() ?? newScopeIdForFlowNode;
 
     const {isModificationModeEnabled} = modificationsStore;
 
@@ -97,12 +98,7 @@ const Variables: React.FC<Props> = observer(
         return;
       }
 
-      if (
-        status === 'first-fetch' ||
-        !isViewMode ||
-        (!isRootNodeSelected && !isSelectedInstanceRunning) ||
-        loadingItemId !== null
-      ) {
+      if (!isViewMode || (!isRootNodeSelected && !isSelectedInstanceRunning)) {
         setFooterVariant('disabled');
         return;
       }
@@ -112,9 +108,7 @@ const Variables: React.FC<Props> = observer(
       isProcessInstanceRunning,
       pendingItem,
       initialValues,
-      status,
       isViewMode,
-      loadingItemId,
       isRootNodeSelected,
     ]);
 

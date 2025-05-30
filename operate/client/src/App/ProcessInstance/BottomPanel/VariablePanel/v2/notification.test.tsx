@@ -20,10 +20,9 @@ import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
-  createBatchOperation,
   createInstance,
-  createOperation,
   createVariable,
+  createVariableV2,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -31,8 +30,6 @@ import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariab
 import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
-import {mockGetOperation} from 'modules/mocks/api/getOperation';
-import * as operationApi from 'modules/api/getOperation';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -47,6 +44,7 @@ import {init} from 'modules/utils/flowNodeMetadata';
 import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -139,6 +137,13 @@ describe('VariablePanel', () => {
 
     mockFetchVariables().withSuccess([createVariable()]);
     mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
@@ -329,7 +334,6 @@ describe('VariablePanel', () => {
   });
 
   it('should display error notification if add variable operation fails', async () => {
-    const getOperationSpy = vi.spyOn(operationApi, 'getOperation');
     vi.useFakeTimers({shouldAdvanceTime: true});
 
     const {user} = render(
@@ -382,11 +386,7 @@ describe('VariablePanel', () => {
     );
 
     mockFetchVariables().withSuccess([createVariable()]);
-    mockApplyOperation().withSuccess(
-      createBatchOperation({id: 'batch-operation-id'}),
-    );
-
-    mockGetOperation().withSuccess([createOperation({state: 'FAILED'})]);
+    mockApplyOperation().withNetworkError();
 
     await user.click(
       screen.getByRole('button', {
@@ -415,8 +415,6 @@ describe('VariablePanel', () => {
       kind: 'error',
       title: 'Variable could not be saved',
     });
-
-    expect(getOperationSpy).toHaveBeenCalledWith('batch-operation-id');
 
     vi.clearAllTimers();
     vi.useRealTimers();

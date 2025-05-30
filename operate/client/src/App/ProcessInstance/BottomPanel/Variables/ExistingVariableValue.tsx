@@ -24,6 +24,7 @@ import {type BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import {getScopeId} from 'modules/utils/variables';
 
 type Props = {
   id?: string;
@@ -111,7 +112,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
     const isValid = !validating && valid;
 
     const lastEditModification = modificationsStore.getLastVariableModification(
-      variablesStore.scopeId,
+      getScopeId(),
       variableName,
       'EDIT_VARIABLE',
     );
@@ -164,7 +165,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
               }}
               onBlur={(event) => {
                 createModification({
-                  scopeId: variablesStore.scopeId,
+                  scopeId: getScopeId(),
                   name: variableName,
                   oldValue: variableValue,
                   newValue: input.value ?? '',
@@ -199,7 +200,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
               });
 
               createModification({
-                scopeId: variablesStore.scopeId,
+                scopeId: getScopeId(),
                 name: variableName,
                 oldValue: variableValue,
                 newValue: value ?? '',

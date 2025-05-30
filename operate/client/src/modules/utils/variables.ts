@@ -6,91 +6,142 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
-import {autorun, reaction, when} from 'mobx';
-import {MAX_VARIABLES_PER_REQUEST} from 'modules/constants/variables';
-import {modificationsStore} from 'modules/stores/modifications';
 import {variablesStore} from 'modules/stores/variables';
-import {isInstanceRunning, isRunning} from './instance';
+import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
+import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
+import {applyOperation} from 'modules/api/processInstances/operations';
+import type {InfiniteData} from '@tanstack/react-query';
+import type {QueryVariablesResponseBody} from '@vzeta/camunda-api-zod-schemas';
 
-const init = (processInstance?: ProcessInstance) => {
-  variablesStore.instanceId = processInstance?.processInstanceKey || null;
+const getScopeId = () => {
+  const {selection} = flowNodeSelectionStore.state;
+  const {metaData} = flowNodeMetaDataStore.state;
 
-  variablesStore.variablesWithActiveOperationsDisposer = when(
-    () => processInstance?.state === 'TERMINATED',
-    variablesStore.removeVariablesWithActiveOperations,
-  );
+  return selection?.flowNodeInstanceId ?? metaData?.flowNodeInstanceId ?? null;
+};
 
-  variablesStore.disposer = autorun(() => {
-    if (
-      processInstance &&
-      isRunning(processInstance) &&
-      variablesStore.scopeId !== null
-    ) {
-      if (
-        variablesStore.intervalId === null &&
-        !modificationsStore.isModificationModeEnabled
-      ) {
-        startPolling(processInstance);
-      }
-    } else {
-      variablesStore.stopPolling();
-    }
+const addVariable = async ({
+  id,
+  name,
+  value,
+  invalidateQueries,
+  onSuccess,
+  onError,
+}: {
+  id: string;
+  name: string;
+  value: string;
+  invalidateQueries: () => void;
+  onSuccess: () => void;
+  onError: (statusCode: number) => void;
+}) => {
+  variablesStore.setPendingItem({
+    name,
+    value,
+    hasActiveOperation: true,
+    isFirst: false,
+    sortValues: null,
+    isPreview: false,
   });
 
-  variablesStore.fetchVariablesDisposer = reaction(
-    () => variablesStore.scopeId,
-    (scopeId) => {
-      variablesStore.clearItems();
+  const response = await applyOperation(id, {
+    operationType: 'ADD_VARIABLE',
+    variableScopeId: getScopeId() || undefined,
+    variableName: name,
+    variableValue: value,
+  });
+  variablesStore.setPendingItem(null);
+  setTimeout(() => invalidateQueries(), 5000);
 
-      if (scopeId !== null) {
-        variablesStore.setPendingItem(null);
-        variablesStore.fetchAbortController?.abort();
-
-        variablesStore.fetchVariables({
-          fetchType: 'initial',
-          // @ts-expect-error - typing was wrong before the migration
-          instanceId: processInstance?.processInstanceKey,
-          payload: {
-            pageSize: MAX_VARIABLES_PER_REQUEST,
-            scopeId: scopeId ?? processInstance?.processInstanceKey,
-          },
-        });
-      }
-    },
-    {fireImmediately: true},
-  );
-
-  variablesStore.deleteFullVariablesDisposer = reaction(
-    () => modificationsStore.isModificationModeEnabled,
-    (isModification, prevIsModification) => {
-      if (!isModification && prevIsModification) {
-        variablesStore.clearFullVariableValues();
-      }
-    },
-  );
-};
-
-const startPolling = async (
-  processInstance?: ProcessInstance,
-  options: {runImmediately?: boolean} = {runImmediately: false},
-) => {
-  if (
-    document.visibilityState === 'hidden' ||
-    (processInstance && !isInstanceRunning(processInstance))
-  ) {
-    return;
-  }
-
-  if (options.runImmediately && processInstance) {
-    variablesStore.handlePolling(processInstance.processInstanceKey);
-  }
-
-  variablesStore.intervalId = setInterval(() => {
-    if (!variablesStore.isPollRequestRunning && processInstance) {
-      variablesStore.handlePolling(processInstance.processInstanceKey);
+  if (response.isSuccess) {
+    onSuccess();
+    return 'SUCCESSFUL';
+  } else {
+    if (response.statusCode === 400) {
+      return 'VALIDATION_ERROR';
     }
-  }, 5000);
+
+    onError(response.statusCode);
+    return 'FAILED';
+  }
 };
 
-export {init, startPolling};
+const updateVariable = async ({
+  id,
+  name,
+  value,
+  invalidateQueries,
+  onError,
+}: {
+  id: string;
+  name: string;
+  value: string;
+  invalidateQueries: () => void;
+  onError: (statusCode: number) => void;
+}) => {
+  const response = await applyOperation(id, {
+    operationType: 'UPDATE_VARIABLE',
+    variableScopeId: getScopeId() || undefined,
+    variableName: name,
+    variableValue: value,
+  });
+
+  invalidateQueries();
+
+  if (!response.isSuccess) {
+    onError(response.statusCode);
+  }
+};
+
+/**
+ * Returns true if any of the variable values is truncated
+ */
+const isTruncated = (variables?: InfiniteData<QueryVariablesResponseBody>) => {
+  return variables?.pages[0]?.items.some((item) => {
+    return item.isTruncated;
+  });
+};
+
+/**
+ * Returns true if the list of variables is paginated (50 variables or more)
+ */
+const isPaginated = (variables?: InfiniteData<QueryVariablesResponseBody>) => {
+  return (variables?.pages && variables.pages.length >= 2) || false;
+};
+
+const hasItems = (variables?: InfiniteData<QueryVariablesResponseBody>) => {
+  return variables?.pages[0]?.items && variables.pages[0]?.items.length > 0;
+};
+
+const variablesAsJSON = (
+  variables?: InfiniteData<QueryVariablesResponseBody>,
+) => {
+  if (isPaginated(variables) || isTruncated(variables)) {
+    return '{}';
+  }
+
+  try {
+    const variableMap =
+      variables?.pages?.flatMap((page) =>
+        page.items.map((variable) => [
+          variable.name,
+          JSON.parse(variable.value),
+        ]),
+      ) ?? [];
+
+    return JSON.stringify(Object.fromEntries(variableMap));
+  } catch {
+    console.error('Error: Variable can not be stringified');
+    return '{}';
+  }
+};
+
+export {
+  getScopeId,
+  addVariable,
+  updateVariable,
+  isTruncated,
+  isPaginated,
+  hasItems,
+  variablesAsJSON,
+};

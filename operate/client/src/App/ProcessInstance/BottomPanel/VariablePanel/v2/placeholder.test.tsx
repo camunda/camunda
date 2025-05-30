@@ -7,15 +7,15 @@
  */
 
 import {VariablePanel} from './index';
-import {render, screen, waitFor} from 'modules/testing-library';
+import {render, screen} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   createInstance,
   createVariable,
+  createVariableV2,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -35,6 +35,7 @@ import {init} from 'modules/utils/flowNodeMetadata';
 import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -50,7 +51,6 @@ const getWrapper = (
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
-        variablesStore.reset();
         flowNodeSelectionStore.reset();
         flowNodeMetaDataStore.reset();
         modificationsStore.reset();
@@ -123,6 +123,19 @@ describe('VariablePanel', () => {
 
     mockFetchVariables().withSuccess([createVariable()]);
     mockFetchVariables().withSuccess([createVariable()]);
+    mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
@@ -157,10 +170,8 @@ describe('VariablePanel', () => {
         wrapper: getWrapper(),
       });
 
-      await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
-
       expect(
-        screen.getByRole('button', {name: /add variable/i}),
+        await screen.findByRole('button', {name: /add variable/i}),
       ).toBeInTheDocument();
       mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
@@ -192,18 +203,18 @@ describe('VariablePanel', () => {
         wrapper: getWrapper(),
       });
 
-      await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
       expect(
-        screen.getByRole('button', {name: /add variable/i}),
+        await screen.findByRole('button', {name: /add variable/i}),
       ).toBeInTheDocument();
 
       mockFetchVariables().withServerError();
+      mockSearchVariables().withServerError();
+      mockSearchVariables().withServerError();
 
       act(() => {
-        variablesStore.fetchVariables({
-          fetchType: 'initial',
-          instanceId: 'invalid_instance',
-          payload: {pageSize: 10, scopeId: '1'},
+        flowNodeSelectionStore.setSelection({
+          flowNodeId: 'TEST_FLOW_NODE',
+          flowNodeInstanceId: '2',
         });
       });
 
@@ -227,18 +238,17 @@ describe('VariablePanel', () => {
         wrapper: getWrapper(),
       });
 
-      await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
       expect(
-        screen.getByRole('button', {name: /add variable/i}),
+        await screen.findByRole('button', {name: /add variable/i}),
       ).toBeInTheDocument();
 
       mockFetchVariables().withNetworkError();
+      mockSearchVariables().withNetworkError();
 
       act(() => {
-        variablesStore.fetchVariables({
-          fetchType: 'initial',
-          instanceId: 'invalid_instance',
-          payload: {pageSize: 10, scopeId: '1'},
+        flowNodeSelectionStore.setSelection({
+          flowNodeId: 'TEST_FLOW_NODE',
+          flowNodeInstanceId: '2',
         });
       });
 

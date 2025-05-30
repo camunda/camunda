@@ -8,25 +8,27 @@
 
 import {validateValueComplete, validateValueValid} from '../validators';
 import {Field, useField, useForm, useFormState} from 'react-final-form';
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {tracking} from 'modules/tracking';
 import {observer} from 'mobx-react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {createVariableFieldName} from '../createVariableFieldName';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
-import {variablesStore} from 'modules/stores/variables';
 import {Popup} from '@carbon/react/icons';
 import {LoadingTextfield} from '../LoadingTextField';
 import {Layer} from '@carbon/react';
 import {useSelectedFlowNodeName} from 'modules/hooks/flowNodeSelection';
+import {getScopeId} from 'modules/utils/variables';
+import type {Variable} from '@vzeta/camunda-api-zod-schemas';
+import {useVariable} from 'modules/queries/variables/useVariable';
+import {notificationsStore} from 'modules/stores/notifications';
 
 type Props = {
   id?: string;
   variableName: string;
   variableValue: string;
-  pauseValidation?: boolean;
-  onFocus?: () => void;
+  isPreview?: boolean;
 };
 
 const createModification = ({
@@ -83,13 +85,27 @@ const createModification = ({
 };
 
 const ExistingVariableValue: React.FC<Props> = observer(
-  ({id, variableName, variableValue, pauseValidation = false, onFocus}) => {
+  ({id, variableName, variableValue, isPreview}) => {
     const {isModificationModeEnabled} = modificationsStore;
-    const {loadingItemId} = variablesStore.state;
     const formState = useFormState();
     const selectedFlowNodeName = useSelectedFlowNodeName() || '';
     const [isModalVisible, setIsModalVisible] = useState(false);
     const form = useForm();
+    const {
+      data: variable,
+      isLoading,
+      error,
+    } = useVariable({isPreview, variableKey: id});
+
+    useEffect(() => {
+      if (error) {
+        notificationsStore.displayNotification({
+          kind: 'error',
+          title: 'Variable could not be fetched',
+          isDismissable: true,
+        });
+      }
+    }, [error]);
 
     const fieldName = isModificationModeEnabled
       ? createVariableFieldName(variableName)
@@ -101,22 +117,17 @@ const ExistingVariableValue: React.FC<Props> = observer(
 
     const isValid = !validating && valid;
 
-    const lastEditModification = modificationsStore.getLastVariableModification(
-      variablesStore.scopeId,
-      variableName,
-      'EDIT_VARIABLE',
-    );
+    const getInitialValue = (variable?: Variable) =>
+      variable?.value ?? variableValue;
 
-    const initialValue =
-      lastEditModification !== undefined
-        ? lastEditModification?.newValue
-        : variableValue;
+    const isVariableValueUndefined = variable?.value === undefined;
+    const pauseValidation = isPreview && isVariableValueUndefined;
 
     return (
       <Layer>
         <Field
           name={fieldName}
-          initialValue={initialValue}
+          initialValue={getInitialValue(variable)}
           validate={
             pauseValidation
               ? () => undefined
@@ -137,7 +148,6 @@ const ExistingVariableValue: React.FC<Props> = observer(
               buttonLabel="Open JSON editor modal"
               tooltipPosition="left"
               onIconClick={() => {
-                onFocus?.();
                 setIsModalVisible(true);
                 tracking.track({
                   eventName: 'json-editor-opened',
@@ -146,20 +156,19 @@ const ExistingVariableValue: React.FC<Props> = observer(
               }}
               Icon={Popup}
               autoFocus={!isModificationModeEnabled || meta.active}
-              isLoading={loadingItemId === id}
+              isLoading={isLoading}
               onFocus={(event) => {
                 if (!meta.active) {
-                  onFocus?.();
                   input.onFocus(event);
                 }
               }}
               onBlur={(event) => {
                 createModification({
-                  scopeId: variablesStore.scopeId,
+                  scopeId: getScopeId(),
                   name: variableName,
-                  oldValue: variableValue,
+                  oldValue: getInitialValue(variable),
                   newValue: input.value ?? '',
-                  isDirty: variableValue !== input.value,
+                  isDirty: getInitialValue(variable) !== input.value,
                   isValid: isValid ?? false,
                   selectedFlowNodeName,
                 });
@@ -190,11 +199,11 @@ const ExistingVariableValue: React.FC<Props> = observer(
               });
 
               createModification({
-                scopeId: variablesStore.scopeId,
+                scopeId: getScopeId(),
                 name: variableName,
-                oldValue: variableValue,
+                oldValue: getInitialValue(variable),
                 newValue: value ?? '',
-                isDirty: initialValue !== value,
+                isDirty: getInitialValue(variable) !== value,
                 isValid: isValid ?? false,
                 selectedFlowNodeName,
               });
