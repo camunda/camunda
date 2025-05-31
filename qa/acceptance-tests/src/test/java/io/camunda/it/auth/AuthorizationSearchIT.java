@@ -17,10 +17,12 @@ import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_DEF
 import static io.camunda.client.api.search.enums.ResourceType.AUTHORIZATION;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.CreateAuthorizationResponse;
 import io.camunda.client.api.response.DeleteAuthorizationResponse;
 import io.camunda.client.api.search.enums.OwnerType;
@@ -78,6 +80,46 @@ class AuthorizationSearchIT {
       new TestUser(RESTRICTED, DEFAULT_PASSWORD, List.of());
 
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
+
+  @Test
+  void getAuthorizationByAuthorizationKeyShouldReturnAuthorizationIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    // given
+    final var resourceId = "test-resource-" + UUID.randomUUID();
+
+    final CreateAuthorizationResponse response =
+        adminClient
+            .newCreateAuthorizationCommand()
+            .ownerId(ADMIN)
+            .ownerType(USER)
+            .resourceId(resourceId)
+            .resourceType(PROCESS_DEFINITION)
+            .permissionTypes(CREATE_PROCESS_INSTANCE)
+            .send()
+            .join();
+
+    Awaitility.await()
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final var authorization =
+                  adminClient
+                      .newAuthorizationGetRequest(response.getAuthorizationKey())
+                      .send()
+                      .join();
+
+              assertThat(authorization.getAuthorizationKey())
+                  .isEqualTo(String.valueOf(response.getAuthorizationKey()));
+            });
+  }
+
+  @Test
+  void getAuthorizationByAuthorizationKeyShouldReturnNotFoundIfAuthorized(
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
+    assertThatThrownBy(() -> camundaClient.newAuthorizationGetRequest(100L).send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("404: 'Not Found'");
+  }
 
   @Test
   void searchShouldReturnAuthorizations(@Authenticated(ADMIN) final CamundaClient adminClient)
