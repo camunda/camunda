@@ -62,7 +62,7 @@ class AssignUserToGroupTest {
   @Test
   void shouldAssignUserToGroup() {
     // when
-    client.newAssignUserToGroupCommand(groupId).username(username).send().join();
+    client.newAssignUserToGroupCommand().username(username).groupId(groupId).send().join();
 
     // then
     ZeebeAssertHelper.assertEntityAssignedToGroup(
@@ -82,8 +82,9 @@ class AssignUserToGroupTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignUserToGroupCommand(nonExistentGroupId)
+                    .newAssignUserToGroupCommand()
                     .username(username)
+                    .groupId(nonExistentGroupId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -96,11 +97,17 @@ class AssignUserToGroupTest {
   @Test
   void shouldRejectIfAlreadyAssigned() {
     // given
-    client.newAssignUserToGroupCommand(groupId).username(username).send().join();
+    client.newAssignUserToGroupCommand().username(username).groupId(groupId).send().join();
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToGroupCommand(groupId).username(username).send().join())
+            () ->
+                client
+                    .newAssignUserToGroupCommand()
+                    .username(username)
+                    .groupId(groupId)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'")
         .hasMessageContaining(
@@ -112,7 +119,13 @@ class AssignUserToGroupTest {
   void shouldRejectIfMissingGroupId() {
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToGroupCommand(null).username("username").send().join())
+            () ->
+                client
+                    .newAssignUserToGroupCommand()
+                    .username("username")
+                    .groupId(null)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be null");
   }
@@ -121,7 +134,8 @@ class AssignUserToGroupTest {
   void shouldRejectIfEmptyGroupId() {
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToGroupCommand("").username("username").send().join())
+            () ->
+                client.newAssignUserToGroupCommand().username("username").groupId("").send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be empty");
   }
@@ -130,7 +144,13 @@ class AssignUserToGroupTest {
   void shouldRejectIfMissingUsername() {
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToGroupCommand("groupId").username(null).send().join())
+            () ->
+                client
+                    .newAssignUserToGroupCommand()
+                    .username(null)
+                    .groupId("groupId")
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("username must not be null");
   }
@@ -139,7 +159,8 @@ class AssignUserToGroupTest {
   void shouldRejectIfEmptyUsername() {
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToGroupCommand("groupId").username("").send().join())
+            () ->
+                client.newAssignUserToGroupCommand().username("").groupId("groupId").send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("username must not be empty");
   }

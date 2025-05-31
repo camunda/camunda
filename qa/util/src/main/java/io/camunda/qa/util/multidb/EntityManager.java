@@ -112,8 +112,9 @@ public final class EntityManager {
           final var entityType = membership.entityType();
           if (entityType == EntityType.USER) {
             defaultClient
-                .newAssignUserToGroupCommand(groupId)
+                .newAssignUserToGroupCommand()
                 .username(membership.memberId())
+                .groupId(groupId)
                 .send()
                 .join();
           } else {

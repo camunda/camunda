@@ -17,6 +17,7 @@ package io.camunda.client.impl.command;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.AssignUserToGroupCommandStep1;
+import io.camunda.client.api.command.AssignUserToGroupCommandStep1.AssignUserToGroupCommandStep2;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignUserToGroupResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
@@ -25,22 +26,28 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class AssignUserToGroupCommandImpl implements AssignUserToGroupCommandStep1 {
+public class AssignUserToGroupCommandImpl
+    implements AssignUserToGroupCommandStep1, AssignUserToGroupCommandStep2 {
 
-  private final String groupId;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
   private String username;
+  private String groupId;
 
-  public AssignUserToGroupCommandImpl(final String groupId, final HttpClient httpClient) {
-    this.groupId = groupId;
+  public AssignUserToGroupCommandImpl(final HttpClient httpClient) {
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
   }
 
   @Override
-  public AssignUserToGroupCommandStep1 username(final String username) {
+  public AssignUserToGroupCommandStep2 username(final String username) {
     this.username = username;
+    return this;
+  }
+
+  @Override
+  public AssignUserToGroupCommandStep2 groupId(final String groupId) {
+    this.groupId = groupId;
     return this;
   }
 

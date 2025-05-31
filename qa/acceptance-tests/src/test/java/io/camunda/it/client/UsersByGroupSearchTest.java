@@ -87,7 +87,7 @@ public class UsersByGroupSearchTest {
   }
 
   private static void assignUserToGroup(final String username, final String groupId) {
-    camundaClient.newAssignUserToGroupCommand(groupId).username(username).send().join();
+    camundaClient.newAssignUserToGroupCommand().username(username).groupId(groupId).send().join();
   }
 
   private static void waitForGroupsToBeUpdated() {

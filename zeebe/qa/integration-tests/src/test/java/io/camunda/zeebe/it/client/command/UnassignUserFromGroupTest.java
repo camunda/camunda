@@ -56,7 +56,7 @@ public class UnassignUserFromGroupTest {
             .send()
             .join()
             .getGroupId();
-    client.newAssignUserToGroupCommand(groupId).username(username).send().join();
+    client.newAssignUserToGroupCommand().username(username).groupId(groupId).send().join();
   }
 
   @Test

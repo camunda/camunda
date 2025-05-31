@@ -63,7 +63,13 @@ public class UnassignMemberGroupTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToGroupCommand(GROUP_ID).username(USERNAME).send().join())
+            () ->
+                client
+                    .newAssignUserToGroupCommand()
+                    .username(USERNAME)
+                    .groupId(GROUP_ID)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 403: 'Forbidden'");
   }
@@ -76,7 +82,13 @@ public class UnassignMemberGroupTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToGroupCommand(GROUP_ID).username(USERNAME).send().join())
+            () ->
+                client
+                    .newAssignUserToGroupCommand()
+                    .username(USERNAME)
+                    .groupId(GROUP_ID)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'");
   }
