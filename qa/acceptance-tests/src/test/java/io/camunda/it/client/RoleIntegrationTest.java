@@ -17,7 +17,6 @@ import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
-import io.camunda.client.protocol.rest.RoleResult;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.io.IOException;
@@ -374,6 +373,4 @@ public class RoleIntegrationTest {
       String resourceId,
       List<PermissionType> permissionTypes,
       String authorizationKey) {}
-
-  private record RoleSearchResponse(List<RoleResult> items) {}
 }

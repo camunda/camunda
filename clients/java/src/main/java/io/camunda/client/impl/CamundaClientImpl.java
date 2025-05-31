@@ -59,6 +59,7 @@ import io.camunda.client.api.command.DeleteGroupCommandStep1;
 import io.camunda.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.client.api.command.DeleteRoleCommandStep1;
 import io.camunda.client.api.command.DeleteTenantCommandStep1;
+import io.camunda.client.api.command.DeleteUserCommandStep1;
 import io.camunda.client.api.command.DeployProcessCommandStep1;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.command.EvaluateDecisionCommandStep1;
@@ -174,6 +175,7 @@ import io.camunda.client.impl.command.DeleteGroupCommandImpl;
 import io.camunda.client.impl.command.DeleteResourceCommandImpl;
 import io.camunda.client.impl.command.DeleteRoleCommandImpl;
 import io.camunda.client.impl.command.DeleteTenantCommandImpl;
+import io.camunda.client.impl.command.DeleteUserCommandImpl;
 import io.camunda.client.impl.command.DeployProcessCommandImpl;
 import io.camunda.client.impl.command.DeployResourceCommandImpl;
 import io.camunda.client.impl.command.EvaluateDecisionCommandImpl;
@@ -959,6 +961,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public CreateUserCommandStep1 newUserCreateCommand() {
     return new CreateUserCommandImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public DeleteUserCommandStep1 newDeleteUserCommand(final String username) {
+    return new DeleteUserCommandImpl(httpClient, username);
   }
 
   @Override
