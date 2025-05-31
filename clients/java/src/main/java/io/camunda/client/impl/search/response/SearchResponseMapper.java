@@ -16,6 +16,7 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.search.response.Authorization;
 import io.camunda.client.api.search.response.BatchOperation;
 import io.camunda.client.api.search.response.BatchOperationItems;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
@@ -201,6 +202,16 @@ public final class SearchResponseMapper {
 
   private static RoleUser toRoleUser(final RoleUserResult response) {
     return new RoleUserImpl(response.getUsername());
+  }
+
+  public static Authorization toAuthorizationResponse(final AuthorizationResult response) {
+    return new AuthorizationImpl(
+        response.getAuthorizationKey(),
+        response.getOwnerId(),
+        response.getResourceId(),
+        response.getOwnerType(),
+        response.getResourceType(),
+        response.getPermissionTypes());
   }
 
   public static Group toGroupResponse(final GroupResult response) {
