@@ -8,12 +8,11 @@
 package io.camunda.search.schema;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Maps;
 import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.*;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -152,16 +151,8 @@ public class IndexSchemaValidator {
    */
   private Map<String, IndexMapping> filterIndexMappings(
       final Map<String, IndexMapping> indexMappings, final IndexDescriptor indexDescriptor) {
-    if (indexDescriptor instanceof IndexTemplateDescriptor) {
-      return indexMappings.entrySet().stream()
-          .filter(
-              e -> e.getKey().equals(((IndexTemplateDescriptor) indexDescriptor).getTemplateName()))
-          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-    } else {
-      return indexMappings.entrySet().stream()
-          .filter(e -> e.getKey().matches(indexDescriptor.getAllVersionsIndexNameRegexPattern()))
-          .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-    }
+    return Maps.filterKeys(
+        indexMappings, k -> k.matches(indexDescriptor.getAllVersionsIndexNameRegexPattern()));
   }
 
   private void failIfIndexNotDynamic(
