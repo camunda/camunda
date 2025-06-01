@@ -82,9 +82,9 @@ public class AssignMemberGroupTest extends ClientRestTest {
   }
 
   @Test
-  void shouldAssignMappingToGroup() {
+  void shouldAddMappingToGroup() {
     // when
-    client.newAssignMappingToGroupCommand(GROUP_ID).mappingId(MAPPING_ID).send().join();
+    client.newAddMappingToGroupCommand().mappingId(MAPPING_ID).groupId(GROUP_ID).send().join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
@@ -92,7 +92,7 @@ public class AssignMemberGroupTest extends ClientRestTest {
   }
 
   @Test
-  void shouldRaiseExceptionOnRequestErrorAssignMapping() {
+  void shouldRaiseExceptionOnRequestErrorAddingMapping() {
     // given
     final String path = REST_API_PATH + "/groups/" + GROUP_ID + "/mapping-rules/" + MAPPING_ID;
     gatewayService.errorOnRequest(path, () -> new ProblemDetail().title("Not Found").status(404));
@@ -100,13 +100,18 @@ public class AssignMemberGroupTest extends ClientRestTest {
     // when / then
     assertThatThrownBy(
             () ->
-                client.newAssignMappingToGroupCommand(GROUP_ID).mappingId(MAPPING_ID).send().join())
+                client
+                    .newAddMappingToGroupCommand()
+                    .mappingId(MAPPING_ID)
+                    .groupId(GROUP_ID)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
 
   @Test
-  void shouldRaiseExceptionIfGroupNotExistsAssignMapping() {
+  void shouldRaiseExceptionIfGroupNotExistsAddingMapping() {
     // given
     final String path = REST_API_PATH + "/groups/" + GROUP_ID + "/mapping-rules/" + MAPPING_ID;
     gatewayService.errorOnRequest(path, () -> new ProblemDetail().title("Conflict").status(409));
@@ -114,13 +119,18 @@ public class AssignMemberGroupTest extends ClientRestTest {
     // when / then
     assertThatThrownBy(
             () ->
-                client.newAssignMappingToGroupCommand(GROUP_ID).mappingId(MAPPING_ID).send().join())
+                client
+                    .newAddMappingToGroupCommand()
+                    .mappingId(MAPPING_ID)
+                    .groupId(GROUP_ID)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'");
   }
 
   @Test
-  void shouldHandleValidationErrorResponseAssignMapping() {
+  void shouldHandleValidationErrorResponseAddingMapping() {
     // given
     final String path = REST_API_PATH + "/groups/" + GROUP_ID + "/mapping-rules/" + MAPPING_ID;
     gatewayService.errorOnRequest(path, () -> new ProblemDetail().title("Bad Request").status(400));
@@ -128,8 +138,68 @@ public class AssignMemberGroupTest extends ClientRestTest {
     // when / then
     assertThatThrownBy(
             () ->
-                client.newAssignMappingToGroupCommand(GROUP_ID).mappingId(MAPPING_ID).send().join())
+                client
+                    .newAddMappingToGroupCommand()
+                    .mappingId(MAPPING_ID)
+                    .groupId(GROUP_ID)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnNullMappingIdWhenAddingMappingToGroup() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newAddMappingToGroupCommand()
+                    .mappingId(null)
+                    .groupId(GROUP_ID)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("mappingId must not be null");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnEmptyMappingIdWhenAddingMappingToGroup() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client.newAddMappingToGroupCommand().mappingId("").groupId(GROUP_ID).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("mappingId must not be empty");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnNullGroupIdWhenAddingMappingToGroup() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newAddMappingToGroupCommand()
+                    .mappingId(MAPPING_ID)
+                    .groupId(null)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("groupId must not be null");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnEmptyGroupIdWhenAddingMappingToGroup() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newAddMappingToGroupCommand()
+                    .mappingId(MAPPING_ID)
+                    .groupId("")
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("groupId must not be empty");
   }
 }
