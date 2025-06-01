@@ -54,6 +54,15 @@ public class UsersSearchIntegrationTest {
   }
 
   @Test
+  void shouldGetUserByUsername() {
+    final User user = camundaClient.newUserGetRequest(USERNAME_1).send().join();
+
+    assertThat(user.getUsername()).isEqualTo(USERNAME_1);
+    assertThat(user.getEmail()).isEqualTo(EMAIL_1);
+    assertThat(user.getName()).isEqualTo(NAME_1);
+  }
+
+  @Test
   void searchShouldReturnUsersFilteredByUsername() {
     final SearchResponse<User> usersSearchResponse =
         camundaClient.newUsersSearchRequest().filter(fn -> fn.username(USERNAME_1)).send().join();
