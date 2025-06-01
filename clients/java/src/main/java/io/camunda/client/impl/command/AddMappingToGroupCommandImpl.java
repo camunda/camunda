@@ -16,46 +16,52 @@
 package io.camunda.client.impl.command;
 
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.AssignMappingToGroupStep1;
+import io.camunda.client.api.command.AddMappingToGroupStep1;
+import io.camunda.client.api.command.AddMappingToGroupStep1.AddMappingToGroupStep2;
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.response.AssignMappingToGroupResponse;
+import io.camunda.client.api.response.AddMappingToGroupResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class AssignMappingToGroupCommandImpl implements AssignMappingToGroupStep1 {
+public class AddMappingToGroupCommandImpl
+    implements AddMappingToGroupStep1, AddMappingToGroupStep2 {
 
-  private final String groupId;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
   private String mappingId;
+  private String groupId;
 
-  public AssignMappingToGroupCommandImpl(final HttpClient httpClient, final String groupId) {
-    this.groupId = groupId;
+  public AddMappingToGroupCommandImpl(final HttpClient httpClient) {
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
   }
 
   @Override
-  public AssignMappingToGroupStep1 mappingId(final String mappingId) {
+  public AddMappingToGroupStep2 mappingId(final String mappingId) {
     this.mappingId = mappingId;
     return this;
   }
 
   @Override
-  public FinalCommandStep<AssignMappingToGroupResponse> requestTimeout(
-      final Duration requestTimeout) {
+  public AddMappingToGroupStep2 groupId(final String groupId) {
+    this.groupId = groupId;
+    return this;
+  }
+
+  @Override
+  public FinalCommandStep<AddMappingToGroupResponse> requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public CamundaFuture<AssignMappingToGroupResponse> send() {
+  public CamundaFuture<AddMappingToGroupResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("groupId", groupId);
     ArgumentUtil.ensureNotNullNorEmpty("mappingId", mappingId);
-    final HttpCamundaFuture<AssignMappingToGroupResponse> result = new HttpCamundaFuture<>();
+    final HttpCamundaFuture<AddMappingToGroupResponse> result = new HttpCamundaFuture<>();
     httpClient.put(
         "/groups/" + groupId + "/mapping-rules/" + mappingId,
         null,
