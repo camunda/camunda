@@ -29,6 +29,7 @@ public final class EngineConfiguration {
   public static final boolean DEFAULT_ENABLE_AUTHORIZATION_CHECKS = false;
 
   public static final int DEFAULT_MAX_PROCESS_DEPTH = 1000;
+  public static final Duration DEFAULT_USAGE_METRICS_EXPORT_INTERVAL = Duration.ofMinutes(5);
 
   public static final Duration DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL = Duration.ofSeconds(1);
   // key has 8 bytes, stay below 4MB
@@ -61,6 +62,8 @@ public final class EngineConfiguration {
   private int batchOperationDbChunkSize = DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE;
   private int batchOperationQueryPageSize = DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE;
   private int batchOperationQueryInClauseSize = DEFAULT_BATCH_OPERATION_QUERY_IN_CLAUSE_SIZE;
+
+  private Duration usageMetricsExportInterval = DEFAULT_USAGE_METRICS_EXPORT_INTERVAL;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -209,6 +212,16 @@ public final class EngineConfiguration {
   public EngineConfiguration setBatchOperationQueryInClauseSize(
       final int batchOperationQueryInClauseSize) {
     this.batchOperationQueryInClauseSize = batchOperationQueryInClauseSize;
+    return this;
+  }
+
+  public Duration getUsageMetricsExportInterval() {
+    return usageMetricsExportInterval;
+  }
+
+  public EngineConfiguration setUsageMetricsExportInterval(
+      final Duration usageMetricsExportInterval) {
+    this.usageMetricsExportInterval = usageMetricsExportInterval;
     return this;
   }
 }

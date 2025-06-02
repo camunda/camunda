@@ -7,10 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-import java.util.List;
-import java.util.Map;
+import io.camunda.zeebe.engine.state.metrics.UsageMetricStateValue;
 
 public interface UsageMetricState {
 
-  Map<String, List<Long>> getTenantIdPIsMapByEventTime(final long key);
+  UsageMetricStateValue getRollingBucket();
 }
