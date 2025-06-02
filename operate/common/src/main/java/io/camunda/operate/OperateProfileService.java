@@ -50,7 +50,7 @@ public class OperateProfileService {
 
   public boolean isConsolidatedAuthOidc() {
     final var consolidatedAuthVariation =
-        AuthenticationMethod.parse(String.valueOf(environment.getProperty(METHOD)));
+        AuthenticationMethod.parse(environment.getProperty(METHOD));
 
     return consolidatedAuthVariation.isPresent()
         && AuthenticationMethod.OIDC.equals(consolidatedAuthVariation.get());
