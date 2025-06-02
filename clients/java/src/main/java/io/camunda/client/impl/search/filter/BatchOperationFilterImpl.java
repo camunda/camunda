@@ -17,12 +17,14 @@ package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
+import io.camunda.client.api.search.filter.builder.BatchOperationStateProperty;
+import io.camunda.client.api.search.filter.builder.BatchOperationTypeProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
+import io.camunda.client.impl.search.filter.builder.BatchOperationStatePropertyImpl;
+import io.camunda.client.impl.search.filter.builder.BatchOperationTypePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.BatchOperationFilter;
-import io.camunda.client.protocol.rest.BatchOperationFilter.StateEnum;
-import io.camunda.client.protocol.rest.BatchOperationTypeEnum;
 import java.util.function.Consumer;
 
 public class BatchOperationFilterImpl
@@ -53,13 +55,21 @@ public class BatchOperationFilterImpl
 
   @Override
   public io.camunda.client.api.search.filter.BatchOperationFilter operationType(
-      final BatchOperationType operationType) {
-    if (operationType == null) {
+      final BatchOperationType batchOperationType) {
+    if (batchOperationType == null) {
       filter.setOperationType(null);
       return this;
     }
 
-    filter.setOperationType(BatchOperationTypeEnum.valueOf(operationType.name()));
+    return operationType(b -> b.eq(batchOperationType));
+  }
+
+  @Override
+  public io.camunda.client.api.search.filter.BatchOperationFilter operationType(
+      Consumer<BatchOperationTypeProperty> fn) {
+    final BatchOperationTypeProperty property = new BatchOperationTypePropertyImpl();
+    fn.accept(property);
+    filter.operationType(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -71,7 +81,15 @@ public class BatchOperationFilterImpl
       return this;
     }
 
-    filter.setState(StateEnum.valueOf(state.name()));
+    return state(b -> b.eq(state));
+  }
+
+  @Override
+  public io.camunda.client.api.search.filter.BatchOperationFilter state(
+      Consumer<BatchOperationStateProperty> fn) {
+    final BatchOperationStateProperty property = new BatchOperationStatePropertyImpl();
+    fn.accept(property);
+    filter.setState(provideSearchRequestProperty(property));
     return this;
   }
 
