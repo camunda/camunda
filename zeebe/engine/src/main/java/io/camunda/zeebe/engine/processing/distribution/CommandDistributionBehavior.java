@@ -194,9 +194,9 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
       final CommandDistributionRecord distributionRecord,
       final long distributionKey) {
     final var distributionQueue = Optional.ofNullable(distributionRecord.getQueueId());
-    distributionQueue.ifPresentOrElse(
-        queue -> enqueueDistribution(queue, partition, distributionKey),
-        () -> getMetrics().addPendingDistribution(partition));
+    distributionQueue.ifPresent(queue -> enqueueDistribution(queue, partition, distributionKey));
+
+    getMetrics().addPendingDistribution(partition);
 
     if (routingInfo.isPartitionScaling(partition)) {
       // If the partition is currently being scaled up, we don't want to distribute the command yet.
@@ -224,8 +224,6 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
         distributionKey,
         CommandDistributionIntent.ENQUEUED,
         commandDistributionEnqueued.setQueueId(queue).setPartitionId(partition));
-
-    getMetrics().addPendingDistribution(partition);
   }
 
   /**

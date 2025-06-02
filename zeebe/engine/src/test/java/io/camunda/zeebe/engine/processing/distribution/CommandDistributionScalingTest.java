@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
@@ -112,7 +112,7 @@ public class CommandDistributionScalingTest {
     // then command is sent immediately to partition 2
     verify(mockInterpartitionCommandSender)
         .sendCommand(eq(2), eq(valueType), eq(intent), eq(key), any());
-    verify(mockInterpartitionCommandSender, times(0))
+    verify(mockInterpartitionCommandSender, never())
         .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any());
     verifyNoMoreInteractions(mockInterpartitionCommandSender);
     assertThat(distributionState.hasPendingDistribution(key, 3)).isTrue();
@@ -151,12 +151,12 @@ public class CommandDistributionScalingTest {
     // then command is sent immediately to partition 2 for the first record
     verify(mockInterpartitionCommandSender)
         .sendCommand(eq(2), eq(valueType), eq(intent), eq(key), any());
-    verify(mockInterpartitionCommandSender, times(0))
+    verify(mockInterpartitionCommandSender, never())
         .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any());
     // the second command is enqueued for partitions 2 and 3
-    verify(mockInterpartitionCommandSender, times(0))
+    verify(mockInterpartitionCommandSender, never())
         .sendCommand(eq(2), eq(valueType), eq(intent), eq(otherKey), any());
-    verify(mockInterpartitionCommandSender, times(0))
+    verify(mockInterpartitionCommandSender, never())
         .sendCommand(eq(3), eq(valueType), eq(intent), eq(otherKey), any());
     verifyNoMoreInteractions(mockInterpartitionCommandSender);
 
@@ -197,12 +197,12 @@ public class CommandDistributionScalingTest {
     fakeProcessingResultBuilder.flushPostCommitTasks();
     verify(mockInterpartitionCommandSender)
         .sendCommand(eq(2), eq(valueType), eq(intent), eq(key), any());
-    verify(mockInterpartitionCommandSender, times(0))
+    verify(mockInterpartitionCommandSender, never())
         .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any());
 
-    verify(mockInterpartitionCommandSender, times(0))
+    verify(mockInterpartitionCommandSender, never())
         .sendCommand(eq(2), eq(valueType), eq(intent), eq(otherKey), any());
-    verify(mockInterpartitionCommandSender, times(0))
+    verify(mockInterpartitionCommandSender, never())
         .sendCommand(eq(3), eq(valueType), eq(intent), eq(otherKey), any());
     verifyNoMoreInteractions(mockInterpartitionCommandSender);
 
