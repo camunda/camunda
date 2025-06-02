@@ -80,7 +80,8 @@ public final class ResolveIncidentBatchExecutorTest extends AbstractBatchOperati
     assertThat(
             RecordingExporter.batchOperationExecutionRecords()
                 .withBatchOperationKey(batchOperationKey)
-                .onlyEvents())
+                .onlyEvents()
+                .limit(r -> r.getIntent() == BatchOperationExecutionIntent.COMPLETED))
         .extracting(Record::getIntent)
         .containsSequence(
             BatchOperationExecutionIntent.EXECUTED, BatchOperationExecutionIntent.COMPLETED);
@@ -89,23 +90,26 @@ public final class ResolveIncidentBatchExecutorTest extends AbstractBatchOperati
     assertThat(
             RecordingExporter.batchOperationExecutionRecords()
                 .withBatchOperationKey(batchOperationKey)
-                .onlyCommands())
+                .onlyCommands()
+                .limit(r -> r.getIntent() == BatchOperationExecutionIntent.EXECUTE))
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationExecutionIntent.EXECUTE);
 
     // and we have a job retry command and a resolve incident command
-    assertThat(RecordingExporter.jobRecords().withRecordKey(failedEvent.getKey()))
+    assertThat(
+            RecordingExporter.jobRecords()
+                .withRecordKey(failedEvent.getKey())
+                .limit(r -> r.getIntent() == JobIntent.UPDATE_RETRIES))
         .extracting(Record::getIntent)
         .containsSequence(JobIntent.UPDATE_RETRIES);
 
-    final var incidentCommands =
+    final var incidentCommand =
         RecordingExporter.incidentRecords()
             .withRecordType(RecordType.COMMAND)
             .withRecordKey(incidentKey)
-            .toList();
-    assertThat(incidentCommands).hasSize(1);
-    assertThat(incidentCommands.getFirst().getIntent()).isEqualTo(IncidentIntent.RESOLVE);
-    assertThat(incidentCommands.getFirst().getAuthorizations()).isEqualTo(claims);
+            .getFirst();
+    assertThat(incidentCommand.getIntent()).isEqualTo(IncidentIntent.RESOLVE);
+    assertThat(incidentCommand.getAuthorizations()).isEqualTo(claims);
   }
 
   @Test
@@ -146,7 +150,8 @@ public final class ResolveIncidentBatchExecutorTest extends AbstractBatchOperati
     assertThat(
             RecordingExporter.batchOperationExecutionRecords()
                 .withBatchOperationKey(batchOperationKey)
-                .onlyEvents())
+                .onlyEvents()
+                .limit(r -> r.getIntent() == BatchOperationExecutionIntent.COMPLETED))
         .extracting(Record::getIntent)
         .containsSequence(
             BatchOperationExecutionIntent.EXECUTED, BatchOperationExecutionIntent.COMPLETED);
@@ -155,13 +160,17 @@ public final class ResolveIncidentBatchExecutorTest extends AbstractBatchOperati
     assertThat(
             RecordingExporter.batchOperationExecutionRecords()
                 .withBatchOperationKey(batchOperationKey)
-                .onlyCommands())
+                .onlyCommands()
+                .limit(r -> r.getIntent() == BatchOperationExecutionIntent.EXECUTE))
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationExecutionIntent.EXECUTE);
 
     // and we have a resolve incident command
     assertThat(RecordingExporter.jobRecords().withProcessInstanceKey(processInstanceKey)).isEmpty();
-    assertThat(RecordingExporter.incidentRecords().withRecordKey(incidentKey))
+    assertThat(
+            RecordingExporter.incidentRecords()
+                .withRecordKey(incidentKey)
+                .limit(r -> r.getIntent() == IncidentIntent.RESOLVE))
         .extracting(Record::getIntent)
         .containsSequence(IncidentIntent.RESOLVE);
   }

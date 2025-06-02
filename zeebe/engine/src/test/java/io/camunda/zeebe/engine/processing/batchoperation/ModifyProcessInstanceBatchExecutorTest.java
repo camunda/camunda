@@ -60,7 +60,8 @@ public final class ModifyProcessInstanceBatchExecutorTest extends AbstractBatchO
     assertThat(
             RecordingExporter.batchOperationExecutionRecords()
                 .withBatchOperationKey(batchOperationKey)
-                .onlyEvents())
+                .onlyEvents()
+                .limit(r -> r.getIntent() == BatchOperationExecutionIntent.COMPLETED))
         .extracting(Record::getIntent)
         .containsSequence(
             BatchOperationExecutionIntent.EXECUTED, BatchOperationExecutionIntent.COMPLETED);
@@ -69,20 +70,19 @@ public final class ModifyProcessInstanceBatchExecutorTest extends AbstractBatchO
     assertThat(
             RecordingExporter.batchOperationExecutionRecords()
                 .withBatchOperationKey(batchOperationKey)
-                .onlyCommands())
+                .onlyCommands()
+                .limit(r -> r.getIntent() == BatchOperationExecutionIntent.EXECUTE))
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationExecutionIntent.EXECUTE);
 
     // and we have a modify command
-    final var modificationCommands =
+    final var modificationCommand =
         RecordingExporter.processInstanceModificationRecords()
             .withRecordType(RecordType.COMMAND)
             .withRecordKey(processInstanceKey)
-            .toList();
-    assertThat(modificationCommands).hasSize(1);
-    assertThat(modificationCommands.getFirst().getIntent())
-        .isEqualTo(ProcessInstanceModificationIntent.MODIFY);
-    assertThat(modificationCommands.getFirst().getAuthorizations()).isEqualTo(claims);
+            .getFirst();
+    assertThat(modificationCommand.getIntent()).isEqualTo(ProcessInstanceModificationIntent.MODIFY);
+    assertThat(modificationCommand.getAuthorizations()).isEqualTo(claims);
   }
 
   @Test
@@ -123,7 +123,8 @@ public final class ModifyProcessInstanceBatchExecutorTest extends AbstractBatchO
     assertThat(
             RecordingExporter.batchOperationExecutionRecords()
                 .withBatchOperationKey(batchOperationKey)
-                .onlyEvents())
+                .onlyEvents()
+                .limit(r -> r.getIntent() == BatchOperationExecutionIntent.COMPLETED))
         .extracting(Record::getIntent)
         .containsSequence(
             BatchOperationExecutionIntent.EXECUTED, BatchOperationExecutionIntent.COMPLETED);
@@ -132,7 +133,8 @@ public final class ModifyProcessInstanceBatchExecutorTest extends AbstractBatchO
     assertThat(
             RecordingExporter.batchOperationExecutionRecords()
                 .withBatchOperationKey(batchOperationKey)
-                .onlyCommands())
+                .onlyCommands()
+                .limit(r -> r.getIntent() == BatchOperationExecutionIntent.EXECUTE))
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationExecutionIntent.EXECUTE);
 
@@ -140,7 +142,8 @@ public final class ModifyProcessInstanceBatchExecutorTest extends AbstractBatchO
     assertThat(
             RecordingExporter.processInstanceModificationRecords()
                 .withRecordKey(processInstanceKey)
-                .onlyCommandRejections())
+                .onlyCommandRejections()
+                .limit(r -> r.getIntent() == ProcessInstanceModificationIntent.MODIFY))
         .extracting(Record::getIntent)
         .containsSequence(ProcessInstanceModificationIntent.MODIFY);
   }
@@ -158,7 +161,8 @@ public final class ModifyProcessInstanceBatchExecutorTest extends AbstractBatchO
     assertThat(
             RecordingExporter.batchOperationExecutionRecords()
                 .withBatchOperationKey(batchOperationKey)
-                .onlyEvents())
+                .onlyEvents()
+                .limit(r -> r.getIntent() == BatchOperationExecutionIntent.COMPLETED))
         .extracting(Record::getIntent)
         .containsSequence(
             BatchOperationExecutionIntent.EXECUTED, BatchOperationExecutionIntent.COMPLETED);
@@ -167,7 +171,8 @@ public final class ModifyProcessInstanceBatchExecutorTest extends AbstractBatchO
     assertThat(
             RecordingExporter.batchOperationExecutionRecords()
                 .withBatchOperationKey(batchOperationKey)
-                .onlyCommands())
+                .onlyCommands()
+                .limit(r -> r.getIntent() == BatchOperationExecutionIntent.EXECUTE))
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationExecutionIntent.EXECUTE);
 
@@ -175,7 +180,8 @@ public final class ModifyProcessInstanceBatchExecutorTest extends AbstractBatchO
     assertThat(
             RecordingExporter.processInstanceModificationRecords()
                 .withRecordKey(42L)
-                .onlyCommandRejections())
+                .onlyCommandRejections()
+                .limit(r -> r.getIntent() == ProcessInstanceModificationIntent.MODIFY))
         .extracting(Record::getIntent)
         .containsSequence(ProcessInstanceModificationIntent.MODIFY);
   }

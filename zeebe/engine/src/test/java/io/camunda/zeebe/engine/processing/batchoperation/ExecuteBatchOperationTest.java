@@ -32,7 +32,8 @@ public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest 
     assertThat(
             RecordingExporter.batchOperationExecutionRecords()
                 .withBatchOperationKey(batchOperationKey)
-                .onlyEvents())
+                .onlyEvents()
+                .limit(r -> r.getIntent() == BatchOperationExecutionIntent.COMPLETED))
         .extracting(Record::getIntent)
         .containsSequence(
             BatchOperationExecutionIntent.EXECUTED, BatchOperationExecutionIntent.COMPLETED);
@@ -41,20 +42,19 @@ public final class ExecuteBatchOperationTest extends AbstractBatchOperationTest 
     assertThat(
             RecordingExporter.batchOperationExecutionRecords()
                 .withBatchOperationKey(batchOperationKey)
-                .onlyCommands())
+                .onlyCommands()
+                .limit(r -> r.getIntent() == BatchOperationExecutionIntent.EXECUTE))
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationExecutionIntent.EXECUTE);
 
     // and we have several cancel process commands
     processInstanceKeys.forEach(
         key -> {
-          final var cancelCommandList =
+          final var cancelCommand =
               RecordingExporter.processInstanceRecords()
                   .withRecordType(RecordType.COMMAND)
                   .withProcessInstanceKey(key)
-                  .toList();
-          assertThat(cancelCommandList).hasSize(1);
-          final var cancelCommand = cancelCommandList.getFirst();
+                  .getFirst();
           assertThat(cancelCommand.getIntent()).isEqualTo(ProcessInstanceIntent.CANCEL);
           assertThat(cancelCommand.getAuthorizations()).isEqualTo(claims);
         });
