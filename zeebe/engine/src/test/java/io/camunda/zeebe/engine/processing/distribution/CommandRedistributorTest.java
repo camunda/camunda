@@ -15,6 +15,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.engine.state.immutable.DistributionState.PendingDistributionVisitor;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,15 +23,17 @@ import org.junit.Test;
 public class CommandRedistributorTest {
 
   private CommandDistributionBehavior behavior;
+  private RoutingInfo routingInfo;
 
   @Before
   public void setUp() {
     behavior = mock(CommandDistributionBehavior.class);
+    routingInfo = mock(RoutingInfo.class);
   }
 
   @Test
   public void shouldNotRetryOnFirstCycle() {
-    final var redistributor = new CommandRedistributor(behavior);
+    final var redistributor = new CommandRedistributor(behavior, routingInfo);
     final var distributionRecord = new CommandDistributionRecord().setPartitionId(2);
 
     doAnswer(
@@ -49,7 +52,7 @@ public class CommandRedistributorTest {
 
   @Test
   public void shouldRetryOnSecondCycle() {
-    final var redistributor = new CommandRedistributor(behavior);
+    final var redistributor = new CommandRedistributor(behavior, routingInfo);
     final var distributionRecord = new CommandDistributionRecord().setPartitionId(2);
 
     doAnswer(
