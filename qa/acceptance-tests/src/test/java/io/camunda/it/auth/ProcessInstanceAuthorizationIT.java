@@ -334,6 +334,8 @@ class ProcessInstanceAuthorizationIT {
                           .join()
                           .items())
                   .hasSize(2); // PROCESS_ID_1 and PROCESS_ID_2
+              assertThat(camundaClient.newVariableSearchRequest().send().join().items())
+                  .hasSize(2); // One per process instance
               assertThat(camundaClient.newElementInstanceSearchRequest().send().join().items())
                   .hasSize(4); // Start event and service task for each process
             });

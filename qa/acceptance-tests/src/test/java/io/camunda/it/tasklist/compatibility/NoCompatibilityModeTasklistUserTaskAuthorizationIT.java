@@ -28,6 +28,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Predicate;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
@@ -278,7 +279,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
       @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
     // given (admin) to create instance
     final var processInstanceKey = createProcessInstance(adminClient, PROCESS_WITH_USER_TASK);
-    final var userTaskKey = awaitUserTaskBeingAvailable(adminClient, processInstanceKey);
+    final var userTaskKey = awaitUserTaskBeingAvailable(adminClient, processInstanceKey, false);
     // given (non-admin) user without any authorizations
 
     // when
@@ -300,7 +301,8 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
     // create a process instance - with pre-assigned user task
     final var processInstanceKey =
         createProcessInstance(adminClient, PROCESS_WITH_USER_TASK_PRE_ASSIGNED);
-    final var userTaskKeyPreAssigned = awaitUserTaskBeingAvailable(adminClient, processInstanceKey);
+    final var userTaskKeyPreAssigned =
+        awaitUserTaskBeingAvailable(adminClient, processInstanceKey, true);
     // given (non-admin) user without any authorizations
 
     // when
@@ -319,9 +321,8 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
       @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
       @Authenticated(TEST_USER_NAME_WITH_PERMISSION) final CamundaClient withPermission) {
     // given (admin) to create instance
-    // create a process instance - with pre-assigned user task
     final var processInstanceKey = createProcessInstance(adminClient, PROCESS_WITH_USER_TASK);
-    final var userTaskKey = awaitUserTaskBeingAvailable(adminClient, processInstanceKey);
+    final var userTaskKey = awaitUserTaskBeingAvailable(adminClient, processInstanceKey, false);
     // given (non-admin) user without any authorizations
     final var response =
         tasklistRestClient
@@ -350,7 +351,8 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
     // create a process instance - with pre-assigned user task
     final var processInstanceKey =
         createProcessInstance(adminClient, PROCESS_WITH_USER_TASK_PRE_ASSIGNED);
-    final var userTaskKeyPreAssigned = awaitUserTaskBeingAvailable(adminClient, processInstanceKey);
+    final var userTaskKeyPreAssigned =
+        awaitUserTaskBeingAvailable(adminClient, processInstanceKey, true);
     // given (non-admin) user without any authorizations
 
     // when
@@ -372,7 +374,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
     final var processInstanceKeyWithJobBasedUserTask =
         createProcessInstance(adminClient, PROCESS_WITH_USER_TASK);
     final var userTaskKeyWithJobBasedUserTask =
-        awaitJobBasedUserTaskBeingAvailable(processInstanceKeyWithJobBasedUserTask);
+        awaitJobBasedUserTaskBeingAvailable(processInstanceKeyWithJobBasedUserTask, false);
     // given (non-admin) user with permissions to assign task
 
     // when
@@ -395,7 +397,8 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
     // given (admin) to create instance
     final var processInstanceKeyWithUserTask =
         createProcessInstance(adminClient, PROCESS_WITH_USER_TASK_PRE_ASSIGNED);
-    final var userTaskKey = awaitJobBasedUserTaskBeingAvailable(processInstanceKeyWithUserTask);
+    final var userTaskKey =
+        awaitJobBasedUserTaskBeingAvailable(processInstanceKeyWithUserTask, true);
     // given (non-admin) user with permissions to unassign task
 
     // when
@@ -419,7 +422,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
     final long anotherProcessInstanceKeyWithJobBasedUserTask =
         createProcessInstance(adminClient, PROCESS_ID_WITH_JOB_BASED_USERTASK);
     final var anotherUserTaskKeyWithJobBasedUserTask =
-        awaitJobBasedUserTaskBeingAvailable(anotherProcessInstanceKeyWithJobBasedUserTask);
+        awaitJobBasedUserTaskBeingAvailable(anotherProcessInstanceKeyWithJobBasedUserTask, false);
     // given (non-admin) user without any authorizations
 
     // when
@@ -441,7 +444,8 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
     final var processInstanceKeyWithJobBasedUserTaskPreAssigned =
         createProcessInstance(adminClient, PROCESS_ID_WITH_JOB_BASED_USERTASK_PRE_ASSIGNED);
     final var userTaskKeyWithJobBasedUserTaskPreAssigned =
-        awaitJobBasedUserTaskBeingAvailable(processInstanceKeyWithJobBasedUserTaskPreAssigned);
+        awaitJobBasedUserTaskBeingAvailable(
+            processInstanceKeyWithJobBasedUserTaskPreAssigned, true);
     // given (non-admin) user without any authorizations
 
     // when
@@ -463,7 +467,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
     final var processInstanceKeyWithJobBasedUserTask =
         createProcessInstance(adminClient, PROCESS_ID_WITH_JOB_BASED_USERTASK);
     final var userTaskKeyWithJobBasedUserTask =
-        awaitJobBasedUserTaskBeingAvailable(processInstanceKeyWithJobBasedUserTask);
+        awaitJobBasedUserTaskBeingAvailable(processInstanceKeyWithJobBasedUserTask, false);
     // given (non-admin) user with permissions to assign task
     final var response =
         tasklistRestClient
@@ -493,7 +497,8 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
     final var processInstanceKeyWithJobBasedUserTaskPreAssigned =
         createProcessInstance(adminClient, PROCESS_ID_WITH_JOB_BASED_USERTASK_PRE_ASSIGNED);
     final var userTaskKeyWithJobBasedUserTaskPreAssigned =
-        awaitJobBasedUserTaskBeingAvailable(processInstanceKeyWithJobBasedUserTaskPreAssigned);
+        awaitJobBasedUserTaskBeingAvailable(
+            processInstanceKeyWithJobBasedUserTaskPreAssigned, true);
     // given (non-admin) user without any authorizations
 
     // when
@@ -515,7 +520,8 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
     final var processInstanceKeyWithJobBasedUserTaskPreAssigned =
         createProcessInstance(adminClient, PROCESS_ID_WITH_JOB_BASED_USERTASK_PRE_ASSIGNED);
     final var userTaskKeyWithJobBasedUserTaskPreAssigned =
-        awaitJobBasedUserTaskBeingAvailable(processInstanceKeyWithJobBasedUserTaskPreAssigned);
+        awaitJobBasedUserTaskBeingAvailable(
+            processInstanceKeyWithJobBasedUserTaskPreAssigned, true);
     // given (non-admin) user without any authorizations
 
     // when
@@ -538,7 +544,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
     final var processInstanceKeyWithJobBasedUserTask =
         createProcessInstance(adminClient, PROCESS_ID_WITH_JOB_BASED_USERTASK);
     final var userTaskKeyWithJobBasedUserTask =
-        awaitJobBasedUserTaskBeingAvailable(processInstanceKeyWithJobBasedUserTask);
+        awaitJobBasedUserTaskBeingAvailable(processInstanceKeyWithJobBasedUserTask, false);
     // given (non-admin) user with permissions to assign task
 
     // when
@@ -577,7 +583,9 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
   }
 
   public static long awaitUserTaskBeingAvailable(
-      final CamundaClient camundaClient, final long processInstanceKey) {
+      final CamundaClient camundaClient,
+      final long processInstanceKey,
+      final boolean shouldBePreAssigned) {
     final AtomicLong userTaskKey = new AtomicLong();
     Awaitility.await("should create an user task")
         .atMost(Duration.ofSeconds(60))
@@ -591,20 +599,32 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
                       .send()
                       .join();
               assertThat(result.items()).hasSize(1);
+              if (shouldBePreAssigned) {
+                assertThat(result.items().getFirst().getAssignee()).isNotNull();
+              }
               userTaskKey.set(result.items().getFirst().getUserTaskKey());
             });
     return userTaskKey.get();
   }
 
-  public static long awaitJobBasedUserTaskBeingAvailable(final long processInstanceKey) {
+  public static long awaitJobBasedUserTaskBeingAvailable(
+      final long processInstanceKey, final boolean shouldBePreAssigned) {
     final var task =
         Awaitility.await("should create a job-based user task")
             .atMost(Duration.ofSeconds(60))
             .ignoreExceptions() // Ignore exceptions and continue retrying
             .until(
                 () -> findTasksForProcessInstance(processInstanceKey),
-                (result) -> result.length == 1);
+                existsAndAssigned(shouldBePreAssigned));
     return Long.parseLong(task[0].getId());
+  }
+
+  private static Predicate<TaskSearchResponse[]> existsAndAssigned(
+      final boolean shouldBePreAssigned) {
+    if (shouldBePreAssigned) {
+      return tsr -> tsr.length == 1 && tsr[0].getAssignee() != null;
+    }
+    return tsr -> tsr.length == 1;
   }
 
   public static void ensureUserTaskIsCompleted(
