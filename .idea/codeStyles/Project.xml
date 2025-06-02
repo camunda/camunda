@@ -28,7 +28,6 @@
       </option>
       <option name="IMPORT_LAYOUT_TABLE">
         <value>
-          <package name="" withSubpackages="true" static="false" module="true" />
           <package name="" withSubpackages="true" static="false" />
           <package name="" withSubpackages="true" static="true" />
           <emptyLine />
@@ -456,6 +455,7 @@
       </indentOptions>
     </codeStyleSettings>
     <codeStyleSettings language="Python">
+      <option name="KEEP_BLANK_LINES_IN_CODE" value="1" />
       <option name="RIGHT_MARGIN" value="80" />
       <option name="ALIGN_MULTILINE_PARAMETERS" value="false" />
       <indentOptions>
