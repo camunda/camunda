@@ -10,12 +10,18 @@ package io.camunda.zeebe.gateway.rest.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.camunda.zeebe.gateway.protocol.rest.BasicStringFilterProperty;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemStateFilterProperty;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationStateFilterProperty;
+import io.camunda.zeebe.gateway.protocol.rest.BatchOperationTypeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.DateTimeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.IntegerFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.gateway.rest.deserializer.BasicStringFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.BatchOperatioItemStateFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.BatchOperationStateFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.BatchOperationTypeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.DateTimeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ElementInstanceStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.IntegerFilterPropertyDeserializer;
@@ -43,6 +49,14 @@ public class JacksonConfig {
     module.addDeserializer(
         ElementInstanceStateFilterProperty.class,
         new ElementInstanceStateFilterPropertyDeserializer());
+    module.addDeserializer(
+        BatchOperationStateFilterProperty.class,
+        new BatchOperationStateFilterPropertyDeserializer());
+    module.addDeserializer(
+        BatchOperationTypeFilterProperty.class, new BatchOperationTypeFilterPropertyDeserializer());
+    module.addDeserializer(
+        BatchOperationItemStateFilterProperty.class,
+        new BatchOperatioItemStateFilterPropertyDeserializer());
     return builder -> builder.modulesToInstall(modules -> modules.add(module));
   }
 
