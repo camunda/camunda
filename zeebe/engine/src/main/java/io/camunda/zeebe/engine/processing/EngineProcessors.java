@@ -326,7 +326,7 @@ public final class EngineProcessors {
         partitionId);
 
     UsageMetricsProcessors.addUsageMetricsProcessors(
-        typedRecordProcessors, config, clock, processingState);
+        typedRecordProcessors, config, clock, processingState, writers, keyGenerator);
 
     return typedRecordProcessors;
   }
