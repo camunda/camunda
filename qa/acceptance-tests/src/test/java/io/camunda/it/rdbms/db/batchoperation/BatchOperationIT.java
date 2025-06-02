@@ -415,7 +415,7 @@ public class BatchOperationIT {
             .search(
                 new BatchOperationQuery(
                     new BatchOperationFilter.Builder()
-                        .state(BatchOperationState.ACTIVE.name())
+                        .states(BatchOperationState.ACTIVE.name())
                         .build(),
                     BatchOperationSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(10))));
