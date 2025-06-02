@@ -11,8 +11,8 @@
     "main"
   ],
   "dependencyDashboard": true,
-  "prConcurrentLimit": 30,
-  "prHourlyLimit": 5,
+  "prConcurrentLimit": 50,
+  "prHourlyLimit": 10,
   "updateNotScheduled": false,
   "schedule": [
     "at any time"
