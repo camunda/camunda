@@ -498,6 +498,36 @@ final class AuthorizationCheckBehaviorTest {
   }
 
   @Test
+  void shouldGetAuthorizationsForNestedMapping() {
+    // given
+    final var claimName = "$.nested.claim";
+    final var claimValue = UUID.randomUUID().toString();
+    final var mapping = createMapping(claimName, claimValue);
+    final var resourceType = AuthorizationResourceType.RESOURCE;
+    final var permissionType = PermissionType.CREATE;
+    final var resourceId = UUID.randomUUID().toString();
+    addPermission(
+        mapping.getMappingId(),
+        AuthorizationOwnerType.MAPPING,
+        resourceType,
+        permissionType,
+        resourceId);
+    final var command = mock(TypedRecord.class);
+    when(command.getAuthorizations())
+        .thenReturn(Map.of(USER_TOKEN_CLAIMS, Map.of("nested", Map.of("claim", claimValue))));
+    when(command.hasRequestMetadata()).thenReturn(true);
+
+    // when
+    final var request =
+        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+    final var authorizations =
+        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
+
+    // then
+    assertThat(authorizations).containsExactlyInAnyOrder(resourceId);
+  }
+
+  @Test
   void shouldGetAuthorizationsForMappingThroughAssignedRole() {
     // given
     final var claimName = UUID.randomUUID().toString();
