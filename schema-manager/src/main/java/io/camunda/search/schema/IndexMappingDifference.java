@@ -8,13 +8,14 @@
 package io.camunda.search.schema;
 
 import com.google.common.base.Equivalence;
+import com.google.common.collect.HashMultiset;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
-import java.util.List;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -110,56 +111,25 @@ public record IndexMappingDifference(
 
     @Override
     protected boolean doEquivalent(final Object a, final Object b) {
-      if (a == b) {
-        return true;
-      }
-      if (a == null || b == null) {
-        return false;
-      }
-
-      if (a instanceof final Map<?, ?> mapA && b instanceof final Map<?, ?> mapB) {
-        if (mapA.size() != mapB.size()) {
-          return false;
-        }
-        for (final Object key : mapA.keySet()) {
-          if (!mapB.containsKey(key) || !equivalent(mapA.get(key), mapB.get(key))) {
-            return false;
-          }
-        }
-        return true;
-      }
-
-      // Handle lists as multisets to ignore order and count duplicates
-      if (a instanceof final List<?> listA && b instanceof final List<?> listB) {
-        if (listA.size() != listB.size()) {
-          return false;
-        }
-
-        final var countA = countElements(listA);
-        final var countB = countElements(listB);
-        return countA.equals(countB);
-      }
-
-      return a.equals(b);
+      return Objects.equals(canonicalize(a), canonicalize(b));
     }
 
     @Override
     protected int doHash(final Object o) {
-      if (o instanceof final Map<?, ?> oMap) {
-        return oMap.entrySet().stream()
-            .mapToInt(entry -> Objects.hash(entry.getKey(), doHash(entry.getValue())))
-            .sum();
-      } else if (o instanceof final List<?> oList) {
-        // Use a multiset-like approach to handle duplicates and ignore order
-        return oList.stream().mapToInt(this::doHash).sum();
-      } else {
-        return Objects.hashCode(o);
-      }
+      return Objects.hashCode(canonicalize(o));
     }
 
-    private Map<Object, Long> countElements(final List<?> list) {
-      return list.stream()
-          .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+    private Object canonicalize(final Object o) {
+      if (o instanceof final Map<?, ?> map) {
+        return map.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, e -> canonicalize(e.getValue())));
+      } else if (o instanceof final Collection<?> collection) {
+        return HashMultiset.create(collection.stream().map(this::canonicalize).toList());
+      } else if (o instanceof final Object[] array) {
+        return HashMultiset.create(Arrays.stream(array).map(this::canonicalize).toList());
+      } else {
+        return o;
+      }
     }
   }
 }
