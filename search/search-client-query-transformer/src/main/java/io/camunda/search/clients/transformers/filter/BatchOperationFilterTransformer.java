@@ -29,8 +29,8 @@ public final class BatchOperationFilterTransformer
 
     ofNullable(stringOperations(ID, filter.batchOperationIdOperations()))
         .ifPresent(queries::addAll);
-    ofNullable(stringTerms(STATE, filter.state())).ifPresent(queries::add);
-    ofNullable(stringTerms(TYPE, filter.operationTypes())).ifPresent(queries::add);
+    ofNullable(stringOperations(STATE, filter.stateOperations())).ifPresent(queries::addAll);
+    ofNullable(stringOperations(TYPE, filter.operationTypeOperations())).ifPresent(queries::addAll);
 
     return and(queries);
   }
