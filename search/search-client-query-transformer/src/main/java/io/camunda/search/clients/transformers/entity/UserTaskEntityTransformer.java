@@ -47,8 +47,13 @@ public class UserTaskEntityTransformer implements ServiceTransformer<TaskEntity,
       return null;
     }
     return switch (source) {
+      case CREATING -> UserTaskState.CREATING;
       case CREATED -> UserTaskState.CREATED;
+      case ASSIGNING -> UserTaskState.ASSIGNING;
+      case UPDATING -> UserTaskState.UPDATING;
+      case COMPLETING -> UserTaskState.COMPLETING;
       case COMPLETED -> UserTaskState.COMPLETED;
+      case CANCELING -> UserTaskState.CANCELING;
       case FAILED -> UserTaskState.FAILED;
       default -> throw new IllegalArgumentException("Unexpected value: " + source);
     };

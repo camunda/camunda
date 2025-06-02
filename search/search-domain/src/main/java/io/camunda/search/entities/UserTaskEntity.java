@@ -66,8 +66,13 @@ public record UserTaskEntity(
   }
 
   public enum UserTaskState {
+    CREATING,
     CREATED,
+    ASSIGNING,
+    UPDATING,
+    COMPLETING,
     COMPLETED,
+    CANCELING,
     CANCELED,
     FAILED
   }
