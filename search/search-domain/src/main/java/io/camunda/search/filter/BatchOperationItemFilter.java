@@ -21,7 +21,7 @@ public record BatchOperationItemFilter(
     List<Operation<String>> batchOperationIdOperations,
     List<Operation<Long>> itemKeyOperations,
     List<Operation<Long>> processInstanceKeyOperations,
-    List<String> state)
+    List<Operation<String>> stateOperations)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<BatchOperationItemFilter> {
@@ -29,7 +29,7 @@ public record BatchOperationItemFilter(
     private List<Operation<String>> batchOperationIdOperations;
     private List<Operation<Long>> itemKeyOperations;
     private List<Operation<Long>> processInstanceKeyOperations;
-    private List<String> state;
+    private List<Operation<String>> stateOperations;
 
     public Builder batchOperationIdOperations(final List<Operation<String>> operations) {
       batchOperationIdOperations = addValuesToList(batchOperationIdOperations, operations);
@@ -91,13 +91,24 @@ public record BatchOperationItemFilter(
       return processInstanceKeyOperations(collectValues(operation, operations));
     }
 
-    public Builder state(final String value, final String... values) {
-      return state(collectValues(value, values));
+    public Builder stateOperations(final List<Operation<String>> operations) {
+      stateOperations = addValuesToList(stateOperations, operations);
+      return this;
     }
 
-    public Builder state(final List<String> values) {
-      state = addValuesToList(state, values);
+    public Builder states(final String value, final String... values) {
+      return stateOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder replaceStateOperationsOperations(final List<Operation<String>> operations) {
+      stateOperations = new ArrayList<>(operations);
       return this;
+    }
+
+    @SafeVarargs
+    public final Builder stateOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return stateOperations(collectValues(operation, operations));
     }
 
     @Override
@@ -106,7 +117,7 @@ public record BatchOperationItemFilter(
           Objects.requireNonNullElse(batchOperationIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(itemKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeyOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(state, Collections.emptyList()));
+          Objects.requireNonNullElse(stateOperations, Collections.emptyList()));
     }
   }
 }
