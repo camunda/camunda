@@ -35,8 +35,13 @@ public final record UserTaskEntity(
     Map<String, String> customHeaders,
     Integer priority) {
   public enum UserTaskState {
+    CREATING,
     CREATED,
+    ASSIGNING,
+    UPDATING,
+    COMPLETING,
     COMPLETED,
+    CANCELING,
     CANCELED,
     FAILED
   }
