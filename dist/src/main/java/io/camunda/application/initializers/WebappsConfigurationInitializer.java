@@ -12,8 +12,10 @@ import static io.camunda.application.Profile.IDENTITY_AUTH;
 import static io.camunda.application.Profile.OPERATE;
 import static io.camunda.application.Profile.SSO_AUTH;
 import static io.camunda.application.Profile.TASKLIST;
+import static io.camunda.authentication.config.AuthenticationProperties.METHOD;
 
 import io.camunda.authentication.config.WebSecurityConfig;
+import io.camunda.security.entity.AuthenticationMethod;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Set;
@@ -51,12 +53,22 @@ public class WebappsConfigurationInitializer
       } else if (activeProfiles.contains(IDENTITY.getId())) {
         propertyMap.put(CAMUNDA_WEBAPPS_DEFAULT_APP_PROPERTY, IDENTITY.getId());
       }
-      propertyMap.put(
-          CAMUNDA_WEBAPPS_LOGIN_DELEGATED_PROPERTY,
-          activeProfiles.stream().anyMatch(LOGIN_DELEGATED_PROFILES::contains));
+      propertyMap.put(CAMUNDA_WEBAPPS_LOGIN_DELEGATED_PROPERTY, isLoginDelegated(context));
       propertyMap.put(
           SERVER_SERVLET_SESSION_COOKIE_NAME_PROPERTY, WebSecurityConfig.SESSION_COOKIE);
       DefaultPropertiesPropertySource.addOrMerge(propertyMap, propertySources);
     }
+  }
+
+  private boolean isLoginDelegated(final ConfigurableApplicationContext context) {
+    final var activeProfiles = Arrays.asList(context.getEnvironment().getActiveProfiles());
+    if (activeProfiles.stream().anyMatch(LOGIN_DELEGATED_PROFILES::contains)) {
+      return true;
+    }
+
+    final var authenticationMethodProperty = context.getEnvironment().getProperty(METHOD);
+    final var authenticationMethod = AuthenticationMethod.parse(authenticationMethodProperty);
+    return authenticationMethod.isPresent()
+        && AuthenticationMethod.OIDC.equals(authenticationMethod.get());
   }
 }
