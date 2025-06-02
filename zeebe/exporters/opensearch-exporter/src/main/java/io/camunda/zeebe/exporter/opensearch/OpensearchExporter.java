@@ -344,8 +344,8 @@ public class OpensearchExporter implements Exporter {
       if (index.messageCorrelation) {
         createValueIndexTemplate(ValueType.MESSAGE_CORRELATION, version);
       }
-      if (index.asyncRequestMetadata) {
-        createValueIndexTemplate(ValueType.ASYNC_REQUEST_METADATA, version);
+      if (index.asyncRequest) {
+        createValueIndexTemplate(ValueType.ASYNC_REQUEST, version);
       }
     }
 

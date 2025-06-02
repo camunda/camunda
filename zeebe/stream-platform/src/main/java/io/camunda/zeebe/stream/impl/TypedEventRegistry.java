@@ -8,7 +8,7 @@
 package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestMetadataRecord;
+import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
@@ -133,7 +133,7 @@ public final class TypedEventRegistry {
     registry.put(
         ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
         BatchOperationPartitionLifecycleRecord.class);
-    registry.put(ValueType.ASYNC_REQUEST_METADATA, AsyncRequestMetadataRecord.class);
+    registry.put(ValueType.ASYNC_REQUEST, AsyncRequestRecord.class);
 
     EVENT_REGISTRY = Collections.unmodifiableMap(registry);
 
