@@ -26,7 +26,8 @@ public class ProcessCacheUtilTest {
     final var process =
         new ProcessEntity().setBpmnXml(Bpmn.convertToString(model)).setBpmnProcessId(processId);
     // when
-    final var callActivities = ProcessCacheUtil.extractCallActivityIdsFromDiagram(process);
+    final var callActivities =
+        ProcessCacheUtil.extractProcessDiagramData(process).callActivityIds();
     // then
     assertThat(callActivities).containsExactly("A_Activity", "C_Activity", "D_Activity");
   }

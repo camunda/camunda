@@ -12,13 +12,11 @@ import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.ProcessFlowNodeEntity;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.exporter.common.cache.process.ProcessDiagramData;
 import io.camunda.zeebe.model.bpmn.instance.BaseElement;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.util.modelreader.ProcessModelReader;
-import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -42,7 +40,7 @@ public final class ProcessCacheUtil {
       final Long processDefinitionKey,
       final Integer callActivityIndex) {
 
-    if (processDefinitionKey == null) {
+    if (processDefinitionKey == null || callActivityIndex == null) {
       return Optional.empty();
     }
     final var cachedProcess = processCache.get(processDefinitionKey);
@@ -74,71 +72,50 @@ public final class ProcessCacheUtil {
   }
 
   /**
-   * Returns all call activity ids from the Process sorted lexicographically.
+   * Returns relevant data from process diagram
    *
    * @param processEntity
-   * @return
+   * @return ProcessDiagramData
    */
-  public static List<String> extractCallActivityIdsFromDiagram(final ProcessEntity processEntity) {
-    return extractCallActivityIdsFromDiagram(
-        processEntity.getBpmnXml(), processEntity.getBpmnProcessId());
+  public static ProcessDiagramData extractProcessDiagramData(final ProcessEntity processEntity) {
+    return extractProcessDiagramData(processEntity.getBpmnXml(), processEntity.getBpmnProcessId());
   }
 
   /**
-   * Returns all call activity ids from the Process sorted lexicographically.
+   * Returns relevant data from process diagram
    *
    * @param processDefinitionEntity
-   * @return
+   * @return ProcessDiagramData
    */
-  public static List<String> extractCallActivityIdsFromDiagram(
+  public static ProcessDiagramData extractProcessDiagramData(
       final ProcessDefinitionEntity processDefinitionEntity) {
-    return extractCallActivityIdsFromDiagram(
+    return extractProcessDiagramData(
         processDefinitionEntity.bpmnXml(), processDefinitionEntity.processDefinitionId());
   }
 
-  public static List<String> extractCallActivityIdsFromDiagram(
-      String bpmnXml, String bpmnProcessId) {
-    return ProcessModelReader.of(bpmnXml.getBytes(StandardCharsets.UTF_8), bpmnProcessId)
-        .map(reader -> sortedCallActivityIds(reader.extractCallActivities()))
-        .orElseGet(ArrayList::new);
+  /**
+   * Returns relevant data from process diagram
+   *
+   * @param bpmnXml
+   * @param bpmnProcessId
+   * @return ProcessDiagramData
+   */
+  public static ProcessDiagramData extractProcessDiagramData(String bpmnXml, String bpmnProcessId) {
+
+    final ProcessModelReader reader =
+        ProcessModelReader.of(bpmnXml.getBytes(StandardCharsets.UTF_8), bpmnProcessId).orElse(null);
+
+    if (reader != null) {
+      final List<String> callActivityIds = sortedCallActivityIds(reader.extractCallActivities());
+      final Map<String, String> flowNodesMap = getFlowNodesMap(reader.extractFlowNodes());
+      return new ProcessDiagramData(callActivityIds, flowNodesMap);
+    }
+
+    return new ProcessDiagramData(List.of(), Map.of());
   }
 
   public static List<String> sortedCallActivityIds(final Collection<CallActivity> callActivities) {
     return callActivities.stream().map(BaseElement::getId).sorted().toList();
-  }
-
-  /**
-   * Returns all flow nodes from the Process diagram
-   *
-   * @param processEntity processEntity
-   * @return Map where key is flowNodeId, and value is flowNodeName
-   */
-  public static Map<String, String> extractFlowNodesMapFromDiagram(
-      final ProcessEntity processEntity) {
-    final String bpmnXml = processEntity.getBpmnXml();
-
-    final BpmnModelInstance modelInstance =
-        Bpmn.readModelFromStream(
-            new ByteArrayInputStream(bpmnXml.getBytes(StandardCharsets.UTF_8)));
-
-    return getFlowNodesMap(modelInstance.getModelElementsByType(FlowNode.class));
-  }
-
-  /**
-   * Returns all flow nodes from the Process diagram
-   *
-   * @param processEntity processEntity
-   * @return Map where key is flowNodeId, and value is flowNodeName
-   */
-  public static Map<String, String> extractFlowNodesMapFromDiagram(
-      final ProcessDefinitionEntity processEntity) {
-    final String bpmnXml = processEntity.bpmnXml();
-
-    final BpmnModelInstance modelInstance =
-        Bpmn.readModelFromStream(
-            new ByteArrayInputStream(bpmnXml.getBytes(StandardCharsets.UTF_8)));
-
-    return getFlowNodesMap(modelInstance.getModelElementsByType(FlowNode.class));
   }
 
   /**
@@ -147,33 +124,27 @@ public final class ProcessCacheUtil {
    * @param processCache
    * @param processDefinitionKey
    * @param flowNodeId
-   * @return flowNodeId
+   * @return flowNodeName
    */
   public static Optional<String> getFlowNodeName(
       final ExporterEntityCache<Long, CachedProcessEntity> processCache,
       final Long processDefinitionKey,
       final String flowNodeId) {
 
-    if (processDefinitionKey == null) {
+    if (processDefinitionKey == null || flowNodeId == null) {
       return Optional.empty();
     }
-    final var cachedProcess = processCache.get(processDefinitionKey);
-    if (cachedProcess.isEmpty()
-        || cachedProcess.get().flowNodesMap() == null
-        || flowNodeId == null) {
-      return Optional.empty();
-    }
-    final String flowNodeName = cachedProcess.get().flowNodesMap().get(flowNodeId);
-    return (flowNodeName == null) ? Optional.empty() : Optional.of(flowNodeName);
+
+    return processCache
+        .get(processDefinitionKey)
+        .filter(cachedProcess -> cachedProcess.flowNodesMap() != null)
+        .filter(cachedProcess -> cachedProcess.flowNodesMap().containsKey(flowNodeId))
+        .map(cachedProcess -> cachedProcess.flowNodesMap().get(flowNodeId));
   }
 
   public static Map<String, String> getFlowNodesMap(Collection<FlowNode> flowNodes) {
-    final Map<String, String> flowNodesMap = new HashMap<>();
-    for (FlowNode flowNode : flowNodes) {
-      flowNodesMap.put(flowNode.getId(), flowNode.getName());
-    }
-
-    return flowNodesMap;
+    return flowNodes.stream()
+        .collect(HashMap::new, (map, fn) -> map.put(fn.getId(), fn.getName()), HashMap::putAll);
   }
 
   public static Map<String, String> getFlowNodesMap(List<ProcessFlowNodeEntity> flowNodes) {

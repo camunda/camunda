@@ -35,11 +35,13 @@ public class RdbmsProcessCacheLoader implements CacheLoader<Long, CachedProcessE
     final var response = reader.findOne(key);
     if (response.isPresent()) {
       final var processDefinitionEntity = response.get();
+      final var processDiagramData =
+          ProcessCacheUtil.extractProcessDiagramData(processDefinitionEntity);
       return new CachedProcessEntity(
           processDefinitionEntity.name(),
           processDefinitionEntity.versionTag(),
-          ProcessCacheUtil.extractCallActivityIdsFromDiagram(processDefinitionEntity),
-          ProcessCacheUtil.extractFlowNodesMapFromDiagram(processDefinitionEntity));
+          processDiagramData.callActivityIds(),
+          processDiagramData.flowNodesMap());
     }
     LOG.debug("Process '{}' not found in RDBMS", key);
     return null;
@@ -50,16 +52,17 @@ public class RdbmsProcessCacheLoader implements CacheLoader<Long, CachedProcessE
     final var query =
         ProcessDefinitionQuery.of(b -> b.filter(f -> f.processDefinitionKeys(List.copyOf(keys))));
     final var response = reader.search(query);
-
     return response.items().stream()
         .collect(
             Collectors.toMap(
                 ProcessDefinitionEntity::processDefinitionKey,
-                pde ->
-                    new CachedProcessEntity(
-                        pde.name(),
-                        pde.versionTag(),
-                        ProcessCacheUtil.extractCallActivityIdsFromDiagram(pde),
-                        ProcessCacheUtil.extractFlowNodesMapFromDiagram(pde))));
+                pde -> {
+                  final var processDiagramData = ProcessCacheUtil.extractProcessDiagramData(pde);
+                  return new CachedProcessEntity(
+                      pde.name(),
+                      pde.versionTag(),
+                      processDiagramData.callActivityIds(),
+                      processDiagramData.flowNodesMap());
+                }));
   }
 }
