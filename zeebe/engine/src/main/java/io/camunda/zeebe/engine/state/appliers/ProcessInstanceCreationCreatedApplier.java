@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
+import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -24,12 +25,15 @@ final class ProcessInstanceCreationCreatedApplier
 
   private final ProcessState processState;
   private final MutableElementInstanceState elementInstanceState;
+  private final MutableUsageMetricState usageMetricState;
 
   public ProcessInstanceCreationCreatedApplier(
       final MutableProcessState processState,
-      final MutableElementInstanceState elementInstanceState) {
+      final MutableElementInstanceState elementInstanceState,
+      final MutableUsageMetricState usageMetricState) {
     this.processState = processState;
     this.elementInstanceState = elementInstanceState;
+    this.usageMetricState = usageMetricState;
   }
 
   @Override
@@ -54,6 +58,12 @@ final class ProcessInstanceCreationCreatedApplier
                 incrementNumberOfTakenSequenceFlows(element, flowScope);
               });
     }
+
+    createUsageMetric(value);
+  }
+
+  private void createUsageMetric(final ProcessInstanceCreationRecord value) {
+    usageMetricState.recordRPIMetric(value.getTenantId());
   }
 
   /**

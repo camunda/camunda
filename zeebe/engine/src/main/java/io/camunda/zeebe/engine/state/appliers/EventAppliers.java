@@ -63,6 +63,7 @@ import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
@@ -260,10 +261,12 @@ public final class EventAppliers implements EventApplier {
   private void registerProcessInstanceCreationAppliers(final MutableProcessingState state) {
     final var processState = state.getProcessState();
     final var elementInstanceState = state.getElementInstanceState();
+    final var usageMetricState = state.getUsageMetricState();
 
     register(
         ProcessInstanceCreationIntent.CREATED,
-        new ProcessInstanceCreationCreatedApplier(processState, elementInstanceState));
+        new ProcessInstanceCreationCreatedApplier(
+            processState, elementInstanceState, usageMetricState));
   }
 
   private void registerProcessInstanceModificationAppliers(final MutableProcessingState state) {
