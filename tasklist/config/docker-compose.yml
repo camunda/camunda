@@ -102,7 +102,7 @@ services:
         condition: service_healthy
     restart: on-failure
     container_name: identity
-    image: camunda/identity:8.6.13
+    image: camunda/identity:8.6.14
     ports:
       - "8084:8084"
     environment:
