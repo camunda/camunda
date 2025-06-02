@@ -20,7 +20,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -105,7 +104,7 @@ public class UpdateMappingMultiPartitionTest {
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // given the role creation distribution is intercepted
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
-      interceptCreateForPartition(partitionId);
+      engine.interceptInterPartitionIntent(partitionId, MappingIntent.CREATE);
     }
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
@@ -137,17 +136,5 @@ public class UpdateMappingMultiPartitionTest {
         .containsExactly(
             tuple(ValueType.MAPPING, MappingIntent.CREATE),
             tuple(ValueType.MAPPING, MappingIntent.UPDATE));
-  }
-
-  private void interceptCreateForPartition(final int partitionId) {
-    final var hasInterceptedPartition = new AtomicBoolean(false);
-    engine.interceptInterPartitionCommands(
-        (receiverPartitionId, valueType, intent, recordKey, command) -> {
-          if (hasInterceptedPartition.get()) {
-            return true;
-          }
-          hasInterceptedPartition.set(true);
-          return !(receiverPartitionId == partitionId && intent == MappingIntent.CREATE);
-        });
   }
 }

@@ -23,7 +23,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
@@ -110,7 +109,7 @@ public class UpdateRoleMultiPartitionTest {
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // when
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
-      interceptRoleCreateForPartition(partitionId);
+      engine.interceptInterPartitionIntent(partitionId, RoleIntent.CREATE);
     }
     final var roleId = UUID.randomUUID().toString();
     engine.role().newRole(roleId).withName("created").create();
@@ -126,17 +125,5 @@ public class UpdateRoleMultiPartitionTest {
         .extracting(r -> r.getValue().getValueType(), r -> r.getValue().getIntent())
         .containsExactly(
             tuple(ValueType.ROLE, RoleIntent.CREATE), tuple(ValueType.ROLE, RoleIntent.UPDATE));
-  }
-
-  private void interceptRoleCreateForPartition(final int partitionId) {
-    final var hasInterceptedPartition = new AtomicBoolean(false);
-    engine.interceptInterPartitionCommands(
-        (receiverPartitionId, valueType, intent, recordKey, command) -> {
-          if (hasInterceptedPartition.get()) {
-            return true;
-          }
-          hasInterceptedPartition.set(true);
-          return !(receiverPartitionId == partitionId && intent == RoleIntent.CREATE);
-        });
   }
 }

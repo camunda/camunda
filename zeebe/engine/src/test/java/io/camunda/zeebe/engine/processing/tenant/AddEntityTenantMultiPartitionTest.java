@@ -25,7 +25,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
@@ -146,7 +145,7 @@ public class AddEntityTenantMultiPartitionTest {
         .getKey();
 
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
-      interceptTenantCreateForPartition(partitionId); // Intercept tenant creation
+      engine.interceptInterPartitionIntent(partitionId, TenantIntent.CREATE);
     }
 
     // when
@@ -172,17 +171,5 @@ public class AddEntityTenantMultiPartitionTest {
             tuple(ValueType.AUTHORIZATION, AuthorizationIntent.CREATE),
             tuple(ValueType.TENANT, TenantIntent.CREATE),
             tuple(ValueType.TENANT, TenantIntent.ADD_ENTITY));
-  }
-
-  private void interceptTenantCreateForPartition(final int partitionId) {
-    final var hasInterceptedPartition = new AtomicBoolean(false);
-    engine.interceptInterPartitionCommands(
-        (receiverPartitionId, valueType, intent, recordKey, command) -> {
-          if (hasInterceptedPartition.get()) {
-            return true;
-          }
-          hasInterceptedPartition.set(true);
-          return !(receiverPartitionId == partitionId && intent == TenantIntent.CREATE);
-        });
   }
 }

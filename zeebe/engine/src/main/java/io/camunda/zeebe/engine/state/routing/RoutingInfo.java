@@ -126,8 +126,7 @@ public interface RoutingInfo {
 
     @Override
     public boolean isPartitionScaling(final int partitionId) {
-      return !routingState.currentPartitions().contains(partitionId)
-          && routingState.desiredPartitions().contains(partitionId);
+      return !partitions().contains(partitionId) && desiredPartitions().contains(partitionId);
     }
   }
 }
