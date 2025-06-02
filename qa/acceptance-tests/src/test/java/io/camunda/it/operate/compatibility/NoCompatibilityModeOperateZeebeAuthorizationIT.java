@@ -55,7 +55,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-public class NoCompatibilityModeOperateAuthorizationIT {
+public class NoCompatibilityModeOperateZeebeAuthorizationIT {
 
   @MultiDbTestApplication
   private static final TestCamundaApplication STANDALONE_CAMUNDA =
