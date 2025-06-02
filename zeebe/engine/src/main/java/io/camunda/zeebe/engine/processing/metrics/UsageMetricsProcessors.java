@@ -9,6 +9,11 @@ package io.camunda.zeebe.engine.processing.metrics;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.InstantSource;
 
 public class UsageMetricsProcessors {
@@ -16,7 +21,16 @@ public class UsageMetricsProcessors {
   public static void addUsageMetricsProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final EngineConfiguration config,
-      final InstantSource clock) {
-    typedRecordProcessors.withListener(new UsageMetricsCheckerScheduler(config, clock));
+      final InstantSource clock,
+      final MutableProcessingState processingState,
+      final Writers writers,
+      final KeyGenerator keyGenerator) {
+    typedRecordProcessors
+        .onCommand(
+            ValueType.USAGE_METRIC,
+            UsageMetricIntent.EXPORT,
+            new UsageMetricsExportProcessor(
+                processingState.getUsageMetricState(), writers, keyGenerator))
+        .withListener(new UsageMetricsCheckerScheduler(config, clock));
   }
 }
