@@ -16,8 +16,10 @@ import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.schema.config.SchemaManagerConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -37,7 +39,10 @@ public class SearchEngineDatabaseConfiguration {
   @Bean
   public SearchEngineSchemaInitializer searchEngineSchemaInitializer(
       final SearchEngineConfiguration searchEngineConfiguration,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      @Autowired(required = false)
+          final Broker broker // if present, then it will ensure that the broker is started first
+      ) {
     return new SearchEngineSchemaInitializer(searchEngineConfiguration, meterRegistry);
   }
 
