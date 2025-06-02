@@ -15,7 +15,9 @@ import static io.camunda.it.util.TestHelper.waitUntilIncidentsConditionsAreMet;
 import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
@@ -60,6 +62,8 @@ public class NoCompatibilityModeOperateAuthorizationIT {
       new TestCamundaApplication()
           .withAuthorizationsEnabled()
           .withBasicAuth()
+          // use to enable Operate's operation executor
+          .withAdditionalProfile(Profile.TEST_EXECUTOR)
           .withAdditionalProperties(
               Map.of(
                   "camunda.operate.zeebe.compatibility.enabled",
@@ -137,7 +141,7 @@ public class NoCompatibilityModeOperateAuthorizationIT {
                       PROCESS_WITH_INCIDENT, PROCESS_WITH_VARIABLE, PROCESS_WITH_SERVICE_TASKS))));
 
   private static long processDefinitionForDeletionKey;
-  private static long decisionDefinitionForDeletionKey;
+  private static DeploymentEvent decisionDeploymentEvent;
   private static long targetMigrationProcessDefinitionKey;
 
   @BeforeAll
@@ -147,8 +151,7 @@ public class NoCompatibilityModeOperateAuthorizationIT {
       @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient testClientNoPermissions) {
     // given
     // deployed process and decision definitions
-    decisionDefinitionForDeletionKey =
-        deployResource(adminClient, DECISION_RESOURCE).getDecisions().get(0).getDecisionKey();
+    decisionDeploymentEvent = deployResource(adminClient, DECISION_RESOURCE);
     processDefinitionForDeletionKey =
         deployResource(adminClient, PROCESS_FOR_DELETION_RESOURCE)
             .getProcesses()
@@ -187,12 +190,13 @@ public class NoCompatibilityModeOperateAuthorizationIT {
       assertThat(responseBody.statusCode()).isEqualTo(expectedResponseCode);
       if (expectedResponseCode == 200) {
         // if the request is successful, we expect the process definition to be deleted
+        RecordingExporter.setMaximumWaitTime(25_000L);
         assertThat(
-                RecordingExporter.records()
-                    .withIntent(ResourceDeletionIntent.DELETED)
-                    .withRecordKey(processDefinitionForDeletionKey)
+                RecordingExporter.resourceDeletionRecords(ResourceDeletionIntent.DELETED)
+                    .withResourceKey(processDefinitionForDeletionKey)
                     .count())
             .isEqualTo(1L);
+        RecordingExporter.setMaximumWaitTime(5000);
       }
     }
   }
@@ -202,6 +206,8 @@ public class NoCompatibilityModeOperateAuthorizationIT {
   public void shouldDeleteDecisionDefinition(final TestUser user, final int expectedResponseCode) {
     // given
     // a client with decision delete permissions
+    final var decisionDefinitionForDeletionKey =
+        decisionDeploymentEvent.getDecisionRequirements().get(0).getDecisionRequirementsKey();
     try (final var operateRestClient =
         STANDALONE_CAMUNDA.newOperateClient(user.username(), user.password())) {
 
@@ -216,12 +222,13 @@ public class NoCompatibilityModeOperateAuthorizationIT {
       assertThat(responseBody.statusCode()).isEqualTo(expectedResponseCode);
       if (expectedResponseCode == 200) {
         // if the request is successful, we expect the decision definition to be deleted
+        RecordingExporter.setMaximumWaitTime(25_000L);
         assertThat(
-                RecordingExporter.records()
-                    .withIntent(ResourceDeletionIntent.DELETED)
-                    .withRecordKey(decisionDefinitionForDeletionKey)
+                RecordingExporter.resourceDeletionRecords(ResourceDeletionIntent.DELETED)
+                    .withResourceKey(decisionDefinitionForDeletionKey)
                     .count())
             .isEqualTo(1L);
+        RecordingExporter.setMaximumWaitTime(5000);
       }
     }
   }
@@ -254,9 +261,8 @@ public class NoCompatibilityModeOperateAuthorizationIT {
         // if the request is successful, we expect the process instance to be canceled
         assertThat(
                 RecordingExporter.processInstanceRecords()
-                    .withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                    .withIntent(ProcessInstanceIntent.TERMINATE_ELEMENT)
                     .withRecordKey(processInstanceKey)
-                    .withProcessInstanceKey(processInstanceKey)
                     .count())
             .isEqualTo(1L);
       }
@@ -280,12 +286,16 @@ public class NoCompatibilityModeOperateAuthorizationIT {
             TEST_USER_WITH_PERMISSIONS.username(), TEST_USER_WITH_PERMISSIONS.password())) {
       final var migrationRequestBody =
           new CreateBatchOperationRequestDto()
+              .setName("authorized-batch")
               .setOperationType(OperationType.MIGRATE_PROCESS_INSTANCE)
               .setQuery(
                   new ListViewQueryDto()
                       .setActive(true)
                       .setRunning(true)
-                      .setBpmnProcessId(PROCESS_FOR_MIGRATION_V1))
+                      .setIncidents(true)
+                      .setFinished(true)
+                      .setCompleted(true)
+                      .setCanceled(true))
               .setMigrationPlan(
                   new MigrationPlanDto()
                       .setTargetProcessDefinitionKey(
@@ -307,12 +317,15 @@ public class NoCompatibilityModeOperateAuthorizationIT {
       final var responseBody = response.get();
       assertThat(responseBody).isNotNull();
       assertThat(responseBody.statusCode()).isEqualTo(200);
+
+      RecordingExporter.setMaximumWaitTime(25_000L);
       assertThat(
-              RecordingExporter.processInstanceMigrationRecords()
-                  .withIntent(ProcessInstanceMigrationIntent.MIGRATED)
-                  .withProcessInstanceKey(processInstanceKey)
+              RecordingExporter.processInstanceMigrationRecords(
+                      ProcessInstanceMigrationIntent.MIGRATED)
+                  .withRecordKey(processInstanceKey)
                   .count())
           .isEqualTo(1L);
+      RecordingExporter.setMaximumWaitTime(5000);
     }
   }
 
@@ -440,7 +453,9 @@ public class NoCompatibilityModeOperateAuthorizationIT {
   }
 
   private static Stream<Arguments> provideUserAndResponseCode() {
+    // the exceptional path arguments are first, so that we can
+    // re-use the same process and decision definitions in the deletion tests
     return Stream.of(
-        Arguments.of(TEST_USER_WITH_PERMISSIONS, 200), Arguments.of(TEST_USER_NO_PERMISSIONS, 403));
+        Arguments.of(TEST_USER_NO_PERMISSIONS, 403), Arguments.of(TEST_USER_WITH_PERMISSIONS, 200));
   }
 }
