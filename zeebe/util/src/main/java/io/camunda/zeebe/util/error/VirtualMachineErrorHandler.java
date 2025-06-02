@@ -11,9 +11,10 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import org.slf4j.Logger;
 
 /**
- * Handles all Throwables and exits for {@link VirtualMachineError}. It can also be used as a {@link
- * UncaughtExceptionHandler uncaught exception handler}, for example as the {@link
- * Thread#setDefaultUncaughtExceptionHandler default uncaught exception handler}
+ * Handles all Throwables and exits for {@link VirtualMachineError} and other virtual machine errors
+ * like {@link ClassCircularityError}. It can also be used as a {@link UncaughtExceptionHandler
+ * uncaught exception handler}, for example as the {@link Thread#setDefaultUncaughtExceptionHandler
+ * default uncaught exception handler}
  */
 public final class VirtualMachineErrorHandler
     implements FatalErrorHandler, UncaughtExceptionHandler {
@@ -38,7 +39,7 @@ public final class VirtualMachineErrorHandler
    */
   @Override
   public void handleError(final Throwable e) {
-    if (e instanceof VirtualMachineError) {
+    if (e instanceof VirtualMachineError || e instanceof ClassCircularityError) {
       tryLogging(e);
       System.exit(EXIT_CODE);
     }
