@@ -129,7 +129,7 @@ jobs:
           if [ -n "${{ inputs.version }}" ]; then
             VERSION="${{ inputs.version }}"
           else
-            VERSION=$(./mvnw -q -Dexec.executable=echo -Dexec.args="${project.version}" --non-recursive exec:exec 2>/dev/null)
+            VERSION=$(./mvnw -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec 2>/dev/null)
           fi
           export VERSION
           if [[ "${VERSION}" == *-SNAPSHOT ]]; then
