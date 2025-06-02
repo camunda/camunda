@@ -23,13 +23,15 @@ public class UsageMetricRecord extends UnifiedRecordValue implements UsageMetric
       new EnumProperty<>("intervalType", IntervalType.class, IntervalType.ACTIVE);
   private final EnumProperty<EventType> eventTypeProp =
       new EnumProperty<>("eventType", EventType.class, EventType.NONE);
+  private final LongProperty resetTimeProp = new LongProperty("resetTime", -1);
   private final LongProperty startTimeProp = new LongProperty("startTime", -1);
   private final LongProperty endTimeProp = new LongProperty("endTime", -1);
   private final DocumentProperty valuesProp = new DocumentProperty("values");
 
   public UsageMetricRecord() {
-    super(5);
+    super(6);
     declareProperty(intervalTypeProp)
+        .declareProperty(resetTimeProp)
         .declareProperty(startTimeProp)
         .declareProperty(endTimeProp)
         .declareProperty(eventTypeProp)
@@ -83,6 +85,15 @@ public class UsageMetricRecord extends UnifiedRecordValue implements UsageMetric
 
   public UsageMetricRecord setValues(final DirectBuffer value) {
     valuesProp.setValue(value);
+    return this;
+  }
+
+  public long getResetTime() {
+    return resetTimeProp.getValue();
+  }
+
+  public UsageMetricRecord setResetTime(final Long resetTime) {
+    resetTimeProp.setValue(resetTime);
     return this;
   }
 
