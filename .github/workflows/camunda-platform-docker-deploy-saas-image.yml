@@ -90,7 +90,7 @@ jobs:
       - uses: ./.github/actions/build-platform-docker
         id: build-push-zeebe-docker
         name: Build & Push zeebe-io/zeebe
-        if: ${{ inputs.camunda-image-only == 'false' }}
+        if: ${{ !inputs.camunda-image-only }}
         with:
           repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/zeebe
           version: ${{ steps.image-tag.outputs.image-tag }}
@@ -101,7 +101,7 @@ jobs:
       - uses: ./.github/actions/build-platform-docker
         id: build-push-operate-docker
         name: Build & Push zeebe-io/operate
-        if: ${{ inputs.camunda-image-only == 'false' }}
+        if: ${{ !inputs.camunda-image-only }}
         with:
           repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/operate
           version: ${{ steps.image-tag.outputs.image-tag }}
@@ -112,7 +112,7 @@ jobs:
       - uses: ./.github/actions/build-platform-docker
         id: build-push-tasklist-docker
         name: Build & Push zeebe-io/tasklist
-        if: ${{ inputs.camunda-image-only == 'false' }}
+        if: ${{ !inputs.camunda-image-only }}
         with:
           repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/tasklist
           version: ${{ steps.image-tag.outputs.image-tag }}
@@ -123,7 +123,7 @@ jobs:
       - uses: ./.github/actions/build-platform-docker
         id: build-push-optimize-docker
         name: Build & Push zeebe-io/optimize
-        if: ${{ inputs.camunda-image-only == 'false' }}
+        if: ${{ !inputs.camunda-image-only }}
         with:
           repository: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/optimize
           version: ${{ steps.image-tag.outputs.image-tag }}
