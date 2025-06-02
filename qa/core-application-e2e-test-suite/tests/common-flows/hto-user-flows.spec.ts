@@ -78,7 +78,7 @@ test.describe('HTO User Flow Tests', () => {
       await taskPanelPage.openTask('Job_Worker_Process');
       await taskDetailsPage.clickAssignToMeButton();
       await taskDetailsPage.clickCompleteTaskButton();
-      await expect(page.getByText('Task completed')).toBeVisible({
+      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
         timeout: 200000,
       });
 
@@ -151,7 +151,7 @@ test.describe('HTO User Flow Tests', () => {
         '"updatedValue"',
       );
       await taskDetailsPage.clickCompleteTaskButton();
-      await expect(page.getByText('Task completed')).toBeVisible({
+      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
         timeout: 200000,
       });
     });
@@ -183,7 +183,7 @@ test.describe('HTO User Flow Tests', () => {
       await taskDetailsPage.clickAssignToMeButton();
       await taskDetailsPage.fillTextInput('Name*', 'Test User');
       await taskDetailsPage.clickCompleteTaskButton();
-      await expect(page.getByText('Task completed')).toBeVisible({
+      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
         timeout: 200000,
       });
 
@@ -241,6 +241,9 @@ test.describe('HTO User Flow Tests', () => {
         taskDetailsPage.detailsPanel.getByText('critical'),
       ).toBeVisible();
       await taskDetailsPage.clickCompleteTaskButton();
+      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
+        timeout: 200000,
+      });
       await taskPanelPage.openTask('priorityTest3');
       await taskDetailsPage.clickAssignToMeButton();
       await expect(
@@ -248,6 +251,9 @@ test.describe('HTO User Flow Tests', () => {
       ).toBeVisible();
       await taskDetailsPage.taskCompletedBanner.waitFor({state: 'hidden'});
       await taskDetailsPage.clickCompleteTaskButton();
+      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
+        timeout: 200000,
+      });
       await taskPanelPage.openTask('priorityTest2');
       await taskDetailsPage.clickAssignToMeButton();
       await expect(
@@ -255,12 +261,17 @@ test.describe('HTO User Flow Tests', () => {
       ).toBeVisible();
       await taskDetailsPage.taskCompletedBanner.waitFor({state: 'hidden'});
       await taskDetailsPage.clickCompleteTaskButton();
+      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
+        timeout: 200000,
+      });
       await taskPanelPage.openTask('priorityTest1');
       await taskDetailsPage.clickAssignToMeButton();
       await expect(taskDetailsPage.detailsPanel.getByText('low')).toBeVisible();
       await taskDetailsPage.taskCompletedBanner.waitFor({state: 'hidden'});
       await taskDetailsPage.clickCompleteTaskButton();
-
+      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
+        timeout: 200000,
+      });
       await taskPanelPage.filterBy('Completed');
       await taskPanelPage.assertCompletedHeadingVisible();
       await taskPanelPage.openTask('priorityTest4');
@@ -307,7 +318,7 @@ test.describe('HTO User Flow Tests', () => {
       await taskPanelPage.openTask('Zeebe_User_Task_Process');
       await taskDetailsPage.clickAssignToMeButton();
       await taskDetailsPage.clickCompleteTaskButton();
-      await expect(page.getByText('Task completed')).toBeVisible({
+      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
         timeout: 200000,
       });
 

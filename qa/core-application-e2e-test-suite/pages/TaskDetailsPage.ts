@@ -120,9 +120,6 @@ class TaskDetailsPage {
 
   async clickCompleteTaskButton() {
     await this.completeTaskButton.click({timeout: 60000});
-    await expect(this.taskCompletedBanner).toBeVisible({
-      timeout: 200000,
-    });
   }
 
   async clickAddVariableButton() {
