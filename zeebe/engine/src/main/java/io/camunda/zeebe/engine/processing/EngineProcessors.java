@@ -338,7 +338,7 @@ public final class EngineProcessors {
         batchOperationMetrics);
 
     UsageMetricsProcessors.addUsageMetricsProcessors(
-        typedRecordProcessors, config, clock, processingState);
+        typedRecordProcessors, config, clock, processingState, writers, keyGenerator);
 
     return typedRecordProcessors;
   }
