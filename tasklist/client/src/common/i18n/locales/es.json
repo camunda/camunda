@@ -336,6 +336,7 @@
     "relativeDateUnknown": "'Desconocido'",
     "processesTabPreviousPageButtonLabel": "Página anterior",
     "processesTabNextPageButtonLabel": "Página siguiente",
-    "processesTabPaginationOfLabel": "{{currentPage}} de {{totalPages}}"
+    "processesTabPaginationOfLabel": "{{currentPage}} de {{totalPages}}",
+    "deniedReason": "La tarea {{type}} fue rechazada por el sistema."
   }
 }

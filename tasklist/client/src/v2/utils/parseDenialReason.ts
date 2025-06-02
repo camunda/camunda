@@ -6,6 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {t} from 'i18next';
+
 export const parseDenialReason = async (
   error: unknown,
   type: 'assignment' | 'unassignment' | 'completion',
@@ -18,7 +20,7 @@ export const parseDenialReason = async (
   const detail =
     typeof responseJson?.detail === 'string' ? responseJson?.detail : '';
 
-  let deniedReason: string = `The task ${type} was rejected by the system.`;
+  let deniedReason: string = t('deniedReason', {type});
   const match = detail.match(/Reason to deny:\s*(.*)/i);
   if (match && match[1]) {
     deniedReason = match[1].trim().replace(/^["'](.*)["']$/, '$1');
