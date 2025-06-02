@@ -54,8 +54,8 @@ public class UserTaskEntityTransformer implements ServiceTransformer<TaskEntity,
       case COMPLETING -> UserTaskState.COMPLETING;
       case COMPLETED -> UserTaskState.COMPLETED;
       case CANCELING -> UserTaskState.CANCELING;
+      case CANCELED -> UserTaskState.CANCELED;
       case FAILED -> UserTaskState.FAILED;
-      default -> throw new IllegalArgumentException("Unexpected value: " + source);
     };
   }
 
