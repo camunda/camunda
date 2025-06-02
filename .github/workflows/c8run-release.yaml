@@ -7,22 +7,22 @@ on:
   workflow_dispatch:
     inputs:
       branch:
-        description: "release branch of c8run to release (stable/8.7, main, etc.)"
+        description: "release branch of c8run to release (e.g., main, stable/8.7, etc.)"
         type: string
         required: true
         default: ""
       camundaVersion:
-        description: "Camunda minor version in format x.y, x.y-rc, or alpha"
+        description: "Camunda minor version in format x.y"
         type: string
         required: true
         default: ""
       camundaAppsRelease:
-        description: "Name of the Camunda apps GH release"
+        description: "Name of the Camunda apps GitHub release page (e.g., 8.7.1, 8.8.0-alpha4, etc.)"
         type: string
         required: true
         default: ""
       publishToCamundaAppsRelease:
-        description: "Publish C8Run artifact to Camunda apps GH release too (in addition to C8Run own GH release)"
+        description: "Publish C8Run artifact to Camunda apps GitHub release page"
         type: boolean
         default: true
       publishToCamundaDownloadCenter:
@@ -213,8 +213,7 @@ jobs:
         env:
           GH_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         run: |
-          gh release edit "${{ inputs.camundaAppsRelease }}" \
-            --prerelease
+          gh release edit "${{ inputs.camundaAppsRelease }}" --prerelease
 
       - name: Camunda Download Center - Upload artifact in own release
         if: inputs.publishToCamundaDownloadCenter
