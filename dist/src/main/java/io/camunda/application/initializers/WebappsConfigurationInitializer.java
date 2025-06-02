@@ -62,10 +62,13 @@ public class WebappsConfigurationInitializer
 
   private boolean isLoginDelegated(final ConfigurableApplicationContext context) {
     final var activeProfiles = Arrays.asList(context.getEnvironment().getActiveProfiles());
-    final var consolidatedAuthVariation =
-        AuthenticationMethod.parse(String.valueOf(context.getEnvironment().getProperty(METHOD)));
-    return activeProfiles.stream().anyMatch(LOGIN_DELEGATED_PROFILES::contains)
-        || (consolidatedAuthVariation.isPresent()
-            && AuthenticationMethod.OIDC.equals(consolidatedAuthVariation.get()));
+    if (activeProfiles.stream().anyMatch(LOGIN_DELEGATED_PROFILES::contains)) {
+      return true;
+    }
+
+    final var authenticationMethodProperty = context.getEnvironment().getProperty(METHOD);
+    final var authenticationMethod = AuthenticationMethod.parse(authenticationMethodProperty);
+    return authenticationMethod.isPresent()
+        && AuthenticationMethod.OIDC.equals(authenticationMethod.get());
   }
 }
