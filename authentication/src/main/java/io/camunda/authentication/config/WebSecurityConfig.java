@@ -87,7 +87,17 @@ public class WebSecurityConfig {
           "/tasklist/**",
           "/",
           "/sso-callback/**",
-          "/oauth2/authorization/**");
+          "/oauth2/authorization/**",
+          // old Tasklist and Operate webapps routes
+          "/processes",
+          "/processes/*",
+          "/{regex:[\\d]+}", // user task id
+          "/processes/*/start",
+          "/new/*",
+          "/decisions",
+          "/decisions/*",
+          "/instances",
+          "/instances/*");
   private static final Set<String> UNPROTECTED_PATHS =
       Set.of(
           // endpoint for failure forwarding
