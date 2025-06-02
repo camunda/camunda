@@ -43,10 +43,18 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.InMemoryOAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.AuthenticatedPrincipalOAuth2AuthorizedClientRepository;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -299,6 +307,26 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    public OAuth2AuthorizedClientService authorizedClientService(
+        final ClientRegistrationRepository clientRegistrationRepository) {
+      return new InMemoryOAuth2AuthorizedClientService(clientRegistrationRepository);
+    }
+
+    @Bean
+    public OAuth2AuthorizedClientRepository authorizedClientRepository(
+        final OAuth2AuthorizedClientService authorizedClientService) {
+      return new AuthenticatedPrincipalOAuth2AuthorizedClientRepository(authorizedClientService);
+    }
+
+    @Bean
+    public OAuth2AuthorizedClientManager authorizedClientManager(
+        final ClientRegistrationRepository clientRegistrationRepository,
+        final OAuth2AuthorizedClientRepository authorizedClientRepository) {
+      return new DefaultOAuth2AuthorizedClientManager(
+          clientRegistrationRepository, authorizedClientRepository);
+    }
+
+    @Bean
     public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(
         final SecurityConfiguration securityConfiguration) {
       final var decoderFactory = new OidcIdTokenDecoderFactory();
@@ -386,7 +414,9 @@ public class WebSecurityConfig {
         final ClientRegistrationRepository clientRegistrationRepository,
         final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter,
         final JwtDecoder jwtDecoder,
-        final CamundaJwtAuthenticationConverter converter)
+        final CamundaJwtAuthenticationConverter converter,
+        final OAuth2AuthorizedClientRepository authorizedClientRepository,
+        final OAuth2AuthorizedClientService authorizedClientService)
         throws Exception {
       return httpSecurity
           .securityMatcher(WEBAPP_PATHS.toArray(new String[0]))
@@ -413,9 +443,24 @@ public class WebSecurityConfig {
               oauthLoginConfigurer -> {
                 oauthLoginConfigurer
                     .clientRegistrationRepository(clientRegistrationRepository)
+                    .authorizedClientRepository(authorizedClientRepository)
                     .redirectionEndpoint(
                         redirectionEndpointConfig ->
-                            redirectionEndpointConfig.baseUri("/sso-callback"));
+                            redirectionEndpointConfig.baseUri("/sso-callback"))
+                    .successHandler(
+                        (req, resp, auth) -> {
+                          final OAuth2AuthenticationToken oauth2Token =
+                              (OAuth2AuthenticationToken) auth;
+                          final OAuth2AuthorizedClient client =
+                              authorizedClientService.loadAuthorizedClient(
+                                  oauth2Token.getAuthorizedClientRegistrationId(),
+                                  oauth2Token.getName());
+                          System.out.println(
+                              "Access token: " + client.getAccessToken().getTokenValue());
+                          System.out.println(
+                              "Refresh token: " + client.getRefreshToken().getTokenValue());
+                          resp.sendRedirect("/"); // continue
+                        });
               })
           .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
           .logout(
