@@ -44,6 +44,7 @@ import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
 import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.processing.metrics.UsageMetricsProcessors;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceFetchProcessor;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
@@ -323,6 +324,9 @@ public final class EngineProcessors {
         processingState,
         config,
         partitionId);
+
+    UsageMetricsProcessors.addUsageMetricsProcessors(
+        typedRecordProcessors, config, clock, processingState);
 
     return typedRecordProcessors;
   }
