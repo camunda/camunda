@@ -7,6 +7,9 @@
  */
 package io.camunda.tasklist.webapp.security;
 
+import static io.camunda.authentication.config.AuthenticationProperties.METHOD;
+
+import io.camunda.security.entity.AuthenticationMethod;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -37,7 +40,7 @@ public class TasklistProfileServiceImpl implements TasklistProfileService {
 
   @Override
   public boolean isLoginDelegated() {
-    return isIdentityProfile() || isSSOProfile();
+    return isIdentityProfile() || isSSOProfile() || isConsolidatedAuthOidc();
   }
 
   private boolean isDevelopmentProfileActive() {
@@ -50,5 +53,13 @@ public class TasklistProfileServiceImpl implements TasklistProfileService {
 
   private boolean isIdentityProfile() {
     return Arrays.asList(environment.getActiveProfiles()).contains(IDENTITY_AUTH_PROFILE);
+  }
+
+  public boolean isConsolidatedAuthOidc() {
+    final var consolidatedAuthVariation =
+        AuthenticationMethod.parse(String.valueOf(environment.getProperty(METHOD)));
+
+    return consolidatedAuthVariation.isPresent()
+        && AuthenticationMethod.OIDC.equals(consolidatedAuthVariation.get());
   }
 }

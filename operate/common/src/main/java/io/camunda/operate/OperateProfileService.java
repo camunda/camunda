@@ -7,6 +7,9 @@
  */
 package io.camunda.operate;
 
+import static io.camunda.authentication.config.AuthenticationProperties.METHOD;
+
+import io.camunda.security.entity.AuthenticationMethod;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -45,6 +48,14 @@ public class OperateProfileService {
     return Arrays.asList(environment.getActiveProfiles()).contains(SSO_AUTH_PROFILE);
   }
 
+  public boolean isConsolidatedAuthOidc() {
+    final var consolidatedAuthVariation =
+        AuthenticationMethod.parse(String.valueOf(environment.getProperty(METHOD)));
+
+    return consolidatedAuthVariation.isPresent()
+        && AuthenticationMethod.OIDC.equals(consolidatedAuthVariation.get());
+  }
+
   public boolean isIdentityProfile() {
     return Arrays.asList(environment.getActiveProfiles()).contains(IDENTITY_AUTH_PROFILE);
   }
@@ -55,6 +66,6 @@ public class OperateProfileService {
   }
 
   public boolean isLoginDelegated() {
-    return isIdentityProfile() || isSSOProfile();
+    return isIdentityProfile() || isSSOProfile() || isConsolidatedAuthOidc();
   }
 }
