@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @DependsOn("searchEngineSchemaInitializer")
-@Profile("!test")
+@Profile({"!test", "test-executor"})
 public class StartupBean {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(StartupBean.class);
