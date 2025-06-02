@@ -310,6 +310,7 @@
           </configOptions>
         </configuration>
         <executions>
+          <!-- general rest api generation -->
           <execution>
             <id>rest</id>
             <goals>
@@ -317,6 +318,17 @@
             </goals>
             <configuration>
               <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
+            </configuration>
+          </execution>
+
+          <!-- batch operation rest api generation -->
+          <execution>
+            <id>client-batch-operation</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${openapi.dir}/batchoperation/rest-api-batchoperation.yaml</inputSpec>
             </configuration>
           </execution>
         </executions>

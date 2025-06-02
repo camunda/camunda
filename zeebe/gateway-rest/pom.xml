@@ -422,6 +422,7 @@
         <directory>../gateway-protocol/src/main/proto</directory>
         <includes>
           <include>rest-api.yaml</include>
+          <include>batchoperation/rest-api-batchoperation.yaml</include>
         </includes>
       </resource>
     </resources>
@@ -435,6 +436,8 @@
           <openapiNormalizer>REF_AS_PARENT_IN_ALLOF=true</openapiNormalizer>
         </configuration>
         <executions>
+
+          <!-- general rest api generation -->
           <execution>
             <id>rest</id>
             <goals>
@@ -442,6 +445,17 @@
             </goals>
             <configuration>
               <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
+            </configuration>
+          </execution>
+
+          <!-- batch operation rest api generation -->
+          <execution>
+            <id>rest-batch-operation</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <inputSpec>${openapi.dir}/batchoperation/rest-api-batchoperation.yaml</inputSpec>
             </configuration>
           </execution>
         </executions>
