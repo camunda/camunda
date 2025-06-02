@@ -209,6 +209,8 @@ public class OpensearchExporterConfiguration {
 
     public boolean asyncRequest = false;
 
+    public boolean usageMetrics = false;
+
     // index settings
     private Integer numberOfShards = null;
     private Integer numberOfReplicas = null;
