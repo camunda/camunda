@@ -69,6 +69,7 @@ public final class TestSupport {
       case BATCH_OPERATION_LIFECYCLE_MANAGEMENT -> config.batchOperationLifecycleManagement = value;
       case AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION ->
           config.adHocSubProcessActivityActivation = value;
+      case USAGE_METRIC -> config.usageMetrics = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);
@@ -121,6 +122,7 @@ public final class TestSupport {
       case BATCH_OPERATION_LIFECYCLE_MANAGEMENT -> config.batchOperationExecution = value;
       case AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION ->
           config.adHocSubProcessActivityActivation = value;
+      case USAGE_METRIC -> config.usageMetrics = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);
