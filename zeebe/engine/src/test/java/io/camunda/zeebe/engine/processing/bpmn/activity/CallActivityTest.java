@@ -50,7 +50,13 @@ public final class CallActivityTest {
           .withEngineConfig(config -> config.setMaxProcessDepth(CUSTOM_CALL_ACTIVITY_DEPTH))
           .withFeatureFlags(
               new FeatureFlags(
-                  true, true, true, true, ENABLE_STRAIGHT_THROUGH_PROCESSING_LOOP_DETECTOR, true));
+                  true,
+                  true,
+                  true,
+                  true,
+                  ENABLE_STRAIGHT_THROUGH_PROCESSING_LOOP_DETECTOR,
+                  true,
+                  false));
 
   private static final String PROCESS_ID_PARENT = "wf-parent";
   private static final String PROCESS_ID_CHILD = "wf-child";

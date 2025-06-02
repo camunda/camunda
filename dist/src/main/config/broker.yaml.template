@@ -1231,3 +1231,17 @@
         # Disables the experimental partition scaling feature by default until it is stable: https://github.com/camunda/camunda/issues/21439
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLEPARTITIONSCALING
         # enablePartitionScaling: false
+
+        # Controls whether the full message body is included in the follow-up event when a message expires.
+        # When enabled, the system appends the entire message payload during expiration.
+        # This is useful in environments where full visibility into expired messages is needed.
+        # Such that full message details can be exported by configuring the exporter filtering to allow `Message.EXPIRED` events.
+        # However, including the full message body increases the size of each follow-up event.
+        # For large messages (e.g., ~100KB), this may lead to batch size limits being exceeded earlier.
+        # As a result, fewer messages may be expired per batch (e.g., only 40 instead of more),
+        # which requires multiple checker runs to process the full batch.
+        # Please be aware that this may introduce performance regressions or cause the expired message state to grow more quickly over time.
+        # To maintain backward compatibility and avoid performance degradation, the default value is false,
+        # meaning message bodies will not be appended unless explicitly enabled.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_EXPERIMENTAL_FEATURES_ENABLEMESSAGEBODYONEXPIRED
+        # enableMessageBodyOnExpired: false
