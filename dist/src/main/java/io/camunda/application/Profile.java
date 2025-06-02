@@ -25,6 +25,7 @@ public enum Profile {
 
   // environment profiles
   TEST("test"),
+  TEST_EXECUTOR("test-executor"),
   DEVELOPMENT("dev"),
   PRODUCTION("prod"),
 
