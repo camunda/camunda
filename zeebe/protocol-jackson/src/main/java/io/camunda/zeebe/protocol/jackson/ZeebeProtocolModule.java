@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.value.ImmutableAsyncRequestMetadataRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableAsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableCommandDistributionRecordValue;
 
 /**
@@ -37,7 +37,7 @@ public final class ZeebeProtocolModule extends SimpleModule {
   public ZeebeProtocolModule() {
     setMixInAnnotation(ImmutableRecord.Builder.class, RecordMixin.class);
     setMixInAnnotation(ImmutableCommandDistributionRecordValue.Builder.class, RecordMixin.class);
-    setMixInAnnotation(ImmutableAsyncRequestMetadataRecordValue.Builder.class, RecordMixin.class);
+    setMixInAnnotation(ImmutableAsyncRequestRecordValue.Builder.class, RecordMixin.class);
   }
 
   @Override

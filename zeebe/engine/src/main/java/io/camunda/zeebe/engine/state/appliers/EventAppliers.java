@@ -19,7 +19,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
-import io.camunda.zeebe.protocol.record.intent.AsyncRequestMetadataIntent;
+import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
@@ -140,7 +140,7 @@ public final class EventAppliers implements EventApplier {
     registerMappingAppliers(state);
     registerBatchOperationAppliers(state);
     registerIdentitySetupAppliers();
-    registerAsyncRequestMetadataAppliers();
+    registerAsyncRequestAppliers();
 
     return this;
   }
@@ -633,9 +633,9 @@ public final class EventAppliers implements EventApplier {
     register(IdentitySetupIntent.INITIALIZED, NOOP_EVENT_APPLIER);
   }
 
-  private void registerAsyncRequestMetadataAppliers() {
-    register(AsyncRequestMetadataIntent.RECEIVED, NOOP_EVENT_APPLIER);
-    register(AsyncRequestMetadataIntent.PROCESSED, NOOP_EVENT_APPLIER);
+  private void registerAsyncRequestAppliers() {
+    register(AsyncRequestIntent.RECEIVED, NOOP_EVENT_APPLIER);
+    register(AsyncRequestIntent.PROCESSED, NOOP_EVENT_APPLIER);
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {

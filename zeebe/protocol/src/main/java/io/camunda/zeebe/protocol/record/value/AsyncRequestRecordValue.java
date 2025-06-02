@@ -18,24 +18,29 @@ package io.camunda.zeebe.protocol.record.value;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import org.immutables.value.Value;
 
 /**
- * Represents metadata for a user-triggered request that may complete asynchronously.
+ * Represents an asynchronous user-triggered request that may complete later.
  *
- * <p>This record is used to persist essential metadata about the original command. It allows
- * follow-up events or responses to be written after the request completes — even if its completion
- * was deferred due to intermediate operations like user task listener execution.
+ * <p>This record captures essential data from the original command so that follow-up events and
+ * client responses can be correctly written after the request finishes — even if it was deferred by
+ * intermediate operations like user task listener execution.
  *
- * <p>See {@link io.camunda.zeebe.protocol.record.intent.AsyncRequestMetadataIntent} for intents.
+ * <p>See {@link AsyncRequestIntent} for intents.
  */
 @Value.Immutable
-@ImmutableProtocol(builder = ImmutableAsyncRequestMetadataRecordValue.Builder.class)
-public interface AsyncRequestMetadataRecordValue extends RecordValue {
+@ImmutableProtocol(builder = ImmutableAsyncRequestRecordValue.Builder.class)
+public interface AsyncRequestRecordValue extends RecordValue {
 
-  /** The key of the original request command. */
-  long getRequestKey();
+  /**
+   * Returns the key of the element instance the request was made against.
+   *
+   * <p>For example, the key of a user task element or process instance.
+   */
+  long getScopeKey();
 
   /** The value type of the original request. */
   ValueType getValueType();

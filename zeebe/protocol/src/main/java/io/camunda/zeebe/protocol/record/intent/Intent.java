@@ -73,7 +73,7 @@ public interface Intent {
           BatchOperationChunkIntent.class,
           BatchOperationExecutionIntent.class,
           AdHocSubProcessActivityActivationIntent.class,
-          AsyncRequestMetadataIntent.class);
+          AsyncRequestIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
@@ -191,8 +191,8 @@ public interface Intent {
         return BatchOperationIntent.from(intent);
       case BATCH_OPERATION_PARTITION_LIFECYCLE:
         return BatchOperationIntent.from(intent);
-      case ASYNC_REQUEST_METADATA:
-        return AsyncRequestMetadataIntent.from(intent);
+      case ASYNC_REQUEST:
+        return AsyncRequestIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -302,8 +302,8 @@ public interface Intent {
         return BatchOperationIntent.valueOf(intent);
       case BATCH_OPERATION_PARTITION_LIFECYCLE:
         return BatchOperationIntent.valueOf(intent);
-      case ASYNC_REQUEST_METADATA:
-        return AsyncRequestMetadataIntent.valueOf(intent);
+      case ASYNC_REQUEST:
+        return AsyncRequestIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

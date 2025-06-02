@@ -16,27 +16,27 @@
 package io.camunda.zeebe.protocol.record.intent;
 
 /**
- * This intent is used to track metadata for user-triggered requests that may complete
- * asynchronously. Such requests can be temporarily deferred during processing – for example, due to
- * the need to handle user task listeners.
+ * This intent is used to track user-triggered requests that may complete asynchronously. Such
+ * requests can be temporarily deferred during processing – for example, due to the need to handle
+ * user task listeners.
  */
-public enum AsyncRequestMetadataIntent implements Intent {
+public enum AsyncRequestIntent implements Intent {
 
   /**
-   * Emitted when a request is received and its metadata must be preserved for later use, including
+   * Emitted when a request is received and its context must be preserved for later use, including
    * writing follow-up events and responses.
    */
   RECEIVED((short) 0),
 
   /**
-   * Emitted once the request has been fully processed and the preserved metadata is no longer
+   * Emitted once the request has been fully processed and the preserved context is no longer
    * needed. Acts as a cleanup signal.
    */
   PROCESSED((short) 1);
 
   private final short value;
 
-  AsyncRequestMetadataIntent(final short value) {
+  AsyncRequestIntent(final short value) {
     this.value = value;
   }
 

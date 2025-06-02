@@ -16,7 +16,7 @@
 package io.camunda.zeebe.protocol.record;
 
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
-import io.camunda.zeebe.protocol.record.intent.AsyncRequestMetadataIntent;
+import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
@@ -67,7 +67,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue;
-import io.camunda.zeebe.protocol.record.value.AsyncRequestMetadataRecordValue;
+import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
@@ -298,8 +298,8 @@ public final class ValueTypeMapping {
         new Mapping<>(
             BatchOperationPartitionLifecycleRecordValue.class, BatchOperationIntent.class));
     mapping.put(
-        ValueType.ASYNC_REQUEST_METADATA,
-        new Mapping<>(AsyncRequestMetadataRecordValue.class, AsyncRequestMetadataIntent.class));
+        ValueType.ASYNC_REQUEST,
+        new Mapping<>(AsyncRequestRecordValue.class, AsyncRequestIntent.class));
     return mapping;
   }
 
