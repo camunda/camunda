@@ -87,7 +87,7 @@ jobs:
                 SUFFIX=" (<https://github.com/camunda/camunda/issues/$GH_ISSUE_ID|GH issue>)"
               fi
 
-              printf "• %sx \`%s.%s\`%s\n" "$NUMBER_OF_FLAKES" "$TEST_CLASS_NAME" "$TEST_NAME" "$SUFFIX"
+              printf "• %sx \`%s.%s\`%s\n\n" "$NUMBER_OF_FLAKES" "$TEST_CLASS_NAME" "$TEST_NAME" "$SUFFIX"
 
             done
             echo ""
