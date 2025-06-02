@@ -524,7 +524,7 @@ class RoleAuthorizationIT {
   }
 
   @Test
-  void unassignRoleFromMappingShouldReturnForbiddenIfUnauthorized(
+  void unassignRoleFromMappingRuleShouldReturnForbiddenIfUnauthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
     assertThatThrownBy(
             () ->
