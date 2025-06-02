@@ -334,7 +334,7 @@ public final class EngineProcessors {
         routingInfo);
 
     UsageMetricsProcessors.addUsageMetricsProcessors(
-        typedRecordProcessors, config, clock, processingState);
+        typedRecordProcessors, config, clock, processingState, writers, keyGenerator);
 
     return typedRecordProcessors;
   }
