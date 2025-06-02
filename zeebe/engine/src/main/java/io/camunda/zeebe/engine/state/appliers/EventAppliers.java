@@ -142,8 +142,13 @@ public final class EventAppliers implements EventApplier {
     registerBatchOperationAppliers(state);
     registerIdentitySetupAppliers();
     registerAsyncRequestAppliers(state);
+    registerUsageMetricsAppliers(state);
 
     return this;
+  }
+
+  private void registerUsageMetricsAppliers(final MutableProcessingState state) {
+    register(UsageMetricIntent.EXPORTED, new UsageMetricsExportedApplier(state));
   }
 
   private void registerProcessAppliers(final MutableProcessingState state) {
