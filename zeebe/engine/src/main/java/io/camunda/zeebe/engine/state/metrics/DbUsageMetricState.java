@@ -10,67 +10,80 @@ package io.camunda.zeebe.engine.state.metrics;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.db.impl.DbCompositeKey;
-import io.camunda.zeebe.db.impl.DbLong;
-import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DbEnumValue;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.Duration;
+import java.time.InstantSource;
 
 public class DbUsageMetricState implements MutableUsageMetricState {
 
-  private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbString> rPIColumnFamily;
-  private final DbCompositeKey<DbLong, DbLong> eventTimePiKey;
-  private final DbLong eventTimeKey;
-  private final DbLong piKey;
-  private final DbString tenantIdVal;
+  private final Duration usageMetricsExportInterval;
+
+  private final ColumnFamily<DbEnumValue<IntervalType>, UsageMetricStateValue>
+      metricsBucketColumnFamily;
+  private final DbEnumValue<IntervalType> metricsBucketKey;
+  private final InstantSource clock;
 
   public DbUsageMetricState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext,
+      final EngineConfiguration config,
+      final InstantSource clock) {
 
-    eventTimeKey = new DbLong();
-    piKey = new DbLong();
-    tenantIdVal = new DbString();
-    eventTimePiKey = new DbCompositeKey<>(eventTimeKey, piKey);
+    usageMetricsExportInterval = config.getUsageMetricsExportInterval();
+    this.clock = clock;
 
-    rPIColumnFamily =
+    metricsBucketKey = new DbEnumValue<>(IntervalType.class);
+    metricsBucketColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.RPI_USAGE_METRICS, transactionContext, eventTimePiKey, tenantIdVal);
+            ZbColumnFamilies.USAGE_METRICS,
+            transactionContext,
+            metricsBucketKey,
+            new UsageMetricStateValue());
   }
 
   @Override
-  public Map<String, List<Long>> getTenantIdPIsMapByEventTime(final long eventTime) {
-    final var tenantIdPIsMap = new HashMap<String, List<Long>>();
-    eventTimeKey.wrapLong(eventTime);
-    rPIColumnFamily.whileEqualPrefix(
-        eventTimeKey,
-        (eventTimePiKey, tenantIdVal) -> {
-          tenantIdPIsMap
-              .computeIfAbsent(tenantIdVal.toString(), ignored -> new ArrayList<>())
-              .add(eventTimePiKey.second().getValue());
-        });
-    return tenantIdPIsMap;
+  public UsageMetricStateValue getRollingBucket() {
+    setRollingBucketKeys();
+    return metricsBucketColumnFamily.get(metricsBucketKey);
+  }
+
+  public void updateRollingBucket(final UsageMetricStateValue bucket) {
+    setRollingBucketKeys();
+    metricsBucketColumnFamily.update(metricsBucketKey, bucket);
+  }
+
+  private void setRollingBucketKeys() {
+    metricsBucketKey.setValue(IntervalType.ROLLING);
   }
 
   @Override
-  public void createRPIMetric(
-      final long eventTime, final long processInstanceKey, final String tenantId) {
-    eventTimeKey.wrapLong(eventTime);
-    piKey.wrapLong(processInstanceKey);
-    tenantIdVal.wrapString(tenantId);
-    rPIColumnFamily.insert(eventTimePiKey, tenantIdVal);
+  public void recordRPIMetric(final String tenantId) {
+    updateRollingBucket(getOrCreateRollingBucket().recordRPI(tenantId));
   }
 
   @Override
-  public void deleteByEventTime(final long eventTime) {
-    eventTimeKey.wrapLong(eventTime);
-    rPIColumnFamily.whileEqualPrefix(
-        eventTimeKey,
-        (eventTimePiKey, tenantIdVal) -> {
-          rPIColumnFamily.deleteExisting(eventTimePiKey);
-        });
+  public void deleteRollingBucket() {
+    setRollingBucketKeys();
+    metricsBucketColumnFamily.deleteExisting(metricsBucketKey);
+  }
+
+  private UsageMetricStateValue getOrCreateRollingBucket() {
+    var bucket = getRollingBucket();
+    if (bucket == null) {
+      final long millis = clock.millis();
+      bucket =
+          new UsageMetricStateValue()
+              .setFromTime(millis)
+              .setToTime(millis + usageMetricsExportInterval.toMillis());
+      metricsBucketColumnFamily.insert(metricsBucketKey, bucket);
+    }
+    return bucket;
+  }
+
+  enum IntervalType {
+    ROLLING
   }
 }

@@ -239,7 +239,7 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
 
   USER_TASK_INITIAL_ASSIGNEE(121),
 
-  RPI_USAGE_METRICS(122),
+  USAGE_METRICS(122),
   BOOTSTRAPPED_AT(123);
 
   private final int value;

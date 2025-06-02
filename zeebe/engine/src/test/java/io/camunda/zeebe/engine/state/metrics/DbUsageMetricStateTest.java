@@ -8,14 +8,17 @@
 package io.camunda.zeebe.engine.state.metrics;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.time.Duration;
 import java.time.InstantSource;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,77 +26,75 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ProcessingStateExtension.class)
 public class DbUsageMetricStateTest {
-  private MutableProcessingState processingState;
+  private ZeebeDb<ZbColumnFamilies> zeebeDb;
+  private TransactionContext transactionContext;
+
+  private InstantSource mockClock;
   private MutableUsageMetricState state;
 
   @BeforeEach
   void beforeEach() {
-    state = processingState.getUsageMetricState();
+    final var mockEngineConfiguration = mock(EngineConfiguration.class);
+    when(mockEngineConfiguration.getUsageMetricsExportInterval()).thenReturn(Duration.ofSeconds(1));
+    mockClock = mock(InstantSource.class);
+    state = new DbUsageMetricState(zeebeDb, transactionContext, mockEngineConfiguration, mockClock);
   }
 
   @Test
-  public void shouldCreateRPIMetricProcessIncident() {
+  public void shouldCreateRollingBucket() {
     // given
     final var eventTime = InstantSource.system().millis();
+    when(mockClock.millis()).thenReturn(eventTime);
 
     // when
-    state.createRPIMetric(eventTime, 123L, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    state.recordRPIMetric(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     // then
-    final var actual = state.getTenantIdPIsMapByEventTime(eventTime);
-    assertThat(actual)
-        .containsExactlyInAnyOrderEntriesOf(
-            Map.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER, List.of(123L)));
+    final var actual = state.getRollingBucket();
+    assertThat(actual.getFromTime()).isEqualTo(eventTime);
+    assertThat(actual.getToTime()).isEqualTo(eventTime + 1000);
+    assertThat(actual.getTenantRPIMap())
+        .containsExactlyInAnyOrderEntriesOf(Map.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 1L));
   }
 
   @Test
-  public void shouldGetTenantIdPIsMapByEventTime() {
+  public void shouldRecordRPIMetrics() {
     // given
-    final var eventTime1 = InstantSource.system().millis();
-    final var eventTime2 =
-        InstantSource.offset(InstantSource.system(), Duration.ofSeconds(10)).millis();
-    state.createRPIMetric(eventTime1, 123L, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    state.createRPIMetric(eventTime2, 10L, "tenant1");
-    state.createRPIMetric(eventTime2, 11L, "tenant1");
-    state.createRPIMetric(eventTime2, 12L, "tenant2");
+    final var eventTime = InstantSource.system().millis();
+    when(mockClock.millis()).thenReturn(eventTime);
 
     // when
-    final var actual1 = state.getTenantIdPIsMapByEventTime(eventTime1);
-    final var actual2 = state.getTenantIdPIsMapByEventTime(eventTime2);
+    state.recordRPIMetric(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    state.recordRPIMetric(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    state.recordRPIMetric("tenant1");
+    state.recordRPIMetric("tenant1");
+    state.recordRPIMetric("tenant1");
+    state.recordRPIMetric("tenant2");
 
     // then
-    assertThat(actual1)
+    final var actual = state.getRollingBucket();
+    assertThat(actual.getFromTime()).isEqualTo(eventTime);
+    assertThat(actual.getToTime()).isEqualTo(eventTime + 1000);
+    assertThat(actual.getTenantRPIMap())
         .containsExactlyInAnyOrderEntriesOf(
-            Map.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER, List.of(123L)));
-    assertThat(actual2)
-        .containsExactlyInAnyOrderEntriesOf(
-            Map.of("tenant1", List.of(10L, 11L), "tenant2", List.of(12L)));
+            Map.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 2L, "tenant1", 3L, "tenant2", 1L));
   }
 
   @Test
-  public void shouldDeleteByEventTime() {
+  public void shouldDeleteRollingBucket() {
     // given
-    final var eventTime1 = InstantSource.system().millis();
-    final var eventTime2 =
-        InstantSource.offset(InstantSource.system(), Duration.ofSeconds(10)).millis();
-    state.createRPIMetric(eventTime1, 123L, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    state.createRPIMetric(eventTime2, 10L, "tenant1");
-    state.createRPIMetric(eventTime2, 11L, "tenant1");
-    state.createRPIMetric(eventTime2, 12L, "tenant2");
-    assertThat(state.getTenantIdPIsMapByEventTime(eventTime1))
-        .containsExactlyInAnyOrderEntriesOf(
-            Map.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER, List.of(123L)));
-    assertThat(state.getTenantIdPIsMapByEventTime(eventTime2))
-        .containsExactlyInAnyOrderEntriesOf(
-            Map.of("tenant1", List.of(10L, 11L), "tenant2", List.of(12L)));
+    final var eventTime = InstantSource.system().millis();
+    when(mockClock.millis()).thenReturn(eventTime);
+    state.recordRPIMetric(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    final var bucket = state.getRollingBucket();
+    assertThat(bucket.getTenantRPIMap())
+        .containsExactlyInAnyOrderEntriesOf(Map.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 1L));
 
     // when
-    state.deleteByEventTime(eventTime2);
+    state.deleteRollingBucket();
 
     // then
-    assertThat(state.getTenantIdPIsMapByEventTime(eventTime1))
-        .containsExactlyInAnyOrderEntriesOf(
-            Map.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER, List.of(123L)));
-    assertThat(state.getTenantIdPIsMapByEventTime(eventTime2)).isEmpty();
+    final var actual = state.getRollingBucket();
+    assertThat(actual).isNull();
   }
 }
