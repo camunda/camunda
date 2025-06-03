@@ -16,7 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class OidcPrincipalLoader {
-  public static final Configuration CONFIGURATION =
+  private static final Configuration CONFIGURATION =
       Configuration.builder()
           // Ignore the common case that the last path element is not set
           .options(Option.DEFAULT_PATH_LEAF_TO_NULL)
