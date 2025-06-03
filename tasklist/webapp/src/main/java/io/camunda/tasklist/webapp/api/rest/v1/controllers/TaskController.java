@@ -114,7 +114,12 @@ public class TaskController extends ApiErrorController {
         taskMapper.toTaskQuery(requireNonNullElse(searchRequest, new TaskSearchRequest()));
 
     if (tasklistProperties.getIdentity() != null
-        && tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()) {
+        && tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()
+        // In the case of M2M tokens the userId is null, so we do not apply the user group
+        // restrictions
+        // this is backwards compatible with previous versions, but in the future this will change
+        && (userReader.getCurrentUser().getUserId() == null
+            || !userReader.getCurrentUser().getUserId().isEmpty())) {
       final List<String> listOfUserGroups = userGroupService.getUserGroups();
       if (!listOfUserGroups.contains(IdentityProperties.FULL_GROUP_ACCESS)) {
         final String userName = userReader.getCurrentUser().getUserId();
@@ -230,6 +235,13 @@ public class TaskController extends ApiErrorController {
   }
 
   private boolean hasAccessToTask(final LazySupplier<TaskDTO> taskSupplier) {
+    if (userReader.getCurrentUser().getUserId() == null
+        || userReader.getCurrentUser().getUserId().isEmpty()) {
+      // In the case of M2M tokens the userId is null, so we do not apply the user group
+      // restrictions
+      // this is backwards compatible with previous versions, but in the future this will change
+      return true;
+    }
     final String userName = userReader.getCurrentUserId();
     final List<String> listOfUserGroups = userGroupService.getUserGroups();
     final var task = taskSupplier.get();
