@@ -21,6 +21,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -31,6 +32,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
@@ -231,9 +233,14 @@ public class TaskListenerTestHelper {
   /**
    * Verifies the sequence of intents related to a user task transition.
    *
-   * <p>This includes {@link UserTaskIntent} and {@link AsyncRequestIntent} records written during
-   * transitions such as assigning, completing, or updating a user task. Use this to assert that the
-   * engine emits the expected flow of events during such transitions.
+   * <p>This includes {@link UserTaskIntent}, {@link AsyncRequestIntent}, and {@link
+   * VariableDocumentIntent} records written during transitions such as assigning, completing, or
+   * updating a user task. Use this to assert that the engine emits the expected flow of events
+   * during such transitions.
+   *
+   * <p>{@link VariableDocumentIntent}-s are supported because variable document updates scoped to a
+   * user task element trigger user task update transition, and are therefore part of the logical
+   * transition flow.
    *
    * @param processInstanceKey the key of the process instance containing the user task
    * @param intents the expected ordered sequence of intents
@@ -244,10 +251,15 @@ public class TaskListenerTestHelper {
 
     assertThat(intents)
         .describedAs(
-            "Expected intents to be only UserTaskIntent or AsyncRequestIntent. Add support here if others are needed.")
+            "Expected intents to be only UserTaskIntent, AsyncRequestIntent, or VariableDocumentIntent. "
+                + "Add support here if others are needed.")
         .allSatisfy(
             intent ->
-                assertThat(intent).isInstanceOfAny(UserTaskIntent.class, AsyncRequestIntent.class));
+                assertThat(intent)
+                    .isInstanceOfAny(
+                        UserTaskIntent.class,
+                        AsyncRequestIntent.class,
+                        VariableDocumentIntent.class));
 
     final var userTaskElementInstanceKey =
         RecordingExporter.userTaskRecords(UserTaskIntent.CREATING)
@@ -262,6 +274,7 @@ public class TaskListenerTestHelper {
               case final UserTaskRecord u ->
                   u.getElementInstanceKey() == userTaskElementInstanceKey;
               case final AsyncRequestRecord a -> a.getScopeKey() == userTaskElementInstanceKey;
+              case final VariableDocumentRecord v -> v.getScopeKey() == userTaskElementInstanceKey;
               default -> false;
             };
 
@@ -271,6 +284,7 @@ public class TaskListenerTestHelper {
             switch (intent) {
               case final UserTaskIntent ut -> tuple(ValueType.USER_TASK, ut);
               case final AsyncRequestIntent ar -> tuple(ValueType.ASYNC_REQUEST, ar);
+              case final VariableDocumentIntent vd -> tuple(ValueType.VARIABLE_DOCUMENT, vd);
               default -> throw new AssertionError("Unexpected intent " + intent);
             };
 
