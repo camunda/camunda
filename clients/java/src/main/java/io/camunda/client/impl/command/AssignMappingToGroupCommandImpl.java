@@ -17,6 +17,7 @@ package io.camunda.client.impl.command;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.AssignMappingToGroupStep1;
+import io.camunda.client.api.command.AssignMappingToGroupStep1.AssignMappingToGroupStep2;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignMappingToGroupResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
@@ -25,22 +26,28 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class AssignMappingToGroupCommandImpl implements AssignMappingToGroupStep1 {
+public class AssignMappingToGroupCommandImpl
+    implements AssignMappingToGroupStep1, AssignMappingToGroupStep2 {
 
-  private final String groupId;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
   private String mappingId;
+  private String groupId;
 
-  public AssignMappingToGroupCommandImpl(final HttpClient httpClient, final String groupId) {
-    this.groupId = groupId;
+  public AssignMappingToGroupCommandImpl(final HttpClient httpClient) {
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
   }
 
   @Override
-  public AssignMappingToGroupStep1 mappingId(final String mappingId) {
+  public AssignMappingToGroupStep2 mappingId(final String mappingId) {
     this.mappingId = mappingId;
+    return this;
+  }
+
+  @Override
+  public AssignMappingToGroupStep2 groupId(final String groupId) {
+    this.groupId = groupId;
     return this;
   }
 

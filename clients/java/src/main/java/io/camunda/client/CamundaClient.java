@@ -2211,8 +2211,9 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    *
    * camundaClient
-   *  .newAssignMappingToGroupCommand(groupId)
+   *  .newAssignMappingToGroupCommand()
    *  .mappingId(mappingId)
+   *  .groupId(groupId)
    *  .send();
    * </pre>
    *
@@ -2220,7 +2221,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  AssignMappingToGroupStep1 newAssignMappingToGroupCommand(String groupId);
+  AssignMappingToGroupStep1 newAssignMappingToGroupCommand();
 
   /**
    * Command to unassign a mapping rule from a group.

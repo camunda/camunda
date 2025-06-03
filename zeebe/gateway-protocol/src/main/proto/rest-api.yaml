@@ -3731,7 +3731,7 @@ paths:
     put:
       tags:
         - Group
-      operationId: addMappingToGroup
+      operationId: assignMappingToGroup
       summary: Assign a mapping rule to a group
       description: |
         Assigns a mapping rule to a group.

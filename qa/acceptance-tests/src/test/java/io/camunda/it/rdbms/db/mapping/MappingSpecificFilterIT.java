@@ -72,9 +72,9 @@ public class MappingSpecificFilterIT {
     createAndSaveGroup(rdbmsWriter, group);
     createAndSaveGroup(rdbmsWriter, anotherGroup);
 
-    addMappingToGroup(group.groupId(), mapping1.mappingId());
-    addMappingToGroup(group.groupId(), mapping2.mappingId());
-    addMappingToGroup(anotherGroup.groupId(), mapping3.mappingId());
+    assignMappingToGroup(group.groupId(), mapping1.mappingId());
+    assignMappingToGroup(group.groupId(), mapping2.mappingId());
+    assignMappingToGroup(anotherGroup.groupId(), mapping3.mappingId());
 
     final var mappings =
         mappingReader.search(
@@ -119,7 +119,7 @@ public class MappingSpecificFilterIT {
         .containsOnly(mappingId1);
   }
 
-  private void addMappingToGroup(final String groupId, final String mappingId) {
+  private void assignMappingToGroup(final String groupId, final String mappingId) {
     rdbmsWriter.getGroupWriter().addMember(new GroupMemberDbModel(groupId, mappingId, "MAPPING"));
     rdbmsWriter.flush();
   }
