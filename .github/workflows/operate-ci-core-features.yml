@@ -1,7 +1,7 @@
 # description: Runs integration tests CI tests owned by Core Features
 # test location: operate/qa/integration-tests
 # owner: Core Features
-name: "[Legacy] Operate / [IT] Core Features"
+name: "[Legacy] Operate"
 on:
   workflow_dispatch:
   push:
@@ -40,9 +40,16 @@ concurrency:
   group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
 jobs:
+  # builds image and pushes to Dockerhub if branch is `main`
+  run-operate-build:
+    name: "Build Operate and Image"
+    uses: ./.github/workflows/operate-ci-build-reusable.yml
+    secrets: inherit
+    with:
+      branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `main` or `stable/**`
   # over 10min run time
   run-core-features-integration-tests:
-    name: "Test"
+    name: "[IT] Core Features"
     uses: ./.github/workflows/operate-ci-test-reusable.yml
     secrets: inherit
     with:
