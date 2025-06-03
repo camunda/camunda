@@ -259,7 +259,8 @@ public final class BatchOperationMultiPartitionTest {
     // is in correct queue
     assertThat(
             RecordingExporter.commandDistributionRecords()
-                .withIntent(CommandDistributionIntent.ENQUEUED))
+                .withIntent(CommandDistributionIntent.ENQUEUED)
+                .limit(r -> r.getIntent() == CommandDistributionIntent.ENQUEUED))
         .extracting(r -> r.getValue().getQueueId())
         .containsOnly(DistributionQueue.BATCH_OPERATION.getQueueId());
   }

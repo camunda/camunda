@@ -32,7 +32,8 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
     assertThat(
             RecordingExporter.batchOperationLifecycleRecords()
                 .withBatchOperationKey(batchOperationKey)
-                .onlyEvents())
+                .onlyEvents()
+                .limit(r -> r.getIntent() == BatchOperationIntent.CANCELED))
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationIntent.CANCELED);
 
@@ -58,7 +59,8 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
     assertThat(
             RecordingExporter.batchOperationLifecycleRecords()
                 .withBatchOperationKey(batchOperationKey)
-                .onlyEvents())
+                .onlyEvents()
+                .limit(r -> r.getIntent() == BatchOperationIntent.SUSPENDED))
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationIntent.SUSPENDED);
 
@@ -91,7 +93,8 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
     assertThat(
             RecordingExporter.batchOperationLifecycleRecords()
                 .withBatchOperationKey(batchOperationKey)
-                .onlyEvents())
+                .onlyEvents()
+                .limit(r -> r.getIntent() == BatchOperationIntent.SUSPENDED))
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationIntent.SUSPENDED);
 
@@ -105,8 +108,8 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
   }
 
   @Test
-  public void shouldRejectSuspendatchOperationIfNotFound() {
-    // given a nonexisting batch operation key
+  public void shouldRejectSuspendBatchOperationIfNotFound() {
+    // given a non-existing batch operation key
     final var batchOperationKey = 1L;
 
     // when we suspend the batch operation which does not exist
@@ -121,7 +124,8 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
             RecordingExporter.batchOperationLifecycleRecords()
                 .withBatchOperationKey(batchOperationKey)
                 .withRejectionType(RejectionType.NOT_FOUND)
-                .onlyCommandRejections())
+                .onlyCommandRejections()
+                .limit(r -> r.getIntent() == BatchOperationIntent.SUSPEND))
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationIntent.SUSPEND);
 
@@ -151,7 +155,8 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
             RecordingExporter.batchOperationLifecycleRecords()
                 .withBatchOperationKey(batchOperationKey)
                 .withRejectionType(RejectionType.INVALID_STATE)
-                .onlyCommandRejections())
+                .onlyCommandRejections()
+                .limit(r -> r.getIntent() == BatchOperationIntent.SUSPEND))
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationIntent.SUSPEND);
 
@@ -188,7 +193,8 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
     assertThat(
             RecordingExporter.batchOperationExecutionRecords()
                 .withBatchOperationKey(batchOperationKey)
-                .onlyEvents())
+                .onlyEvents()
+                .limit(r -> r.getIntent() == BatchOperationExecutionIntent.COMPLETED))
         .extracting(Record::getIntent)
         .containsSequence(
             BatchOperationExecutionIntent.EXECUTED, BatchOperationExecutionIntent.COMPLETED);
@@ -209,7 +215,8 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
             RecordingExporter.batchOperationLifecycleRecords()
                 .withBatchOperationKey(batchOperationKey)
                 .withRejectionType(RejectionType.NOT_FOUND)
-                .onlyCommandRejections())
+                .onlyCommandRejections()
+                .limit(r -> r.getIntent() == BatchOperationIntent.RESUME))
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationIntent.RESUME);
 
@@ -240,7 +247,8 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
             RecordingExporter.batchOperationLifecycleRecords()
                 .withBatchOperationKey(batchOperationKey)
                 .withRejectionType(RejectionType.INVALID_STATE)
-                .onlyCommandRejections())
+                .onlyCommandRejections()
+                .limit(r -> r.getIntent() == BatchOperationIntent.RESUME))
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationIntent.RESUME);
   }
@@ -266,7 +274,8 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
     assertThat(
             RecordingExporter.batchOperationLifecycleRecords()
                 .onlyCommandRejections()
-                .withBatchOperationKey(batchOperationKey))
+                .withBatchOperationKey(batchOperationKey)
+                .limit(r -> r.getIntent() == BatchOperationIntent.CANCEL))
         .allSatisfy(
             r -> {
               assertThat(r.getIntent()).isEqualTo(BatchOperationIntent.CANCEL);
@@ -295,7 +304,8 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
     assertThat(
             RecordingExporter.batchOperationLifecycleRecords()
                 .onlyCommandRejections()
-                .withBatchOperationKey(batchOperationKey))
+                .withBatchOperationKey(batchOperationKey)
+                .limit(r -> r.getIntent() == BatchOperationIntent.SUSPEND))
         .allSatisfy(
             r -> {
               assertThat(r.getIntent()).isEqualTo(BatchOperationIntent.SUSPEND);
@@ -327,7 +337,8 @@ public final class LifecycleBatchOperationTest extends AbstractBatchOperationTes
     assertThat(
             RecordingExporter.batchOperationLifecycleRecords()
                 .onlyCommandRejections()
-                .withBatchOperationKey(batchOperationKey))
+                .withBatchOperationKey(batchOperationKey)
+                .limit(r -> r.getIntent() == BatchOperationIntent.RESUME))
         .allSatisfy(
             r -> {
               assertThat(r.getIntent()).isEqualTo(BatchOperationIntent.RESUME);

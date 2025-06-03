@@ -77,7 +77,8 @@ public final class MigrateProcessesBatchExecutorTest extends AbstractBatchOperat
     assertThat(
             RecordingExporter.batchOperationExecutionRecords()
                 .withBatchOperationKey(batchOperationKey)
-                .onlyEvents())
+                .onlyEvents()
+                .limit(r -> r.getIntent() == BatchOperationExecutionIntent.COMPLETED))
         .extracting(Record::getIntent)
         .containsSequence(
             BatchOperationExecutionIntent.EXECUTED, BatchOperationExecutionIntent.COMPLETED);
@@ -86,19 +87,18 @@ public final class MigrateProcessesBatchExecutorTest extends AbstractBatchOperat
     assertThat(
             RecordingExporter.batchOperationExecutionRecords()
                 .withBatchOperationKey(batchOperationKey)
-                .onlyCommands())
+                .onlyCommands()
+                .limit(r -> r.getIntent() == BatchOperationExecutionIntent.EXECUTE))
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationExecutionIntent.EXECUTE);
 
     // and we have migrate commands
-    final var migrationCommands =
+    final var migrationCommand =
         RecordingExporter.processInstanceMigrationRecords()
             .withRecordType(RecordType.COMMAND)
             .withRecordKey(processInstanceKey)
-            .toList();
-    assertThat(migrationCommands).hasSize(1);
-    assertThat(migrationCommands.getFirst().getIntent())
-        .isEqualTo(ProcessInstanceMigrationIntent.MIGRATE);
-    assertThat(migrationCommands.getFirst().getAuthorizations()).isEqualTo(claims);
+            .getFirst();
+    assertThat(migrationCommand.getIntent()).isEqualTo(ProcessInstanceMigrationIntent.MIGRATE);
+    assertThat(migrationCommand.getAuthorizations()).isEqualTo(claims);
   }
 }

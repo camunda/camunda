@@ -111,12 +111,15 @@ public final class CreateBatchOperationTest extends AbstractBatchOperationTest {
     // then
     assertThat(
             RecordingExporter.batchOperationCreationRecords()
-                .withBatchOperationKey(batchOperationKey))
+                .withBatchOperationKey(batchOperationKey)
+                .limit(record -> record.getIntent().equals(BatchOperationIntent.CREATED)))
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationIntent.CREATED);
 
     assertThat(
-            RecordingExporter.batchOperationChunkRecords().withBatchOperationKey(batchOperationKey))
+            RecordingExporter.batchOperationChunkRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .limit(record -> record.getIntent().equals(BatchOperationChunkIntent.CREATED)))
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationChunkIntent.CREATE, BatchOperationChunkIntent.CREATED);
   }
