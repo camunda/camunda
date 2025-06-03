@@ -13,11 +13,11 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 
-public class ProcessCreatedApplier implements TypedEventApplier<ProcessIntent, ProcessRecord> {
+public class ProcessCreatedV1Applier implements TypedEventApplier<ProcessIntent, ProcessRecord> {
 
   private final MutableProcessState processState;
 
-  public ProcessCreatedApplier(final MutableProcessingState state) {
+  public ProcessCreatedV1Applier(final MutableProcessingState state) {
     processState = state.getProcessState();
   }
 
