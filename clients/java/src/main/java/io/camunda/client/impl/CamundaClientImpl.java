@@ -949,8 +949,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public AssignUserToGroupCommandStep1 newAssignUserToGroupCommand(final String groupId) {
-    return new AssignUserToGroupCommandImpl(groupId, httpClient);
+  public AssignUserToGroupCommandStep1 newAssignUserToGroupCommand() {
+    return new AssignUserToGroupCommandImpl(httpClient);
   }
 
   @Override

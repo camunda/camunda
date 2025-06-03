@@ -17,14 +17,24 @@ package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.AssignUserToGroupResponse;
 
-public interface AssignUserToGroupCommandStep1 extends FinalCommandStep<AssignUserToGroupResponse> {
+public interface AssignUserToGroupCommandStep1 {
 
   /**
    * Sets the username for the assignment.
    *
    * @param username the username of the user
-   * @return the builder for this command. Call {@link #send()} to complete the command and send it
-   *     to the broker.
+   * @return the builder for this command.
    */
-  AssignUserToGroupCommandStep1 username(String username);
+  AssignUserToGroupCommandStep2 username(String username);
+
+  interface AssignUserToGroupCommandStep2 extends FinalCommandStep<AssignUserToGroupResponse> {
+    /**
+     * Sets the group ID.
+     *
+     * @param groupId the id of the group
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    AssignUserToGroupCommandStep2 groupId(String groupId);
+  }
 }
