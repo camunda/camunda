@@ -20,6 +20,7 @@ import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
@@ -492,7 +493,15 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
                     Function.identity(),
                     type -> recordFilters.stream().anyMatch(f -> f.acceptValue(type))));
 
-    return new ExporterEventFilter(acceptRecordTypes, acceptValueTypes);
+    final Map<Intent, Boolean> acceptIntents =
+        Intent.INTENT_CLASSES.stream()
+            .flatMap(i -> Arrays.stream(i.getEnumConstants()))
+            .collect(
+                Collectors.toMap(
+                    Function.identity(),
+                    intent -> recordFilters.stream().anyMatch(f -> f.acceptIntent(intent))));
+
+    return new ExporterEventFilter(acceptRecordTypes, acceptValueTypes, acceptIntents);
   }
 
   private void onFailure() {
@@ -729,12 +738,15 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     private final RecordMetadata metadata = new RecordMetadata();
     private final Map<RecordType, Boolean> acceptRecordTypes;
     private final Map<ValueType, Boolean> acceptValueTypes;
+    private final Map<Intent, Boolean> acceptIntents;
 
     ExporterEventFilter(
         final Map<RecordType, Boolean> acceptRecordTypes,
-        final Map<ValueType, Boolean> acceptValueTypes) {
+        final Map<ValueType, Boolean> acceptValueTypes,
+        final Map<Intent, Boolean> acceptIntents) {
       this.acceptRecordTypes = acceptRecordTypes;
       this.acceptValueTypes = acceptValueTypes;
+      this.acceptIntents = acceptIntents;
     }
 
     @Override
@@ -743,8 +755,11 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
       final RecordType recordType = metadata.getRecordType();
       final ValueType valueType = metadata.getValueType();
+      final Intent intent = metadata.getIntent();
 
-      return acceptRecordTypes.get(recordType) && acceptValueTypes.get(valueType);
+      return acceptRecordTypes.get(recordType)
+          && acceptValueTypes.get(valueType)
+          && acceptIntents.get(intent);
     }
 
     @Override
@@ -754,6 +769,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
           + acceptRecordTypes
           + ", acceptValueTypes="
           + acceptValueTypes
+          + ", acceptIntents="
+          + acceptIntents
           + '}';
     }
   }

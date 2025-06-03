@@ -206,7 +206,8 @@ final class ExporterContainer implements Controller {
   private boolean acceptRecord(final RecordMetadata metadata) {
     final Context.RecordFilter filter = context.getFilter();
     return filter.acceptType(metadata.getRecordType())
-        && filter.acceptValue(metadata.getValueType());
+        && filter.acceptValue(metadata.getValueType())
+        && filter.acceptIntent(metadata.getIntent());
   }
 
   void configureExporter() throws Exception {
