@@ -5,11 +5,16 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.zeebeimport.v8_7.processors.fni.fni;
+package io.camunda.operate;
 
 import org.junit.platform.suite.api.SelectPackages;
 import org.junit.platform.suite.api.Suite;
 
 @Suite
-@SelectPackages("io.camunda.operate.zeebeimport.v8_7.processors.fni.fni")
-public class OperateDataLayersTestSuite {}
+@SelectPackages({
+  "io.camunda.operate.store.elasticsearch",
+  "io.camunda.operate.entities",
+  "io.camunda.operate.schema.templates",
+  "io.camunda.operate.util"
+})
+public class OperateDataLayerTestSuite {}

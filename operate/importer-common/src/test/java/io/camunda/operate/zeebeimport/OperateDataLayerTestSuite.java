@@ -5,15 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate;
+package io.camunda.operate.zeebeimport;
 
 import org.junit.platform.suite.api.SelectPackages;
 import org.junit.platform.suite.api.Suite;
 
 @Suite
-@SelectPackages({
-  "io.camunda.operate.elasticsearch",
-  "io.camunda.operate.webapp.elasticsearch",
-  "io.camunda.operate.webapp.opensearch"
-})
-public class OperateDataLayersTestSuite {}
+@SelectPackages("io.camunda.operate.zeebeimport")
+public class OperateDataLayerTestSuite {}

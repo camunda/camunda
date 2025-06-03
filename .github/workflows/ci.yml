@@ -304,7 +304,7 @@ jobs:
 
   # description: Runs unit tests broken down by component and team. Tests are run by JUnit5 Suite and is invoked by the maven command
   # test location: Operate
-  # owner: Core Features, Data Layers
+  # owner: Core Features, Data Layer
   consolidated-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "[UT] ${{ matrix.component }} - ${{matrix.suiteName}}"
@@ -316,10 +316,10 @@ jobs:
       fail-fast: false
       matrix:
         component: [ Operate ]
-        suite: [ DataLayers, CoreFeatures ]
+        suite: [ DataLayer, CoreFeatures ]
         include:
-          - suite: DataLayers
-            suiteName: Data Layers
+          - suite: DataLayer
+            suiteName: Data Layer
           - suite: CoreFeatures
             suiteName: Core Features
     steps:

@@ -16,4 +16,4 @@ import org.junit.platform.suite.api.Suite;
   "io.camunda.operate.opensearch",
   "io.camunda.operate.zeebeimport"
 })
-public class OperateDataLayersTestSuite {}
+public class OperateDataLayerTestSuite {}

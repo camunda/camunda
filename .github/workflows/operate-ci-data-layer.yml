@@ -2,7 +2,7 @@
 # test location: operate/common, operate/importer, operate/importer-8_7, operate/importer-common, operate/qa/integration-tests, operate/schema, operate/webapp
 # owner: Data Layer
 ---
-name: "[Legacy] Operate / [IT] Data Layers"
+name: "[Legacy] Operate / [IT] Data Layer"
 on:
   workflow_dispatch:
   push:
