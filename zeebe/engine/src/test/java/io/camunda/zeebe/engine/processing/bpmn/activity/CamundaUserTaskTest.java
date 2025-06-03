@@ -16,11 +16,14 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
+import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -36,6 +39,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.assertj.core.groups.Tuple;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -1047,10 +1051,11 @@ public final class CamundaUserTaskTest {
         .hasIntent(VariableDocumentIntent.UPDATED)
         .hasValueType(ValueType.VARIABLE_DOCUMENT);
 
+    final var userTaskElementInstanceKey = createdUserTaskRecord.getValue().getElementInstanceKey();
     Assertions.assertThat(
             RecordingExporter.variableRecords(VariableIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .withScopeKey(createdUserTaskRecord.getValue().getElementInstanceKey())
+                .withScopeKey(userTaskElementInstanceKey)
                 .getFirst()
                 .getValue())
         .describedAs("Expect the variable to be created at the local scope of user task element")
@@ -1067,6 +1072,32 @@ public final class CamundaUserTaskTest {
         .containsSequence(
             Tuple.tuple(UserTaskIntent.UPDATING, List.of(UserTaskRecord.VARIABLES)),
             Tuple.tuple(UserTaskIntent.UPDATED, List.of(UserTaskRecord.VARIABLES)));
+
+    final Predicate<Record<?>> isUserTaskVariablesUpdateRelatedRecords =
+        r ->
+            switch (r.getValue()) {
+              case final UserTaskRecord u ->
+                  u.getElementInstanceKey() == userTaskElementInstanceKey;
+              case final VariableDocumentRecord v -> v.getScopeKey() == userTaskElementInstanceKey;
+              case final AsyncRequestRecord a -> a.getScopeKey() == userTaskElementInstanceKey;
+              default -> false;
+            };
+
+    assertThat(
+            RecordingExporter.records()
+                .filter(isUserTaskVariablesUpdateRelatedRecords)
+                .skipUntil(r -> r.getIntent() == VariableDocumentIntent.UPDATE)
+                .limit(r -> r.getIntent() == AsyncRequestIntent.PROCESSED))
+        .extracting(Record::getValueType, Record::getIntent)
+        .describedAs("Verify the expected sequence of UserTask and VariableDocument intents")
+        .containsExactly(
+            tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATE),
+            tuple(ValueType.ASYNC_REQUEST, AsyncRequestIntent.RECEIVED),
+            tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATING),
+            tuple(ValueType.USER_TASK, UserTaskIntent.UPDATING),
+            tuple(ValueType.USER_TASK, UserTaskIntent.UPDATED),
+            tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATED),
+            tuple(ValueType.ASYNC_REQUEST, AsyncRequestIntent.PROCESSED));
   }
 
   @Test
