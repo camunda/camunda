@@ -76,7 +76,7 @@ public class UsersUpdateIntegrationTest {
             () ->
                 camundaClient
                     .newUpdateUserCommand(nonExistingUserName)
-                    .name("Role Name")
+                    .name("User Name")
                     .email("new_email@email.com")
                     .send()
                     .join())
