@@ -51,6 +51,7 @@
 
   <sql id="searchFilter">
     WHERE 1 = 1
+    <if test="filter.authorizationKey != null">AND AUTHORIZATION_KEY = #{filter.authorizationKey}</if>
     <if test="filter.ownerType != null">AND OWNER_TYPE = #{filter.ownerType}</if>
     <if test="filter.resourceType != null">AND RESOURCE_TYPE = #{filter.resourceType}</if>
     <if test="filter.permissionTypes != null and !filter.permissionTypes.isEmpty()">
