@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue;
+import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
@@ -107,6 +108,7 @@ public class CompactRecordLogger {
           entry("DEPLOYMENT_DISTRIBUTION", "DPLY_DSTR"),
           entry("DEPLOYMENT", "DPLY"),
           entry("VARIABLE", "VAR"),
+          entry("DOCUMENT", "DOC"),
           entry("ELEMENT_", ""),
           entry("_ELEMENT", ""),
           entry("EVENT", "EVNT"),
@@ -118,7 +120,8 @@ public class CompactRecordLogger {
           entry("USER_TASK", "UT"),
           entry("ROLE", "RL"),
           entry("GROUP", "GR"),
-          entry("MAPPING", "MAP"));
+          entry("MAPPING", "MAP"),
+          entry("ASYNC_REQUEST", "ASY_REQ"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -176,6 +179,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.TENANT, this::summarizeTenant);
     valueLoggers.put(ValueType.GROUP, this::summarizeGroup);
     valueLoggers.put(ValueType.MAPPING, this::summarizeMapping);
+    valueLoggers.put(ValueType.ASYNC_REQUEST, this::summarizeAsyncRequest);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -1079,6 +1083,19 @@ public class CompactRecordLogger {
         .append("]");
 
     return builder.toString();
+  }
+
+  private String summarizeAsyncRequest(final Record<?> record) {
+    final var value = (AsyncRequestRecordValue) record.getValue();
+
+    return new StringBuilder()
+        .append("req ")
+        .append(abbreviate(value.getValueType().name()))
+        .append(":")
+        .append(value.getIntent())
+        .append(", scope: ")
+        .append(shortenKey(value.getScopeKey()))
+        .toString();
   }
 
   private String formatPinnedTime(final long time) {
