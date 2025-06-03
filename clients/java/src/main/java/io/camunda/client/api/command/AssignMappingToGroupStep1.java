@@ -20,7 +20,7 @@ import io.camunda.client.api.response.AssignMappingToGroupResponse;
 public interface AssignMappingToGroupStep1 {
 
   /**
-   * Sets the mapping ID for assigning.
+   * Sets the mapping ID for the assignment.
    *
    * @param mappingId the ID of the mapping to add
    * @return the builder for this command.

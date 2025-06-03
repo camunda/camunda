@@ -92,7 +92,7 @@ public class AssignMemberGroupTest extends ClientRestTest {
   }
 
   @Test
-  void shouldRaiseExceptionOnRequestErrorAddingMapping() {
+  void shouldRaiseExceptionOnRequestErrorAssigningMapping() {
     // given
     final String path = REST_API_PATH + "/groups/" + GROUP_ID + "/mapping-rules/" + MAPPING_ID;
     gatewayService.errorOnRequest(path, () -> new ProblemDetail().title("Not Found").status(404));
@@ -111,7 +111,7 @@ public class AssignMemberGroupTest extends ClientRestTest {
   }
 
   @Test
-  void shouldRaiseExceptionIfGroupNotExistsAddingMapping() {
+  void shouldRaiseExceptionIfGroupNotExistsAssigningMapping() {
     // given
     final String path = REST_API_PATH + "/groups/" + GROUP_ID + "/mapping-rules/" + MAPPING_ID;
     gatewayService.errorOnRequest(path, () -> new ProblemDetail().title("Conflict").status(409));
@@ -130,7 +130,7 @@ public class AssignMemberGroupTest extends ClientRestTest {
   }
 
   @Test
-  void shouldHandleValidationErrorResponseAddingMapping() {
+  void shouldHandleValidationErrorResponseAssigningMapping() {
     // given
     final String path = REST_API_PATH + "/groups/" + GROUP_ID + "/mapping-rules/" + MAPPING_ID;
     gatewayService.errorOnRequest(path, () -> new ProblemDetail().title("Bad Request").status(400));
