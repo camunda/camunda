@@ -134,8 +134,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
   }
 
   @Test
-  public void shouldNotReturnProcessDefinitionWithUnauthorizedUser(
-      @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
+  public void shouldNotReturnProcessDefinitionWithUnauthorizedUser() {
     // given (non-admin) user without any authorizations
 
     // when
@@ -150,8 +149,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
   }
 
   @Test
-  public void shouldBeAuthorizedToRetrieveProcessDefinition(
-      @Authenticated(TEST_USER_NAME_WITH_PERMISSION) final CamundaClient withPermission) {
+  public void shouldBeAuthorizedToRetrieveProcessDefinition() {
     // given (non-admin) user without any authorizations
 
     // when
@@ -166,8 +164,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
   }
 
   @Test
-  public void shouldReturnNoDefinitionsWithUnauthorizedUser(
-      @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
+  public void shouldReturnNoDefinitionsWithUnauthorizedUser() {
     // given (non-admin) user without any authorizations
 
     // when
@@ -182,8 +179,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
   }
 
   @Test
-  public void shouldBeAuthorizedToRetrieveDefinitionOne(
-      @Authenticated(TEST_USER_NAME_WITH_PERMISSION) final CamundaClient withPermission) {
+  public void shouldBeAuthorizedToRetrieveDefinitionOne() {
     // given (non-admin) user without any authorizations
 
     // when
@@ -199,8 +195,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
   }
 
   @Test
-  public void shouldBeAuthorizedToRetrieveDefinitions(
-      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
+  public void shouldBeAuthorizedToRetrieveDefinitions() {
     // given (non-admin) user without any authorizations
 
     // when
@@ -220,8 +215,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
   }
 
   @Test
-  public void shouldNotCreateInstanceWithUnauthorizedUser(
-      @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
+  public void shouldNotCreateInstanceWithUnauthorizedUser() {
     // given (non-admin) user without any authorizations
 
     // when
@@ -237,8 +231,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
 
   @Test
   public void shouldBeAuthorizedToCreateInstance(
-      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
-      @Authenticated(TEST_USER_NAME_WITH_PERMISSION) final CamundaClient withPermission) {
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
     // given (non-admin) user with authorizations
     final int currentCountOfPIs = countOfProcessInstances(adminClient, PROCESS_WITH_USER_TASK);
 
@@ -256,8 +249,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
 
   @Test
   public void shouldCreateProcessInstanceWithoutAuthentication(
-      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
-      @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
     // given (non-admin) user without any authorizations
     final int currentCountOfPIs = countOfProcessInstances(adminClient, PROCESS_WITH_USER_TASK);
 
@@ -275,8 +267,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
 
   @Test
   public void shouldNotAssignUserTaskWithUnauthorizedUser(
-      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
-      @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
     // given (admin) to create instance
     final var processInstanceKey = createProcessInstance(adminClient, PROCESS_WITH_USER_TASK);
     final var userTaskKey = awaitUserTaskBeingAvailable(adminClient, processInstanceKey, false);
@@ -295,8 +286,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
 
   @Test
   public void shouldNotCompleteUserTaskWithUnauthorizedUser(
-      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
-      @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
     // given (admin) to create instance
     // create a process instance - with pre-assigned user task
     final var processInstanceKey =
@@ -318,8 +308,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
 
   @Test
   public void shouldBeAuthorizedToCompleteUserTask(
-      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
-      @Authenticated(TEST_USER_NAME_WITH_PERMISSION) final CamundaClient withPermission) {
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
     // given (admin) to create instance
     final var processInstanceKey = createProcessInstance(adminClient, PROCESS_WITH_USER_TASK);
     final var userTaskKey = awaitUserTaskBeingAvailable(adminClient, processInstanceKey, false);
@@ -345,8 +334,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
 
   @Test
   public void shouldNotUnassignUserTaskWithUnauthorizedUser(
-      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
-      @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
     // given (admin) to create instance
     // create a process instance - with pre-assigned user task
     final var processInstanceKey =
@@ -368,8 +356,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
 
   @Test
   public void shouldBeAuthorizedToAssignUserTask(
-      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
-      @Authenticated(TEST_USER_NAME_WITH_PERMISSION) final CamundaClient withPermission) {
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
     // given (admin) to create instance
     final var processInstanceKeyWithJobBasedUserTask =
         createProcessInstance(adminClient, PROCESS_WITH_USER_TASK);
@@ -392,8 +379,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
 
   @Test
   public void shouldBeAuthorizedToUnassignUserTask(
-      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
-      @Authenticated(TEST_USER_NAME_WITH_PERMISSION) final CamundaClient withPermission) {
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
     // given (admin) to create instance
     final var processInstanceKeyWithUserTask =
         createProcessInstance(adminClient, PROCESS_WITH_USER_TASK_PRE_ASSIGNED);
@@ -415,8 +401,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
 
   @Test
   public void shouldNotAssignJobBasedUserTaskWithUnauthorizedUser(
-      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
-      @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
     // given (admin) to create instance
     // create a process instance with job based user task
     final long anotherProcessInstanceKeyWithJobBasedUserTask =
@@ -438,8 +423,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
 
   @Test
   public void shouldNotCompleteJobBasedUserTaskWithUnauthorizedUser(
-      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
-      @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
     // given (admin) to create instance
     final var processInstanceKeyWithJobBasedUserTaskPreAssigned =
         createProcessInstance(adminClient, PROCESS_ID_WITH_JOB_BASED_USERTASK_PRE_ASSIGNED);
@@ -461,8 +445,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
 
   @Test
   public void shouldBeAuthorizedToCompleteJobBasedUserTask(
-      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
-      @Authenticated(TEST_USER_NAME_WITH_PERMISSION) final CamundaClient withPermission) {
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
     // given (admin) to create instance
     final var processInstanceKeyWithJobBasedUserTask =
         createProcessInstance(adminClient, PROCESS_ID_WITH_JOB_BASED_USERTASK);
@@ -491,8 +474,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
 
   @Test
   public void shouldNotUnassignJobBasedUserTaskWithUnauthorizedUser(
-      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
-      @Authenticated(TEST_USER_NAME_NO_PERMISSION) final CamundaClient noPermission) {
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
     // given (admin) to create instance
     final var processInstanceKeyWithJobBasedUserTaskPreAssigned =
         createProcessInstance(adminClient, PROCESS_ID_WITH_JOB_BASED_USERTASK_PRE_ASSIGNED);
@@ -514,8 +496,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
 
   @Test
   public void shouldBeAuthorizedToUnassignJobBasedUserTask(
-      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
-      @Authenticated(TEST_USER_NAME_WITH_PERMISSION) final CamundaClient withPermission) {
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
     // given (admin) to create instance
     final var processInstanceKeyWithJobBasedUserTaskPreAssigned =
         createProcessInstance(adminClient, PROCESS_ID_WITH_JOB_BASED_USERTASK_PRE_ASSIGNED);
@@ -538,8 +519,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
 
   @Test
   public void shouldBeAuthorizedToAssignJobBasedUserTask(
-      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient,
-      @Authenticated(TEST_USER_NAME_WITH_PERMISSION) final CamundaClient withPermission) {
+      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
     // given (admin) to create instance
     final var processInstanceKeyWithJobBasedUserTask =
         createProcessInstance(adminClient, PROCESS_ID_WITH_JOB_BASED_USERTASK);
