@@ -24,8 +24,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CamundaProcessTestRuntimeBuilder {
+
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(CamundaProcessTestRuntimeBuilder.class);
 
   private ContainerFactory containerFactory = new ContainerFactory();
 
@@ -223,7 +228,8 @@ public class CamundaProcessTestRuntimeBuilder {
       case REMOTE:
         return new CamundaProcessTestRemoteRuntime(this);
       default:
-        throw new IllegalStateException("Unknown runtime mode: " + runtimeMode);
+        LOGGER.warn("Unknown runtime mode: {}. Fall back to MANAGED runtime mode.", runtimeMode);
+        return new CamundaProcessTestContainerRuntime(this, containerFactory);
     }
   }
 
