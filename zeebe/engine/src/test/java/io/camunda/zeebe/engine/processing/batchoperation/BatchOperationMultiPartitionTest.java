@@ -97,6 +97,9 @@ public final class BatchOperationMultiPartitionTest {
             RecordingExporter.batchOperationPartitionLifecycleRecords()
                 .withBatchOperationKey(batchOperationKey)
                 .withPartitionId(1)
+                .limitByCount(
+                    record -> record.getIntent().equals(BatchOperationIntent.PARTITION_COMPLETED),
+                    3)
                 .collect(Collectors.toList()))
         .extracting(Record::getIntent)
         .containsExactlyInAnyOrder(
@@ -111,9 +114,26 @@ public final class BatchOperationMultiPartitionTest {
             RecordingExporter.batchOperationLifecycleRecords()
                 .withBatchOperationKey(batchOperationKey)
                 .withPartitionId(1)
+                .limit(record -> record.getIntent().equals(BatchOperationIntent.COMPLETED))
                 .collect(Collectors.toList()))
         .extracting(Record::getIntent)
         .contains(BatchOperationIntent.COMPLETED);
+    assertThat(engine.getProcessingState(1).getBatchOperationState().get(batchOperationKey))
+        .isEmpty();
+
+    for (int i = 2; i <= PARTITION_COUNT; i++) {
+      assertThat(
+              RecordingExporter.batchOperationPartitionLifecycleRecords()
+                  .withBatchOperationKey(batchOperationKey)
+                  .withPartitionId(i)
+                  .limit(
+                      record -> record.getIntent().equals(BatchOperationIntent.PARTITION_COMPLETED))
+                  .collect(Collectors.toList()))
+          .extracting(Record::getIntent)
+          .contains(BatchOperationIntent.PARTITION_COMPLETED);
+      assertThat(engine.getProcessingState(i).getBatchOperationState().get(batchOperationKey))
+          .isEmpty();
+    }
   }
 
   @Test
