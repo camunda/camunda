@@ -60,9 +60,9 @@
 /operate/common/src/test/java/io/camunda/operate/OperateCoreFeaturesTestSuite.java    @camunda/core-features
 /operate/webapp/src/test/java/io/camunda/operate/OperateCoreFeaturesTestSuite.java    @camunda/core-features
 
-#################
-## Data Layers ##
-#################
+################
+## Data Layer ##
+################
 /db/                                                                   @camunda/data-layer
 /zeebe/exporters/                                                      @camunda/data-layer
 /zeebe/exporter-api                                                    @camunda/data-layer
@@ -93,5 +93,5 @@
 /.github/workflows/operate-run-tests.yml            @camunda/data-layer
 
 # Unit Test Suites
-/operate/common/src/test/java/io/camunda/operate/OperateDataLayersTestSuite.java    @camunda/data-layer
-/operate/webapp/src/test/java/io/camunda/operate/OperateDataLayersTestSuite.java    @camunda/data-layer
+/operate/common/src/test/java/io/camunda/operate/OperateDataLayerTestSuite.java    @camunda/data-layer
+/operate/webapp/src/test/java/io/camunda/operate/OperateDataLayerTestSuite.java    @camunda/data-layer

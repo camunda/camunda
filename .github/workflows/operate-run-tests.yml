@@ -1,7 +1,7 @@
 # description: Reuseable workflow that executes the passed maven command
 # called by: operate-test-importer.yml, operate-test-backup-restore.yml
 # test location: operate
-# owner: Data Layers
+# owner: Data Layer
 ---
 name: Operate Run Tests
 env:
