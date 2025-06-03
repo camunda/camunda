@@ -17,6 +17,7 @@ import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.BatchOperationProcessInstanceModificationPlanValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.Comparator;
+import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -46,9 +48,13 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
       new ArrayProperty<>("chunkKeys", LongValue::new);
   // Authentication claims, needed for query + command auth
   private final DocumentProperty authenticationProp = new DocumentProperty("authentication");
+  private final ArrayProperty<IntegerValue> partitionsProp =
+      new ArrayProperty<>("partitions", IntegerValue::new);
+  private final ArrayProperty<IntegerValue> completedPartitionsProp =
+      new ArrayProperty<>("completedPartitions", IntegerValue::new);
 
   public PersistedBatchOperation() {
-    super(9);
+    super(11);
     declareProperty(keyProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(statusProp)
@@ -57,7 +63,9 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
         .declareProperty(modificationPlanProp)
         .declareProperty(chunkKeysProp)
         .declareProperty(initializedProp)
-        .declareProperty(authenticationProp);
+        .declareProperty(authenticationProp)
+        .declareProperty(partitionsProp)
+        .declareProperty(completedPartitionsProp);
   }
 
   public PersistedBatchOperation wrap(final BatchOperationCreationRecord record) {
@@ -67,6 +75,7 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
     setMigrationPlan(record.getMigrationPlan());
     setModificationPlan(record.getModificationPlan());
     setAuthentication(record.getAuthenticationBuffer());
+    setPartitions(record.getPartitionIds());
     return this;
   }
 
@@ -176,6 +185,27 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
       final BatchOperationProcessInstanceMigrationPlanValue migrationPlan) {
     migrationPlanProp.getValue().wrap(migrationPlan);
     return this;
+  }
+
+  public List<Integer> getPartitions() {
+    return partitionsProp.stream().map(IntegerValue::getValue).toList();
+  }
+
+  public PersistedBatchOperation setPartitions(final List<Integer> partitions) {
+    partitionsProp.reset();
+    for (final var partition : partitions) {
+      partitionsProp.add().setValue(partition);
+    }
+    return this;
+  }
+
+  public PersistedBatchOperation addCompletedPartition(final int partitionId) {
+    completedPartitionsProp.add().setValue(partitionId);
+    return this;
+  }
+
+  public List<Integer> getCompletedPartitions() {
+    return completedPartitionsProp.stream().map(IntegerValue::getValue).toList();
   }
 
   public long nextChunkKey() {

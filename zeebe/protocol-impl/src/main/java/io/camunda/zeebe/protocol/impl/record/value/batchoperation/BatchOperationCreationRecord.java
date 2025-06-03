@@ -7,15 +7,19 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import java.util.Collection;
+import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -28,6 +32,7 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
   public static final String PROP_MIGRATION_PLAN = "migrationPlan";
   public static final String PROP_MODIFICATION_PLAN = "modificationPlan";
   public static final String PROP_AUTHENTICATION = "authentication";
+  public static final String PROP_PARTITION_IDS = "partitionIds";
 
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY, -1);
   private final EnumProperty<BatchOperationType> batchOperationTypeProp =
@@ -41,15 +46,18 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
           PROP_MODIFICATION_PLAN, new BatchOperationProcessInstanceModificationPlan());
   // Authentication, needed for query in scheduler + command auth
   private final DocumentProperty authenticationProp = new DocumentProperty(PROP_AUTHENTICATION);
+  private final ArrayProperty<IntegerValue> partitionIdsProp =
+      new ArrayProperty<>(PROP_PARTITION_IDS, IntegerValue::new);
 
   public BatchOperationCreationRecord() {
-    super(6);
+    super(7);
     declareProperty(batchOperationKeyProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(entityFilterProp)
         .declareProperty(migrationPlanProp)
         .declareProperty(modificationPlanProp)
-        .declareProperty(authenticationProp);
+        .declareProperty(authenticationProp)
+        .declareProperty(partitionIdsProp);
   }
 
   @Override
@@ -108,6 +116,20 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  public List<Integer> getPartitionIds() {
+    return partitionIdsProp.stream().map(IntegerValue::getValue).toList();
+  }
+
+  public BatchOperationCreationRecord setPartitionIds(final Collection<Integer> partitionIds) {
+    partitionIdsProp.reset();
+    for (final Integer partitionId : partitionIds) {
+      partitionIdsProp.add().setValue(partitionId);
+    }
+
+    return this;
+  }
+
   public DirectBuffer getAuthenticationBuffer() {
     return authenticationProp.getValue();
   }
@@ -128,6 +150,8 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
     migrationPlanProp.getValue().wrap(record.getMigrationPlan());
     modificationPlanProp.getValue().wrap(record.getModificationPlan());
     authenticationProp.setValue(record.getAuthenticationBuffer());
+    setPartitionIds(record.getPartitionIds());
+
     return this;
   }
 }

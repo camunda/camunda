@@ -46,6 +46,14 @@ public interface BatchOperationCreationRecordValue extends BatchOperationRelated
    */
   BatchOperationProcessInstanceModificationPlanValue getModificationPlan();
 
+  /**
+   * The list of partitions this batch operation is executed on. THis list will be filled by the
+   * engine.
+   *
+   * @return the list of partitions
+   */
+  List<Integer> getPartitionIds();
+
   @Value.Immutable
   @ImmutableProtocol(
       builder = ImmutableBatchOperationProcessInstanceMigrationPlanValue.Builder.class)

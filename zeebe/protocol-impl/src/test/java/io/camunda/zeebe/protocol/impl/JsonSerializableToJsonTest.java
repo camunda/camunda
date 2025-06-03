@@ -3252,6 +3252,7 @@ final class JsonSerializableToJsonTest {
             () ->
                 new BatchOperationCreationRecord()
                     .setBatchOperationKey(12345L)
+                    .setPartitionIds(List.of(1, 2, 3))
                     .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE),
         """
   {
@@ -3259,6 +3260,7 @@ final class JsonSerializableToJsonTest {
     "batchOperationType": "CANCEL_PROCESS_INSTANCE",
     "entityFilterBuffer": {"expandable":false},
     "entityFilter": null,
+    "partitionIds": [1, 2, 3],
     "migrationPlan":{"targetProcessDefinitionKey":-1,"mappingInstructions":[],"empty":false,"encodedLength":50},
     "modificationPlan":{"moveInstructions":[],"empty":false,"encodedLength":19},
     "authenticationBuffer": {"expandable":false}
@@ -3275,6 +3277,7 @@ final class JsonSerializableToJsonTest {
             () ->
                 new BatchOperationCreationRecord()
                     .setBatchOperationKey(12345L)
+                    .setPartitionIds(List.of(1, 2, 3))
                     .setBatchOperationType(BatchOperationType.MIGRATE_PROCESS_INSTANCE)
                     .setEntityFilter(
                         toMessagePack("{'processDefinitionKey': 67890, 'state': 'ACTIVE'}"))
@@ -3314,6 +3317,7 @@ final class JsonSerializableToJsonTest {
      "entityFilterBuffer": {
        "expandable": false
      },
+    "partitionIds": [1, 2, 3],
      "entityFilter": "{\\"processDefinitionKey\\":67890,\\"state\\":\\"ACTIVE\\"}",
      "migrationPlan": {
        "mappingInstructions": [

@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -69,6 +70,51 @@ public final class BatchOperationMultiPartitionTest {
           .extracting(Record::getIntent)
           .containsExactly(BatchOperationIntent.CREATE, BatchOperationIntent.CREATED);
     }
+  }
+
+  @Test
+  public void shouldCompleteOnAllPartitions() {
+    // given
+    final long batchOperationKey =
+        engine
+            .batchOperation()
+            .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+            .withFilter(new UnsafeBuffer("{\"hasIncident\": false}".getBytes()))
+            .create()
+            .getValue()
+            .getBatchOperationKey();
+
+    // when
+    for (int i = 1; i <= PARTITION_COUNT; i++) {
+      engine
+          .batchOperation()
+          .newExecution()
+          .onPartition(i)
+          .withBatchOperationKey(batchOperationKey)
+          .execute();
+    }
+
+    assertThat(
+            RecordingExporter.batchOperationPartitionLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .withPartitionId(1)
+                .collect(Collectors.toList()))
+        .extracting(Record::getIntent)
+        .containsExactlyInAnyOrder(
+            BatchOperationIntent.COMPLETE_PARTITION,
+            BatchOperationIntent.COMPLETE_PARTITION,
+            BatchOperationIntent.COMPLETE_PARTITION,
+            BatchOperationIntent.PARTITION_COMPLETED,
+            BatchOperationIntent.PARTITION_COMPLETED,
+            BatchOperationIntent.PARTITION_COMPLETED);
+
+    assertThat(
+            RecordingExporter.batchOperationExecutionRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .withPartitionId(1)
+                .collect(Collectors.toList()))
+        .extracting(Record::getIntent)
+        .contains(BatchOperationExecutionIntent.COMPLETED);
   }
 
   @Test

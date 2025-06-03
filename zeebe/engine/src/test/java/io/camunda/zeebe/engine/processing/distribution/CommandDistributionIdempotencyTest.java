@@ -15,6 +15,7 @@ import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCancelProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCreateProcessor;
+import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationPartitionCompleteProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationResumeProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSuspendProcessor;
 import io.camunda.zeebe.engine.processing.clock.ClockProcessor;
@@ -49,6 +50,7 @@ import io.camunda.zeebe.engine.processing.user.UserDeleteProcessor;
 import io.camunda.zeebe.engine.processing.user.UserUpdateProcessor;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender.CommandInterceptor;
+import io.camunda.zeebe.engine.util.client.BatchOperationClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -288,6 +290,22 @@ public class CommandDistributionIdempotencyTest {
                       .resume();
                 }),
             BatchOperationResumeProcessor.class
+          },
+          {
+            "BatchOperation.COMPLETE_PARTITION is idempotent",
+            new Scenario(
+                ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
+                BatchOperationIntent.COMPLETE_PARTITION,
+                () -> {
+                  // create BO on partition 2 to enforce distribution later
+                  final var batchOperation = createBatchOperation(2);
+                  return ENGINE
+                      .batchOperation()
+                      .newExecution()
+                      .withBatchOperationKey(batchOperation.getKey())
+                      .execute();
+                }),
+            BatchOperationPartitionCompleteProcessor.class
           },
           {
             "Clock.RESET is idempotent",
@@ -682,9 +700,15 @@ public class CommandDistributionIdempotencyTest {
   }
 
   private static Record<BatchOperationCreationRecordValue> createBatchOperation() {
+    return createBatchOperation(BatchOperationClient.DEFAULT_PARTITION);
+  }
+
+  private static Record<BatchOperationCreationRecordValue> createBatchOperation(
+      final int partitionId) {
     return ENGINE
         .batchOperation()
         .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+        .onPartition(partitionId)
         .withFilter(
             new UnsafeBuffer(
                 MsgPackConverter.convertToMsgPack(
