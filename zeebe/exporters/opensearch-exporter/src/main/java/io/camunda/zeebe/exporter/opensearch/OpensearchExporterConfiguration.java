@@ -315,7 +315,7 @@ public class OpensearchExporterConfiguration {
           + user
           + ", authorization="
           + authorization
-          + ", asyncRequestMetadata="
+          + ", asyncRequest="
           + asyncRequest
           + '}';
     }

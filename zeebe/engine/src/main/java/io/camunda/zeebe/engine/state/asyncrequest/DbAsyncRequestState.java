@@ -59,12 +59,7 @@ public class DbAsyncRequestState implements MutableAsyncRequestState {
 
   @Override
   public void deleteRequest(final AsyncRequestRecord record) {
-    deleteRequest(record.getScopeKey(), record.getValueType(), record.getIntent());
-  }
-
-  @Override
-  public void deleteRequest(final long scopeKey, final ValueType valueType, final Intent intent) {
-    asyncRequestMetadataKey.setAll(scopeKey, valueType, intent);
+    asyncRequestMetadataKey.setAll(record);
 
     asyncRequestMetadataColumnFamily.deleteIfExists(asyncRequestMetadataKey);
   }

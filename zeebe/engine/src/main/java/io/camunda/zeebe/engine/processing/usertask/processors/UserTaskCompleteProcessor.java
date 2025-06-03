@@ -34,13 +34,13 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
   private static final String DEFAULT_ACTION = "complete";
 
   private final ElementInstanceState elementInstanceState;
+  private final AsyncRequestState asyncRequestState;
   private final EventHandle eventHandle;
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final TypedResponseWriter responseWriter;
   private final UserTaskCommandPreconditionChecker preconditionChecker;
   private final AsyncRequestBehavior asyncRequestBehavior;
-  private final AsyncRequestState asyncRequestState;
 
   public UserTaskCompleteProcessor(
       final ProcessingState state,
@@ -49,6 +49,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
       final AsyncRequestBehavior asyncRequestBehavior,
       final AuthorizationCheckBehavior authCheckBehavior) {
     elementInstanceState = state.getElementInstanceState();
+    asyncRequestState = state.getAsyncRequestState();
     this.eventHandle = eventHandle;
     stateWriter = writers.state();
     commandWriter = writers.command();
@@ -60,7 +61,6 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
             state.getUserTaskState(),
             authCheckBehavior);
     this.asyncRequestBehavior = asyncRequestBehavior;
-    asyncRequestState = state.getAsyncRequestState();
   }
 
   @Override
@@ -84,12 +84,12 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
   public void onFinalizeCommand(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
 
-    final var optionalRequest =
+    final var asyncRequest =
         asyncRequestState.findRequest(
             userTaskRecord.getElementInstanceKey(), ValueType.USER_TASK, UserTaskIntent.COMPLETE);
 
     final long userTaskKey = command.getKey();
-    if (optionalRequest.isEmpty()) {
+    if (asyncRequest.isEmpty()) {
       stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord);
       completeElementInstance(userTaskRecord);
 
@@ -97,8 +97,8 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
           userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord, command);
       return;
     }
-    final var request = optionalRequest.get();
 
+    final var request = asyncRequest.get();
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord);
     completeElementInstance(userTaskRecord);
     responseWriter.writeResponse(

@@ -92,6 +92,7 @@ public class CompactRecordLogger {
           entry("COMPLETE_TASK_LISTENER", "COMP_TL"),
           entry("DENY_TASK_LISTENER", "DENY_TL"),
           entry("TASK_LISTENER", "TL"),
+          entry("EXECUTION_LISTENER", "EL"),
           entry("ASSIGNMENT_DENIED", "ASGN_DENIED"),
           entry("COMPLETION_DENIED", "COMP_DENIED"),
           entry("UPDATE_DENIED", "UPDT_DENIED"),
@@ -1092,9 +1093,10 @@ public class CompactRecordLogger {
         .append("req ")
         .append(abbreviate(value.getValueType().name()))
         .append(":")
-        .append(value.getIntent())
-        .append(", scope: ")
+        .append(abbreviate(value.getIntent().name()))
+        .append(" at [")
         .append(shortenKey(value.getScopeKey()))
+        .append("]")
         .toString();
   }
 

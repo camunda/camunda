@@ -9,14 +9,10 @@ package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestRecord;
-import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 
 public interface MutableAsyncRequestState extends AsyncRequestState {
 
   void storeRequest(final long asyncRequestKey, final AsyncRequestRecord record);
 
   void deleteRequest(final AsyncRequestRecord record);
-
-  void deleteRequest(final long scopeKey, final ValueType valueType, final Intent intent);
 }

@@ -327,7 +327,7 @@ public class ElasticsearchExporterConfiguration {
           + user
           + ", authorization="
           + authorization
-          + ", asyncRequestMetadata="
+          + ", asyncRequest="
           + asyncRequest
           + '}';
     }
