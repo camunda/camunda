@@ -149,12 +149,12 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   private static String createParams(final OAuthCredentialsProviderBuilder builder) {
     final Map<String, String> payload = new HashMap<>();
 
-    if (builder.entraConfigurationProvided()) {
+    if (builder.sslClientCertConfigurationProvided()) {
       payload.put(
           "client_assertion",
           getClientAssertion(
-              builder.getEntraCertificatePath().toAbsolutePath().toString(),
-              builder.getEntraCertificatePassword(),
+              builder.getSslClientCertPath().toAbsolutePath().toString(),
+              builder.getSslClientCertPassword(),
               builder.getClientId(),
               builder.getAudience()));
       payload.put("client_assertion_type", JWT_ASSERTION_TYPE);

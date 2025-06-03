@@ -110,12 +110,12 @@ public final class OAuthCredentialsProviderTest {
           .getResource("idp-ssl/localhost.p12")
           .getPath();
 
-  private static final String ENTRA_KEYSTORE_PATH =
-      OAuthCredentialsProviderTest.class.getClassLoader().getResource("oauth/entra.jks").getPath();
+  private static final String OAUTH_SSL_CLIENT_CERT_PATH =
+      OAuthCredentialsProviderTest.class.getClassLoader().getResource("oauth/test.jks").getPath();
 
   private static final String TRUSTSTORE_PASSWORD = "password";
   private static final String KEYSTORE_PASSWORD = "password";
-  private static final String ENTRA_KEYSTORE_PASSWORD = "mstest";
+  private static final String OAUTH_SSL_CLIENT_CERT_PASSWORD = "mstest";
 
   @RegisterExtension
   static WireMockExtension httpsWiremock =
@@ -768,8 +768,8 @@ public final class OAuthCredentialsProviderTest {
       if (withAssertion) {
         builder =
             builder
-                .entraCertificatePath(ENTRA_KEYSTORE_PATH)
-                .entraCertificatePassword(ENTRA_KEYSTORE_PASSWORD);
+                .sslClientCertPath(OAUTH_SSL_CLIENT_CERT_PATH)
+                .sslClientCertPassword(OAUTH_SSL_CLIENT_CERT_PASSWORD);
       }
       if (withClientSecret) {
         builder = builder.clientSecret(SECRET);
