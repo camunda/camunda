@@ -37,6 +37,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
+import io.camunda.zeebe.util.health.HealthStatus;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -487,6 +488,7 @@ public final class ExporterDirectorTest {
 
   @Test
   public void shouldNotRetryExportingOnDeserializationException() {
+    // given
     final var recordExporterRef = new AtomicReference<RecordExporter>();
     rule.startExporterDirector(
         exporterDescriptors,
@@ -497,11 +499,21 @@ public final class ExporterDirectorTest {
     final var recordExporter = recordExporterRef.get();
     doThrow(new RuntimeException("deserialization exception")).when(recordExporter).wrap(any());
 
+    // when
     final long eventPosition1 = writeEvent();
 
+    // then
     verify(recordExporter, timeout(10000))
         .wrap(argThat(evt -> evt.getPosition() == eventPosition1));
     verifyNoMoreInteractions(recordExporter);
+    Awaitility.await("Until director is unhealthy")
+        .untilAsserted(
+            () ->
+                assertThat(rule.getDirector().getHealthReport().status())
+                    .isEqualTo(HealthStatus.DEAD));
+    assertThat(rule.getDirector().getPhase())
+        .succeedsWithin(Duration.ofSeconds(5))
+        .satisfies(phase -> assertThat(phase).isEqualTo(ExporterPhase.CLOSED));
   }
 
   @Test
