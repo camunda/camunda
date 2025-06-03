@@ -298,7 +298,10 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         failure,
         failure);
     actor.fail(failure);
+    updateHealthStatusWithError(failure);
+  }
 
+  private void updateHealthStatusWithError(final Throwable failure) {
     if (failure instanceof UnrecoverableException) {
       healthReport = HealthReport.dead(this).withIssue(failure);
 
@@ -457,6 +460,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       recordExporter.wrap(event);
     } catch (final Exception exception) {
       LOG.warn(ERROR_MESSAGE_DESERIALIZATION_ERROR_EXPORTING_ABORTED, event, exception);
+      updateHealthStatusWithError(new UnrecoverableException(exception));
       onFailure();
       return;
     }
