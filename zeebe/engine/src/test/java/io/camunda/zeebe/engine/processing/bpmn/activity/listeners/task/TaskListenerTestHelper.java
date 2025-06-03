@@ -18,12 +18,16 @@ import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
+import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -38,8 +42,10 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
+import org.assertj.core.groups.Tuple;
 
 public class TaskListenerTestHelper {
 
@@ -217,9 +223,68 @@ public class TaskListenerTestHelper {
             RecordingExporter.userTaskRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(r -> r.getIntent() == intents[intents.length - 1]))
-        .extracting(io.camunda.zeebe.protocol.record.Record::getIntent)
+        .extracting(Record::getIntent)
         .describedAs("Verify the expected sequence of User Task intents")
         .containsSequence(intents);
+  }
+
+  /**
+   * Verifies the sequence of intents related to a user task transition.
+   *
+   * <p>This includes {@link UserTaskIntent} and {@link AsyncRequestIntent} records written during
+   * transitions such as assigning, completing, or updating a user task. Use this to assert that the
+   * engine emits the expected flow of events during such transitions.
+   *
+   * @param processInstanceKey the key of the process instance containing the user task
+   * @param intents the expected ordered sequence of intents
+   */
+  void assertUserTaskTransitionRelatedIntentsSequence(
+      final long processInstanceKey, final Intent... intents) {
+    assertThat(intents).describedAs("Expected intents not to be empty").isNotEmpty();
+
+    assertThat(intents)
+        .describedAs(
+            "Expected intents to be only UserTaskIntent or AsyncRequestIntent. Add support here if others are needed.")
+        .allSatisfy(
+            intent ->
+                assertThat(intent).isInstanceOfAny(UserTaskIntent.class, AsyncRequestIntent.class));
+
+    final var userTaskElementInstanceKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getValue()
+            .getElementInstanceKey();
+
+    final Predicate<Record<?>> isUserTaskTransitionRelatedRecord =
+        r ->
+            switch (r.getValue()) {
+              case final UserTaskRecord u ->
+                  u.getElementInstanceKey() == userTaskElementInstanceKey;
+              case final AsyncRequestRecord a -> a.getScopeKey() == userTaskElementInstanceKey;
+              default -> false;
+            };
+
+    // mapping intent to it's corresponding value type for easier debugging in case of failures
+    final Function<Intent, Tuple> intentToValueTypeIntentTupleMapper =
+        intent ->
+            switch (intent) {
+              case final UserTaskIntent ut -> tuple(ValueType.USER_TASK, ut);
+              case final AsyncRequestIntent ar -> tuple(ValueType.ASYNC_REQUEST, ar);
+              default -> throw new AssertionError("Unexpected intent " + intent);
+            };
+
+    final var expectedSequence =
+        Stream.of(intents).map(intentToValueTypeIntentTupleMapper).toArray(Tuple[]::new);
+
+    assertThat(
+            RecordingExporter.records()
+                .filter(isUserTaskTransitionRelatedRecord)
+                .skipUntil(r -> r.getIntent() == intents[0])
+                .limit(intents.length))
+        .extracting(Record::getValueType, Record::getIntent)
+        .describedAs("Verify sequence of intents related to user task transition")
+        .containsSequence(expectedSequence);
   }
 
   JobListenerEventType mapToJobListenerEventType(final ZeebeTaskListenerEventType eventType) {
