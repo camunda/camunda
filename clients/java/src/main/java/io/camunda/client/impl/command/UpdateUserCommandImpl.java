@@ -70,6 +70,8 @@ public class UpdateUserCommandImpl implements UpdateUserCommandStep1 {
 
   @Override
   public CamundaFuture<UpdateUserResponse> send() {
+    ArgumentUtil.ensureNotNullNorEmpty("name", request.getName());
+    ArgumentUtil.ensureNotNullNorEmpty("email", request.getEmail());
     final HttpCamundaFuture<UpdateUserResponse> result = new HttpCamundaFuture<>();
     httpClient.put(
         "/users/" + username, jsonMapper.toJson(request), httpRequestConfig.build(), result);

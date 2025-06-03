@@ -16,6 +16,7 @@
 package io.camunda.client.user;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.protocol.rest.UserUpdateRequest;
 import io.camunda.client.util.ClientRestTest;
@@ -37,5 +38,53 @@ public class UpdateUserTest extends ClientRestTest {
     assertThat(request.getName()).isEqualTo(NAME);
     assertThat(request.getEmail()).isEqualTo(EMAIL);
     assertThat(request.getPassword()).isEqualTo(PASSWORD);
+  }
+
+  @Test
+  void shouldRaiseExceptionOnNullName() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUpdateUserCommand(USERNAME)
+                    .name(null)
+                    .email("new_email@email.com")
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("name must not be null");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnEmptyName() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUpdateUserCommand(USERNAME)
+                    .name("")
+                    .email("new_email@email.com")
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("name must not be empty");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnNullEmail() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newUpdateUserCommand(USERNAME).name(NAME).email(null).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("email must not be null");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnEmptyEmail() {
+    // when / then
+    assertThatThrownBy(
+            () -> client.newUpdateUserCommand(USERNAME).name(NAME).email("").send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("email must not be empty");
   }
 }
