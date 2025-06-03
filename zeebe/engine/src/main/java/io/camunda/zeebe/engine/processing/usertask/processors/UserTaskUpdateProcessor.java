@@ -7,24 +7,27 @@
  */
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
+import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,25 +37,28 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
   private static final String DEFAULT_ACTION = "update";
 
   private final StateWriter stateWriter;
-  private final UserTaskState userTaskState;
   private final VariableState variableState;
   private final TypedResponseWriter responseWriter;
   private final VariableBehavior variableBehavior;
   private final UserTaskCommandPreconditionChecker preconditionChecker;
+  private final AsyncRequestBehavior asyncRequestBehavior;
+  private final AsyncRequestState asyncRequestState;
 
   public UserTaskUpdateProcessor(
       final ProcessingState state,
       final Writers writers,
       final VariableBehavior variableBehavior,
+      final AsyncRequestBehavior asyncRequestBehavior,
       final AuthorizationCheckBehavior authCheckBehavior) {
     stateWriter = writers.state();
-    userTaskState = state.getUserTaskState();
     variableState = state.getVariableState();
     this.variableBehavior = variableBehavior;
     responseWriter = writers.response();
     preconditionChecker =
         new UserTaskCommandPreconditionChecker(
             List.of(LifecycleState.CREATED), "update", state.getUserTaskState(), authCheckBehavior);
+    this.asyncRequestBehavior = asyncRequestBehavior;
+    asyncRequestState = state.getAsyncRequestState();
   }
 
   @Override
@@ -64,12 +70,12 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
   @Override
   public void onCommand(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
-    final long userTaskKey = command.getKey();
+    asyncRequestBehavior.writeAsyncRequestReceived(userTaskRecord.getElementInstanceKey(), command);
 
     userTaskRecord.wrapChangedAttributesIfValueChanged(command.getValue());
     userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
 
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATING, userTaskRecord);
+    stateWriter.appendFollowUpEvent(command.getKey(), UserTaskIntent.UPDATING, userTaskRecord);
   }
 
   @Override
@@ -77,27 +83,33 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
 
-    if (command.hasRequestMetadata()) {
+    final var expectedValueTypes = Set.of(ValueType.USER_TASK, ValueType.VARIABLE_DOCUMENT);
+    final var asyncRequest =
+        asyncRequestState
+            .findAllRequestsByScopeKey(userTaskRecord.getElementInstanceKey())
+            .filter(request -> expectedValueTypes.contains(request.valueType()))
+            // Currently, we assume that at most one async request exists per user task element
+            // instance, since only one such request:(e.g., for a UT:UPDATE or VD:UPDATE command)
+            // is handled at a time.
+            // However, this assumption may need to be revisited if we later support concurrent
+            // operations targeting the same user task.
+            .findFirst();
+
+    if (asyncRequest.isEmpty()) {
+      LOGGER.error(
+          "No async request found for userTaskKey='{}', writing 'USER_TASK.UPDATED' without response. "
+              + "This may indicate a problem with how the update was triggered. "
+              + "If the update was triggered by a user task variables update, variables will not be merged. "
+              + "Please report this as a bug.",
+          userTaskKey);
       stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
       responseWriter.writeEventOnCommand(
           userTaskKey, UserTaskIntent.UPDATED, userTaskRecord, command);
       return;
     }
 
-    final var recordRequestMetadata = userTaskState.findRecordRequestMetadata(userTaskKey);
-    if (recordRequestMetadata.isEmpty()) {
-      LOGGER.error(
-          "No request metadata found for userTaskKey='{}', writing 'USER_TASK.UPDATED' without response. "
-              + "This may indicate a problem with how the update was triggered. "
-              + "If the update was triggered by a user task variables update, variables will not be merged. "
-              + "Please report this as a bug.",
-          userTaskKey);
-      stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
-      return;
-    }
-
-    final var metadata = recordRequestMetadata.get();
-    switch (metadata.getTriggerType()) {
+    final var request = asyncRequest.get();
+    switch (request.valueType()) {
       case USER_TASK -> {
         stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
         responseWriter.writeResponse(
@@ -105,8 +117,8 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
             UserTaskIntent.UPDATED,
             userTaskRecord,
             ValueType.USER_TASK,
-            metadata.getRequestId(),
-            metadata.getRequestStreamId());
+            request.requestId(),
+            request.requestStreamId());
       }
       case VARIABLE_DOCUMENT -> {
         // Update triggered by a VariableDocument command.
@@ -140,14 +152,15 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
             VariableDocumentIntent.UPDATED,
             variableDocumentRecord,
             ValueType.VARIABLE_DOCUMENT,
-            metadata.getRequestId(),
-            metadata.getRequestStreamId());
+            request.requestId(),
+            request.requestStreamId());
       }
       default ->
           throw new IllegalArgumentException(
-              "Unexpected user task transition trigger type: '%s'"
-                  .formatted(metadata.getTriggerType()));
+              "Unexpected valueType of async request: '%s'".formatted(request.valueType()));
     }
+
+    stateWriter.appendFollowUpEvent(request.key(), AsyncRequestIntent.PROCESSED, request.record());
   }
 
   private void mergeVariables(
