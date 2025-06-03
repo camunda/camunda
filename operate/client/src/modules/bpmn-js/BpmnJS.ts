@@ -108,31 +108,6 @@ class BpmnJS {
       hasOuterBorderOnSelection,
     } = options;
 
-    const selectedFlowNodeIds = unfilteredSelectedFlowNodeIds?.filter(
-      (flowNodeId) => {
-        const element = this.#navigatedViewer
-          ?.get('elementRegistry')
-          .get(flowNodeId);
-        return element !== undefined;
-      },
-    );
-    const highlightedFlowNodeIds = unfilteredHighlightedFlowNodeIds?.filter(
-      (flowNodeId) => {
-        const element = this.#navigatedViewer
-          ?.get('elementRegistry')
-          .get(flowNodeId);
-        return element !== undefined;
-      },
-    );
-    const selectableFlowNodes = unfilteredSelectableFlowNodes?.filter(
-      (flowNodeId) => {
-        const element = this.#navigatedViewer
-          ?.get('elementRegistry')
-          .get(flowNodeId);
-        return element !== undefined;
-      },
-    );
-
     if (this.#navigatedViewer === null) {
       this.#createViewer(container);
     }
@@ -141,6 +116,19 @@ class BpmnJS {
       this.#xml = xml;
       await this.import(xml);
     }
+
+    const doesElementExist = (flowNodeId: string) => {
+      return (
+        this.#navigatedViewer?.get('elementRegistry')?.get(flowNodeId) !==
+        undefined
+      );
+    };
+    const selectedFlowNodeIds =
+      unfilteredSelectedFlowNodeIds?.filter(doesElementExist);
+    const highlightedFlowNodeIds =
+      unfilteredHighlightedFlowNodeIds?.filter(doesElementExist);
+    const selectableFlowNodes =
+      unfilteredSelectableFlowNodes?.filter(doesElementExist);
 
     // if render is called a second time before importing has finished,
     // exit early because there is no root element yet.
