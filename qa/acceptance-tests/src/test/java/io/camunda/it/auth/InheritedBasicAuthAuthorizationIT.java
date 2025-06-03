@@ -37,7 +37,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-public class InheritedAuthorizationIT {
+public class InheritedBasicAuthAuthorizationIT {
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
