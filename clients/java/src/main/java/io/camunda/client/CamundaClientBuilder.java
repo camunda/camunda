@@ -28,6 +28,7 @@ import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 
+/** A builder to create a {@link CamundaClient}. */
 public interface CamundaClientBuilder {
 
   /**

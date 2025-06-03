@@ -15,7 +15,9 @@
  */
 package io.camunda.process.test.impl.runtime;
 
-public class ContainerRuntimeDefaults {
+import java.net.URI;
+
+public class CamundaProcessTestRuntimeDefaults {
 
   public static final String DEFAULT_CAMUNDA_DOCKER_IMAGE_NAME = "camunda/camunda";
   public static final String DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION = "SNAPSHOT";
@@ -28,6 +30,10 @@ public class ContainerRuntimeDefaults {
   public static final String ELASTICSEARCH_LOGGER_NAME = "tc.elasticsearch";
   public static final String CAMUNDA_LOGGER_NAME = "tc.camunda";
   public static final String CONNECTORS_LOGGER_NAME = "tc.connectors";
+
+  public static final URI LOCAL_CAMUNDA_MONITORING_API_ADDRESS =
+      URI.create("http://0.0.0.0:" + ContainerRuntimePorts.CAMUNDA_MONITORING_API);
+  public static final URI LOCAL_CONNECTORS_REST_API_ADDRESS = URI.create("http://0.0.0.0:8085");
 
   private static final ContainerRuntimePropertiesUtil PROPERTIES_UTIL =
       ContainerRuntimePropertiesUtil.readProperties();
