@@ -257,6 +257,10 @@ public final class BpmnStateBehavior {
     copyVariablesToProcessInstance(targetProcessInstanceKey, targetProcess, variables);
   }
 
+  public boolean shouldSuspendProcessInstance(final long processInstanceKey, final String elementId) {
+    return elementInstanceState.shouldSuspendElementInstance(processInstanceKey, elementId);
+  }
+
   private void copyVariablesToProcessInstance(
       final long targetProcessInstanceKey,
       final DeployedProcess targetProcess,

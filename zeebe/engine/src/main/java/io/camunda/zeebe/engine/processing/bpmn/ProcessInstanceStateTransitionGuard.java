@@ -59,12 +59,14 @@ public final class ProcessInstanceStateTransitionGuard {
 
     return switch (context.getIntent()) {
       case ACTIVATE_ELEMENT ->
+        // todo: check instance is not suspended
           hasActiveFlowScopeInstance(context)
               .flatMap(ok -> canActivateParallelGateway(context, element))
               .flatMap(ok -> canActivateInclusiveGateway(context, element));
       case COMPLETE_ELEMENT ->
           // an incident is resolved by writing a COMPLETE command when the element instance is in
           // state COMPLETING
+          // todo: check instance is not suspended
           hasElementInstanceWithState(
                   context,
                   ProcessInstanceIntent.ELEMENT_ACTIVATED,
