@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.exporter.stream;
 import static org.mockito.Mockito.spy;
 
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
+import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.RecordExporter;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
 import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -29,6 +30,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
@@ -99,6 +101,12 @@ public final class ExporterRule implements TestRule {
   }
 
   public void startExporterDirector(final List<ExporterDescriptor> exporterDescriptors) {
+    startExporterDirector(exporterDescriptors, Function.identity());
+  }
+
+  public void startExporterDirector(
+      final List<ExporterDescriptor> exporterDescriptors,
+      final Function<RecordExporter, RecordExporter> recordExporter) {
     final var stream = streams.getLogStream(STREAM_NAME);
     final var runtimeFolder = streams.createRuntimeFolder(stream);
     capturedZeebeDb = spy(zeebeDbFactory.createDb(runtimeFolder.toFile()));
@@ -116,7 +124,7 @@ public final class ExporterRule implements TestRule {
             .meterRegistry(new SimpleMeterRegistry())
             .positionsToSkipFilter(positionsToSkipFilter);
 
-    director = new ExporterDirector(context, false);
+    director = new ExporterDirector(context, false, recordExporter);
     director.startAsync(actorSchedulerRule.get()).join();
   }
 
