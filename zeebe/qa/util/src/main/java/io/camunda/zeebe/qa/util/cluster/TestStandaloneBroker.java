@@ -14,6 +14,7 @@ import io.camunda.application.commons.configuration.BrokerBasedConfiguration.Bro
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.authentication.config.AuthenticationProperties;
+import io.camunda.security.configuration.ConfiguredMapping;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
@@ -39,7 +40,9 @@ import org.springframework.util.unit.DataSize;
 @SuppressWarnings("UnusedReturnValue")
 public final class TestStandaloneBroker extends TestSpringApplication<TestStandaloneBroker>
     implements TestGateway<TestStandaloneBroker>, TestStandaloneApplication<TestStandaloneBroker> {
-
+  public static final String DEFAULT_MAPPING_ID = "default";
+  public static final String DEFAULT_MAPPING_CLAIM_NAME = "client_id";
+  public static final String DEFAULT_MAPPING_CLAIM_VALUE = "default";
   private static final String RECORDING_EXPORTER_ID = "recordingExporter";
   private final BrokerBasedProperties config;
   private final CamundaSecurityProperties securityConfig;
@@ -77,8 +80,21 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
                 InitializationConfiguration.DEFAULT_USER_EMAIL));
     securityConfig
         .getInitialization()
+        .getMappings()
+        .add(
+            new ConfiguredMapping(
+                DEFAULT_MAPPING_ID, DEFAULT_MAPPING_CLAIM_NAME, DEFAULT_MAPPING_CLAIM_VALUE));
+    securityConfig
+        .getInitialization()
         .getDefaultRoles()
-        .put("admin", Map.of("users", List.of(InitializationConfiguration.DEFAULT_USER_USERNAME)));
+        .put(
+            "admin",
+            Map.of(
+                "users",
+                List.of(InitializationConfiguration.DEFAULT_USER_USERNAME),
+                "mappings",
+                List.of(DEFAULT_MAPPING_ID)));
+
     withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
     // by default, we don't want to create the schema as ES/OS containers may not be used in the
     // current test
@@ -169,16 +185,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     return config.getGateway();
   }
 
-  /**
-   * Modifies the security configuration. Will still mutate the configuration if the broker is
-   * started, but likely has no effect until it's restarted.
-   */
-  public TestStandaloneBroker withSecurityConfig(
-      final Consumer<CamundaSecurityProperties> modifier) {
-    modifier.accept(securityConfig);
-    return this;
-  }
-
   /** Enables multi-tenancy in the security configuration. */
   public TestStandaloneBroker withMultiTenancyEnabled() {
     return withSecurityConfig(cfg -> cfg.getMultiTenancy().setEnabled(true));
@@ -237,15 +243,21 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     return this;
   }
 
+  /**
+   * Modifies the security configuration. Will still mutate the configuration if the broker is
+   * started, but likely has no effect until it's restarted.
+   */
+  @Override
+  public TestStandaloneBroker withSecurityConfig(
+      final Consumer<CamundaSecurityProperties> modifier) {
+    modifier.accept(securityConfig);
+    return this;
+  }
+
   /** Returns the broker configuration */
   @Override
   public BrokerBasedProperties brokerConfig() {
     return config;
-  }
-
-  @Override
-  public CamundaSecurityProperties securityConfig() {
-    return securityConfig;
   }
 
   @Override

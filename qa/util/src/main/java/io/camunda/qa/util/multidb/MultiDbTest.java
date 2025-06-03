@@ -77,4 +77,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Documented
 @ExtendWith(CamundaMultiDBExtension.class)
 @Inherited
-public @interface MultiDbTest {}
+public @interface MultiDbTest {
+
+  /**
+   * @return if true, then a Keycoak container will be started. This is useful for tests that
+   *     require OIDC authentication.
+   */
+  boolean setupKeycloak() default false;
+}
