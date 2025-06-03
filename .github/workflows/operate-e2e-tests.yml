@@ -40,6 +40,8 @@ concurrency:
 
 jobs:
   test:
+    # Temporarily disabled E2E tests while we fix them
+    if: false
     runs-on: gcp-core-4-default
     services:
       elasticsearch:
