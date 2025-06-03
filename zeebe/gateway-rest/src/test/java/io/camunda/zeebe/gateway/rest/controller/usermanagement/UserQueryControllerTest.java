@@ -9,10 +9,12 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.UserEntity;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.UserQuery;
@@ -21,6 +23,7 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,6 +74,66 @@ public class UserQueryControllerTest extends RestControllerTest {
   @BeforeEach
   void setup() {
     when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
+  }
+
+  @Test
+  void getUserShouldReturnOk() {
+    // given
+    final var user = new UserEntity(100L, "username", "User Name", "email@email.com", "password");
+    when(userServices.getUser(user.username())).thenReturn(user);
+
+    // when
+    webClient
+        .get()
+        .uri("%s/%s".formatted("/v2/users/", user.username()))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+              "username": "username",
+              "name": "User Name",
+              "email": "email@email.com"
+            }""");
+
+    // then
+    verify(userServices, times(1)).getUser(user.username());
+  }
+
+  @Test
+  void getNonExistingUserShouldReturnNotFound() {
+    // given
+    final var username = Strings.newRandomValidIdentityId();
+    final var path = "%s/%s".formatted("/v2/users", username);
+    when(userServices.getUser(username))
+        .thenThrow(
+            new CamundaSearchException("user not found", CamundaSearchException.Reason.NOT_FOUND));
+
+    // when
+    webClient
+        .get()
+        .uri(path)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "NOT_FOUND",
+              "status": 404,
+              "detail": "user not found",
+              "instance": "%s"
+            }"""
+                .formatted(path));
+
+    // then
+    verify(userServices, times(1)).getUser(username);
   }
 
   @Test

@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.UserSearchClient;
+import io.camunda.search.entities.UserEntity;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -23,8 +24,10 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserDeleteRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -87,5 +90,29 @@ public class UserServiceTest {
     final var request = userDeleteRequestArgumentCaptor.getValue().getRequestWriter();
     assertThat(request.getUsername()).isEqualTo(username);
     assertThat(request.getUserKey()).isEqualTo(-1L);
+  }
+
+  @Test
+  public void shouldReturnUserForGet() {
+    // given
+    final var entity = mock(UserEntity.class);
+    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array(), Arrays.array());
+    when(client.searchUsers(any())).thenReturn(result);
+
+    // when
+    final var searchQueryResult = services.findUser(entity.username());
+
+    // then
+    assertThat(searchQueryResult).contains(entity);
+  }
+
+  @Test
+  public void shouldThrownExceptionIfUserNotFoundByUsername() {
+    // given
+    final var username = "username";
+    when(client.searchUsers(any())).thenReturn(new SearchQueryResult<>(0, List.of(), null, null));
+
+    // when / then
+    assertThat(services.findUser(username)).isEmpty();
   }
 }
