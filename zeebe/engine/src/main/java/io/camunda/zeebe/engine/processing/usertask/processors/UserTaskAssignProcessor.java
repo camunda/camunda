@@ -7,16 +7,18 @@
  */
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
+import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
@@ -26,21 +28,24 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
 
   private static final String DEFAULT_ACTION = "assign";
 
-  private final UserTaskState userTaskState;
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final UserTaskCommandPreconditionChecker preconditionChecker;
+  private final AsyncRequestBehavior asyncRequestBehavior;
+  private final AsyncRequestState asyncRequestState;
 
   public UserTaskAssignProcessor(
       final ProcessingState state,
       final Writers writers,
+      final AsyncRequestBehavior asyncRequestBehavior,
       final AuthorizationCheckBehavior authCheckBehavior) {
-    userTaskState = state.getUserTaskState();
     stateWriter = writers.state();
     responseWriter = writers.response();
     preconditionChecker =
         new UserTaskCommandPreconditionChecker(
             List.of(LifecycleState.CREATED), "assign", state.getUserTaskState(), authCheckBehavior);
+    this.asyncRequestBehavior = asyncRequestBehavior;
+    asyncRequestState = state.getAsyncRequestState();
   }
 
   @Override
@@ -52,7 +57,7 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
   @Override
   public void onCommand(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
-    final long userTaskKey = command.getKey();
+    asyncRequestBehavior.writeAsyncRequestReceived(userTaskRecord.getElementInstanceKey(), command);
 
     final var newAssignee = command.getValue().getAssignee();
     if (!userTaskRecord.getAssignee().equals(newAssignee)) {
@@ -61,7 +66,7 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
     }
     userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
 
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
+    stateWriter.appendFollowUpEvent(command.getKey(), UserTaskIntent.ASSIGNING, userTaskRecord);
   }
 
   @Override
@@ -69,23 +74,27 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
 
-    if (command.hasRequestMetadata()) {
+    final var asyncRequest =
+        asyncRequestState.findRequest(
+            userTaskRecord.getElementInstanceKey(), ValueType.USER_TASK, UserTaskIntent.ASSIGN);
+
+    if (asyncRequest.isEmpty()) {
+      // When activating a user task that specifies an assignee in the process.
       stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
       responseWriter.writeEventOnCommand(
           userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord, command);
-    } else {
-      final var recordRequestMetadata = userTaskState.findRecordRequestMetadata(userTaskKey);
-      stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
-
-      recordRequestMetadata.ifPresent(
-          metadata ->
-              responseWriter.writeResponse(
-                  userTaskKey,
-                  UserTaskIntent.ASSIGNED,
-                  userTaskRecord,
-                  ValueType.USER_TASK,
-                  metadata.getRequestId(),
-                  metadata.getRequestStreamId()));
+      return;
     }
+
+    final var request = asyncRequest.get();
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
+    responseWriter.writeResponse(
+        userTaskKey,
+        UserTaskIntent.ASSIGNED,
+        userTaskRecord,
+        ValueType.USER_TASK,
+        request.requestId(),
+        request.requestStreamId());
+    stateWriter.appendFollowUpEvent(request.key(), AsyncRequestIntent.PROCESSED, request.record());
   }
 }

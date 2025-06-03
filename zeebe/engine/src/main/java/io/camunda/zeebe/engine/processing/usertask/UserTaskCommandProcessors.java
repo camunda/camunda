@@ -58,9 +58,11 @@ public final class UserTaskCommandProcessors {
                     bpmnBehaviors.userTaskBehavior(),
                     bpmnBehaviors.jobBehavior()),
                 UserTaskIntent.ASSIGN,
-                new UserTaskAssignProcessor(processingState, writers, authCheckBehavior),
+                new UserTaskAssignProcessor(
+                    processingState, writers, asyncRequestBehavior, authCheckBehavior),
                 UserTaskIntent.CLAIM,
-                new UserTaskClaimProcessor(processingState, writers, authCheckBehavior),
+                new UserTaskClaimProcessor(
+                    processingState, writers, asyncRequestBehavior, authCheckBehavior),
                 UserTaskIntent.UPDATE,
                 new UserTaskUpdateProcessor(
                     processingState,
