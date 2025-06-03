@@ -334,10 +334,13 @@ public class TaskListenerDenialsTest {
     // task update denial
     helper.assertUserTaskTransitionRelatedIntentsSequence(
         processInstanceKey,
+        VariableDocumentIntent.UPDATE,
         AsyncRequestIntent.RECEIVED,
+        VariableDocumentIntent.UPDATING,
         UserTaskIntent.UPDATING,
         UserTaskIntent.DENY_TASK_LISTENER,
         UserTaskIntent.UPDATE_DENIED,
+        VariableDocumentIntent.UPDATE_DENIED,
         AsyncRequestIntent.PROCESSED);
 
     assertThat(
@@ -542,15 +545,23 @@ public class TaskListenerDenialsTest {
     // task update denial
     helper.assertUserTaskTransitionRelatedIntentsSequence(
         processInstanceKey,
+        // denied attempt
+        VariableDocumentIntent.UPDATE,
         AsyncRequestIntent.RECEIVED,
+        VariableDocumentIntent.UPDATING,
         UserTaskIntent.UPDATING,
         UserTaskIntent.DENY_TASK_LISTENER,
         UserTaskIntent.UPDATE_DENIED,
+        VariableDocumentIntent.UPDATE_DENIED,
         AsyncRequestIntent.PROCESSED,
+        // successful attempt
+        VariableDocumentIntent.UPDATE,
         AsyncRequestIntent.RECEIVED,
+        VariableDocumentIntent.UPDATING,
         UserTaskIntent.UPDATING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.UPDATED,
+        VariableDocumentIntent.UPDATED,
         AsyncRequestIntent.PROCESSED);
 
     assertThat(

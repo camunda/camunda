@@ -15,10 +15,8 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
-import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
-import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -481,34 +479,18 @@ public class TaskListenerBlockedTransitionTest {
         listenerType + "_2",
         listenerType + "_3");
 
-    final Predicate<Record<?>> isUserTaskVariablesUpdateRelatedRecords =
-        r ->
-            switch (r.getValue()) {
-              case final UserTaskRecord u ->
-                  u.getElementInstanceKey() == userTaskElementInstanceKey;
-              case final VariableDocumentRecord v -> v.getScopeKey() == userTaskElementInstanceKey;
-              case final AsyncRequestRecord a -> a.getScopeKey() == userTaskElementInstanceKey;
-              default -> false;
-            };
-
-    assertThat(
-            RecordingExporter.records()
-                .filter(isUserTaskVariablesUpdateRelatedRecords)
-                .skipUntil(r -> r.getIntent() == VariableDocumentIntent.UPDATE)
-                .limit(r -> r.getIntent() == AsyncRequestIntent.PROCESSED))
-        .extracting(Record::getValueType, Record::getIntent)
-        .describedAs("Verify the expected sequence of UserTask and VariableDocument intents")
-        .containsExactly(
-            tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATE),
-            tuple(ValueType.ASYNC_REQUEST, AsyncRequestIntent.RECEIVED),
-            tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATING),
-            tuple(ValueType.USER_TASK, UserTaskIntent.UPDATING),
-            tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETE_TASK_LISTENER),
-            tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETE_TASK_LISTENER),
-            tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETE_TASK_LISTENER),
-            tuple(ValueType.USER_TASK, UserTaskIntent.UPDATED),
-            tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATED),
-            tuple(ValueType.ASYNC_REQUEST, AsyncRequestIntent.PROCESSED));
+    helper.assertUserTaskTransitionRelatedIntentsSequence(
+        processInstanceKey,
+        VariableDocumentIntent.UPDATE,
+        AsyncRequestIntent.RECEIVED,
+        VariableDocumentIntent.UPDATING,
+        UserTaskIntent.UPDATING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.UPDATED,
+        VariableDocumentIntent.UPDATED,
+        AsyncRequestIntent.PROCESSED);
 
     if (semantic == VariableDocumentUpdateSemantic.LOCAL) {
       verifyVariableCreated(
