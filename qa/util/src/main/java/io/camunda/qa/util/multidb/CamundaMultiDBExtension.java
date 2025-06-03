@@ -9,11 +9,14 @@ package io.camunda.qa.util.multidb;
 
 import static org.assertj.core.api.Fail.fail;
 
+import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.GroupDefinition;
+import io.camunda.qa.util.auth.MappingDefinition;
 import io.camunda.qa.util.auth.RoleDefinition;
 import io.camunda.qa.util.auth.TestGroup;
+import io.camunda.qa.util.auth.TestMapping;
 import io.camunda.qa.util.auth.TestRole;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
@@ -21,6 +24,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.test.testcontainers.DefaultTestContainers;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.lang.annotation.Annotation;
@@ -39,6 +43,9 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.platform.commons.support.ModifierSupport;
+import org.keycloak.representations.idm.ClientRepresentation;
+import org.keycloak.representations.idm.RealmRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -211,6 +218,7 @@ public class CamundaMultiDBExtension
   public static final String DEFAULT_OS_ADMIN_PW = "yourStrongPassword123!";
   public static final Duration TIMEOUT_DATABASE_EXPORTER_READINESS = Duration.ofMinutes(3);
   public static final Duration TIMEOUT_DATABASE_READINESS = Duration.ofMinutes(3);
+  public static final String KEYCLOAK_REALM = "camunda";
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaMultiDBExtension.class);
   private final DatabaseType databaseType;
   private final List<AutoCloseable> closeables = new ArrayList<>();
@@ -222,6 +230,7 @@ public class CamundaMultiDBExtension
   private MultiDbSetupHelper setupHelper = new NoopDBSetupHelper();
   private CamundaClientTestFactory authenticatedClientFactory;
   private EntityManager entityManager;
+  private KeycloakContainer keycloakContainer;
 
   public CamundaMultiDBExtension() {
     this(new TestStandaloneBroker());
@@ -251,7 +260,7 @@ public class CamundaMultiDBExtension
   }
 
   @Override
-  public void beforeAll(final ExtensionContext context) {
+  public void beforeAll(final ExtensionContext context) throws Exception {
     LOGGER.info("Starting up Camunda instance, with {}", databaseType);
     final Class<?> testClass = context.getRequiredTestClass();
     final var isHistoryRelatedTest = testClass.isAnnotationPresent(HistoryMultiDbTest.class);
@@ -301,34 +310,121 @@ public class CamundaMultiDBExtension
         .timeout(TIMEOUT_DATABASE_READINESS)
         .until(setupHelper::validateConnection);
 
+    final var shouldSetupKeycloak =
+        Optional.ofNullable(testClass.getAnnotation(MultiDbTest.class))
+            .map(MultiDbTest::setupKeycloak)
+            .orElse(false);
+    if (shouldSetupKeycloak) {
+      setupKeycloak();
+      applicationUnderTest
+          .application()
+          .withSecurityConfig(
+              cfg -> {
+                final var oidcConfig = cfg.getAuthentication().getOidc();
+                oidcConfig.setClientId("example");
+                oidcConfig.setRedirectUri("example.com");
+                oidcConfig.setIssuerUri(
+                    keycloakContainer.getAuthServerUrl()
+                        + "/realms/"
+                        + CamundaMultiDBExtension.KEYCLOAK_REALM);
+              });
+    }
+
+    if (shouldSetupKeycloak) {
+      authenticatedClientFactory =
+          new OidcCamundaClientTestFactory(
+              applicationUnderTest,
+              testPrefix,
+              keycloakContainer.getAuthServerUrl()
+                  + "/realms/camunda/protocol/openid-connect/token");
+      injectStaticKeycloakContainerField(testClass, keycloakContainer);
+    } else {
+      authenticatedClientFactory = new BasicAuthCamundaClientTestFactory(applicationUnderTest);
+    }
+
     if (applicationUnderTest.shouldBeManaged) {
       manageApplicationUnderTest();
     }
 
-    authenticatedClientFactory = new BasicAuthCamundaClientTestFactory(applicationUnderTest);
-    entityManager = new EntityManager(authenticatedClientFactory.getDefaultUserCamundaClient());
-    createEntities(testClass);
+    entityManager = new EntityManager(authenticatedClientFactory.getAdminCamundaClient());
+    createEntities(testClass, shouldSetupKeycloak);
+
     // we support only static fields for now - to make sure test setups are build in a way
     // such they are reusable and tests methods are not relying on order, etc.
     // We want to run tests in an efficient manner, and reduce setup time
     injectStaticClientField(testClass);
   }
 
-  private void createEntities(final Class<?> testClass) {
+  private KeycloakContainer setupKeycloak() {
+    keycloakContainer = DefaultTestContainers.createDefaultKeycloak();
+    closeables.add(keycloakContainer);
+    keycloakContainer.start();
+
+    final var realm = new RealmRepresentation();
+    realm.setRealm(KEYCLOAK_REALM);
+    realm.setEnabled(true);
+    try (final var keycloak = keycloakContainer.getKeycloakAdminClient()) {
+      keycloak.realms().create(realm);
+    }
+    setupUserInKeycloak(
+        TestStandaloneBroker.DEFAULT_MAPPING_ID, TestStandaloneBroker.DEFAULT_MAPPING_CLAIM_VALUE);
+
+    return keycloakContainer;
+  }
+
+  private void createEntities(final Class<?> testClass, final Boolean shouldSetupKeycloak) {
     final var users = findUsers(testClass, null, ModifierSupport::isStatic);
+    final var mappings = findMappings(testClass, null, ModifierSupport::isStatic);
     final var groups = findGroups(testClass, null, ModifierSupport::isStatic);
     final var roles = findRoles(testClass, null, ModifierSupport::isStatic);
-    entityManager.withUser(users).withGroups(groups).withRoles(roles).await();
+    entityManager
+        .withUser(users)
+        .withMappings(mappings)
+        .withGroups(groups)
+        .withRoles(roles)
+        .await();
     users.forEach(
         user ->
             authenticatedClientFactory.createClientForUser(applicationUnderTest.application, user));
+
+    mappings.forEach(
+        mapping -> {
+          authenticatedClientFactory.createClientForMapping(
+              applicationUnderTest.application, mapping);
+
+          if (shouldSetupKeycloak) {
+            setupUserInKeycloak(mapping.id(), mapping.claimValue());
+          }
+        });
+  }
+
+  private void setupUserInKeycloak(final String mappingId, final String claimValue) {
+    final var clientRepresentation = new ClientRepresentation();
+    clientRepresentation.setClientId(claimValue);
+    clientRepresentation.setEnabled(true);
+    clientRepresentation.setClientAuthenticatorType("client-secret");
+    clientRepresentation.setSecret(claimValue);
+    clientRepresentation.setServiceAccountsEnabled(true);
+
+    final var userRepresentation = new UserRepresentation();
+    userRepresentation.setId(claimValue);
+    userRepresentation.setUsername(claimValue);
+    userRepresentation.setServiceAccountClientId(mappingId);
+    userRepresentation.setEnabled(true);
+
+    try (final var keycloak = keycloakContainer.getKeycloakAdminClient()) {
+      final var realm = keycloak.realm(CamundaMultiDBExtension.KEYCLOAK_REALM);
+      realm.clients().create(clientRepresentation).close();
+      realm.users().create(userRepresentation).close();
+    }
   }
 
   private void manageApplicationUnderTest() {
     final var application = applicationUnderTest.application;
     closeables.add(application);
     application.start();
-    application.awaitCompleteTopology(application.brokerConfig());
+    application.awaitCompleteTopology(
+        application.brokerConfig(), authenticatedClientFactory.getAdminCamundaClient());
 
     Awaitility.await("Await exporter readiness")
         .timeout(TIMEOUT_DATABASE_EXPORTER_READINESS)
@@ -397,6 +493,12 @@ public class CamundaMultiDBExtension
     return findFields(testClass, testInstance, predicate, TestRole.class, RoleDefinition.class);
   }
 
+  private List<TestMapping> findMappings(
+      final Class<?> testClass, final Object testInstance, final Predicate<Field> predicate) {
+    return findFields(
+        testClass, testInstance, predicate, TestMapping.class, MappingDefinition.class);
+  }
+
   private <T> List<T> findFields(
       final Class<?> testClass,
       final Object testInstance,
@@ -431,6 +533,24 @@ public class CamundaMultiDBExtension
             field.set(null, getCamundaClient(field.getAnnotation(Authenticated.class)));
           } else {
             fail("Camunda Client field couldn't be injected. Make sure it is static.");
+          }
+        }
+      } catch (final Exception ex) {
+        throw new RuntimeException(ex);
+      }
+    }
+  }
+
+  private void injectStaticKeycloakContainerField(
+      final Class<?> testClass, final KeycloakContainer keycloakContainer) {
+    for (final Field field : testClass.getDeclaredFields()) {
+      try {
+        if (field.getType() == KeycloakContainer.class) {
+          if (ModifierSupport.isStatic(field)) {
+            field.setAccessible(true);
+            field.set(null, keycloakContainer);
+          } else {
+            fail("Keycloak container field couldn't be injected. Make sure it is static.");
           }
         }
       } catch (final Exception ex) {

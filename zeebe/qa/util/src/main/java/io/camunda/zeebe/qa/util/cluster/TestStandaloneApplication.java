@@ -43,9 +43,13 @@ public interface TestStandaloneApplication<T extends TestStandaloneApplication<T
    */
   T withBrokerConfig(final Consumer<BrokerBasedProperties> modifier);
 
-  BrokerBasedProperties brokerConfig();
+  /**
+   * Modifies the security configuration. Will still mutate the configuration if the broker is
+   * started, but likely has no effect until it's restarted.
+   */
+  T withSecurityConfig(final Consumer<CamundaSecurityProperties> modifier);
 
-  CamundaSecurityProperties securityConfig();
+  BrokerBasedProperties brokerConfig();
 
   default Optional<AuthenticationMethod> clientAuthenticationMethod() {
     return Optional.empty();
@@ -69,8 +73,6 @@ public interface TestStandaloneApplication<T extends TestStandaloneApplication<T
                         .username(DEFAULT_USER_USERNAME)
                         .password(DEFAULT_USER_PASSWORD)
                         .build());
-              } else {
-                throw new IllegalStateException("Unsupported authentication method: " + method);
               }
             });
 
