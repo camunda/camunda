@@ -244,7 +244,8 @@ public final class EngineProcessors {
         scheduledTaskStateFactory,
         typedRecordProcessors,
         writers,
-        processingState);
+        processingState,
+        routingInfo);
 
     UserProcessors.addUserProcessors(
         keyGenerator,
@@ -590,13 +591,15 @@ public final class EngineProcessors {
       final Supplier<ScheduledTaskState> scheduledTaskStateSupplier,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
-      final ProcessingState processingState) {
+      final ProcessingState processingState,
+      final RoutingInfo routingInfo) {
 
     // periodically retries command distribution
     typedRecordProcessors.withListener(
         new CommandRedistributor(
             commandDistributionBehavior.withScheduledState(
-                scheduledTaskStateSupplier.get().getDistributionState())));
+                scheduledTaskStateSupplier.get().getDistributionState()),
+            routingInfo));
 
     final var distributionState = processingState.getDistributionState();
     typedRecordProcessors.onCommand(
