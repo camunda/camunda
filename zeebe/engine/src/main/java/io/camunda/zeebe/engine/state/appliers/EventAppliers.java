@@ -140,7 +140,7 @@ public final class EventAppliers implements EventApplier {
     registerMappingAppliers(state);
     registerBatchOperationAppliers(state);
     registerIdentitySetupAppliers();
-    registerAsyncRequestAppliers();
+    registerAsyncRequestAppliers(state);
 
     return this;
   }
@@ -633,9 +633,10 @@ public final class EventAppliers implements EventApplier {
     register(IdentitySetupIntent.INITIALIZED, NOOP_EVENT_APPLIER);
   }
 
-  private void registerAsyncRequestAppliers() {
-    register(AsyncRequestIntent.RECEIVED, NOOP_EVENT_APPLIER);
-    register(AsyncRequestIntent.PROCESSED, NOOP_EVENT_APPLIER);
+  private void registerAsyncRequestAppliers(final MutableProcessingState state) {
+    final var asyncRequestState = state.getAsyncRequestState();
+    register(AsyncRequestIntent.RECEIVED, new AsyncRequestReceivedApplier(asyncRequestState));
+    register(AsyncRequestIntent.PROCESSED, new AsyncRequestProcessedApplier(asyncRequestState));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {
