@@ -36,7 +36,7 @@ public final class BasicAuthCamundaClientTestFactory implements CamundaClientTes
   }
 
   @Override
-  public CamundaClient getDefaultUserCamundaClient() {
+  public CamundaClient getAdminCamundaClient() {
     return getCamundaClient(InitializationConfiguration.DEFAULT_USER_USERNAME);
   }
 
