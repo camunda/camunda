@@ -210,9 +210,11 @@ public class CamundaProcessTestExtension
     }
     CamundaAssert.reset();
     closeCreatedClients();
-    // final steps: delete data and reset the time
-    deleteRuntimeData();
+    // final steps: reset the time and delete data
+    // It's important that the runtime clock is reset before the purge is started, as doing it
+    // the other way around leads to race conditions and inconsistencies in the tests
     resetRuntimeClock();
+    deleteRuntimeData();
   }
 
   private void printTestResults() {
