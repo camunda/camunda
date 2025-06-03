@@ -12,9 +12,9 @@ import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.qa.util.auth.Membership;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestGroup;
+import io.camunda.qa.util.auth.TestMapping;
 import io.camunda.qa.util.auth.TestRole;
 import io.camunda.qa.util.auth.TestUser;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,6 +24,7 @@ public final class EntityManager {
   final Map<String, TestUser> users = new ConcurrentHashMap<>();
   final Map<String, TestGroup> groups = new ConcurrentHashMap<>();
   final Map<String, TestRole> roles = new ConcurrentHashMap<>();
+  final Map<String, TestMapping> mappings = new ConcurrentHashMap<>();
   private final CamundaClient defaultClient;
 
   public EntityManager(final CamundaClient defaultClient) {
@@ -87,6 +88,24 @@ public final class EntityManager {
     return this;
   }
 
+  public EntityManager withMappings(final List<TestMapping> mappings) {
+    mappings.stream()
+        .filter(mapping -> !this.mappings.containsKey(mapping.id()))
+        .forEach(
+            mapping -> {
+              this.mappings.put(mapping.id(), mapping);
+              defaultClient
+                  .newCreateMappingCommand()
+                  .mappingId(mapping.id())
+                  .claimName(mapping.claimName())
+                  .claimValue(mapping.claimValue())
+                  .name(mapping.id())
+                  .send()
+                  .join();
+            });
+    return this;
+  }
+
   private void addPermissions(
       final String ownerId, final OwnerType ownerType, final List<Permissions> permissions) {
     permissions.forEach(
@@ -110,15 +129,25 @@ public final class EntityManager {
     memberships.forEach(
         membership -> {
           final var entityType = membership.entityType();
-          if (entityType == EntityType.USER) {
-            defaultClient
-                .newAssignUserToGroupCommand()
-                .username(membership.memberId())
-                .groupId(groupId)
-                .send()
-                .join();
-          } else {
-            throw new IllegalArgumentException("Unsupported entity type: " + entityType);
+          switch (entityType) {
+            case USER:
+              defaultClient
+                  .newAssignUserToGroupCommand()
+                  .username(membership.memberId())
+                  .groupId(groupId)
+                  .send()
+                  .join();
+              break;
+            case MAPPING:
+              defaultClient
+                  .newAssignMappingToGroupCommand()
+                  .mappingId(membership.memberId())
+                  .groupId(groupId)
+                  .send()
+                  .join();
+              break;
+            default:
+              throw new IllegalArgumentException("Unsupported entity type: " + entityType);
           }
         });
   }
@@ -141,6 +170,14 @@ public final class EntityManager {
                   .newAssignRoleToGroupCommand()
                   .roleId(roleId)
                   .groupId(membership.memberId())
+                  .send()
+                  .join();
+              break;
+            case MAPPING:
+              defaultClient
+                  .newAssignRoleToMappingCommand()
+                  .roleId(roleId)
+                  .mappingId(membership.memberId())
                   .send()
                   .join();
               break;
