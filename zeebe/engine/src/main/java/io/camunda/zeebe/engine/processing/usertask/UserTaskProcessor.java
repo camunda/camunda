@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandProcessor;
+import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -35,11 +36,13 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Optional;
+import java.util.Set;
 
 @ExcludeAuthorizationCheck
 public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
@@ -61,6 +64,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   private final MutableUserTaskState userTaskState;
   private final ElementInstanceState elementInstanceState;
   private final VariableState variableState;
+  private final AsyncRequestState asyncRequestState;
 
   private final BpmnJobBehavior jobBehavior;
 
@@ -83,6 +87,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     this.userTaskState = userTaskState;
     elementInstanceState = state.getElementInstanceState();
     variableState = state.getVariableState();
+    asyncRequestState = state.getAsyncRequestState();
 
     jobBehavior = bpmnBehaviors.jobBehavior();
 
@@ -229,62 +234,70 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   private void writeRejectionForCommand(
       final TypedRecord<UserTaskRecord> command,
       final UserTaskRecord persistedRecord,
-      final UserTaskIntent intent) {
-
+      final UserTaskIntent intentToWrite) {
+    final long userTaskInstanceKey = persistedRecord.getElementInstanceKey();
     persistedRecord.setDeniedReason(command.getValue().getDeniedReason());
-    final var recordRequestMetadata =
-        userTaskState.findRecordRequestMetadata(persistedRecord.getUserTaskKey());
+    stateWriter.appendFollowUpEvent(
+        persistedRecord.getUserTaskKey(), intentToWrite, persistedRecord);
 
-    stateWriter.appendFollowUpEvent(persistedRecord.getUserTaskKey(), intent, persistedRecord);
-    recordRequestMetadata.ifPresent(
-        metadata -> {
-          switch (metadata.getTriggerType()) {
-            case USER_TASK ->
-                responseWriter.writeRejection(
-                    command.getKey(),
-                    mapDeniedIntentToResponseIntent(intent),
-                    command.getValue(),
-                    command.getValueType(),
-                    RejectionType.INVALID_STATE,
-                    mapDeniedIntentToResponseRejectionReason(
-                        intent,
-                        persistedRecord.getUserTaskKey(),
-                        command.getValue().getDeniedReason()),
-                    metadata.getRequestId(),
-                    metadata.getRequestStreamId());
-            case VARIABLE_DOCUMENT -> {
-              final long userTaskInstanceKey = command.getValue().getElementInstanceKey();
-              variableState
-                  .findVariableDocumentState(userTaskInstanceKey)
-                  .ifPresent(
-                      variableDocumentState -> {
-                        final long variableDocumentKey = variableDocumentState.getKey();
-                        final var variableDocumentRecord = variableDocumentState.getRecord();
-                        stateWriter.appendFollowUpEvent(
-                            variableDocumentKey,
-                            VariableDocumentIntent.UPDATE_DENIED,
-                            variableDocumentRecord);
+    final var expectedValueTypes = Set.of(ValueType.USER_TASK, ValueType.VARIABLE_DOCUMENT);
+    asyncRequestState
+        .findAllRequestsByScopeKey(userTaskInstanceKey)
+        .filter(request -> expectedValueTypes.contains(request.valueType()))
+        // Currently, we assume that at most one async request exists per user task element
+        // instance.
+        // However, this assumption may need to be revisited if we later support concurrent
+        // operations targeting the same user task element.
+        .findFirst()
+        .ifPresent(
+            request -> {
+              switch (request.valueType()) {
+                case USER_TASK ->
+                    responseWriter.writeRejection(
+                        command.getKey(),
+                        mapDeniedIntentToResponseIntent(intentToWrite),
+                        command.getValue(),
+                        command.getValueType(),
+                        RejectionType.INVALID_STATE,
+                        mapDeniedIntentToResponseRejectionReason(
+                            intentToWrite,
+                            persistedRecord.getUserTaskKey(),
+                            command.getValue().getDeniedReason()),
+                        request.requestId(),
+                        request.requestStreamId());
+                case VARIABLE_DOCUMENT ->
+                    variableState
+                        .findVariableDocumentState(userTaskInstanceKey)
+                        .ifPresent(
+                            variableDocumentState -> {
+                              final long variableDocumentKey = variableDocumentState.getKey();
+                              final var variableDocumentRecord = variableDocumentState.getRecord();
+                              stateWriter.appendFollowUpEvent(
+                                  variableDocumentKey,
+                                  VariableDocumentIntent.UPDATE_DENIED,
+                                  variableDocumentRecord);
 
-                        final var deniedReason =
-                            USER_TASK_VARIABLE_UPDATE_REJECTION.formatted(
-                                userTaskInstanceKey, command.getValue().getDeniedReason());
-                        responseWriter.writeRejection(
-                            variableDocumentKey,
-                            VariableDocumentIntent.UPDATE,
-                            variableDocumentRecord,
-                            ValueType.VARIABLE_DOCUMENT,
-                            RejectionType.INVALID_STATE,
-                            deniedReason,
-                            metadata.getRequestId(),
-                            metadata.getRequestStreamId());
-                      });
-            }
-            default ->
-                throw new IllegalArgumentException(
-                    "Unexpected user task transition trigger type: '%s'"
-                        .formatted(metadata.getTriggerType()));
-          }
-        });
+                              final var deniedReason =
+                                  USER_TASK_VARIABLE_UPDATE_REJECTION.formatted(
+                                      userTaskInstanceKey, command.getValue().getDeniedReason());
+                              responseWriter.writeRejection(
+                                  variableDocumentKey,
+                                  VariableDocumentIntent.UPDATE,
+                                  variableDocumentRecord,
+                                  ValueType.VARIABLE_DOCUMENT,
+                                  RejectionType.INVALID_STATE,
+                                  deniedReason,
+                                  request.requestId(),
+                                  request.requestStreamId());
+                            });
+                default ->
+                    throw new IllegalArgumentException(
+                        "Unexpected value type: '%s', only %s are expected"
+                            .formatted(request.valueType(), expectedValueTypes));
+              }
+              stateWriter.appendFollowUpEvent(
+                  request.key(), AsyncRequestIntent.PROCESSED, request.record());
+            });
   }
 
   private ExecutableUserTask getUserTaskElement(final UserTaskRecord userTaskRecord) {
