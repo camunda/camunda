@@ -77,6 +77,7 @@ public final class FileBasedSnapshotStoreImpl {
   private final AtomicLong receivingSnapshotStartCount;
   private final Set<PersistableSnapshot> pendingSnapshots = new HashSet<>();
   private final Set<FileBasedSnapshot> availableSnapshots = new HashSet<>();
+  private final Set<FileBasedSnapshot> bootstrapSnapshots = new HashSet<>();
   private final CRC32CChecksumProvider checksumProvider;
   private final ConcurrencyControl actor;
   private final Path bootstrapSnapshotsDirectory;
@@ -537,7 +538,10 @@ public final class FileBasedSnapshotStoreImpl {
         availableSnapshots.add(newPersistedSnapshot);
       }
 
-      LOGGER.info("Committed new snapshot {}", newPersistedSnapshot.getId());
+      LOGGER.info(
+          "Committed new snapshot {}, isBoostrap: {}",
+          newPersistedSnapshot.getId(),
+          newPersistedSnapshot.isBootstrap());
 
       snapshotMetrics.incrementSnapshotCount();
       observeSnapshotSize(newPersistedSnapshot, isBootstrap);
@@ -714,33 +718,36 @@ public final class FileBasedSnapshotStoreImpl {
   }
 
   public ActorFuture<PersistedSnapshot> copyForBootstrap(
-      final long processedPosition,
-      final PersistedSnapshot persistedSnapshot,
-      final BiConsumer<Path, Path> copySnapshot) {
+      final PersistedSnapshot persistedSnapshot, final BiConsumer<Path, Path> copySnapshot) {
     final var snapshotPath = persistedSnapshot.getPath();
-    return persistedSnapshot
-        .reserve()
-        .andThen(
-            reservation -> {
-              final var snapshotId = new FileBasedSnapshotId(0, 0, processedPosition, 0, brokerId);
-              final var destinationFolder = buildSnapshotDirectory(snapshotId, true);
+    final var snapshotId = (FileBasedSnapshotId) persistedSnapshot.snapshotId();
+    final var destinationFolder = buildSnapshotDirectory(snapshotId, true);
 
-              try {
-                FileUtil.ensureDirectoryExists(destinationFolder);
-                copySnapshot.accept(snapshotPath, destinationFolder);
-                final var transientSnapshot =
-                    new FileBasedTransientSnapshot(
-                        snapshotId, destinationFolder, this, actor, checksumProvider, true);
-                return transientSnapshot
-                    .take(toPath -> copySnapshot.accept(snapshotPath, toPath))
-                    .andThen(ignored -> transientSnapshot.persistInternal(), actor);
-              } catch (final Exception e) {
-                throw new SnapshotException("Failed to copy snapshot to new location", e);
-              } finally {
-                final var res = (FileBasedSnapshotReservation) reservation;
-                res.releaseInternal();
-              }
-            },
-            actor);
+    try {
+      FileUtil.ensureDirectoryExists(destinationFolder);
+      copySnapshot.accept(snapshotPath, destinationFolder);
+      final var transientSnapshot =
+          new FileBasedTransientSnapshot(
+              snapshotId, destinationFolder, this, actor, checksumProvider, true);
+      return transientSnapshot
+          .take(toPath -> copySnapshot.accept(snapshotPath, toPath))
+          .andThen(ignored -> transientSnapshot.persistInternal(), actor)
+          .thenApply(
+              persisted -> {
+                bootstrapSnapshots.add((FileBasedSnapshot) persisted);
+                return persisted;
+              },
+              actor);
+    } catch (final Exception e) {
+      throw new SnapshotException("Failed to copy snapshot to new location", e);
+    }
+  }
+
+  ActorFuture<Void> deleteBootstrapSnapshots() {
+    return actor.call(
+        () -> {
+          bootstrapSnapshots.forEach(FileBasedSnapshot::delete);
+          return null;
+        });
   }
 }

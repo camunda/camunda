@@ -105,6 +105,10 @@ public interface PersistedSnapshot {
    */
   ActorFuture<SnapshotReservation> reserve();
 
+  default boolean isBootstrap() {
+    return getMetadata() != null && getMetadata().isBootstrap();
+  }
+
   @VisibleForTesting
   boolean isReserved();
 

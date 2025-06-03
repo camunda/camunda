@@ -22,8 +22,4 @@ public class FileBasedSnapshotReservation implements SnapshotReservation {
   public ActorFuture<Void> release() {
     return snapshot.removeReservation(this);
   }
-
-  void releaseInternal() {
-    snapshot.removeReservationInternal(this);
-  }
 }

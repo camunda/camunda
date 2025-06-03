@@ -109,9 +109,30 @@ public final class FileBasedSnapshotTest {
     assertThat(snapshot.isReserved()).isFalse();
   }
 
+  @Test
+  public void shouldMarkAsReservedBootstrappedSnapshots() throws IOException {
+    // given
+    final var metadata = new FileBasedSnapshotMetadata(1, 1L, 1L, 0, true);
+    final var snapshotPath = snapshotDir.resolve("snapshot");
+    final Path checksumPath = snapshotDir.resolve("checksum");
+
+    // when
+    final var snapshot = createSnapshot(snapshotPath, checksumPath, metadata);
+
+    // then
+    assertThat(snapshot.isReserved()).isTrue();
+    assertThat(snapshot.isBootstrap()).isTrue();
+  }
+
   private FileBasedSnapshot createSnapshot(final Path snapshotPath, final Path checksumPath)
       throws IOException {
-    final var metadata = new FileBasedSnapshotId(1L, 1L, 1L, 1L, 0);
+    return createSnapshot(snapshotPath, checksumPath, null);
+  }
+
+  private FileBasedSnapshot createSnapshot(
+      final Path snapshotPath, final Path checksumPath, final FileBasedSnapshotMetadata metadata)
+      throws IOException {
+    final var snapshotId = new FileBasedSnapshotId(1L, 1L, 1L, 1L, 0);
 
     FileUtil.ensureDirectoryExists(snapshotPath);
     for (final var entry : SNAPSHOT_FILE_CONTENTS.entrySet()) {
@@ -125,8 +146,8 @@ public final class FileBasedSnapshotTest {
         snapshotPath,
         checksumPath,
         new SfvChecksumImpl(),
+        snapshotId,
         metadata,
-        null,
         s -> {},
         actor.getActorControl());
   }

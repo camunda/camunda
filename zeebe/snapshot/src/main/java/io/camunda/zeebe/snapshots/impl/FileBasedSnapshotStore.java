@@ -136,10 +136,13 @@ public final class FileBasedSnapshotStore extends Actor
 
   @Override
   public ActorFuture<PersistedSnapshot> copyForBootstrap(
-      final long processPosition,
-      final PersistedSnapshot persistedSnapshot,
-      final BiConsumer<Path, Path> copySnapshot) {
-    return snapshotStore.copyForBootstrap(processPosition, persistedSnapshot, copySnapshot);
+      final PersistedSnapshot persistedSnapshot, final BiConsumer<Path, Path> copySnapshot) {
+    return snapshotStore.copyForBootstrap(persistedSnapshot, copySnapshot);
+  }
+
+  @Override
+  public ActorFuture<Void> deleteBootstrapSnapshots() {
+    return snapshotStore.deleteBootstrapSnapshots();
   }
 
   @Override

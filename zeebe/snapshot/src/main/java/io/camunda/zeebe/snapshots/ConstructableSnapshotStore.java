@@ -31,14 +31,16 @@ public interface ConstructableSnapshotStore extends PersistedSnapshotStore {
    * Makes a copy of the given snapshot to the given destination folder, keeping only the columns
    * needed for the bootstrap process of a new partition. Anything raft related data is removed.
    *
-   * @param processPosition the position of the last processed event
    * @param persistedSnapshot the persisted snapshot to copy
    * @param copySnapshot the consumer which copies the snapshot to the destination folder. The first
    *     argument is the path of the source snapshot and the second argument is the destination
    *     folder
    */
   ActorFuture<PersistedSnapshot> copyForBootstrap(
-      long processPosition,
-      PersistedSnapshot persistedSnapshot,
-      BiConsumer<Path, Path> copySnapshot);
+      PersistedSnapshot persistedSnapshot, BiConsumer<Path, Path> copySnapshot);
+
+  /**
+   * @return an ActorFuture which completes when all bootstrap snapshots have been deleted
+   */
+  ActorFuture<Void> deleteBootstrapSnapshots();
 }

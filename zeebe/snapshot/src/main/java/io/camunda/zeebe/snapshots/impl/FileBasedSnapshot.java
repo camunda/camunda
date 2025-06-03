@@ -151,7 +151,9 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
 
   @Override
   public boolean isReserved() {
-    return !reservations.isEmpty();
+    // bootstrap snapshots are not deleted following the normal procedure, they are deleted when the
+    // scaling operation has been terminated
+    return !reservations.isEmpty() || (metadata != null && metadata.isBootstrap());
   }
 
   void delete() {
@@ -220,12 +222,8 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   ActorFuture<Void> removeReservation(final FileBasedSnapshotReservation reservation) {
     return actor.call(
         () -> {
-          removeReservationInternal(reservation);
+          reservations.remove(reservation);
           return null;
         });
-  }
-
-  void removeReservationInternal(final FileBasedSnapshotReservation reservation) {
-    reservations.remove(reservation);
   }
 }
