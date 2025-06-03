@@ -29,7 +29,6 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.engine.state.instance.UserTaskTransitionTriggerRequestMetadata;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
@@ -196,20 +195,6 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     final var eventType = mapIntentToEventType(intent);
 
     if (userTaskElement.hasTaskListeners(eventType)) {
-      /*
-       * Store the original command's metadata (requestId, requestStreamId) before creating
-       * the first task listener job. This metadata will be used later to finalize the original
-       * command after all task listeners have been processed, ensuring that the engine can respond
-       * appropriately to the original command request.
-       *
-       * Note:
-       * Typically, persistence logic should be handled via `*Applier` classes. However, since
-       * this involves request-related data, so in the case of command reconstruction,
-       * we will have new request values anyway, so persisting these data here is acceptable.
-       * A similar approach has been used in `ProcessInstanceCreationCreateWithResultProcessor`.
-       */
-      storeUserTaskRecordRequestMetadata(command);
-
       final var listener = userTaskElement.getTaskListeners(eventType).getFirst();
       final var userTaskElementInstance = getUserTaskElementInstance(persistedRecord);
       final var context = buildContext(userTaskElementInstance);
@@ -222,20 +207,6 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
   private boolean isRetriedCommand(final TypedRecord<UserTaskRecord> command) {
     return command instanceof RetryTypedRecord<UserTaskRecord>;
-  }
-
-  private void storeUserTaskRecordRequestMetadata(final TypedRecord<UserTaskRecord> command) {
-    if (!command.hasRequestMetadata()) {
-      return;
-    }
-
-    final var metadata =
-        new UserTaskTransitionTriggerRequestMetadata()
-            .setIntent(command.getIntent())
-            .setTriggerType(ValueType.USER_TASK)
-            .setRequestId(command.getRequestId())
-            .setRequestStreamId(command.getRequestStreamId());
-    userTaskState.storeRecordRequestMetadata(command.getValue().getUserTaskKey(), metadata);
   }
 
   private void handleCommandRejection(
