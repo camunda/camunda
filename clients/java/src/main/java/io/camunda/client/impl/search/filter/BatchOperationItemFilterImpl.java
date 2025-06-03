@@ -17,11 +17,11 @@ package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.enums.BatchOperationItemState;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
+import io.camunda.client.api.search.filter.builder.BasicStringProperty;
 import io.camunda.client.api.search.filter.builder.BatchOperationItemStateProperty;
-import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
+import io.camunda.client.impl.search.filter.builder.BasicStringPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.BatchOperationItemStatePropertyImpl;
-import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.BatchOperationItemFilter;
 import java.util.function.Consumer;
@@ -45,8 +45,8 @@ public class BatchOperationItemFilterImpl
 
   @Override
   public io.camunda.client.api.search.filter.BatchOperationItemFilter batchOperationId(
-      final Consumer<StringProperty> fn) {
-    final StringProperty property = new StringPropertyImpl();
+      final Consumer<BasicStringProperty> fn) {
+    final BasicStringProperty property = new BasicStringPropertyImpl();
     fn.accept(property);
     filter.setBatchOperationId(provideSearchRequestProperty(property));
     return this;

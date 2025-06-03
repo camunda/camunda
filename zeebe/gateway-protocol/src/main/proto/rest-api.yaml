@@ -9554,7 +9554,7 @@ components:
         batchOperationId:
           description: The key (or operate legacy ID) of the batch operation.
           allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
         operationType:
           description: The type of the batch operation.
           allOf:
@@ -9694,7 +9694,7 @@ components:
         batchOperationId:
           description: The key (or operate legacy ID) of the batch operation.
           allOf:
-            - $ref: "#/components/schemas/StringFilterProperty"
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
         itemKey:
           description: The key of the item, e.g. a process instance key.
           allOf:

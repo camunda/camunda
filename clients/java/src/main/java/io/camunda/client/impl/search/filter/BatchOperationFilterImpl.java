@@ -17,12 +17,12 @@ package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
+import io.camunda.client.api.search.filter.builder.BasicStringProperty;
 import io.camunda.client.api.search.filter.builder.BatchOperationStateProperty;
 import io.camunda.client.api.search.filter.builder.BatchOperationTypeProperty;
-import io.camunda.client.api.search.filter.builder.StringProperty;
+import io.camunda.client.impl.search.filter.builder.BasicStringPropertyImpl;
 import io.camunda.client.impl.search.filter.builder.BatchOperationStatePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.BatchOperationTypePropertyImpl;
-import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.BatchOperationFilter;
 import java.util.function.Consumer;
@@ -46,8 +46,8 @@ public class BatchOperationFilterImpl
 
   @Override
   public io.camunda.client.api.search.filter.BatchOperationFilter batchOperationId(
-      final Consumer<StringProperty> fn) {
-    final StringProperty property = new StringPropertyImpl();
+      final Consumer<BasicStringProperty> fn) {
+    final BasicStringProperty property = new BasicStringPropertyImpl();
     fn.accept(property);
     filter.setBatchOperationId(provideSearchRequestProperty(property));
     return this;
@@ -66,7 +66,7 @@ public class BatchOperationFilterImpl
 
   @Override
   public io.camunda.client.api.search.filter.BatchOperationFilter operationType(
-      Consumer<BatchOperationTypeProperty> fn) {
+      final Consumer<BatchOperationTypeProperty> fn) {
     final BatchOperationTypeProperty property = new BatchOperationTypePropertyImpl();
     fn.accept(property);
     filter.operationType(provideSearchRequestProperty(property));
@@ -86,7 +86,7 @@ public class BatchOperationFilterImpl
 
   @Override
   public io.camunda.client.api.search.filter.BatchOperationFilter state(
-      Consumer<BatchOperationStateProperty> fn) {
+      final Consumer<BatchOperationStateProperty> fn) {
     final BatchOperationStateProperty property = new BatchOperationStatePropertyImpl();
     fn.accept(property);
     filter.setState(provideSearchRequestProperty(property));
