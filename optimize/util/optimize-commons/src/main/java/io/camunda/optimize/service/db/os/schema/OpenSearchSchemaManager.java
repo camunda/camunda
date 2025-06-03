@@ -96,7 +96,6 @@ import org.springframework.stereotype.Component;
 public class OpenSearchSchemaManager
     extends DatabaseSchemaManager<OptimizeOpenSearchClient, IndexSettings.Builder> {
 
-  public static final String ALL_INDEXES = "_all";
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(OpenSearchSchemaManager.class);
   private final OpenSearchMetadataService metadataService;
@@ -574,11 +573,12 @@ public class OpenSearchSchemaManager
   private void unblockIndices(final OptimizeOpenSearchClient osClient) {
     final List<String> indexesBlocked;
     try {
+      final String optimizeIndexes = indexNameService.getIndexPrefix() + "-*";
       final GetIndicesSettingsResponse settingsResponse =
           osClient
               .getOpenSearchClient()
               .indices()
-              .getSettings(new GetIndicesSettingsRequest.Builder().index(ALL_INDEXES).build());
+              .getSettings(new GetIndicesSettingsRequest.Builder().index(optimizeIndexes).build());
       indexesBlocked =
           settingsResponse.result().values().stream()
               .filter(
