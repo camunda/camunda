@@ -2,7 +2,7 @@
 # test location: operate/client/src/App
 # owner: Core Features
 ---
-name: "[Legacy] Operate"
+name: "[Legacy] Operate [FE]"
 on:
   push:
     branches:
@@ -27,7 +27,7 @@ concurrency:
 jobs:
   # Operate FE Unit tests do not meet the stability requirements to be in Unified CI.
   fe-unit-tests:
-    name: "[FE] Unit Tests"
+    name: "Unit Tests"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
