@@ -13,7 +13,6 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbShort;
-import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableAsyncRequestState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestRecord;
@@ -93,8 +92,7 @@ public class DbAsyncRequestState implements MutableAsyncRequestState {
     return values.stream().map(AsyncRequest::new);
   }
 
-  private static final class ScopeKeyAndValueTypeValue
-      extends DbCompositeKey<DbLong, DbShort> {
+  private static final class ScopeKeyAndValueTypeValue extends DbCompositeKey<DbLong, DbShort> {
 
     public ScopeKeyAndValueTypeValue() {
       super(new DbLong(), new DbShort());
@@ -115,10 +113,10 @@ public class DbAsyncRequestState implements MutableAsyncRequestState {
   }
 
   private static final class AsyncRequestMetadataKey
-      extends DbCompositeKey<ScopeKeyAndValueTypeValue, DbString> {
+      extends DbCompositeKey<ScopeKeyAndValueTypeValue, DbShort> {
 
     public AsyncRequestMetadataKey() {
-      super(new ScopeKeyAndValueTypeValue(), new DbString());
+      super(new ScopeKeyAndValueTypeValue(), new DbShort());
     }
 
     public void setAll(final AsyncRequestRecord record) {
@@ -127,7 +125,7 @@ public class DbAsyncRequestState implements MutableAsyncRequestState {
 
     public void setAll(final long scopeKey, final ValueType valueType, final Intent intent) {
       first().setAll(scopeKey, valueType);
-      second().wrapString(intent.name());
+      second().wrapShort(intent.value());
     }
 
     public long scopeKey() {
@@ -139,7 +137,7 @@ public class DbAsyncRequestState implements MutableAsyncRequestState {
     }
 
     public Intent intent() {
-      return Intent.fromProtocolValue(valueType(), second().toString());
+      return Intent.fromProtocolValue(valueType(), second().getValue());
     }
 
     @Override
