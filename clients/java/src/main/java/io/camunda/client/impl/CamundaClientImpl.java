@@ -23,8 +23,8 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
 import io.camunda.client.api.command.ActivateJobsCommandStep1;
-import io.camunda.client.api.command.AddMappingToGroupStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
+import io.camunda.client.api.command.AssignMappingToGroupStep1;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.client.api.command.AssignRoleToClientCommandStep1;
 import io.camunda.client.api.command.AssignRoleToGroupCommandStep1;
@@ -140,8 +140,8 @@ import io.camunda.client.api.statistics.request.ProcessInstanceElementStatistics
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.client.impl.command.ActivateAdHocSubProcessActivitiesCommandImpl;
-import io.camunda.client.impl.command.AddMappingToGroupCommandImpl;
 import io.camunda.client.impl.command.AssignGroupToTenantCommandImpl;
+import io.camunda.client.impl.command.AssignMappingToGroupCommandImpl;
 import io.camunda.client.impl.command.AssignMappingToTenantCommandImpl;
 import io.camunda.client.impl.command.AssignRoleToClientCommandImpl;
 import io.camunda.client.impl.command.AssignRoleToGroupCommandImpl;
@@ -1138,8 +1138,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public AddMappingToGroupStep1 newAddMappingToGroupCommand() {
-    return new AddMappingToGroupCommandImpl(httpClient);
+  public AssignMappingToGroupStep1 newAssignMappingToGroupCommand() {
+    return new AssignMappingToGroupCommandImpl(httpClient);
   }
 
   @Override

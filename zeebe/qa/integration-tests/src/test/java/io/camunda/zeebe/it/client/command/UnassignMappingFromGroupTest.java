@@ -57,7 +57,7 @@ public class UnassignMappingFromGroupTest {
             .send()
             .join()
             .getGroupId();
-    client.newAddMappingToGroupCommand().mappingId(mappingId).groupId(groupId).send().join();
+    client.newAssignMappingToGroupCommand().mappingId(mappingId).groupId(groupId).send().join();
   }
 
   @Test

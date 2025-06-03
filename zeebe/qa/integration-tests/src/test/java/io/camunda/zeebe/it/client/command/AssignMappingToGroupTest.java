@@ -24,7 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
-public class AddMappingToGroupTest {
+public class AssignMappingToGroupTest {
 
   @TestZeebe
   private final TestStandaloneBroker zeebe =
@@ -60,9 +60,9 @@ public class AddMappingToGroupTest {
   }
 
   @Test
-  void shouldAddMappingToGroup() {
+  void shouldAssignMappingToGroup() {
     // when
-    client.newAddMappingToGroupCommand().mappingId(mappingId).groupId(groupId).send().join();
+    client.newAssignMappingToGroupCommand().mappingId(mappingId).groupId(groupId).send().join();
 
     // then
     ZeebeAssertHelper.assertEntityAssignedToGroup(
@@ -82,7 +82,7 @@ public class AddMappingToGroupTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAddMappingToGroupCommand()
+                    .newAssignMappingToGroupCommand()
                     .mappingId(mappingId)
                     .groupId(nonExistentGroupId)
                     .send()
@@ -95,15 +95,15 @@ public class AddMappingToGroupTest {
   }
 
   @Test
-  void shouldRejectIfAlreadyAdded() {
+  void shouldRejectIfAlreadyAssigned() {
     // given
-    client.newAddMappingToGroupCommand().mappingId(mappingId).groupId(groupId).send().join();
+    client.newAssignMappingToGroupCommand().mappingId(mappingId).groupId(groupId).send().join();
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newAddMappingToGroupCommand()
+                    .newAssignMappingToGroupCommand()
                     .mappingId(mappingId)
                     .groupId(groupId)
                     .send()
@@ -121,7 +121,7 @@ public class AddMappingToGroupTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAddMappingToGroupCommand()
+                    .newAssignMappingToGroupCommand()
                     .mappingId(mappingId)
                     .groupId(null)
                     .send()
@@ -135,7 +135,12 @@ public class AddMappingToGroupTest {
     // when / then
     assertThatThrownBy(
             () ->
-                client.newAddMappingToGroupCommand().mappingId(mappingId).groupId("").send().join())
+                client
+                    .newAssignMappingToGroupCommand()
+                    .mappingId(mappingId)
+                    .groupId("")
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be empty");
   }
@@ -145,7 +150,12 @@ public class AddMappingToGroupTest {
     // when / then
     assertThatThrownBy(
             () ->
-                client.newAddMappingToGroupCommand().mappingId(null).groupId(groupId).send().join())
+                client
+                    .newAssignMappingToGroupCommand()
+                    .mappingId(null)
+                    .groupId(groupId)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("mappingId must not be null");
   }
@@ -154,7 +164,13 @@ public class AddMappingToGroupTest {
   void shouldRejectIfEmptyMappingId() {
     // when / then
     assertThatThrownBy(
-            () -> client.newAddMappingToGroupCommand().mappingId("").groupId(groupId).send().join())
+            () ->
+                client
+                    .newAssignMappingToGroupCommand()
+                    .mappingId("")
+                    .groupId(groupId)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("mappingId must not be empty");
   }

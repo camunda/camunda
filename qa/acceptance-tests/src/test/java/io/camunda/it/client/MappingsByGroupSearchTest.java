@@ -38,8 +38,8 @@ public class MappingsByGroupSearchTest {
 
     createGroup(GROUP_ID);
 
-    addMappingToGroup(MAPPING_ID_1, GROUP_ID);
-    addMappingToGroup(MAPPING_ID_2, GROUP_ID);
+    assignMappingToGroup(MAPPING_ID_1, GROUP_ID);
+    assignMappingToGroup(MAPPING_ID_2, GROUP_ID);
 
     waitForGroupsToBeUpdated();
   }
@@ -116,8 +116,13 @@ public class MappingsByGroupSearchTest {
     camundaClient.newCreateGroupCommand().groupId(groupId).name("name").send().join();
   }
 
-  private static void addMappingToGroup(final String mappingId, final String groupId) {
-    camundaClient.newAddMappingToGroupCommand().mappingId(mappingId).groupId(groupId).send().join();
+  private static void assignMappingToGroup(final String mappingId, final String groupId) {
+    camundaClient
+        .newAssignMappingToGroupCommand()
+        .mappingId(mappingId)
+        .groupId(groupId)
+        .send()
+        .join();
   }
 
   private static void waitForGroupsToBeUpdated() {
