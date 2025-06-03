@@ -8,6 +8,7 @@
 package io.camunda.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
@@ -67,5 +68,19 @@ public class AuthorizationIntegrationTest {
               assertThat(retrievedAuthorization.getPermissionTypes())
                   .isEqualTo(List.of(PermissionTypeEnum.CREATE));
             });
+  }
+
+  @Test
+  void shouldReturnNotFoundWhenGettingNonExistentAuthorization() {
+    // when / then
+    final var nonExistingAuthorizationKey = 100L;
+    assertThatThrownBy(
+            () ->
+                camundaClient.newAuthorizationGetRequest(nonExistingAuthorizationKey).send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 404: 'Not Found'")
+        .hasMessageContaining(
+            "Authorization with authorization key %d not found"
+                .formatted(nonExistingAuthorizationKey));
   }
 }
