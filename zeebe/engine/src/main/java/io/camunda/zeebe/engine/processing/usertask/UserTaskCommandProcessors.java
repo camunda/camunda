@@ -72,7 +72,7 @@ public final class UserTaskCommandProcessors {
                     authCheckBehavior),
                 UserTaskIntent.COMPLETE,
                 new UserTaskCompleteProcessor(
-                    processingState, eventHandle, writers, authCheckBehavior),
+                    processingState, eventHandle, writers, asyncRequestBehavior, authCheckBehavior),
                 UserTaskIntent.CANCEL,
                 new UserTaskCancelProcessor(processingState, writers)));
     validateProcessorsSetup(commandToProcessor);
