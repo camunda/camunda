@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import io.camunda.zeebe.util.health.HealthStatus;
@@ -394,14 +395,17 @@ public final class ExporterDirectorTest {
         .onConfigure(
             withFilter(
                 Arrays.asList(RecordType.COMMAND, RecordType.EVENT),
-                Collections.singletonList(ValueType.DEPLOYMENT)));
+                Collections.singletonList(ValueType.DEPLOYMENT),
+                Arrays.asList(DeploymentIntent.CREATED, DeploymentIntent.CREATE)));
 
     exporters
         .get(1)
         .onConfigure(
             withFilter(
                 Collections.singletonList(RecordType.EVENT),
-                Arrays.asList(ValueType.DEPLOYMENT, ValueType.JOB)));
+                Arrays.asList(ValueType.DEPLOYMENT, ValueType.JOB),
+                Arrays.asList(
+                    DeploymentIntent.CREATED, DeploymentIntent.CREATE, JobIntent.CREATED)));
 
     startExporterDirector(exporterDescriptors);
 
@@ -826,6 +830,30 @@ public final class ExporterDirectorTest {
               @Override
               public boolean acceptValue(final ValueType valueType) {
                 return valueTypes.contains(valueType);
+              }
+            });
+  }
+
+  private Consumer<Context> withFilter(
+      final List<RecordType> acceptedTypes,
+      final List<ValueType> valueTypes,
+      final List<Intent> intents) {
+    return context ->
+        context.setFilter(
+            new Context.RecordFilter() {
+              @Override
+              public boolean acceptType(final RecordType recordType) {
+                return acceptedTypes.contains(recordType);
+              }
+
+              @Override
+              public boolean acceptValue(final ValueType valueType) {
+                return valueTypes.contains(valueType);
+              }
+
+              @Override
+              public boolean acceptIntent(final Intent intent) {
+                return intents.contains(intent);
               }
             });
   }

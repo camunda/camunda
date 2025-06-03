@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.micrometer.core.instrument.Counter;
@@ -108,6 +109,11 @@ final class ExporterContainerTest {
 
     @Override
     public boolean acceptValue(final ValueType valueType) {
+      return false;
+    }
+
+    @Override
+    public boolean acceptIntent(final Intent intent) {
       return false;
     }
   }
