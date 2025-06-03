@@ -50,7 +50,7 @@ public final class MsgPackConverter {
       new TypeReference<>() {};
   private static final TypeReference<HashMap<String, String>> STRING_MAP_TYPE_REFERENCE =
       new TypeReference<>() {};
-  private static final TypeReference<HashMap<String, Number>> NUMBER_MAP_TYPE_REFERENCE =
+  private static final TypeReference<HashMap<String, Long>> LONG_MAP_TYPE_REFERENCE =
       new TypeReference<>() {};
   private static final TypeReference<HashMap<PermissionType, Set<String>>>
       PERMISSION_MAP_TYPE_REFERENCE = new TypeReference<>() {};
@@ -172,8 +172,8 @@ public final class MsgPackConverter {
     return convertToMap(STRING_MAP_TYPE_REFERENCE, buffer);
   }
 
-  public static Map<String, Number> convertToNumberMap(final DirectBuffer buffer) {
-    return convertToMap(NUMBER_MAP_TYPE_REFERENCE, buffer);
+  public static Map<String, Long> convertToLongMap(final DirectBuffer buffer) {
+    return convertToMap(LONG_MAP_TYPE_REFERENCE, buffer);
   }
 
   public static Map<PermissionType, Set<String>> convertToPermissionMap(final DirectBuffer buffer) {
