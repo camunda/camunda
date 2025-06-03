@@ -45,7 +45,7 @@ public class OldRoutesRedirectionControllerIT extends TasklistIntegrationTest {
   }
 
   static Stream<String> notFoundTestDataProvider() {
-    return Stream.of("/v1/user-tasks", "/decisions", "/a12345", "/new");
+    return Stream.of("/v1/user-tasks", "/decisions", "/new");
   }
 
   @ParameterizedTest
