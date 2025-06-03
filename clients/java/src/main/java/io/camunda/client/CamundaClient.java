@@ -2055,15 +2055,15 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newAssignGroupToTenantCommand(tenantId)
-   *   .groupId(groupId)
+   *   .newAssignGroupToTenantCommand()
+   *   .groupId("groupId")
+   *   .tenantId("tenantId")
    *   .send();
    * </pre>
    *
-   * @param tenantId the unique identifier of the tenant
    * @return a builder to configure and send the assign group to tenant command
    */
-  AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(String tenantId);
+  AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand();
 
   /**
    * Command to unassign a group from a tenant.

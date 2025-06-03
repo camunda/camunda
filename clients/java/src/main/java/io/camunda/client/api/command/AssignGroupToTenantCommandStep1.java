@@ -17,15 +17,25 @@ package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.AssignGroupToTenantResponse;
 
-public interface AssignGroupToTenantCommandStep1
-    extends FinalCommandStep<AssignGroupToTenantResponse> {
+public interface AssignGroupToTenantCommandStep1 {
 
   /**
    * Sets the group ID for the assignment.
    *
    * @param groupId the ID of the group
-   * @return the builder for this command. Call {@link #send()} to complete the command and send it
-   *     to the broker.
+   * @return the builder for this command.
    */
-  AssignGroupToTenantCommandStep1 groupId(String groupId);
+  AssignGroupToTenantCommandStep2 groupId(String groupId);
+
+  interface AssignGroupToTenantCommandStep2 extends FinalCommandStep<AssignGroupToTenantResponse> {
+
+    /**
+     * Sets the tenant ID.
+     *
+     * @param tenantId the tenantId of the tenant
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    AssignGroupToTenantCommandStep2 tenantId(String tenantId);
+  }
 }

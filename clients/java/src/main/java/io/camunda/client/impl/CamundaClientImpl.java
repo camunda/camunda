@@ -1097,8 +1097,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand(final String tenantId) {
-    return new AssignGroupToTenantCommandImpl(httpClient, tenantId);
+  public AssignGroupToTenantCommandStep1 newAssignGroupToTenantCommand() {
+    return new AssignGroupToTenantCommandImpl(httpClient);
   }
 
   @Override
