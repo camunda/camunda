@@ -22,6 +22,7 @@ import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
@@ -32,7 +33,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
-@RequestMapping("/v2")
+@RequestMapping("/v2/authorizations")
 public class AuthorizationController {
   private final AuthorizationServices authorizationServices;
 
@@ -40,14 +41,28 @@ public class AuthorizationController {
     this.authorizationServices = authorizationServices;
   }
 
-  @CamundaPostMapping(path = "/authorizations")
+  @CamundaPostMapping()
   public CompletableFuture<ResponseEntity<Object>> createAuthorization(
       @RequestBody final AuthorizationRequest authorizationCreateRequest) {
     return RequestMapper.toCreateAuthorizationRequest(authorizationCreateRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::create);
   }
 
-  @CamundaDeleteMapping(path = "/authorizations/{authorizationKey}")
+  @CamundaGetMapping(path = "/{authorizationKey}")
+  public ResponseEntity<Object> getAuthorization(@PathVariable final long authorizationKey) {
+    try {
+      return ResponseEntity.ok()
+          .body(
+              SearchQueryResponseMapper.toAuthorization(
+                  authorizationServices
+                      .withAuthentication(RequestMapper.getAuthentication())
+                      .getAuthorization(authorizationKey)));
+    } catch (final Exception exception) {
+      return RestErrorMapper.mapErrorToResponse(exception);
+    }
+  }
+
+  @CamundaDeleteMapping(path = "/{authorizationKey}")
   public CompletableFuture<ResponseEntity<Object>> delete(
       @PathVariable final long authorizationKey) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
@@ -57,7 +72,7 @@ public class AuthorizationController {
                 .deleteAuthorization(authorizationKey));
   }
 
-  @CamundaPutMapping(path = "/authorizations/{authorizationKey}")
+  @CamundaPutMapping(path = "/{authorizationKey}")
   public CompletableFuture<ResponseEntity<Object>> updateAuthorization(
       @PathVariable final long authorizationKey,
       @RequestBody final AuthorizationRequest authorizationUpdateRequest) {
@@ -65,7 +80,7 @@ public class AuthorizationController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::update);
   }
 
-  @CamundaPostMapping(path = "/authorizations/search")
+  @CamundaPostMapping(path = "/search")
   public ResponseEntity<AuthorizationSearchResult> searchAuthorizations(
       @RequestBody(required = false) final AuthorizationSearchQuery query) {
     return SearchQueryRequestMapper.toAuthorizationQuery(query)

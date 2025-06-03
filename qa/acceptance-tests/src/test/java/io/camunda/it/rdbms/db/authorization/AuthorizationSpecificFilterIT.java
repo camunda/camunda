@@ -57,7 +57,11 @@ public class AuthorizationSpecificFilterIT {
     createAndSaveAuthorization(
         rdbmsWriter,
         AuthorizationFixtures.createRandomized(
-            b -> b.ownerId("foo").ownerType("FILTER_TEST").resourceType("TEST")));
+            b ->
+                b.authorizationKey(100L)
+                    .ownerId("foo")
+                    .ownerType("FILTER_TEST")
+                    .resourceType("TEST")));
 
     final var searchResult =
         authorizationReader.search(
@@ -71,6 +75,7 @@ public class AuthorizationSpecificFilterIT {
 
   static List<AuthorizationFilter> shouldFindWithSpecificFilterParameters() {
     return List.of(
+        new AuthorizationFilter.Builder().authorizationKey(100L).build(),
         new AuthorizationFilter.Builder().ownerIds("foo").build(),
         new AuthorizationFilter.Builder().ownerType("FILTER_TEST").build(),
         new AuthorizationFilter.Builder().resourceType("TEST").build());

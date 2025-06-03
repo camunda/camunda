@@ -13,13 +13,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.AuthorizationSearchClient;
+import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import java.util.List;
 import java.util.Set;
+import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -81,5 +84,30 @@ public class AuthorizationServiceTest {
 
     // then
     assertThat(authorizedApplications).containsExactly("*");
+  }
+
+  @Test
+  public void shouldReturnSingleAuthorizationForGet() {
+    // given
+    final var entity = mock(AuthorizationEntity.class);
+    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array(), Arrays.array());
+    when(client.searchAuthorizations(any())).thenReturn(result);
+
+    // when
+    final var searchQueryResult = services.findAuthorization(entity.authorizationKey());
+
+    // then
+    assertThat(searchQueryResult).contains(entity);
+  }
+
+  @Test
+  public void shouldThrownExceptionIfAuthorizationNotFound() {
+    // given
+    final var authorizationKey = 100L;
+    when(client.searchAuthorizations(any()))
+        .thenReturn(new SearchQueryResult<>(0, List.of(), null, null));
+
+    // when / then
+    assertThat(services.findAuthorization(authorizationKey)).isEmpty();
   }
 }
