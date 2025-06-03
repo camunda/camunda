@@ -33,27 +33,27 @@ public class AssignMappingToTenantTest extends ClientRestTest {
   @Test
   void shouldAssignMappingToTenant() {
     // when
-    client.newAssignMappingToTenantCommand(TENANT_ID).mappingId(MAPPING_ID).send().join();
+    client.newAssignMappingRuleToTenantCommand(TENANT_ID).mappingRuleId(MAPPING_ID).send().join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
     assertThat(requestPath)
-        .isEqualTo(REST_API_PATH + "/tenants/" + TENANT_ID + "/mappings/" + MAPPING_ID);
+        .isEqualTo(REST_API_PATH + "/tenants/" + TENANT_ID + "/mapping-rules/" + MAPPING_ID);
   }
 
   @Test
   void shouldRaiseExceptionOnNotFoundTenant() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_ID + "/mappings/" + MAPPING_ID,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/mapping-rules/" + MAPPING_ID,
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToTenantCommand(TENANT_ID)
-                    .mappingId(MAPPING_ID)
+                    .newAssignMappingRuleToTenantCommand(TENANT_ID)
+                    .mappingRuleId(MAPPING_ID)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -64,15 +64,15 @@ public class AssignMappingToTenantTest extends ClientRestTest {
   void shouldRaiseExceptionOnNotFoundMapping() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_ID + "/mappings/" + MAPPING_ID,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/mapping-rules/" + MAPPING_ID,
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToTenantCommand(TENANT_ID)
-                    .mappingId(MAPPING_ID)
+                    .newAssignMappingRuleToTenantCommand(TENANT_ID)
+                    .mappingRuleId(MAPPING_ID)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -83,15 +83,15 @@ public class AssignMappingToTenantTest extends ClientRestTest {
   void shouldHandleServerError() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_ID + "/mappings/" + MAPPING_ID,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/mapping-rules/" + MAPPING_ID,
         () -> new ProblemDetail().title("Internal Server Error").status(500));
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToTenantCommand(TENANT_ID)
-                    .mappingId(MAPPING_ID)
+                    .newAssignMappingRuleToTenantCommand(TENANT_ID)
+                    .mappingRuleId(MAPPING_ID)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -102,15 +102,15 @@ public class AssignMappingToTenantTest extends ClientRestTest {
   void shouldRaiseExceptionOnForbiddenRequest() {
     // given
     gatewayService.errorOnRequest(
-        REST_API_PATH + "/tenants/" + TENANT_ID + "/mappings/" + MAPPING_ID,
+        REST_API_PATH + "/tenants/" + TENANT_ID + "/mapping-rules/" + MAPPING_ID,
         () -> new ProblemDetail().title("Forbidden").status(403));
 
     // when / then
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToTenantCommand(TENANT_ID)
-                    .mappingId(MAPPING_ID)
+                    .newAssignMappingRuleToTenantCommand(TENANT_ID)
+                    .mappingRuleId(MAPPING_ID)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)

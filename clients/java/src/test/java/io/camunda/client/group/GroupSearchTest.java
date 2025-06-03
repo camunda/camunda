@@ -79,8 +79,8 @@ public class GroupSearchTest extends ClientRestTest {
     // when
     final String groupId = "groupId";
     client
-        .newMappingsByGroupSearchRequest(groupId)
-        .filter(fn -> fn.mappingId("mappingId"))
+        .newMappingRulesByGroupSearchRequest(groupId)
+        .filter(fn -> fn.mappingRuleId("mappingId"))
         .sort(MappingSort::name)
         .page(fn -> fn.limit(5))
         .send()

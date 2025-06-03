@@ -23,27 +23,27 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.MappingFilter;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
-import io.camunda.client.api.search.request.MappingsByRoleSearchRequest;
+import io.camunda.client.api.search.request.MappingRulesByRoleSearchRequest;
 import io.camunda.client.api.search.request.SearchRequestPage;
-import io.camunda.client.api.search.response.Mapping;
+import io.camunda.client.api.search.response.MappingRule;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.MappingSort;
 import io.camunda.client.impl.command.ArgumentUtil;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
-import io.camunda.client.protocol.rest.MappingSearchQueryRequest;
-import io.camunda.client.protocol.rest.MappingSearchQueryResult;
+import io.camunda.client.protocol.rest.MappingRuleSearchQueryRequest;
+import io.camunda.client.protocol.rest.MappingRuleSearchQueryResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class MappingsByRoleSearchRequestImpl
-    extends TypedSearchRequestPropertyProvider<MappingSearchQueryRequest>
-    implements MappingsByRoleSearchRequest {
+    extends TypedSearchRequestPropertyProvider<MappingRuleSearchQueryRequest>
+    implements MappingRulesByRoleSearchRequest {
 
-  private final MappingSearchQueryRequest request;
+  private final MappingRuleSearchQueryRequest request;
   private final String roleId;
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
@@ -54,43 +54,43 @@ public class MappingsByRoleSearchRequestImpl
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     this.roleId = roleId;
-    this.httpRequestConfig = httpClient.newRequestConfig();
-    this.request = new MappingSearchQueryRequest();
+    httpRequestConfig = httpClient.newRequestConfig();
+    request = new MappingRuleSearchQueryRequest();
   }
 
   @Override
-  public FinalSearchRequestStep<Mapping> requestTimeout(final Duration requestTimeout) {
+  public FinalSearchRequestStep<MappingRule> requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public CamundaFuture<SearchResponse<Mapping>> send() {
+  public CamundaFuture<SearchResponse<MappingRule>> send() {
     ArgumentUtil.ensureNotNullNorEmpty("roleId", roleId);
-    final HttpCamundaFuture<SearchResponse<Mapping>> result = new HttpCamundaFuture<>();
+    final HttpCamundaFuture<SearchResponse<MappingRule>> result = new HttpCamundaFuture<>();
     httpClient.post(
         String.format("/roles/%s/mapping-rules/search", roleId),
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        MappingSearchQueryResult.class,
+        MappingRuleSearchQueryResult.class,
         SearchResponseMapper::toMappingsResponse,
         result);
     return result;
   }
 
   @Override
-  public MappingsByRoleSearchRequest filter(final MappingFilter value) {
+  public MappingRulesByRoleSearchRequest filter(final MappingFilter value) {
     request.setFilter(provideSearchRequestProperty(value));
     return this;
   }
 
   @Override
-  public MappingsByRoleSearchRequest filter(final Consumer<MappingFilter> fn) {
+  public MappingRulesByRoleSearchRequest filter(final Consumer<MappingFilter> fn) {
     return filter(mappingFilter(fn));
   }
 
   @Override
-  public MappingsByRoleSearchRequest sort(final MappingSort value) {
+  public MappingRulesByRoleSearchRequest sort(final MappingSort value) {
     request.setSort(
         SearchRequestSortMapper.toMappingSearchQuerySortRequest(
             provideSearchRequestProperty(value)));
@@ -98,23 +98,23 @@ public class MappingsByRoleSearchRequestImpl
   }
 
   @Override
-  public MappingsByRoleSearchRequest sort(final Consumer<MappingSort> fn) {
+  public MappingRulesByRoleSearchRequest sort(final Consumer<MappingSort> fn) {
     return sort(mappingSort(fn));
   }
 
   @Override
-  public MappingsByRoleSearchRequest page(final SearchRequestPage value) {
+  public MappingRulesByRoleSearchRequest page(final SearchRequestPage value) {
     request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 
   @Override
-  public MappingsByRoleSearchRequest page(final Consumer<SearchRequestPage> fn) {
+  public MappingRulesByRoleSearchRequest page(final Consumer<SearchRequestPage> fn) {
     return page(searchRequestPage(fn));
   }
 
   @Override
-  protected MappingSearchQueryRequest getSearchRequestProperty() {
+  protected MappingRuleSearchQueryRequest getSearchRequestProperty() {
     return request;
   }
 }

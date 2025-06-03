@@ -30,12 +30,17 @@ public class UnassignRoleFromMappingTest extends ClientRestTest {
   @Test
   void shouldUnassignRoleFromMapping() {
     // when
-    client.newUnassignRoleFromMappingCommand().roleId(ROLE_ID).mappingId(MAPPING_ID).send().join();
+    client
+        .newUnassignRoleFromMappingRuleCommand()
+        .roleId(ROLE_ID)
+        .mappingRuleId(MAPPING_ID)
+        .send()
+        .join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
     assertThat(requestPath)
-        .isEqualTo(REST_API_PATH + "/roles/" + ROLE_ID + "/mappings/" + MAPPING_ID);
+        .isEqualTo(REST_API_PATH + "/roles/" + ROLE_ID + "/mapping-rules/" + MAPPING_ID);
   }
 
   @Test
@@ -44,9 +49,9 @@ public class UnassignRoleFromMappingTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignRoleFromMappingCommand()
+                    .newUnassignRoleFromMappingRuleCommand()
                     .roleId(null)
-                    .mappingId(MAPPING_ID)
+                    .mappingRuleId(MAPPING_ID)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
@@ -59,9 +64,9 @@ public class UnassignRoleFromMappingTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignRoleFromMappingCommand()
+                    .newUnassignRoleFromMappingRuleCommand()
                     .roleId("")
-                    .mappingId(MAPPING_ID)
+                    .mappingRuleId(MAPPING_ID)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
@@ -74,13 +79,13 @@ public class UnassignRoleFromMappingTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignRoleFromMappingCommand()
+                    .newUnassignRoleFromMappingRuleCommand()
                     .roleId(ROLE_ID)
-                    .mappingId(null)
+                    .mappingRuleId(null)
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("mappingId must not be null");
+        .hasMessageContaining("mappingRuleId must not be null");
   }
 
   @Test
@@ -89,12 +94,12 @@ public class UnassignRoleFromMappingTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignRoleFromMappingCommand()
+                    .newUnassignRoleFromMappingRuleCommand()
                     .roleId(ROLE_ID)
-                    .mappingId("")
+                    .mappingRuleId("")
                     .send()
                     .join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("mappingId must not be empty");
+        .hasMessageContaining("mappingRuleId must not be empty");
   }
 }

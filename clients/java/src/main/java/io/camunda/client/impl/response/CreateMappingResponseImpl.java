@@ -20,15 +20,15 @@ import io.camunda.client.protocol.rest.MappingRuleCreateResult;
 
 public class CreateMappingResponseImpl implements CreateMappingResponse {
 
-  private String mappingId;
+  private String mappingRuleId;
 
   @Override
-  public String getMappingId() {
-    return mappingId;
+  public String getMappingRuleId() {
+    return mappingRuleId;
   }
 
   public CreateMappingResponseImpl setResponse(final MappingRuleCreateResult response) {
-    mappingId = response.getMappingId();
+    mappingRuleId = response.getMappingRuleId();
     return this;
   }
 }

@@ -16,19 +16,20 @@
 package io.camunda.client.impl.command;
 
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
+import io.camunda.client.api.command.AssignMappingRuleToTenantCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.response.AssignMappingToTenantResponse;
+import io.camunda.client.api.response.AssignMappingRuleToTenantResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public final class AssignMappingToTenantCommandImpl implements AssignMappingToTenantCommandStep1 {
+public final class AssignMappingToTenantCommandImpl
+    implements AssignMappingRuleToTenantCommandStep1 {
 
   private final String tenantId;
-  private String mappingId;
+  private String mappingRuleId;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
@@ -39,22 +40,22 @@ public final class AssignMappingToTenantCommandImpl implements AssignMappingToTe
   }
 
   @Override
-  public AssignMappingToTenantCommandStep1 mappingId(final String mappingId) {
-    this.mappingId = mappingId;
+  public AssignMappingRuleToTenantCommandStep1 mappingRuleId(final String mappingRuleId) {
+    this.mappingRuleId = mappingRuleId;
     return this;
   }
 
   @Override
-  public FinalCommandStep<AssignMappingToTenantResponse> requestTimeout(
+  public FinalCommandStep<AssignMappingRuleToTenantResponse> requestTimeout(
       final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public CamundaFuture<AssignMappingToTenantResponse> send() {
-    final HttpCamundaFuture<AssignMappingToTenantResponse> result = new HttpCamundaFuture<>();
-    final String endpoint = String.format("/tenants/%s/mappings/%s", tenantId, mappingId);
+  public CamundaFuture<AssignMappingRuleToTenantResponse> send() {
+    final HttpCamundaFuture<AssignMappingRuleToTenantResponse> result = new HttpCamundaFuture<>();
+    final String endpoint = String.format("/tenants/%s/mapping-rules/%s", tenantId, mappingRuleId);
     httpClient.put(endpoint, null, httpRequestConfig.build(), result);
     return result;
   }

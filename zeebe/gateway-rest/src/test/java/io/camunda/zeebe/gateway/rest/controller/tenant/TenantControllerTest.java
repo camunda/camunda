@@ -596,7 +596,7 @@ public class TenantControllerTest extends RestControllerTest {
   private static Stream<Arguments> provideAddMemberByIdTestCases() {
     return Stream.of(
         Arguments.of(EntityType.USER, "users", "username"),
-        Arguments.of(EntityType.MAPPING, "mappings", "mappingId"),
+        Arguments.of(EntityType.MAPPING, "mapping-rules", "mappingId"),
         Arguments.of(EntityType.GROUP, "groups", "groupId"),
         Arguments.of(EntityType.ROLE, "roles", "roleId"),
         Arguments.of(EntityType.CLIENT, "clients", "clientId"));
@@ -605,7 +605,7 @@ public class TenantControllerTest extends RestControllerTest {
   private static Stream<Arguments> provideRemoveMemberByIdTestCases() {
     return Stream.of(
         Arguments.of(EntityType.USER, "users", "username"),
-        Arguments.of(EntityType.MAPPING, "mappings", "mappingId"),
+        Arguments.of(EntityType.MAPPING, "mapping-rules", "mappingId"),
         Arguments.of(EntityType.GROUP, "groups", "groupId"),
         Arguments.of(EntityType.ROLE, "roles", "roleId"),
         Arguments.of(EntityType.CLIENT, "clients", "clientId"));

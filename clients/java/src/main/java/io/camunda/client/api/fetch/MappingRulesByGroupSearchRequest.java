@@ -13,6 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.response;
+package io.camunda.client.api.fetch;
 
-public interface AssignMappingToTenantResponse {}
+import io.camunda.client.api.search.filter.MappingFilter;
+import io.camunda.client.api.search.request.FinalSearchRequestStep;
+import io.camunda.client.api.search.request.TypedSearchRequest;
+import io.camunda.client.api.search.response.MappingRule;
+import io.camunda.client.api.search.sort.MappingSort;
+
+public interface MappingRulesByGroupSearchRequest
+    extends TypedSearchRequest<MappingFilter, MappingSort, MappingRulesByGroupSearchRequest>,
+        FinalSearchRequestStep<MappingRule> {}

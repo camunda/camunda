@@ -13,12 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.request;
+package io.camunda.client.api.response;
 
-import io.camunda.client.api.search.filter.MappingFilter;
-import io.camunda.client.api.search.response.Mapping;
-import io.camunda.client.api.search.sort.MappingSort;
-
-public interface MappingsByRoleSearchRequest
-    extends TypedSearchRequest<MappingFilter, MappingSort, MappingsByRoleSearchRequest>,
-        FinalSearchRequestStep<Mapping> {}
+public interface AssignMappingRuleToTenantResponse {}

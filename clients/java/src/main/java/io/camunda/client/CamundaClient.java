@@ -18,8 +18,8 @@ package io.camunda.client;
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
+import io.camunda.client.api.command.AssignMappingRuleToTenantCommandStep1;
 import io.camunda.client.api.command.AssignMappingToGroupStep1;
-import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
 import io.camunda.client.api.command.AssignRoleToClientCommandStep1;
 import io.camunda.client.api.command.AssignRoleToGroupCommandStep1;
 import io.camunda.client.api.command.AssignRoleToMappingCommandStep1;
@@ -40,7 +40,7 @@ import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
 import io.camunda.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.client.api.command.CreateDocumentLinkCommandStep1;
 import io.camunda.client.api.command.CreateGroupCommandStep1;
-import io.camunda.client.api.command.CreateMappingCommandStep1;
+import io.camunda.client.api.command.CreateMappingRuleCommandStep1;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.CreateRoleCommandStep1;
 import io.camunda.client.api.command.CreateTenantCommandStep1;
@@ -65,7 +65,7 @@ import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignMappingFromGroupStep1;
 import io.camunda.client.api.command.UnassignRoleFromClientCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromGroupCommandStep1;
-import io.camunda.client.api.command.UnassignRoleFromMappingCommandStep1;
+import io.camunda.client.api.command.UnassignRoleFromMappingRuleCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromUserCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
@@ -89,7 +89,7 @@ import io.camunda.client.api.fetch.ElementInstanceGetRequest;
 import io.camunda.client.api.fetch.GroupGetRequest;
 import io.camunda.client.api.fetch.GroupsSearchRequest;
 import io.camunda.client.api.fetch.IncidentGetRequest;
-import io.camunda.client.api.fetch.MappingsByGroupSearchRequest;
+import io.camunda.client.api.fetch.MappingRulesByGroupSearchRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetFormRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetXmlRequest;
@@ -115,7 +115,7 @@ import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
 import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
 import io.camunda.client.api.search.request.GroupsByRoleSearchRequest;
 import io.camunda.client.api.search.request.IncidentSearchRequest;
-import io.camunda.client.api.search.request.MappingsByRoleSearchRequest;
+import io.camunda.client.api.search.request.MappingRulesByRoleSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
@@ -1396,7 +1396,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the unassign role from mapping command
    */
-  UnassignRoleFromMappingCommandStep1 newUnassignRoleFromMappingCommand();
+  UnassignRoleFromMappingRuleCommandStep1 newUnassignRoleFromMappingRuleCommand();
 
   /**
    * Command to unassign a role from a client.
@@ -1613,7 +1613,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  CreateMappingCommandStep1 newCreateMappingCommand();
+  CreateMappingRuleCommandStep1 newCreateMappingRuleCommand();
 
   /*
    * Retrieves the XML representation of a decision requirements.
@@ -1989,7 +1989,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param tenantId the unique identifier of the tenant
    * @return a builder for the assign mapping rule to tenant command
    */
-  AssignMappingToTenantCommandStep1 newAssignMappingToTenantCommand(String tenantId);
+  AssignMappingRuleToTenantCommandStep1 newAssignMappingRuleToTenantCommand(String tenantId);
 
   /**
    * Command to assign a user to a tenant.
@@ -2303,7 +2303,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param groupId the ID of the group
    * @return a builder for the mappings by group search request
    */
-  MappingsByGroupSearchRequest newMappingsByGroupSearchRequest(String groupId);
+  MappingRulesByGroupSearchRequest newMappingRulesByGroupSearchRequest(String groupId);
 
   /**
    * Executes a search request to query mappings by role.
@@ -2320,7 +2320,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param roleId the ID of the role
    * @return a builder for the mappings by role search request
    */
-  MappingsByRoleSearchRequest newMappingsByRoleSearchRequest(String roleId);
+  MappingRulesByRoleSearchRequest newMappingsByRoleSearchRequest(String roleId);
 
   /**
    * Executes a search request to query roles by group.

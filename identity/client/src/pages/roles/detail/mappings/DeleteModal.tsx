@@ -14,11 +14,11 @@ import {
   UseEntityModalCustomProps,
 } from "src/components/modal";
 import { useNotifications } from "src/components/notifications";
-import { Mapping } from "src/utility/api/mappings";
+import { MappingRule } from "src/utility/api/mappings";
 import { unassignRoleMapping } from "src/utility/api/roles";
 
 type RemoveRoleMappingModalProps = UseEntityModalCustomProps<
-  Mapping,
+  MappingRule,
   {
     roleId: string;
   }
@@ -40,7 +40,7 @@ const DeleteModal: FC<RemoveRoleMappingModalProps> = ({
     if (roleId && mapping) {
       const { success } = await callUnassignMapping({
         roleId,
-        mappingId: mapping.mappingId,
+        mappingRuleId: mapping.mappingRuleId,
       });
 
       if (success) {
@@ -66,10 +66,10 @@ const DeleteModal: FC<RemoveRoleMappingModalProps> = ({
       <p>
         <Translate
           i18nKey="removeMappingFromRole"
-          values={{ mappingId: mapping.mappingId }}
+          values={{ mappingRuleId: mapping.mappingRuleId }}
         >
-          Are you sure you want to remove <strong>{mapping.mappingId}</strong>{" "}
-          from this role?
+          Are you sure you want to remove{" "}
+          <strong>{mapping.mappingRuleId}</strong> from this role?
         </Translate>
       </p>
     </Modal>

@@ -22,22 +22,22 @@ import io.camunda.client.protocol.rest.MappingRuleCreateRequest;
 import io.camunda.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
 
-public class CreateMappingTest extends ClientRestTest {
+public class CreateMappingRuleTest extends ClientRestTest {
 
   public static final String CLAIM_NAME = "claimName";
   public static final String CLAIM_VALUE = "claimValue";
   public static final String NAME = "mappingName";
-  public static final String MAPPING_ID = "mappingId";
+  public static final String MAPPING_RULE_ID = "mappingRuleId";
 
   @Test
   void shouldCreateMapping() {
     // when
     client
-        .newCreateMappingCommand()
+        .newCreateMappingRuleCommand()
         .claimName(CLAIM_NAME)
         .claimValue(CLAIM_VALUE)
         .name(NAME)
-        .mappingId(MAPPING_ID)
+        .mappingRuleId(MAPPING_RULE_ID)
         .send()
         .join();
 
@@ -47,14 +47,20 @@ public class CreateMappingTest extends ClientRestTest {
     assertThat(request.getClaimName()).isEqualTo(CLAIM_NAME);
     assertThat(request.getClaimValue()).isEqualTo(CLAIM_VALUE);
     assertThat(request.getName()).isEqualTo(NAME);
-    assertThat(request.getMappingId()).isEqualTo(MAPPING_ID);
+    assertThat(request.getMappingRuleId()).isEqualTo(MAPPING_RULE_ID);
   }
 
   @Test
   void shouldRaiseExceptionOnNullClaimName() {
     // when / then
     assertThatThrownBy(
-            () -> client.newCreateMappingCommand().claimValue(CLAIM_VALUE).name(NAME).send().join())
+            () ->
+                client
+                    .newCreateMappingRuleCommand()
+                    .claimValue(CLAIM_VALUE)
+                    .name(NAME)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("claimName");
   }
@@ -63,7 +69,8 @@ public class CreateMappingTest extends ClientRestTest {
   void shouldRaiseExceptionOnNullClaimValue() {
     // when / then
     assertThatThrownBy(
-            () -> client.newCreateMappingCommand().claimName(CLAIM_NAME).name(NAME).send().join())
+            () ->
+                client.newCreateMappingRuleCommand().claimName(CLAIM_NAME).name(NAME).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("claimValue");
   }
@@ -74,7 +81,7 @@ public class CreateMappingTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newCreateMappingCommand()
+                    .newCreateMappingRuleCommand()
                     .claimName(CLAIM_NAME)
                     .claimValue(CLAIM_VALUE)
                     .send()
