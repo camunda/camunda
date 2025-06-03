@@ -11,8 +11,8 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
-import io.camunda.zeebe.db.impl.DbEnumValue;
 import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.db.impl.DbShort;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableAsyncRequestState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -94,15 +94,15 @@ public class DbAsyncRequestState implements MutableAsyncRequestState {
   }
 
   private static final class ScopeKeyAndValueTypeValue
-      extends DbCompositeKey<DbLong, DbEnumValue<ValueType>> {
+      extends DbCompositeKey<DbLong, DbShort> {
 
     public ScopeKeyAndValueTypeValue() {
-      super(new DbLong(), new DbEnumValue<>(ValueType.class));
+      super(new DbLong(), new DbShort());
     }
 
     public void setAll(final long scopeKey, final ValueType valueType) {
       first().wrapLong(scopeKey);
-      second().setValue(valueType);
+      second().wrapShort(valueType.value());
     }
 
     public long scopeKey() {
@@ -110,7 +110,7 @@ public class DbAsyncRequestState implements MutableAsyncRequestState {
     }
 
     public ValueType valueType() {
-      return second().getValue();
+      return ValueType.get(second().getValue());
     }
   }
 
