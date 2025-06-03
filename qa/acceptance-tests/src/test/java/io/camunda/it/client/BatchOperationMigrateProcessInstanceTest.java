@@ -35,6 +35,7 @@ import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.lang.reflect.Method;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -144,6 +145,89 @@ public class BatchOperationMigrateProcessInstanceTest {
       processInstanceHasVariables(
           client, processInstanceKey, Map.of("foo", v -> v.getValue().equals("\"bar\"")));
     }
+  }
+
+  @Test
+  void shouldMigrateProcessInstancesWithFailuresWithBatch(final TestInfo testInfo) {
+    // given
+    final String testScopeId =
+        testInfo.getTestMethod().map(Method::toString).orElse(UUID.randomUUID().toString());
+
+    final long sourceProcessDefinitionKey =
+        deployProcessAndWaitForIt(client, "process/migration-process_v1.bpmn")
+            .getProcessDefinitionKey();
+    final var targetProcessDefinitionKey =
+        deployProcessAndWaitForIt(client, "process/migration-process_v2.bpmn")
+            .getProcessDefinitionKey();
+
+    final List<Long> processInstances = new ArrayList<>();
+    IntStream.range(0, 10)
+        .forEach(
+            i ->
+                processInstances.add(
+                    startScopedProcessInstance(
+                            client,
+                            sourceProcessDefinitionKey,
+                            testScopeId,
+                            Map.of("foo", "bar", "fail", i > 5))
+                        .getProcessInstanceKey()));
+
+    waitForScopedProcessInstancesToStart(client, testScopeId, processInstances.size());
+    waitForActiveScopedUserTasks(client, testScopeId, processInstances.size());
+
+    // when
+    final var batchCreated =
+        batchMigrateProcessInstance(
+            client,
+            testScopeId,
+            sourceProcessDefinitionKey,
+            MigrationPlan.newBuilder()
+                .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+                .addMappingInstruction("taskA", "taskA2")
+                .addMappingInstruction("taskB", "taskB2")
+                .addMappingInstruction("taskC", "taskC2")
+                .addMappingInstruction("notExit", "taskA2")
+                .build());
+
+    // then wait if batch has correct amount of items. (To fail fast if not)
+    waitForBatchOperationWithCorrectTotalCount(
+        client, batchCreated.getBatchOperationKey(), processInstances.size());
+
+    // and wait for the batch operation to complete
+    waitForBatchOperationCompleted(client, batchCreated.getBatchOperationKey(), 5, 5);
+
+    Awaitility.await("should update batch operation items")
+        .atMost(Duration.ofSeconds(15))
+        .pollInterval(Duration.ofMillis(100))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              // and
+              final var batchItems =
+                  client
+                      .newBatchOperationItemsSearchRequest()
+                      .filter(
+                          f ->
+                              f.batchOperationId(
+                                  Long.toString(batchCreated.getBatchOperationKey())))
+                      .send()
+                      .join()
+                      .items();
+              assertThat(batchItems).isNotEmpty();
+              assertThat(batchItems).hasSize(processInstances.size());
+              final var statusList =
+                  batchItems.stream().map(BatchOperationItem::getStatus).toList();
+              assertThat(
+                      statusList.stream()
+                          .filter(s -> s.equals(BatchOperationItemState.COMPLETED))
+                          .count())
+                  .isEqualTo(5);
+              assertThat(
+                      statusList.stream()
+                          .filter(s -> s.equals(BatchOperationItemState.FAILED))
+                          .count())
+                  .isEqualTo(5);
+            });
   }
 
   public CreateBatchOperationResponse batchMigrateProcessInstance(

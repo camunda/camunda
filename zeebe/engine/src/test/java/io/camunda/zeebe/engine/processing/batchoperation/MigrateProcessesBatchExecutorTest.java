@@ -7,15 +7,18 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.collection.Maps;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
@@ -27,7 +30,7 @@ public final class MigrateProcessesBatchExecutorTest extends AbstractBatchOperat
   @Test
   public void shouldMigrateProcess() {
     // given
-    final Map<String, Object> claims = Map.of("claim1", "value1", "claim2", "value2");
+    final Map<String, Object> claims = Map.of(AUTHORIZED_USERNAME, "admin");
 
     // create a process with a user task a
     engine
@@ -100,5 +103,80 @@ public final class MigrateProcessesBatchExecutorTest extends AbstractBatchOperat
             .getFirst();
     assertThat(migrationCommand.getIntent()).isEqualTo(ProcessInstanceMigrationIntent.MIGRATE);
     assertThat(migrationCommand.getAuthorizations()).isEqualTo(claims);
+  }
+
+  @Test
+  public void shouldHandleRejectedMigrateProcessCommand() {
+    // given
+    final var user = createUser();
+    addProcessDefinitionPermissionsToUser(user, PermissionType.UPDATE_PROCESS_INSTANCE);
+    final Map<String, Object> claims = Map.of(AUTHORIZED_USERNAME, user.getUsername());
+
+    // create a process with a user task a
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("process").startEvent().userTask("userTaskA").done())
+        .deploy()
+        .getValue()
+        .getProcessesMetadata()
+        .get(0)
+        .getProcessDefinitionKey();
+
+    // create another process with a user task b
+    final long processDefinitionKey2 =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process2").startEvent().userTask("userTaskB").done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst()
+            .getProcessDefinitionKey();
+
+    final var processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId("process")
+            .withVariables(Maps.of(entry("foo", "bar")))
+            .create();
+
+    // wait for the user task to exist
+    RecordingExporter.jobRecords()
+        .withProcessInstanceKey(processInstanceKey)
+        .withIntent(JobIntent.CREATED)
+        .getFirst();
+
+    // then start the batch where we give wrong migration plan to get a rejected command
+    final var batchOperationKey =
+        createNewMigrateProcessesBatchOperation(
+            Set.of(processInstanceKey),
+            processDefinitionKey2,
+            Map.of("userTask", "userTaskNotExists"),
+            claims);
+
+    // then we have executed and completed event
+    assertThat(
+            RecordingExporter.batchOperationExecutionRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .onlyEvents())
+        .extracting(Record::getIntent)
+        .containsSequence(
+            BatchOperationExecutionIntent.EXECUTED, BatchOperationExecutionIntent.COMPLETED);
+
+    // and a follow op up command to execute again
+    assertThat(
+            RecordingExporter.batchOperationExecutionRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .onlyCommands())
+        .extracting(Record::getIntent)
+        .containsSequence(BatchOperationExecutionIntent.EXECUTE);
+
+    // and we have a rejected command
+    assertThat(
+            RecordingExporter.processInstanceMigrationRecords().withRecordKey(processInstanceKey))
+        .extracting(Record::getRejectionType)
+        .containsSequence(RejectionType.INVALID_ARGUMENT);
   }
 }
