@@ -1087,6 +1087,65 @@ class TaskControllerTest {
       }
 
       @Test
+      void accessRestrictionsShouldReturnTasksForM2MAuthentication() throws Exception {
+        // Given
+        final var providedTask =
+            new TaskDTO()
+                .setId("111111")
+                .setFlowNodeBpmnId("Register the passenger")
+                .setBpmnProcessId("Flight registration")
+                .setAssignee("demo")
+                .setCreationTime("2023-02-20T18:37:19.214+0000")
+                .setTaskState(TaskState.CREATED)
+                .setCandidateGroups(new String[] {"Admins"})
+                .setSortValues(new String[] {"123", "456"});
+        final var taskResponse =
+            new TaskSearchResponse()
+                .setId("111111")
+                .setName("Register the passenger")
+                .setProcessName("Flight registration")
+                .setAssignee("demo")
+                .setCreationDate("2023-02-20T18:37:19.214+0000")
+                .setCandidateGroups(new String[] {"Admins"})
+                .setTaskState(TaskState.CREATED)
+                .setSortValues(new String[] {"123", "456"});
+        final var searchRequest =
+            new TaskSearchRequest().setPageSize(20).setState(TaskState.CREATED);
+
+        final var searchQuery = mock(TaskQueryDTO.class);
+
+        when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
+        when(tasklistProperties.getIdentity().isUserAccessRestrictionsEnabled()).thenReturn(true);
+        when(userReader.getCurrentUser()).thenReturn(mock(UserDTO.class));
+        when(userReader.getCurrentUser().getUserId()).thenReturn(null);
+        when(taskMapper.toTaskQuery(searchRequest)).thenReturn(searchQuery);
+        when(taskService.getTasks(searchQuery, Set.of(TASK_DESCRIPTION), false))
+            .thenReturn(List.of(providedTask));
+        when(taskMapper.toTaskSearchResponse(providedTask)).thenReturn(taskResponse);
+
+        // When
+        final var responseAsString =
+            mockMvc
+                .perform(
+                    post(TasklistURIs.TASKS_URL_V1.concat("/search"))
+                        .characterEncoding(StandardCharsets.UTF_8.name())
+                        .content(CommonUtils.OBJECT_MAPPER.writeValueAsString(searchRequest))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        final var result =
+            CommonUtils.OBJECT_MAPPER.readValue(
+                responseAsString, new TypeReference<List<TaskSearchResponse>>() {});
+
+        // Then
+        assertThat(result).singleElement().isEqualTo(taskResponse);
+      }
+
+      @Test
       void accessRestrictionsShouldReturnTasksForCandidateUser() throws Exception {
         // Given
         final var providedTask =
