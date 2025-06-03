@@ -83,7 +83,7 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
           // If the partition is currently being scaled up, we won't yet try distributing to it.
           if (routingInfo.isPartitionScaling(record.getPartitionId())) {
             LOG.debug(
-                "Excluding distribution {} for partition {} as it is currently being scaled up.",
+                "Excluding distribution {} for partition {} as it is currently scaling up.",
                 distributionKey,
                 record.getPartitionId());
             return false;
