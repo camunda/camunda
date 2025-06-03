@@ -23,13 +23,14 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.util.List;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-class UserSearchingAuthorizationIT {
+class UserAuthorizationIT {
 
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
@@ -39,7 +40,6 @@ class UserSearchingAuthorizationIT {
   private static final String RESTRICTED = "restrictedUser";
   private static final String RESTRICTED_WITH_READ = "restrictedUser2";
   private static final String FIRST_USER = "user1";
-  private static final String SECOND_USER = "user2";
   private static final String DEFAULT_PASSWORD = "password";
 
   @UserDefinition
@@ -68,9 +68,6 @@ class UserSearchingAuthorizationIT {
   @UserDefinition
   private static final TestUser USER_1 = new TestUser(FIRST_USER, DEFAULT_PASSWORD, List.of());
 
-  @UserDefinition
-  private static final TestUser USER_2 = new TestUser(SECOND_USER, DEFAULT_PASSWORD, List.of());
-
   @Test
   void searchShouldReturnAuthorizedUsers(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient userClient) {
@@ -80,7 +77,7 @@ class UserSearchingAuthorizationIT {
     // then
     assertThat(result.items())
         .map(io.camunda.client.api.search.response.User::getUsername)
-        .containsExactly("demo", "admin", "restrictedUser", "restrictedUser2", "user1", "user2");
+        .containsExactly("demo", "admin", "restrictedUser", "restrictedUser2", "user1");
   }
 
   @Test
@@ -117,6 +114,51 @@ class UserSearchingAuthorizationIT {
   void deleteUserShouldReturnForbiddenIfUnauthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
     assertThatThrownBy(() -> camundaClient.newDeleteUserCommand(RESTRICTED).send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
+
+  @Test
+  void shouldUpdateUserByUsernameIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    final String updatedName = "updated_name";
+    final String updatedEmail = "updated_email@email.com";
+
+    adminClient
+        .newUpdateUserCommand(USER_1.username())
+        .name(updatedName)
+        .email(updatedEmail)
+        .send()
+        .join();
+
+    Awaitility.await("User is updated")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () ->
+                assertThat(
+                        adminClient
+                            .newUsersSearchRequest()
+                            .filter(fn -> fn.username(USER_1.username()))
+                            .send()
+                            .join()
+                            .items()
+                            .getFirst())
+                    .matches(u -> u.getUsername().equals(USER_1.username()))
+                    .matches(u -> u.getEmail().equals(updatedEmail))
+                    .matches(u -> u.getName().equals(updatedName)));
+  }
+
+  @Test
+  void updateUserShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUpdateUserCommand(USER_1.username())
+                    .name("updated_name")
+                    .email("updated_email@email.com")
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("403: 'Forbidden'");
   }

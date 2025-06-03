@@ -78,6 +78,7 @@ import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.client.api.command.UpdateRoleCommandStep1;
 import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
+import io.camunda.client.api.command.UpdateUserCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.client.api.fetch.BatchOperationGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetRequest;
@@ -1612,6 +1613,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   DeleteUserCommandStep1 newDeleteUserCommand(String username);
+
+  /**
+   * Command to update a user.
+   *
+   * <pre>
+   * camundaClient
+   *  .newUpdateUserCommand("username")
+   *  .name("name")
+   *  .email("email@email.com")
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder for the command
+   */
+  UpdateUserCommandStep1 newUpdateUserCommand(String username);
 
   /**
    * Command to create a mapping rule.
