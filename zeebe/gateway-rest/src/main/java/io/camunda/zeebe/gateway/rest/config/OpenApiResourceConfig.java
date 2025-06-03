@@ -22,8 +22,14 @@ public class OpenApiResourceConfig implements WebMvcConfigurer {
   @Override
   public void addResourceHandlers(final ResourceHandlerRegistry registry) {
     registry
-        .addResourceHandler("/rest-api.yaml")
+        .addResourceHandler("/rest-api.yaml", "/batchoperation/rest-api-batchoperation.yaml")
         .addResourceLocations("classpath:/apidoc/")
+        .resourceChain(true)
+        .addTransformer(new YamlToJsonResourceTransformer(objectMapper));
+
+    registry
+        .addResourceHandler("/batchoperation/*")
+        .addResourceLocations("classpath:/apidoc/batchoperation/")
         .resourceChain(true)
         .addTransformer(new YamlToJsonResourceTransformer(objectMapper));
   }
