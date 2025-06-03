@@ -15,7 +15,7 @@ import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestRecord;
 
 public class AsyncRequestMetadataValue extends UnpackedObject implements DbValue {
 
-  private final LongProperty asyncRequestKeyProperty = new LongProperty("key", -1);
+  private final LongProperty asyncRequestKeyProperty = new LongProperty("asyncRequestKey", -1);
 
   private final ObjectProperty<AsyncRequestRecord> recordProp =
       new ObjectProperty<>("asyncRequestRecord", new AsyncRequestRecord());

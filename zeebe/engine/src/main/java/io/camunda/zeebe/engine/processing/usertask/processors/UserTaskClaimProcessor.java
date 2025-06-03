@@ -36,18 +36,19 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
 
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
-  private final UserTaskCommandPreconditionChecker preconditionChecker;
-  private final AsyncRequestBehavior asyncRequestBehavior;
   private final AsyncRequestState asyncRequestState;
+  private final AsyncRequestBehavior asyncRequestBehavior;
+  private final UserTaskCommandPreconditionChecker preconditionChecker;
 
   public UserTaskClaimProcessor(
       final ProcessingState state,
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
       final AuthorizationCheckBehavior authCheckBehavior) {
-    asyncRequestState = state.getAsyncRequestState();
     stateWriter = writers.state();
     responseWriter = writers.response();
+    asyncRequestState = state.getAsyncRequestState();
+    this.asyncRequestBehavior = asyncRequestBehavior;
     preconditionChecker =
         new UserTaskCommandPreconditionChecker(
             List.of(LifecycleState.CREATED),
@@ -55,7 +56,6 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
             UserTaskClaimProcessor::checkClaim,
             state.getUserTaskState(),
             authCheckBehavior);
-    this.asyncRequestBehavior = asyncRequestBehavior;
   }
 
   @Override
@@ -69,7 +69,6 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     asyncRequestBehavior.writeAsyncRequestReceived(userTaskRecord.getElementInstanceKey(), command);
 
-    final long userTaskKey = command.getKey();
     final var newAssignee = command.getValue().getAssignee();
     if (!userTaskRecord.getAssignee().equals(newAssignee)) {
       userTaskRecord.setAssignee(newAssignee);
@@ -77,7 +76,7 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
     }
     userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
 
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CLAIMING, userTaskRecord);
+    stateWriter.appendFollowUpEvent(command.getKey(), UserTaskIntent.CLAIMING, userTaskRecord);
   }
 
   @Override

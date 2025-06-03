@@ -38,11 +38,11 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
 
   private final StateWriter stateWriter;
   private final VariableState variableState;
+  private final AsyncRequestState asyncRequestState;
   private final TypedResponseWriter responseWriter;
   private final VariableBehavior variableBehavior;
-  private final UserTaskCommandPreconditionChecker preconditionChecker;
   private final AsyncRequestBehavior asyncRequestBehavior;
-  private final AsyncRequestState asyncRequestState;
+  private final UserTaskCommandPreconditionChecker preconditionChecker;
 
   public UserTaskUpdateProcessor(
       final ProcessingState state,
@@ -52,13 +52,13 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
       final AuthorizationCheckBehavior authCheckBehavior) {
     stateWriter = writers.state();
     variableState = state.getVariableState();
+    asyncRequestState = state.getAsyncRequestState();
     this.variableBehavior = variableBehavior;
+    this.asyncRequestBehavior = asyncRequestBehavior;
     responseWriter = writers.response();
     preconditionChecker =
         new UserTaskCommandPreconditionChecker(
             List.of(LifecycleState.CREATED), "update", state.getUserTaskState(), authCheckBehavior);
-    this.asyncRequestBehavior = asyncRequestBehavior;
-    asyncRequestState = state.getAsyncRequestState();
   }
 
   @Override

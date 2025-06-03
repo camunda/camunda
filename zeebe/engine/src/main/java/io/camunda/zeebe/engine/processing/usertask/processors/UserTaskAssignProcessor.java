@@ -30,9 +30,9 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
 
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
-  private final UserTaskCommandPreconditionChecker preconditionChecker;
-  private final AsyncRequestBehavior asyncRequestBehavior;
   private final AsyncRequestState asyncRequestState;
+  private final AsyncRequestBehavior asyncRequestBehavior;
+  private final UserTaskCommandPreconditionChecker preconditionChecker;
 
   public UserTaskAssignProcessor(
       final ProcessingState state,
@@ -41,11 +41,11 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
       final AuthorizationCheckBehavior authCheckBehavior) {
     stateWriter = writers.state();
     responseWriter = writers.response();
+    asyncRequestState = state.getAsyncRequestState();
+    this.asyncRequestBehavior = asyncRequestBehavior;
     preconditionChecker =
         new UserTaskCommandPreconditionChecker(
             List.of(LifecycleState.CREATED), "assign", state.getUserTaskState(), authCheckBehavior);
-    this.asyncRequestBehavior = asyncRequestBehavior;
-    asyncRequestState = state.getAsyncRequestState();
   }
 
   @Override
@@ -79,7 +79,8 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
             userTaskRecord.getElementInstanceKey(), ValueType.USER_TASK, UserTaskIntent.ASSIGN);
 
     if (asyncRequest.isEmpty()) {
-      // When activating a user task that specifies an assignee in the process.
+      // Async request might be absent if the assignment transition was triggered internally
+      // by Zeebe due to an assignee configured in the process model.
       stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
       responseWriter.writeEventOnCommand(
           userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord, command);
