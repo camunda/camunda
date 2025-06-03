@@ -18,6 +18,16 @@ public interface RoutingState {
 
   boolean isInitialized();
 
+  /**
+   * Retrieves the event key of the SCALING_UP event for a specific partition count.
+   *
+   * @param partitionCount the target number of partitions for the scaling operation
+   * @return the event key of the SCALING_UP event that scaled to the specified partition count.
+   *     Returns 0 for the initial partition count, or -1 if the system has never scaled to the
+   *     specified number of partitions
+   */
+  long bootstrappedAt(int partitionCount);
+
   sealed interface MessageCorrelation {
     record HashMod(int partitionCount) implements MessageCorrelation {
       public HashMod {

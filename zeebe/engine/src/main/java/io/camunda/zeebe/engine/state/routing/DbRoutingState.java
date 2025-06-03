@@ -10,6 +10,8 @@ package io.camunda.zeebe.engine.state.routing;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.db.impl.DbInt;
+import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
 import io.camunda.zeebe.protocol.Protocol;
@@ -24,7 +26,10 @@ public final class DbRoutingState implements MutableRoutingState {
   private static final String DESIRED_KEY = "DESIRED";
 
   private final ColumnFamily<DbString, PersistedRoutingInfo> columnFamily;
+  private final ColumnFamily<DbInt, DbLong> bootstrappedAtColumnFamily;
   private final DbString key = new DbString();
+  private final DbInt partitionIdKey = new DbInt();
+  private final DbLong dbLong = new DbLong();
   private final PersistedRoutingInfo currentRoutingInfo = new PersistedRoutingInfo();
   private final PersistedRoutingInfo desiredRoutingInfo = new PersistedRoutingInfo();
 
@@ -33,6 +38,9 @@ public final class DbRoutingState implements MutableRoutingState {
     columnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.ROUTING, transactionContext, key, new PersistedRoutingInfo());
+    bootstrappedAtColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.BOOTSTRAPPED_AT, transactionContext, partitionIdKey, new DbLong());
   }
 
   @Override
@@ -64,6 +72,16 @@ public final class DbRoutingState implements MutableRoutingState {
   }
 
   @Override
+  public long bootstrappedAt(final int partitionCount) {
+    partitionIdKey.wrapInt(partitionCount);
+    final var value = bootstrappedAtColumnFamily.get(partitionIdKey);
+    if (value == null) {
+      return -1L;
+    }
+    return value.getValue();
+  }
+
+  @Override
   public void initializeRoutingInfo(final int partitionCount) {
     final var partitions =
         IntStream.rangeClosed(Protocol.START_PARTITION_ID, partitionCount)
@@ -75,16 +93,17 @@ public final class DbRoutingState implements MutableRoutingState {
     currentRoutingInfo.setPartitions(partitions);
     currentRoutingInfo.setMessageCorrelation(new MessageCorrelation.HashMod(partitionCount));
     columnFamily.insert(key, currentRoutingInfo);
-    setDesiredPartitions(partitions);
+    setDesiredPartitions(partitions, 0L);
   }
 
   @Override
-  public void setDesiredPartitions(final Set<Integer> partitions) {
+  public void setDesiredPartitions(final Set<Integer> partitions, final long eventKey) {
     final var currentMessageCorrelation = messageCorrelation();
     desiredRoutingInfo.reset();
     desiredRoutingInfo.setPartitions(partitions);
     desiredRoutingInfo.setMessageCorrelation(currentMessageCorrelation);
 
+    setBootstrappedAt(partitions.size(), eventKey);
     key.wrapString(DESIRED_KEY);
     columnFamily.upsert(key, desiredRoutingInfo);
   }
@@ -95,5 +114,14 @@ public final class DbRoutingState implements MutableRoutingState {
     final var desiredPartitions = columnFamily.get(key);
     key.wrapString(CURRENT_KEY);
     columnFamily.update(key, desiredPartitions);
+  }
+
+  private void setBootstrappedAt(final int partitionCount, final long key) {
+    partitionIdKey.wrapInt(partitionCount);
+    dbLong.wrapLong(key);
+    if (bootstrappedAtColumnFamily.get(partitionIdKey) == null) {
+      // do not override if it's already set
+      bootstrappedAtColumnFamily.insert(partitionIdKey, dbLong);
+    }
   }
 }
