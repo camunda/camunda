@@ -245,6 +245,33 @@ public final class TestHelper {
   }
 
   /**
+   * Waits for active process instances which are having a process variable {@link
+   * #VAR_TEST_SCOPE_ID}.
+   *
+   * @param camundaClient ... CamundaClient
+   * @param scopeId ... some unique id for the test case
+   */
+  public static void waitForScopedActiveProcessInstances(
+      final CamundaClient camundaClient, final String scopeId, final int expectedProcessInstances) {
+    Awaitility.await("should start process instances and import in Operate")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newProcessInstanceSearchRequest()
+                      .filter(
+                          f ->
+                              f.state(ProcessInstanceState.ACTIVE)
+                                  .variables(getScopedVariables(scopeId)))
+                      .send()
+                      .join();
+              assertThat(result.page().totalItems()).isEqualTo(expectedProcessInstances);
+            });
+  }
+
+  /**
    * Waits for process instances to start which are having a process variable {@link *
    * #VAR_TEST_SCOPE_ID}.
    *
