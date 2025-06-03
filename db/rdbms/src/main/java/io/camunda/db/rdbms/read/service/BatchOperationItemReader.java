@@ -23,7 +23,7 @@ public class BatchOperationItemReader extends AbstractEntityReader<BatchOperatio
   private final BatchOperationMapper batchOperationMapper;
 
   public BatchOperationItemReader(final BatchOperationMapper batchOperationMapper) {
-    super(BatchOperationItemSearchColumn::findByProperty);
+    super(BatchOperationItemSearchColumn.values());
     this.batchOperationMapper = batchOperationMapper;
   }
 

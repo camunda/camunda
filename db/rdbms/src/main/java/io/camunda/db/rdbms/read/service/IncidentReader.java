@@ -24,7 +24,7 @@ public class IncidentReader extends AbstractEntityReader<IncidentEntity> {
   private final IncidentMapper incidentMapper;
 
   public IncidentReader(final IncidentMapper incidentMapper) {
-    super(IncidentSearchColumn::findByProperty);
+    super(IncidentSearchColumn.values());
     this.incidentMapper = incidentMapper;
   }
 

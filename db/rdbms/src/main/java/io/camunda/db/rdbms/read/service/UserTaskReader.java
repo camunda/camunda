@@ -26,7 +26,7 @@ public class UserTaskReader extends AbstractEntityReader<UserTaskEntity> {
   private final UserTaskMapper userTaskMapper;
 
   public UserTaskReader(final UserTaskMapper userTaskMapper) {
-    super(UserTaskSearchColumn::findByProperty);
+    super(UserTaskSearchColumn.values());
     this.userTaskMapper = userTaskMapper;
   }
 

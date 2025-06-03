@@ -25,7 +25,7 @@ public class GroupReader extends AbstractEntityReader<GroupEntity> {
   private final GroupMapper groupMapper;
 
   public GroupReader(final GroupMapper groupMapper) {
-    super(GroupSearchColumn::findByProperty);
+    super(GroupSearchColumn.values());
     this.groupMapper = groupMapper;
   }
 

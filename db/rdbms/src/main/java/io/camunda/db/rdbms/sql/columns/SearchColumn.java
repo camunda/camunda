@@ -15,19 +15,27 @@ import java.util.function.Function;
 
 public interface SearchColumn<T> {
 
-  static final Map<Class<?>, Function<Object, Object>> converters = Map.of(
-      Long.class, obj -> Long.valueOf(obj.toString()),
-      OffsetDateTime.class, obj -> DateUtil.fuzzyToOffsetDateTime(obj)
-  );
+  static final Map<Class<?>, Function<Object, Object>> converters =
+      Map.of(
+          Long.class, obj -> Long.valueOf(obj.toString()),
+          Integer.class, obj -> Integer.valueOf(obj.toString()),
+          String.class, obj -> obj.toString(),
+          Boolean.class, obj -> Boolean.valueOf(obj.toString()),
+          OffsetDateTime.class, obj -> DateUtil.fuzzyToOffsetDateTime(obj));
 
   String name();
 
-  default String property() {
-    return null;
-  }
+  String property();
 
-  default Class<T> getEntityClass() {
-    return null;
+  Class<T> getEntityClass();
+
+  default Class getPropertyType() {
+    try {
+      final var method = getEntityClass().getMethod(property());
+      return method.getReturnType();
+    } catch (final NoSuchMethodException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   default Object getPropertyValue(final T entity) {
@@ -43,18 +51,26 @@ public interface SearchColumn<T> {
     }
   }
 
-  default Class getPropertyType() {
-    try {
-      final var method = getEntityClass().getMethod(property());
-      return method.getReturnType();
-    } catch (final NoSuchMethodException e) {
-      throw new RuntimeException(e);
+  default Object convertSortOption(final Object object) {
+    if (object == null) {
+      return null;
     }
+
+    return getConverter(getPropertyType()).apply(object);
   }
 
-  // deprecated
-  default Object convertSortOption(final Object object) {
-    final Class<?> targetType = getPropertyType();
-    return converters.getOrDefault(targetType, obj -> obj).apply(object);
+  static Function<Object, Object> getConverter(final Class<?> type) {
+    //    if (type.isEnum()) {
+    //      return obj -> Enum.valueOf((Class<? extends Enum>) type, obj.toString());
+    //    }
+
+    final var converter = converters.get(type);
+
+    if (converter == null) {
+      throw new IllegalArgumentException(
+          "No converter found for type: " + type.getName() + ". Please register a converter.");
+    }
+
+    return converter;
   }
 }

@@ -25,7 +25,7 @@ public class RoleReader extends AbstractEntityReader<RoleEntity> {
   private final RoleMapper roleMapper;
 
   public RoleReader(final RoleMapper roleMapper) {
-    super(RoleSearchColumn::findByProperty);
+    super(RoleSearchColumn.values());
     this.roleMapper = roleMapper;
   }
 

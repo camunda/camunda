@@ -24,7 +24,7 @@ public class FormReader extends AbstractEntityReader<FormEntity> {
   private final FormMapper formMapper;
 
   public FormReader(final FormMapper formMapper) {
-    super(FormSearchColumn::findByProperty);
+    super(FormSearchColumn.values());
     this.formMapper = formMapper;
   }
 

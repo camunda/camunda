@@ -26,12 +26,20 @@ import java.util.List;
 
 abstract class AbstractEntityReader<T> {
 
-  private final SearchColumnFinder<T> searchColumnFinder;
+  private final List<SearchColumn<T>> searchableColumns;
   private final Cursor cursor;
 
-  public AbstractEntityReader(final SearchColumnFinder<T> searchColumnFinder) {
-    this.searchColumnFinder = searchColumnFinder;
+  public AbstractEntityReader(final SearchColumn<T>[] searchableColumns) {
+    this.searchableColumns = List.of(searchableColumns);
     cursor = new Cursor();
+  }
+
+  private SearchColumn<T> determineSearchColumn(final String columnProperty) {
+    // TODO convert to Map for faster lookup
+    return searchableColumns.stream()
+        .filter(column -> column.property().equals(columnProperty))
+        .findFirst()
+        .orElseThrow(() -> new IllegalArgumentException("Unknown sortField: " + columnProperty));
   }
 
   @SafeVarargs
@@ -41,10 +49,7 @@ abstract class AbstractEntityReader<T> {
     final var discriminatorColumnList = new ArrayList<>(Arrays.asList(discriminatorColumns));
 
     for (final FieldSorting fieldSorting : sortOption.getFieldSortings()) {
-      final var column = searchColumnFinder.findByProperty(fieldSorting.field());
-      if (column == null) {
-        throw new IllegalArgumentException("Unknown sortField: " + fieldSorting.field());
-      }
+      final var column = determineSearchColumn(fieldSorting.field());
 
       // remove the column from the discriminator list to not sort double
       discriminatorColumnList.remove(column);
