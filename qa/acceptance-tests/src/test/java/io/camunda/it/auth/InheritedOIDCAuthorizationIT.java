@@ -39,9 +39,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-@Testcontainers
 @MultiDbTest(setupKeycloak = true)
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
@@ -59,7 +57,11 @@ public class InheritedOIDCAuthorizationIT {
 
   @MappingDefinition
   private static final TestMapping MAPPING_THROUGH_AUTHORIZED_GROUP =
-      new TestMapping("mappingId", DEFAULT_MAPPING_CLAIM_NAME, "claimValue", List.of());
+      new TestMapping(
+          Strings.newRandomValidIdentityId(),
+          DEFAULT_MAPPING_CLAIM_NAME,
+          Strings.newRandomValidIdentityId(),
+          List.of());
 
   @MappingDefinition
   private static final TestMapping MAPPING_THROUGH_UNAUTHORIZED_GROUP =
