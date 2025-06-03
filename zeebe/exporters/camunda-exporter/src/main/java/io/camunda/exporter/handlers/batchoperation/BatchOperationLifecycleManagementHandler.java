@@ -31,7 +31,8 @@ public class BatchOperationLifecycleManagementHandler
       Set.of(
           BatchOperationIntent.CANCELED,
           BatchOperationIntent.SUSPENDED,
-          BatchOperationIntent.RESUMED);
+          BatchOperationIntent.RESUMED,
+          BatchOperationIntent.COMPLETED);
   private final String indexName;
 
   public BatchOperationLifecycleManagementHandler(final String indexName) {
@@ -68,7 +69,6 @@ public class BatchOperationLifecycleManagementHandler
   public void updateEntity(
       final Record<BatchOperationLifecycleManagementRecordValue> record,
       final BatchOperationEntity entity) {
-    final var value = record.getValue();
     if (record.getIntent().equals(BatchOperationIntent.CANCELED)) {
       entity
           .setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
@@ -77,6 +77,8 @@ public class BatchOperationLifecycleManagementHandler
       entity.setEndDate(null).setState(BatchOperationState.SUSPENDED);
     } else if (record.getIntent().equals(BatchOperationIntent.RESUMED)) {
       entity.setEndDate(null).setState(BatchOperationState.ACTIVE);
+    } else if (record.getIntent().equals(BatchOperationIntent.COMPLETED)) {
+      entity.setEndDate(null).setState(BatchOperationState.COMPLETED);
     }
   }
 

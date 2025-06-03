@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.fail;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCancelProcessor;
+import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCompleteProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCreateProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationPartitionCompleteProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationResumeProcessor;
@@ -290,6 +291,21 @@ public class CommandDistributionIdempotencyTest {
                       .resume();
                 }),
             BatchOperationResumeProcessor.class
+          },
+          {
+            "BatchOperation.COMPLETE is idempotent",
+            new Scenario(
+                ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
+                BatchOperationIntent.COMPLETE,
+                () -> {
+                  final var batchOperation = createBatchOperation();
+                  return ENGINE
+                      .batchOperation()
+                      .newLifecycle()
+                      .withBatchOperationKey(batchOperation.getKey())
+                      .complete();
+                }),
+            BatchOperationCompleteProcessor.class
           },
           {
             "BatchOperation.COMPLETE_PARTITION is idempotent",

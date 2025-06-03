@@ -14,7 +14,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
@@ -38,7 +37,6 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationChunkRecordValue;
-import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationExecutionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationItemValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
@@ -478,19 +476,21 @@ public class RecordFixtures {
         .build();
   }
 
-  protected static ImmutableRecord<RecordValue> getBatchOperationExecutionCompletedRecord(
+  protected static ImmutableRecord<RecordValue> getBatchOperationCompletedRecord(
       final Long batchOperationKey, final Long position) {
     final Record<RecordValue> recordValueRecord =
-        FACTORY.generateRecord(ValueType.BATCH_OPERATION_EXECUTION);
+        FACTORY.generateRecord(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT);
 
     return ImmutableRecord.builder()
         .from(recordValueRecord)
-        .withIntent(BatchOperationExecutionIntent.COMPLETED)
+        .withIntent(BatchOperationIntent.COMPLETED)
         .withPosition(position)
         .withTimestamp(System.currentTimeMillis())
         .withValue(
-            ImmutableBatchOperationExecutionRecordValue.builder()
-                .from((ImmutableBatchOperationExecutionRecordValue) recordValueRecord.getValue())
+            ImmutableBatchOperationLifecycleManagementRecordValue.builder()
+                .from(
+                    (ImmutableBatchOperationLifecycleManagementRecordValue)
+                        recordValueRecord.getValue())
                 .withBatchOperationKey(batchOperationKey)
                 .build())
         .build();

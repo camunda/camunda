@@ -8,8 +8,8 @@
 package io.camunda.it.rdbms.exporter;
 
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationChunkRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationCompletedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationCreatedRecord;
-import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationExecutionCompletedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationLifecycleCanceledRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationLifecycleResumeRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationLifecycleSuspendedRecord;
@@ -77,8 +77,8 @@ class RdbmsExporterBatchOperationsIT {
     final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
     final var batchOperationKey = batchOperationCreatedRecord.getKey();
     final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
-    final var batchOperationExecutionCompletedRecord =
-        getBatchOperationExecutionCompletedRecord(batchOperationKey, 3L);
+    final var batchOperationCompletedRecord =
+        getBatchOperationCompletedRecord(batchOperationKey, 3L);
 
     // when
     exporter.export(batchOperationCreatedRecord);
@@ -92,7 +92,7 @@ class RdbmsExporterBatchOperationsIT {
     assertThat(batchOperation.state()).isEqualTo(BatchOperationState.ACTIVE);
 
     // and when we complete it
-    exporter.export(batchOperationExecutionCompletedRecord);
+    exporter.export(batchOperationCompletedRecord);
 
     // then it should be completed
     batchOperation =
