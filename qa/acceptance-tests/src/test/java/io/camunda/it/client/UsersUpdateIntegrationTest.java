@@ -8,6 +8,7 @@
 package io.camunda.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
@@ -65,6 +66,25 @@ public class UsersUpdateIntegrationTest {
               assertThat(response.items().getFirst().getName()).isEqualTo(updatedName);
               assertThat(response.items().getFirst().getEmail()).isEqualTo(updatedEmail);
             });
+  }
+
+  @Test
+  void shouldReturnNotFoundWhenUpdatingIfUserDoesNotExist() {
+    // when / then
+    final var nonExistingUserName = "nonExistingUserName";
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUpdateUserCommand(nonExistingUserName)
+                    .name("Role Name")
+                    .email("new_email@email.com")
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 404: 'Not Found'")
+        .hasMessageContaining(
+            "Expected to update user with username %s, but a user with this username does not exist"
+                .formatted(nonExistingUserName));
   }
 
   private static void assertUserCreated(final String userName) {
