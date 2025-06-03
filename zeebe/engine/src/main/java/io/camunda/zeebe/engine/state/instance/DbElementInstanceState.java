@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationRuntimeInstructionValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -73,6 +74,12 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   /** [process definition key | process instance key] => [Nil] */
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil>
       processInstanceKeyByProcessDefinitionKeyColumnFamily;
+
+  // todo: array
+  private final ColumnFamily<DbLong, RuntimeInstruction> runtimeInstructionsByProcessInstanceId;
+  private final RuntimeInstruction runtimeInstruction;
+
+  private final
 
   public DbElementInstanceState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
@@ -134,6 +141,16 @@ public final class DbElementInstanceState implements MutableElementInstanceState
             transactionContext,
             processInstanceKeyByProcessDefinitionKey,
             DbNil.INSTANCE);
+
+    runtimeInstruction = new RuntimeInstruction();
+
+    runtimeInstructionsByProcessInstanceId =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.RUNTIME_INSTRUCTIONS,
+            transactionContext,
+            elementInstanceKey,
+            runtimeInstruction
+        );
   }
 
   @Override
@@ -477,6 +494,41 @@ public final class DbElementInstanceState implements MutableElementInstanceState
         });
 
     return hasActiveInstances.get();
+  }
+
+  @Override
+  public boolean shouldSuspendElementInstance(final long processInstanceKey,
+      final String elementId) {
+
+    elementInstanceKey.wrapLong(processInstanceKey);
+    final var runtimeInstructions = runtimeInstructionsByProcessInstanceId.get(elementInstanceKey);
+    if (runtimeInstructions == null) {
+      return false;
+    }
+    if (runtimeInstructions.isEmpty()) {
+      return false;
+    }
+    return runtimeInstructions.getAfterElementId().equals(elementId);
+  }
+
+  @Override
+  public void addRuntimeInstructions(
+      final long processInstanceKey,
+      final List<ProcessInstanceCreationRuntimeInstructionValue> runtimeInstructions) {
+
+    runtimeInstruction.setAfterElementId(runtimeInstructions.getFirst().getElementId());
+    elementInstanceKey.wrapLong(processInstanceKey);
+    runtimeInstructionsByProcessInstanceId.insert(elementInstanceKey, runtimeInstruction);
+  }
+
+  @Override
+  public void updateSuspendedState(final long processInstanceKey, final boolean suspended) {
+
+  }
+
+  @Override
+  public boolean isSuspended(final long processInstanceKey) {
+    return false;
   }
 
   private ElementInstance copyElementInstance(final ElementInstance elementInstance) {

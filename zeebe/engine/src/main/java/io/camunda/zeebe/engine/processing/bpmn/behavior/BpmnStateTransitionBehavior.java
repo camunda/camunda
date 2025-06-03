@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
 import java.util.function.Function;
 
@@ -291,6 +292,18 @@ public final class BpmnStateTransitionBehavior {
       final BpmnElementContext context, final ExecutableSequenceFlow sequenceFlow) {
     verifyTransition(context, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN);
     final var target = sequenceFlow.getTarget();
+    final var source = sequenceFlow.getSource();
+
+    if (stateBehavior.shouldSuspendProcessInstance(context.getProcessInstanceKey(), BufferUtil.bufferAsString(source.getId()))) {
+
+      final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
+      stateWriter.appendFollowUpEvent(
+          context.getProcessInstanceKey(),
+          ProcessInstanceIntent.ELEMENT_SUSPENDED,
+          processInstance.getValue()
+      );
+      return;
+    }
 
     followUpInstanceRecord.wrap(context.getRecordValue());
     followUpInstanceRecord

@@ -43,6 +43,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
@@ -328,6 +329,7 @@ public final class ProcessInstanceServices
       Long requestTimeout,
       Long operationReference,
       List<ProcessInstanceCreationStartInstruction> startInstructions,
+      List<ProcessInstanceCreationRuntimeInstruction> runtimeInstructions,
       List<String> fetchVariables) {}
 
   public record ProcessInstanceCancelRequest(Long processInstanceKey, Long operationReference) {}

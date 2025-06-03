@@ -99,6 +99,7 @@ import io.camunda.zeebe.gateway.protocol.rest.MappingRuleUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationCancellationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
@@ -124,10 +125,12 @@ import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.RuntimeInstructionType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -764,6 +767,15 @@ public class RequestMapper {
                                     .ProcessInstanceCreationStartInstruction()
                                 .setElementId(instruction.getElementId()))
                     .toList(),
+                request.getRuntimeInstructions().stream()
+                        .map(
+                            instruction -> {
+                              final var instructionCasted = (ProcessInstanceCreationCancellationInstruction) instruction;
+                              return new ProcessInstanceCreationRuntimeInstruction()
+                                  .setType(RuntimeInstructionType.SUSPEND_PROCESS_INSTANCE)
+                                  .setAfterElementId(instructionCasted.getAfterElementId());
+                            }
+                        ).toList(),
                 request.getFetchVariables()));
   }
 

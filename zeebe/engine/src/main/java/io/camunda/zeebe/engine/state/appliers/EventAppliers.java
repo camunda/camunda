@@ -260,7 +260,19 @@ public final class EventAppliers implements EventApplier {
 
     register(
         ProcessInstanceCreationIntent.CREATED,
+        1,
         new ProcessInstanceCreationCreatedApplier(processState, elementInstanceState));
+
+    register(
+        ProcessInstanceCreationIntent.CREATED,
+        2,
+        new ProcessInstanceCreationCreatedApplierV2(processState, elementInstanceState));
+
+    // TODO
+    // store in the state: process instance suspended e.g. elementinstancestate.updateElement
+    // 
+    register(ProcessInstanceIntent.ELEMENT_SUSPENDED,
+        NOOP_EVENT_APPLIER);
   }
 
   private void registerProcessInstanceModificationAppliers(final MutableProcessingState state) {

@@ -6306,12 +6306,14 @@ components:
         - ACTIVE
         - COMPLETED
         - TERMINATED
+        - SUSPENDED
     ElementInstanceStateEnum:
       description: Element states, one of ACTIVE, COMPLETED, TERMINATED.
       enum:
         - ACTIVE
         - COMPLETED
         - TERMINATED
+        - SUSPENDED
     ProcessInstanceCallHierarchyEntry:
       type: object
       required:
