@@ -77,7 +77,7 @@ class UserTaskAuthorizationIT {
     startProcessInstance(adminClient, PROCESS_ID_1);
     startProcessInstance(adminClient, PROCESS_ID_2);
 
-    waitForTasksBeingExported(adminClient, 3);
+    waitForProcessAndTasksBeingExported(adminClient);
   }
 
   @Test
@@ -201,14 +201,24 @@ class UserTaskAuthorizationIT {
     camundaClient.newCreateInstanceCommand().bpmnProcessId(processId).latestVersion().send().join();
   }
 
-  private static void waitForTasksBeingExported(
-      final CamundaClient camundaClient, final int expectedCount) {
+  private static void waitForProcessAndTasksBeingExported(final CamundaClient camundaClient) {
     Awaitility.await("should receive data from ES")
         .atMost(Duration.ofMinutes(1))
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
-            () ->
-                assertThat(camundaClient.newUserTaskSearchRequest().send().join().items())
-                    .hasSize(expectedCount));
+            () -> {
+              assertThat(
+                      camundaClient
+                          .newProcessInstanceSearchRequest()
+                          .filter(
+                              filter ->
+                                  filter.processDefinitionId(
+                                      fn -> fn.in(PROCESS_ID_1, PROCESS_ID_2)))
+                          .send()
+                          .join()
+                          .items())
+                  .hasSize(2);
+              assertThat(camundaClient.newUserTaskSearchRequest().send().join().items()).hasSize(3);
+            });
   }
 }
