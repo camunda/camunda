@@ -23,6 +23,7 @@ public class OidcAuthenticationConfiguration {
   private Set<String> audiences;
   private String usernameClaim = "sub";
   private String clientIdClaim;
+  private String groupsClaim;
   private String organizationId;
 
   public String getIssuerUri() {
@@ -119,5 +120,13 @@ public class OidcAuthenticationConfiguration {
 
   public void setOrganizationId(final String organizationId) {
     this.organizationId = organizationId;
+  }
+
+  public String getGroupsClaim() {
+    return groupsClaim;
+  }
+
+  public void setGroupsClaim(final String groupsClaim) {
+    this.groupsClaim = groupsClaim;
   }
 }

@@ -7,6 +7,7 @@
  */
 package io.camunda.authentication;
 
+import static io.camunda.authentication.CamundaOAuthPrincipalService.CLAIM_NOT_STRING_OR_STRING_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
@@ -282,6 +283,84 @@ public class CamundaOAuthPrincipalServiceTest {
               TenantDTO.fromEntity(tenantEntity1), TenantDTO.fromEntity(tenantEntity2));
       assertThat(authenticationContext.authorizedApplications())
           .containsExactlyInAnyOrder("app-1", "app-2");
+    }
+  }
+
+  @Nested
+  class GroupsClaimConfiguration {
+    private static final String GROUPS_CLAIM = "groups";
+    @Mock private MappingServices mappingServices;
+    @Mock private TenantServices tenantServices;
+    @Mock private RoleServices roleServices;
+    @Mock private GroupServices groupServices;
+    @Mock private AuthorizationServices authorizationServices;
+    @Mock private SecurityConfiguration securityConfiguration;
+    @Mock private AuthenticationConfiguration authenticationConfiguration;
+    @Mock private OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
+
+    @BeforeEach
+    public void setUp() throws Exception {
+      MockitoAnnotations.openMocks(this).close();
+
+      when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfiguration);
+      when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
+      when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn("sub");
+      when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn("not-tested");
+      when(oidcAuthenticationConfiguration.getGroupsClaim()).thenReturn(GROUPS_CLAIM);
+
+      camundaOAuthPrincipalService =
+          new CamundaOAuthPrincipalService(
+              mappingServices,
+              tenantServices,
+              roleServices,
+              groupServices,
+              authorizationServices,
+              securityConfiguration);
+    }
+
+    @Test
+    public void shouldFetchClaimGroupWhenGroupClaimIsPresent() {
+      // given
+      final Map<String, Object> claims =
+          Map.of("groups", List.of("idp-group1", "idp-group2"), "sub", "user1");
+      final var mapping1 = new MappingEntity("map-1", 1L, "role", "R1", "role-r1");
+      final var mapping2 = new MappingEntity("map-2", 2L, "group", "G1", "group-g1");
+      when(mappingServices.getMatchingMappings(claims)).thenReturn(List.of(mapping1, mapping2));
+      when(groupServices.getGroupsByMemberIds(Set.of("map-1", "map-2"), EntityType.MAPPING))
+          .thenReturn(List.of(new GroupEntity(1L, "local-g1", "G1", "Group G1")));
+
+      // when
+      final var oauthContext = camundaOAuthPrincipalService.loadOAuthContext(claims);
+
+      // then
+      assertThat(oauthContext.authenticationContext().groups()).isEqualTo(claims.get("groups"));
+    }
+
+    @Test
+    public void shouldLoadGroupWhenGroupsClaimIsAString() {
+      // given
+      final Map<String, Object> claims = Map.of("groups", "idp-group1", "sub", "user1");
+      // when
+      final var oauthContext = camundaOAuthPrincipalService.loadOAuthContext(claims);
+
+      // then
+      assertThat(oauthContext.authenticationContext().groups())
+          .containsExactly((String) claims.get("groups"));
+    }
+
+    @Test
+    public void shouldThrowExceptionWhenGroupsClaimIsNotStringArray() {
+      // given
+      final Map<String, Object> claims =
+          Map.of("groups", List.of("idp-group1", "idp-group2", Map.of("m1", "m2")), "sub", "user1");
+      // when
+      final var exception =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> camundaOAuthPrincipalService.loadOAuthContext(claims));
+
+      assertThat(exception.getMessage())
+          .isEqualTo(CLAIM_NOT_STRING_OR_STRING_ARRAY.formatted("groups", GROUPS_CLAIM));
     }
   }
 }
