@@ -60,7 +60,7 @@ public final class BufferedTaskResultBuilder implements TaskResultBuilder {
             .rejectionReason("")
             .valueType(valueType)
             .operationReference(metadata.operationReference())
-            .batchOperationKey(metadata.batchOperationKey());
+            .batchOperationReference(metadata.batchOperationKey());
     final var either = mutableRecordBatch.appendRecord(key, recordMetadata, -1, value);
 
     either.ifRight(ok -> cache.add(intent, key));

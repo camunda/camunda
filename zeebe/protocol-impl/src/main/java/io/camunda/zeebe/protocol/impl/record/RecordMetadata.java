@@ -285,8 +285,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     return operationReference;
   }
 
-  public RecordMetadata batchOperationKey(final long batchOperationKey) {
-    batchOperationReference = batchOperationKey;
+  public RecordMetadata batchOperationReference(final long batchOperationReference) {
+    this.batchOperationReference = batchOperationReference;
     return this;
   }
 

@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter.CommandMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
@@ -111,7 +112,10 @@ public final class BatchOperationExecuteProcessor
     final var followupCommand = new BatchOperationExecutionRecord();
     followupCommand.setBatchOperationKey(batchKey);
     commandWriter.appendFollowUpCommand(
-        command.getKey(), BatchOperationExecutionIntent.EXECUTE, followupCommand, batchKey, null);
+        command.getKey(),
+        BatchOperationExecutionIntent.EXECUTE,
+        followupCommand,
+        CommandMetadata.of(b -> b.batchOperationReference(batchOperation.getKey())));
   }
 
   private PersistedBatchOperation getBatchOperation(final long batchOperationKey) {

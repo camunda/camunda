@@ -67,7 +67,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
     }
 
     if (batchOperationReference != batchOperationReferenceNullValue()) {
-      metadata.batchOperationKey(batchOperationReference);
+      metadata.batchOperationReference(batchOperationReference);
     }
 
     final ValueType valueType = TypedEventRegistry.TYPE_REGISTRY.get(value.getClass());
@@ -115,7 +115,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
             .rejectionReason(rejectionReason)
             .valueType(valueType)
             .operationReference(operationReference)
-            .batchOperationKey(batchOperationReference);
+            .batchOperationReference(batchOperationReference);
     final var entry = RecordBatchEntry.createEntry(key, metadata, -1, value);
     processingResponse = new ProcessingResponseImpl(entry, requestId, requestStreamId);
     return this;
