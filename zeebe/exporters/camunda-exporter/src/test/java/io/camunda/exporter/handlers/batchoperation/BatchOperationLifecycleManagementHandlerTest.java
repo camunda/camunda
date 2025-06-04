@@ -44,16 +44,21 @@ class BatchOperationLifecycleManagementHandlerTest {
     final Record<BatchOperationLifecycleManagementRecordValue> resumedRecord =
         factory.generateRecordWithIntent(
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT, BatchOperationIntent.RESUMED);
+    final Record<BatchOperationLifecycleManagementRecordValue> completedRecord =
+        factory.generateRecordWithIntent(
+            ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT, BatchOperationIntent.COMPLETED);
 
     // when
     final boolean handlesCanceled = handler.handlesRecord(canceledRecord);
     final boolean handlesSuspended = handler.handlesRecord(suspendedRecord);
     final boolean handlesResumed = handler.handlesRecord(resumedRecord);
+    final boolean handlesCompleted = handler.handlesRecord(completedRecord);
 
     // then
     assertThat(handlesCanceled).isTrue();
     assertThat(handlesSuspended).isTrue();
     assertThat(handlesResumed).isTrue();
+    assertThat(handlesCompleted).isTrue();
   }
 
   @Test
@@ -147,6 +152,24 @@ class BatchOperationLifecycleManagementHandlerTest {
 
     // then
     assertThat(entity.getState()).isEqualTo(BatchOperationState.ACTIVE);
+    assertThat(entity.getEndDate()).isNull();
+  }
+
+  @Test
+  void shouldUpdateEntityForCompletedIntent() {
+    // given
+    final Record<BatchOperationLifecycleManagementRecordValue> record =
+        factory.generateRecord(
+            ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
+            r -> r.withIntent(BatchOperationIntent.COMPLETED));
+
+    final var entity = new BatchOperationEntity();
+
+    // when
+    handler.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getState()).isEqualTo(BatchOperationState.COMPLETED);
     assertThat(entity.getEndDate()).isNull();
   }
 

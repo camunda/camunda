@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 
@@ -17,15 +18,31 @@ public class BatchOperationPartitionCompletedApplier
     implements TypedEventApplier<BatchOperationIntent, BatchOperationPartitionLifecycleRecord> {
 
   private final MutableBatchOperationState batchOperationState;
+  private final int partitionId;
 
   public BatchOperationPartitionCompletedApplier(
-      final MutableBatchOperationState batchOperationState) {
+      final MutableBatchOperationState batchOperationState, final int partitionId) {
     this.batchOperationState = batchOperationState;
+    this.partitionId = partitionId;
   }
 
   @Override
   public void applyState(
       final long batchOperationKey, final BatchOperationPartitionLifecycleRecord value) {
-    batchOperationState.completePartition(batchOperationKey, value.getSourcePartitionId());
+    if (isOnLeadPartition(batchOperationKey)) {
+      batchOperationState.completePartition(batchOperationKey, value.getSourcePartitionId());
+    } else {
+      batchOperationState.complete(batchOperationKey);
+    }
+  }
+
+  /**
+   * Check, if this applier is running on the lead partition of the batch operation.
+   *
+   * @param batchOperationKey the key of the batch operation
+   * @return true if this applier is running on the lead partition, false otherwise
+   */
+  private boolean isOnLeadPartition(final long batchOperationKey) {
+    return Protocol.decodePartitionId(batchOperationKey) == partitionId;
   }
 }

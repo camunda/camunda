@@ -161,6 +161,10 @@ public final class BatchOperationExecuteProcessor
           BatchOperationIntent.COMPLETE_PARTITION,
           batchInternalComplete);
     } else {
+      stateWriter.appendFollowUpEvent(
+          executionRecord.getBatchOperationKey(),
+          BatchOperationIntent.PARTITION_COMPLETED,
+          batchInternalComplete);
       commandDistributionBehavior
           .withKey(keyGenerator.nextKey())
           .inQueue(DistributionQueue.BATCH_OPERATION)
