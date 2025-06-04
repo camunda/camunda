@@ -9,9 +9,10 @@ package io.camunda.exporter.rdbms.cache;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
-import io.camunda.exporter.rdbms.utils.ProcessCacheUtil;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.query.ProcessDefinitionQuery;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -34,10 +35,13 @@ public class RdbmsProcessCacheLoader implements CacheLoader<Long, CachedProcessE
     final var response = reader.findOne(key);
     if (response.isPresent()) {
       final var processDefinitionEntity = response.get();
+      final var processDiagramData =
+          ProcessCacheUtil.extractProcessDiagramData(processDefinitionEntity);
       return new CachedProcessEntity(
           processDefinitionEntity.name(),
           processDefinitionEntity.versionTag(),
-          ProcessCacheUtil.extractCallActivityIdsFromDiagram(processDefinitionEntity));
+          processDiagramData.callActivityIds(),
+          processDiagramData.flowNodesMap());
     }
     LOG.debug("Process '{}' not found in RDBMS", key);
     return null;
@@ -48,15 +52,17 @@ public class RdbmsProcessCacheLoader implements CacheLoader<Long, CachedProcessE
     final var query =
         ProcessDefinitionQuery.of(b -> b.filter(f -> f.processDefinitionKeys(List.copyOf(keys))));
     final var response = reader.search(query);
-
     return response.items().stream()
         .collect(
             Collectors.toMap(
                 ProcessDefinitionEntity::processDefinitionKey,
-                pde ->
-                    new CachedProcessEntity(
-                        pde.name(),
-                        pde.versionTag(),
-                        ProcessCacheUtil.extractCallActivityIdsFromDiagram(pde))));
+                pde -> {
+                  final var processDiagramData = ProcessCacheUtil.extractProcessDiagramData(pde);
+                  return new CachedProcessEntity(
+                      pde.name(),
+                      pde.versionTag(),
+                      processDiagramData.callActivityIds(),
+                      processDiagramData.flowNodesMap());
+                }));
   }
 }

@@ -16,13 +16,13 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.cache.TestProcessCache;
-import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.listview.ListViewJoinRelation;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -246,7 +246,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
 
     processCache.put(
         processInstanceRecordValue.getProcessDefinitionKey(),
-        new CachedProcessEntity("test-process-name", "test-version-tag", new ArrayList<>()));
+        new CachedProcessEntity(
+            "test-process-name", "test-version-tag", new ArrayList<>(), Map.of()));
 
     // when
     final ProcessInstanceForListViewEntity processInstanceForListViewEntity =
@@ -319,10 +320,11 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             pi3Key);
     processCache.put(
         processDefinitionKey1,
-        new CachedProcessEntity(null, null, List.of("0", "1", "2", callActivityId1)));
+        new CachedProcessEntity(null, null, List.of("0", "1", "2", callActivityId1), Map.of()));
 
     processCache.put(
-        processDefinitionKey2, new CachedProcessEntity(null, null, List.of("0", callActivityId2)));
+        processDefinitionKey2,
+        new CachedProcessEntity(null, null, List.of("0", callActivityId2), Map.of()));
 
     // when called process 3rd level
     final ProcessInstanceForListViewEntity processInstanceForListViewEntity3 =

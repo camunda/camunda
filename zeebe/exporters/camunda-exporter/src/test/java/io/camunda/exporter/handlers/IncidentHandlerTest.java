@@ -17,10 +17,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.cache.TestProcessCache;
-import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -288,10 +288,12 @@ public class IncidentHandlerTest {
 
     processCache.put(
         processDefinitionKey1,
-        new CachedProcessEntity(null, null, List.of("0", "1", "2", callActivityId1)));
+        new CachedProcessEntity(
+            null, null, List.of("0", "1", "2", callActivityId1), Map.of("FI1", "FN1")));
 
     processCache.put(
-        processDefinitionKey2, new CachedProcessEntity(null, null, List.of("0", callActivityId2)));
+        processDefinitionKey2,
+        new CachedProcessEntity(null, null, List.of("0", callActivityId2), Map.of("FI1", "FN1")));
 
     // when
     final IncidentEntity incidentEntity = new IncidentEntity();

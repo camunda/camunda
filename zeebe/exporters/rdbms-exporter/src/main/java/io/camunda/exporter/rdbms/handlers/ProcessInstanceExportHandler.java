@@ -12,11 +12,11 @@ import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDb
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
-import io.camunda.exporter.rdbms.cache.CachedProcessEntity;
-import io.camunda.exporter.rdbms.cache.ExporterEntityCache;
-import io.camunda.exporter.rdbms.utils.ProcessCacheUtil;
 import io.camunda.exporter.rdbms.utils.TreePath;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;

@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.utils;
+package io.camunda.zeebe.exporter.common.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -26,7 +26,8 @@ public class ProcessCacheUtilTest {
     final var process =
         new ProcessEntity().setBpmnXml(Bpmn.convertToString(model)).setBpmnProcessId(processId);
     // when
-    final var callActivities = ProcessCacheUtil.extractCallActivityIdsFromDiagram(process);
+    final var callActivities =
+        ProcessCacheUtil.extractProcessDiagramData(process).callActivityIds();
     // then
     assertThat(callActivities).containsExactly("A_Activity", "C_Activity", "D_Activity");
   }
