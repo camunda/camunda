@@ -13,6 +13,7 @@ import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketAggregate
 import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketBase;
 import co.elastic.clients.elasticsearch._types.aggregations.SingleBucketAggregateBase;
 import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.search.clients.core.AggregationResult;
 import io.camunda.search.clients.core.AggregationResult.Builder;
 import io.camunda.search.clients.transformers.SearchTransfomer;
@@ -20,6 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class SearchAggregationResultTransformer
     implements SearchTransfomer<Map<String, Aggregate>, Map<String, AggregationResult>> {
@@ -35,6 +37,19 @@ public class SearchAggregationResultTransformer
         .docCount(aggregate.docCount())
         .aggregations(transformAggregation(aggregate.aggregations()))
         .build();
+  }
+
+  private AggregationResult transformTopHitsAggregate(
+      final co.elastic.clients.elasticsearch._types.aggregations.TopHitsAggregate aggregate) {
+    final var hits = aggregate.hits().hits();
+    final List<String> sources =
+        hits.stream()
+            .map(Hit::source)
+            .filter(Objects::nonNull)
+            .map(jsonData -> jsonData.toJson().toString())
+            .toList();
+    final String jsonArray = sources.stream().collect(Collectors.joining(",", "[", "]"));
+    return new Builder().jsonHit(jsonArray).build();
   }
 
   private <B extends MultiBucketBase> AggregationResult transformMultiBucketAggregate(
@@ -92,6 +107,7 @@ public class SearchAggregationResultTransformer
             case Filter -> res = transformSingleBucketAggregate(aggregate.filter());
             case Filters -> res = transformMultiBucketAggregate(aggregate.filters());
             case Sterms -> res = transformMultiBucketAggregate(aggregate.sterms());
+            case TopHits -> res = transformTopHitsAggregate(aggregate.topHits());
             default ->
                 throw new IllegalStateException(
                     "Unsupported aggregation type: " + aggregate._kind());
