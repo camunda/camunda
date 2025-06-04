@@ -14,12 +14,9 @@ import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.ApplicationUnderTest;
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
-import io.camunda.zeebe.test.util.asserts.TopologyAssert;
-import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.agrona.CloseHelper;
-import org.awaitility.Awaitility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,24 +66,10 @@ public final class BasicAuthCamundaClientTestFactory implements CamundaClientTes
   }
 
   private CamundaClient createDefaultUserClient(final ApplicationUnderTest application) {
-    final CamundaClient defaultClient =
-        createAuthenticatedClient(
-            application.application(),
-            InitializationConfiguration.DEFAULT_USER_USERNAME,
-            InitializationConfiguration.DEFAULT_USER_PASSWORD);
-    // Block until the default user is created. If the application is not managed by the extension
-    // there is no point waiting for the topology to be healthy, as the application might not be
-    // started yet.
-    if (application.shouldBeManaged()) {
-      Awaitility.await()
-          .atMost(Duration.ofSeconds(20))
-          .ignoreExceptions()
-          .untilAsserted(
-              () ->
-                  TopologyAssert.assertThat(defaultClient.newTopologyRequest().send().join())
-                      .isHealthy());
-    }
-    return defaultClient;
+    return createAuthenticatedClient(
+        application.application(),
+        InitializationConfiguration.DEFAULT_USER_USERNAME,
+        InitializationConfiguration.DEFAULT_USER_PASSWORD);
   }
 
   private CamundaClient createAuthenticatedClient(
@@ -94,6 +77,8 @@ public final class BasicAuthCamundaClientTestFactory implements CamundaClientTes
     return gateway
         .newClientBuilder()
         .preferRestOverGrpc(true)
+        .restAddress(gateway.restAddress())
+        .grpcAddress(gateway.grpcAddress())
         .credentialsProvider(
             new BasicAuthCredentialsProviderBuilder().username(username).password(password).build())
         .build();
