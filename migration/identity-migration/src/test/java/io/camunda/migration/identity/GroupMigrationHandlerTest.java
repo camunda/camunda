@@ -34,6 +34,7 @@ import org.apache.commons.lang3.NotImplementedException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -139,6 +140,54 @@ public class GroupMigrationHandlerTest {
                       .noneMatch(MigrationStatusUpdateRequest::success);
                 }));
     verify(managementIdentityClient, times(2)).fetchGroups(anyInt());
-    verify(groupService, times(2)).createGroup(any());
+    verify(groupService, times(2)).createGroup(any(GroupDTO.class));
+  }
+
+  @Test
+  public void shouldNormalizeGroupIDIfTooLong() {
+    // given
+    final String longGroupName = "a".repeat(300);
+    final Group group = new Group("id1", longGroupName);
+    when(managementIdentityClient.fetchGroups(anyInt()))
+        .thenReturn(List.of(group))
+        .thenReturn(List.of());
+    when(groupService.createGroup(any(GroupDTO.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    final var groupResult = ArgumentCaptor.forClass(GroupDTO.class);
+    verify(groupService, times(1)).createGroup(groupResult.capture());
+    assertThat(groupResult.getValue().groupId())
+        .describedAs("Group ID should be normalized to 256 characters")
+        .hasSize(256);
+    assertThat(groupResult.getValue().groupId())
+        .describedAs("Group ID should be lowercased")
+        .isEqualTo(longGroupName.toLowerCase().substring(0, 256));
+  }
+
+  @Test
+  public void shouldNormalizeGroupIDIfContainsUnsupportedCharacters() {
+    // given
+    final String groupNameWithUnsupportedChars = "Group@Name#With$Special%Chars";
+    final Group group = new Group("id1", groupNameWithUnsupportedChars);
+    when(managementIdentityClient.fetchGroups(anyInt()))
+        .thenReturn(List.of(group))
+        .thenReturn(List.of());
+    when(groupService.createGroup(any(GroupDTO.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    final var groupResult = ArgumentCaptor.forClass(GroupDTO.class);
+    verify(groupService).createGroup(groupResult.capture());
+    assertThat(groupResult.getValue().groupId())
+        .describedAs("Group ID should be normalized to remove unsupported characters")
+        .doesNotContain("#", "$", "%")
+        .contains("_");
   }
 }
