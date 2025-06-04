@@ -44,7 +44,7 @@ public class CamundaProcessTestRuntimeConfiguration {
   private Map<String, String> connectorsEnvVars = Collections.emptyMap();
   private Map<String, String> connectorsSecrets = Collections.emptyMap();
 
-  private CamundaProcessTestRuntimeMode runtimeMode = CamundaProcessTestRuntimeMode.MANAGED;
+  private CamundaProcessTestRuntimeMode runtimeMode = CamundaProcessTestRuntimeMode.MANAGED_GLOBAL;
 
   @NestedConfigurationProperty private RemoteConfiguration remote = new RemoteConfiguration();
 

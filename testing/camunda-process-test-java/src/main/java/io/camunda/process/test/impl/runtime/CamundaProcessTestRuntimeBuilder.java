@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.runtime;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
+import io.camunda.process.test.api.CamundaProcessTestGlobalRuntime;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.containers.ContainerFactory;
 import java.net.URI;
@@ -31,6 +32,8 @@ public class CamundaProcessTestRuntimeBuilder {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(CamundaProcessTestRuntimeBuilder.class);
+
+  private static CamundaProcessTestRuntime globalRuntime;
 
   private ContainerFactory containerFactory = new ContainerFactory();
 
@@ -65,7 +68,7 @@ public class CamundaProcessTestRuntimeBuilder {
   private boolean connectorsEnabled = false;
   private final Map<String, String> connectorsSecrets = new HashMap<>();
 
-  private CamundaProcessTestRuntimeMode runtimeMode = CamundaProcessTestRuntimeMode.MANAGED;
+  private CamundaProcessTestRuntimeMode runtimeMode = CamundaProcessTestRuntimeMode.MANAGED_GLOBAL;
 
   private CamundaClientBuilderFactory remoteCamundaClientBuilderFactory =
       () -> CamundaClient.newClientBuilder().usePlaintext();
@@ -78,121 +81,121 @@ public class CamundaProcessTestRuntimeBuilder {
 
   CamundaProcessTestRuntimeBuilder withContainerFactory(final ContainerFactory containerFactory) {
     this.containerFactory = containerFactory;
-    return this;
+    return updateRuntimeMode();
   }
 
   // ============ Configuration options =================
 
   public CamundaProcessTestRuntimeBuilder withCamundaDockerImageName(final String dockerImageName) {
     camundaDockerImageName = dockerImageName;
-    return this;
+    return updateRuntimeMode();
   }
 
   public CamundaProcessTestRuntimeBuilder withCamundaDockerImageVersion(
       final String dockerImageVersion) {
     camundaDockerImageVersion = dockerImageVersion;
-    return this;
+    return updateRuntimeMode();
   }
 
   public CamundaProcessTestRuntimeBuilder withElasticsearchDockerImageName(
       final String dockerImageName) {
     elasticsearchDockerImageName = dockerImageName;
-    return this;
+    return updateRuntimeMode();
   }
 
   public CamundaProcessTestRuntimeBuilder withElasticsearchDockerImageVersion(
       final String dockerImageVersion) {
     elasticsearchDockerImageVersion = dockerImageVersion;
-    return this;
+    return updateRuntimeMode();
   }
 
   public CamundaProcessTestRuntimeBuilder withConnectorsDockerImageName(
       final String dockerImageName) {
     connectorsDockerImageName = dockerImageName;
-    return this;
+    return updateRuntimeMode();
   }
 
   public CamundaProcessTestRuntimeBuilder withConnectorsDockerImageVersion(
       final String dockerImageVersion) {
     connectorsDockerImageVersion = dockerImageVersion;
-    return this;
+    return updateRuntimeMode();
   }
 
   public CamundaProcessTestRuntimeBuilder withCamundaEnv(final Map<String, String> envVars) {
     camundaEnvVars.putAll(envVars);
-    return this;
+    return updateRuntimeMode();
   }
 
   public CamundaProcessTestRuntimeBuilder withCamundaEnv(final String name, final String value) {
     camundaEnvVars.put(name, value);
-    return this;
+    return updateRuntimeMode();
   }
 
   public CamundaProcessTestRuntimeBuilder withElasticsearchEnv(final Map<String, String> envVars) {
     elasticsearchEnvVars.putAll(envVars);
-    return this;
+    return updateRuntimeMode();
   }
 
   public CamundaProcessTestRuntimeBuilder withElasticsearchEnv(
       final String name, final String value) {
     elasticsearchEnvVars.put(name, value);
-    return this;
+    return updateRuntimeMode();
   }
 
   public CamundaProcessTestRuntimeBuilder withConnectorsEnv(final Map<String, String> envVars) {
     connectorsEnvVars.putAll(envVars);
-    return this;
+    return updateRuntimeMode();
   }
 
   public CamundaProcessTestRuntimeBuilder withConnectorsEnv(final String name, final String value) {
     connectorsEnvVars.put(name, value);
-    return this;
+    return updateRuntimeMode();
   }
 
   public CamundaProcessTestRuntimeBuilder withCamundaExposedPort(final int port) {
     camundaExposedPorts.add(port);
-    return this;
+    return updateRuntimeMode();
   }
 
   public CamundaProcessTestRuntimeBuilder withElasticsearchExposedPort(final int port) {
     elasticsearchExposedPorts.add(port);
-    return this;
+    return updateRuntimeMode();
   }
 
   public CamundaProcessTestRuntimeBuilder withConnectorsExposedPort(final int port) {
     connectorsExposedPorts.add(port);
-    return this;
+    return updateRuntimeMode();
   }
 
   public CamundaProcessTestRuntimeBuilder withCamundaLogger(final String loggerName) {
     camundaLoggerName = loggerName;
-    return this;
+    return updateRuntimeMode();
   }
 
   public CamundaProcessTestRuntimeBuilder withElasticsearchLogger(final String loggerName) {
     elasticsearchLoggerName = loggerName;
-    return this;
+    return updateRuntimeMode();
   }
 
   public CamundaProcessTestRuntimeBuilder withConnectorsLogger(final String loggerName) {
     connectorsLoggerName = loggerName;
-    return this;
+    return updateRuntimeMode();
   }
 
   public CamundaProcessTestRuntimeBuilder withConnectorsEnabled(final boolean enabled) {
     connectorsEnabled = enabled;
-    return this;
+    return updateRuntimeMode();
   }
 
   public CamundaProcessTestRuntimeBuilder withConnectorsSecret(
       final String name, final String value) {
     connectorsSecrets.put(name, value);
-    return this;
+    return updateRuntimeMode();
   }
 
   public CamundaProcessTestRuntimeBuilder withConnectorsSecrets(final Map<String, String> secrets) {
     connectorsSecrets.putAll(secrets);
-    return this;
+    return updateRuntimeMode();
   }
 
   public CamundaProcessTestRuntimeBuilder withRuntimeMode(
@@ -204,32 +207,34 @@ public class CamundaProcessTestRuntimeBuilder {
   public CamundaProcessTestRuntimeBuilder withRemoteCamundaClientBuilderFactory(
       final CamundaClientBuilderFactory remoteCamundaClientBuilderFactory) {
     this.remoteCamundaClientBuilderFactory = remoteCamundaClientBuilderFactory;
-    return this;
+    return updateRuntimeMode();
   }
 
   public CamundaProcessTestRuntimeBuilder withRemoteCamundaMonitoringApiAddress(
       final URI remoteCamundaMonitoringApiAddress) {
     this.remoteCamundaMonitoringApiAddress = remoteCamundaMonitoringApiAddress;
-    return this;
+    return updateRuntimeMode();
   }
 
   public CamundaProcessTestRuntimeBuilder withRemoteConnectorsRestApiAddress(
       final URI remoteConnectorsRestApiAddress) {
     this.remoteConnectorsRestApiAddress = remoteConnectorsRestApiAddress;
-    return this;
+    return updateRuntimeMode();
   }
 
   // ============ Build =================
 
   public CamundaProcessTestRuntime build() {
     switch (runtimeMode) {
-      case MANAGED:
+      case MANAGED_GLOBAL:
+        return CamundaProcessTestGlobalRuntime.INSTANCE.getRuntime();
+      case MANAGED_CUSTOM:
         return new CamundaProcessTestContainerRuntime(this, containerFactory);
       case REMOTE:
         return new CamundaProcessTestRemoteRuntime(this);
       default:
-        LOGGER.warn("Unknown runtime mode: {}. Fall back to MANAGED runtime mode.", runtimeMode);
-        return new CamundaProcessTestContainerRuntime(this, containerFactory);
+        LOGGER.warn("Unknown runtime mode: {}. Fall back to MANAGED_GLOBAL runtime mode.", runtimeMode);
+        return CamundaProcessTestGlobalRuntime.INSTANCE.getRuntime();
     }
   }
 
@@ -317,5 +322,13 @@ public class CamundaProcessTestRuntimeBuilder {
 
   public URI getRemoteConnectorsRestApiAddress() {
     return remoteConnectorsRestApiAddress;
+  }
+
+  // ============ Global Runtime =================
+
+  private CamundaProcessTestRuntimeBuilder updateRuntimeMode() {
+    return withRuntimeMode(runtimeMode == CamundaProcessTestRuntimeMode.MANAGED_GLOBAL
+        ? CamundaProcessTestRuntimeMode.MANAGED_CUSTOM
+        : runtimeMode);
   }
 }
