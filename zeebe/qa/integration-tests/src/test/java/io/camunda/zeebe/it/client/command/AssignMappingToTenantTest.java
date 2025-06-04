@@ -62,7 +62,7 @@ class AssignMappingToTenantTest {
   @Test
   void shouldAssignMappingToTenant() {
     // When
-    client.newAssignMappingToTenantCommand(TENANT_ID).mappingId(ID).send().join();
+    client.newAssignMappingToTenantCommand().mappingId(ID).tenantId(TENANT_ID).send().join();
 
     // Then
     ZeebeAssertHelper.assertEntityAssignedToTenant(
@@ -83,8 +83,9 @@ class AssignMappingToTenantTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToTenantCommand(invalidTenantId)
+                    .newAssignMappingToTenantCommand()
                     .mappingId(mappingId)
+                    .tenantId(invalidTenantId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -103,8 +104,9 @@ class AssignMappingToTenantTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToTenantCommand(TENANT_ID)
+                    .newAssignMappingToTenantCommand()
                     .mappingId(invalidMappingId)
+                    .tenantId(TENANT_ID)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -117,11 +119,17 @@ class AssignMappingToTenantTest {
   @Test
   void shouldRejectAssignIfTenantAlreadyAssignedToMapping() {
     // given
-    client.newAssignMappingToTenantCommand(TENANT_ID).mappingId(ID).send().join();
+    client.newAssignMappingToTenantCommand().mappingId(ID).tenantId(TENANT_ID).send().join();
 
     // When / Then
     assertThatThrownBy(
-            () -> client.newAssignMappingToTenantCommand(TENANT_ID).mappingId(ID).send().join())
+            () ->
+                client
+                    .newAssignMappingToTenantCommand()
+                    .mappingId(ID)
+                    .tenantId(TENANT_ID)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'")
         .hasMessageContaining(
