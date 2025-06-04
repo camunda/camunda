@@ -34,13 +34,12 @@ public class CamundaSpringProcessTestRuntimeBuilder {
       final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
 
     final CamundaProcessTestRuntimeMode runtimeMode = runtimeConfiguration.getRuntimeMode();
+
     runtimeBuilder.withRuntimeMode(runtimeMode);
-
-    if (runtimeMode == CamundaProcessTestRuntimeMode.MANAGED || runtimeMode == null) {
-      configureManagedRuntime(runtimeBuilder, runtimeConfiguration);
-
-    } else if (runtimeMode == CamundaProcessTestRuntimeMode.REMOTE) {
+    if (runtimeMode == CamundaProcessTestRuntimeMode.REMOTE) {
       configureRemoteRuntime(runtimeBuilder, runtimeConfiguration);
+    } else {
+      configureManagedRuntime(runtimeBuilder, runtimeConfiguration);
     }
 
     return runtimeBuilder.build();
@@ -49,6 +48,10 @@ public class CamundaSpringProcessTestRuntimeBuilder {
   private static void configureManagedRuntime(
       final CamundaProcessTestRuntimeBuilder runtimeBuilder,
       final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
+
+    if (runtimeConfiguration.isForceLocalRuntime()) {
+      runtimeBuilder.withLocalRuntime();
+    }
 
     runtimeBuilder
         .withCamundaDockerImageVersion(runtimeConfiguration.getCamundaVersion())

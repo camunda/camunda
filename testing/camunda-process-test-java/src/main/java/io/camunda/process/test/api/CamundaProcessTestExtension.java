@@ -398,6 +398,18 @@ public class CamundaProcessTestExtension
   }
 
   /**
+   * Forces the extension to run against a local Camunda container runtime instead of using the
+   * global runtime. This is *only* necessary if you haven't changed any other configurations, for
+   * example by invoking `withConnectorsDockerImageVersion`.
+   *
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withLocalRuntime() {
+    runtimeBuilder.withLocalRuntime();
+    return this;
+  }
+
+  /**
    * Configure the connection to the remote runtime using the given client builder.
    *
    * @param camundaClientBuilderFactory the client builder to configure the connection

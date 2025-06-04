@@ -55,6 +55,37 @@ import org.junit.jupiter.api.extension.ExtendWith;
  *   }
  * }
  * </pre>
+ *
+ * <p>Depending on a test class' configuration, the CPT may create a local Camunda container runtime
+ * or use the global container runtime. Essentially, as long as no properties of the {@see
+ * CamundaProcessTestRuntimeBuilder} are changed from their defaults, the global runtime will be
+ * preferred to reduce startup and teardown performance.
+ *
+ * <p>However, the global runtime can be disabled on a per-test-class basis or for the entire
+ * project. To force a test class to create a local Camunda runtime, configure the extension using
+ * `withLocalRuntime` as shown:
+ *
+ * <pre>
+ *   @RegisterExtension
+ *   private static final CamundaProcessTestExtension EXTENSION =
+ *       new CamundaProcessTestExtension()
+ *          .withLocalRuntime() // Will create a new test-class specific Camunda runtime
+ * </pre>
+ *
+ * To disable the global container runtime, set the property
+ * `camunda.process.test.globalRuntimeDisabled` to false. You can do this either by setting the
+ * property in the maven POM:
+ *
+ * <pre>
+ *   <properties>
+ *     <io.camunda.process.test.globalRuntimeDisabled>false</io.camunda.process.test.globalRuntimeDisabled>
+ *   </properties>
+ * </pre>
+ *
+ * Or by configuring Maven with the flag `-Dio.camunda.process.test.globalRuntimeDisabled="false"`
+ *
+ * <p>Please note that disabling the global Camunda runtime may incur significant performance
+ * penalties as every test class must start and stop its own runtime.
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)

@@ -41,6 +41,7 @@ public class ContainerRuntimePropertiesUtilTest {
     assertThat(propertiesUtil.getConnectorsDockerImageName())
         .isEqualTo("camunda/connectors-bundle");
     assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo("SNAPSHOT");
+    assertThat(propertiesUtil.getGlobalCptRuntimeDisabled()).isEqualTo(false);
   }
 
   @Test
@@ -77,6 +78,7 @@ public class ContainerRuntimePropertiesUtilTest {
     assertThat(propertiesUtil.getConnectorsDockerImageName())
         .isEqualTo("camunda/connectors-bundle");
     assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo("SNAPSHOT");
+    assertThat(propertiesUtil.getGlobalCptRuntimeDisabled()).isEqualTo(false);
   }
 
   @ParameterizedTest
@@ -227,5 +229,28 @@ public class ContainerRuntimePropertiesUtilTest {
 
     // then
     assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo(expectedVersion);
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    "true, true",
+    "TRUE, true",
+    "tRuE, true",
+    "  tRuE, true",
+    "tRuE  , true",
+  })
+  void shouldEnableGlobalContainerRuntimeIfTrue(
+      final String propertyValue, final boolean expectedValue) {
+    // given
+    final Properties properties = new Properties();
+    properties.put(
+        ContainerRuntimePropertiesUtil.PROPERTY_NAME_GLOBAL_CPT_RUNTIME_DISABLED, propertyValue);
+
+    // when
+    final ContainerRuntimePropertiesUtil propertiesUtil =
+        new ContainerRuntimePropertiesUtil(properties);
+
+    // then
+    assertThat(propertiesUtil.getGlobalCptRuntimeDisabled()).isEqualTo(expectedValue);
   }
 }

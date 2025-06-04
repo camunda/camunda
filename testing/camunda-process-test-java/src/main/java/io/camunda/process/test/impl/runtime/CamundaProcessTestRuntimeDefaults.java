@@ -52,4 +52,7 @@ public class CamundaProcessTestRuntimeDefaults {
       PROPERTIES_UTIL.getConnectorsDockerImageName();
   public static final String CONNECTORS_DOCKER_IMAGE_VERSION =
       PROPERTIES_UTIL.getConnectorsDockerImageVersion();
+
+  public static final boolean GLOBAL_CPT_RUNTIME_DISABLED =
+      PROPERTIES_UTIL.getGlobalCptRuntimeDisabled();
 }

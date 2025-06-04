@@ -262,7 +262,8 @@ public class JunitExtensionTest {
             .withCamundaEnv(camundaEnvVars)
             .withCamundaEnv("env-3", "test-3")
             .withCamundaExposedPort(100)
-            .withCamundaExposedPort(200);
+            .withCamundaExposedPort(200)
+            .withLocalRuntime();
 
     // when
     extension.beforeAll(extensionContext);
@@ -279,6 +280,8 @@ public class JunitExtensionTest {
 
     verify(camundaRuntimeBuilder).withCamundaExposedPort(100);
     verify(camundaRuntimeBuilder).withCamundaExposedPort(200);
+
+    verify(camundaRuntimeBuilder).withLocalRuntime();
   }
 
   @Test
