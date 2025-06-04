@@ -11,6 +11,14 @@ public class Data {
   private Backup backup = new Backup();
   private Database database = new Database();
 
+  public Backup getBackup() {
+    return backup;
+  }
+
+  public void setBackup(Backup backup) {
+    this.backup = backup;
+  }
+
   public Database getDatabase() {
     return database;
   }

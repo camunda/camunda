@@ -14,10 +14,62 @@ public class Cluster {
   private Integer nodeId;
   private String runtimeDirectory;
   private Duration snapshotPeriod;
-  private Boolean diskMonitoringEnabled = true;
-  private Duration diskMonitoringInterval = Duration.ofSeconds(1);
-  private DataSize diskFreeSpaceProcessing = DataSize.ofGigabytes(2);
-  private DataSize diskFreeSpaceReplication = DataSize.ofGigabytes(1);
+  private Boolean diskMonitoringEnabled;
+  private Duration diskMonitoringInterval;
+  private DataSize diskFreeSpaceProcessing;
+  private DataSize diskFreeSpaceReplication;
+  private Boolean gossipSyncEnabled;
+  private Duration gossipSyncDelay;
+  private Duration gossipSyncRequestTimeout;
+  private Integer gossipFanout;
+
+  public int getGossipFanout() {
+    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.cluster.configManager.gossip.gossipFanout");
+    if (deprecated != null && gossipFanout == null) {
+      return Integer.parseInt(deprecated);
+    }
+
+    return gossipFanout;
+  }
+
+  public void setGossipFanout(int gossipFanout) {
+    this.gossipFanout = gossipFanout;
+  }
+
+  public Duration getGossipSyncRequestTimeout() {
+    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.cluster.configManager.gossip.syncRequestTimeout");
+    if (deprecated != null && gossipSyncRequestTimeout == null) {
+      return Duration.parse(deprecated);
+    }
+
+    return gossipSyncRequestTimeout;
+  }
+
+  public Duration getGossipSyncDelay() {
+    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.cluster.configManager.gossip.syncDelay");
+    if (deprecated != null && gossipSyncDelay == null) {
+      return Duration.parse(deprecated);
+    }
+
+    return gossipSyncDelay;
+  }
+
+  public void setGossipSyncDelay(Duration gossipSyncDelay) {
+    this.gossipSyncDelay = gossipSyncDelay;
+  }
+
+  public boolean getGossipSyncEnabled() {
+    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.cluster.configManager.gossip.enableSync");
+    if (deprecated != null && gossipSyncEnabled == null) {
+      return Boolean.parseBoolean(deprecated);
+    }
+
+    return gossipSyncEnabled;
+  }
+
+  public void setGossipSyncEnabled(boolean gossipSyncEnabled) {
+    this.gossipSyncEnabled = gossipSyncEnabled;
+  }
 
   public int getNodeId() {
     String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.cluster.nodeId");

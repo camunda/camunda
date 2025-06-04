@@ -64,6 +64,7 @@ public final class SystemContext {
 
   private final Duration shutdownTimeout;
 
+  private final BrokerCfg brokerCfg; // this disappears eventually
   private final UnifiedConfiguration config;
 
   private final IdentityConfiguration identityConfiguration;
@@ -80,6 +81,7 @@ public final class SystemContext {
 
   public SystemContext(
       final Duration shutdownTimeout,
+      final BrokerCfg brokerCfg,
       final UnifiedConfiguration config,
       final IdentityConfiguration identityConfiguration,
       final ActorScheduler scheduler,
@@ -92,6 +94,7 @@ public final class SystemContext {
       final JwtDecoder jwtDecoder,
       final SearchClientsProxy searchClientsProxy) {
     this.shutdownTimeout = shutdownTimeout;
+    this.brokerCfg = brokerCfg;
     this.config = config;
     this.identityConfiguration = identityConfiguration;
     this.scheduler = scheduler;
@@ -108,6 +111,7 @@ public final class SystemContext {
 
   @VisibleForTesting
   public SystemContext(
+      final BrokerCfg brokerCfg,
       final UnifiedConfiguration config,
       final ActorScheduler scheduler,
       final AtomixCluster cluster,
@@ -118,6 +122,7 @@ public final class SystemContext {
       final JwtDecoder jwtDecoder) {
     this(
         DEFAULT_SHUTDOWN_TIMEOUT,
+        brokerCfg,
         config,
         null,
         scheduler,
@@ -142,10 +147,9 @@ public final class SystemContext {
   }
 
   private void validateConfiguration() {
-    validateDataConfig(brokerCfg.getData());
-
-    validClusterConfigs(cluster);
-    validateExperimentalConfigs(cluster, brokerCfg.getExperimental());
+    validateDataConfig(config);
+    validClusterConfigs(config);
+    validateExperimentalConfigs(brokerCfg.getCluster(), brokerCfg.getExperimental());
 
     validateExporters(brokerCfg.getExporters());
 
@@ -155,28 +159,26 @@ public final class SystemContext {
     }
   }
 
-  private void validClusterConfigs(final ClusterCfg cluster) {
-    final var gossiper = cluster.getConfigManager().gossip();
-
+  private void validClusterConfigs(final UnifiedConfiguration config) {
     final var errors = new ArrayList<String>(0);
 
-    if (!gossiper.syncDelay().isPositive()) {
+    if (!config.getCluster().getGossipSyncDelay().isPositive()) {
       errors.add(
           String.format(
               "syncDelay must be positive: configured value = %d ms",
-              gossiper.syncDelay().toMillis()));
+              config.getCluster().getGossipSyncDelay().toMillis()));
     }
-    if (!gossiper.syncRequestTimeout().isPositive()) {
+    if (!config.getCluster().getGossipSyncRequestTimeout().isPositive()) {
       errors.add(
           String.format(
               "syncRequestTimeout must be positive: configured value = %d ms",
-              gossiper.syncRequestTimeout().toMillis()));
+              config.getCluster().getGossipSyncRequestTimeout().toMillis()));
     }
-    if (gossiper.gossipFanout() < 2) {
+    if (config.getCluster().getGossipFanout() < 2) {
       errors.add(
           String.format(
               "gossipFanout must be greater than 1: configured value = %d",
-              gossiper.gossipFanout()));
+              config.getCluster().getGossipFanout()));
     }
 
     if (!errors.isEmpty()) {
@@ -234,7 +236,7 @@ public final class SystemContext {
       }
     }
 
-    validateBackupCfg(config);
+    validateBackupCfg(brokerCfg.getData().getBackup());
   }
 
   private void validateBackupCfg(final BackupStoreCfg backup) {

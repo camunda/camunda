@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.engine;
 import static io.camunda.zeebe.protocol.record.intent.MessageIntent.PUBLISH;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.commandapi.CommandApiRule;
@@ -20,7 +21,8 @@ import org.junit.rules.RuleChain;
 
 public final class RejectIncompleteCommandsTest {
 
-  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
+  private static final UnifiedConfiguration CONFIG = new UnifiedConfiguration();
+  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule(CONFIG);
 
   private static final CommandApiRule API_RULE = new CommandApiRule(BROKER_RULE::getAtomixCluster);
 

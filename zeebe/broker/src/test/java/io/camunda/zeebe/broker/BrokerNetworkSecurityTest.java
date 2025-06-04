@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker;
 
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
@@ -57,7 +58,9 @@ public final class BrokerNetworkSecurityTest {
         LangUtil.rethrowUnchecked(e);
       }
 
-      broker = new EmbeddedBrokerRule(this::configureBroker);
+      UnifiedConfiguration config = new UnifiedConfiguration();
+
+      broker = new EmbeddedBrokerRule(config, this::configureBroker);
       final var statement = super.apply(base, description);
       return broker.apply(statement, description);
     }

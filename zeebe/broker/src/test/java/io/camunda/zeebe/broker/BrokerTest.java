@@ -9,13 +9,15 @@ package io.camunda.zeebe.broker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import org.junit.Rule;
 import org.junit.Test;
 
 public final class BrokerTest {
 
-  @Rule public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  final UnifiedConfiguration config = new UnifiedConfiguration();
+  @Rule public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(config);
 
   @Test
   public void shouldStartAndStopBroker() {
