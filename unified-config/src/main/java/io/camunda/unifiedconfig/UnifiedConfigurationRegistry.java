@@ -15,5 +15,6 @@ public class UnifiedConfigurationRegistry {
   @PostConstruct
   public void someRuntimeChecks() {
     System.out.println("Breakpoint here and check the object config");
+    config.printFullConfigurationAsYaml();
   }
 }
