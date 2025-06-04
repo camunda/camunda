@@ -13,6 +13,3 @@ export const IS_TENANT_ROLES_SUPPORTED = false;
 // Roles details page - Remove when endpoints are available - https://github.com/camunda/camunda/issues/26961
 export const IS_ROLES_USERS_SUPPORTED = false;
 export const IS_ROLES_MAPPINGS_SUPPORTED = false;
-
-// Roles base page (and e2e tests) - Remove when Roles page is integrated https://github.com/camunda/camunda/issues/29768
-export const IS_ROLES_BASE_PAGE_INTEGRATED = false;
