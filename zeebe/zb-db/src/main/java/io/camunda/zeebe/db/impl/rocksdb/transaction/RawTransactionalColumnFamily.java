@@ -21,9 +21,6 @@ import org.slf4j.LoggerFactory;
 public class RawTransactionalColumnFamily {
   private static final Logger LOG = LoggerFactory.getLogger(RawTransactionalColumnFamily.class);
 
-  private static final int INITIAL_KEY_LENGTH = 256;
-  private static final int INITIAL_VALUE_LENGTH = 4 * 1024;
-
   protected final ZeebeTransactionDb<ZbColumnFamilies> transactionDb;
   protected final ZbColumnFamilies columnFamily;
   protected final ColumnFamilyContext columnFamilyContext;
@@ -39,6 +36,13 @@ public class RawTransactionalColumnFamily {
     this.context = context;
   }
 
+  /**
+   * Run the given visitor for each key/value pair in the column family.
+   *
+   * @param visitor to run for each key/value pair: the key bytearray is "raw", i.e. contains also
+   *     the column family prefix. In order to get access to the key without the prefix, you need to
+   *     use {@link ColumnFamilyContext#wrapKeyView(byte[])}
+   */
   public void forEach(final Visitor visitor) {
     context.runInTransaction(
         () -> {
@@ -47,32 +51,22 @@ public class RawTransactionalColumnFamily {
               (prefixKey, prefixLength) -> {
                 try (final RocksIterator iterator =
                     newIterator(context, transactionDb.getPrefixReadOptions())) {
-
-                  byte[] keyBytes = new byte[INITIAL_KEY_LENGTH];
-                  byte[] valueBytes = new byte[INITIAL_VALUE_LENGTH];
                   final var seekTarget = new DbNullKey();
                   boolean shouldVisitNext = true;
 
                   for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
                       iterator.isValid() && shouldVisitNext;
                       iterator.next()) {
-                    final int keyLen = iterator.key(keyBytes, 0, keyBytes.length);
-                    // RocksDB reports the key length of the key, even if it exceeds the provided
-                    // buffer
-                    if (keyLen > keyBytes.length) {
-                      keyBytes = iterator.key();
-                    }
-                    final int valueLen = iterator.value(valueBytes, 0, valueBytes.length);
-                    // same as above
-                    if (valueLen > valueBytes.length) {
-                      valueBytes = iterator.value();
-                    }
+                    final byte[] keyBytes = iterator.key();
+                    final byte[] valueBytes = iterator.value();
 
-                    if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyLen)) {
+                    if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
                       break;
                     }
                     try {
-                      shouldVisitNext = visitor.visit(keyBytes, 0, keyLen, valueBytes, 0, valueLen);
+                      shouldVisitNext =
+                          visitor.visit(
+                              keyBytes, 0, keyBytes.length, valueBytes, 0, valueBytes.length);
                     } catch (final Exception e) {
                       LOG.error(
                           "Error visiting key {} in column family {}",
