@@ -28,11 +28,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
@@ -83,7 +83,7 @@ public class CamundaOAuthPrincipalService {
     }
 
     final Set<String> groups;
-    if (StringUtils.isNoneEmpty(groupsClaim)) {
+    if (StringUtils.hasText(groupsClaim)) {
       groups = getGroupsFromClaims(claims);
     } else {
       groups =
