@@ -43,7 +43,9 @@ describe('Add variable', () => {
     });
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
-    expect(await screen.findByTestId('variables-list')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
 
     expect(
       screen.queryByRole('textbox', {
@@ -97,7 +99,9 @@ describe('Add variable', () => {
     });
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
-    expect(await screen.findByTestId('variables-list')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
 
@@ -145,7 +149,9 @@ describe('Add variable', () => {
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
 
-    expect(await screen.findByTestId('variables-list')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
 
@@ -246,7 +252,9 @@ describe('Add variable', () => {
     });
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
-    expect(await screen.findByTestId('variables-list')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
 
@@ -336,7 +344,9 @@ describe('Add variable', () => {
     });
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
-    expect(await screen.findByTestId('variables-list')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
 
@@ -399,7 +409,9 @@ describe('Add variable', () => {
     variablesStore.fetchVariables('1');
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
-    expect(await screen.findByTestId('variables-list')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
 
     mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(screen.getByRole('button', {name: /add variable/i}));
@@ -426,7 +438,9 @@ describe('Add variable', () => {
     });
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
-    expect(await screen.findByTestId('variables-list')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
 
     expect(
       screen.queryByRole('textbox', {
@@ -480,7 +494,9 @@ describe('Add variable', () => {
     });
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
-    expect(await screen.findByTestId('variables-list')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
     expect(
@@ -508,7 +524,9 @@ describe('Add variable', () => {
     });
 
     const {user} = render(<Variables />, {wrapper: getWrapper()});
-    expect(await screen.findByTestId('variables-list')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
 
     expect(
       await screen.findByRole('button', {name: /add variable/i}),
