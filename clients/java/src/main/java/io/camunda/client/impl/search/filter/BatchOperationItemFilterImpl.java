@@ -16,9 +16,15 @@
 package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.enums.BatchOperationItemState;
+import io.camunda.client.api.search.filter.builder.BasicLongProperty;
+import io.camunda.client.api.search.filter.builder.BasicStringProperty;
+import io.camunda.client.api.search.filter.builder.BatchOperationItemStateProperty;
+import io.camunda.client.impl.search.filter.builder.BasicLongPropertyImpl;
+import io.camunda.client.impl.search.filter.builder.BasicStringPropertyImpl;
+import io.camunda.client.impl.search.filter.builder.BatchOperationItemStatePropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.protocol.rest.BatchOperationItemFilter;
-import io.camunda.client.protocol.rest.BatchOperationItemFilter.StateEnum;
+import java.util.function.Consumer;
 
 public class BatchOperationItemFilterImpl
     extends TypedSearchRequestPropertyProvider<BatchOperationItemFilter>
@@ -33,20 +39,47 @@ public class BatchOperationItemFilterImpl
   @Override
   public io.camunda.client.api.search.filter.BatchOperationItemFilter batchOperationId(
       final String batchOperationId) {
-    filter.setBatchOperationId(batchOperationId);
+    batchOperationId(b -> b.eq(batchOperationId));
+    return this;
+  }
+
+  @Override
+  public io.camunda.client.api.search.filter.BatchOperationItemFilter batchOperationId(
+      final Consumer<BasicStringProperty> fn) {
+    final BasicStringProperty property = new BasicStringPropertyImpl();
+    fn.accept(property);
+    filter.setBatchOperationId(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
   public io.camunda.client.api.search.filter.BatchOperationItemFilter itemKey(final long itemKey) {
-    filter.itemKey(Long.toString(itemKey));
+    itemKey(b -> b.eq(itemKey));
+    return this;
+  }
+
+  @Override
+  public io.camunda.client.api.search.filter.BatchOperationItemFilter itemKey(
+      final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
+    fn.accept(property);
+    filter.setItemKey(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
   public io.camunda.client.api.search.filter.BatchOperationItemFilter processInstanceKey(
       final long processInstanceKey) {
-    filter.processInstanceKey(Long.toString(processInstanceKey));
+    processInstanceKey(b -> b.eq(processInstanceKey));
+    return this;
+  }
+
+  @Override
+  public io.camunda.client.api.search.filter.BatchOperationItemFilter processInstanceKey(
+      final Consumer<BasicLongProperty> fn) {
+    final BasicLongProperty property = new BasicLongPropertyImpl();
+    fn.accept(property);
+    filter.setProcessInstanceKey(provideSearchRequestProperty(property));
     return this;
   }
 
@@ -58,7 +91,15 @@ public class BatchOperationItemFilterImpl
       return this;
     }
 
-    filter.setState(StateEnum.valueOf(state.name()));
+    return state(b -> b.eq(state));
+  }
+
+  @Override
+  public io.camunda.client.api.search.filter.BatchOperationItemFilter state(
+      final Consumer<BatchOperationItemStateProperty> fn) {
+    final BatchOperationItemStateProperty property = new BatchOperationItemStatePropertyImpl();
+    fn.accept(property);
+    filter.setState(provideSearchRequestProperty(property));
     return this;
   }
 

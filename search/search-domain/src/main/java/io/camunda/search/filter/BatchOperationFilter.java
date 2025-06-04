@@ -10,54 +10,91 @@ package io.camunda.search.filter;
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
 
+import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 public record BatchOperationFilter(
-    List<String> batchOperationIds, List<String> operationTypes, List<String> state)
+    List<Operation<String>> batchOperationIdOperations,
+    List<Operation<String>> operationTypeOperations,
+    List<Operation<String>> stateOperations)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<BatchOperationFilter> {
 
-    private List<String> batchOperationIds;
-    private List<String> operationTypes;
-    private List<String> state;
+    private List<Operation<String>> batchOperationIdOperations;
+    private List<Operation<String>> operationTypeOperations;
+    private List<Operation<String>> stateOperations;
 
-    public Builder batchOperationIds(final String value, final String... values) {
-      return batchOperationIds(collectValues(value, values));
+    public Builder batchOperationIdOperations(final List<Operation<String>> operations) {
+      batchOperationIdOperations = addValuesToList(batchOperationIdOperations, operations);
+      return this;
     }
 
-    public Builder batchOperationIds(final List<String> values) {
-      batchOperationIds = addValuesToList(batchOperationIds, values);
+    public Builder batchOperationIds(final String value, final String... values) {
+      return batchOperationIdOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder replaceBatchOperationIdOperations(final List<Operation<String>> operations) {
+      batchOperationIdOperations = new ArrayList<>(operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder batchOperationIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return batchOperationIdOperations(collectValues(operation, operations));
+    }
+
+    public Builder operationTypeOperations(final List<Operation<String>> operations) {
+      operationTypeOperations = addValuesToList(operationTypeOperations, operations);
       return this;
     }
 
     public Builder operationTypes(final String value, final String... values) {
-      return operationTypes(collectValues(value, values));
+      return operationTypeOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
-    public Builder operationTypes(final List<String> values) {
-      operationTypes = addValuesToList(operationTypes, values);
+    public Builder replaceOperationTypeOperations(final List<Operation<String>> operations) {
+      operationTypeOperations = new ArrayList<>(operations);
       return this;
     }
 
-    public Builder state(final String value, final String... values) {
-      return state(collectValues(value, values));
+    @SafeVarargs
+    public final Builder operationTypeOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return operationTypeOperations(collectValues(operation, operations));
     }
 
-    public Builder state(final List<String> values) {
-      state = addValuesToList(state, values);
+    public Builder stateOperations(final List<Operation<String>> operations) {
+      stateOperations = addValuesToList(stateOperations, operations);
       return this;
+    }
+
+    public Builder states(final String value, final String... values) {
+      return stateOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder replaceStateOperations(final List<Operation<String>> operations) {
+      stateOperations = new ArrayList<>(operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder stateOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return stateOperations(collectValues(operation, operations));
     }
 
     @Override
     public BatchOperationFilter build() {
       return new BatchOperationFilter(
-          Objects.requireNonNullElse(batchOperationIds, Collections.emptyList()),
-          Objects.requireNonNullElse(operationTypes, Collections.emptyList()),
-          Objects.requireNonNullElse(state, Collections.emptyList()));
+          Objects.requireNonNullElse(batchOperationIdOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(operationTypeOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(stateOperations, Collections.emptyList()));
     }
   }
 }

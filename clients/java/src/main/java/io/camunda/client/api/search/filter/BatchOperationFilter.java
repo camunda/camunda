@@ -17,7 +17,12 @@ package io.camunda.client.api.search.filter;
 
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
+import io.camunda.client.api.search.filter.builder.BasicStringProperty;
+import io.camunda.client.api.search.filter.builder.BatchOperationStateProperty;
+import io.camunda.client.api.search.filter.builder.BatchOperationTypeProperty;
+import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestFilter;
+import java.util.function.Consumer;
 
 public interface BatchOperationFilter extends SearchRequestFilter {
 
@@ -30,6 +35,14 @@ public interface BatchOperationFilter extends SearchRequestFilter {
   BatchOperationFilter batchOperationId(final String batchOperationId);
 
   /**
+   * Filter by batchOperationId using {@link StringProperty} consumer
+   *
+   * @param fn the consumer to apply to the StringProperty
+   * @return the updated filter
+   */
+  BatchOperationFilter batchOperationId(final Consumer<BasicStringProperty> fn);
+
+  /**
    * Filters batch operations by the specified type.
    *
    * @param operationType the operationType
@@ -38,10 +51,26 @@ public interface BatchOperationFilter extends SearchRequestFilter {
   BatchOperationFilter operationType(final BatchOperationType operationType);
 
   /**
+   * Filter by operationType using {@link BatchOperationType} consumer
+   *
+   * @param fn the consumer to apply to the BatchOperationType
+   * @return the updated filter
+   */
+  BatchOperationFilter operationType(Consumer<BatchOperationTypeProperty> fn);
+
+  /**
    * Filters batch operations by the specified state.
    *
    * @param state the state
    * @return the updated filter
    */
   BatchOperationFilter state(final BatchOperationState state);
+
+  /**
+   * Filter by state using {@link BatchOperationStateProperty} consumer
+   *
+   * @param fn the consumer to apply to the BatchOperationStateProperty
+   * @return the updated filter
+   */
+  BatchOperationFilter state(Consumer<BatchOperationStateProperty> fn);
 }

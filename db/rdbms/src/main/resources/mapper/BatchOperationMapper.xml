@@ -152,21 +152,25 @@
   <sql id="searchFilter">
     WHERE 1 = 1
     <!-- basic filters -->
-    <if test="filter.batchOperationIds != null and !filter.batchOperationIds.isEmpty()">
-      AND BATCH_OPERATION_ID IN
-      <foreach collection="filter.batchOperationIds" item="value" open="(" separator=", "
-        close=")">#{value}
+    <if
+      test="filter.batchOperationIdOperations != null and !filter.batchOperationIdOperations.isEmpty()">
+      <foreach collection="filter.batchOperationIdOperations" item="operation">
+        AND BATCH_OPERATION_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
-    <if test="filter.operationTypes != null and !filter.operationTypes.isEmpty()">
-      AND OPERATION_TYPE IN
-      <foreach collection="filter.operationTypes" item="value" open="(" separator=", " close=")">
-        #{value}
+    <if
+      test="filter.operationTypeOperations != null and !filter.operationTypeOperations.isEmpty()">
+      <foreach collection="filter.operationTypeOperations" item="operation">
+        AND OPERATION_TYPE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
-    <if test="filter.state != null and !filter.state.isEmpty()">
-      AND STATE IN
-      <foreach collection="filter.state" item="value" open="(" separator=", " close=")">#{value}
+    <if
+      test="filter.stateOperations != null and !filter.stateOperations.isEmpty()">
+      <foreach collection="filter.stateOperations" item="operation">
+        AND STATE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
   </sql>
@@ -195,26 +199,31 @@
   <sql id="itemSearchFilter">
     WHERE 1 = 1
     <!-- basic filters -->
-    <if test="filter.batchOperationIds != null and !filter.batchOperationIds.isEmpty()">
-      AND BATCH_OPERATION_ID IN
-      <foreach collection="filter.batchOperationIds" item="value" open="(" separator=", "
-        close=")">#{value}
+    <if
+      test="filter.batchOperationIdOperations != null and !filter.batchOperationIdOperations.isEmpty()">
+      <foreach collection="filter.batchOperationIdOperations" item="operation">
+        AND BATCH_OPERATION_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
-    <if test="filter.itemKeys != null and !filter.itemKeys.isEmpty()">
-      AND ITEM_KEYS IN
-      <foreach collection="filter.itemKeys" item="value" open="(" separator=", " close=")">
-        #{value}
+    <if test="filter.itemKeyOperations != null and !filter.itemKeyOperations.isEmpty()">
+      <foreach collection="filter.itemKeyOperations" item="operation">
+        AND ITEM_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
-    <if test="filter.processInstanceKeys != null and !filter.processInstanceKeys.isEmpty()">
-      AND PROCESS_INSTANCE_KEY IN
-      <foreach collection="filter.processInstanceKeys" item="value" open="(" separator=", " close=")">#{value}
+    <if
+      test="filter.processInstanceKeyOperations != null and !filter.processInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.processInstanceKeyOperations" item="operation">
+        AND PROCESS_INSTANCE_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
-    <if test="filter.state != null and !filter.state.isEmpty()">
-      AND STATE IN
-      <foreach collection="filter.state" item="value" open="(" separator=", " close=")">#{value}
+    <if
+      test="filter.stateOperations != null and !filter.stateOperations.isEmpty()">
+      <foreach collection="filter.stateOperations" item="operation">
+        AND STATE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
   </sql>

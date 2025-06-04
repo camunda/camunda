@@ -9553,20 +9553,110 @@ components:
       properties:
         batchOperationId:
           description: The key (or operate legacy ID) of the batch operation.
-          type: string
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
         operationType:
-          $ref: "#/components/schemas/BatchOperationTypeEnum"
+          description: The type of the batch operation.
+          allOf:
+            - $ref: "#/components/schemas/BatchOperationTypeFilterProperty"
         state:
-          type: string
           description: The state of the batch operation.
-          enum:
-            - CREATED
-            - ACTIVE
-            - SUSPENDED
-            - COMPLETED
-            - COMPLETED_WITH_ERRORS
-            - CANCELED
-            - INCOMPLETED
+          allOf:
+            - $ref: "#/components/schemas/BatchOperationStateFilterProperty"
+    BatchOperationTypeFilterProperty:
+      description: BatchOperationTypeEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/BatchOperationTypeEnum"
+        - $ref: "#/components/schemas/AdvancedBatchOperationTypeFilter"
+    AdvancedBatchOperationTypeFilter:
+      title: Advanced filter
+      description: Advanced BatchOperationTypeEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/BatchOperationTypeEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/BatchOperationTypeEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchOperationTypeEnum"
+        $like:
+          description: |
+            Checks if the property matches the provided like value.
+
+            Supported wildcard characters are:
+
+            * `*`: matches zero, one, or multiple characters.
+            * `?`: matches one, single character.
+
+            Wildcard characters can be escaped with backslash, for instance: `\*`.
+          type: string
+    BatchOperationStateFilterProperty:
+      description: BatchOperationStateEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/BatchOperationStateEnum"
+        - $ref: "#/components/schemas/AdvancedBatchOperationStateFilter"
+    AdvancedBatchOperationStateFilter:
+      title: Advanced filter
+      description: Advanced BatchOperationStateEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/BatchOperationStateEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/BatchOperationStateEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchOperationStateEnum"
+        $like:
+          description: |
+            Checks if the property matches the provided like value.
+
+            Supported wildcard characters are:
+
+            * `*`: matches zero, one, or multiple characters.
+            * `?`: matches one, single character.
+
+            Wildcard characters can be escaped with backslash, for instance: `\*`.
+          type: string
+    BatchOperationStateEnum:
+      description: The state, one of ACTIVE, COMPLETED, TERMINATED.
+      enum:
+        - CREATED
+        - ACTIVE
+        - SUSPENDED
+        - COMPLETED
+        - COMPLETED_WITH_ERRORS
+        - CANCELED
+        - INCOMPLETED
     BatchOperationItemSearchQuerySortRequest:
       type: object
       properties:
@@ -9603,21 +9693,70 @@ components:
       properties:
         batchOperationId:
           description: The key (or operate legacy ID) of the batch operation.
-          type: string
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
         itemKey:
           description: The key of the item, e.g. a process instance key.
-          type: string
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
         processInstanceKey:
           description: The process instance key of the processed item.
-          type: string
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
         state:
           type: string
           description: The state of the batch operation.
-          enum:
-            - ACTIVE
-            - COMPLETED
-            - CANCELED
-            - FAILED
+          allOf:
+            - $ref: "#/components/schemas/BatchOperationItemStateFilterProperty"
+    BatchOperationItemStateFilterProperty:
+      description: BatchOperationItemStateEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/BatchOperationItemStateEnum"
+        - $ref: "#/components/schemas/AdvancedBatchOperationItemStateFilter"
+    AdvancedBatchOperationItemStateFilter:
+      title: Advanced filter
+      description: Advanced BatchOperationItemStateEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/BatchOperationItemStateEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/BatchOperationItemStateEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchOperationItemStateEnum"
+        $like:
+          description: |
+            Checks if the property matches the provided like value.
+
+            Supported wildcard characters are:
+
+            * `*`: matches zero, one, or multiple characters.
+            * `?`: matches one, single character.
+
+            Wildcard characters can be escaped with backslash, for instance: `\*`.
+          type: string
+    BatchOperationItemStateEnum:
+      description: The state, one of ACTIVE, COMPLETED, TERMINATED.
+      enum:
+        - ACTIVE
+        - COMPLETED
+        - CANCELED
+        - FAILED
     BatchOperationSearchQueryResult:
       type: object
       allOf:

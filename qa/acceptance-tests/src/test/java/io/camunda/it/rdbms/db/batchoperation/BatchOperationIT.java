@@ -10,15 +10,18 @@ package io.camunda.it.rdbms.db.batchoperation;
 import static io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures.createAndSaveBatchOperation;
 import static io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures.createAndSaveRandomBatchOperationItems;
 import static io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures.createAndSaveRandomBatchOperations;
+import static io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures.createSaveReturnRandomBatchOperationItems;
 import static io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures.insertBatchOperationsItems;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringKey;
+import static io.camunda.util.FilterUtil.mapDefaultToOperation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
+import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.BatchOperationEntity;
@@ -415,7 +418,38 @@ public class BatchOperationIT {
             .search(
                 new BatchOperationQuery(
                     new BatchOperationFilter.Builder()
-                        .state(BatchOperationState.ACTIVE.name())
+                        .states(BatchOperationState.ACTIVE.name())
+                        .build(),
+                    BatchOperationSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.items()).isNotEmpty();
+    assertThat(searchResult.items())
+        .allSatisfy(i -> assertThat(i.state()).isEqualTo(BatchOperationState.ACTIVE));
+    assertThat(searchResult.items()).anySatisfy(i -> assertBatchOperationEntity(i, batchOperation));
+  }
+
+  @TestTemplate
+  public void shouldFindBatchOperationWithFullFilter(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    createAndSaveRandomBatchOperations(
+        rdbmsService.createWriter(0), b -> b.state(BatchOperationState.COMPLETED));
+    final var batchOperation =
+        createAndSaveBatchOperation(
+            rdbmsService.createWriter(0), b -> b.state(BatchOperationState.ACTIVE));
+
+    final var searchResult =
+        rdbmsService
+            .getBatchOperationReader()
+            .search(
+                new BatchOperationQuery(
+                    new BatchOperationFilter.Builder()
+                        .batchOperationIds(batchOperation.batchOperationId())
+                        .operationTypes(batchOperation.operationType())
+                        .states(batchOperation.state().name())
                         .build(),
                     BatchOperationSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(10))));
@@ -446,6 +480,72 @@ public class BatchOperationIT {
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(20);
+    assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
+  public void shouldFindAllBatchOperationItemsPaged(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter writer = rdbmsService.createWriter(0);
+
+    final var batchOperation = createAndSaveBatchOperation(writer, b -> b);
+
+    final var items =
+        createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationId(), 10);
+
+    final var searchResult =
+        rdbmsService
+            .getBatchOperationItemReader()
+            .search(
+                new BatchOperationItemQuery(
+                    new BatchOperationItemFilter.Builder()
+                        .batchOperationIds(batchOperation.batchOperationId())
+                        .build(),
+                    BatchOperationItemSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(10);
+    assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
+  public void shouldFindBatchOperationItemsWithFullFilter(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter writer = rdbmsService.createWriter(0);
+
+    final var batchOperation =
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
+
+    final var items =
+        createSaveReturnRandomBatchOperationItems(writer, batchOperation.batchOperationId(), 10);
+
+    final var itemKeys =
+        items.stream().map(BatchOperationItemDbModel::itemKey).collect(Collectors.toList());
+
+    final var processInstanceKeys =
+        items.stream()
+            .map(BatchOperationItemDbModel::processInstanceKey)
+            .collect(Collectors.toList());
+
+    final var searchResult =
+        rdbmsService
+            .getBatchOperationItemReader()
+            .search(
+                new BatchOperationItemQuery(
+                    new BatchOperationItemFilter.Builder()
+                        .batchOperationIds(batchOperation.batchOperationId())
+                        .itemKeyOperations(mapDefaultToOperation(itemKeys))
+                        .processInstanceKeyOperations(mapDefaultToOperation(processInstanceKeys))
+                        .states(BatchOperationState.ACTIVE.name())
+                        .build(),
+                    BatchOperationItemSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(10);
     assertThat(searchResult.items()).hasSize(5);
   }
 

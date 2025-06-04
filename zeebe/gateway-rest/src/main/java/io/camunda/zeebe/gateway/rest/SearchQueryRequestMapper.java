@@ -75,8 +75,6 @@ import io.camunda.search.sort.UserTaskSort;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.protocol.rest.*;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationFilter.StateEnum;
-import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemFilter;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.gateway.rest.util.ProcessInstanceStateConverter;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
@@ -684,11 +682,15 @@ public final class SearchQueryRequestMapper {
     final var builder = FilterBuilders.batchOperation();
 
     if (filter != null) {
-      ofNullable(filter.getBatchOperationId()).ifPresent(builder::batchOperationIds);
-      ofNullable(filter.getState()).map(StateEnum::toString).ifPresent(builder::state);
+      ofNullable(filter.getBatchOperationId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::batchOperationIdOperations);
+      ofNullable(filter.getState())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::stateOperations);
       ofNullable(filter.getOperationType())
-          .map(BatchOperationTypeEnum::toString)
-          .ifPresent(builder::operationTypes);
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::operationTypeOperations);
     }
 
     return builder.build();
@@ -733,10 +735,18 @@ public final class SearchQueryRequestMapper {
     final var builder = FilterBuilders.batchOperationItem();
 
     if (filter != null) {
-      ofNullable(filter.getBatchOperationId()).ifPresent(builder::batchOperationIds);
+      ofNullable(filter.getBatchOperationId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::batchOperationIdOperations);
       ofNullable(filter.getState())
-          .map(BatchOperationItemFilter.StateEnum::toString)
-          .ifPresent(builder::state);
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::stateOperations);
+      ofNullable(filter.getItemKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::itemKeyOperations);
+      ofNullable(filter.getProcessInstanceKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::processInstanceKeyOperations);
     }
 
     return builder.build();

@@ -21,7 +21,6 @@ import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
 import io.camunda.client.protocol.rest.*;
-import io.camunda.client.protocol.rest.BatchOperationItemFilter.StateEnum;
 import io.camunda.client.protocol.rest.BatchOperationItemSearchQuerySortRequest.FieldEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
@@ -45,7 +44,7 @@ class SearchBatchOperationItemsTest extends ClientRestTest {
     assertThat(restRequest.getUrl()).isEqualTo("/v2/batch-operation-items/search");
     assertThat(restRequest.getBodyAsString())
         .isEqualTo(
-            "{\"sort\":[{\"field\":\"state\",\"order\":\"ASC\"}],\"filter\":{\"batchOperationId\":\"123\"}}");
+            "{\"sort\":[{\"field\":\"state\",\"order\":\"ASC\"}],\"filter\":{\"batchOperationId\":{\"$eq\":\"123\",\"$in\":[],\"$notIn\":[]}}}");
   }
 
   @Test
@@ -76,10 +75,11 @@ class SearchBatchOperationItemsTest extends ClientRestTest {
     // then
     final BatchOperationItemSearchQuery request =
         gatewayService.getLastRequest(BatchOperationItemSearchQuery.class);
-    assertThat(request.getFilter().getBatchOperationId()).isEqualTo("123");
-    assertThat(request.getFilter().getState()).isEqualTo(StateEnum.ACTIVE);
-    assertThat(request.getFilter().getProcessInstanceKey()).isEqualTo("123");
-    assertThat(request.getFilter().getItemKey()).isEqualTo("456");
+    assertThat(request.getFilter().getBatchOperationId().get$Eq()).isEqualTo("123");
+    assertThat(request.getFilter().getState().get$Eq())
+        .isEqualTo(BatchOperationItemStateEnum.ACTIVE);
+    assertThat(request.getFilter().getProcessInstanceKey().get$Eq()).isEqualTo("123");
+    assertThat(request.getFilter().getItemKey().get$Eq()).isEqualTo("456");
   }
 
   @Test
