@@ -31,5 +31,9 @@ public final class ScalingProcessors {
         ValueType.SCALE,
         ScaleIntent.STATUS,
         new ScaleUpStatusProcessor(keyGenerator, writers, processingState.getRoutingState()));
+    typedRecordProcessors.onCommand(
+        ValueType.SCALE,
+        ScaleIntent.MARK_PARTITIONS_BOOTSTRAPPED,
+        new MarkPartitionsBootstrappedProcessor(keyGenerator, writers, processingState));
   }
 }

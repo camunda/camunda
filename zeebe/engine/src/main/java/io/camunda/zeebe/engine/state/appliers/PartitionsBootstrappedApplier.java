@@ -5,22 +5,24 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.scaling;
+package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 
-public class ScaledUpApplier implements TypedEventApplier<ScaleIntent, ScaleRecord> {
+public class PartitionsBootstrappedApplier implements TypedEventApplier<ScaleIntent, ScaleRecord> {
+
   private final MutableRoutingState routingState;
 
-  public ScaledUpApplier(final MutableRoutingState routingState) {
-    this.routingState = routingState;
+  public PartitionsBootstrappedApplier(final MutableProcessingState state) {
+    routingState = state.getRoutingState();
   }
 
   @Override
   public void applyState(final long key, final ScaleRecord value) {
-    // TODO: when relocation is done, apply the changes to the routing state
+    routingState.arriveAtDesiredState();
   }
 }
