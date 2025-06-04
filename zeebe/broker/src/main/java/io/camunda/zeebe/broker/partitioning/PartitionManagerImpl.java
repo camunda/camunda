@@ -39,6 +39,7 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupProcessShutdownException;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthStatus;
@@ -377,7 +378,25 @@ public final class PartitionManagerImpl
         () ->
             bootstrapPartition(partitionMetadata, partitionConfig, initializeFromSnapshot)
                 .onComplete(future));
-    return future;
+    if (initializeFromSnapshot) {
+      return future
+          .andThen(ignored -> notifyPartitionBootstrapped(partitionId), concurrencyControl)
+          .andThen(
+              (ignored, error) -> {
+                if (error != null) {
+                  // bootstrap has failed, let's stop and return the error.
+                  return stopPartition(partitionId, true)
+                      .andThen(
+                          none -> CompletableActorFuture.completedExceptionally(error),
+                          concurrencyControl);
+                } else {
+                  return CompletableActorFuture.completed();
+                }
+              },
+              concurrencyControl);
+    } else {
+      return future;
+    }
   }
 
   @Override
@@ -543,5 +562,29 @@ public final class PartitionManagerImpl
       final Duration timeout) {
     return scalingExecutor.awaitRedistributionCompletion(
         desiredPartitionCount, redistributedPartitions, timeout);
+  }
+
+  @Override
+  public ActorFuture<Void> notifyPartitionBootstrapped(final int partitionId) {
+    return scalingExecutor.notifyPartitionBootstrapped(partitionId);
+  }
+
+  private ActorFuture<Void> stopPartition(final int partitionId, final boolean purgeData) {
+    final var partition = partitions.get(partitionId);
+    if (partition != null) {
+      return partition
+          .stop()
+          .andThen(
+              ignored -> {
+                partitions.remove(partitionId);
+                if (purgeData) {
+                  partition.raftPartition().delete();
+                }
+                return null;
+              },
+              concurrencyControl);
+    } else {
+      return CompletableActorFuture.completed();
+    }
   }
 }

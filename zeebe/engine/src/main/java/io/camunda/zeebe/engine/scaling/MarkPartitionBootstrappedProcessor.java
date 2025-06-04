@@ -61,15 +61,6 @@ public class MarkPartitionBootstrappedProcessor implements TypedRecordProcessor<
 
   private String validate(final TypedRecord<ScaleRecord> command) {
     final var scaleUp = command.getValue();
-    if (!(routingState.desiredPartitions().size() == scaleUp.getDesiredPartitionCount())) {
-      final var reason =
-          String.format(
-              "The redistributed partitions do not match the desired partitions. "
-                  + "The redistributed partitions are %s, the desired partitions are %s.",
-              scaleUp.getRedistributedPartitions(), routingState.desiredPartitions());
-      rejectWith(command, RejectionType.INVALID_STATE, reason);
-      return reason;
-    }
     if (scaleUp.getRedistributedPartitions().size() != 1) {
       final var reason =
           String.format(
@@ -79,6 +70,15 @@ public class MarkPartitionBootstrappedProcessor implements TypedRecordProcessor<
       return reason;
     }
     final var partition = scaleUp.getRedistributedPartitions().getFirst();
+    if (partition > routingState.desiredPartitions().size()) {
+      final var reason =
+          String.format(
+              "The redistributed partitions do not match the desired partitions. "
+                  + "The redistributed partition is %s, the desired partitions are %s.",
+              partition, routingState.desiredPartitions());
+      rejectWith(command, RejectionType.INVALID_STATE, reason);
+      return reason;
+    }
     if (!routingState.desiredPartitions().contains(partition)
         && !routingState.currentPartitions().contains(partition)) {
       final var reason = String.format("Partition %d is not a valid partition.", partition);

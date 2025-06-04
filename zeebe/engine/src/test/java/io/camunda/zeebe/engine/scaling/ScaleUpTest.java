@@ -66,9 +66,7 @@ public class ScaleUpTest {
         RecordToWrite.command()
             .scale(
                 ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
-                new ScaleRecord()
-                    .setDesiredPartitionCount(3)
-                    .setRedistributedPartitions(List.of(3)));
+                new ScaleRecord().setRedistributedPartitions(List.of(3)));
     // when
     engine.writeRecords(command, bootstrapPartitions);
 
@@ -280,9 +278,7 @@ public class ScaleUpTest {
         RecordToWrite.command()
             .scale(
                 ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
-                new ScaleRecord()
-                    .setDesiredPartitionCount(3)
-                    .setRedistributedPartitions(List.of(3)));
+                new ScaleRecord().setRedistributedPartitions(List.of(3)));
     // when
     engine.writeRecords(scaleTo3, bootstrapPartitionsTo3);
 
@@ -313,9 +309,7 @@ public class ScaleUpTest {
         RecordToWrite.command()
             .scale(
                 ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
-                new ScaleRecord()
-                    .setDesiredPartitionCount(4)
-                    .setRedistributedPartitions(List.of(4)));
+                new ScaleRecord().setRedistributedPartitions(List.of(4)));
     engine.writeRecords(scaleTo4, bootstrapPartitionsTo4);
 
     // then
@@ -346,9 +340,7 @@ public class ScaleUpTest {
         RecordToWrite.command()
             .scale(
                 ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
-                new ScaleRecord()
-                    .setDesiredPartitionCount(3)
-                    .setRedistributedPartitions(List.of(3)));
+                new ScaleRecord().setRedistributedPartitions(List.of(3)));
     // when
     engine.writeRecords(scaleTo3, bootstrapPartitionsTo3);
     assertThat(
