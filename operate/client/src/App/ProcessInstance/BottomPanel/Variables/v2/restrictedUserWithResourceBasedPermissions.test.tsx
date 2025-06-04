@@ -6,11 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  render,
-  screen,
-  waitForElementToBeRemoved,
-} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import Variables from './index';
@@ -20,14 +16,26 @@ import {authenticationStore} from 'modules/stores/authentication';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 const instanceMock = createInstance({id: '1'});
+jest.mock('modules/feature-flags', () => ({
+  ...jest.requireActual('modules/feature-flags'),
+  IS_PROCESS_INSTANCE_V2_ENABLED: true,
+}));
 
 describe('Restricted user with resource based permissions', () => {
   beforeEach(() => {
     window.clientConfig = {
       resourcePermissionsEnabled: true,
     };
+
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessInstanceDeprecated().withSuccess(instanceMock);
+    mockFetchProcessInstanceDeprecated().withSuccess(instanceMock);
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockFetchProcessDefinitionXml().withSuccess('');
   });
 
   afterEach(() => {
@@ -71,7 +79,9 @@ describe('Restricted user with resource based permissions', () => {
     });
 
     render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
 
     expect(
       screen.getByRole('button', {name: /add variable/i}),
@@ -91,7 +101,6 @@ describe('Restricted user with resource based permissions', () => {
     });
 
     render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     expect(
       screen.queryByRole('button', {name: /add variable/i}),
@@ -113,13 +122,14 @@ describe('Restricted user with resource based permissions', () => {
     });
 
     render(<Variables />, {wrapper: getWrapper()});
-
-    await waitForElementToBeRemoved(() =>
-      screen.getByTestId('variables-skeleton'),
-    );
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
 
     expect(
-      screen.getByRole('button', {name: 'View full value of testVariableName'}),
+      await screen.findByRole('button', {
+        name: 'View full value of testVariableName',
+      }),
     ).toBeInTheDocument();
   });
 });
