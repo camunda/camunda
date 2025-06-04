@@ -10,17 +10,4 @@ package io.camunda.zeebe.exporter.common.cache.process;
 import java.util.List;
 import java.util.Map;
 
-public record CachedProcessEntity(
-    String name,
-    String versionTag,
-    String version,
-    List<String> callElementIds,
-    Map<String, String> flowNodesMap) {
-  public CachedProcessEntity(
-      final String name,
-      final String versionTag,
-      final List<String> callElementIds,
-      final Map<String, String> flowNodesMap) {
-    this(name, versionTag, null, callElementIds, flowNodesMap);
-  }
-}
+public record ProcessDiagramData(List<String> callActivityIds, Map<String, String> flowNodesMap) {}
