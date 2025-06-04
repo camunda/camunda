@@ -3,11 +3,19 @@ The following would be added to the `CI & Automation` Wiki page as a new section
 
 # CI Test Files
 
-## CI Ownership
-Each CI test file has an owning team. The owning team can be found either through the `CODEOWNERS` file or on the metadata in the file itself. The `CODEOWNERS` file is organized and broken down by team, any additions to the file should follow that convention. The metadata on a CI file is used by a scraping tool so that it is easy to gather information about the current state of CI. You can look at the metadata for a quick overview of the owning team, where the tests live, how the test is called, and a description of what the file is actually testing
+## Ownership
+Each CI test file has an owning team. The owning team can be found either through the `CODEOWNERS` file or on the metadata in the file itself. The `CODEOWNERS` file is organized and broken down by team, any additions to the file should follow that convention. The metadata on a GHA workflow file is used by a scraping tool so that it is easy to gather information about the current state of CI. You can look at the metadata for a quick overview of the owning team, where the tests live, how the test is called, and a description of what the file is actually testing
+
+Metadata follows this structure and is placed at the beginning of a GHA workflow file
+
+```
+# description: <Decribes what the GHA is running and what is being tested>
+# test location: <The filepath of the tests being run>
+# owner: <The name of the owning team>
+```
 
 ## Legacy CI
-"Legacy CI" is a name for CI tests that has not been migrated to the Unified CI. Legacy tests do not meet the inclusion criteria for Unified CI, such as running under 10 minutes.
+"Legacy CI" is a name for CI tests that has not been migrated to the Unified CI. Legacy tests do not meet the [inclusion criteria for Unified CI](https://github.com/camunda/camunda/wiki/CI-&-Automation#workflow-inclusion-criteria), such as running under 10 minutes.
 
 Tests that are marked as Legacy are to be migrated to Unified CI by the owning team in the future. Once migrated, the test should live inside the `ci.yml` file, or be part of a workflow file that is called by it. The label of "Legacy" should be removed as well
 
