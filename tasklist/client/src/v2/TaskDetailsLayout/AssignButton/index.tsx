@@ -15,6 +15,8 @@ import {useTranslation} from 'react-i18next';
 import {useAssignTask} from 'v2/api/useAssignTask.mutation';
 import {useUnassignTask} from 'v2/api/useUnassignTask.mutation';
 import {usePollForAssignmentResult} from 'v2/api/usePollForAssignmentResult.mutation';
+import {parseDenialReason} from 'v2/utils/parseDenialReason';
+import {requestErrorSchema} from 'common/api/request';
 
 type AssignmentStatus =
   | 'off'
@@ -71,7 +73,22 @@ const AssignButton: React.FC<Props> = ({id, assignee, currentUser}) => {
       });
       setAssignmentStatus('assignmentSuccessful');
       tracking.track({eventName: 'task-assigned'});
-    } catch {
+    } catch (error) {
+      const {data: parsedError, success} = requestErrorSchema.safeParse(error);
+
+      if (success && parsedError.variant === 'failed-response') {
+        notificationsStore.displayNotification({
+          kind: 'error',
+          title: t('taskDetailsTaskAssignmentError'),
+          subtitle: parseDenialReason(
+            await parsedError?.response?.json(),
+            'assignment',
+          ),
+          isDismissable: true,
+        });
+        return;
+      }
+
       notificationsStore.displayNotification({
         kind: 'error',
         title: t('taskDetailsTaskAssignmentError'),
@@ -92,7 +109,22 @@ const AssignButton: React.FC<Props> = ({id, assignee, currentUser}) => {
       });
       setAssignmentStatus('unassignmentSuccessful');
       tracking.track({eventName: 'task-unassigned'});
-    } catch {
+    } catch (error) {
+      const {data: parsedError, success} = requestErrorSchema.safeParse(error);
+
+      if (success && parsedError.variant === 'failed-response') {
+        notificationsStore.displayNotification({
+          kind: 'error',
+          title: t('taskDetailsTaskUnassignmentError'),
+          subtitle: parseDenialReason(
+            await parsedError?.response?.json(),
+            'unassignment',
+          ),
+          isDismissable: true,
+        });
+        return;
+      }
+
       notificationsStore.displayNotification({
         kind: 'error',
         title: t('taskDetailsTaskUnassignmentError'),

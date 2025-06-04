@@ -348,6 +348,7 @@
     "relativeDateUnknown": "'Unknown'",
     "processesTabPreviousPageButtonLabel": "Previous page",
     "processesTabNextPageButtonLabel": "Next page",
-    "processesTabPaginationOfLabel": "{{currentPage}} of {{totalPages}}"
+    "processesTabPaginationOfLabel": "{{currentPage}} of {{totalPages}}",
+    "deniedReason": "The task {{type}} was rejected by the system."
   }
 }
