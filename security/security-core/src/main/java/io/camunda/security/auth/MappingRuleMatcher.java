@@ -12,6 +12,7 @@ import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.JsonPathException;
 import com.jayway.jsonpath.Option;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -31,26 +32,16 @@ public final class MappingRuleMatcher {
 
   public static <T extends MappingRule> Stream<T> matchingRules(
       final Stream<T> mappingRules, final Map<String, Object> claims) {
-    return mappingRules.filter(mappingRule -> matchRule(mappingRule, claims));
+    final CompilationCache compilationCache = new CompilationCache();
+    final EvaluationCache evaluationCache = new EvaluationCache(compilationCache, claims);
+    return mappingRules.filter(mappingRule -> matchRule(evaluationCache, mappingRule));
   }
 
   private static boolean matchRule(
-      final MappingRule mappingRule, final Map<String, Object> claims) {
-    final JsonPath compiledPath;
-    try {
-      compiledPath = JsonPath.compile(mappingRule.claimName());
-    } catch (final JsonPathException e) {
-      LOG.warn(
-          "Failed to compile expression {} for mapping rule {}",
-          mappingRule.claimName(),
-          mappingRule.mappingId(),
-          e);
-      return false;
-    }
-
+      final EvaluationCache evaluationCache, final MappingRule mappingRule) {
     final Object claimValue;
     try {
-      claimValue = compiledPath.read(claims, CONFIGURATION);
+      claimValue = evaluationCache.evaluate(mappingRule.claimName());
     } catch (final JsonPathException e) {
       return false;
     }
@@ -58,6 +49,48 @@ public final class MappingRuleMatcher {
       return claimValues.contains(mappingRule.claimValue());
     }
     return mappingRule.claimValue().equals(claimValue);
+  }
+
+  /**
+   * A long-lived cache for compiling expressions. This is used to avoid recompiling the same
+   * expression multiple times.
+   */
+  private static final class CompilationCache {
+    private final Map<String, JsonPath> cache = new HashMap<>();
+
+    public JsonPath compile(final String expression) {
+      return cache.computeIfAbsent(
+          expression,
+          exp -> {
+            try {
+              return JsonPath.compile(exp);
+            } catch (final JsonPathException e) {
+              LOG.warn("Failed to compile expression {}", exp, e);
+              return null;
+            }
+          });
+    }
+  }
+
+  /**
+   * A short-lived cache for evaluating many expressions against the same claims. Results are cached
+   * so each expression is only evaluated once.
+   */
+  private static final class EvaluationCache {
+    private final CompilationCache compilationCache;
+    private final Map<String, Object> claims;
+    private final Map<String, Object> evaluations = new HashMap<>();
+
+    public EvaluationCache(
+        final CompilationCache compilationCache, final Map<String, Object> claims) {
+      this.compilationCache = compilationCache;
+      this.claims = claims;
+    }
+
+    public Object evaluate(final String expression) {
+      return evaluations.computeIfAbsent(
+          expression, exp -> compilationCache.compile(expression).read(claims, CONFIGURATION));
+    }
   }
 
   public interface MappingRule {
