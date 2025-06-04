@@ -78,6 +78,10 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         new BpmnStateTransitionBehavior(
             processingState.getKeyGenerator(),
             bpmnBehaviors.stateBehavior(),
+            bpmnBehaviors.jobBehavior(),
+            bpmnBehaviors.eventSubscriptionBehavior(),
+            bpmnBehaviors.incidentBehavior(),
+            bpmnBehaviors.userTaskBehavior(),
             processEngineMetrics,
             this::getContainerProcessor,
             writers);

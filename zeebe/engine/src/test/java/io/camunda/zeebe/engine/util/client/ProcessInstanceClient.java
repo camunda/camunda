@@ -132,9 +132,12 @@ public final class ProcessInstanceClient {
       return this;
     }
 
-    public ProcessInstanceCreationClient withRuntimeSuspendInstruction(final String afterElementId) {
-      final var instruction = new ProcessInstanceCreationRuntimeInstruction().setType(
-          RuntimeInstructionType.SUSPEND_PROCESS_INSTANCE).setAfterElementId(afterElementId);
+    public ProcessInstanceCreationClient withRuntimeSuspendInstruction(
+        final String afterElementId) {
+      final var instruction =
+          new ProcessInstanceCreationRuntimeInstruction()
+              .setType(RuntimeInstructionType.SUSPEND_PROCESS_INSTANCE)
+              .setAfterElementId(afterElementId);
       processInstanceCreationRecord.addRuntimeInstruction(instruction);
       return this;
     }

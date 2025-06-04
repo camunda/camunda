@@ -309,6 +309,11 @@ public final class BpmnUserTaskBehavior {
     userTaskCanceling(elementInstance).ifPresent(this::userTaskCanceled);
   }
 
+  public void cancelUserTask(final BpmnElementContext elementInstanceContext) {
+    final var elementInstance = stateBehavior.getElementInstance(elementInstanceContext);
+    cancelUserTask(elementInstance);
+  }
+
   public Optional<UserTaskRecord> userTaskCanceling(final ElementInstance elementInstance) {
     final long userTaskKey = elementInstance.getUserTaskKey();
     if (userTaskKey <= 0) {
@@ -331,6 +336,8 @@ public final class BpmnUserTaskBehavior {
     final long userTaskKey = userTaskRecord.getUserTaskKey();
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELED, userTaskRecord);
   }
+
+
 
   public void userTaskCreated(final UserTaskRecord userTaskRecord) {
     final long userTaskKey = userTaskRecord.getUserTaskKey();

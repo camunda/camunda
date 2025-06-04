@@ -52,7 +52,8 @@ public interface ProcessInstanceCreationRecordValue
   }
 
   @Value.Immutable
-  @ImmutableProtocol(builder = ImmutableProcessInstanceCreationRuntimeInstructionValue.Builder.class)
+  @ImmutableProtocol(
+      builder = ImmutableProcessInstanceCreationRuntimeInstructionValue.Builder.class)
   interface ProcessInstanceCreationRuntimeInstructionValue {
     String getType();
 
@@ -60,8 +61,10 @@ public interface ProcessInstanceCreationRecordValue
   }
 
   @Value.Immutable
-  @ImmutableProtocol(builder = ImmutableProcessInstanceCreationCancellationInstructionValue.Builder.class)
-  interface ProcessInstanceCreationCancellationInstructionValue extends ProcessInstanceCreationRuntimeInstructionValue {
+  @ImmutableProtocol(
+      builder = ImmutableProcessInstanceCreationCancellationInstructionValue.Builder.class)
+  interface ProcessInstanceCreationCancellationInstructionValue
+      extends ProcessInstanceCreationRuntimeInstructionValue {
     String getAfterElementId();
   }
 }

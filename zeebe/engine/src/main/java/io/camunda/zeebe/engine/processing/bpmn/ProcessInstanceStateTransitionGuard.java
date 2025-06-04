@@ -58,36 +58,35 @@ public final class ProcessInstanceStateTransitionGuard {
       final BpmnElementContext context, final ExecutableFlowElement element) {
 
     return switch (context.getIntent()) {
-      case ACTIVATE_ELEMENT ->
-        // todo: check instance is not suspended
-          hasActiveFlowScopeInstance(context)
-              .flatMap(ok -> canActivateParallelGateway(context, element))
-              .flatMap(ok -> canActivateInclusiveGateway(context, element));
+      case ACTIVATE_ELEMENT -> hasActiveFlowScopeInstance(context)
+          .flatMap(ok -> processInstanceNotSuspended(context, element))
+          .flatMap(ok -> canActivateParallelGateway(context, element))
+          .flatMap(ok -> canActivateInclusiveGateway(context, element));
       case COMPLETE_ELEMENT ->
-          // an incident is resolved by writing a COMPLETE command when the element instance is in
-          // state COMPLETING
-          // todo: check instance is not suspended
-          hasElementInstanceWithState(
-                  context,
-                  ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                  ProcessInstanceIntent.ELEMENT_COMPLETING)
-              .flatMap(ok -> hasActiveFlowScopeInstance(context));
-      case TERMINATE_ELEMENT ->
+        // an incident is resolved by writing a COMPLETE command when the element instance is in
+        // state COMPLETING
           hasElementInstanceWithState(
               context,
-              ProcessInstanceIntent.ELEMENT_ACTIVATING,
               ProcessInstanceIntent.ELEMENT_ACTIVATED,
-              ProcessInstanceIntent.ELEMENT_COMPLETING);
+              ProcessInstanceIntent.ELEMENT_COMPLETING)
+              .flatMap(ok -> hasActiveFlowScopeInstance(context))
+              .flatMap(ok -> processInstanceNotSuspended(context, element));
+      case TERMINATE_ELEMENT -> hasElementInstanceWithState(
+          context,
+          ProcessInstanceIntent.ELEMENT_ACTIVATING,
+          ProcessInstanceIntent.ELEMENT_ACTIVATED,
+          ProcessInstanceIntent.ELEMENT_COMPLETING)
+          .flatMap(ok -> processInstanceNotSuspended(context, element));
       case CONTINUE_TERMINATING_ELEMENT ->
           hasElementInstanceWithState(context, ProcessInstanceIntent.ELEMENT_TERMINATING);
-      case COMPLETE_EXECUTION_LISTENER ->
-          hasElementInstanceWithState(
-              context,
-              ProcessInstanceIntent.ELEMENT_ACTIVATING,
-              ProcessInstanceIntent.ELEMENT_COMPLETING);
+      case COMPLETE_EXECUTION_LISTENER -> hasElementInstanceWithState(
+          context,
+          ProcessInstanceIntent.ELEMENT_ACTIVATING,
+          ProcessInstanceIntent.ELEMENT_COMPLETING);
       default -> Either.left(UNSUPPORTED_INTENT_MESSAGE.formatted(context.getIntent()));
     };
   }
+
 
   private Either<String, ElementInstance> getElementInstance(final BpmnElementContext context) {
     final var elementInstance = stateBehavior.getElementInstance(context);
@@ -207,6 +206,23 @@ public final class ProcessInstanceStateTransitionGuard {
       // a root process has no flow scope instance
       return Either.right(null);
     }
+  }
+
+  private Either<String, Object> processInstanceNotSuspended(final BpmnElementContext context,
+      final ExecutableFlowElement element) {
+    if (context.getBpmnElementType() == BpmnElementType.PROCESS
+        && context.getIntent() == ProcessInstanceIntent.ACTIVATE_ELEMENT) {
+      // when activating a process instance, it cannot yet be suspended
+      return Either.right(null);
+    }
+    final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
+    if (processInstance == null) {
+      return Either.left("Process instance '" + context.getProcessInstanceKey() + "' not found");
+    }
+    if (processInstance.isSuspended()) {
+      return Either.left("Process instance suspended");
+    }
+    return Either.right(processInstance);
   }
 
   private Either<String, ?> canActivateParallelGateway(

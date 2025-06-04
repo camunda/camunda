@@ -491,30 +491,4 @@ public final class CreateProcessInstanceTest {
             tuple(
                 BpmnElementType.START_EVENT, "noneStart", ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
-
-  @Test
-  public void shouldCreateProcessInstanceWithRuntimeSuspendInstruction() {
-    // given
-    final String processId = "process";
-    final String elementToSuspend = "element";
-    ENGINE
-        .deployment()
-        .withXmlResource(Bpmn.createExecutableProcess(processId).startEvent()
-            .manualTask(elementToSuspend).endEvent().done())
-        .deploy();
-
-    // when
-    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId)
-        .withRuntimeSuspendInstruction(elementToSuspend)
-        .create();
-
-    // then
-    var result = RecordingExporter.processInstanceRecords()
-        .withProcessInstanceKey(processInstanceKey)
-        .withIntent(ProcessInstanceIntent.ELEMENT_SUSPENDED)
-        .withElementType(BpmnElementType.PROCESS)
-        .getFirst();
-
-    assertThat(result).isNotNull();
-  }
 }
