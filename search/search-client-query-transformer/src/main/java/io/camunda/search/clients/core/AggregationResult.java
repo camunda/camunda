@@ -10,12 +10,27 @@ package io.camunda.search.clients.core;
 import io.camunda.util.ObjectBuilder;
 import java.util.Map;
 
-public record AggregationResult(Long docCount, Map<String, AggregationResult> aggregations) {
+public record AggregationResult(
+    Long docCount, Map<String, AggregationResult> aggregations, String jsonHits) {
+
+  public AggregationResult(final Long docCount, final Map<String, AggregationResult> aggregations) {
+    this(docCount, aggregations, null);
+  }
+
+  public AggregationResult(final String jsonHits) {
+    this(null, null, jsonHits);
+  }
 
   public static final class Builder implements ObjectBuilder<AggregationResult> {
 
     private Long docCount;
     private Map<String, AggregationResult> aggregations;
+    private String jsonHit;
+
+    public Builder jsonHit(final String value) {
+      jsonHit = value;
+      return this;
+    }
 
     public Builder docCount(final Long value) {
       docCount = value;
@@ -29,7 +44,7 @@ public record AggregationResult(Long docCount, Map<String, AggregationResult> ag
 
     @Override
     public AggregationResult build() {
-      return new AggregationResult(docCount, aggregations);
+      return new AggregationResult(docCount, aggregations, jsonHit);
     }
   }
 }

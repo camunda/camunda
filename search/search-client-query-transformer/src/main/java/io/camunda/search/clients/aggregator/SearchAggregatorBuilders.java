@@ -35,6 +35,14 @@ public final class SearchAggregatorBuilders {
     return terms().name(name).field(field).build();
   }
 
+  public static SearchTopHitsAggregator.Builder topHits() {
+    return new SearchTopHitsAggregator.Builder();
+  }
+
+  public static SearchTopHitsAggregator topHits(final String name, final String field) {
+    return topHits().name(name).field(field).build();
+  }
+
   public static SearchFilterAggregator.Builder filter() {
     return new SearchFilterAggregator.Builder();
   }
