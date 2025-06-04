@@ -50,8 +50,8 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
   private final DocumentProperty authenticationProp = new DocumentProperty("authentication");
   private final ArrayProperty<IntegerValue> partitionsProp =
       new ArrayProperty<>("partitions", IntegerValue::new);
-  private final ArrayProperty<IntegerValue> completedPartitionsProp =
-      new ArrayProperty<>("completedPartitions", IntegerValue::new);
+  private final ArrayProperty<IntegerValue> finishedPartitionsProp =
+      new ArrayProperty<>("finishedPartitions", IntegerValue::new);
 
   public PersistedBatchOperation() {
     super(11);
@@ -65,7 +65,7 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
         .declareProperty(initializedProp)
         .declareProperty(authenticationProp)
         .declareProperty(partitionsProp)
-        .declareProperty(completedPartitionsProp);
+        .declareProperty(finishedPartitionsProp);
   }
 
   public PersistedBatchOperation wrap(final BatchOperationCreationRecord record) {
@@ -199,13 +199,13 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
     return this;
   }
 
-  public PersistedBatchOperation addCompletedPartition(final int partitionId) {
-    completedPartitionsProp.add().setValue(partitionId);
+  public PersistedBatchOperation addFinishedPartition(final int partitionId) {
+    finishedPartitionsProp.add().setValue(partitionId);
     return this;
   }
 
-  public List<Integer> getCompletedPartitions() {
-    return completedPartitionsProp.stream().map(IntegerValue::getValue).toList();
+  public List<Integer> getFinishedPartitions() {
+    return finishedPartitionsProp.stream().map(IntegerValue::getValue).toList();
   }
 
   public long nextChunkKey() {
