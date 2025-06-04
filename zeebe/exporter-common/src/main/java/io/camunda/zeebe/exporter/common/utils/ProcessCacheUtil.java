@@ -137,9 +137,8 @@ public final class ProcessCacheUtil {
 
     return processCache
         .get(processDefinitionKey)
-        .filter(cachedProcess -> cachedProcess.flowNodesMap() != null)
-        .filter(cachedProcess -> cachedProcess.flowNodesMap().containsKey(flowNodeId))
-        .map(cachedProcess -> cachedProcess.flowNodesMap().get(flowNodeId));
+        .map(CachedProcessEntity::flowNodesMap)
+        .map(map -> map.get(flowNodeId));
   }
 
   public static Map<String, String> getFlowNodesMap(Collection<FlowNode> flowNodes) {
