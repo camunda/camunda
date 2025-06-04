@@ -17,6 +17,7 @@ package io.camunda.client.impl.command;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.AssignUserToTenantCommandStep1;
+import io.camunda.client.api.command.AssignUserToTenantCommandStep1.AssignUserToTenantCommandStep2;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignUserToTenantResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
@@ -25,22 +26,28 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public final class AssignUserToTenantCommandImpl implements AssignUserToTenantCommandStep1 {
+public final class AssignUserToTenantCommandImpl
+    implements AssignUserToTenantCommandStep1, AssignUserToTenantCommandStep2 {
 
-  private final String tenantId;
+  private String tenantId;
   private String username;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public AssignUserToTenantCommandImpl(final HttpClient httpClient, final String tenantId) {
+  public AssignUserToTenantCommandImpl(final HttpClient httpClient) {
     this.httpClient = httpClient;
-    this.tenantId = tenantId;
     httpRequestConfig = httpClient.newRequestConfig();
   }
 
   @Override
-  public AssignUserToTenantCommandStep1 username(final String username) {
+  public AssignUserToTenantCommandStep2 username(final String username) {
     this.username = username;
+    return this;
+  }
+
+  @Override
+  public AssignUserToTenantCommandStep2 tenantId(final String tenantId) {
+    this.tenantId = tenantId;
     return this;
   }
 

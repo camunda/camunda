@@ -18,15 +18,24 @@ package io.camunda.client.api.command;
 import io.camunda.client.api.response.AssignUserToTenantResponse;
 
 /** Command to assign a user to a tenant. */
-public interface AssignUserToTenantCommandStep1
-    extends FinalCommandStep<AssignUserToTenantResponse> {
+public interface AssignUserToTenantCommandStep1 {
 
   /**
    * Sets the user key for the assignment.
    *
    * @param username the unique identifier for the user
-   * @return the builder for this command. Call {@link #send()} to complete the command and send it
-   *     to the broker.
+   * @return the builder for this command.
    */
-  AssignUserToTenantCommandStep1 username(String username);
+  AssignUserToTenantCommandStep2 username(String username);
+
+  interface AssignUserToTenantCommandStep2 extends FinalCommandStep<AssignUserToTenantResponse> {
+    /**
+     * Sets the tenant ID.
+     *
+     * @param tenantId the id of the tenant
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    AssignUserToTenantCommandStep2 tenantId(String tenantId);
+  }
 }

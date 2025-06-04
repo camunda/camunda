@@ -35,7 +35,7 @@ public class AssignUserToTenantTest extends ClientRestTest {
   @Test
   void shouldAssignUserToTenant() {
     // when
-    client.newAssignUserToTenantCommand(TENANT_ID).username(USER_NAME).send().join();
+    client.newAssignUserToTenantCommand().username(USER_NAME).tenantId(TENANT_ID).send().join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
@@ -54,7 +54,13 @@ public class AssignUserToTenantTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToTenantCommand(TENANT_ID).username(USER_NAME).send().join())
+            () ->
+                client
+                    .newAssignUserToTenantCommand()
+                    .username(USER_NAME)
+                    .tenantId(TENANT_ID)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -68,7 +74,13 @@ public class AssignUserToTenantTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToTenantCommand(TENANT_ID).username(USER_NAME).send().join())
+            () ->
+                client
+                    .newAssignUserToTenantCommand()
+                    .username(USER_NAME)
+                    .tenantId(TENANT_ID)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -82,7 +94,13 @@ public class AssignUserToTenantTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToTenantCommand(TENANT_ID).username(USER_NAME).send().join())
+            () ->
+                client
+                    .newAssignUserToTenantCommand()
+                    .username(USER_NAME)
+                    .tenantId(TENANT_ID)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 500: 'Internal Server Error'");
   }
@@ -96,7 +114,13 @@ public class AssignUserToTenantTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newAssignUserToTenantCommand(TENANT_ID).username(USER_NAME).send().join())
+            () ->
+                client
+                    .newAssignUserToTenantCommand()
+                    .username(USER_NAME)
+                    .tenantId(TENANT_ID)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 403: 'Forbidden'");
   }

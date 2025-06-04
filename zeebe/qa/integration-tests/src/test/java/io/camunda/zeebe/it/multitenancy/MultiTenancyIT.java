@@ -1631,6 +1631,11 @@ public class MultiTenancyIT {
     Arrays.stream(usernames)
         .forEach(
             username ->
-                client.newAssignUserToTenantCommand(tenantId).username(username).send().join());
+                client
+                    .newAssignUserToTenantCommand()
+                    .username(username)
+                    .tenantId(tenantId)
+                    .send()
+                    .join());
   }
 }

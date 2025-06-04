@@ -64,7 +64,7 @@ class AssignUserToTenantTest {
   @Test
   void shouldAssignUserToTenant() {
     // When
-    client.newAssignUserToTenantCommand(TENANT_ID).username(USERNAME).send().join();
+    client.newAssignUserToTenantCommand().username(USERNAME).tenantId(TENANT_ID).send().join();
 
     // Then
     assertThat(
@@ -86,8 +86,9 @@ class AssignUserToTenantTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignUserToTenantCommand(invalidTenantId)
+                    .newAssignUserToTenantCommand()
                     .username(USERNAME)
+                    .tenantId(invalidTenantId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -100,11 +101,17 @@ class AssignUserToTenantTest {
   @Test
   void shouldRejectAssignIfTenantAlreadyAssignedToUser() {
     // Given
-    client.newAssignUserToTenantCommand(TENANT_ID).username(USERNAME).send().join();
+    client.newAssignUserToTenantCommand().username(USERNAME).tenantId(TENANT_ID).send().join();
 
     // When / Then
     assertThatThrownBy(
-            () -> client.newAssignUserToTenantCommand(TENANT_ID).username(USERNAME).send().join())
+            () ->
+                client
+                    .newAssignUserToTenantCommand()
+                    .username(USERNAME)
+                    .tenantId(TENANT_ID)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'")
         .hasMessageContaining(
