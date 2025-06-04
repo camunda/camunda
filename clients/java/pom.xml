@@ -26,7 +26,6 @@
     <version.java>8</version.java>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
     <openapi.dir>${maven.multiModuleProjectDirectory}/zeebe/gateway-protocol/src/main/proto</openapi.dir>
-    <auth0.java-jwt.version>4.4.0</auth0.java-jwt.version>
   </properties>
 
   <dependencies>
@@ -267,7 +266,6 @@
     <dependency>
       <groupId>com.auth0</groupId>
       <artifactId>java-jwt</artifactId>
-      <version>${auth0.java-jwt.version}</version>
     </dependency>
 
   </dependencies>
