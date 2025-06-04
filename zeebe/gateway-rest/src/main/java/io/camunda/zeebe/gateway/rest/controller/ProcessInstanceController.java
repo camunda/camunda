@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
@@ -19,8 +20,10 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceFilter;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceIncidentSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
@@ -193,6 +196,16 @@ public class ProcessInstanceController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::batchOperationModify);
   }
 
+  @CamundaPostMapping(path = "/{processInstanceKey}/incidents/search")
+  public ResponseEntity<IncidentSearchQueryResult> searchIncidents(
+      @PathVariable("processInstanceKey") final long processInstanceKey,
+      @RequestBody(required = false) final ProcessInstanceIncidentSearchQuery query) {
+    return SearchQueryRequestMapper.toIncidentQuery(query)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            incidentQuery -> searchIncidents(processInstanceKey, incidentQuery));
+  }
+
   private ResponseEntity<ProcessInstanceSearchQueryResult> search(
       final ProcessInstanceQuery query) {
     try {
@@ -202,6 +215,19 @@ public class ProcessInstanceController {
               .search(query);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private ResponseEntity<IncidentSearchQueryResult> searchIncidents(
+      final long processInstanceKey, final IncidentQuery query) {
+    try {
+      final var result =
+          processInstanceServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .searchIncidents(processInstanceKey, query);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toIncidentSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

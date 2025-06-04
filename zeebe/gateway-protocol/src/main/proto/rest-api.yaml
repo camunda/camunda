@@ -1792,6 +1792,49 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /process-instances/{processInstanceKey}/incidents/search:
+    post:
+      tags:
+        - Process instance
+      operationId: searchProcessInstanceIncidents
+      summary: Search for incidents associated with a process instance
+      description: |
+        Search for incidents caused by the process instance or any of its called process or decision instances.
+      parameters:
+        - name: processInstanceKey
+          in: path
+          required: true
+          description: The assigned key of the process instance, which acts as a unique identifier for this process instance.
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProcessInstanceIncidentSearchQuery"
+      responses:
+        "200":
+          description: The process instance search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IncidentSearchQueryResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The process instance with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /process-instances/{processInstanceKey}/cancellation:
     post:
       tags:
@@ -5781,6 +5824,16 @@ components:
           description: The process instance search filters.
           allOf:
             - $ref: "#/components/schemas/ProcessInstanceFilter"
+    ProcessInstanceIncidentSearchQuery:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/IncidentSearchQuerySortRequest"
     AdvancedIntegerFilter:
       title: Advanced filter
       description: Advanced integer (int32) filter.

@@ -122,12 +122,14 @@ public class CamundaServicesConfiguration {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ProcessInstanceSearchClient processInstanceSearchClient,
-      final SequenceFlowSearchClient sequenceFlowSearchClient) {
+      final SequenceFlowSearchClient sequenceFlowSearchClient,
+      final IncidentSearchClient incidentSearchClient) {
     return new ProcessInstanceServices(
         brokerClient,
         securityContextProvider,
         processInstanceSearchClient,
         sequenceFlowSearchClient,
+        incidentSearchClient,
         null);
   }
 
