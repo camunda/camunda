@@ -12,7 +12,6 @@ import {observer} from 'mobx-react';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {variablesStore} from 'modules/stores/variables';
 import {TabView} from 'modules/components/TabView';
-import {processInstanceListenersStore} from 'modules/stores/processInstanceListeners';
 import {useProcessInstancePageParams} from '../../../useProcessInstancePageParams';
 import {InputOutputMappings} from '../InputOutputMappings';
 import {VariablesContent as VariablesContentV2} from './VariablesContent';
@@ -38,7 +37,6 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
   const flowNodeInstanceId =
     flowNodeSelectionStore.state.selection?.flowNodeInstanceId;
 
-  const {listenersFailureCount} = processInstanceListenersStore;
   const [listenerTypeFilter, setListenerTypeFilter] =
     useState<ListenerEntity['listenerType']>();
 
@@ -62,6 +60,8 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
     payload: {filter: jobsFilter},
     disabled: !shouldUseFlowNodeId && !flowNodeInstanceId,
   });
+
+  const hasFailedListeners = jobs?.items.some(({state}) => state === 'FAILED');
 
   useEffect(() => {
     init(processInstance);
@@ -110,7 +110,7 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
         {
           id: 'listeners',
           testId: 'listeners-tab-button',
-          ...(listenersFailureCount && {
+          ...(hasFailedListeners && {
             labelIcon: <WarningFilled />,
           }),
           label: 'Listeners',
