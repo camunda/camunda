@@ -34,7 +34,6 @@ describe('Add variable', () => {
 
   afterEach(async () => {
     jest.clearAllMocks();
-    await new Promise(process.nextTick);
   });
 
   it('should show/hide add variable inputs', async () => {

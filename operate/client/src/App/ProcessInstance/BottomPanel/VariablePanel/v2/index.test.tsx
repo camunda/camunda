@@ -177,7 +177,9 @@ describe('VariablePanel', () => {
 
     render(<VariablePanel />, {wrapper: getWrapper()});
 
-    expect(await screen.findByTestId('variables-list')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
   });
 
@@ -595,8 +597,9 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([createVariable()]);
 
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-    expect(await screen.findByTestId('variables-list')).toBeTruthy();
-
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);

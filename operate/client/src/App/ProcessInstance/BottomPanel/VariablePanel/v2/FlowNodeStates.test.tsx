@@ -186,7 +186,9 @@ describe('VariablePanel', () => {
     modificationsStore.enableModificationMode();
 
     render(<VariablePanel />, {wrapper: getWrapper()});
-    expect(await screen.findByTestId('variables-list')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
     expect(
       await screen.findByRole('button', {name: /add variable/i}),
@@ -351,7 +353,9 @@ describe('VariablePanel', () => {
     modificationsStore.enableModificationMode();
 
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-    expect(await screen.findByTestId('variables-list')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
@@ -530,7 +534,9 @@ describe('VariablePanel', () => {
     modificationsStore.enableModificationMode();
 
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-    expect(await screen.findByTestId('variables-list')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 

@@ -203,7 +203,9 @@ describe('VariablePanel', () => {
     render(<VariablePanel />, {
       wrapper: getWrapper([Paths.processInstance('processInstanceId123')]),
     });
-    expect(await screen.findByTestId('variables-list')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
@@ -260,7 +262,9 @@ describe('VariablePanel', () => {
     });
 
     render(<VariablePanel />, {wrapper: getWrapper()});
-    expect(await screen.findByTestId('variables-list')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
@@ -351,7 +355,9 @@ describe('VariablePanel', () => {
     modificationsStore.enableModificationMode();
 
     render(<VariablePanel />, {wrapper: getWrapper()});
-    expect(await screen.findByTestId('variables-list')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
@@ -452,7 +458,9 @@ describe('VariablePanel', () => {
     });
 
     render(<VariablePanel />, {wrapper: getWrapper()});
-    expect(await screen.findByTestId('variables-list')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
@@ -513,7 +521,9 @@ describe('VariablePanel', () => {
     modificationsStore.enableModificationMode();
 
     render(<VariablePanel />, {wrapper: getWrapper()});
-    expect(await screen.findByTestId('variables-list')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     expect(
