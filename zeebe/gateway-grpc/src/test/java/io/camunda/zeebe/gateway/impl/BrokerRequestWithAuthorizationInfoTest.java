@@ -28,7 +28,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionReque
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionResponse;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.stream.Collectors;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -116,16 +116,12 @@ public class BrokerRequestWithAuthorizationInfoTest extends GatewayTest {
   }
 
   private void assertThatAuthorizationInfoIsSet(final Map<String, Object> claims) {
-    final Map<String, Object> mapToCheck =
-        claims.entrySet().stream()
-            .map(
-                entry ->
-                    Map.entry(
-                        Authorization.USER_TOKEN_CLAIM_PREFIX + entry.getKey(), entry.getValue()))
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     final BrokerExecuteCommand<?> brokerRequest = brokerClient.getSingleBrokerRequest();
     final Map<String, Object> decodedMap = brokerRequest.getAuthorization().getClaims();
-
-    assertThat(decodedMap).containsAllEntriesOf(mapToCheck);
+    assertThat(decodedMap)
+        .extractingByKey(
+            Authorization.USER_TOKEN_CLAIMS,
+            InstanceOfAssertFactories.map(String.class, Object.class))
+        .containsAllEntriesOf(claims);
   }
 }

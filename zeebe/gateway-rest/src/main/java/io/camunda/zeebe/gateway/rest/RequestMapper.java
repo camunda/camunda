@@ -77,7 +77,6 @@ import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.auth.Authorization;
-import io.camunda.zeebe.auth.ClaimTransformer;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivateActivitiesInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivitySearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
@@ -639,9 +638,7 @@ public class RequestMapper {
         }
 
         if (authenticatedPrincipal instanceof final CamundaOAuthPrincipal principal) {
-          principal
-              .getClaims()
-              .forEach((key, value) -> ClaimTransformer.applyUserClaim(claims, key, value));
+          claims.put(Authorization.USER_TOKEN_CLAIMS, principal.getClaims());
           authenticationBuilder.mapping(principal.getOAuthContext().mappingIds().stream().toList());
         }
 

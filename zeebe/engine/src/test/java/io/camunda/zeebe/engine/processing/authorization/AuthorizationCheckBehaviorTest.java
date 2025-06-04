@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.authorization;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_ANONYMOUS_USER;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_CLIENT_ID;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
-import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIM_PREFIX;
+import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -406,10 +406,8 @@ final class AuthorizationCheckBehaviorTest {
     when(command.getAuthorizations())
         .thenReturn(
             Map.of(
-                USER_TOKEN_CLAIM_PREFIX + firstClaimName,
-                firstClaimValue,
-                USER_TOKEN_CLAIM_PREFIX + secondClaimName,
-                secondClaimValue));
+                USER_TOKEN_CLAIMS,
+                Map.of(firstClaimName, firstClaimValue, secondClaimName, secondClaimValue)));
     when(command.hasRequestMetadata()).thenReturn(true);
 
     // then
@@ -456,7 +454,7 @@ final class AuthorizationCheckBehaviorTest {
     when(command.getAuthorizations())
         .thenReturn(
             Map.of(
-                USER_TOKEN_CLAIM_PREFIX + claimName, List.of(firstClaimValue, secondClaimValue)));
+                USER_TOKEN_CLAIMS, Map.of(claimName, List.of(firstClaimValue, secondClaimValue))));
     when(command.hasRequestMetadata()).thenReturn(true);
 
     // then
@@ -488,6 +486,36 @@ final class AuthorizationCheckBehaviorTest {
         permissionType,
         resourceId);
     final var command = mockCommandWithMapping(claimName, claimValue);
+
+    // when
+    final var request =
+        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+    final var authorizations =
+        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
+
+    // then
+    assertThat(authorizations).containsExactlyInAnyOrder(resourceId);
+  }
+
+  @Test
+  void shouldGetAuthorizationsForNestedMapping() {
+    // given
+    final var claimName = "$.nested.claim";
+    final var claimValue = UUID.randomUUID().toString();
+    final var mapping = createMapping(claimName, claimValue);
+    final var resourceType = AuthorizationResourceType.RESOURCE;
+    final var permissionType = PermissionType.CREATE;
+    final var resourceId = UUID.randomUUID().toString();
+    addPermission(
+        mapping.getMappingId(),
+        AuthorizationOwnerType.MAPPING,
+        resourceType,
+        permissionType,
+        resourceId);
+    final var command = mock(TypedRecord.class);
+    when(command.getAuthorizations())
+        .thenReturn(Map.of(USER_TOKEN_CLAIMS, Map.of("nested", Map.of("claim", claimValue))));
+    when(command.hasRequestMetadata()).thenReturn(true);
 
     // when
     final var request =
@@ -733,7 +761,7 @@ final class AuthorizationCheckBehaviorTest {
   private TypedRecord<?> mockCommandWithMapping(final String claimName, final String claimValue) {
     final var command = mock(TypedRecord.class);
     when(command.getAuthorizations())
-        .thenReturn(Map.of(USER_TOKEN_CLAIM_PREFIX + claimName, claimValue));
+        .thenReturn(Map.of(USER_TOKEN_CLAIMS, Map.of(claimName, claimValue)));
     when(command.hasRequestMetadata()).thenReturn(true);
     return command;
   }
