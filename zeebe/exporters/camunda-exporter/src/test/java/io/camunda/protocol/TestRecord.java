@@ -92,6 +92,11 @@ public record TestRecord(long position, ValueType valueType) implements Record<T
   }
 
   @Override
+  public long getBatchOperationReference() {
+    return 0;
+  }
+
+  @Override
   public Record<TestValue> copyOf() {
     return this;
   }

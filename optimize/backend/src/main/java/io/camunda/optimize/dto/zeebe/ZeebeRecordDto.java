@@ -37,6 +37,7 @@ public abstract class ZeebeRecordDto<VALUE extends RecordValue, INTENT extends I
   private INTENT intent;
   private Map<String, Object> authorizations;
   private long operationReference;
+  private long batchOperationKey;
 
   public ZeebeRecordDto() {}
 
@@ -124,6 +125,13 @@ public abstract class ZeebeRecordDto<VALUE extends RecordValue, INTENT extends I
     return operationReference;
   }
 
+
+  @Override
+  public long getBatchOperationReference() {
+    return batchOperationKey;
+  }
+
+
   @Override
   public Record<VALUE> copyOf() {
     throw new UnsupportedOperationException("Operation not supported");
@@ -185,6 +193,10 @@ public abstract class ZeebeRecordDto<VALUE extends RecordValue, INTENT extends I
     this.position = position;
   }
 
+  public void setBatchOperationKey(final long batchOperationKey) {
+    this.batchOperationKey = batchOperationKey;
+  }
+
   public Long getSequence() {
     return sequence;
   }
@@ -241,6 +253,8 @@ public abstract class ZeebeRecordDto<VALUE extends RecordValue, INTENT extends I
         + getAuthorizations()
         + ", operationReference="
         + getOperationReference()
+        + ", batchOperationKey="
+        + getBatchOperationReference()
         + ")";
   }
 
@@ -262,5 +276,6 @@ public abstract class ZeebeRecordDto<VALUE extends RecordValue, INTENT extends I
     public static final String intent = "intent";
     public static final String authorizations = "authorizations";
     public static final String operationReference = "operationReference";
+    public static final String batchOperationKey = "batchOperationKey";
   }
 }
