@@ -210,7 +210,10 @@ public class CamundaProcessTestExtension
     }
     CamundaAssert.reset();
     closeCreatedClients();
-    // final step: delete data
+    // final steps: reset the time and delete data
+    // It's important that the runtime clock is reset before the purge is started, as doing it
+    // the other way around leads to race conditions and inconsistencies in the tests
+    resetRuntimeClock();
     deleteRuntimeData();
   }
 
@@ -238,6 +241,19 @@ public class CamundaProcessTestExtension
     } catch (final Throwable t) {
       LOG.warn(
           "Failed to delete the runtime data, skipping. Check the runtime for details. "
+              + "Note that a dirty runtime may cause failures in other test cases.",
+          t);
+    }
+  }
+
+  private void resetRuntimeClock() {
+    try {
+      LOG.debug("Resetting the time");
+      camundaManagementClient.resetTime();
+      LOG.debug("Time reset");
+    } catch (final Throwable t) {
+      LOG.warn(
+          "Failed to reset the time, skipping. Check the runtime for details. "
               + "Note that a dirty runtime may cause failures in other test cases.",
           t);
     }

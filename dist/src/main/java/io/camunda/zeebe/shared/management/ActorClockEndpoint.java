@@ -118,7 +118,9 @@ public class ActorClockEndpoint {
           "Expected to reset the clock, but the clock is immutable", 403);
     }
 
-    clock.get().resetTime();
+    final var mutableClock = clock.get();
+    mutableClock.resetTime();
+    mutableClock.update();
     return getCurrentClock();
   }
 
