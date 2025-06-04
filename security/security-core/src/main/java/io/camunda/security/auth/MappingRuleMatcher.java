@@ -15,6 +15,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
+import net.jcip.annotations.NotThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +55,11 @@ public final class MappingRuleMatcher {
   /**
    * A long-lived cache for compiling expressions. This is used to avoid recompiling the same
    * expression multiple times.
+   *
+   * <p>This cache is not thread-safe, mostly because <a
+   * href="https://github.com/json-path/JsonPath/issues/975">JsonPath is not thread safe</a>.
    */
+  @NotThreadSafe
   private static final class CompilationCache {
     private final Map<String, JsonPath> cache = new HashMap<>();
 
@@ -75,7 +80,11 @@ public final class MappingRuleMatcher {
   /**
    * A short-lived cache for evaluating many expressions against the same claims. Results are cached
    * so each expression is only evaluated once.
+   *
+   * <p>This cache is not thread-safe because the underlying {@link CompilationCache} is not
+   * thread-safe either.
    */
+  @NotThreadSafe
   private static final class EvaluationCache {
     private final CompilationCache compilationCache;
     private final Map<String, Object> claims;
