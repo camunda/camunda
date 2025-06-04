@@ -2,20 +2,30 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
+import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record JobEntity(
     Long jobKey,
-    Long processInstanceKey,
-    Long processDefinitionKey,
-    Long elementInstanceKey,
-    String elementId,
     String type,
     String worker,
     JobState state,
     JobKind kind,
     ListenerEventType listenerEventType,
+    Integer retries,
+    Boolean isDenied,
+    String deniedReason,
+    Boolean hasFailedWithRetriesLeft,
+    String errorCode,
+    String errorMessage,
+    Map<String, String> customHeaders,
+    OffsetDateTime deadline,
     OffsetDateTime endTime,
+    String processDefinitionId,
+    Long processDefinitionKey,
+    Long processInstanceKey,
+    String elementId,
+    Long elementInstanceKey,
     String tenantId) {
 
   public enum JobState {

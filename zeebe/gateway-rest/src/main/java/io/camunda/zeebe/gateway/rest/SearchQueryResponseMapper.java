@@ -465,10 +465,25 @@ public final class SearchQueryResponseMapper {
     return new JobSearchResult()
         .jobKey(KeyUtil.keyToString(job.jobKey()))
         .type(job.type())
+        .worker(job.worker())
         .state(JobStateEnum.fromValue(job.state().name()))
         .kind(JobKindEnum.fromValue(job.kind().name()))
         .listenerEventType(JobListenerEventTypeEnum.fromValue(job.listenerEventType().name()))
-        .endTime(formatDate(job.endTime()));
+        .retries(job.retries())
+        .isDenied(job.isDenied())
+        .deniedReason(job.deniedReason())
+        .hasFailedWithRetriesLeft(job.hasFailedWithRetriesLeft())
+        .errorCode(job.errorCode())
+        .errorMessage(job.errorMessage())
+        .customHeaders(job.customHeaders())
+        .deadline(formatDate(job.deadline()))
+        .endTime(formatDate(job.endTime()))
+        .processDefinitionId(job.processDefinitionId())
+        .processDefinitionKey(KeyUtil.keyToString(job.processDefinitionKey()))
+        .processInstanceKey(KeyUtil.keyToString(job.processInstanceKey()))
+        .elementId(job.elementId())
+        .elementInstanceKey(KeyUtil.keyToString(job.elementInstanceKey()))
+        .tenantId(job.tenantId());
   }
 
   public static ProcessInstanceResult toProcessInstance(final ProcessInstanceEntity p) {

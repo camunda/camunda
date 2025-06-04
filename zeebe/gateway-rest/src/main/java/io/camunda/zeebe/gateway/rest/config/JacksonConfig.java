@@ -13,6 +13,8 @@ import io.camunda.zeebe.gateway.protocol.rest.BasicStringFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.DateTimeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.IntegerFilterProperty;
+import io.camunda.zeebe.gateway.protocol.rest.JobKindFilterProperty;
+import io.camunda.zeebe.gateway.protocol.rest.JobListenerEventTypeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.JobStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.StringFilterProperty;
@@ -20,6 +22,8 @@ import io.camunda.zeebe.gateway.rest.deserializer.BasicStringFilterPropertyDeser
 import io.camunda.zeebe.gateway.rest.deserializer.DateTimeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ElementInstanceStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.IntegerFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.JobKindFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.JobListenerEventTypeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.JobStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ProcessInstanceStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.StringFilterPropertyDeserializer;
@@ -46,6 +50,10 @@ public class JacksonConfig {
         ElementInstanceStateFilterProperty.class,
         new ElementInstanceStateFilterPropertyDeserializer());
     module.addDeserializer(JobStateFilterProperty.class, new JobStateFilterPropertyDeserializer());
+    module.addDeserializer(JobKindFilterProperty.class, new JobKindFilterPropertyDeserializer());
+    module.addDeserializer(
+        JobListenerEventTypeFilterProperty.class,
+        new JobListenerEventTypeFilterPropertyDeserializer());
     return builder -> builder.modulesToInstall(modules -> modules.add(module));
   }
 
