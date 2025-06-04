@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.importing.engine.service;
 
+import static io.camunda.optimize.dto.optimize.ReportConstants.STRING_TYPE;
 import static io.camunda.optimize.dto.optimize.query.variable.VariableType.BOOLEAN;
 import static io.camunda.optimize.dto.optimize.query.variable.VariableType.DATE;
 import static io.camunda.optimize.dto.optimize.query.variable.VariableType.DOUBLE;
@@ -73,8 +74,15 @@ public class ObjectVariableService {
         final ProcessVariableDto processVariableDto = createSkeletonVariableDto(variableUpdateDto);
         processVariableDto.setId(variableUpdateDto.getId());
         processVariableDto.setName(variableUpdateDto.getName());
-        processVariableDto.setType(variableUpdateDto.getType());
-        processVariableDto.setValue(Collections.singletonList(variableUpdateDto.getValue()));
+        if (variableUpdateDto.getType().equals(STRING_TYPE)) {
+          parseStringOrDateVariableAndSet(
+              variableUpdateDto.getValue(),
+              Collections.singletonList(variableUpdateDto.getValue()),
+              processVariableDto);
+        } else {
+          processVariableDto.setType(variableUpdateDto.getType());
+          processVariableDto.setValue(Collections.singletonList(variableUpdateDto.getValue()));
+        }
         resultList.add(processVariableDto);
       }
     }
