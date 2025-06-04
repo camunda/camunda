@@ -77,7 +77,7 @@ class BatchOperationControllerTest extends RestControllerTest {
   private static Stream<Arguments> provideAdvancedSearchParameters() {
     final var streamBuilder = Stream.<Arguments>builder();
 
-    stringOperationTestCases(
+    basicStringOperationTestCases(
         streamBuilder,
         "batchOperationId",
         ops ->

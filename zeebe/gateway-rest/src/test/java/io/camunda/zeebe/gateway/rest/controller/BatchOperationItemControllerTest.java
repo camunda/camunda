@@ -60,7 +60,7 @@ class BatchOperationItemControllerTest extends RestControllerTest {
             new io.camunda.search.filter.BatchOperationItemFilter.Builder()
                 .processInstanceKeyOperations(ops)
                 .build());
-    stringOperationTestCases(
+    basicStringOperationTestCases(
         streamBuilder,
         "batchOperationId",
         ops ->

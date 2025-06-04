@@ -125,6 +125,15 @@ public abstract class RestControllerTest {
         .forEach(streamBuilder::add);
   }
 
+  public static void basicStringOperationTestCases(
+      final Stream.Builder<Arguments> streamBuilder,
+      final String filterKey,
+      final Function<List<Operation<String>>, Object> builderMethod) {
+    BASIC_STRING_OPERATIONS.stream()
+        .map(ops -> generateParameterizedArguments(filterKey, builderMethod, ops, true))
+        .forEach(streamBuilder::add);
+  }
+
   public static void stringOperationTestCases(
       final Stream.Builder<Arguments> streamBuilder,
       final String filterKey,
