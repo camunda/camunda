@@ -29,7 +29,10 @@ public interface ConstructableSnapshotStore extends PersistedSnapshotStore {
 
   /**
    * Makes a copy of the given snapshot to the given destination folder, keeping only the columns
-   * needed for the bootstrap process of a new partition. Anything raft related data is removed.
+   * needed for the bootstrap process of a new partition. Any raft related data is removed.
+   *
+   * <p>Only one snapshot for bootstrap can be taken at a time. It will be located into the
+   * "bootstrap-snapshots" folder.
    *
    * @param persistedSnapshot the persisted snapshot to copy
    * @param copySnapshot the consumer which copies the snapshot to the destination folder. The first

@@ -718,6 +718,16 @@ public final class FileBasedSnapshotStoreImpl {
     }
   }
 
+  /**
+   * Take a copy of the given persisted snapshot and move it to the bootstrap snapshots directory,
+   * applying the {@param copySnapshot} function to the files. Only one snapshot for bootstrap can
+   * be taken at a time. It will be located into the "bootstrap-snapshots" folder.
+   *
+   * @param persistedSnapshot to copy from
+   * @param copySnapshot function to copy the files from the snapshot into the target folder: the
+   *     arguments are (sourcePath, targetPath)
+   * @return a future with the persisted snapshot for bootstrap.
+   */
   public ActorFuture<PersistedSnapshot> copyForBootstrap(
       final PersistedSnapshot persistedSnapshot, final BiConsumer<Path, Path> copySnapshot) {
     final var snapshotPath = persistedSnapshot.getPath();
