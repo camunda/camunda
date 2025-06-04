@@ -37,6 +37,7 @@ const useProcessInstanceDeprecated = <T = ProcessInstanceEntity>(
         }
       : skipToken,
     select,
+    refetchInterval: 5000,
   });
 };
 

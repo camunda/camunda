@@ -50,6 +50,11 @@ import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'mo
 
 const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
 
+jest.mock('modules/feature-flags', () => ({
+  ...jest.requireActual('modules/feature-flags'),
+  IS_PROCESS_INSTANCE_V2_ENABLED: true,
+}));
+
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
     displayNotification: jest.fn(() => () => {}),
@@ -87,7 +92,7 @@ const getWrapper = (
   return Wrapper;
 };
 
-describe.skip('VariablePanel', () => {
+describe('VariablePanel', () => {
   const mockProcessInstance: ProcessInstance = {
     processInstanceKey: 'instance_id',
     state: 'ACTIVE',
@@ -168,8 +173,13 @@ describe.skip('VariablePanel', () => {
   });
 
   it('should render variables', async () => {
+    mockFetchVariables().withSuccess([createVariable()]);
+
     render(<VariablePanel />, {wrapper: getWrapper()});
 
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
   });
 
@@ -388,6 +398,8 @@ describe.skip('VariablePanel', () => {
   });
 
   it('should display validation error if backend validation fails while adding variable', async () => {
+    mockFetchVariables().withSuccess([createVariable()]);
+
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() =>
       expect(
@@ -582,10 +594,13 @@ describe.skip('VariablePanel', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: statistics,
     });
+    mockFetchVariables().withSuccess([createVariable()]);
 
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
-    expect(screen.getByText('testVariableName')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
+    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);

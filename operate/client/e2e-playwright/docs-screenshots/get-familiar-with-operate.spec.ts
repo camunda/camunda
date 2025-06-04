@@ -118,6 +118,8 @@ test.describe('get familiar with operate', () => {
       URL_API_PATTERN,
       mockProcessInstanceDetailResponses({
         processInstanceDetail: runningOrderProcessInstance.detail,
+        processInstanceDetailV2: runningOrderProcessInstance.detailV2,
+        callHierarchy: runningOrderProcessInstance.callHierarchy,
         flowNodeInstances: runningOrderProcessInstance.flowNodeInstances,
         statisticsV2: runningOrderProcessInstance.statisticsV2,
         sequenceFlows: runningOrderProcessInstance.sequenceFlows,

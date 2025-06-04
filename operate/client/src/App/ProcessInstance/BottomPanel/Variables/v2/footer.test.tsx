@@ -36,6 +36,53 @@ import {mockFetchProcessInstance as mockProcessInstanceDeprecated} from 'modules
 const instanceMock = createInstance({id: '1'});
 
 describe('Footer', () => {
+  beforeEach(() => {
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithInputOutputMappingsXML,
+    );
+    mockProcessInstanceDeprecated().withSuccess(instanceMock);
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [
+        {
+          elementId: 'start',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 1,
+        },
+        {
+          elementId: 'neverFails',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 1,
+        },
+      ],
+    });
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [
+        {
+          elementId: 'start',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 1,
+        },
+        {
+          elementId: 'neverFails',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 1,
+        },
+      ],
+    });
+  });
+
+  afterEach(async () => {
+    jest.clearAllMocks();
+  });
+
   it('should disable add variable button when loading', async () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
@@ -85,7 +132,8 @@ describe('Footer', () => {
     );
   });
 
-  it.skip('should hide/disable add variable button if add/edit variable button is clicked', async () => {
+  it('should hide/disable add variable button if add/edit variable button is clicked', async () => {
+    jest.useFakeTimers();
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockProcessInstanceDeprecated().withSuccess(instanceMock);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
@@ -105,9 +153,11 @@ describe('Footer', () => {
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
-    expect(
-      screen.queryByRole('button', {name: /add variable/i}),
-    ).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', {name: /add variable/i}),
+      ).not.toBeInTheDocument(),
+    );
 
     await user.click(screen.getByRole('button', {name: /exit edit mode/i}));
     expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
@@ -121,32 +171,13 @@ describe('Footer', () => {
 
     await user.click(screen.getByRole('button', {name: /exit edit mode/i}));
     expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
-  it.skip('should disable add variable button when selected flow node is not running', async () => {
+  it('should disable add variable button when selected flow node is not running', async () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockProcessInstanceDeprecated().withSuccess(instanceMock);
-    mockFetchFlownodeInstancesStatistics().withSuccess({
-      items: [
-        {
-          elementId: 'start',
-          active: 0,
-          canceled: 0,
-          incidents: 0,
-          completed: 1,
-        },
-        {
-          elementId: 'neverFails',
-          active: 0,
-          canceled: 0,
-          incidents: 0,
-          completed: 1,
-        },
-      ],
-    });
-    mockFetchProcessDefinitionXml().withSuccess(
-      mockProcessWithInputOutputMappingsXML,
-    );
     mockFetchVariables().withSuccess([]);
 
     init('process-instance', []);
@@ -156,13 +187,6 @@ describe('Footer', () => {
       instanceId: '1',
       payload: {pageSize: 10, scopeId: '1'},
     });
-
-    render(<Variables />, {wrapper: getWrapper()});
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
-
-    await waitFor(() =>
-      expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled(),
-    );
 
     mockFetchFlowNodeMetadata().withSuccess({
       ...singleInstanceMetadata,
@@ -179,6 +203,9 @@ describe('Footer', () => {
         isMultiInstance: false,
       }),
     );
+
+    render(<Variables />, {wrapper: getWrapper()});
+    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
 
     await waitFor(() =>
       expect(
@@ -207,7 +234,5 @@ describe('Footer', () => {
     );
 
     expect(screen.getByRole('button', {name: /add variable/i})).toBeDisabled();
-
-    flowNodeMetaDataStore.reset();
   });
 });

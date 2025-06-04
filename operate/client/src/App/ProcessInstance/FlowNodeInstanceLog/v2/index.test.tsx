@@ -47,8 +47,21 @@ const mockProcessInstance: ProcessInstance = {
   processDefinitionId: 'processName',
   tenantId: '<default>',
   processDefinitionName: 'Multi-Instance Process',
-  hasIncident: true,
+  hasIncident: false,
 };
+const mockDeprecatedProcessInstance = createInstance({
+  id: '1',
+  state: 'ACTIVE',
+  processName: 'processName',
+  bpmnProcessId: 'processName',
+  operations: [
+    createOperation({
+      state: 'COMPLETED',
+      type: 'MIGRATE_PROCESS_INSTANCE',
+      completedDate: MOCK_TIMESTAMP,
+    }),
+  ],
+});
 
 const Wrapper = ({children}: {children?: React.ReactNode}) => {
   useEffect(() => {
@@ -74,23 +87,15 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
 describe('FlowNodeInstanceLog', () => {
   beforeEach(async () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
-      createInstance({
-        id: '1',
-        state: 'ACTIVE',
-        processName: 'processName',
-        bpmnProcessId: 'processName',
-        operations: [
-          createOperation({
-            state: 'COMPLETED',
-            type: 'MIGRATE_PROCESS_INSTANCE',
-            completedDate: MOCK_TIMESTAMP,
-          }),
-        ],
-      }),
+      mockDeprecatedProcessInstance,
     );
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
     processInstanceDetailsStore.init({id: '1'});
+  });
+
+  afterEach(async () => {
+    await new Promise(process.nextTick);
   });
 
   it('should render skeleton when instance tree is not loaded', async () => {
@@ -197,7 +202,11 @@ describe('FlowNodeInstanceLog', () => {
     jest.useRealTimers();
   });
 
-  it.skip('should render flow node instances tree', async () => {
+  it('should render flow node instances tree', async () => {
+    jest.useFakeTimers();
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockDeprecatedProcessInstance,
+    );
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessDefinitionXml().withSuccess('');
     init(mockProcessInstance);
@@ -209,7 +218,9 @@ describe('FlowNodeInstanceLog', () => {
     );
 
     expect(
-      screen.getByText('Migrated 2018-12-12 00:00:00'),
+      await screen.findByText('Migrated 2018-12-12 00:00:00'),
     ).toBeInTheDocument();
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 });

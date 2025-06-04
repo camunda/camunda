@@ -51,6 +51,9 @@ import {
   useIsRootNodeSelected,
   useRootNode,
 } from 'modules/hooks/flowNodeSelection';
+import {notificationsStore} from 'modules/stores/notifications';
+import {useNavigate} from 'react-router-dom';
+import {Locations} from 'modules/Routes';
 
 const startPolling = (processInstance?: ProcessInstanceT) => {
   startPollingVariables(processInstance, {runImmediately: true});
@@ -74,11 +77,29 @@ const ProcessInstance: React.FC = observer(() => {
   const {data: processInstanceData} = useProcessInstance();
   const isRootNodeSelected = useIsRootNodeSelected();
   const rootNode = useRootNode();
+  const navigate = useNavigate();
 
   const {isNavigationInterrupted, confirmNavigation, cancelNavigation} =
     useCallbackPrompt({
       shouldInterrupt: modificationsStore.isModificationModeEnabled,
     });
+
+  useEffect(() => {
+    if (error?.response?.status === 404 && processInstanceId) {
+      notificationsStore.displayNotification({
+        kind: 'error',
+        title: `Instance ${processInstanceId} could not be found`,
+        isDismissable: true,
+      });
+      navigate(
+        Locations.processes({
+          active: true,
+          incidents: true,
+        }),
+        {replace: true},
+      );
+    }
+  }, [error, processInstanceId, navigate]);
 
   useEffect(() => {
     const disposer = reaction(
@@ -183,7 +204,7 @@ const ProcessInstance: React.FC = observer(() => {
             breadcrumb={
               isBreadcrumbVisible && callHierarchy ? (
                 <Breadcrumb
-                  callHierarchy={callHierarchy}
+                  callHierarchy={callHierarchy.slice(0, -1)}
                   processInstance={processInstance}
                 />
               ) : undefined
