@@ -45,7 +45,7 @@ public class Cursor<T> {
               new TypeReference<Object[]>() {}); // new TypeReference<List<Object>>() {}
 
       return IntStream.range(0, columns.size())
-          .mapToObj(i -> columns.get(i).convertSortOption(values[i]))
+          .mapToObj(i -> columns.get(i).convertToPropertyValue(values[i]))
           .toArray();
 
     } catch (final IOException e) {

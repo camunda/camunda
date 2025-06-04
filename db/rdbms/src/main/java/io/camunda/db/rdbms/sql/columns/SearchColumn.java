@@ -15,7 +15,7 @@ import java.util.function.Function;
 
 public interface SearchColumn<T> {
 
-  static final Map<Class<?>, Function<Object, Object>> converters =
+  Map<Class<?>, Function<Object, Object>> converters =
       Map.of(
           Long.class, obj -> Long.valueOf(obj.toString()),
           Integer.class, obj -> Integer.valueOf(obj.toString()),
@@ -51,7 +51,7 @@ public interface SearchColumn<T> {
     }
   }
 
-  default Object convertSortOption(final Object object) {
+  default Object convertToPropertyValue(final Object object) {
     if (object == null) {
       return null;
     }
@@ -60,9 +60,9 @@ public interface SearchColumn<T> {
   }
 
   static Function<Object, Object> getConverter(final Class<?> type) {
-    //    if (type.isEnum()) {
-    //      return obj -> Enum.valueOf((Class<? extends Enum>) type, obj.toString());
-    //    }
+    if (type.isEnum()) {
+      return obj -> Enum.valueOf((Class<? extends Enum>) type, obj.toString());
+    }
 
     final var converter = converters.get(type);
 

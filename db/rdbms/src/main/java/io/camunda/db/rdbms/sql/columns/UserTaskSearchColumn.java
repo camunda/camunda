@@ -10,7 +10,7 @@ package io.camunda.db.rdbms.sql.columns;
 import io.camunda.search.entities.UserTaskEntity;
 
 public enum UserTaskSearchColumn implements SearchColumn<UserTaskEntity> {
-  USER_TASK_KEY("userKey"),
+  USER_TASK_KEY("userTaskKey"),
   CREATION_DATE("creationDate"),
   DUE_DATE("dueDate"),
   FOLLOW_UP_DATE("followUpDate"),
