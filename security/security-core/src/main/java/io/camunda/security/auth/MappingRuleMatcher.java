@@ -7,6 +7,8 @@
  */
 package io.camunda.security.auth;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.JsonPathException;
@@ -67,19 +69,15 @@ public final class MappingRuleMatcher {
    */
   @NotThreadSafe
   public static final class CompilationCache {
-    private final Map<String, JsonPath> cache = new HashMap<>();
+    private final Cache<String, JsonPath> cache = Caffeine.newBuilder().maximumSize(1024).build();
 
     public JsonPath compile(final String expression) {
-      return cache.computeIfAbsent(
-          expression,
-          exp -> {
-            try {
-              return JsonPath.compile(exp);
-            } catch (final JsonPathException e) {
-              LOG.warn("Failed to compile expression {}", exp, e);
-              return null;
-            }
-          });
+      try {
+        return cache.get(expression, JsonPath::compile);
+      } catch (final RuntimeException e) {
+        LOG.warn("Failed to compile expression {}", expression, e);
+        return null;
+      }
     }
   }
 
