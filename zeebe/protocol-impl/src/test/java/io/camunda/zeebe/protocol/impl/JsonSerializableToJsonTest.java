@@ -3437,6 +3437,7 @@ final class JsonSerializableToJsonTest {
       {
         "intervalType": "ACTIVE",
         "eventType": "RPI",
+        "resetTime": -1,
         "startTime": 123,
         "endTime": 124,
         "values": {"tenant1":5}
@@ -3453,6 +3454,7 @@ final class JsonSerializableToJsonTest {
       {
         "intervalType": "ACTIVE",
         "eventType": "NONE",
+        "resetTime": -1,
         "startTime": -1,
         "endTime": -1,
         "values": {}
