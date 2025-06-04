@@ -54,7 +54,6 @@ public final class UserTaskCommandProcessors {
                 new UserTaskCreateProcessor(
                     processingState,
                     writers,
-                    authCheckBehavior,
                     bpmnBehaviors.userTaskBehavior(),
                     bpmnBehaviors.jobBehavior()),
                 UserTaskIntent.ASSIGN,
