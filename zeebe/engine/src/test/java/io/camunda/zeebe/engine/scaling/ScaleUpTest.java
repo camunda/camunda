@@ -17,12 +17,14 @@ import static org.mockito.Mockito.verify;
 import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.test.util.record.ScaleRecordStream;
 import java.util.List;
 import java.util.Set;
 import org.junit.Before;
@@ -31,11 +33,13 @@ import org.junit.Test;
 
 public class ScaleUpTest {
   @Rule public final EngineRule engine = EngineRule.multiplePartition(2);
+  private int index;
 
   @Before
   public void beforeEach() {
     RecordingExporter.reset();
     clearInvocations(engine.getCommandResponseWriter());
+    index = 100;
   }
 
   @Test
@@ -43,7 +47,9 @@ public class ScaleUpTest {
     // given
     final var command =
         RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3));
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3))
+            .key(Protocol.encodePartitionId(1, index++));
+
     command.recordMetadata().requestId(123);
 
     // when
@@ -60,27 +66,27 @@ public class ScaleUpTest {
 
     final var command =
         RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3));
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3))
+            .key(Protocol.encodePartitionId(1, index++));
 
     final var bootstrapPartitions =
         RecordToWrite.command()
             .scale(
                 ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
-                new ScaleRecord().setRedistributedPartitions(List.of(3)));
+                new ScaleRecord().setRedistributedPartitions(List.of(3)))
+            .key(Protocol.encodePartitionId(1, index++));
     // when
     engine.writeRecords(command, bootstrapPartitions);
 
     // then
-    assertThat(
-            RecordingExporter.scaleRecords()
-                .limit(r -> r.getIntent() == ScaleIntent.SCALED_UP)
-                .map(Record::getIntent))
+    assertThat(allScaleRecordsForPartition(1).map(Record::getIntent))
         .containsExactly(
             ScaleIntent.SCALE_UP,
             ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
             ScaleIntent.SCALING_UP,
             ScaleIntent.PARTITION_BOOTSTRAPPED,
             ScaleIntent.SCALED_UP);
+    assertPartitionBootstrappedHasBeenRedistributed();
   }
 
   @Test
@@ -91,7 +97,8 @@ public class ScaleUpTest {
     engine.start();
     final var command =
         RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3));
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3))
+            .key(Protocol.encodePartitionId(1, index++));
 
     // when
     engine.writeRecords(command);
@@ -110,7 +117,10 @@ public class ScaleUpTest {
   @Test
   public void shouldRejectEmptyScaleUp() {
     // given
-    final var command = RecordToWrite.command().scale(ScaleIntent.SCALE_UP, new ScaleRecord());
+    final var command =
+        RecordToWrite.command()
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord())
+            .key(Protocol.encodePartitionId(1, index++));
 
     // when
     engine.writeRecords(command);
@@ -131,7 +141,8 @@ public class ScaleUpTest {
 
     final var command =
         RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(10000));
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(10000))
+            .key(Protocol.encodePartitionId(1, index++));
 
     // when
     engine.writeRecords(command);
@@ -151,7 +162,8 @@ public class ScaleUpTest {
     // given
     final var command =
         RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(1));
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(1))
+            .key(Protocol.encodePartitionId(1, index++));
 
     // when
     engine.writeRecords(command);
@@ -176,7 +188,8 @@ public class ScaleUpTest {
     // when
     engine.writeRecords(
         RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3)));
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3))
+            .key(Protocol.encodePartitionId(1, index++)));
 
     // then
     assertThat(RecordingExporter.scaleRecords().onlyCommandRejections().findFirst())
@@ -197,7 +210,8 @@ public class ScaleUpTest {
                 ScaleIntent.STATUS,
                 new ScaleRecord()
                     .setDesiredPartitionCount(4)
-                    .setRedistributedPartitions(List.of(4)));
+                    .setRedistributedPartitions(List.of(4)))
+            .key(Protocol.encodePartitionId(1, index++));
 
     // when
     engine.writeRecords(command);
@@ -219,7 +233,8 @@ public class ScaleUpTest {
     // given
     final var scaleUpCommand =
         RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(4));
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(4))
+            .key(Protocol.encodePartitionId(1, index++));
 
     final var getStatusCommand =
         RecordToWrite.command()
@@ -270,23 +285,23 @@ public class ScaleUpTest {
   @Test
   public void shouldScaleUpContinuously() {
     // given
+    var index = 1023;
     final var scaleTo3 =
         RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3));
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3))
+            .key(Protocol.encodePartitionId(1, index++));
 
     final var bootstrapPartitionsTo3 =
         RecordToWrite.command()
             .scale(
                 ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
-                new ScaleRecord().setRedistributedPartitions(List.of(3)));
+                new ScaleRecord().setRedistributedPartitions(List.of(3)))
+            .key(Protocol.encodePartitionId(1, index++));
     // when
     engine.writeRecords(scaleTo3, bootstrapPartitionsTo3);
 
     // then
-    assertThat(
-            RecordingExporter.scaleRecords()
-                .limit(r -> r.getIntent() == ScaleIntent.SCALED_UP)
-                .map(Record::getIntent))
+    assertThat(allScaleRecordsForPartition(1).map(Record::getIntent))
         .hasSize(5)
         .containsSequence(
             ScaleIntent.SCALE_UP,
@@ -294,6 +309,8 @@ public class ScaleUpTest {
             ScaleIntent.SCALING_UP,
             ScaleIntent.PARTITION_BOOTSTRAPPED,
             ScaleIntent.SCALED_UP);
+
+    assertPartitionBootstrappedHasBeenRedistributed();
 
     RecordingExporter.reset();
 
@@ -304,19 +321,18 @@ public class ScaleUpTest {
                 ScaleIntent.SCALE_UP,
                 new ScaleRecord()
                     .setDesiredPartitionCount(4)
-                    .setRedistributedPartitions(List.of(4)));
+                    .setRedistributedPartitions(List.of(4)))
+            .key(Protocol.encodePartitionId(1, index++));
     final var bootstrapPartitionsTo4 =
         RecordToWrite.command()
             .scale(
                 ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
-                new ScaleRecord().setRedistributedPartitions(List.of(4)));
+                new ScaleRecord().setRedistributedPartitions(List.of(4)))
+            .key(Protocol.encodePartitionId(1, index++));
     engine.writeRecords(scaleTo4, bootstrapPartitionsTo4);
 
     // then
-    assertThat(
-            RecordingExporter.scaleRecords()
-                .limit(r -> r.getIntent() == ScaleIntent.SCALED_UP)
-                .map(Record::getIntent))
+    assertThat(allScaleRecordsForPartition(1).map(Record::getIntent))
         .hasSize(5)
         .containsSequence(
             ScaleIntent.SCALE_UP,
@@ -324,6 +340,7 @@ public class ScaleUpTest {
             ScaleIntent.SCALING_UP,
             ScaleIntent.PARTITION_BOOTSTRAPPED,
             ScaleIntent.SCALED_UP);
+    assertPartitionBootstrappedHasBeenRedistributed();
   }
 
   @Test
@@ -332,38 +349,60 @@ public class ScaleUpTest {
     // set a lower maximum time as we don't expect to see the SCALED_UP event
     RecordingExporter.setMaximumWaitTime(200);
     // given
+    var index = 99;
     final var scaleTo3 =
         RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3));
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3))
+            .key(Protocol.encodePartitionId(1, index++));
 
     final var bootstrapPartitionsTo3 =
         RecordToWrite.command()
             .scale(
                 ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
-                new ScaleRecord().setRedistributedPartitions(List.of(3)));
+                new ScaleRecord().setRedistributedPartitions(List.of(3)))
+            .key(Protocol.encodePartitionId(1, index++));
+    bootstrapPartitionsTo3.recordMetadata().requestId(1234);
     // when
     engine.writeRecords(scaleTo3, bootstrapPartitionsTo3);
-    assertThat(
-            RecordingExporter.scaleRecords()
-                .limit(r -> r.getIntent() == ScaleIntent.SCALED_UP)
-                .map(Record::getIntent))
-        .hasSize(5);
-    RecordingExporter.reset();
-    clearInvocations(engine.getCommandResponseWriter());
+    assertThat(allScaleRecordsForPartition(1).map(Record::getIntent)).hasSize(5);
+    assertPartitionBootstrappedHasBeenRedistributed();
 
-    bootstrapPartitionsTo3.recordMetadata().requestId(1234);
+    RecordingExporter.reset();
+
+    // when
     engine.writeRecords(bootstrapPartitionsTo3);
 
+    // then
     // no additional events are added to the log stream
     final var records =
-        RecordingExporter.scaleRecords().limit(r -> r.getIntent() == ScaleIntent.SCALED_UP);
+        RecordingExporter.scaleRecords()
+            .limit(r -> r.getIntent() == ScaleIntent.SCALED_UP)
+            .filter(r -> r.getPartitionId() == 1);
     assertThat(records)
         .hasSize(2)
         .map(Record::getIntent)
         .containsSequence(
             ScaleIntent.MARK_PARTITION_BOOTSTRAPPED, ScaleIntent.PARTITION_BOOTSTRAPPED);
 
-    verify(engine.getCommandResponseWriter(), timeout(1000).times(1))
+    verify(engine.getCommandResponseWriter(), timeout(1000).times(2))
         .tryWriteResponse(anyInt(), anyLong());
+  }
+
+  private ScaleRecordStream allScaleRecordsForPartition(final int partitionId) {
+    return RecordingExporter.scaleRecords()
+        .limit(r -> r.getIntent() == ScaleIntent.SCALED_UP && r.getPartitionId() == partitionId)
+        .filter(r -> r.getPartitionId() == partitionId);
+  }
+
+  private void assertPartitionBootstrappedHasBeenRedistributed() {
+    assertThat(allScaleRecordsForPartition(2))
+        .hasSize(5)
+        .map(Record::getIntent)
+        .containsExactly(
+            ScaleIntent.SCALE_UP,
+            ScaleIntent.SCALING_UP,
+            ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
+            ScaleIntent.PARTITION_BOOTSTRAPPED,
+            ScaleIntent.SCALED_UP);
   }
 }

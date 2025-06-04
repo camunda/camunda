@@ -7,11 +7,13 @@
  */
 package io.camunda.zeebe.engine.scaling;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoutingState;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
@@ -22,27 +24,31 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Optional;
 
-public class MarkPartitionBootstrappedProcessor implements TypedRecordProcessor<ScaleRecord> {
+public class MarkPartitionBootstrappedProcessor
+    implements DistributedTypedRecordProcessor<ScaleRecord> {
 
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final RoutingState routingState;
+  private final CommandDistributionBehavior distributionBehavior;
 
   public MarkPartitionBootstrappedProcessor(
       final KeyGenerator keyGenerator,
       final Writers writers,
-      final ProcessingState processingState) {
+      final ProcessingState processingState,
+      final CommandDistributionBehavior distributionBehavior) {
     this.keyGenerator = keyGenerator;
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     stateWriter = writers.state();
     routingState = processingState.getRoutingState();
+    this.distributionBehavior = distributionBehavior;
   }
 
   @Override
-  public void processRecord(final TypedRecord<ScaleRecord> command) {
+  public void processNewCommand(final TypedRecord<ScaleRecord> command) {
     final var scaleUp = command.getValue();
 
     final var rejection = validate(command);
@@ -60,6 +66,23 @@ public class MarkPartitionBootstrappedProcessor implements TypedRecordProcessor<
     if (!wasAlreadyBootstrapped && areAllPartitionsBootstrapped()) {
       stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.SCALED_UP, scaleUp);
     }
+    distributionBehavior
+        .withKey(scalingKey)
+        .inQueue(DistributionQueue.SCALING)
+        .forOtherPartitions()
+        .distribute(command);
+  }
+
+  @Override
+  public void processDistributedCommand(final TypedRecord<ScaleRecord> command) {
+    final var scaleUp = command.getValue();
+    final var scalingKey = command.getKey();
+    final var wasAlreadyBootstrapped = areAllPartitionsBootstrapped();
+    stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.PARTITION_BOOTSTRAPPED, scaleUp);
+    if (!wasAlreadyBootstrapped && areAllPartitionsBootstrapped()) {
+      stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.SCALED_UP, scaleUp);
+    }
+    distributionBehavior.acknowledgeCommand(command);
   }
 
   private Optional<Tuple<RejectionType, String>> validate(final TypedRecord<ScaleRecord> command) {

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.scaling;
 
+import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -19,6 +20,7 @@ public final class ScalingProcessors {
   private ScalingProcessors() {}
 
   public static void addScalingProcessors(
+      final CommandDistributionBehavior distributionBehavior,
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final KeyGenerator keyGenerator,
@@ -26,7 +28,7 @@ public final class ScalingProcessors {
     typedRecordProcessors.onCommand(
         ValueType.SCALE,
         ScaleIntent.SCALE_UP,
-        new ScaleUpProcessor(keyGenerator, writers, processingState));
+        new ScaleUpProcessor(keyGenerator, writers, processingState, distributionBehavior));
     typedRecordProcessors.onCommand(
         ValueType.SCALE,
         ScaleIntent.STATUS,
@@ -34,6 +36,7 @@ public final class ScalingProcessors {
     typedRecordProcessors.onCommand(
         ValueType.SCALE,
         ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
-        new MarkPartitionBootstrappedProcessor(keyGenerator, writers, processingState));
+        new MarkPartitionBootstrappedProcessor(
+            keyGenerator, writers, processingState, distributionBehavior));
   }
 }
