@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.stream.IntStream;
 
 public class Cursor<T> {
-  static final JsonMapper mapper =
+  static final JsonMapper MAPPER =
       JsonMapper.builder()
           .addModule(new JavaTimeModule())
           .disable((SerializationFeature.WRITE_DATES_AS_TIMESTAMPS))
@@ -28,7 +28,7 @@ public class Cursor<T> {
   public String encode(final T entity, final List<SearchColumn<T>> columns) {
     try {
       final var fields = columns.stream().map(s -> s.getPropertyValue(entity)).toArray();
-      final var value = mapper.writeValueAsString(fields);
+      final var value = MAPPER.writeValueAsString(fields);
 
       return Base64.getEncoder().encodeToString(value.getBytes());
     } catch (final JsonProcessingException e) {
@@ -40,7 +40,7 @@ public class Cursor<T> {
     try {
       final var decodedCursor = java.util.Base64.getDecoder().decode(cursor);
       final var values =
-          mapper.readValue(
+          MAPPER.readValue(
               decodedCursor,
               new TypeReference<Object[]>() {}); // new TypeReference<List<Object>>() {}
 

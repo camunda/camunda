@@ -15,7 +15,7 @@ import java.util.function.Function;
 
 public interface SearchColumn<T> {
 
-  Map<Class<?>, Function<Object, Object>> converters =
+  Map<Class<?>, Function<Object, Object>> CONVERTERS =
       Map.of(
           Long.class, obj -> Long.valueOf(obj.toString()),
           Integer.class, obj -> Integer.valueOf(obj.toString()),
@@ -64,7 +64,7 @@ public interface SearchColumn<T> {
       return obj -> Enum.valueOf((Class<? extends Enum>) type, obj.toString());
     }
 
-    final var converter = converters.get(type);
+    final var converter = CONVERTERS.get(type);
 
     if (converter == null) {
       throw new IllegalArgumentException(

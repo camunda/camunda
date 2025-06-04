@@ -9,7 +9,6 @@ package io.camunda.zeebe.util;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -39,7 +38,7 @@ public final class DateUtil {
       final String timestamp, final DateTimeFormatter dateTimeFormatter) {
     try {
       final ZonedDateTime zonedDateTime = ZonedDateTime.parse(timestamp, dateTimeFormatter);
-      return OffsetDateTime.ofInstant(zonedDateTime.toInstant(), ZoneId.systemDefault());
+      return OffsetDateTime.ofInstant(zonedDateTime.toInstant(), ZoneOffset.UTC);
     } catch (final DateTimeParseException e) {
       LOGGER.error(String.format("Cannot parse date from %s - %s", timestamp, e.getMessage()), e);
     }
