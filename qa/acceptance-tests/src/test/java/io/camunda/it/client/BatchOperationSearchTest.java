@@ -13,7 +13,6 @@ import static io.camunda.it.util.TestHelper.startScopedProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationCompleted;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationWithCorrectTotalCount;
 import static io.camunda.it.util.TestHelper.waitForProcessInstanceToBeTerminated;
-import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitForScopedActiveProcessInstances;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -68,8 +67,6 @@ public class BatchOperationSearchTest {
     final var targetProcessDefinitionKey =
         deployProcessAndWaitForIt(camundaClient, "process/migration-process_v2.bpmn")
             .getProcessDefinitionKey();
-
-    waitForProcessesToBeDeployed(camundaClient, 3);
 
     // Batch 1 - Cancel Processes
     IntStream.range(0, 10)

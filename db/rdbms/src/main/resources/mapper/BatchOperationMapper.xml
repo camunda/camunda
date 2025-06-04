@@ -208,7 +208,7 @@
     </if>
     <if test="filter.itemKeyOperations != null and !filter.itemKeyOperations.isEmpty()">
       <foreach collection="filter.itemKeyOperations" item="operation">
-        AND ITEM_KEYS
+        AND ITEM_KEY
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
