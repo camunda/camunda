@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {observer} from 'mobx-react';
 
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -38,9 +38,9 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
   const flowNodeInstanceId =
     flowNodeSelectionStore.state.selection?.flowNodeInstanceId;
 
-  const {listenersFailureCount, state, fetchListeners, reset} =
-    processInstanceListenersStore;
-  const {listenerTypeFilter} = state;
+  const {listenersFailureCount} = processInstanceListenersStore;
+  const [listenerTypeFilter, setListenerTypeFilter] =
+    useState<ListenerEntity['listenerType']>();
 
   const shouldUseFlowNodeId = !flowNodeInstanceId && flowNodeId;
 
@@ -63,10 +63,6 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
     disabled: !shouldUseFlowNodeId && !flowNodeInstanceId,
   });
 
-  // useEffect(() => {
-  //   reset();
-  // }, [flowNodeId, flowNodeInstanceId, reset]);
-
   useEffect(() => {
     init(processInstance);
 
@@ -74,35 +70,6 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
       variablesStore.reset();
     };
   }, [processInstance]);
-
-  // useEffect(() => {
-  //   if (shouldUseFlowNodeId) {
-  //     fetchListeners({
-  //       fetchType: 'initial',
-  //       processInstanceId: processInstanceId,
-  //       payload: {
-  //         flowNodeId,
-  //         ...(listenerTypeFilter && {listenerTypeFilter}),
-  //       },
-  //     });
-  //   } else if (flowNodeInstanceId) {
-  //     fetchListeners({
-  //       fetchType: 'initial',
-  //       processInstanceId: processInstanceId,
-  //       payload: {
-  //         flowNodeInstanceId,
-  //         ...(listenerTypeFilter && {listenerTypeFilter}),
-  //       },
-  //     });
-  //   }
-  // }, [
-  //   fetchListeners,
-  //   processInstanceId,
-  //   flowNodeId,
-  //   flowNodeInstanceId,
-  //   shouldUseFlowNodeId,
-  //   listenerTypeFilter,
-  // ]);
 
   return (
     <TabView
@@ -147,7 +114,12 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
             labelIcon: <WarningFilled />,
           }),
           label: 'Listeners',
-          content: <Listeners jobs={jobs} />,
+          content: (
+            <Listeners
+              jobs={jobs}
+              setListenerTypeFilter={setListenerTypeFilter}
+            />
+          ),
           removePadding: true,
           onClick: () => {
             setListenerTabVisibility(true);

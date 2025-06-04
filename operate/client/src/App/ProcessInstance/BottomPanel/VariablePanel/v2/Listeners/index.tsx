@@ -43,13 +43,15 @@ type SelectedItem = {
 
 type Props = {
   jobs: GetJobsResponseBody | undefined;
+  setListenerTypeFilter: React.Dispatch<
+    React.SetStateAction<ListenerEntity['listenerType'] | undefined>
+  >;
 };
 
 const ROW_HEIGHT = 46;
 
-const Listeners: React.FC<Props> = observer(({jobs}) => {
+const Listeners: React.FC<Props> = observer(({jobs, setListenerTypeFilter}) => {
   const {
-    setListenerTypeFilter,
     shouldFetchPreviousListeners,
     fetchPreviousListeners,
     shouldFetchNextListeners,
