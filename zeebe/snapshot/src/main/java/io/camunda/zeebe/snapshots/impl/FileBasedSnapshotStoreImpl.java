@@ -739,7 +739,11 @@ public final class FileBasedSnapshotStoreImpl {
               },
               actor);
     } catch (final Exception e) {
-      throw new SnapshotException("Failed to copy snapshot to new location", e);
+      throw new SnapshotCopyForBootstrapException(
+          String.format(
+              "Failed to copy snapshot %s to new location: sourcePath=%s, destinationPath=%s",
+              zeroedSnapshotId, snapshotPath, destinationFolder),
+          e);
     }
   }
 
