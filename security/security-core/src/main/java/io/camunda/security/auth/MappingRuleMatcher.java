@@ -102,7 +102,15 @@ public final class MappingRuleMatcher {
 
     public Object evaluate(final String expression) {
       return evaluations.computeIfAbsent(
-          expression, exp -> compilationCache.compile(expression).read(claims, CONFIGURATION));
+          expression,
+          exp -> {
+            final var compiledExpression = compilationCache.compile(exp);
+            if (compiledExpression == null) {
+              // If the expression could not be compiled, we can't evaluate it either.
+              return null;
+            }
+            return compiledExpression.read(claims, CONFIGURATION);
+          });
     }
   }
 
