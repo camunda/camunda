@@ -184,7 +184,7 @@ public class ProcessingDbState implements MutableProcessingState {
     mappingState = new DbMappingState(zeebeDb, transactionContext);
     batchOperationState = new DbBatchOperationState(zeebeDb, transactionContext);
     membershipState = new DbMembershipState(zeebeDb, transactionContext);
-    usageMetricState = new DbUsageMetricState(zeebeDb, transactionContext, config, clock);
+    usageMetricState = new DbUsageMetricState(zeebeDb, transactionContext, config);
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
   }
 
