@@ -7,22 +7,25 @@
  */
 
 import {t} from 'i18next';
-import {type ProblemDetailsResponse} from '@vzeta/camunda-api-zod-schemas';
+import {problemDetailResponseSchema} from '@vzeta/camunda-api-zod-schemas';
 
-export const parseDenialReason = async (
-  errorPayload: ProblemDetailsResponse,
+const parseDenialReason = (
+  errorPayload: unknown,
   type: 'assignment' | 'unassignment' | 'completion',
-): Promise<string | undefined> => {
-  if (!errorPayload || errorPayload.status !== 409) return undefined;
+): string | undefined => {
+  const {data: errorBody, success} =
+    problemDetailResponseSchema.safeParse(errorPayload);
 
-  const detail =
-    typeof errorPayload?.detail === 'string' ? errorPayload?.detail : '';
+  if (!success || errorBody.status !== 409) {
+    return undefined;
+  }
+  const match = errorBody.detail.match(/Reason to deny:\s*(.*)/i);
 
-  let deniedReason: string = t('deniedReason', {type});
-  const match = detail.match(/Reason to deny:\s*(.*)/i);
-  if (match && match[1]) {
-    deniedReason = match[1].trim().replace(/^["'](.*)["']$/, '$1');
+  if (Array.isArray(match) && match[1]) {
+    return match[1].trim().replace(/^["'](.*)["']$/, '$1');
   }
 
-  return deniedReason;
+  return t('deniedReason', {type});
 };
+
+export {parseDenialReason};

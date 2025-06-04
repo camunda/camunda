@@ -80,7 +80,7 @@ const AssignButton: React.FC<Props> = ({id, assignee, currentUser}) => {
         notificationsStore.displayNotification({
           kind: 'error',
           title: t('taskDetailsTaskAssignmentError'),
-          subtitle: await parseDenialReason(
+          subtitle: parseDenialReason(
             await parsedError?.response?.json(),
             'assignment',
           ),
@@ -116,7 +116,7 @@ const AssignButton: React.FC<Props> = ({id, assignee, currentUser}) => {
         notificationsStore.displayNotification({
           kind: 'error',
           title: t('taskDetailsTaskUnassignmentError'),
-          subtitle: await parseDenialReason(
+          subtitle: parseDenialReason(
             await parsedError?.response?.json(),
             'unassignment',
           ),

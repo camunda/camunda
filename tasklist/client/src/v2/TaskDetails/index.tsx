@@ -99,7 +99,7 @@ const TaskDetails: React.FC = observer(() => {
       notificationsStore.displayNotification({
         kind: 'error',
         title: t('taskCouldNotBeCompletedNotification'),
-        subtitle: await parseDenialReason(
+        subtitle: parseDenialReason(
           await parsedError?.response?.json(),
           'completion',
         ),
