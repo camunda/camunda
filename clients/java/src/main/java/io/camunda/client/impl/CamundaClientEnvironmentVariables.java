@@ -52,6 +52,9 @@ public final class CamundaClientEnvironmentVariables {
   public static final String OAUTH_ENV_CONNECT_TIMEOUT = "CAMUNDA_AUTH_CONNECT_TIMEOUT";
   public static final String OAUTH_ENV_READ_TIMEOUT = "CAMUNDA_AUTH_READ_TIMEOUT";
 
+  public static final String OAUTH_ENV_SSL_CLIENT_CERT_PATH = "OAUTH_SSL_CLIENT_CERT_PATH";
+  public static final String OAUTH_ENV_SSL_CLIENT_CERT_PASSWORD = "OAUTH_SSL_CLIENT_CERT_PASSWORD";
+
   /** Basic Auth Environment Variables */
   public static final String BASIC_AUTH_ENV_USERNAME = "CAMUNDA_BASIC_AUTH_USERNAME";
 
