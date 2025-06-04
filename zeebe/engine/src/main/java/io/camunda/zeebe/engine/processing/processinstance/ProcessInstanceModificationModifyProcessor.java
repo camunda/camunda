@@ -217,6 +217,7 @@ public final class ProcessInstanceModificationModifyProcessor
             processInstanceRecord.getProcessDefinitionKey(), processInstanceRecord.getTenantId());
 
     final var validationResult = validateCommand(command, process);
+    // todo: if process instance is suspended -> reject
     if (validationResult.isLeft()) {
       final var rejection = validationResult.getLeft();
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());

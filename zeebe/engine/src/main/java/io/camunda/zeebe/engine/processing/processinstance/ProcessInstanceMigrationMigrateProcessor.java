@@ -154,6 +154,8 @@ public class ProcessInstanceMigrationMigrateProcessor
       return;
     }
 
+    // todo: if process instance is suspended -> reject
+
     requireNonDuplicateSourceElementIds(mappingInstructions, processInstanceKey);
 
     final DeployedProcess targetProcessDefinition =

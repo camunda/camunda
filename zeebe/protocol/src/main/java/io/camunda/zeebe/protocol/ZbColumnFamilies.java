@@ -242,7 +242,8 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   RPI_USAGE_METRICS(122),
   BOOTSTRAPPED_AT(123),
 
-  RUNTIME_INSTRUCTIONS(124);
+  RUNTIME_INSTRUCTIONS(124),
+  SUSPENDED_PROCESS_INSTANCES(125);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;

@@ -79,8 +79,6 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   private final ColumnFamily<DbLong, RuntimeInstruction> runtimeInstructionsByProcessInstanceId;
   private final RuntimeInstruction runtimeInstruction;
 
-  private final
-
   public DbElementInstanceState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
@@ -149,8 +147,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
             ZbColumnFamilies.RUNTIME_INSTRUCTIONS,
             transactionContext,
             elementInstanceKey,
-            runtimeInstruction
-        );
+            runtimeInstruction);
   }
 
   @Override
@@ -497,8 +494,8 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
-  public boolean shouldSuspendElementInstance(final long processInstanceKey,
-      final String elementId) {
+  public boolean shouldSuspendElementInstance(
+      final long processInstanceKey, final String elementId) {
 
     elementInstanceKey.wrapLong(processInstanceKey);
     final var runtimeInstructions = runtimeInstructionsByProcessInstanceId.get(elementInstanceKey);
@@ -519,16 +516,6 @@ public final class DbElementInstanceState implements MutableElementInstanceState
     runtimeInstruction.setAfterElementId(runtimeInstructions.getFirst().getElementId());
     elementInstanceKey.wrapLong(processInstanceKey);
     runtimeInstructionsByProcessInstanceId.insert(elementInstanceKey, runtimeInstruction);
-  }
-
-  @Override
-  public void updateSuspendedState(final long processInstanceKey, final boolean suspended) {
-
-  }
-
-  @Override
-  public boolean isSuspended(final long processInstanceKey) {
-    return false;
   }
 
   private ElementInstance copyElementInstance(final ElementInstance elementInstance) {

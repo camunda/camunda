@@ -56,8 +56,7 @@ final class ProcessInstanceCreationCreatedApplierV2
     }
     if (!value.getRuntimeInstructions().isEmpty()) {
       elementInstanceState.addRuntimeInstructions(
-          value.getProcessInstanceKey(),
-          value.getRuntimeInstructions());
+          value.getProcessInstanceKey(), value.getRuntimeInstructions());
     }
   }
 

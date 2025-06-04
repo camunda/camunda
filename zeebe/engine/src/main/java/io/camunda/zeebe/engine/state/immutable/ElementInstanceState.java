@@ -123,8 +123,6 @@ public interface ElementInstanceState {
 
   boolean shouldSuspendElementInstance(long processInstanceKey, String elementId);
 
-  boolean isSuspended(long processInstanceKey);
-
   @FunctionalInterface
   interface TakenSequenceFlowVisitor {
     void visit(

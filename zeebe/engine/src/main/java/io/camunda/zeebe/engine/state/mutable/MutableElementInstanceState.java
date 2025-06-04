@@ -101,6 +101,4 @@ public interface MutableElementInstanceState extends ElementInstanceState {
   void addRuntimeInstructions(
       long processInstanceKey,
       List<ProcessInstanceCreationRuntimeInstructionValue> runtimeInstructions);
-
-  void updateSuspendedState(long processInstanceKey, boolean suspended);
 }

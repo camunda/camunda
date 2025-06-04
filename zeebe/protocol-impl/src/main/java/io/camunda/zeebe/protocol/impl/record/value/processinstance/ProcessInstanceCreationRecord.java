@@ -44,8 +44,10 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructionsProperty =
       new ArrayProperty<>("startInstructions", ProcessInstanceCreationStartInstruction::new);
 
-  private final ArrayProperty<ProcessInstanceCreationRuntimeInstruction> runtimeInstructionsProperty =
-      new ArrayProperty<>("runtimeInstructions", ProcessInstanceCreationRuntimeInstruction::new);
+  private final ArrayProperty<ProcessInstanceCreationRuntimeInstruction>
+      runtimeInstructionsProperty =
+          new ArrayProperty<>(
+              "runtimeInstructions", ProcessInstanceCreationRuntimeInstruction::new);
 
   public ProcessInstanceCreationRecord() {
     super(9);

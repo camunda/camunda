@@ -252,6 +252,9 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessInstanceIntent.ANCESTOR_MIGRATED,
         new ProcessInstanceAncestorMigratedApplier(elementInstanceState));
+    register(
+        ProcessInstanceIntent.ELEMENT_SUSPENDED,
+        new ProcessInstanceElementSuspendedApplier(elementInstanceState));
   }
 
   private void registerProcessInstanceCreationAppliers(final MutableProcessingState state) {
@@ -267,12 +270,6 @@ public final class EventAppliers implements EventApplier {
         ProcessInstanceCreationIntent.CREATED,
         2,
         new ProcessInstanceCreationCreatedApplierV2(processState, elementInstanceState));
-
-    // TODO
-    // store in the state: process instance suspended e.g. elementinstancestate.updateElement
-    // 
-    register(ProcessInstanceIntent.ELEMENT_SUSPENDED,
-        NOOP_EVENT_APPLIER);
   }
 
   private void registerProcessInstanceModificationAppliers(final MutableProcessingState state) {

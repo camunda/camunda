@@ -768,14 +768,15 @@ public class RequestMapper {
                                 .setElementId(instruction.getElementId()))
                     .toList(),
                 request.getRuntimeInstructions().stream()
-                        .map(
-                            instruction -> {
-                              final var instructionCasted = (ProcessInstanceCreationCancellationInstruction) instruction;
-                              return new ProcessInstanceCreationRuntimeInstruction()
-                                  .setType(RuntimeInstructionType.SUSPEND_PROCESS_INSTANCE)
-                                  .setAfterElementId(instructionCasted.getAfterElementId());
-                            }
-                        ).toList(),
+                    .map(
+                        instruction -> {
+                          final var instructionCasted =
+                              (ProcessInstanceCreationCancellationInstruction) instruction;
+                          return new ProcessInstanceCreationRuntimeInstruction()
+                              .setType(RuntimeInstructionType.SUSPEND_PROCESS_INSTANCE)
+                              .setAfterElementId(instructionCasted.getAfterElementId());
+                        })
+                    .toList(),
                 request.getFetchVariables()));
   }
 

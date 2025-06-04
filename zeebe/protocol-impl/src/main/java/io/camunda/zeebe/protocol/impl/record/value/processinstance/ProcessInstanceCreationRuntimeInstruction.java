@@ -15,9 +15,9 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 @JsonIgnoreProperties({
-    /* These fields are inherited from ObjectValue; there have no purpose in exported JSON records*/
-    "encodedLength",
-    "empty"
+  /* These fields are inherited from ObjectValue; there have no purpose in exported JSON records*/
+  "encodedLength",
+  "empty"
 })
 public class ProcessInstanceCreationRuntimeInstruction extends ObjectValue
     implements ProcessInstanceCreationRuntimeInstructionValue {
@@ -46,8 +46,8 @@ public class ProcessInstanceCreationRuntimeInstruction extends ObjectValue
   }
 
   /**
-   * Gets the type of this instruction as a string.
-   * This method is used to satisfy the ProcessInstanceCreationRuntimeInstructionValue interface.
+   * Gets the type of this instruction as a string. This method is used to satisfy the
+   * ProcessInstanceCreationRuntimeInstructionValue interface.
    *
    * @return the type as a string
    */
