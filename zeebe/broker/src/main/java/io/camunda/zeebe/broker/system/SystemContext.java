@@ -14,6 +14,7 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
@@ -62,7 +63,9 @@ public final class SystemContext {
       "Expected to have an append batch size maximum which is non negative and smaller then '%d', but was '%s'.";
 
   private final Duration shutdownTimeout;
-  private final BrokerCfg brokerCfg;
+
+  private final UnifiedConfiguration config;
+
   private final IdentityConfiguration identityConfiguration;
   private Map<String, String> diagnosticContext;
   private final ActorScheduler scheduler;
@@ -77,7 +80,7 @@ public final class SystemContext {
 
   public SystemContext(
       final Duration shutdownTimeout,
-      final BrokerCfg brokerCfg,
+      final UnifiedConfiguration config,
       final IdentityConfiguration identityConfiguration,
       final ActorScheduler scheduler,
       final AtomixCluster cluster,
@@ -89,7 +92,7 @@ public final class SystemContext {
       final JwtDecoder jwtDecoder,
       final SearchClientsProxy searchClientsProxy) {
     this.shutdownTimeout = shutdownTimeout;
-    this.brokerCfg = brokerCfg;
+    this.config = config;
     this.identityConfiguration = identityConfiguration;
     this.scheduler = scheduler;
     this.cluster = cluster;
@@ -105,7 +108,7 @@ public final class SystemContext {
 
   @VisibleForTesting
   public SystemContext(
-      final BrokerCfg brokerCfg,
+      final UnifiedConfiguration config,
       final ActorScheduler scheduler,
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
@@ -115,7 +118,7 @@ public final class SystemContext {
       final JwtDecoder jwtDecoder) {
     this(
         DEFAULT_SHUTDOWN_TIMEOUT,
-        brokerCfg,
+        config,
         null,
         scheduler,
         cluster,
@@ -128,18 +131,17 @@ public final class SystemContext {
         null);
   }
 
+  BrokerCfg _brokerCfg;
+
   private void initSystemContext() {
     validateConfiguration();
 
-    final var cluster = brokerCfg.getCluster();
-    final String brokerId = String.format("Broker-%d", cluster.getNodeId());
+    final String brokerId = String.format("Broker-%d", config.getCluster().getNodeId());
 
     diagnosticContext = Collections.singletonMap(BROKER_ID_LOG_PROPERTY, brokerId);
   }
 
   private void validateConfiguration() {
-    final ClusterCfg cluster = brokerCfg.getCluster();
-
     validateDataConfig(brokerCfg.getData());
 
     validClusterConfigs(cluster);
@@ -212,28 +214,27 @@ public final class SystemContext {
     }
   }
 
-  private void validateDataConfig(final DataCfg dataCfg) {
-    final var snapshotPeriod = dataCfg.getSnapshotPeriod();
+  private void validateDataConfig(final UnifiedConfiguration config) {
+    final var snapshotPeriod = config.getCluster().getSnapshotPeriod();
     if (snapshotPeriod.isNegative() || snapshotPeriod.minus(MINIMUM_SNAPSHOT_PERIOD).isNegative()) {
       throw new IllegalArgumentException(String.format(SNAPSHOT_PERIOD_ERROR_MSG, snapshotPeriod));
     }
 
-    if (dataCfg.getDisk().isEnableMonitoring()) {
+    if (config.getCluster().getDiskMonitoringEnabled()) {
       try {
-        final FreeSpaceCfg freeSpaceCfg = dataCfg.getDisk().getFreeSpace();
-        final var processingFreeSpace = freeSpaceCfg.getProcessing().toBytes();
-        final var replicationFreeSpace = freeSpaceCfg.getReplication().toBytes();
+        final var processingFreeSpace = config.getCluster().getDiskFreeSpaceProcessing().toBytes();
+        final var replicationFreeSpace = config.getCluster().getDiskFreeSpaceReplication().toBytes();
         if (processingFreeSpace <= replicationFreeSpace) {
           throw new IllegalArgumentException(
-              "Minimum free space for processing (%d) must be greater than minimum free space for replication (%d). Configured values are %s"
-                  .formatted(processingFreeSpace, replicationFreeSpace, freeSpaceCfg));
+              "Minimum free space for processing (%d) must be greater than minimum free space for replication (%d)."
+                  .formatted(processingFreeSpace, replicationFreeSpace));
         }
       } catch (final Exception e) {
         throw new InvalidConfigurationException("Failed to parse disk monitoring configuration", e);
       }
     }
 
-    validateBackupCfg(dataCfg.getBackup());
+    validateBackupCfg(config);
   }
 
   private void validateBackupCfg(final BackupStoreCfg backup) {

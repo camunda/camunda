@@ -7,15 +7,19 @@
  */
 package io.camunda.unifiedconfig;
 
-public class Data {
-  private Backup backup = new Backup();
-  private Database database = new Database();
+public class Backup {
+  private String store;
 
-  public Database getDatabase() {
-    return database;
+  public String getStore() {
+    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.backup.store");
+    if (deprecated != null && store == null) {
+      return deprecated;
+    }
+
+    return store;
   }
 
-  public void setDatabase(final Database database) {
-    this.database = database;
+  public void setStore(String store) {
+    this.store = store;
   }
 }

@@ -7,13 +7,22 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties
 public class UnifiedConfiguration {
   private Camunda camunda;
+  private Cluster cluster;
 
   public Camunda getCamunda() {
     return camunda;
   }
 
+  public Cluster getCluster() {
+    return cluster;
+  }
+
   public void setCamunda(Camunda camunda) {
     this.camunda = camunda;
+  }
+
+  public void setCluster(Cluster cluster) {
+    this.cluster = cluster;
   }
 
   public void printFullConfigurationAsYaml() {
