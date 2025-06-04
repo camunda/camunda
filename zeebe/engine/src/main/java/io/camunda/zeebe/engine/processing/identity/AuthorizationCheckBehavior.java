@@ -93,21 +93,60 @@ public final class AuthorizationCheckBehavior {
     final var username = getUsername(request);
     final var clientId = getClientId(request);
 
+    final var tenantResult = checkTenants(request, username, clientId);
+
+    if (tenantResult.isLeft()) {
+      return tenantResult;
+    }
+
+    return checkPermissions(request, username, clientId);
+  }
+
+  private Either<Rejection, Void> checkTenants(
+      final AuthorizationRequest request,
+      final Optional<String> username,
+      final Optional<String> clientId) {
     if (username.isPresent()) {
       final var userAuthorized =
-          isEntityAuthorized(request, EntityType.USER, Set.of(username.get()));
+          isEntityAuthorizedForTenant(request, EntityType.USER, Set.of(username.get()));
       if (userAuthorized.isRight()) {
         return userAuthorized;
       }
     } else if (clientId.isPresent()) {
       final var clientAuthorized =
-          isEntityAuthorized(request, EntityType.CLIENT, Set.of(clientId.get()));
+          isEntityAuthorizedForTenant(request, EntityType.CLIENT, Set.of(clientId.get()));
       if (clientAuthorized.isRight()) {
         return clientAuthorized;
       }
     }
 
-    return isEntityAuthorized(
+    return isEntityAuthorizedForTenant(
+        request,
+        EntityType.MAPPING,
+        getPersistedMappings(request)
+            .map(PersistedMapping::getMappingId)
+            .collect(Collectors.toSet()));
+  }
+
+  private Either<Rejection, Void> checkPermissions(
+      final AuthorizationRequest request,
+      final Optional<String> username,
+      final Optional<String> clientId) {
+    if (username.isPresent()) {
+      final var userAuthorized =
+          isEntityAuthorizedForResource(request, EntityType.USER, Set.of(username.get()));
+      if (userAuthorized.isRight()) {
+        return userAuthorized;
+      }
+    } else if (clientId.isPresent()) {
+      final var clientAuthorized =
+          isEntityAuthorizedForResource(request, EntityType.CLIENT, Set.of(clientId.get()));
+      if (clientAuthorized.isRight()) {
+        return clientAuthorized;
+      }
+    }
+
+    return isEntityAuthorizedForResource(
         request,
         EntityType.MAPPING,
         getPersistedMappings(request)
@@ -116,51 +155,66 @@ public final class AuthorizationCheckBehavior {
   }
 
   /**
-   * Verifies a user is authorized to perform this request. This method checks if the user has
-   * access to the tenant and if the user has the required permissions for the resource.
+   * Verifies an entity is authorized to perform this request. This method checks if the entity has
+   * the required permissions for the resource.
    *
    * @param request the authorization request to check authorization for
    * @param entityType the type of the entity being accessed
-   * @param entityIds the username of the user making this request
+   * @param entityIds the ID of the entity making this request (ex. username, client id, mapping
+   *     ids)
    * @return an {@link Either} containing a {@link Rejection} or {@link Void}
    */
-  private Either<Rejection, Void> isEntityAuthorized(
+  private Either<Rejection, Void> isEntityAuthorizedForResource(
+      final AuthorizationRequest request,
+      final EntityType entityType,
+      final Collection<String> entityIds) {
+    if (authorizationsEnabled) {
+      final var isAuthorizedForResource =
+          entityIds.stream()
+              .flatMap(
+                  entityId ->
+                      getAuthorizedResourceIdentifiers(
+                          entityType,
+                          entityId,
+                          request.getResourceType(),
+                          request.getPermissionType()))
+              .anyMatch(resourceId -> request.getResourceIds().contains(resourceId));
+      if (!isAuthorizedForResource) {
+        return Either.left(
+            new Rejection(RejectionType.FORBIDDEN, request.getForbiddenErrorMessage()));
+      }
+    }
+    return Either.right(null);
+  }
+
+  /**
+   * Verifies an entity is authorized to perform this request. This method checks if the entity has
+   * access to the tenant.
+   *
+   * @param request the authorization request to check authorization for
+   * @param entityType the type of the entity being accessed
+   * @param entityIds the ID of the entity making this request (ex. username, client id, mapping
+   *     ids)
+   * @return an {@link Either} containing a {@link Rejection} or {@link Void}
+   */
+  private Either<Rejection, Void> isEntityAuthorizedForTenant(
       final AuthorizationRequest request,
       final EntityType entityType,
       final Collection<String> entityIds) {
     if (multiTenancyEnabled && request.isTenantOwnedResource()) {
-      final var isAssignedToTenant =
+      final var isNotAssignedToTenant =
           entityIds.stream()
               .noneMatch(
                   entityId ->
                       getAuthorizedTenantIds(entityType, entityId)
                           .anyMatch(request.tenantId::equals));
-      if (isAssignedToTenant) {
+      if (isNotAssignedToTenant) {
         final var rejectionType =
             request.isNewResource() ? RejectionType.FORBIDDEN : RejectionType.NOT_FOUND;
         return Either.left(new Rejection(rejectionType, request.getTenantErrorMessage()));
       }
     }
-
-    if (!authorizationsEnabled) {
-      return Either.right(null);
-    }
-
-    final var isAuthorizedForResource =
-        entityIds.stream()
-            .flatMap(
-                entityId ->
-                    getAuthorizedResourceIdentifiers(
-                        entityType,
-                        entityId,
-                        request.getResourceType(),
-                        request.getPermissionType()))
-            .anyMatch(resourceId -> request.getResourceIds().contains(resourceId));
-    if (isAuthorizedForResource) {
-      return Either.right(null);
-    }
-
-    return Either.left(new Rejection(RejectionType.FORBIDDEN, request.getForbiddenErrorMessage()));
+    return Either.right(null);
   }
 
   /**
