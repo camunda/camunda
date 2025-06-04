@@ -8457,6 +8457,7 @@ components:
           description: The field to sort by.
           type: string
           enum:
+            - processDefinitionId
             - processDefinitionKey
             - processInstanceKey
             - elementInstanceKey
@@ -8465,10 +8466,17 @@ components:
             - type
             - worker
             - state
-            - jobKind
+            - kind
             - listenerEventType
-            - endDate
             - tenantId
+            - retries
+            - isDenied
+            - deniedReason
+            - hasFailedWithRetriesLeft
+            - errorCode
+            - errorMessage
+            - deadline
+            - endTime
         order:
           $ref: "#/components/schemas/SortOrderEnum"
       required:
@@ -8565,7 +8573,7 @@ components:
           nullable: true
         hasFailedWithRetriesLeft:
           description: Indicates whether the job has failed with retries left.
-          type: string
+          type: boolean
         errorCode:
           description: The error code provided for the failed job.
           type: string
@@ -8575,9 +8583,10 @@ components:
           type: string
           nullable: true
         customHeaders:
-          description: A set of custom headers defined during modelling; returned as a serialized JSON document.
+          description: A set of custom headers defined during modelling.
           type: object
-          additionalProperties: true
+          additionalProperties:
+            type: string
         deadline:
           description: When the job can be activated.
           type: string

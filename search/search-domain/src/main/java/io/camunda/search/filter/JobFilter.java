@@ -10,26 +10,91 @@ import java.util.List;
 import java.util.Objects;
 
 public record JobFilter(
-    List<Operation<String>> stateOperations,
+    List<Operation<Long>> jobKeyOperations,
     List<Operation<String>> typeOperations,
     List<Operation<String>> workerOperations,
-    List<Operation<Long>> processInstanceKeyOperations,
+    List<Operation<String>> stateOperations,
+    List<Operation<String>> kindOperations,
+    List<Operation<String>> listenerEventTypeOperations,
+    List<Operation<String>> processDefinitionIdOperations,
     List<Operation<Long>> processDefinitionKeyOperations,
+    List<Operation<Long>> processInstanceKeyOperations,
+    List<Operation<String>> elementIdOperations,
     List<Operation<Long>> elementInstanceKeyOperations,
-    List<Operation<String>> elementIdOperations)
+    List<Operation<String>> tenantIdOperations)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<JobFilter> {
-    private List<Operation<String>> stateOperations;
+    private List<Operation<Long>> jobKeyOperations;
+    private List<Operation<String>> kindOperations;
+    private List<Operation<String>> listenerEventTypeOperations;
+    private List<Operation<String>> processDefinitionIdOperations;
+    private List<Operation<String>> tenantIdOperations;
     private List<Operation<String>> typeOperations;
     private List<Operation<String>> workerOperations;
-    private List<Operation<Long>> processInstanceKeyOperations;
+    private List<Operation<String>> stateOperations;
     private List<Operation<Long>> processDefinitionKeyOperations;
-    private List<Operation<Long>> elementInstanceKeyOperations;
+    private List<Operation<Long>> processInstanceKeyOperations;
     private List<Operation<String>> elementIdOperation;
+    private List<Operation<Long>> elementInstanceKeyOperations;
 
-    public Builder stateOperations(final List<Operation<String>> values) {
-      stateOperations = addValuesToList(stateOperations, values);
+    public Builder jobKeyOperations(final List<Operation<Long>> operations) {
+      jobKeyOperations = addValuesToList(jobKeyOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder jobKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return jobKeyOperations(collectValues(operation, operations));
+    }
+
+    public Builder kindOperations(final List<Operation<String>> operations) {
+      kindOperations = addValuesToList(kindOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder kindOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return kindOperations(collectValues(operation, operations));
+    }
+
+    public Builder listenerEventTypeOperations(final List<Operation<String>> operations) {
+      listenerEventTypeOperations = addValuesToList(listenerEventTypeOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder listenerEventTypeOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return listenerEventTypeOperations(collectValues(operation, operations));
+    }
+
+    public Builder processDefinitionIdOperations(final List<Operation<String>> operations) {
+      processDefinitionIdOperations = addValuesToList(processDefinitionIdOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder processDefinitionIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return processDefinitionIdOperations(collectValues(operation, operations));
+    }
+
+    public Builder tenantIdOperations(final List<Operation<String>> operations) {
+      tenantIdOperations = addValuesToList(tenantIdOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder tenantIdOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return tenantIdOperations(collectValues(operation, operations));
+    }
+
+    public Builder stateOperations(final List<Operation<String>> operations) {
+      stateOperations = addValuesToList(stateOperations, operations);
       return this;
     }
 
@@ -63,10 +128,6 @@ public record JobFilter(
     public final Builder workerOperations(
         final Operation<String> operation, final Operation<String>... operations) {
       return workerOperations(collectValues(operation, operations));
-    }
-
-    public Builder workers(final String value, final String... values) {
-      return workerOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     public Builder processInstanceKeyOperations(final List<Operation<Long>> operations) {
@@ -110,10 +171,6 @@ public record JobFilter(
       return elementInstanceKeyOperations(collectValues(operation, operations));
     }
 
-    public Builder elementInstanceKeys(final Long value, final Long... values) {
-      return elementInstanceKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
-    }
-
     public Builder elementIdOperations(final List<Operation<String>> operations) {
       elementIdOperation = addValuesToList(elementIdOperation, operations);
       return this;
@@ -125,20 +182,21 @@ public record JobFilter(
       return elementIdOperations(collectValues(operation, operations));
     }
 
-    public Builder elementIds(final String value, final String... values) {
-      return elementIdOperations(FilterUtil.mapDefaultToOperation(value, values));
-    }
-
     @Override
     public JobFilter build() {
       return new JobFilter(
-          Objects.requireNonNullElse(stateOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(jobKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(typeOperations, Collections.emptyList()),
           Objects.requireNonNullElse(workerOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(processInstanceKeyOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(stateOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(kindOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(listenerEventTypeOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(processDefinitionIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeyOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(processInstanceKeyOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(elementIdOperation, Collections.emptyList()),
           Objects.requireNonNullElse(elementInstanceKeyOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(elementIdOperation, Collections.emptyList()));
+          Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()));
     }
   }
 }
