@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.stream.impl;
 
-import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationReferenceNullValue;
-
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -40,16 +38,10 @@ public final class BufferedTaskResultBuilder implements TaskResultBuilder {
 
   @Override
   public boolean appendCommandRecord(
-      final long key, final Intent intent, final UnifiedRecordValue value) {
-    return appendCommandRecord(key, intent, value, operationReferenceNullValue());
-  }
-
-  @Override
-  public boolean appendCommandRecord(
       final long key,
       final Intent intent,
       final UnifiedRecordValue value,
-      final long operationReference) {
+      final Metadata metadata) {
     final ValueType valueType = TypedEventRegistry.TYPE_REGISTRY.get(value.getClass());
     if (valueType == null) {
       // usually happens when the record is not registered at the TypedStreamEnvironment
@@ -60,15 +52,16 @@ public final class BufferedTaskResultBuilder implements TaskResultBuilder {
       return true;
     }
 
-    final var metadata =
+    final var recordMetadata =
         new RecordMetadata()
             .recordType(RecordType.COMMAND)
             .intent(intent)
             .rejectionType(RejectionType.NULL_VAL)
             .rejectionReason("")
             .valueType(valueType)
-            .operationReference(operationReference);
-    final var either = mutableRecordBatch.appendRecord(key, metadata, -1, value);
+            .operationReference(metadata.operationReference())
+            .batchOperationKey(metadata.batchOperationKey());
+    final var either = mutableRecordBatch.appendRecord(key, recordMetadata, -1, value);
 
     either.ifRight(ok -> cache.add(intent, key));
     return either.isRight();
