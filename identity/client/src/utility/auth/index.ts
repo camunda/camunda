@@ -6,16 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { Paths } from "src/components/global/routePaths";
-import { getBaseUrl } from "src/configuration";
+import { getBaseUrl, getLoginApiUrl } from "src/configuration";
 
 let loggedIn = false;
-
-export const LOGIN_PATH = `${getBaseUrl()}${Paths.login()}`;
-
-export function getLoginPath(next?: string) {
-  return next ? `${LOGIN_PATH}?next=${next}` : LOGIN_PATH;
-}
 
 export function activateSession() {
   loggedIn = true;
@@ -36,7 +29,7 @@ export function login(
   const data = new FormData();
   data.set("username", username);
   data.set("password", password);
-  return fetch("/login", {
+  return fetch(getLoginApiUrl(), {
     method: "post",
     body: data,
   })
