@@ -8,6 +8,7 @@
 
 import {reactQueryClient} from 'common/react-query/reactQueryClient';
 import {authenticationStore} from 'common/auth/authentication';
+import {z} from 'zod';
 
 type RequestError =
   | {
@@ -97,18 +98,18 @@ async function request(
   }
 }
 
-function isRequestError(error: unknown): error is {
-  variant: 'network-error';
-  response: null;
-  networkError: Error;
-} {
-  return (
-    error !== null &&
-    typeof error === 'object' &&
-    'variant' in error &&
-    error.variant === 'network-error'
-  );
-}
+const requestErrorSchema = z.union([
+  z.object({
+    variant: z.literal('network-error'),
+    response: z.literal(null),
+    networkError: z.instanceof(Error),
+  }),
+  z.object({
+    variant: z.literal('failed-response'),
+    response: z.instanceof(Response),
+    networkError: z.literal(null),
+  }),
+]);
 
-export {request, isRequestError};
+export {request, requestErrorSchema};
 export type {RequestError};

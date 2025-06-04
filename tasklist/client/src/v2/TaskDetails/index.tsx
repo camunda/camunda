@@ -23,7 +23,7 @@ import {Variables} from './Variables';
 import {FormJS} from './FormJS';
 import {useUploadDocuments} from 'common/api/useUploadDocuments.mutation';
 import {parseDenialReason} from 'v2/utils/parseDenialReason';
-import {isRequestError} from 'common/api/request';
+import {requestErrorSchema} from 'common/api/request';
 
 const TaskDetails: React.FC = observer(() => {
   const {task, currentUser} = useOutletContext<OutletContext>();
@@ -93,16 +93,24 @@ const TaskDetails: React.FC = observer(() => {
   }
 
   async function handleSubmissionFailure(error: unknown) {
-    let denialReason: string | undefined = undefined;
+    const {data: parsedError, success} = requestErrorSchema.safeParse(error);
 
-    if (!isRequestError(error)) {
-      denialReason = await parseDenialReason(error, 'completion');
+    if (success && parsedError.variant === 'failed-response') {
+      notificationsStore.displayNotification({
+        kind: 'error',
+        title: t('taskCouldNotBeCompletedNotification'),
+        subtitle: await parseDenialReason(
+          await parsedError?.response?.json(),
+          'completion',
+        ),
+        isDismissable: true,
+      });
+      return;
     }
 
     notificationsStore.displayNotification({
       kind: 'error',
       title: t('taskCouldNotBeCompletedNotification'),
-      subtitle: denialReason,
       isDismissable: true,
     });
   }
