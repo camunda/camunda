@@ -55,9 +55,12 @@ public final class RecordToWrite implements LogAppendEntry {
     return new RecordToWrite(recordMetadata.recordType(RecordType.COMMAND));
   }
 
-  public static RecordToWrite command(final long operationReference) {
+  public static RecordToWrite command(final long operationReference, final long batchOperationKey) {
     final var recordMetadata =
-        new RecordMetadata().recordType(RecordType.COMMAND).operationReference(operationReference);
+        new RecordMetadata()
+            .recordType(RecordType.COMMAND)
+            .operationReference(operationReference)
+            .batchOperationKey(batchOperationKey);
     return new RecordToWrite(recordMetadata);
   }
 

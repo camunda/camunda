@@ -337,7 +337,9 @@ public final class ProcessingStateMachine {
     // be appended to the followup events
     final var processingResultBuilder =
         new BufferedProcessingResultBuilder(
-            logStreamWriter::canWriteEvents, initialCommand.getOperationReference());
+            logStreamWriter::canWriteEvents,
+            initialCommand.getOperationReference(),
+            initialCommand.getBatchOperationReference());
     var lastProcessingResultSize = 0;
 
     // It might be that we reached the batch size limit during processing a command.
@@ -522,7 +524,9 @@ public final class ProcessingStateMachine {
     final var rejectionReason = errorMessage != null ? errorMessage : "";
     final ProcessingResultBuilder processingResultBuilder =
         new BufferedProcessingResultBuilder(
-            logStreamWriter::canWriteEvents, typedCommand.getOperationReference());
+            logStreamWriter::canWriteEvents,
+            typedCommand.getOperationReference(),
+            typedCommand.getBatchOperationReference());
     final var errorRecord = new ErrorRecord();
     errorRecord.initErrorRecord(
         new CommandRejectionException(rejectionReason), currentRecord.getPosition());
@@ -535,7 +539,8 @@ public final class ProcessingStateMachine {
             .recordVersion(RecordMetadata.DEFAULT_RECORD_VERSION)
             .rejectionType(RejectionType.NULL_VAL)
             .rejectionReason("")
-            .operationReference(typedCommand.getOperationReference());
+            .operationReference(typedCommand.getOperationReference())
+            .batchOperationReference(typedCommand.getBatchOperationReference());
     processingResultBuilder.appendRecord(currentRecord.getKey(), errorRecord, recordMetadata);
     processingResultBuilder.withResponse(
         RecordType.COMMAND_REJECTION,
@@ -563,7 +568,9 @@ public final class ProcessingStateMachine {
         () -> {
           final ProcessingResultBuilder processingResultBuilder =
               new BufferedProcessingResultBuilder(
-                  logStreamWriter::canWriteEvents, typedCommand.getOperationReference());
+                  logStreamWriter::canWriteEvents,
+                  typedCommand.getOperationReference(),
+                  typedCommand.getBatchOperationReference());
           currentProcessingResult =
               currentProcessor.onProcessingError(
                   processingException, typedCommand, processingResultBuilder);
