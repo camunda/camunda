@@ -16,7 +16,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
 import java.time.Duration;
-import java.time.InstantSource;
 
 public class DbUsageMetricState implements MutableUsageMetricState {
 
@@ -25,16 +24,13 @@ public class DbUsageMetricState implements MutableUsageMetricState {
   private final ColumnFamily<DbEnumValue<IntervalType>, UsageMetricStateValue>
       metricsBucketColumnFamily;
   private final DbEnumValue<IntervalType> metricsBucketKey;
-  private final InstantSource clock;
 
   public DbUsageMetricState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
-      final EngineConfiguration config,
-      final InstantSource clock) {
+      final EngineConfiguration config) {
 
     usageMetricsExportInterval = config.getUsageMetricsExportInterval();
-    this.clock = clock;
 
     metricsBucketKey = new DbEnumValue<>(IntervalType.class);
     metricsBucketColumnFamily =
@@ -62,25 +58,17 @@ public class DbUsageMetricState implements MutableUsageMetricState {
 
   @Override
   public void recordRPIMetric(final String tenantId) {
-    updateRollingBucket(getOrCreateRollingBucket().recordRPI(tenantId));
+    updateRollingBucket(getRollingBucket().recordRPI(tenantId));
   }
 
   @Override
-  public void deleteRollingBucket() {
+  public void resetRollingBucket(final long resetTime) {
     setRollingBucketKeys();
-    metricsBucketColumnFamily.deleteExisting(metricsBucketKey);
-  }
-
-  private UsageMetricStateValue getOrCreateRollingBucket() {
-    var bucket = getRollingBucket();
-    if (bucket == null) {
-      final long millis = clock.millis();
-      bucket =
-          new UsageMetricStateValue()
-              .setFromTime(millis)
-              .setToTime(millis + usageMetricsExportInterval.toMillis());
-      metricsBucketColumnFamily.insert(metricsBucketKey, bucket);
-    }
-    return bucket;
+    metricsBucketColumnFamily.deleteIfExists(metricsBucketKey);
+    final var bucket =
+        new UsageMetricStateValue()
+            .setFromTime(resetTime)
+            .setToTime(resetTime + usageMetricsExportInterval.toMillis());
+    metricsBucketColumnFamily.insert(metricsBucketKey, bucket);
   }
 }

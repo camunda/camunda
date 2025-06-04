@@ -26,9 +26,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ProcessingStateExtension.class)
 public class DbUsageMetricStateTest {
+
   private ZeebeDb<ZbColumnFamilies> zeebeDb;
   private TransactionContext transactionContext;
-
   private InstantSource mockClock;
   private MutableUsageMetricState state;
 
@@ -36,8 +36,7 @@ public class DbUsageMetricStateTest {
   void beforeEach() {
     final var mockEngineConfiguration = mock(EngineConfiguration.class);
     when(mockEngineConfiguration.getUsageMetricsExportInterval()).thenReturn(Duration.ofSeconds(1));
-    mockClock = mock(InstantSource.class);
-    state = new DbUsageMetricState(zeebeDb, transactionContext, mockEngineConfiguration, mockClock);
+    state = new DbUsageMetricState(zeebeDb, transactionContext, mockEngineConfiguration);
   }
 
   @Test
@@ -81,7 +80,7 @@ public class DbUsageMetricStateTest {
   }
 
   @Test
-  public void shouldDeleteRollingBucket() {
+  public void shouldResetRollingBucket() {
     // given
     final var eventTime = InstantSource.system().millis();
     when(mockClock.millis()).thenReturn(eventTime);
@@ -91,7 +90,7 @@ public class DbUsageMetricStateTest {
         .containsExactlyInAnyOrderEntriesOf(Map.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 1L));
 
     // when
-    state.deleteRollingBucket();
+    state.resetRollingBucket(1L);
 
     // then
     final var actual = state.getRollingBucket();
