@@ -7,10 +7,7 @@
  */
 package io.camunda.unifiedconfig;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-
-@ConfigurationProperties(prefix = "camunda")
-public class CamundaConfiguration {
+public class Camunda {
   private Data data = new Data();
 
   public Data getData() {
