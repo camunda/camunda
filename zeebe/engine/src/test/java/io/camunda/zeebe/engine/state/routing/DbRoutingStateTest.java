@@ -77,7 +77,8 @@ final class DbRoutingStateTest {
         .isEqualTo(new RoutingState.MessageCorrelation.HashMod(1));
 
     // when
-    routingState.arriveAtDesiredState();
+    routingState.activatePartition(2);
+    routingState.activatePartition(3);
 
     // then
     assertThat(routingState.currentPartitions()).containsExactlyInAnyOrder(1, 2, 3);

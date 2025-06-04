@@ -20,7 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
-public class MarkPartitionsBootstrappedProcessor implements TypedRecordProcessor<ScaleRecord> {
+public class MarkPartitionBootstrappedProcessor implements TypedRecordProcessor<ScaleRecord> {
 
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -28,7 +28,7 @@ public class MarkPartitionsBootstrappedProcessor implements TypedRecordProcessor
   private final TypedResponseWriter responseWriter;
   private final RoutingState routingState;
 
-  public MarkPartitionsBootstrappedProcessor(
+  public MarkPartitionBootstrappedProcessor(
       final KeyGenerator keyGenerator,
       final Writers writers,
       final ProcessingState processingState) {
@@ -42,20 +42,60 @@ public class MarkPartitionsBootstrappedProcessor implements TypedRecordProcessor
   @Override
   public void processRecord(final TypedRecord<ScaleRecord> command) {
     final var scaleUp = command.getValue();
+
+    final var reason = validate(command);
+    if (reason != null) {
+      return;
+    }
+    final var scalingKey = keyGenerator.nextKey();
+    final var wasAlreadyBootstrapped = areAllPartitionsBootstrapped();
+    stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.PARTITION_BOOTSTRAPPED, scaleUp);
+    responseWriter.writeEventOnCommand(
+        scalingKey, ScaleIntent.PARTITION_BOOTSTRAPPED, scaleUp, command);
+    // now the PARTITION_BOOTSTRAPPED event has been applied to the state, let's check if
+    // it was the last partition missing.
+    if (!wasAlreadyBootstrapped && areAllPartitionsBootstrapped()) {
+      stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.SCALED_UP, scaleUp);
+    }
+  }
+
+  private String validate(final TypedRecord<ScaleRecord> command) {
+    final var scaleUp = command.getValue();
     if (!(routingState.desiredPartitions().size() == scaleUp.getDesiredPartitionCount())) {
       final var reason =
           String.format(
               "The redistributed partitions do not match the desired partitions. "
                   + "The redistributed partitions are %s, the desired partitions are %s.",
               scaleUp.getRedistributedPartitions(), routingState.desiredPartitions());
-      rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, reason);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_ARGUMENT, reason);
+      rejectWith(command, RejectionType.INVALID_STATE, reason);
+      return reason;
     }
-    final var scalingKey = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.PARTITIONS_BOOTSTRAPPED, scaleUp);
-    // TODO remove when relocation is needed
-    responseWriter.writeEventOnCommand(
-        scalingKey, ScaleIntent.MARK_PARTITIONS_BOOTSTRAPPED, scaleUp, command);
-    stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.SCALED_UP, scaleUp);
+    if (scaleUp.getRedistributedPartitions().size() != 1) {
+      final var reason =
+          String.format(
+              "Only one partition can be marked as bootstrapped at a time. The redistributed partitions are %s.",
+              scaleUp.getRedistributedPartitions());
+      rejectWith(command, RejectionType.INVALID_ARGUMENT, reason);
+      return reason;
+    }
+    final var partition = scaleUp.getRedistributedPartitions().getFirst();
+    if (!routingState.desiredPartitions().contains(partition)
+        && !routingState.currentPartitions().contains(partition)) {
+      final var reason = String.format("Partition %d is not a valid partition.", partition);
+      rejectWith(command, RejectionType.INVALID_ARGUMENT, reason);
+      return reason;
+    }
+
+    return null;
+  }
+
+  private boolean areAllPartitionsBootstrapped() {
+    return routingState.desiredPartitions().equals(routingState.currentPartitions());
+  }
+
+  private void rejectWith(
+      final TypedRecord<ScaleRecord> command, final RejectionType type, final String reason) {
+    rejectionWriter.appendRejection(command, type, reason);
+    responseWriter.writeRejectionOnCommand(command, type, reason);
   }
 }

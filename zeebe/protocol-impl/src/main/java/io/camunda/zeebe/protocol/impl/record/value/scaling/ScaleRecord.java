@@ -14,6 +14,9 @@ import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
 import java.util.Collection;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue {
   private final IntegerProperty desiredPartitionCountProp =
@@ -49,8 +52,10 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
   }
 
   @Override
-  public Collection<Integer> getRedistributedPartitions() {
-    return redistributedPartitions.stream().map(IntegerValue::getValue).toList();
+  public SortedSet<Integer> getRedistributedPartitions() {
+    return redistributedPartitions.stream()
+        .map(IntegerValue::getValue)
+        .collect(Collectors.toCollection(TreeSet::new));
   }
 
   @Override

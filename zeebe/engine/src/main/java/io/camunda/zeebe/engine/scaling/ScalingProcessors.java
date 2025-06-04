@@ -33,7 +33,7 @@ public final class ScalingProcessors {
         new ScaleUpStatusProcessor(keyGenerator, writers, processingState.getRoutingState()));
     typedRecordProcessors.onCommand(
         ValueType.SCALE,
-        ScaleIntent.MARK_PARTITIONS_BOOTSTRAPPED,
-        new MarkPartitionsBootstrappedProcessor(keyGenerator, writers, processingState));
+        ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
+        new MarkPartitionBootstrappedProcessor(keyGenerator, writers, processingState));
   }
 }
