@@ -88,6 +88,7 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
         new CachedProcessEntity(
             entity.getName(),
             entity.getVersionTag(),
+            Integer.toString(entity.getVersion()),
             entity.getCallActivityIds(),
             ProcessCacheUtil.getFlowNodesMap(entity.getFlowNodes()));
     processCache.put(process.getProcessDefinitionKey(), cachedProcessEntity);
