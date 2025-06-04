@@ -35,7 +35,7 @@ public class UnassignMemberGroupTest extends ClientRestTest {
   @Test
   void shouldUnassignUserFromGroup() {
     // when
-    client.newUnassignUserFromGroupCommand(GROUP_ID).username(USERNAME).send().join();
+    client.newUnassignUserFromGroupCommand().username(USERNAME).groupId(GROUP_ID).send().join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
@@ -50,9 +50,75 @@ public class UnassignMemberGroupTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newUnassignUserFromGroupCommand(GROUP_ID).username(USERNAME).send().join())
+            () ->
+                client
+                    .newUnassignUserFromGroupCommand()
+                    .username(USERNAME)
+                    .groupId(GROUP_ID)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnNullUsername() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUnassignUserFromGroupCommand()
+                    .username(null)
+                    .groupId(GROUP_ID)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("username must not be null");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnEmptyUsername() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUnassignUserFromGroupCommand()
+                    .username("")
+                    .groupId(GROUP_ID)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("username must not be empty");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnNullGroupId() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUnassignUserFromGroupCommand()
+                    .username(USERNAME)
+                    .groupId(null)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("groupId must not be null");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnEmptyGroupId() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUnassignUserFromGroupCommand()
+                    .username(USERNAME)
+                    .groupId("")
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("groupId must not be empty");
   }
 
   @Test
