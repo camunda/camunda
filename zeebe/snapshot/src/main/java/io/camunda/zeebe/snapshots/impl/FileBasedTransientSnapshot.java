@@ -160,12 +160,13 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
 
     try {
       final var metadata =
-          new FileBasedSnapshotMetadata(
-              FileBasedSnapshotStoreImpl.VERSION,
-              snapshotId.getProcessedPosition(),
-              snapshotId.getExportedPosition(),
-              lastFollowupEventPosition,
-              isBootstrap);
+          isBootstrap
+              ? FileBasedSnapshotMetadata.forBootstrap(FileBasedSnapshotStoreImpl.VERSION)
+              : new FileBasedSnapshotMetadata(
+                  FileBasedSnapshotStoreImpl.VERSION,
+                  snapshotId.getProcessedPosition(),
+                  snapshotId.getExportedPosition(),
+                  lastFollowupEventPosition);
       writeMetadataAndUpdateChecksum(metadata);
       snapshot = snapshotStore.persistNewSnapshot(snapshotId, checksum, metadata);
       future.complete(snapshot);

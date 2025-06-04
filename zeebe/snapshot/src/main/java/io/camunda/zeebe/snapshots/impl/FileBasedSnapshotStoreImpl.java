@@ -22,6 +22,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
 import io.camunda.zeebe.snapshots.SnapshotException;
 import io.camunda.zeebe.snapshots.SnapshotException.CorruptedSnapshotException;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
+import io.camunda.zeebe.snapshots.SnapshotException.SnapshotCopyForBootstrapException;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.util.Either;
@@ -720,15 +721,15 @@ public final class FileBasedSnapshotStoreImpl {
   public ActorFuture<PersistedSnapshot> copyForBootstrap(
       final PersistedSnapshot persistedSnapshot, final BiConsumer<Path, Path> copySnapshot) {
     final var snapshotPath = persistedSnapshot.getPath();
-    final var snapshotId = (FileBasedSnapshotId) persistedSnapshot.snapshotId();
-    final var destinationFolder = buildSnapshotDirectory(snapshotId, true);
+    final var zeroedSnapshotId = new FileBasedSnapshotId(0, 0, 0, 0, brokerId);
+    final var destinationFolder = buildSnapshotDirectory(zeroedSnapshotId, true);
 
     try {
       FileUtil.ensureDirectoryExists(destinationFolder);
       copySnapshot.accept(snapshotPath, destinationFolder);
       final var transientSnapshot =
           new FileBasedTransientSnapshot(
-              snapshotId, destinationFolder, this, actor, checksumProvider, true);
+              zeroedSnapshotId, destinationFolder, this, actor, checksumProvider, true);
       return transientSnapshot
           .take(toPath -> copySnapshot.accept(snapshotPath, toPath))
           .andThen(ignored -> transientSnapshot.persistInternal(), actor)
