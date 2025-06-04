@@ -254,5 +254,10 @@ public final class ExporterTest {
     public long getOperationReference() {
       return 0;
     }
+
+    @Override
+    public long getBatchOperationReference() {
+      return 0;
+    }
   }
 }

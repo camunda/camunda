@@ -112,6 +112,11 @@ public final class RetryTypedRecord<T extends UnifiedRecordValue> implements Typ
   }
 
   @Override
+  public long getBatchOperationReference() {
+    return 0;
+  }
+
+  @Override
   public Record<T> copyOf() {
     return this;
   }
