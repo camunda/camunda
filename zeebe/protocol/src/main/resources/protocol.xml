@@ -73,6 +73,7 @@
       <validValue name="BATCH_OPERATION_PARTITION_LIFECYCLE">55</validValue>
 
       <!-- Management records / record not related to process automation -->
+      <!-- value 252 was used for "REDISTRIBUTION, do not use-->
       <validValue name="SCALE">253</validValue>
       <validValue name="CHECKPOINT">254</validValue>
     </enum>
