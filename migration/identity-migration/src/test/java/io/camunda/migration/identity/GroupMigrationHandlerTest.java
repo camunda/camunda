@@ -23,6 +23,7 @@ import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
+import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -30,14 +31,12 @@ import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.apache.commons.lang3.NotImplementedException;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-@Disabled("https://github.com/camunda/camunda/issues/26973")
 @ExtendWith(MockitoExtension.class)
 public class GroupMigrationHandlerTest {
   private final ManagementIdentityClient managementIdentityClient;
@@ -83,7 +82,7 @@ public class GroupMigrationHandlerTest {
 
     // then
     verify(managementIdentityClient, times(2)).fetchGroups(anyInt());
-    verify(groupService, times(2)).createGroup(any());
+    verify(groupService, times(2)).createGroup(any(GroupDTO.class));
   }
 
   @Test

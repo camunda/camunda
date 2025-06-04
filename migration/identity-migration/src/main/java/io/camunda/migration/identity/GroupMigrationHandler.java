@@ -13,6 +13,7 @@ import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
+import io.camunda.service.GroupServices.GroupDTO;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
@@ -45,13 +46,24 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
 
   private MigrationStatusUpdateRequest processTask(final Group group) {
     try {
-      // TODO: Revisit this part with https://github.com/camunda/camunda/issues/26973
-      //      groupServices.createGroup(group.name()).join();
+      final var groupDTO = new GroupDTO(normalizeGroupID(group.name()), group.name(), "");
+      groupServices.createGroup(groupDTO);
     } catch (final Exception e) {
       if (!isConflictError(e)) {
         return managementIdentityTransformer.toMigrationStatusUpdateRequest(group, e);
       }
     }
     return managementIdentityTransformer.toMigrationStatusUpdateRequest(group, null);
+  }
+
+  // Normalizes the group ID to ensure it meets the requirements for a valid group ID.
+  // For SaaS the group ID is derived from the group name, because in the old identity
+  // management system the group ID was generated internally.
+  private String normalizeGroupID(final String groupName) {
+    var normalizedId = groupName.toLowerCase();
+    if (normalizedId.length() > 256) {
+      normalizedId = normalizedId.substring(0, 256);
+    }
+    return normalizedId.replaceAll("[^a-zA-Z0-9_\\-]", "_");
   }
 }
