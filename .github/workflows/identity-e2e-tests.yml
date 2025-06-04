@@ -34,9 +34,12 @@ concurrency:
   cancel-in-progress: true
   group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
+permissions:
+  contents: read # for git clone
+
 jobs:
   test:
-    runs-on: gcp-core-4-default
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
       elasticsearch:
@@ -53,59 +56,23 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.3.0
+      - name: Setup Maven
+        uses: ./.github/actions/setup-build
         with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/github.com/organizations/camunda NEXUS_USR;
-            secret/data/github.com/organizations/camunda NEXUS_PSW;
-      - name: Setup Node
-        uses: actions/setup-node@v4
+          harbor: true
+          maven-cache-key-modifier: identity-tests
+          maven-version: 3.8.6
+          time-zone: Europe/Berlin
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Build frontend
+        uses: ./.github/actions/build-frontend
         with:
-          node-version: "22"
-      - name: Setup yarn
-        run: npm install -g yarn
-      - name: Install node dependencies
-        working-directory: ./identity/client
-        run: yarn install
-      - name: Add Yarn binaries to Path
-        working-directory: ./identity/client
-        run: |
-          yarn bin >> "$GITHUB_PATH"
-          yarn global bin >> "$GITHUB_PATH"
+          directory: ./identity/client
       - name: Install Playwright
         run: yarn exec playwright install --with-deps chromium
         working-directory: ./identity/client
-      - name: Build frontend
-        working-directory: ./identity/client
-        run: yarn build
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: "adopt"
-          java-version: "21"
-      - name: Setup Maven
-        uses: ./.github/actions/setup-maven-dist
-        with:
-          maven-version: "3.9.6"
-          set-mvnw: true
-      # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
-      - name: "Create settings.xml"
-        uses: s4u/maven-settings-action@v3.1.0
-        with:
-          githubServer: false
-          servers: |
-            [{
-              "id": "camunda-nexus",
-              "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
-              "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
-            }]
-          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
       - name: Build backend
         run: ./mvnw clean install -DskipTests=true -DskipChecks -Dskip.fe.build=true -T1C -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Start Identity
