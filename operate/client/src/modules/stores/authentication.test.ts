@@ -78,21 +78,18 @@ describe('stores/authentication', () => {
   );
 
   describe('isForbidden', () => {
-    it('should return true when authorizedApplications does not contain "operate" or "*"', () => {
-      authenticationStore.state.authorizedApplications = ['tasklist'];
+    it('should return true when authorizedComponents does not contain "operate" or "*"', () => {
+      authenticationStore.state.authorizedComponents = ['tasklist'];
       expect(authenticationStore.isForbidden()).toBe(true);
     });
 
-    it('should return false when authorizedApplications contains "operate"', () => {
-      authenticationStore.state.authorizedApplications = [
-        'tasklist',
-        'operate',
-      ];
+    it('should return false when authorizedComponents contains "operate"', () => {
+      authenticationStore.state.authorizedComponents = ['tasklist', 'operate'];
       expect(authenticationStore.isForbidden()).toBe(false);
     });
 
-    it('should return false when authorizedApplications contains "*"', () => {
-      authenticationStore.state.authorizedApplications = ['*'];
+    it('should return false when authorizedComponents contains "*"', () => {
+      authenticationStore.state.authorizedComponents = ['*'];
       expect(authenticationStore.isForbidden()).toBe(false);
     });
   });

@@ -22,7 +22,7 @@ type MeDto = {
   userId: string;
   displayName: string | null;
   canLogout: boolean;
-  authorizedApplications?: Array<string>;
+  authorizedComponents?: Array<string>;
   roles: ReadonlyArray<string> | null;
   salesPlanType: SalesPlanType | null;
   c8Links: {

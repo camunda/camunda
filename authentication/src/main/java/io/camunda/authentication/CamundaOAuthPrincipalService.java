@@ -90,8 +90,8 @@ public class CamundaOAuthPrincipalService {
 
     final var authContextBuilder =
         new AuthenticationContextBuilder()
-            .withAuthorizedApplications(
-                authorizationServices.getAuthorizedApplications(
+            .withAuthorizedComponents(
+                authorizationServices.getAuthorizedComponents(
                     Stream.concat(roles.stream().map(RoleEntity::roleId), mappingIds.stream())
                         .collect(Collectors.toSet())))
             .withTenants(tenants)

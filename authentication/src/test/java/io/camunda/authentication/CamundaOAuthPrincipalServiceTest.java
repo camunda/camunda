@@ -220,7 +220,7 @@ public class CamundaOAuthPrincipalServiceTest {
               Set.of("test-id", "test-id-2"), Set.of("group-g1"), Set.of("roleR1", "roleGroup")))
           .thenReturn(List.of(tenantT1, groupTenant));
 
-      when(authorizationServices.getAuthorizedApplications(
+      when(authorizationServices.getAuthorizedComponents(
               Set.of("test-id", "test-id-2", "roleR1", "roleGroup")))
           .thenReturn(List.of("*"));
 
@@ -235,7 +235,7 @@ public class CamundaOAuthPrincipalServiceTest {
       assertThat(authenticationContext.groups()).containsExactly("group-g1");
       assertThat(authenticationContext.tenants())
           .containsAll(List.of(TenantDTO.fromEntity(tenantT1), TenantDTO.fromEntity(groupTenant)));
-      assertThat(authenticationContext.authorizedApplications()).containsAll(Set.of("*"));
+      assertThat(authenticationContext.authorizedComponents()).containsAll(Set.of("*"));
     }
 
     @Test
@@ -263,7 +263,7 @@ public class CamundaOAuthPrincipalServiceTest {
       when(roleServices.getRolesByMappingsAndGroups(Set.of("map-1", "map-2"), Set.of("group-g1")))
           .thenReturn(List.of(roleR1));
 
-      when(authorizationServices.getAuthorizedApplications(Set.of("map-1", "map-2", "roleR1")))
+      when(authorizationServices.getAuthorizedComponents(Set.of("map-1", "map-2", "roleR1")))
           .thenReturn(List.of("app-1", "app-2"));
 
       // when
@@ -280,7 +280,7 @@ public class CamundaOAuthPrincipalServiceTest {
       assertThat(authenticationContext.tenants())
           .containsExactlyInAnyOrder(
               TenantDTO.fromEntity(tenantEntity1), TenantDTO.fromEntity(tenantEntity2));
-      assertThat(authenticationContext.authorizedApplications())
+      assertThat(authenticationContext.authorizedComponents())
           .containsExactlyInAnyOrder("app-1", "app-2");
     }
   }
