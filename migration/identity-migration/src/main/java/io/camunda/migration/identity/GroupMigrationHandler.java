@@ -64,6 +64,6 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
     if (normalizedId.length() > 256) {
       normalizedId = normalizedId.substring(0, 256);
     }
-    return normalizedId.replaceAll("[^a-zA-Z0-9_\\-]", "_");
+    return normalizedId.replaceAll("[^a-zA-Z0-9_@.-]+", "_");
   }
 }
