@@ -142,6 +142,16 @@ public final class SearchQueryResponseMapper {
   }
 
   public static ProcessDefinitionSearchQueryResult toProcessDefinitionSearchQueryResponse(
+      final List<ProcessDefinitionEntity> result) {
+    return new ProcessDefinitionSearchQueryResult()
+        // .page(page)
+        .items(
+            ofNullable(result)
+                .map(SearchQueryResponseMapper::toProcessDefinitions)
+                .orElseGet(Collections::emptyList));
+  }
+
+  public static ProcessDefinitionSearchQueryResult toProcessDefinitionSearchQueryResponse(
       final SearchQueryResult<ProcessDefinitionEntity> result) {
     final var page = toSearchQueryPageResponse(result);
     return new ProcessDefinitionSearchQueryResult()

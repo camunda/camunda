@@ -13,6 +13,7 @@ import static io.camunda.zeebe.protocol.record.value.EntityType.ROLE;
 import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
 import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResult;
+import io.camunda.search.aggregation.result.ProcessDefinitionLatestVersionAggregationResult;
 import io.camunda.search.aggregation.result.ProcessInstanceFlowNodeStatisticsAggregationResult;
 import io.camunda.search.clients.auth.DocumentAuthorizationQueryStrategy;
 import io.camunda.search.clients.transformers.ServiceTransformers;
@@ -192,6 +193,14 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   public SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
       final ProcessDefinitionQuery filter) {
     return getSearchExecutor().search(filter, ProcessEntity.class);
+  }
+
+  @Override
+  public List<ProcessDefinitionEntity> latestProcessDefinitions(
+      final ProcessDefinitionQuery query) {
+    return getSearchExecutor()
+        .aggregate(query, ProcessDefinitionLatestVersionAggregationResult.class)
+        .items();
   }
 
   @Override

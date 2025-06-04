@@ -50,11 +50,32 @@ public class ProcessDefinitionController {
     this.authenticationProvider = authenticationProvider;
   }
 
+  @CamundaPostMapping(path = "/latest")
+  public ResponseEntity<ProcessDefinitionSearchQueryResult> latestProcessDefinitions(
+      @RequestBody(required = false) final ProcessDefinitionSearchQuery query) {
+    return SearchQueryRequestMapper.toProcessDefinitionQuery(query)
+        .fold(RestErrorMapper::mapProblemToResponse, this::latest);
+  }
+
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<ProcessDefinitionSearchQueryResult> searchProcessDefinitions(
       @RequestBody(required = false) final ProcessDefinitionSearchQuery query) {
     return SearchQueryRequestMapper.toProcessDefinitionQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
+  }
+
+  private ResponseEntity<ProcessDefinitionSearchQueryResult> latest(
+      final ProcessDefinitionQuery query) {
+    try {
+      final var result =
+          processDefinitionServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .latest(query);
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toProcessDefinitionSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
   }
 
   private ResponseEntity<ProcessDefinitionSearchQueryResult> search(

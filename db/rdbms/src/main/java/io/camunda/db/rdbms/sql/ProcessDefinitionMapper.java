@@ -12,6 +12,7 @@ import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
+import io.camunda.search.query.ProcessDefinitionQuery;
 import java.util.List;
 
 public interface ProcessDefinitionMapper {
@@ -24,4 +25,6 @@ public interface ProcessDefinitionMapper {
 
   List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(
       ProcessDefinitionStatisticsFilter filter);
+
+  List<ProcessDefinitionEntity> findLatest(ProcessDefinitionQuery filter);
 }

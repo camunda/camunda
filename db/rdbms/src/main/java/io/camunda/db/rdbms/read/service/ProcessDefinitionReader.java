@@ -62,4 +62,9 @@ public class ProcessDefinitionReader extends AbstractEntityReader<ProcessDefinit
     LOG.trace("[RDBMS DB] Query process definition flow node statistics with filter {}", filter);
     return processDefinitionMapper.flowNodeStatistics(filter);
   }
+
+  public List<ProcessDefinitionEntity> findLatest(final ProcessDefinitionQuery filter) {
+    LOG.trace("[RDBMS DB] Query process definition with latest version");
+    return processDefinitionMapper.findLatest(filter);
+  }
 }

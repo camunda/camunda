@@ -7,6 +7,7 @@
  */
 package io.camunda.search.query;
 
+import io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -23,6 +24,11 @@ public record ProcessDefinitionQuery(
   public static ProcessDefinitionQuery of(
       final Function<ProcessDefinitionQuery.Builder, ObjectBuilder<ProcessDefinitionQuery>> fn) {
     return fn.apply(new ProcessDefinitionQuery.Builder()).build();
+  }
+
+  @Override
+  public ProcessDefinitionLatestVersionAggregation aggregation() {
+    return new ProcessDefinitionLatestVersionAggregation(filter);
   }
 
   public static final class Builder

@@ -9,7 +9,6 @@ package io.camunda.search.clients;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 
-import io.camunda.search.aggregation.AggregationBase;
 import io.camunda.search.aggregation.result.AggregationResultBase;
 import io.camunda.search.clients.auth.AuthorizationQueryStrategy;
 import io.camunda.search.clients.core.SearchQueryRequest;
@@ -24,7 +23,6 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.query.TypedSearchAggregationQuery;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.sort.SortOption;
 import io.camunda.security.auth.SecurityContext;
@@ -76,8 +74,8 @@ public final class SearchClientBasedQueryExecutor {
     return responseTransformer.apply(response, reverse);
   }
 
-  public <F extends FilterBase, A extends AggregationBase, R extends AggregationResultBase>
-      R aggregate(final TypedSearchAggregationQuery<F, A> query, final Class<R> resultClass) {
+  public <F extends FilterBase, S extends SortOption, R extends AggregationResultBase> R aggregate(
+      final TypedSearchQuery<F, S> query, final Class<R> resultClass) {
     final var searchQueryResponse =
         executeSearch(query, searchRequest -> searchClient.search(searchRequest, Object.class));
     return transformers

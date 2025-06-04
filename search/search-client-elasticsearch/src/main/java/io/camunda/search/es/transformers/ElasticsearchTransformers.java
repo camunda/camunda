@@ -13,6 +13,7 @@ import io.camunda.search.clients.aggregator.SearchFilterAggregator;
 import io.camunda.search.clients.aggregator.SearchFiltersAggregator;
 import io.camunda.search.clients.aggregator.SearchParentAggregator;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
+import io.camunda.search.clients.aggregator.SearchTopHitsAggregator;
 import io.camunda.search.clients.core.SearchDeleteRequest;
 import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchGetResponse;
@@ -45,6 +46,7 @@ import io.camunda.search.es.transformers.aggregator.SearchFilterAggregatorTransf
 import io.camunda.search.es.transformers.aggregator.SearchFiltersAggregatorTransformer;
 import io.camunda.search.es.transformers.aggregator.SearchParentAggregatorTransformer;
 import io.camunda.search.es.transformers.aggregator.SearchTermsAggregatorTransformer;
+import io.camunda.search.es.transformers.aggregator.SearchTopHitsAggregatorTransformer;
 import io.camunda.search.es.transformers.query.BoolQueryTransformer;
 import io.camunda.search.es.transformers.query.ConstantScoreQueryTransformer;
 import io.camunda.search.es.transformers.query.ExistsQueryTransformer;
@@ -135,6 +137,7 @@ public final class ElasticsearchTransformers {
     mappers.put(SearchFilterAggregator.class, new SearchFilterAggregatorTransformer(mappers));
     mappers.put(SearchFiltersAggregator.class, new SearchFiltersAggregatorTransformer(mappers));
     mappers.put(SearchTermsAggregator.class, new SearchTermsAggregatorTransformer(mappers));
+    mappers.put(SearchTopHitsAggregator.class, new SearchTopHitsAggregatorTransformer(mappers));
     mappers.put(SearchChildrenAggregator.class, new SearchChildrenAggregatorTransformer(mappers));
     mappers.put(SearchParentAggregator.class, new SearchParentAggregatorTransformer(mappers));
 

@@ -20,6 +20,8 @@ public interface ProcessDefinitionSearchClient {
   SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
       ProcessDefinitionQuery filter);
 
+  List<ProcessDefinitionEntity> latestProcessDefinitions(ProcessDefinitionQuery filter);
+
   List<ProcessFlowNodeStatisticsEntity> processDefinitionFlowNodeStatistics(
       final ProcessDefinitionStatisticsFilter filter);
 
