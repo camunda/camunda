@@ -118,8 +118,7 @@ public class BatchOperationExecutionSchedulerTest {
 
     // and should NOT append an execute command
     verify(taskResultBuilder, times(0))
-        .appendCommandRecord(
-            anyLong(), any(Intent.class), any(UnifiedRecordValue.class), anyLong());
+        .appendCommandRecord(anyLong(), any(Intent.class), any(UnifiedRecordValue.class), any());
   }
 
   @Test

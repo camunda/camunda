@@ -27,6 +27,7 @@ import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
+import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder.Metadata;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -131,7 +132,11 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     command.setBatchOperationKey(batchOperationKey);
     command.setBatchOperationType(batchOperation.getBatchOperationType());
     LOG.debug("Appending batch operation {} started event", batchOperationKey);
-    taskResultBuilder.appendCommandRecord(batchOperationKey, BatchOperationIntent.START, command);
+    taskResultBuilder.appendCommandRecord(
+        batchOperationKey,
+        BatchOperationIntent.START,
+        command,
+        Metadata.of(b -> b.batchOperationReference(batchOperationKey)));
   }
 
   private void appendFailedCommand(
@@ -141,7 +146,11 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     command.setBatchOperationKey(batchOperationKey);
     command.setBatchOperationType(batchOperation.getBatchOperationType());
     LOG.debug("Appending batch operation {} failed event", batchOperationKey);
-    taskResultBuilder.appendCommandRecord(batchOperationKey, BatchOperationIntent.FAIL, command);
+    taskResultBuilder.appendCommandRecord(
+        batchOperationKey,
+        BatchOperationIntent.FAIL,
+        command,
+        Metadata.of(b -> b.batchOperationReference(batchOperationKey)));
   }
 
   private void appendChunk(
@@ -162,7 +171,10 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     LOG.debug(
         "Appending batch operation {} subbatch with {} items.", batchOperationKey, items.size());
     taskResultBuilder.appendCommandRecord(
-        batchOperationKey, BatchOperationChunkIntent.CREATE, command);
+        batchOperationKey,
+        BatchOperationChunkIntent.CREATE,
+        command,
+        Metadata.of(b -> b.batchOperationReference(batchOperationKey)));
   }
 
   private void appendExecution(
@@ -172,7 +184,10 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
 
     LOG.debug("Appending batch operation execution {}", batchOperationKey);
     taskResultBuilder.appendCommandRecord(
-        batchOperationKey, BatchOperationExecutionIntent.EXECUTE, command, batchOperationKey);
+        batchOperationKey,
+        BatchOperationExecutionIntent.EXECUTE,
+        command,
+        Metadata.of(b -> b.batchOperationReference(batchOperationKey)));
   }
 
   private Set<Item> queryAllKeys(final PersistedBatchOperation batchOperation) {
