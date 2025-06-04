@@ -326,7 +326,7 @@ public class CamundaOAuthPrincipalServiceTest {
           Map.of("groups", List.of("idp-group1", "idp-group2"), "sub", "user1");
       final var mapping1 = new MappingEntity("map-1", 1L, "role", "R1", "role-r1");
       final var mapping2 = new MappingEntity("map-2", 2L, "group", "G1", "group-g1");
-      when(mappingServices.getMatchingMappings(claims)).thenReturn(List.of(mapping1, mapping2));
+      when(mappingServices.getMatchingMappings(claims)).thenReturn(Stream.of(mapping1, mapping2));
       when(groupServices.getGroupsByMemberIds(Set.of("map-1", "map-2"), EntityType.MAPPING))
           .thenReturn(List.of(new GroupEntity(1L, "local-g1", "G1", "Group G1")));
 
