@@ -722,17 +722,41 @@ public final class FileBasedSnapshotStoreImpl {
       final PersistedSnapshot persistedSnapshot, final BiConsumer<Path, Path> copySnapshot) {
     final var snapshotPath = persistedSnapshot.getPath();
     final var zeroedSnapshotId = new FileBasedSnapshotId(0, 0, 0, 0, brokerId);
+
     final var destinationFolder = buildSnapshotDirectory(zeroedSnapshotId, true);
 
     try {
-      FileUtil.ensureDirectoryExists(destinationFolder);
-      copySnapshot.accept(snapshotPath, destinationFolder);
-      final var transientSnapshot =
-          new FileBasedTransientSnapshot(
-              zeroedSnapshotId, destinationFolder, this, actor, checksumProvider, true);
-      return transientSnapshot
-          .take(toPath -> copySnapshot.accept(snapshotPath, toPath))
-          .andThen(ignored -> transientSnapshot.persistInternal(), actor)
+      return actor
+          .call(
+              () -> {
+                // the destination folder should not exist, as only one snapshot for bootstrap is
+                // created at a time
+                if (Files.exists(destinationFolder)) {
+                  return CompletableActorFuture.completedExceptionally(
+                      new SnapshotCopyForBootstrapException(
+                          String.format(
+                              """
+                  Destination folder already exists: %s. Only one bootstrap snapshot can be taken at a time.\
+                  If the previous scaling operation has terminated successfully, please delete the folder manually and try again.\
+                  If the previous operation has not terminated successfully, please wait for it to complete before trying again.\
+                  """,
+                              destinationFolder)));
+                } else {
+                  FileUtil.ensureDirectoryExists(destinationFolder);
+                  return CompletableActorFuture.completed();
+                }
+              })
+          .andThen(fut -> fut, actor)
+          .andThen(
+              ignored -> {
+                final var transientSnapshot =
+                    new FileBasedTransientSnapshot(
+                        zeroedSnapshotId, destinationFolder, this, actor, checksumProvider, true);
+                return transientSnapshot
+                    .take(toPath -> copySnapshot.accept(snapshotPath, toPath))
+                    .andThen(ignore -> transientSnapshot.persistInternal(), actor);
+              },
+              actor)
           .thenApply(
               persisted -> {
                 bootstrapSnapshots.add((FileBasedSnapshot) persisted);

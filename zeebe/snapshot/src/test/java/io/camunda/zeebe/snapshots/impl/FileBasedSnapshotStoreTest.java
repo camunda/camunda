@@ -472,6 +472,20 @@ public class FileBasedSnapshotStoreTest {
             });
   }
 
+  @Test
+  public void shouldNotTakeMoreThanOneSnapshotForBootstrap() throws IOException {
+    // given
+    final var transientSnapshot = takeTransientSnapshotWithFiles(123L);
+    final var persistedSnapshot = transientSnapshot.persist().join();
+    // when
+    final var copied = snapshotStore.copyForBootstrap(persistedSnapshot, copyAllFiles()).join();
+
+    // then
+    assertThatThrownBy(
+            (() -> snapshotStore.copyForBootstrap(persistedSnapshot, copyAllFiles()).join()))
+        .hasMessageContaining("Destination folder already exists");
+  }
+
   private boolean createSnapshotDir(final Path path) {
     try {
       FileUtil.ensureDirectoryExists(path);

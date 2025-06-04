@@ -18,6 +18,11 @@ public class SnapshotException extends RuntimeException {
   }
 
   public static class SnapshotCopyForBootstrapException extends SnapshotException {
+
+    public SnapshotCopyForBootstrapException(final String message) {
+      super(message);
+    }
+
     public SnapshotCopyForBootstrapException(final String message, final Throwable cause) {
       super(message, cause);
     }
