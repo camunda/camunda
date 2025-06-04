@@ -89,6 +89,11 @@ record MockTypedCheckpointRecord(
   }
 
   @Override
+  public long getBatchOperationReference() {
+    return -1;
+  }
+
+  @Override
   public long getKey() {
     return 0;
   }

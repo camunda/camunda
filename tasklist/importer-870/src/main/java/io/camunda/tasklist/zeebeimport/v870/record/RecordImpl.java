@@ -39,6 +39,7 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
 
   private Map<String, Object> authorizations;
   private long operationReference;
+  private long batchOperationKey;
 
   public RecordImpl() {}
 
@@ -179,6 +180,15 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   }
 
   @Override
+  public long getBatchOperationReference() {
+    return batchOperationKey;
+  }
+
+  public void setBatchOperationKey(final long batchOperationKey) {
+    this.batchOperationKey = batchOperationKey;
+  }
+
+  @Override
   public Record<T> clone() {
     throw new UnsupportedOperationException("Clone not implemented");
   }
@@ -216,6 +226,8 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
         + value
         + ", operationReference="
         + operationReference
+        + ", batchOperationKey="
+        + batchOperationKey
         + '}';
   }
 
