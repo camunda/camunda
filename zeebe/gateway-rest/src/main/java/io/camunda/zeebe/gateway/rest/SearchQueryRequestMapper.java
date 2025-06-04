@@ -12,6 +12,7 @@ import static io.camunda.zeebe.gateway.rest.util.AdvancedSearchFilterUtil.mapToO
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.*;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateDate;
+import static io.camunda.zeebe.protocol.impl.record.value.job.JobRecord.RETRIES;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
@@ -288,27 +289,42 @@ public final class SearchQueryRequestMapper {
       final io.camunda.zeebe.gateway.protocol.rest.JobFilter filter) {
     final var builder = FilterBuilders.job();
     if (filter != null) {
-      ofNullable(filter.getState())
-          .map(mapToOperations(String.class))
-          .ifPresent(builder::stateOperations);
+      ofNullable(filter.getJobKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::jobKeyOperations);
       ofNullable(filter.getType())
           .map(mapToOperations(String.class))
           .ifPresent(builder::typeOperations);
       ofNullable(filter.getWorker())
           .map(mapToOperations(String.class))
           .ifPresent(builder::workerOperations);
-      ofNullable(filter.getProcessInstanceKey())
-          .map(mapToOperations(Long.class))
-          .ifPresent(builder::processInstanceKeyOperations);
+      ofNullable(filter.getState())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::stateOperations);
+      ofNullable(filter.getKind())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::kindOperations);
+      ofNullable(filter.getListenerEventType())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::listenerEventTypeOperations);
+      ofNullable(filter.getProcessDefinitionId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::processDefinitionIdOperations);
       ofNullable(filter.getProcessDefinitionKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::processDefinitionKeyOperations);
-      ofNullable(filter.getElementInstanceKey())
+      ofNullable(filter.getProcessInstanceKey())
           .map(mapToOperations(Long.class))
-          .ifPresent(builder::elementInstanceKeyOperations);
+          .ifPresent(builder::processInstanceKeyOperations);
       ofNullable(filter.getElementId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::elementIdOperations);
+      ofNullable(filter.getElementInstanceKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::elementInstanceKeyOperations);
+      ofNullable(filter.getTenantId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::tenantIdOperations);
     }
 
     return builder.build();
@@ -1241,10 +1257,18 @@ public final class SearchQueryRequestMapper {
         case TYPE -> builder.type();
         case WORKER -> builder.worker();
         case STATE -> builder.state();
-        case JOB_KIND -> builder.jobKind();
+        case KIND -> builder.jobKind();
         case LISTENER_EVENT_TYPE -> builder.listenerEventType();
-        case END_DATE -> builder.endDate();
+        case END_TIME -> builder.endTime();
         case TENANT_ID -> builder.tenantId();
+        case RETRIES -> builder.retries();
+        case IS_DENIED -> builder.isDenied();
+        case DENIED_REASON -> builder.deniedReason();
+        case HAS_FAILED_WITH_RETRIES_LEFT -> builder.hasFailedWithRetriesLeft();
+        case ERROR_CODE -> builder.errorCode();
+        case ERROR_MESSAGE -> builder.errorMessage();
+        case DEADLINE -> builder.deadline();
+        case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

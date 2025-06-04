@@ -68,13 +68,53 @@ public record JobSort(List<FieldSorting> orderings) implements SortOption {
       return this;
     }
 
-    public JobSort.Builder endDate() {
-      currentOrdering = new FieldSorting("endDate", null);
+    public JobSort.Builder endTime() {
+      currentOrdering = new FieldSorting("endTime", null);
       return this;
     }
 
     public JobSort.Builder tenantId() {
       currentOrdering = new FieldSorting("tenantId", null);
+      return this;
+    }
+
+    public JobSort.Builder retries() {
+      currentOrdering = new FieldSorting("retries", null);
+      return this;
+    }
+
+    public JobSort.Builder isDenied() {
+      currentOrdering = new FieldSorting("isDenied", null);
+      return this;
+    }
+
+    public JobSort.Builder deniedReason() {
+      currentOrdering = new FieldSorting("deniedReason", null);
+      return this;
+    }
+
+    public JobSort.Builder hasFailedWithRetriesLeft() {
+      currentOrdering = new FieldSorting("hasFailedWithRetriesLeft", null);
+      return this;
+    }
+
+    public JobSort.Builder errorCode() {
+      currentOrdering = new FieldSorting("errorCode", null);
+      return this;
+    }
+
+    public JobSort.Builder errorMessage() {
+      currentOrdering = new FieldSorting("errorMessage", null);
+      return this;
+    }
+
+    public JobSort.Builder deadline() {
+      currentOrdering = new FieldSorting("deadline", null);
+      return this;
+    }
+
+    public JobSort.Builder processDefinitionId() {
+      currentOrdering = new FieldSorting("processDefinitionId", null);
       return this;
     }
 

@@ -13,16 +13,25 @@ public class JobEntityTransformer
   public JobEntity apply(final io.camunda.webapps.schema.entities.JobEntity value) {
     return new JobEntity(
         value.getKey(),
-        value.getProcessInstanceKey(),
-        value.getProcessDefinitionKey(),
-        value.getFlowNodeInstanceId(),
-        value.getFlowNodeId(),
         value.getType(),
         value.getWorker(),
         toState(value.getState()),
         toJobKind(value.getJobKind()),
         toListenerEventType(value.getListenerEventType()),
+        value.getRetries(),
+        value.isDenied(),
+        value.getDeniedReason(),
+        value.isJobFailedWithRetriesLeft(),
+        value.getErrorCode(),
+        value.getErrorMessage(),
+        value.getCustomHeaders(),
+        value.getDeadline(),
         value.getEndTime(),
+        value.getBpmnProcessId(),
+        value.getProcessDefinitionKey(),
+        value.getProcessInstanceKey(),
+        value.getFlowNodeId(),
+        value.getFlowNodeInstanceId(),
         value.getTenantId());
   }
 
