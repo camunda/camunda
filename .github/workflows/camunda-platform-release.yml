@@ -250,6 +250,7 @@ jobs:
 
           # Default changelog value
           changelog="Release ${{ inputs.releaseVersion }}"
+          isDraftRelease="true"
 
           # Right now we only support patch releases for generating the changelog
           # as it is the easiest to automate and the most repetitive work to do on a release
@@ -282,6 +283,7 @@ jobs:
             --token=${{ secrets.GITHUB_TOKEN }} \
             --label="version:$ZCL_TARGET_REV" \
             --org camunda --repo zeebe)
+            isDraftRelease="false"
           fi
 
           # With multiline strings the output needs to be set differently.
@@ -291,6 +293,7 @@ jobs:
           echo 'CHANGELOG<<EOF' >> $GITHUB_OUTPUT
           echo "$changelog" >> $GITHUB_OUTPUT
           echo 'EOF' >> $GITHUB_OUTPUT
+          echo "isDraftRelease=$isDraftRelease" >> "$GITHUB_OUTPUT"
 
           # To show the changelog also as step summary
           echo "$changelog" >> $GITHUB_STEP_SUMMARY
@@ -329,7 +332,7 @@ jobs:
           name: ${{ inputs.releaseVersion }}
           artifacts: "release-artifacts/*"
           artifactErrorsFailBuild: true
-          draft: true
+          draft: ${{ steps.gen-changelog.outputs.isDraftRelease }}
           body: ${{ steps.gen-changelog.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: ${{ steps.pre-release.outputs.result }}
