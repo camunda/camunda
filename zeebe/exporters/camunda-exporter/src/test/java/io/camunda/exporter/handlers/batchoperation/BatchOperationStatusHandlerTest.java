@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.handlers.batchoperation;
 
-import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationReferenceNullValue;
+import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperationReferenceNullValue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
@@ -39,7 +39,7 @@ class BatchOperationStatusHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-index";
-  private final long operationalReference = 42L;
+  private final long batchOperationKey = 42L;
 
   abstract class AbstractOperationStatusHandlerTest<T extends RecordValue> {
 
@@ -57,11 +57,11 @@ class BatchOperationStatusHandlerTest {
     }
 
     @Test
-    void shouldNotHandleSuccessRecordWithoutOperationReference() {
+    void shouldNotHandleSuccessRecordWithoutBatchOperationKeyInMetadata() {
       final var record =
           ImmutableRecord.<T>builder()
               .from(createSuccessRecord())
-              .withOperationReference(operationReferenceNullValue())
+              .withBatchOperationReference(batchOperationReferenceNullValue())
               .build();
 
       assertThat(handler.handlesRecord(record)).isFalse();
@@ -75,11 +75,11 @@ class BatchOperationStatusHandlerTest {
     }
 
     @Test
-    void shouldNotHandleFailureRecordWithoutOperationReference() {
+    void shouldNotHandleFailureRecordWithoutBatchOperationKeyInMetadata() {
       final var record =
           ImmutableRecord.<T>builder()
               .from(createFailureRecord())
-              .withOperationReference(operationReferenceNullValue())
+              .withBatchOperationReference(batchOperationReferenceNullValue())
               .build();
 
       assertThat(handler.handlesRecord(record)).isFalse();
@@ -145,7 +145,7 @@ class BatchOperationStatusHandlerTest {
       final var generatedIds = handler.generateIds(record);
 
       assertThat(generatedIds)
-          .containsExactly(operationalReference + "_" + handler.getItemKey(record));
+          .containsExactly(batchOperationKey + "_" + handler.getItemKey(record));
     }
 
     @Test
@@ -178,7 +178,7 @@ class BatchOperationStatusHandlerTest {
           ValueType.PROCESS_INSTANCE_MODIFICATION,
           b ->
               b.withIntent(ProcessInstanceModificationIntent.MODIFIED)
-                  .withOperationReference(operationalReference));
+                  .withBatchOperationReference(batchOperationKey));
     }
 
     @Override
@@ -188,7 +188,7 @@ class BatchOperationStatusHandlerTest {
           b ->
               b.withRejectionType(RejectionType.NOT_FOUND)
                   .withIntent(ProcessInstanceModificationIntent.MODIFY)
-                  .withOperationReference(operationalReference));
+                  .withBatchOperationReference(batchOperationKey));
     }
   }
 
@@ -214,7 +214,7 @@ class BatchOperationStatusHandlerTest {
           ValueType.PROCESS_INSTANCE_MIGRATION,
           b ->
               b.withIntent(ProcessInstanceMigrationIntent.MIGRATED)
-                  .withOperationReference(operationalReference));
+                  .withBatchOperationReference(batchOperationKey));
     }
 
     @Override
@@ -224,7 +224,7 @@ class BatchOperationStatusHandlerTest {
           b ->
               b.withRejectionType(RejectionType.NOT_FOUND)
                   .withIntent(ProcessInstanceMigrationIntent.MIGRATE)
-                  .withOperationReference(operationalReference));
+                  .withBatchOperationReference(batchOperationKey));
     }
   }
 
@@ -255,7 +255,7 @@ class BatchOperationStatusHandlerTest {
                           .from(factory.generateObject(ProcessInstanceRecordValue.class))
                           .withBpmnElementType(BpmnElementType.PROCESS)
                           .build())
-                  .withOperationReference(operationalReference));
+                  .withBatchOperationReference(batchOperationKey));
     }
 
     @Override
@@ -270,7 +270,7 @@ class BatchOperationStatusHandlerTest {
                           .withBpmnElementType(BpmnElementType.PROCESS)
                           .build())
                   .withIntent(ProcessInstanceIntent.CANCEL)
-                  .withOperationReference(operationalReference));
+                  .withBatchOperationReference(batchOperationKey));
     }
   }
 
@@ -294,7 +294,8 @@ class BatchOperationStatusHandlerTest {
     Record<IncidentRecordValue> createSuccessRecord() {
       return factory.generateRecord(
           ValueType.INCIDENT,
-          b -> b.withIntent(IncidentIntent.RESOLVED).withOperationReference(operationalReference));
+          b ->
+              b.withIntent(IncidentIntent.RESOLVED).withBatchOperationReference(batchOperationKey));
     }
 
     @Override
@@ -304,7 +305,7 @@ class BatchOperationStatusHandlerTest {
           b ->
               b.withRejectionType(RejectionType.NOT_FOUND)
                   .withIntent(IncidentIntent.RESOLVE)
-                  .withOperationReference(operationalReference));
+                  .withBatchOperationReference(batchOperationKey));
     }
   }
 }
