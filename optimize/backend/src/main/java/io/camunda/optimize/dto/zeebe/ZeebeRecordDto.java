@@ -125,12 +125,10 @@ public abstract class ZeebeRecordDto<VALUE extends RecordValue, INTENT extends I
     return operationReference;
   }
 
-
   @Override
   public long getBatchOperationReference() {
     return batchOperationKey;
   }
-
 
   @Override
   public Record<VALUE> copyOf() {
