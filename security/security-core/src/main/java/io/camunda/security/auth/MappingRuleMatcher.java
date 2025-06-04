@@ -33,7 +33,13 @@ public final class MappingRuleMatcher {
 
   public static <T extends MappingRule> Stream<T> matchingRules(
       final Stream<T> mappingRules, final Map<String, Object> claims) {
-    final CompilationCache compilationCache = new CompilationCache();
+    return matchingRules(new CompilationCache(), mappingRules, claims);
+  }
+
+  public static <T extends MappingRule> Stream<T> matchingRules(
+      final CompilationCache compilationCache,
+      final Stream<T> mappingRules,
+      final Map<String, Object> claims) {
     final EvaluationCache evaluationCache = new EvaluationCache(compilationCache, claims);
     return mappingRules.filter(mappingRule -> matchRule(evaluationCache, mappingRule));
   }
@@ -60,7 +66,7 @@ public final class MappingRuleMatcher {
    * href="https://github.com/json-path/JsonPath/issues/975">JsonPath is not thread safe</a>.
    */
   @NotThreadSafe
-  private static final class CompilationCache {
+  public static final class CompilationCache {
     private final Map<String, JsonPath> cache = new HashMap<>();
 
     public JsonPath compile(final String expression) {
