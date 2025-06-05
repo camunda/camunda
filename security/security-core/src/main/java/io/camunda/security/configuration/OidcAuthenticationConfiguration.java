@@ -7,6 +7,7 @@
  */
 package io.camunda.security.configuration;
 
+import io.camunda.security.auth.OidcGroupsLoader;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -127,6 +128,7 @@ public class OidcAuthenticationConfiguration {
   }
 
   public void setGroupsClaim(final String groupsClaim) {
+    new OidcGroupsLoader(groupsClaim);
     this.groupsClaim = groupsClaim;
   }
 }
