@@ -78,7 +78,7 @@ public final class FileBasedSnapshotStoreImpl {
   private final AtomicLong receivingSnapshotStartCount;
   private final Set<PersistableSnapshot> pendingSnapshots = new HashSet<>();
   private final Set<FileBasedSnapshot> availableSnapshots = new HashSet<>();
-  private final Set<FileBasedSnapshot> bootstrapSnapshots = new HashSet<>();
+  private volatile Optional<FileBasedSnapshot> bootstrapSnapshot = Optional.empty();
   private final CRC32CChecksumProvider checksumProvider;
   private final ConcurrencyControl actor;
   private final Path bootstrapSnapshotsDirectory;
@@ -741,7 +741,7 @@ public final class FileBasedSnapshotStoreImpl {
               () -> {
                 // the destination folder should not exist, as only one snapshot for bootstrap is
                 // created at a time
-                if (Files.exists(destinationFolder)) {
+                if (Files.exists(destinationFolder) || bootstrapSnapshot.isPresent()) {
                   return CompletableActorFuture.completedExceptionally(
                       new SnapshotCopyForBootstrapException(
                           String.format(
@@ -769,7 +769,7 @@ public final class FileBasedSnapshotStoreImpl {
               actor)
           .thenApply(
               persisted -> {
-                bootstrapSnapshots.add((FileBasedSnapshot) persisted);
+                bootstrapSnapshot = Optional.of((FileBasedSnapshot) persisted);
                 return persisted;
               },
               actor);
@@ -785,8 +785,13 @@ public final class FileBasedSnapshotStoreImpl {
   ActorFuture<Void> deleteBootstrapSnapshots() {
     return actor.call(
         () -> {
-          bootstrapSnapshots.forEach(FileBasedSnapshot::delete);
+          bootstrapSnapshot.ifPresent(FileBasedSnapshot::delete);
+          bootstrapSnapshot = Optional.empty();
           return null;
         });
+  }
+
+  public Optional<PersistedSnapshot> getBootstrapSnapshot() {
+    return bootstrapSnapshot.map(PersistedSnapshot.class::cast);
   }
 }

@@ -415,7 +415,7 @@ public class FileBasedSnapshotStoreTest {
   }
 
   @Test
-  public void shouldCopyAPersistedSnapshotIntoAnotherFolderCorrectly() throws IOException {
+  public void shouldCreateASnapshotForBootstrap() throws IOException {
     // given
     final var transientSnapshot = takeTransientSnapshotWithFiles(123L);
     final var persistedSnapshot = transientSnapshot.persist().join();
@@ -424,6 +424,7 @@ public class FileBasedSnapshotStoreTest {
     final var copiedSnapshot =
         snapshotStore.copyForBootstrap(persistedSnapshot, copyAllFiles()).join();
 
+    // then
     assertThat(copiedSnapshot)
         .satisfies(
             s -> {
@@ -433,10 +434,30 @@ public class FileBasedSnapshotStoreTest {
                   .isEqualTo(
                       FileBasedSnapshotMetadata.forBootstrap(FileBasedSnapshotStoreImpl.VERSION));
             });
+
+    assertThat(snapshotStore.getBootstrapSnapshot())
+        .isPresent()
+        .satisfies(sn -> assertThat(sn.get().getId()).isEqualTo(copiedSnapshot.getId()));
+  }
+
+  @Test
+  public void shouldRestoreASnapshotForBootstrapCorrectly() throws IOException {
+    // given
+    final var transientSnapshot = takeTransientSnapshotWithFiles(123L);
+    final var persistedSnapshot = transientSnapshot.persist().join();
+
+    // when
+    final var copiedSnapshot =
+        snapshotStore.copyForBootstrap(persistedSnapshot, copyAllFiles()).join();
+
     final var files = copiedSnapshot.files();
     snapshotStore.restore(copiedSnapshot.getId(), files);
 
     // then
+    assertThat(snapshotStore.getBootstrapSnapshot())
+        .isPresent()
+        .satisfies(sn -> assertThat(sn.get().getId()).isEqualTo(copiedSnapshot.getId()));
+
     assertThat(snapshotStore.getLatestSnapshot())
         .isPresent()
         .satisfies(s -> assertThat(s.get().getId()).isEqualTo(copiedSnapshot.getId()));
@@ -470,6 +491,8 @@ public class FileBasedSnapshotStoreTest {
               final var path = snapshot.getPath();
               assertThat(path).doesNotExist();
             });
+
+    assertThat(snapshotStore.getBootstrapSnapshot()).isEmpty();
   }
 
   @Test
@@ -478,7 +501,7 @@ public class FileBasedSnapshotStoreTest {
     final var transientSnapshot = takeTransientSnapshotWithFiles(123L);
     final var persistedSnapshot = transientSnapshot.persist().join();
     // when
-    final var copied = snapshotStore.copyForBootstrap(persistedSnapshot, copyAllFiles()).join();
+    snapshotStore.copyForBootstrap(persistedSnapshot, copyAllFiles()).join();
 
     // then
     assertThatThrownBy(

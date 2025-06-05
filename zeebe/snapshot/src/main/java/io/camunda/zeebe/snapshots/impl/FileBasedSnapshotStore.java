@@ -10,6 +10,7 @@ package io.camunda.zeebe.snapshots.impl;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.snapshots.BootstrapSnapshotStore;
 import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -28,7 +29,10 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 
 public final class FileBasedSnapshotStore extends Actor
-    implements ConstructableSnapshotStore, ReceivableSnapshotStore, RestorableSnapshotStore {
+    implements ConstructableSnapshotStore,
+        ReceivableSnapshotStore,
+        RestorableSnapshotStore,
+        BootstrapSnapshotStore {
 
   private final String actorName;
   private final int partitionId;
@@ -132,6 +136,11 @@ public final class FileBasedSnapshotStore extends Actor
       final long processedPosition,
       final long exportedPosition) {
     return snapshotStore.newTransientSnapshot(index, term, processedPosition, exportedPosition);
+  }
+
+  @Override
+  public Optional<PersistedSnapshot> getBootstrapSnapshot() {
+    return snapshotStore.getBootstrapSnapshot();
   }
 
   @Override
