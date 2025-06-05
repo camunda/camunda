@@ -63,13 +63,13 @@ a unit test.
 
 **Key properties:**
 
-* Small scoped:
-  * one unit test should validate one behavior
+* Small-scope:
+  * One unit test should validate one behavior
   * Testing without dependencies
 * Fast: A unit test should be quick in execution
-  * Comes with small scoped
+  * Comes with a small scope
 * Most of our tests should be unit tests (see testing pyramid above)
-  * As they should be fast and small scoped we can have many of them
+  * As they should be fast and small-scope, we can have many of them
 
 > [!Note]
 >
@@ -87,19 +87,20 @@ a unit test.
 > The expectation is that for unit tests that set up code is fast, and test should be itself fast.
 > If this is not the case, there might be something off with your test itself.
 
-### Small scoped
+### Small-scope
 
 **Why:**
 
 * To separate concerns
-  - To make sure we test on component/unit in isolation, building confidence that this unit itself
+  - To make sure we test on the component/unit in isolation, building confidence that this unit itself
     behaves correctly. The test behavior is more controllable and observable
-  - A test fail shows specific that one unit and behavior is affected. If not small scoped we might
+  - A test failure shows specifically that one unit and behavior is affected. If not small-scoped, we might
     not test one unit, and can't be sure whether any other behavior influences the test
-* Allows to be quick in execution time, when focusing on one small unit with little setup
+* Allows to be quick execution time, when focusing on one small unit with little setup
 * Reduces the maintainability/readability
   - as tests are not affected by changes in other components
-  - it makes clear and understandable what is tested
+  - It makes it clear and understandable what is tested
+* We can separately test business logic from the integration with asynchronous code
 
 #### Do's:
 
@@ -252,6 +253,20 @@ public void shouldSubstractAfterAdd() {
   assertThat(anotherValue).isEqualTo(expectedValue);
 }
 ```
+
+#### Dont's: Testing asynchronous code
+
+If we do not separate asynchronous code and the business logic, we have to test our code asynchronously.
+This means we have a harder time testing our logic, as they are non-deterministic and are likely to become flaky.
+
+The tests are no longer small-scoped and have a dependency on, for example, a scheduler/executor, etc.
+
+Good examples of the separation of business logic and asynchronous code to test synchronously.
+
+ * [Asynchronous code](https://github.com/camunda/camunda/blob/main/zeebe/transport/src/main/java/io/camunda/zeebe/transport/stream/impl/RemoteStreamTransport.java), where the wiring of the business logic happens
+ * [Business code](https://github.com/camunda/camunda/blob/main/zeebe/transport/src/main/java/io/camunda/zeebe/transport/stream/impl/RemoteStreamApiHandler.java), which can be separately tested
+ * [Unit tests](https://github.com/camunda/camunda/blob/main/zeebe/transport/src/test/java/io/camunda/zeebe/transport/stream/impl/RemoteStreamApiHandlerTest.java) of the business code, making sure to validate each behavior
+
 
 ### Where should unit tests live
 
