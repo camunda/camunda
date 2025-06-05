@@ -8,7 +8,7 @@
 package io.camunda.unifiedconfig;
 
 public class Database {
-  private String type;
+  private String type = "elasticsearch";
   private ElasticSearch elasticsearch = new ElasticSearch();
   private ProcessCache processCache = new ProcessCache();
 

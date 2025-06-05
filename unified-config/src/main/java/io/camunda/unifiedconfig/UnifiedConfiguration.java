@@ -6,8 +6,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties
 public class UnifiedConfiguration {
-  private Camunda camunda;
-  private Cluster cluster;
+  private Camunda camunda = new Camunda();
+  private Cluster cluster = new Cluster();
 
   public Camunda getCamunda() {
     return camunda;

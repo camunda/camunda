@@ -8,18 +8,18 @@
 package io.camunda.unifiedconfig;
 
 public class Backup {
-  private String store;
+  private BackupStoreType store = BackupStoreType.NONE;
 
-  public String getStore() {
+  public BackupStoreType getStore() {
     String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.backup.store");
     if (deprecated != null && store == null) {
-      return deprecated;
+      return BackupStoreType.valueOf(deprecated);
     }
 
     return store;
   }
 
-  public void setStore(String store) {
+  public void setStore(BackupStoreType store) {
     this.store = store;
   }
 

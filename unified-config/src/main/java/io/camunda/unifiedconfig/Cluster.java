@@ -11,21 +11,21 @@ import java.time.Duration;
 import org.springframework.util.unit.DataSize;
 
 public class Cluster {
-  private Integer nodeId;
-  private String runtimeDirectory;
-  private Duration snapshotPeriod;
-  private Boolean diskMonitoringEnabled;
-  private Duration diskMonitoringInterval;
-  private DataSize diskFreeSpaceProcessing;
-  private DataSize diskFreeSpaceReplication;
-  private Boolean gossipSyncEnabled;
-  private Duration gossipSyncDelay;
-  private Duration gossipSyncRequestTimeout;
-  private Integer gossipFanout;
+  private int nodeId = 0;
+  private String runtimeDirectory = null;
+  private Duration snapshotPeriod = Duration.ofMinutes(5);
+  private boolean diskMonitoringEnabled = true;
+  private Duration diskMonitoringInterval = Duration.ofSeconds(1);
+  private DataSize diskFreeSpaceProcessing = DataSize.ofGigabytes(2);
+  private DataSize diskFreeSpaceReplication = DataSize.ofGigabytes(1);
+  private boolean gossipSyncEnabled = true; // double check that this is correct
+  private Duration gossipSyncDelay = Duration.ofSeconds(10);
+  private Duration gossipSyncRequestTimeout = Duration.ofSeconds(2);
+  private int gossipFanout = 2;
 
   public int getGossipFanout() {
     String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.cluster.configManager.gossip.gossipFanout");
-    if (deprecated != null && gossipFanout == null) {
+    if (deprecated != null) {
       return Integer.parseInt(deprecated);
     }
 
@@ -38,7 +38,7 @@ public class Cluster {
 
   public Duration getGossipSyncRequestTimeout() {
     String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.cluster.configManager.gossip.syncRequestTimeout");
-    if (deprecated != null && gossipSyncRequestTimeout == null) {
+    if (deprecated != null) {
       return Duration.parse(deprecated);
     }
 
@@ -47,7 +47,7 @@ public class Cluster {
 
   public Duration getGossipSyncDelay() {
     String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.cluster.configManager.gossip.syncDelay");
-    if (deprecated != null && gossipSyncDelay == null) {
+    if (deprecated != null) {
       return Duration.parse(deprecated);
     }
 
@@ -60,7 +60,7 @@ public class Cluster {
 
   public boolean getGossipSyncEnabled() {
     String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.cluster.configManager.gossip.enableSync");
-    if (deprecated != null && gossipSyncEnabled == null) {
+    if (deprecated != null) {
       return Boolean.parseBoolean(deprecated);
     }
 
@@ -73,7 +73,7 @@ public class Cluster {
 
   public int getNodeId() {
     String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.cluster.nodeId");
-    if (deprecated != null && nodeId == null) {
+    if (deprecated != null) {
       return Integer.parseInt(deprecated);
     }
 
@@ -82,7 +82,7 @@ public class Cluster {
 
   public String getRuntimeDirectory() {
     String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.runtimeDirectory");
-    if (deprecated != null && runtimeDirectory == null) {
+    if (deprecated != null) {
       return deprecated;
     }
 
@@ -91,7 +91,7 @@ public class Cluster {
 
   public Duration getSnapshotPeriod() {
     String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.snapshotPeriod");
-    if (deprecated != null && snapshotPeriod == null) {
+    if (deprecated != null) {
       return Duration.parse(snapshotPeriod.toString());
     }
 
@@ -100,7 +100,7 @@ public class Cluster {
 
   public boolean getDiskMonitoringEnabled() {
     String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.enableMonitoring");
-    if (deprecated != null && diskMonitoringEnabled == null) {
+    if (deprecated != null) {
       return Boolean.parseBoolean(deprecated);
     }
 
@@ -109,7 +109,7 @@ public class Cluster {
 
   public DataSize getDiskFreeSpaceProcessing() {
     String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.disk.freeSpace.processing");
-    if (deprecated != null && diskFreeSpaceProcessing == null) {
+    if (deprecated != null) {
       return DataSize.parse(deprecated);
     }
 
@@ -118,7 +118,7 @@ public class Cluster {
 
   public DataSize getDiskFreeSpaceReplication() {
     String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.disk.freeSpace.replication");
-    if (deprecated != null && diskFreeSpaceReplication == null) {
+    if (deprecated != null) {
       return DataSize.parse(deprecated);
     }
 
@@ -127,7 +127,7 @@ public class Cluster {
 
   public Duration getDiskMonitoringInterval() {
     String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.disk.monitoringInterval");
-    if (deprecated != null && diskMonitoringInterval == null) {
+    if (deprecated != null) {
       return Duration.parse(deprecated);
     }
 
