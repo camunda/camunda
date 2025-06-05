@@ -49,10 +49,7 @@ public class GroupMigrationHandlerTest {
     this.managementIdentityClient = managementIdentityClient;
     this.groupService = groupService;
     migrationHandler =
-        new GroupMigrationHandler(
-            Authentication.none(),
-            managementIdentityClient,
-            groupService);
+        new GroupMigrationHandler(Authentication.none(), managementIdentityClient, groupService);
   }
 
   @Test

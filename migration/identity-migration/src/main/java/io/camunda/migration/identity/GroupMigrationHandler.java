@@ -8,9 +8,7 @@
 package io.camunda.migration.identity;
 
 import io.camunda.migration.identity.dto.Group;
-import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
-import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
@@ -47,8 +45,7 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
       groupServices.createGroup(groupDTO);
     } catch (final Exception e) {
       if (!isConflictError(e)) {
-        throw new RuntimeException(
-            "Failed to migrate group with ID: " + group.id(), e);
+        throw new RuntimeException("Failed to migrate group with ID: " + group.id(), e);
       }
     }
   }
@@ -57,7 +54,7 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
   // For SaaS the group ID is derived from the group name, because in the old identity
   // management system the group ID was generated internally.
   private String normalizeGroupID(final Group group) {
-    if (group.id() == null || group.id().isEmpty()) {
+    if (group.name() == null || group.name().isEmpty()) {
       return group.id();
     }
     final String groupName = group.name();
