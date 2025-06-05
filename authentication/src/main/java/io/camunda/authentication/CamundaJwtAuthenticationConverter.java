@@ -17,6 +17,7 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.stereotype.Service;
 
@@ -29,32 +30,47 @@ public class CamundaJwtAuthenticationConverter
   final CamundaOAuthPrincipalService camundaOAuthPrincipalService;
   final OAuth2AuthorizedClientService oAuth2AuthorizedClientService;
   final OAuth2AuthorizedClientManager oAuth2AuthorizedClientManager;
+  final JwtDecoder decoder;
 
   public CamundaJwtAuthenticationConverter(
       final CamundaOAuthPrincipalService camundaOAuthPrincipalService,
       final OAuth2AuthorizedClientService oAuth2AuthorizedClientService,
-      final OAuth2AuthorizedClientManager oAuth2AuthorizedClientManager) {
-    System.out.println("Converter created");
+      final OAuth2AuthorizedClientManager oAuth2AuthorizedClientManager,
+      final JwtDecoder decoder) {
     this.camundaOAuthPrincipalService = camundaOAuthPrincipalService;
     this.oAuth2AuthorizedClientService = oAuth2AuthorizedClientService;
     this.oAuth2AuthorizedClientManager = oAuth2AuthorizedClientManager;
+    this.decoder = decoder;
   }
 
   @Override
   public AbstractAuthenticationToken convert(final Jwt source) {
-    System.out.println("IPETROV: auth converter executed");
     final AbstractAuthenticationToken token = jwtAuthenticationConverter.convert(source);
     final OAuth2AuthorizedClient authorizedClient =
         oAuth2AuthorizedClientService.loadAuthorizedClient(
             OidcClientRegistration.REGISTRATION_ID,
             SecurityContextHolder.getContext().getAuthentication().getName());
-    return new CamundaJwtAuthenticationToken(
+
+    // New option
+    return new CamundaJwtAuthenticationTokenV2(
         source,
         new CamundaJwtUser(
             source, camundaOAuthPrincipalService.loadOAuthContext(source.getClaims())),
         authorizedClient,
         token.getCredentials(),
         token.getAuthorities(),
-        oAuth2AuthorizedClientManager::authorize);
+        oAuth2AuthorizedClientManager::authorize,
+        decoder::decode);
+
+    // Old option:
+    //    return new CamundaJwtAuthenticationToken(
+    //        source,
+    //        new CamundaJwtUser(
+    //            source, camundaOAuthPrincipalService.loadOAuthContext(source.getClaims())),
+    //        authorizedClient,
+    //        token.getCredentials(),
+    //        token.getAuthorities(),
+    //        oAuth2AuthorizedClientManager::authorize);
+
   }
 }
