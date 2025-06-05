@@ -65,8 +65,11 @@ public class OidcCamundaUserService implements CamundaUserService {
     return getCamundaUser()
         .map(
             user -> {
-              final var oidcUser = (CamundaOidcUser) user;
-              return oidcUser.getIdToken().getTokenValue();
+              if (user instanceof final CamundaOidcUser camundaOAuthPrincipal) {
+                return camundaOAuthPrincipal.getIdToken().getTokenValue();
+              }
+
+              return null;
             })
         .orElse(null);
   }
