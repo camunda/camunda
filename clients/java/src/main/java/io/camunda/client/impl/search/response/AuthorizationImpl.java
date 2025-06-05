@@ -15,10 +15,10 @@
  */
 package io.camunda.client.impl.search.response;
 
+import io.camunda.client.api.search.enums.OwnerType;
+import io.camunda.client.api.search.enums.PermissionType;
+import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.Authorization;
-import io.camunda.client.protocol.rest.OwnerTypeEnum;
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import java.util.List;
 
 public class AuthorizationImpl implements Authorization {
@@ -26,17 +26,17 @@ public class AuthorizationImpl implements Authorization {
   private final String authorizationKey;
   private final String ownerId;
   private final String resourceId;
-  private final OwnerTypeEnum ownerType;
-  private final ResourceTypeEnum resourceType;
-  private final List<PermissionTypeEnum> permissionTypes;
+  private final OwnerType ownerType;
+  private final ResourceType resourceType;
+  private final List<PermissionType> permissionTypes;
 
   public AuthorizationImpl(
       final String authorizationKey,
       final String ownerId,
       final String resourceId,
-      final OwnerTypeEnum ownerType,
-      final ResourceTypeEnum resourceType,
-      final List<PermissionTypeEnum> permissionTypes) {
+      final OwnerType ownerType,
+      final ResourceType resourceType,
+      final List<PermissionType> permissionTypes) {
     this.authorizationKey = authorizationKey;
     this.ownerId = ownerId;
     this.resourceId = resourceId;
@@ -56,12 +56,12 @@ public class AuthorizationImpl implements Authorization {
   }
 
   @Override
-  public OwnerTypeEnum getOwnerType() {
+  public OwnerType getOwnerType() {
     return ownerType;
   }
 
   @Override
-  public ResourceTypeEnum getResourceType() {
+  public ResourceType getResourceType() {
     return resourceType;
   }
 
@@ -71,7 +71,7 @@ public class AuthorizationImpl implements Authorization {
   }
 
   @Override
-  public List<PermissionTypeEnum> getPermissionTypes() {
+  public List<PermissionType> getPermissionTypes() {
     return permissionTypes;
   }
 }

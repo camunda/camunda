@@ -16,6 +16,9 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.search.enums.OwnerType;
+import io.camunda.client.api.search.enums.PermissionType;
+import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.Authorization;
 import io.camunda.client.api.search.response.BatchOperation;
 import io.camunda.client.api.search.response.BatchOperationItems;
@@ -41,8 +44,10 @@ import io.camunda.client.api.search.response.User;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.impl.search.response.BatchOperationItemsImpl.BatchOperationItemImpl;
+import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.*;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -205,13 +210,20 @@ public final class SearchResponseMapper {
   }
 
   public static Authorization toAuthorizationResponse(final AuthorizationResult response) {
+    final List<PermissionTypeEnum> permissionTypes = response.getPermissionTypes();
+    final List<PermissionType> convertedPermissionTypes = new ArrayList<>();
+    for (final PermissionTypeEnum permissionType : permissionTypes) {
+      final PermissionType converted = EnumUtil.convert(permissionType, PermissionType.class);
+      convertedPermissionTypes.add(converted);
+    }
+
     return new AuthorizationImpl(
         response.getAuthorizationKey(),
         response.getOwnerId(),
         response.getResourceId(),
-        response.getOwnerType(),
-        response.getResourceType(),
-        response.getPermissionTypes());
+        EnumUtil.convert(response.getOwnerType(), OwnerType.class),
+        EnumUtil.convert(response.getResourceType(), ResourceType.class),
+        convertedPermissionTypes);
   }
 
   public static Group toGroupResponse(final GroupResult response) {

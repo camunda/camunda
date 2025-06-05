@@ -15,9 +15,9 @@
  */
 package io.camunda.client.api.search.response;
 
-import io.camunda.client.protocol.rest.OwnerTypeEnum;
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.client.protocol.rest.ResourceTypeEnum;
+import io.camunda.client.api.search.enums.OwnerType;
+import io.camunda.client.api.search.enums.PermissionType;
+import io.camunda.client.api.search.enums.ResourceType;
 import java.util.List;
 
 public interface Authorization {
@@ -26,11 +26,11 @@ public interface Authorization {
 
   String getOwnerId();
 
-  OwnerTypeEnum getOwnerType();
+  OwnerType getOwnerType();
 
-  ResourceTypeEnum getResourceType();
+  ResourceType getResourceType();
 
   String getResourceId();
 
-  List<PermissionTypeEnum> getPermissionTypes();
+  List<PermissionType> getPermissionTypes();
 }
