@@ -11,16 +11,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.migration.identity.dto.Group;
-import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
-import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
@@ -55,7 +52,6 @@ public class GroupMigrationHandlerTest {
         new GroupMigrationHandler(
             Authentication.none(),
             managementIdentityClient,
-            new ManagementIdentityTransformer(),
             groupService);
   }
 
@@ -109,38 +105,6 @@ public class GroupMigrationHandlerTest {
     // then
     verify(managementIdentityClient, times(2)).fetchGroups(anyInt());
     verify(groupService, times(2)).createGroup(any());
-    verify(managementIdentityClient, times(2))
-        .updateMigrationStatus(
-            assertArg(
-                migrationStatusUpdateRequests -> {
-                  assertThat(migrationStatusUpdateRequests)
-                      .describedAs("All migrations have succeeded")
-                      .allMatch(MigrationStatusUpdateRequest::success);
-                }));
-  }
-
-  @Test
-  void setErrorWhenGroupCreationHasError() {
-    // given
-    when(groupService.createGroup(any())).thenThrow(new RuntimeException());
-    when(managementIdentityClient.fetchGroups(anyInt()))
-        .thenReturn(List.of(new Group("id1", "t1"), new Group("id2", "t2")))
-        .thenReturn(List.of());
-
-    // when
-    migrationHandler.migrate();
-
-    // then
-    verify(managementIdentityClient, times(2))
-        .updateMigrationStatus(
-            assertArg(
-                statusUpdateRequests -> {
-                  assertThat(statusUpdateRequests)
-                      .describedAs("All migrations have failed")
-                      .noneMatch(MigrationStatusUpdateRequest::success);
-                }));
-    verify(managementIdentityClient, times(2)).fetchGroups(anyInt());
-    verify(groupService, times(2)).createGroup(any(GroupDTO.class));
   }
 
   @Test

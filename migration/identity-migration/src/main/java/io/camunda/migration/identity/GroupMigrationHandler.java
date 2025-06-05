@@ -21,16 +21,13 @@ import org.springframework.stereotype.Component;
 public class GroupMigrationHandler extends MigrationHandler<Group> {
 
   private final ManagementIdentityClient managementIdentityClient;
-  private final ManagementIdentityTransformer managementIdentityTransformer;
   private final GroupServices groupServices;
 
   public GroupMigrationHandler(
       final Authentication authentication,
       final ManagementIdentityClient managementIdentityClient,
-      final ManagementIdentityTransformer managementIdentityTransformer,
       final GroupServices groupServices) {
     this.managementIdentityClient = managementIdentityClient;
-    this.managementIdentityTransformer = managementIdentityTransformer;
     this.groupServices = groupServices.withAuthentication(authentication);
   }
 
@@ -41,19 +38,19 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
 
   @Override
   protected void process(final List<Group> batch) {
-    managementIdentityClient.updateMigrationStatus(batch.stream().map(this::processTask).toList());
+    batch.forEach(this::processTask);
   }
 
-  private MigrationStatusUpdateRequest processTask(final Group group) {
+  private void processTask(final Group group) {
     try {
       final var groupDTO = new GroupDTO(normalizeGroupID(group), group.name(), "");
       groupServices.createGroup(groupDTO);
     } catch (final Exception e) {
       if (!isConflictError(e)) {
-        return managementIdentityTransformer.toMigrationStatusUpdateRequest(group, e);
+        throw new RuntimeException(
+            "Failed to migrate group with ID: " + group.id(), e);
       }
     }
-    return managementIdentityTransformer.toMigrationStatusUpdateRequest(group, null);
   }
 
   // Normalizes the group ID to ensure it meets the requirements for a valid group ID.
