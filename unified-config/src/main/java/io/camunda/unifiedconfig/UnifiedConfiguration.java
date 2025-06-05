@@ -1,5 +1,6 @@
 package io.camunda.unifiedconfig;
 
+import org.springframework.core.env.Environment;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.springframework.boot.context.properties.ConfigurationProperties;

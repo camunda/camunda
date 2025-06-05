@@ -16,6 +16,10 @@ public class UnifiedConfigurationRegistry {
 
   @PostConstruct
   public void init() {
+    // This is a bit of a hack.
+    // At the moment, I'm low on better ideas on how to do this.
+    // It is wired only when this object is instantiated with Spring. Otherwise it's null,
+    // therefore, we need to IoC it, if we want to use it in tests for deprecated properties.
     environment = env;
 
     System.out.println("Breakpoint here and check the object config");
@@ -23,6 +27,10 @@ public class UnifiedConfigurationRegistry {
   }
 
   public static String getDeprecatedValue(String breadcrumb) {
+    if (environment == null) {
+      return null;
+    }
+
     return environment.getProperty(breadcrumb);
   }
 }
