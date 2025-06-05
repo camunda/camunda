@@ -221,6 +221,7 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
 
   GROUPS(110, ColumnFamilyScope.GLOBAL),
 
+  @Deprecated
   REDISTRIBUTION(111),
 
   USERNAME_BY_USER_KEY(112, ColumnFamilyScope.GLOBAL),
