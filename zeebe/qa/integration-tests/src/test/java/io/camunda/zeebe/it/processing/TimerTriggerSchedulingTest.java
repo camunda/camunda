@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.processing;
 
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -22,7 +23,8 @@ import org.junit.rules.RuleChain;
 
 public class TimerTriggerSchedulingTest {
 
-  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
+  private static final UnifiedConfiguration CONFIG = new UnifiedConfiguration();
+  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule(CONFIG);
   private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
 
   @ClassRule
