@@ -15,6 +15,7 @@ import { searchRoles } from "src/utility/api/roles";
 import useTranslate from "src/utility/localization";
 import OwnerSelection from "./OwnerSelection";
 import TextField from "src/components/form/TextField";
+import { isOIDC } from "src/configuration";
 
 type SelectionProps = {
   type: OwnerType;
@@ -27,6 +28,17 @@ const Selection: FC<SelectionProps> = ({ type, ownerId, onChange }) => {
 
   switch (type) {
     case OwnerType.USER:
+      if (isOIDC) {
+        return (
+          <TextField
+            value={ownerId}
+            label={t("username")}
+            onChange={onChange}
+            placeholder={t("enterUsername")}
+            type="text"
+          />
+        );
+      }
       return (
         <OwnerSelection
           id="userSelection"
@@ -66,7 +78,6 @@ const Selection: FC<SelectionProps> = ({ type, ownerId, onChange }) => {
           itemToString={(role) => role.name || role.roleId}
         />
       );
-
     case OwnerType.CLIENT:
       return (
         <TextField
