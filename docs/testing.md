@@ -44,7 +44,7 @@ Conventions are here to help make the code base clearer and consistent, we want 
   - If it is too time-consuming to migrate (e.g., uses lots of custom JUnit 4 rules), you can omit that.
 - Where possible, avoid waiting for something to happen; this will reduce flakiness.
   - If you have to, use [Awaitility](http://www.awaitility.org/) to await conditions, **do not use `Thread.sleep` or the likes**.
-- Avoid using any shaded dependencies*, and use direct ones. 
+- Avoid using any shaded dependencies*, and use direct ones.
 
 _*Shaded dependency: is a dependency that is repackaged in a different dependency/library. For example, Testcontainer does this with Awaitility, to be independent of version updates. We should ensure that we do not use such shaded dependencies, as we would be conflicting with versions and usage if we would use the shaded and the explicit ones._
 
@@ -75,8 +75,7 @@ a unit test.
 >
 > The key properties are rule of thumb, we should try to stick with it, there might be cases to
 > break with this.
-
-
+>
 > [!Note]
 >
 > **It is fine to repeat yourself in tests.**
@@ -263,10 +262,9 @@ The tests are no longer small-scoped and have a dependency on, for example, a sc
 
 Good examples of the separation of business logic and asynchronous code to test synchronously.
 
- * [Asynchronous code](https://github.com/camunda/camunda/blob/main/zeebe/transport/src/main/java/io/camunda/zeebe/transport/stream/impl/RemoteStreamTransport.java), where the wiring of the business logic happens
- * [Business code](https://github.com/camunda/camunda/blob/main/zeebe/transport/src/main/java/io/camunda/zeebe/transport/stream/impl/RemoteStreamApiHandler.java), which can be separately tested
- * [Unit tests](https://github.com/camunda/camunda/blob/main/zeebe/transport/src/test/java/io/camunda/zeebe/transport/stream/impl/RemoteStreamApiHandlerTest.java) of the business code, making sure to validate each behavior
-
+* [Asynchronous code](https://github.com/camunda/camunda/blob/main/zeebe/transport/src/main/java/io/camunda/zeebe/transport/stream/impl/RemoteStreamTransport.java), where the wiring of the business logic happens
+* [Business code](https://github.com/camunda/camunda/blob/main/zeebe/transport/src/main/java/io/camunda/zeebe/transport/stream/impl/RemoteStreamApiHandler.java), which can be separately tested
+* [Unit tests](https://github.com/camunda/camunda/blob/main/zeebe/transport/src/test/java/io/camunda/zeebe/transport/stream/impl/RemoteStreamApiHandlerTest.java) of the business code, making sure to validate each behavior
 
 ### Where should unit tests live
 
