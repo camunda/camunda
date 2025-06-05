@@ -205,4 +205,37 @@ public class GroupMigrationHandlerTest {
         .describedAs("Entity type should be USER")
         .isEqualTo(EntityType.USER);
   }
+
+  @Test
+  public void shouldIgnoreAlreadyAssignedUsers() {
+    // given
+    final var groupId = "groupId";
+    final Group group = new Group(groupId, "Test Group");
+    when(managementIdentityClient.fetchGroups(anyInt()))
+        .thenReturn(List.of(group))
+        .thenReturn(List.of());
+    when(managementIdentityClient.fetchGroupUsers(groupId))
+        .thenReturn(
+            List.of(
+                new User("user1", "username", "name", "email@email.com"),
+                new User("user2", "username", "name", "email@email.com")));
+    when(groupService.createGroup(any(GroupDTO.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(groupService.assignMember(any(GroupMemberDTO.class)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new BrokerRejectionException(
+                    new BrokerRejection(
+                        GroupIntent.CREATE,
+                        -1,
+                        RejectionType.ALREADY_EXISTS,
+                        "member already exists"))));
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    verify(managementIdentityClient, times(2)).fetchGroups(anyInt());
+    verify(groupService, times(2)).assignMember(any(GroupMemberDTO.class));
+  }
 }

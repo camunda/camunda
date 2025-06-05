@@ -76,9 +76,19 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
     final var users = managementIdentityClient.fetchGroupUsers(sourceGroupId);
     users.forEach(
         user -> {
-          final var groupMember =
-              new GroupMemberDTO(targetGroupId, user.getEmail(), EntityType.USER);
-          groupServices.assignMember(groupMember);
+          try {
+            final var groupMember =
+                new GroupMemberDTO(targetGroupId, user.getEmail(), EntityType.USER);
+            groupServices.assignMember(groupMember);
+          } catch (final Exception e) {
+            if (!isConflictError(e)) {
+              throw new RuntimeException(
+                  String.format(
+                      "Failed to assign user with ID '%s' to group with ID '%s'",
+                      user.getEmail(), targetGroupId),
+                  e);
+            }
+          }
         });
   }
 }
