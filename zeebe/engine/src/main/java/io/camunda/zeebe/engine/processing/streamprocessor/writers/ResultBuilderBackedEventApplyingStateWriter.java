@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -45,14 +46,29 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
   @Override
   public void appendFollowUpEvent(
       final long key, final Intent intent, final RecordValue value, final int recordVersion) {
-    final var metadata =
+    appendFollowUpEvent(
+        key, intent, value, FollowUpEventMetadata.builder().recordVersion(recordVersion).build());
+  }
+
+  @Override
+  public void appendFollowUpEvent(
+      final long key,
+      final Intent intent,
+      final RecordValue value,
+      final FollowUpEventMetadata metadata) {
+    final int recordVersion =
+        metadata.getRecordVersion().orElseGet(() -> eventApplier.getLatestVersion(intent));
+
+    final var recordMetadata =
         new RecordMetadata()
             .recordType(RecordType.EVENT)
             .intent(intent)
             .recordVersion(recordVersion)
             .rejectionType(RejectionType.NULL_VAL)
             .rejectionReason("");
-    resultBuilder().appendRecord(key, value, metadata);
+    metadata.getOperationReference().ifPresent(recordMetadata::operationReference);
+
+    resultBuilder().appendRecord(key, value, recordMetadata);
     eventApplier.applyState(key, intent, value, recordVersion);
   }
 
