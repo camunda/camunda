@@ -72,6 +72,12 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
+      # Run zeebe build before optimize build to ensure that the zeebe deps are installed up-to-date
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
+
       #########################################################################
       # Build Optimize frontend
       - name: Build frontend

@@ -99,6 +99,11 @@ jobs:
           ELASTIC_JVM_MEMORY: 1
           ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_database_port }}
 
+      # Run zeebe build before optimize build to ensure that the zeebe deps are installed up-to-date
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
       - name: Build optimize dependencies
         uses: ./.github/actions/run-maven
         with:
@@ -170,6 +175,11 @@ jobs:
           OPENSEARCH_VERSION: ${{ steps.pom-info.outputs.x_opensearch_test_version }}
           OPENSEARCH_JVM_MEMORY: 1
           OPENSEARCH_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_database_port }}
+      # Run zeebe build before optimize build to ensure that the zeebe deps are installed up-to-date
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
       - name: Install optimize dependencies
         uses: ./.github/actions/run-maven
         with:
@@ -252,6 +262,11 @@ jobs:
           ELASTIC_JVM_MEMORY: 16
           ELASTIC_HTTP_PORT: 9200
 
+      # Run zeebe build before optimize build to ensure that the zeebe deps are installed up-to-date
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
       - name: Verify integration
         uses: ./.github/actions/run-maven
         env:
@@ -331,6 +346,11 @@ jobs:
           OPENSEARCH_JVM_MEMORY: 16
           OPENSEARCH_HTTP_PORT: 9200
 
+      # Run zeebe build before optimize build to ensure that the zeebe deps are installed up-to-date
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
       - name: Verify integration
         uses: ./.github/actions/run-maven
         env:
@@ -395,6 +415,11 @@ jobs:
           OPENSEARCH_JVM_MEMORY: 1
           OPENSEARCH_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
 
+      # Run zeebe build before optimize build to ensure that the zeebe deps are installed up-to-date
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
       - name: Install optimize dependencies
         uses: ./.github/actions/run-maven
         with:

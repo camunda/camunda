@@ -1110,6 +1110,11 @@ jobs:
         uses: ./.github/actions/run-maven
         with:
           parameters: -f build-tools/pom.xml install
+      # Run zeebe build before optimize build to ensure that the zeebe deps are installed up-to-date
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
       - name: Build optimize dependencies
         uses: ./.github/actions/run-maven
         with:

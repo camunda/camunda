@@ -78,6 +78,11 @@ jobs:
           project_name: e2e
           additional_flags: "--profile self-managed"
 
+      # Run zeebe build before optimize build to ensure that the zeebe deps are installed up-to-date
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
       - name: Build backend
         run: mvn -f optimize/pom.xml clean install -T1C -DskipTests -Dskip.docker -pl backend -am
 
