@@ -13,7 +13,7 @@ import java.util.Set;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 public class CamundaJwtUser implements CamundaOAuthPrincipal, Serializable {
-  private final Jwt jwt;
+  private Jwt jwt;
   private final OAuthContext oauthContext;
 
   public CamundaJwtUser(
@@ -25,6 +25,11 @@ public class CamundaJwtUser implements CamundaOAuthPrincipal, Serializable {
   public CamundaJwtUser(final Jwt jwt, final OAuthContext oauthContext) {
     this.jwt = jwt;
     this.oauthContext = oauthContext;
+  }
+
+  public void refreshJwt(final Jwt newJwt) {
+    // TODO: consider concurrency?
+    this.jwt = newJwt;
   }
 
   @Override
