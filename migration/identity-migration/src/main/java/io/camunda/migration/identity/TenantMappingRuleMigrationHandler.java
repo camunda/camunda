@@ -42,8 +42,9 @@ public class TenantMappingRuleMigrationHandler extends MigrationHandler<TenantMa
     this.mappingServices = mappingServices.withAuthentication(authentication);
   }
 
+  // TODO: this will be revisited
   @Override
-  protected List<TenantMappingRule> fetchBatch() {
+  protected List<TenantMappingRule> fetchBatch(final int page) {
     return managementIdentityClient.fetchTenantMappingRules(SIZE);
   }
 

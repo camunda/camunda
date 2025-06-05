@@ -39,8 +39,9 @@ public class AuthorizationMigrationHandler extends MigrationHandler<UserResource
     this.authorizationService = authorizationService.withAuthentication(authentication);
   }
 
+  // TODO: this will be revisited
   @Override
-  protected List<UserResourceAuthorization> fetchBatch() {
+  protected List<UserResourceAuthorization> fetchBatch(final int page) {
     return managementIdentityClient.fetchUserResourceAuthorizations(SIZE);
   }
 

@@ -35,8 +35,7 @@ public class ManagementIdentityClient {
       "/api/migration/tenant/user?" + URL_PARAMS;
   private static final String MIGRATION_MAPPING_RULE_ENDPOINT =
       "/api/migration/mapping-rule?" + URL_PARAMS + "&type={1}";
-  private static final String MIGRATION_GROUPS_ENDPOINT =
-      "/api/migration/group?" + URL_PARAMS + "&organizationId={1}";
+  private static final String MIGRATION_GROUPS_ENDPOINT = "/api/group?page={0}&organizationId={1}";
   private static final String MIGRATION_USER_GROUP_ENDPOINT =
       "/api/migration/group/user?" + URL_PARAMS;
 
@@ -80,11 +79,11 @@ public class ManagementIdentityClient {
         .toList();
   }
 
-  public List<Group> fetchGroups(final int pageSize) {
+  public List<Group> fetchGroups(final int page) {
     return Arrays.stream(
             Objects.requireNonNull(
                 restTemplate.getForObject(
-                    MIGRATION_GROUPS_ENDPOINT, Group[].class, pageSize, organizationId)))
+                    MIGRATION_GROUPS_ENDPOINT, Group[].class, page, organizationId)))
         .toList();
   }
 

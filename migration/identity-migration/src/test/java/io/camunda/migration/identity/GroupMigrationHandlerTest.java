@@ -11,18 +11,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.migration.identity.dto.Group;
-import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
-import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
+import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -30,14 +28,13 @@ import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.apache.commons.lang3.NotImplementedException;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-@Disabled("https://github.com/camunda/camunda/issues/26973")
 @ExtendWith(MockitoExtension.class)
 public class GroupMigrationHandlerTest {
   private final ManagementIdentityClient managementIdentityClient;
@@ -52,11 +49,7 @@ public class GroupMigrationHandlerTest {
     this.managementIdentityClient = managementIdentityClient;
     this.groupService = groupService;
     migrationHandler =
-        new GroupMigrationHandler(
-            Authentication.none(),
-            managementIdentityClient,
-            new ManagementIdentityTransformer(),
-            groupService);
+        new GroupMigrationHandler(Authentication.none(), managementIdentityClient, groupService);
   }
 
   @Test
@@ -83,7 +76,7 @@ public class GroupMigrationHandlerTest {
 
     // then
     verify(managementIdentityClient, times(2)).fetchGroups(anyInt());
-    verify(groupService, times(2)).createGroup(any());
+    verify(groupService, times(2)).createGroup(any(GroupDTO.class));
   }
 
   @Test
@@ -109,37 +102,74 @@ public class GroupMigrationHandlerTest {
     // then
     verify(managementIdentityClient, times(2)).fetchGroups(anyInt());
     verify(groupService, times(2)).createGroup(any());
-    verify(managementIdentityClient, times(2))
-        .updateMigrationStatus(
-            assertArg(
-                migrationStatusUpdateRequests -> {
-                  assertThat(migrationStatusUpdateRequests)
-                      .describedAs("All migrations have succeeded")
-                      .allMatch(MigrationStatusUpdateRequest::success);
-                }));
   }
 
   @Test
-  void setErrorWhenGroupCreationHasError() {
+  public void shouldNormalizeGroupIDIfTooLong() {
     // given
-    when(groupService.createGroup(any())).thenThrow(new RuntimeException());
+    final String longGroupName = "a".repeat(300);
+    final Group group = new Group("id1", longGroupName);
     when(managementIdentityClient.fetchGroups(anyInt()))
-        .thenReturn(List.of(new Group("id1", "t1"), new Group("id2", "t2")))
+        .thenReturn(List.of(group))
         .thenReturn(List.of());
+    when(groupService.createGroup(any(GroupDTO.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     migrationHandler.migrate();
 
     // then
-    verify(managementIdentityClient, times(2))
-        .updateMigrationStatus(
-            assertArg(
-                statusUpdateRequests -> {
-                  assertThat(statusUpdateRequests)
-                      .describedAs("All migrations have failed")
-                      .noneMatch(MigrationStatusUpdateRequest::success);
-                }));
-    verify(managementIdentityClient, times(2)).fetchGroups(anyInt());
-    verify(groupService, times(2)).createGroup(any());
+    final var groupResult = ArgumentCaptor.forClass(GroupDTO.class);
+    verify(groupService, times(1)).createGroup(groupResult.capture());
+    assertThat(groupResult.getValue().groupId())
+        .describedAs("Group ID should be normalized to 256 characters")
+        .hasSize(256);
+    assertThat(groupResult.getValue().groupId())
+        .describedAs("Group ID should be lowercased")
+        .isEqualTo(longGroupName.toLowerCase().substring(0, 256));
+  }
+
+  @Test
+  public void shouldNormalizeGroupIDIfContainsUnsupportedCharacters() {
+    // given
+    final String groupNameWithUnsupportedChars = "Group@Name#With$Special%Chars";
+    final Group group = new Group("id1", groupNameWithUnsupportedChars);
+    when(managementIdentityClient.fetchGroups(anyInt()))
+        .thenReturn(List.of(group))
+        .thenReturn(List.of());
+    when(groupService.createGroup(any(GroupDTO.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    final var groupResult = ArgumentCaptor.forClass(GroupDTO.class);
+    verify(groupService).createGroup(groupResult.capture());
+    assertThat(groupResult.getValue().groupId())
+        .describedAs("Group ID should be normalized to remove unsupported characters")
+        .doesNotContain("#", "$", "%")
+        .contains("_");
+  }
+
+  @Test
+  public void shouldFallbackToGroupIdIfNameIsEmpty() {
+    // given
+    final Group group = new Group("id1", "");
+    when(managementIdentityClient.fetchGroups(anyInt()))
+        .thenReturn(List.of(group))
+        .thenReturn(List.of());
+    when(groupService.createGroup(any(GroupDTO.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    final var groupResult = ArgumentCaptor.forClass(GroupDTO.class);
+    verify(groupService).createGroup(groupResult.capture());
+    assertThat(groupResult.getValue().groupId())
+        .describedAs("Group ID should fallback to the original ID if name is empty")
+        .isEqualTo("id1");
   }
 }
