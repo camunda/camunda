@@ -27,16 +27,26 @@ have:
 
 ## General conventions
 
+Conventions are here to help make the code base clearer and consistent, we want to stick to the conventions until there are good reasons not to.
+
 - Every public change should be verified via an automated test.
   - Every bug fix should be verified via a regression test.
+- Make sure to test one behavior at a time, not combining properties or behaviors
+  - If you test names that contain something like `And`, `Or`, etc., this is likely a code smell.
+- Prefix your tests with `should...`
+  - This is to ensure consistency in our code base and make sure that you're testing a behavior.
+- Divide your test into separate sections, using comments: `given, when, then`.
+  - This is to make the test clearer, separate concerns, and to highlight what exactly is tested. Future readers will appreciate it.
 - It's perfectly fine to repeat yourself in tests; the focus is on readability.
-  - One caveat here, is with acceptance tests, where set up can be expensive.
-- Where possible, use junit 5 to write tests.
+  - One caveat here is with acceptance tests, where set up can be expensive.
+- Where possible, use JUnit 5 to write tests.
   - When modifying an existing junit 4 test, if possible, first take the time to migrate it to junit 5.
-  - If it is too time-consuming to migrate (e.g. uses lots of custom junit 4 rules), you can omit that.
+  - If it is too time-consuming to migrate (e.g., uses lots of custom JUnit 4 rules), you can omit that.
 - Where possible, avoid waiting for something to happen; this will reduce flakiness.
   - If you have to, use [Awaitility](http://www.awaitility.org/) to await conditions, **do not use `Thread.sleep` or the likes**.
-- Avoid using any shaded dependencies, and use direct ones.
+- Avoid using any shaded dependencies*, and use direct ones. 
+
+_*Shaded dependency: is a dependency that is repackaged in a different dependency/library. For example, Testcontainer does this with Awaitility, to be independent of version updates. We should ensure that we do not use such shaded dependencies, as we would be conflicting with versions and usage if we would use the shaded and the explicit ones._
 
 [//]: # (### Add rules of thumb when writing tests, e.g. use junit 5 where possible, etc.)
 
@@ -44,12 +54,12 @@ have:
 
 [//]: # (### What is a unit test)
 
-A test which validates/verified the behavior of just one component or unit, without dependencies is
+A test that validates/verifies the behavior of just one component or unit, without dependencies, is
 a unit test.
 
 > [!Note]
 >
-> A unit or component can be just one class, but doesn't need necessarily.
+> A unit or component can be just one class, but doesn't necessarily need.
 
 **Key properties:**
 
@@ -65,7 +75,8 @@ a unit test.
 >
 > The key properties are rule of thumb, we should try to stick with it, there might be cases to
 > break with this.
->
+
+
 > [!Note]
 >
 > **It is fine to repeat yourself in tests.**
@@ -328,10 +339,6 @@ logic too simple, but it's also essentially testing a Java feature, not our own 
 
 Additionally, testing the `#liveConnections()` method, while our own code, is also much too simple
 as it simply delegates to the underlying server stream member.
-
-### Unit test conventions
-
-[//]: # (TODO: General thing &#40;move later&#41; If you see yourself fixing a bug, you must write at least one test.)
 
 ## Integration test
 
