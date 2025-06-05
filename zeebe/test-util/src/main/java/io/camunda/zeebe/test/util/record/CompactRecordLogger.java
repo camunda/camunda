@@ -156,6 +156,8 @@ public class CompactRecordLogger {
   private ObjectMapper objectMapper;
 
   {
+    valueLoggers.put(ValueType.NULL_VAL, this::summarizeMiscValue);
+    valueLoggers.put(ValueType.SBE_UNKNOWN, this::summarizeMiscValue);
     valueLoggers.put(ValueType.DEPLOYMENT, this::summarizeDeployment);
     valueLoggers.put(ValueType.DEPLOYMENT_DISTRIBUTION, this::summarizeDeploymentDistribution);
     valueLoggers.put(ValueType.PROCESS, this::summarizeProcess);
