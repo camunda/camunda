@@ -12,8 +12,18 @@ import java.nio.file.Path;
 import java.util.Optional;
 import java.util.function.BiConsumer;
 
+/**
+ * Represent a store, that allows to make copy of existing backups that are targeted at
+ * bootstrapping a new partition. A snapshot for bootstrap contains only data that is present in all
+ * partitions and does not contain any raft/processing position/index.
+ *
+ * <p>One backup can be taken at a time, as only one scaling up operation can be done at a time.
+ */
 public interface BootstrapSnapshotStore {
 
+  /**
+   * @return the latest snapshot that was copied if present.
+   */
   Optional<PersistedSnapshot> getBootstrapSnapshot();
 
   /**
