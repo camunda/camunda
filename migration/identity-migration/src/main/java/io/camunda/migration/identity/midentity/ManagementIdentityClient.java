@@ -7,13 +7,13 @@
  */
 package io.camunda.migration.identity.midentity;
 
+import io.camunda.identity.sdk.users.dto.User;
 import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.dto.MappingRule.MappingRuleType;
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.dto.TenantMappingRule;
-import io.camunda.migration.identity.dto.UserGroups;
 import io.camunda.migration.identity.dto.UserResourceAuthorization;
 import io.camunda.migration.identity.dto.UserTenants;
 import java.util.ArrayList;
@@ -36,8 +36,8 @@ public class ManagementIdentityClient {
   private static final String MIGRATION_MAPPING_RULE_ENDPOINT =
       "/api/migration/mapping-rule?" + URL_PARAMS + "&type={1}";
   private static final String MIGRATION_GROUPS_ENDPOINT = "/api/group?page={0}&organizationId={1}";
-  private static final String MIGRATION_USER_GROUP_ENDPOINT =
-      "/api/migration/group/user?" + URL_PARAMS;
+  private static final String MIGRATION_USER_GROUPS_ENDPOINT =
+      "/api/group/{0}/users?organizationId={1}";
 
   private final String organizationId;
   private final RestTemplate restTemplate;
@@ -94,11 +94,11 @@ public class ManagementIdentityClient {
         .toList();
   }
 
-  public List<UserGroups> fetchUserGroups(final int pageSize) {
+  public List<User> fetchGroupUsers(final String groupId) {
     return Arrays.stream(
             Objects.requireNonNull(
                 restTemplate.getForObject(
-                    MIGRATION_USER_GROUP_ENDPOINT, UserGroups[].class, pageSize)))
+                    MIGRATION_USER_GROUPS_ENDPOINT, User[].class, groupId, organizationId)))
         .toList();
   }
 

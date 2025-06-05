@@ -12,6 +12,8 @@ import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
+import io.camunda.service.GroupServices.GroupMemberDTO;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
@@ -41,8 +43,10 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
 
   private void processTask(final Group group) {
     try {
-      final var groupDTO = new GroupDTO(normalizeGroupID(group), group.name(), "");
+      final var normalizedGroupId = normalizeGroupID(group);
+      final var groupDTO = new GroupDTO(normalizedGroupId, group.name(), "");
       groupServices.createGroup(groupDTO);
+      assignUsersToGroup(group.id(), normalizedGroupId);
     } catch (final Exception e) {
       if (!isConflictError(e)) {
         throw new RuntimeException("Failed to migrate group with ID: " + group.id(), e);
@@ -66,5 +70,25 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
       normalizedId = normalizedId.substring(0, 256);
     }
     return normalizedId;
+  }
+
+  private void assignUsersToGroup(final String sourceGroupId, final String targetGroupId) {
+    final var users = managementIdentityClient.fetchGroupUsers(sourceGroupId);
+    users.forEach(
+        user -> {
+          try {
+            final var groupMember =
+                new GroupMemberDTO(targetGroupId, user.getEmail(), EntityType.USER);
+            groupServices.assignMember(groupMember);
+          } catch (final Exception e) {
+            if (!isConflictError(e)) {
+              throw new RuntimeException(
+                  String.format(
+                      "Failed to assign user with ID '%s' to group with ID '%s'",
+                      user.getEmail(), targetGroupId),
+                  e);
+            }
+          }
+        });
   }
 }
