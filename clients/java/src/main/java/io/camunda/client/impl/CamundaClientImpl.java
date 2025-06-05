@@ -1157,8 +1157,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public UnassignMappingFromGroupStep1 newUnassignMappingFromGroupCommand(final String groupId) {
-    return new UnassignMappingFromGroupCommandImpl(httpClient, groupId);
+  public UnassignMappingFromGroupStep1 newUnassignMappingFromGroupCommand() {
+    return new UnassignMappingFromGroupCommandImpl(httpClient);
   }
 
   @Override

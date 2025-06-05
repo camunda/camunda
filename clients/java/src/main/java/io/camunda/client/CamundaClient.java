@@ -2248,8 +2248,9 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    *
    * camundaClient
-   *  .newUnassignMappingFromGroupCommand(groupId)
+   *  .newUnassignMappingFromGroupCommand()
    *  .mappingId(mappingId)
+   *  .groupId(groupId)
    *  .send();
    * </pre>
    *
@@ -2257,7 +2258,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  UnassignMappingFromGroupStep1 newUnassignMappingFromGroupCommand(String groupId);
+  UnassignMappingFromGroupStep1 newUnassignMappingFromGroupCommand();
 
   /**
    * Request to get a group by group ID.
