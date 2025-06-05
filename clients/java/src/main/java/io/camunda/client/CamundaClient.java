@@ -100,6 +100,7 @@ import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
 import io.camunda.client.api.fetch.RoleGetRequest;
 import io.camunda.client.api.fetch.RolesByGroupSearchRequest;
 import io.camunda.client.api.fetch.RolesSearchRequest;
+import io.camunda.client.api.fetch.UserGetRequest;
 import io.camunda.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.UsersByGroupSearchRequest;
@@ -1630,6 +1631,21 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   UpdateUserCommandStep1 newUpdateUserCommand(String username);
+
+  /**
+   * Request to get a user by username.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newUserGetRequest("username")
+   *  .send();
+   * </pre>
+   *
+   * @param username the username of the user
+   * @return a builder for the request to get a user
+   */
+  UserGetRequest newUserGetRequest(String username);
 
   /**
    * Command to create a mapping rule.
