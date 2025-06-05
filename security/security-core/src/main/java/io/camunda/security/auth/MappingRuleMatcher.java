@@ -21,6 +21,14 @@ import net.jcip.annotations.NotThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Matches mapping rules against claims by evaluating JSONPath expressions for each mapping rule.
+ * Keeps a cache of compiled JSONPath expressions to avoid recompiling the same expressions multiple
+ * times.
+ *
+ * <p>This class is not thread-safe because compiled JSONPath expressions are not thread-safe.
+ */
+@NotThreadSafe
 public final class MappingRuleMatcher {
   private static final Configuration CONFIGURATION =
       Configuration.builder()
@@ -30,18 +38,14 @@ public final class MappingRuleMatcher {
           .mappingProvider(null)
           .build();
   private static final Logger LOG = LoggerFactory.getLogger(MappingRuleMatcher.class);
+  private final CompilationCache compilationCache;
 
-  private MappingRuleMatcher() {}
-
-  public static <T extends MappingRule> Stream<T> matchingRules(
-      final Stream<T> mappingRules, final Map<String, Object> claims) {
-    return matchingRules(new CompilationCache(), mappingRules, claims);
+  public MappingRuleMatcher() {
+    compilationCache = new CompilationCache();
   }
 
-  public static <T extends MappingRule> Stream<T> matchingRules(
-      final CompilationCache compilationCache,
-      final Stream<T> mappingRules,
-      final Map<String, Object> claims) {
+  public <T extends MappingRule> Stream<T> matchingRules(
+      final Stream<T> mappingRules, final Map<String, Object> claims) {
     final EvaluationCache evaluationCache = new EvaluationCache(compilationCache, claims);
     return mappingRules.filter(mappingRule -> matchRule(evaluationCache, mappingRule));
   }
