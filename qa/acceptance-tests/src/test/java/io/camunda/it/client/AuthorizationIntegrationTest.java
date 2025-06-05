@@ -17,9 +17,6 @@ import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.Authorization;
-import io.camunda.client.protocol.rest.OwnerTypeEnum;
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
@@ -36,16 +33,19 @@ public class AuthorizationIntegrationTest {
     // given
     final var ownerId = Strings.newRandomValidIdentityId();
     final var resourceId = Strings.newRandomValidIdentityId();
+    final OwnerType ownerType = OwnerType.USER;
+    final ResourceType resourceType = ResourceType.RESOURCE;
+    final PermissionType permissionType = PermissionType.CREATE;
 
     // when
     final CreateAuthorizationResponse authorization =
         camundaClient
             .newCreateAuthorizationCommand()
             .ownerId(ownerId)
-            .ownerType(OwnerType.USER)
+            .ownerType(ownerType)
             .resourceId(resourceId)
-            .resourceType(ResourceType.RESOURCE)
-            .permissionTypes(PermissionType.CREATE)
+            .resourceType(resourceType)
+            .permissionTypes(permissionType)
             .send()
             .join();
     final long authorizationKey = authorization.getAuthorizationKey();
@@ -61,12 +61,11 @@ public class AuthorizationIntegrationTest {
               assertThat(retrievedAuthorization.getAuthorizationKey())
                   .isEqualTo(String.valueOf(authorizationKey));
               assertThat(retrievedAuthorization.getResourceId()).isEqualTo(resourceId);
-              assertThat(retrievedAuthorization.getResourceType())
-                  .isEqualTo(ResourceTypeEnum.RESOURCE);
+              assertThat(retrievedAuthorization.getResourceType()).isEqualTo(resourceType);
               assertThat(retrievedAuthorization.getOwnerId()).isEqualTo(ownerId);
-              assertThat(retrievedAuthorization.getOwnerType()).isEqualTo(OwnerTypeEnum.USER);
+              assertThat(retrievedAuthorization.getOwnerType()).isEqualTo(ownerType);
               assertThat(retrievedAuthorization.getPermissionTypes())
-                  .isEqualTo(List.of(PermissionTypeEnum.CREATE));
+                  .isEqualTo(List.of(permissionType));
             });
   }
 
