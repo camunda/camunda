@@ -43,6 +43,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
     basePackages = {
       "io.camunda.zeebe.broker",
       "io.camunda.zeebe.shared",
+      "io.camunda.unifiedconfig"
     })
 @Profile("broker")
 public class BrokerModuleConfiguration implements CloseableSilently {

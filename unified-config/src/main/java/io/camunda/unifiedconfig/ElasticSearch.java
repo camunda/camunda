@@ -9,7 +9,7 @@ package io.camunda.unifiedconfig;
 
 public class ElasticSearch {
   private String url;
-  private String indexPrefix;
+  private String indexPrefix = "optimize";
 
   public String getUrl() {
     return url;
