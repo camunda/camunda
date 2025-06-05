@@ -14,6 +14,7 @@ import { GroupsPage } from "./pages/GroupsPage";
 import { createFixture } from "./utils/createFixture";
 import { RolesPage } from "./pages/RolesPage";
 import { MappingsPage } from "./pages/MappingsPage";
+import { AuthorizationsPage } from "./pages/AuthorizationsPage";
 
 type Fixtures = {
   header: Header;
@@ -22,6 +23,7 @@ type Fixtures = {
   groupsPage: GroupsPage;
   rolesPage: RolesPage;
   mappingsPage: MappingsPage;
+  authorizationsPage: AuthorizationsPage;
 };
 
 export const test = base.extend<Fixtures>({
@@ -31,4 +33,5 @@ export const test = base.extend<Fixtures>({
   groupsPage: createFixture(GroupsPage),
   rolesPage: createFixture(RolesPage),
   mappingsPage: createFixture(MappingsPage),
+  authorizationsPage: createFixture(AuthorizationsPage),
 });
