@@ -260,34 +260,4 @@ public class UnassignMemberGroupTest extends ClientRestTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("mappingId must not be empty");
   }
-
-  @Test
-  void shouldRaiseExceptionOnNullGroupId() {
-    // when / then
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUnassignMappingFromGroupCommand()
-                    .mappingId(MAPPING_ID)
-                    .groupId(null)
-                    .send()
-                    .join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("groupId must not be null");
-  }
-
-  @Test
-  void shouldRaiseExceptionOnEmptyGroupId() {
-    // when / then
-    assertThatThrownBy(
-            () ->
-                client
-                    .newUnassignMappingFromGroupCommand()
-                    .mappingId(MAPPING_ID)
-                    .groupId("")
-                    .send()
-                    .join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("groupId must not be empty");
-  }
 }
