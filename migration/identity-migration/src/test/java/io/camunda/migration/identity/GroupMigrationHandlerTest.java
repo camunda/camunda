@@ -190,4 +190,25 @@ public class GroupMigrationHandlerTest {
         .doesNotContain("#", "$", "%")
         .contains("_");
   }
+
+  @Test
+  public void shouldFallbackToGroupIdIfNameIsEmpty() {
+    // given
+    final Group group = new Group("id1", "");
+    when(managementIdentityClient.fetchGroups(anyInt()))
+        .thenReturn(List.of(group))
+        .thenReturn(List.of());
+    when(groupService.createGroup(any(GroupDTO.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    final var groupResult = ArgumentCaptor.forClass(GroupDTO.class);
+    verify(groupService).createGroup(groupResult.capture());
+    assertThat(groupResult.getValue().groupId())
+        .describedAs("Group ID should fallback to the original ID if name is empty")
+        .isEqualTo("id1");
+  }
 }

@@ -46,7 +46,7 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
 
   private MigrationStatusUpdateRequest processTask(final Group group) {
     try {
-      final var groupDTO = new GroupDTO(normalizeGroupID(group.name()), group.name(), "");
+      final var groupDTO = new GroupDTO(normalizeGroupID(group), group.name(), "");
       groupServices.createGroup(groupDTO);
     } catch (final Exception e) {
       if (!isConflictError(e)) {
@@ -59,11 +59,18 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
   // Normalizes the group ID to ensure it meets the requirements for a valid group ID.
   // For SaaS the group ID is derived from the group name, because in the old identity
   // management system the group ID was generated internally.
-  private String normalizeGroupID(final String groupName) {
-    var normalizedId = groupName.toLowerCase();
+  private String normalizeGroupID(final Group group) {
+    if (group.id() == null || group.id().isEmpty()) {
+      return group.id();
+    }
+    final String groupName = group.name();
+
+    String normalizedId =
+        groupName.toLowerCase().replaceAll("[^a-z0-9_@.-]", "_"); // Replace disallowed characters
+
     if (normalizedId.length() > 256) {
       normalizedId = normalizedId.substring(0, 256);
     }
-    return normalizedId.replaceAll("[^a-zA-Z0-9_@.-]+", "_");
+    return normalizedId;
   }
 }
