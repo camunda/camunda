@@ -16,15 +16,18 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.identity.sdk.users.dto.User;
 import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
+import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.apache.commons.lang3.NotImplementedException;
@@ -171,5 +174,35 @@ public class GroupMigrationHandlerTest {
     assertThat(groupResult.getValue().groupId())
         .describedAs("Group ID should fallback to the original ID if name is empty")
         .isEqualTo("id1");
+  }
+
+  @Test
+  public void shouldAssignUsersToGroup() {
+    // given
+    final var groupId = "groupId";
+    final Group group = new Group(groupId, "Test Group");
+    when(managementIdentityClient.fetchGroups(anyInt()))
+        .thenReturn(List.of(group))
+        .thenReturn(List.of());
+    when(managementIdentityClient.fetchGroupUsers(groupId))
+        .thenReturn(List.of(new User("user1", "username", "name", "email@email.com")));
+    when(groupService.createGroup(any(GroupDTO.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    final var groupMember = ArgumentCaptor.forClass(GroupMemberDTO.class);
+    verify(groupService).assignMember(groupMember.capture());
+    assertThat(groupMember.getValue().groupId())
+        .describedAs("Group ID should match the migrated group ID")
+        .isEqualTo("test_group");
+    assertThat(groupMember.getValue().memberId())
+        .describedAs("Member ID should match the user email")
+        .isEqualTo("email@email.com");
+    assertThat(groupMember.getValue().memberType())
+        .describedAs("Entity type should be USER")
+        .isEqualTo(EntityType.USER);
   }
 }
