@@ -51,31 +51,7 @@ public class RawTransactionalColumnFamily {
               (prefixKey, prefixLength) -> {
                 try (final RocksIterator iterator =
                     newIterator(context, transactionDb.getPrefixReadOptions())) {
-                  final var seekTarget = new DbNullKey();
-                  boolean shouldVisitNext = true;
-
-                  for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
-                      iterator.isValid() && shouldVisitNext;
-                      iterator.next()) {
-                    final byte[] keyBytes = iterator.key();
-                    final byte[] valueBytes = iterator.value();
-
-                    if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
-                      break;
-                    }
-                    try {
-                      shouldVisitNext =
-                          visitor.visit(
-                              keyBytes, 0, keyBytes.length, valueBytes, 0, valueBytes.length);
-                    } catch (final Exception e) {
-                      LOG.error(
-                          "Error visiting key {} in column family {}",
-                          new String(keyBytes),
-                          columnFamily,
-                          e);
-                      shouldVisitNext = false;
-                    }
-                  }
+                  forEach(iterator, prefixKey, 0, prefixLength, visitor);
                 }
               });
         });
@@ -133,6 +109,35 @@ public class RawTransactionalColumnFamily {
         key,
         keyOffset,
         keyLen);
+  }
+
+  private void forEach(
+      final RocksIterator iterator,
+      final byte[] prefixKey,
+      final int prefixOffset,
+      final int prefixLength,
+      final Visitor visitor) {
+    final var seekTarget = new DbNullKey();
+    boolean shouldVisitNext = true;
+
+    for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
+        iterator.isValid() && shouldVisitNext;
+        iterator.next()) {
+      final byte[] keyBytes = iterator.key();
+      final byte[] valueBytes = iterator.value();
+
+      if (!startsWith(prefixKey, prefixOffset, prefixLength, keyBytes, 0, keyBytes.length)) {
+        break;
+      }
+      try {
+        shouldVisitNext =
+            visitor.visit(keyBytes, 0, keyBytes.length, valueBytes, 0, valueBytes.length);
+      } catch (final Exception e) {
+        LOG.error(
+            "Error visiting key {} in column family {}", new String(keyBytes), columnFamily, e);
+        shouldVisitNext = false;
+      }
+    }
   }
 
   RocksIterator newIterator(final TransactionContext context, final ReadOptions options) {
