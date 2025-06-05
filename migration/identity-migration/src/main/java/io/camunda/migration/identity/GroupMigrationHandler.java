@@ -35,8 +35,8 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
   }
 
   @Override
-  protected List<Group> fetchBatch() {
-    return managementIdentityClient.fetchGroups(SIZE);
+  protected List<Group> fetchBatch(final int page) {
+    return managementIdentityClient.fetchGroups(page);
   }
 
   @Override

@@ -31,14 +31,16 @@ public abstract class MigrationHandler<T> {
   public void migrate() {
     logger.info("Migrating started.");
     List<T> batch;
+    int page = 0;
     do {
-      batch = fetchBatch();
+      batch = fetchBatch(page);
       process(batch);
+      page++;
     } while (!batch.isEmpty());
     logger.info("Migrating finished.");
   }
 
-  protected abstract List<T> fetchBatch();
+  protected abstract List<T> fetchBatch(int page);
 
   protected abstract void process(List<T> batch);
 }
