@@ -8,7 +8,6 @@
 package io.camunda.zeebe.db.impl.rocksdb;
 
 import io.camunda.zeebe.db.SnapshotCopy;
-import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.RawTransactionalColumnFamily;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransaction;
@@ -47,24 +46,20 @@ public class RocksDBSnapshotCopy implements SnapshotCopy {
   @Override
   public void copySnapshot(
       final Path fromPath, final Path toDBPath, final Set<ColumnFamilyScope> scopes) {
-    withContexts(fromPath, toDBPath, new ScopedCopyContextConsumer(scopes));
+    withContexts(fromPath, toDBPath, scoped(scopes));
   }
 
-  record ScopedCopyContextConsumer(Set<ColumnFamilyScope> scopes) implements CopyContextConsumer {
-
-    @Override
-    public void accept(
-        final ZeebeTransactionDb<ZbColumnFamilies> fromDB,
-        final TransactionContext fromCtx,
-        final ZeebeTransactionDb<ZbColumnFamilies> toDB,
-        final TransactionContext toCtx) {
-
+  private CopyContextConsumer scoped(final Set<ColumnFamilyScope> scopes) {
+    return (fromDB, fromCtx, toDB, toCtx) -> {
       final var abort = new AtomicBoolean(false);
       toCtx.runInTransaction(
           () -> {
             final var toTransaction = (ZeebeTransaction) toCtx.getCurrentTransaction();
             for (final var cf : ZbColumnFamilies.values()) {
-              if (!scopes.contains(cf.partitionScope()) || abort.get()) {
+              if (abort.get()) {
+                break;
+              }
+              if (!scopes.contains(cf.partitionScope())) {
                 continue;
               }
               LOG.debug("Copying column family '{}'", cf);
@@ -90,6 +85,6 @@ public class RocksDBSnapshotCopy implements SnapshotCopy {
             }
             toTransaction.commit();
           });
-    }
+    };
   }
 }
