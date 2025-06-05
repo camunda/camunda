@@ -49,6 +49,15 @@ public class ProcessDefinitionServices
         .searchProcessDefinitions(query);
   }
 
+  public List<ProcessDefinitionEntity> latest(final ProcessDefinitionQuery query) {
+    return processDefinitionSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication,
+                Authorization.of(a -> a.processDefinition().readProcessDefinition())))
+        .latestProcessDefinitions(query);
+  }
+
   public List<ProcessFlowNodeStatisticsEntity> elementStatistics(
       final ProcessDefinitionStatisticsFilter filter) {
     return processDefinitionSearchClient
