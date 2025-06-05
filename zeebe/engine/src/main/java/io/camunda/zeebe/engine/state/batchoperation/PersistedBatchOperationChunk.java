@@ -14,6 +14,7 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class PersistedBatchOperationChunk extends UnpackedObject implements DbValue {
 
@@ -55,14 +56,7 @@ public class PersistedBatchOperationChunk extends UnpackedObject implements DbVa
   }
 
   public PersistedBatchOperationChunk removeItemKeys(final Set<Long> itemKeys) {
-    final var newKeys =
-        itemKeysProp.stream().map(LongValue::getValue).filter(k -> !itemKeys.contains(k)).toList();
-
-    // This is needed since ArrayProperty does not support removing items
-    itemKeysProp.reset();
-    for (final var key : newKeys) {
-      itemKeysProp.add().setValue(key);
-    }
+    itemKeysProp.remove(itemKeys.stream().map(LongValue::new).collect(Collectors.toSet()));
 
     return this;
   }
