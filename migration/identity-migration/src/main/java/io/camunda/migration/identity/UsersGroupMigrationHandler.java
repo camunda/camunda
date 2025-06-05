@@ -40,8 +40,9 @@ public class UsersGroupMigrationHandler extends MigrationHandler<UserGroups> {
     this.mappingServices = mappingServices;
   }
 
+  // TODO: this will be revisited
   @Override
-  protected List<UserGroups> fetchBatch() {
+  protected List<UserGroups> fetchBatch(final int page) {
     return managementIdentityClient.fetchUserGroups(SIZE);
   }
 

@@ -40,8 +40,9 @@ public class UserTenantsMigrationHandler extends MigrationHandler<UserTenants> {
     this.mappingServices = mappingServices;
   }
 
+  // TODO: this will be revisited
   @Override
-  protected List<UserTenants> fetchBatch() {
+  protected List<UserTenants> fetchBatch(final int page) {
     return managementIdentityClient.fetchUserTenants(SIZE);
   }
 

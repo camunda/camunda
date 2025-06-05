@@ -39,8 +39,9 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
     this.managementIdentityTransformer = managementIdentityTransformer;
   }
 
+  // TODO: this will be revisited
   @Override
-  protected List<Role> fetchBatch() {
+  protected List<Role> fetchBatch(final int page) {
     return managementIdentityClient.fetchRoles(SIZE);
   }
 

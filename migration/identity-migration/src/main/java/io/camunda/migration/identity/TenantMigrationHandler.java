@@ -34,8 +34,9 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
     this.tenantServices = tenantServices.withAuthentication(authentication);
   }
 
+  // TODO: this will be revisited
   @Override
-  protected List<Tenant> fetchBatch() {
+  protected List<Tenant> fetchBatch(final int page) {
     return managementIdentityClient.fetchTenants(SIZE);
   }
 
