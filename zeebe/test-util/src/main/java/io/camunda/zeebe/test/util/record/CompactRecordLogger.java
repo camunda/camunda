@@ -57,6 +57,7 @@ import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
@@ -93,7 +94,6 @@ public class CompactRecordLogger {
           entry("COMPLETE_TASK_LISTENER", "COMP_TL"),
           entry("DENY_TASK_LISTENER", "DENY_TL"),
           entry("TASK_LISTENER", "TL"),
-          entry("EXECUTION_LISTENER", "EL"),
           entry("ASSIGNMENT_DENIED", "ASGN_DENIED"),
           entry("COMPLETION_DENIED", "COMP_DENIED"),
           entry("UPDATE_DENIED", "UPDT_DENIED"),
@@ -185,6 +185,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.GROUP, this::summarizeGroup);
     valueLoggers.put(ValueType.MAPPING, this::summarizeMapping);
     valueLoggers.put(ValueType.ASYNC_REQUEST, this::summarizeAsyncRequest);
+    valueLoggers.put(ValueType.USER, this::summarizeUser);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -1090,6 +1091,25 @@ public class CompactRecordLogger {
         .append(", claimValue=")
         .append(value.getClaimValue())
         .append("]");
+
+    return builder.toString();
+  }
+
+  private String summarizeUser(final Record<?> record) {
+    final var value = (UserRecordValue) record.getValue();
+
+    final StringBuilder builder = new StringBuilder();
+    if (record.getKey() != value.getUserKey()) {
+      builder.append(shortenKey(value.getUserKey())).append(" ");
+    }
+
+    builder
+        .append("u=")
+        .append(formatId(value.getUsername()))
+        .append(" @=")
+        .append(value.getEmail())
+        .append(" n=")
+        .append(value.getName());
 
     return builder.toString();
   }
