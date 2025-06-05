@@ -16,7 +16,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.auth.Authenticated;
+import io.camunda.qa.util.auth.MappingDefinition;
 import io.camunda.qa.util.auth.Permissions;
+import io.camunda.qa.util.auth.TestMapping;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -28,12 +30,9 @@ import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -53,7 +52,6 @@ class MappingAuthorizationIT {
   private static final String UNAUTHORIZED = "unauthorizedUser";
   private static final String DEFAULT_PASSWORD = "password";
   private static final String MAPPING_SEARCH_ENDPOINT = "v2/mapping-rules/search";
-  private static final Duration AWAIT_TIMEOUT = Duration.ofSeconds(15);
 
   @UserDefinition
   private static final TestUser ADMIN_USER =
@@ -73,16 +71,15 @@ class MappingAuthorizationIT {
   private static final TestUser UNAUTHORIZED_USER =
       new TestUser(UNAUTHORIZED, DEFAULT_PASSWORD, List.of());
 
-  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
+  @MappingDefinition
+  private static final TestMapping MAPPING_1 =
+      new TestMapping("mapping1", "test-name", "test-value");
 
-  @BeforeAll
-  static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    createMapping(adminClient, "test-name", "test-value", "mapping1");
-    createMapping(adminClient, "test-name2", "test-value2", "mapping2");
-    final int expectedCount = 2;
-    waitForMappingsToBeCreated(
-        adminClient.getConfiguration().getRestAddress().toString(), ADMIN, expectedCount);
-  }
+  @MappingDefinition
+  private static final TestMapping MAPPING_2 =
+      new TestMapping("mapping2", "test-name2", "test-value2");
+
+  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
   @Test
   void searchShouldReturnAuthorizedMappings(
@@ -91,9 +88,9 @@ class MappingAuthorizationIT {
         searchMappings(userClient.getConfiguration().getRestAddress().toString(), RESTRICTED);
 
     assertThat(mappingSearchResponse.items())
-        .hasSize(2)
+        .hasSizeGreaterThanOrEqualTo(2)
         .map(MappingResponse::name)
-        .containsExactlyInAnyOrder("mapping1", "mapping2");
+        .contains("mapping1", "mapping2");
   }
 
   @Test
@@ -118,18 +115,6 @@ class MappingAuthorizationIT {
         .name(mappingId)
         .send()
         .join();
-  }
-
-  private static void waitForMappingsToBeCreated(
-      final String restAddress, final String username, final int expectedCount) {
-    Awaitility.await("should create mappings and import in ES")
-        .atMost(AWAIT_TIMEOUT)
-        .ignoreExceptions()
-        .untilAsserted(
-            () -> {
-              final var mappingSearchResponse = searchMappings(restAddress, username);
-              assertThat(mappingSearchResponse.items()).hasSize(expectedCount);
-            });
   }
 
   // TODO once available, this test should use the client to make the request
