@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationReferenceNullValue;
+import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperationReferenceNullValue;
 
 import io.camunda.security.auth.MappingRuleMatcher;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -81,7 +81,8 @@ public final class AuthorizationCheckBehavior {
     }
 
     if (!request.getCommand().hasRequestMetadata()
-        && request.getCommand().getOperationReference() == operationReferenceNullValue()) {
+        && request.getCommand().getBatchOperationReference()
+            == batchOperationReferenceNullValue()) {
       // The command is written by Zeebe internally. Internal Zeebe commands are always authorized
       return Either.right(null);
     }
