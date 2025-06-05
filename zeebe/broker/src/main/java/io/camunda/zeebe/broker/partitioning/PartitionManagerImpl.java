@@ -178,10 +178,14 @@ public final class PartitionManagerImpl
             initializeFromSnapshot,
             brokerMeterRegistry);
     final var partition = Partition.bootstrapping(context);
-    partitions.put(id, partition);
+    if (partitions.putIfAbsent(id, partition) != null) {
+      result.completeExceptionally(
+          new PartitionAlreadyExistsException(partitionMetadata.id().id()));
+    } else {
+      concurrencyControl.runOnCompletion(
+          partition.start(), (started, error) -> completePartitionStart(id, error, result));
+    }
 
-    concurrencyControl.runOnCompletion(
-        partition.start(), (started, error) -> completePartitionStart(id, error, result));
     return result;
   }
 
@@ -384,11 +388,15 @@ public final class PartitionManagerImpl
           .andThen(
               (ignored, error) -> {
                 if (error != null) {
-                  // bootstrap has failed, let's stop and return the error.
-                  return stopPartition(partitionId)
-                      .andThen(
-                          none -> CompletableActorFuture.completedExceptionally(error),
-                          concurrencyControl);
+                  if (error instanceof PartitionAlreadyExistsException) {
+                    return CompletableActorFuture.completedExceptionally(error);
+                  } else {
+                    // bootstrap has failed, let's stop and return the error.
+                    return stopPartition(partitionId)
+                        .andThen(
+                            none -> CompletableActorFuture.completedExceptionally(error),
+                            concurrencyControl);
+                  }
                 } else {
                   return CompletableActorFuture.completed();
                 }
@@ -574,7 +582,7 @@ public final class PartitionManagerImpl
     if (partition != null) {
       return partition
           .stop()
-          .andThen(
+          .thenApply(
               ignored -> {
                 partitions.remove(partitionId);
                 return null;
@@ -582,6 +590,13 @@ public final class PartitionManagerImpl
               concurrencyControl);
     } else {
       return CompletableActorFuture.completed();
+    }
+  }
+
+  public final class PartitionAlreadyExistsException extends RuntimeException {
+
+    PartitionAlreadyExistsException(final int partitionId) {
+      super("Partition with id %d already exists".formatted(partitionId));
     }
   }
 }
