@@ -9,7 +9,10 @@ package io.camunda.zeebe.snapshots;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.VisibleForTesting;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 
 /** Represents a snapshot, which was persisted at the {@link PersistedSnapshotStore}. */
 public interface PersistedSnapshot {
@@ -20,6 +23,8 @@ public interface PersistedSnapshot {
    * @return the snapshot format version
    */
   int version();
+
+  SnapshotId snapshotId();
 
   /**
    * Returns the snapshot index.
@@ -100,6 +105,33 @@ public interface PersistedSnapshot {
    */
   ActorFuture<SnapshotReservation> reserve();
 
+  default boolean isBootstrap() {
+    return getMetadata() != null && getMetadata().isBootstrap();
+  }
+
   @VisibleForTesting
   boolean isReserved();
+
+  /**
+   * Note that this method is not synchronized with the actor, so the snapshot may be deleted
+   * concurrently, returning only a partial list of files.
+   *
+   * @return the files that are part of this snapshot, indexed by filename. Useful for calling
+   *     {@link RestorableSnapshotStore#restore(String, Map)}
+   */
+  default Map<String, Path> files() {
+    final var map = new HashMap<String, Path>();
+    try (final var stream = Files.list(getPath())) {
+      stream.forEach(
+          file -> {
+            final var fileName = file.getFileName().toString();
+            map.put(fileName, file);
+          });
+
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
+    map.put(getChecksumPath().getFileName().toString(), getChecksumPath());
+    return map;
+  }
 }

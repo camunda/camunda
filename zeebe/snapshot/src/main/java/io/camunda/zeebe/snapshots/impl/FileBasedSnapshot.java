@@ -14,6 +14,7 @@ import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
+import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.SnapshotMetadata;
 import io.camunda.zeebe.snapshots.SnapshotReservation;
 import io.camunda.zeebe.util.FileUtil;
@@ -72,6 +73,11 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   @Override
   public int version() {
     return VERSION;
+  }
+
+  @Override
+  public SnapshotId snapshotId() {
+    return snapshotId;
   }
 
   @Override
@@ -145,7 +151,9 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
 
   @Override
   public boolean isReserved() {
-    return !reservations.isEmpty();
+    // bootstrap snapshots are not deleted following the normal procedure, they are deleted when the
+    // scaling operation has been terminated
+    return !reservations.isEmpty() || (metadata != null && metadata.isBootstrap());
   }
 
   void delete() {
