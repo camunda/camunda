@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter;
 import io.camunda.zeebe.engine.state.EventApplier;
@@ -41,6 +42,19 @@ public final class EventApplyingStateWriter implements StateWriter {
   @Override
   public void appendFollowUpEvent(
       final long key, final Intent intent, final RecordValue value, final int recordVersion) {
+    appendFollowUpEvent(
+        key, intent, value, FollowUpEventMetadata.builder().recordVersion(recordVersion).build());
+  }
+
+  @Override
+  public void appendFollowUpEvent(
+      final long key,
+      final Intent intent,
+      final RecordValue value,
+      final FollowUpEventMetadata metadata) {
+    final int recordVersion =
+        metadata.getRecordVersion().orElse(RecordMetadata.DEFAULT_RECORD_VERSION);
+
     eventWriter.appendFollowUpEvent(key, intent, value, recordVersion);
     eventApplier.applyState(key, intent, value, recordVersion);
   }
