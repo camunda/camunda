@@ -25,19 +25,24 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 public class RocksDBSnapshotCopyTest {
+  final long rowsPerCF = 100;
   @TempDir Path destinationPath;
+  @TempDir Path sourceDBPath;
   @TempDir Path sourcePath;
+  Path sourceSnapshotPath;
   private RocksDBSnapshotCopy copy;
   private Random random;
+  private ZeebeRocksDbFactory<ZbColumnFamilies> factory;
 
   @BeforeEach
   void setup() {
-    final ZeebeRocksDbFactory<ZbColumnFamilies> factory =
+    factory =
         new ZeebeRocksDbFactory<>(
             new RocksDbConfiguration(),
             new ConsistencyChecksSettings(),
@@ -45,44 +50,20 @@ public class RocksDBSnapshotCopyTest {
             SimpleMeterRegistry::new);
     copy = new RocksDBSnapshotCopy(factory);
     random = new Random(1212331);
+    sourceSnapshotPath = sourcePath.resolve("snapshot");
+  }
+
+  @AfterEach
+  public void tearDown() {
+    sourceSnapshotPath.toFile().delete();
   }
 
   @Test
   public void shouldCopyOnlySomeColumns() throws Exception {
     // given
-    final long rowsPerCF = 100;
-    final Map<ZbColumnFamilies, Long> expectedRowsPerCF = initCounterMap();
-    copy.withContexts(
-        sourcePath,
-        destinationPath,
-        (fromDB, fromCtx, toDB, toCtx) -> {
-          fromCtx.runInTransaction(
-              () -> {
-                final var ctx = (ZeebeTransaction) fromCtx.getCurrentTransaction();
-                for (final ZbColumnFamilies cf : ZbColumnFamilies.values()) {
-                  final var transactionalColumnFamily =
-                      new RawTransactionalColumnFamily(fromDB, cf, fromCtx);
-                  for (int i = 0; i < rowsPerCF; i++) {
-                    // the key must be big enough to avoid generating duplicates.
-                    // with 1024 and the seed in the setup no duplicates are created.
-                    // otherwise, the number of rows per cf can be reduced to reduce the amount of
-                    // collisions
-                    final var key = new byte[random.nextInt(1024)];
-                    random.nextBytes(key);
-
-                    final var value = new byte[random.nextInt(64 * 1024)];
-                    random.nextBytes(value);
-                    transactionalColumnFamily.put(ctx, key, 0, key.length, value, 0, value.length);
-                    if (cf.partitionScope() == ColumnFamilyScope.GLOBAL) {
-                      expectedRowsPerCF.compute(cf, (k, v) -> v + 1);
-                    }
-                  }
-                  ctx.commit();
-                }
-              });
-        });
+    final var expectedRowsPerCF = populateSnapshot(factory);
     // when
-    copy.copySnapshot(sourcePath, destinationPath, Set.of(ColumnFamilyScope.GLOBAL));
+    copy.copySnapshot(sourceSnapshotPath, destinationPath, Set.of(ColumnFamilyScope.GLOBAL));
 
     // then
     final var sourceSize = computeDBSpace(sourcePath);
@@ -91,7 +72,7 @@ public class RocksDBSnapshotCopyTest {
 
     final var copiedRows = initCounterMap();
     copy.withContexts(
-        sourcePath,
+        sourceSnapshotPath,
         destinationPath,
         (fromDB, fromCtx, toDB, toCtx) -> {
           toCtx.runInTransaction(
@@ -133,5 +114,40 @@ public class RocksDBSnapshotCopyTest {
     final var map = new java.util.EnumMap<ZbColumnFamilies, Long>(ZbColumnFamilies.class);
     Arrays.stream(ZbColumnFamilies.values()).forEach(cf -> map.put(cf, 0L));
     return map;
+  }
+
+  private Map<ZbColumnFamilies, Long> populateSnapshot(
+      final ZeebeRocksDbFactory<ZbColumnFamilies> factory) {
+    final Map<ZbColumnFamilies, Long> expectedRowsPerCF = initCounterMap();
+    try (final var fromDB = factory.createDb(sourceDBPath.toFile())) {
+      final var fromCtx = fromDB.createContext();
+      fromCtx.runInTransaction(
+          () -> {
+            final var ctx = (ZeebeTransaction) fromCtx.getCurrentTransaction();
+            for (final ZbColumnFamilies cf : ZbColumnFamilies.values()) {
+              final var transactionalColumnFamily =
+                  new RawTransactionalColumnFamily(fromDB, cf, fromCtx);
+              for (int i = 0; i < rowsPerCF; i++) {
+                // the key must be big enough to avoid generating duplicates.
+                // with 1024 and the seed in the setup no duplicates are created.
+                // otherwise, the number of rows per cf can be reduced to reduce the amount of
+                // collisions
+                final var key = new byte[random.nextInt(1024)];
+                random.nextBytes(key);
+
+                final var value = new byte[random.nextInt(64 * 1024)];
+                random.nextBytes(value);
+                transactionalColumnFamily.put(ctx, key, 0, key.length, value, 0, value.length);
+                if (cf.partitionScope() == ColumnFamilyScope.GLOBAL) {
+                  expectedRowsPerCF.compute(cf, (k, v) -> v + 1);
+                }
+              }
+              ctx.commit();
+            }
+          });
+
+      fromDB.createSnapshot(sourceSnapshotPath.toFile());
+    }
+    return expectedRowsPerCF;
   }
 }
