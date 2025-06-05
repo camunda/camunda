@@ -12,12 +12,18 @@ import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_I
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.operate.entities.OperateZeebeEntity;
 import io.camunda.operate.schema.templates.ListViewTemplate;
+import io.camunda.operate.util.TreePath;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ProcessInstanceForListViewEntity
     extends OperateZeebeEntity<ProcessInstanceForListViewEntity> {
+
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(ProcessInstanceForListViewEntity.class);
 
   private Long processDefinitionKey;
   private String processName;
@@ -165,7 +171,7 @@ public class ProcessInstanceForListViewEntity
   }
 
   public ProcessInstanceForListViewEntity setTreePath(final String treePath) {
-    this.treePath = treePath;
+    this.treePath = safeTreePath(treePath);
     return this;
   }
 
@@ -264,5 +270,25 @@ public class ProcessInstanceForListViewEntity
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(joinRelation, that.joinRelation)
         && Objects.equals(position, that.position);
+  }
+
+  private String safeTreePath(final String treePath) {
+    if (treePath == null || treePath.isEmpty()) {
+      return "";
+    }
+    if (treePath.length() >= Short.MAX_VALUE) {
+      LOGGER.warn(
+          "Tree path for {} is too long: {} characters. It should be less than {} characters,"
+              + " so truncating it to the parent process instance.",
+          getProcessInstanceKey(),
+          treePath.length(),
+          Short.MAX_VALUE);
+      return truncateTreePath(treePath);
+    }
+    return treePath;
+  }
+
+  private String truncateTreePath(final String treePath) {
+    return "PI_" + new TreePath(treePath).extractRootInstanceId();
   }
 }
