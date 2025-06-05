@@ -161,6 +161,11 @@ public final class FileBasedSnapshotStore extends Actor
   }
 
   @Override
+  public ActorFuture<Void> restore(final PersistedSnapshot snapshot) {
+    return snapshotStore.restore(snapshot);
+  }
+
+  @Override
   public String toString() {
     return "FileBasedSnapshotStore{"
         + "actorName='"

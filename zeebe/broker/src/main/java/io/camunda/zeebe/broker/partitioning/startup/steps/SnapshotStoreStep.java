@@ -15,7 +15,7 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 
-public final class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
+public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
 
   @Override
   public String getName() {
@@ -27,7 +27,7 @@ public final class SnapshotStoreStep implements StartupStep<PartitionStartupCont
     final var snapshotStore =
         new FileBasedSnapshotStore(
             context.brokerConfig().getCluster().getNodeId(),
-            context.partitionMetadata().id().id(),
+            context.partitionId(),
             context.partitionDirectory(),
             new ChecksumProviderRocksDBImpl(),
             context.partitionMeterRegistry());
@@ -38,8 +38,7 @@ public final class SnapshotStoreStep implements StartupStep<PartitionStartupCont
             .submitActor(snapshotStore, SchedulingHints.ioBound())
             .thenApply(v -> context.snapshotStore(snapshotStore), context.concurrencyControl());
     if (context.isInitializeFromSnapshot()) {
-      // TODO acquire the snapshot and initialize it using it
-      result = result.thenApply(ignored -> context);
+      result = result.andThen(this::initializeFromSnapshot, context.concurrencyControl());
     }
     return result;
   }
@@ -54,5 +53,17 @@ public final class SnapshotStoreStep implements StartupStep<PartitionStartupCont
           .closeAsync()
           .thenApply(ignored -> context.snapshotStore(null), context.concurrencyControl());
     }
+  }
+
+  ActorFuture<PartitionStartupContext> initializeFromSnapshot(
+      final PartitionStartupContext context) {
+    final var fut = context.snapshotTransfer().getLatestSnapshot(context.partitionId());
+    return fut.andThen(
+        snapshot ->
+            context
+                .snapshotStore()
+                .restore(snapshot)
+                .thenApply(ignored -> context, context.concurrencyControl()),
+        context.concurrencyControl());
   }
 }

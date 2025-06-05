@@ -703,6 +703,14 @@ public final class FileBasedSnapshotStoreImpl {
     }
   }
 
+  public ActorFuture<Void> restore(final PersistedSnapshot snapshot) {
+    return actor.call(
+        () -> {
+          restore(snapshot.getId(), snapshot.files());
+          return null;
+        });
+  }
+
   private void moveNamedFileToDirectory(
       final String name, final Path source, final Path targetDirectory) {
     final var targetFilePath = targetDirectory.resolve(name);

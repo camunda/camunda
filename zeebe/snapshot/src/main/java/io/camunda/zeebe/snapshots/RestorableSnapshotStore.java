@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.snapshots;
 
+import io.camunda.zeebe.scheduler.future.ActorFuture;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
@@ -23,4 +24,7 @@ public interface RestorableSnapshotStore {
    * @throws IOException
    */
   void restore(final String snapshotId, final Map<String, Path> snapshotFiles) throws IOException;
+
+  /** Restore a PersistedSnapshot using the actor context in order to be thread safe */
+  ActorFuture<Void> restore(PersistedSnapshot snapshot);
 }
