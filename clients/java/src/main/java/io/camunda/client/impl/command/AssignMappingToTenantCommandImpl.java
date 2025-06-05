@@ -17,6 +17,7 @@ package io.camunda.client.impl.command;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.AssignMappingToTenantCommandStep1;
+import io.camunda.client.api.command.AssignMappingToTenantCommandStep1.AssignMappingToTenantCommandStep2;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignMappingToTenantResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
@@ -25,22 +26,28 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public final class AssignMappingToTenantCommandImpl implements AssignMappingToTenantCommandStep1 {
+public final class AssignMappingToTenantCommandImpl
+    implements AssignMappingToTenantCommandStep1, AssignMappingToTenantCommandStep2 {
 
-  private final String tenantId;
+  private String tenantId;
   private String mappingId;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public AssignMappingToTenantCommandImpl(final HttpClient httpClient, final String tenantId) {
+  public AssignMappingToTenantCommandImpl(final HttpClient httpClient) {
     this.httpClient = httpClient;
-    this.tenantId = tenantId;
     httpRequestConfig = httpClient.newRequestConfig();
   }
 
   @Override
-  public AssignMappingToTenantCommandStep1 mappingId(final String mappingId) {
+  public AssignMappingToTenantCommandStep2 mappingId(final String mappingId) {
     this.mappingId = mappingId;
+    return this;
+  }
+
+  @Override
+  public AssignMappingToTenantCommandStep2 tenantId(final String tenantId) {
+    this.tenantId = tenantId;
     return this;
   }
 

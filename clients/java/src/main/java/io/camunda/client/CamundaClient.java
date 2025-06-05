@@ -2031,18 +2031,18 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newAssignMappingToTenantCommand(tenantId)
-   *   .mappingId(mappingId)
+   *   .newAssignMappingToTenantCommand()
+   *   .mappingId("mappingId")
+   *   .tenantId("tenantId")
    *   .send();
    * </pre>
    *
    * <p>This command sends an HTTP PUT request to assign the specified mapping rule to the given
    * tenant.
    *
-   * @param tenantId the unique identifier of the tenant
    * @return a builder for the assign mapping rule to tenant command
    */
-  AssignMappingToTenantCommandStep1 newAssignMappingToTenantCommand(String tenantId);
+  AssignMappingToTenantCommandStep1 newAssignMappingToTenantCommand();
 
   /**
    * Command to assign a user to a tenant.

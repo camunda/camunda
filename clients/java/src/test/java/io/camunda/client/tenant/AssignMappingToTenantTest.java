@@ -33,7 +33,12 @@ public class AssignMappingToTenantTest extends ClientRestTest {
   @Test
   void shouldAssignMappingToTenant() {
     // when
-    client.newAssignMappingToTenantCommand(TENANT_ID).mappingId(MAPPING_ID).send().join();
+    client
+        .newAssignMappingToTenantCommand()
+        .mappingId(MAPPING_ID)
+        .tenantId(TENANT_ID)
+        .send()
+        .join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
@@ -52,8 +57,9 @@ public class AssignMappingToTenantTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToTenantCommand(TENANT_ID)
+                    .newAssignMappingToTenantCommand()
                     .mappingId(MAPPING_ID)
+                    .tenantId(TENANT_ID)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -71,8 +77,9 @@ public class AssignMappingToTenantTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToTenantCommand(TENANT_ID)
+                    .newAssignMappingToTenantCommand()
                     .mappingId(MAPPING_ID)
+                    .tenantId(TENANT_ID)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -90,8 +97,9 @@ public class AssignMappingToTenantTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToTenantCommand(TENANT_ID)
+                    .newAssignMappingToTenantCommand()
                     .mappingId(MAPPING_ID)
+                    .tenantId(TENANT_ID)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -109,8 +117,9 @@ public class AssignMappingToTenantTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newAssignMappingToTenantCommand(TENANT_ID)
+                    .newAssignMappingToTenantCommand()
                     .mappingId(MAPPING_ID)
+                    .tenantId(TENANT_ID)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
