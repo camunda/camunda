@@ -109,7 +109,7 @@ public class AuthorizationsUtil implements CloseableSilently {
         .join()
         .getTenantKey();
     for (final var username : usernames) {
-      client.newAssignUserToTenantCommand(tenantId).username(username).send().join();
+      client.newAssignUserToTenantCommand().username(username).tenantId(tenantId).send().join();
     }
     awaitTenantExistsInElasticsearch(tenantId);
   }
