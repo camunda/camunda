@@ -74,9 +74,11 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
 
   private void assignUsersToGroup(final String sourceGroupId, final String targetGroupId) {
     final var users = managementIdentityClient.fetchGroupUsers(sourceGroupId);
-    users.forEach(user -> {
-      final var groupMember = new GroupMemberDTO(targetGroupId, user.getEmail(), EntityType.USER);
-      groupServices.assignMember(groupMember);
-    });
+    users.forEach(
+        user -> {
+          final var groupMember =
+              new GroupMemberDTO(targetGroupId, user.getEmail(), EntityType.USER);
+          groupServices.assignMember(groupMember);
+        });
   }
 }
