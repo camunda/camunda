@@ -112,6 +112,13 @@ public interface PersistedSnapshot {
   @VisibleForTesting
   boolean isReserved();
 
+  /**
+   * Note that this method is not synchronized with the actor, so the snapshot may be deleted
+   * concurrently, returning only a partial list of files.
+   *
+   * @return the files that are part of this snapshot, indexed by filename. Useful for calling
+   *     {@link RestorableSnapshotStore#restore(String, Map)}
+   */
   default Map<String, Path> files() {
     final var map = new HashMap<String, Path>();
     try (final var stream = Files.list(getPath())) {
