@@ -385,7 +385,7 @@ public final class PartitionManagerImpl
               (ignored, error) -> {
                 if (error != null) {
                   // bootstrap has failed, let's stop and return the error.
-                  return stopPartition(partitionId, true)
+                  return stopPartition(partitionId)
                       .andThen(
                           none -> CompletableActorFuture.completedExceptionally(error),
                           concurrencyControl);
@@ -569,7 +569,7 @@ public final class PartitionManagerImpl
     return scalingExecutor.notifyPartitionBootstrapped(partitionId);
   }
 
-  private ActorFuture<Void> stopPartition(final int partitionId, final boolean purgeData) {
+  private ActorFuture<Void> stopPartition(final int partitionId) {
     final var partition = partitions.get(partitionId);
     if (partition != null) {
       return partition
@@ -577,9 +577,6 @@ public final class PartitionManagerImpl
           .andThen(
               ignored -> {
                 partitions.remove(partitionId);
-                if (purgeData) {
-                  partition.raftPartition().delete();
-                }
                 return null;
               },
               concurrencyControl);
