@@ -2069,18 +2069,18 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newUnassignUserFromTenantCommand(tenantId)
+   *   .newUnassignUserFromTenantCommand()
    *   .username(username)
+   *   .tenantId(tenantId)
    *   .send();
    * </pre>
    *
    * <p>This command sends an HTTP DELETE request to remove the specified user from the given
    * tenant.
    *
-   * @param tenantId the unique identifier of the tenant
    * @return a builder for the remove user from tenant command
    */
-  RemoveUserFromTenantCommandStep1 newUnassignUserFromTenantCommand(String tenantId);
+  RemoveUserFromTenantCommandStep1 newUnassignUserFromTenantCommand();
 
   /**
    * Command to assign a group to a tenant.

@@ -59,7 +59,7 @@ class RemoveUserFromTenantTest {
   @Test
   void shouldRemoveUserFromTenant() {
     // When
-    client.newUnassignUserFromTenantCommand(TENANT_ID).username(USERNAME).send().join();
+    client.newUnassignUserFromTenantCommand().username(USERNAME).tenantId(TENANT_ID).send().join();
 
     // Then
     ZeebeAssertHelper.assertEntityRemovedFromTenant(
@@ -75,8 +75,9 @@ class RemoveUserFromTenantTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignUserFromTenantCommand(invalidTenantId)
+                    .newUnassignUserFromTenantCommand()
                     .username(USERNAME)
+                    .tenantId(invalidTenantId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -103,8 +104,9 @@ class RemoveUserFromTenantTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignUserFromTenantCommand(TENANT_ID)
+                    .newUnassignUserFromTenantCommand()
                     .username(unassignedUsername)
+                    .tenantId(TENANT_ID)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
