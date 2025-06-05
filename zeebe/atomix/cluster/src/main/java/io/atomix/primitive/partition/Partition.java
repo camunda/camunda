@@ -42,4 +42,6 @@ public interface Partition {
    * @return the collection of all members in the partition
    */
   Collection<MemberId> members();
+
+  PartitionMetadata partitionMetadata();
 }
