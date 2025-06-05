@@ -17,15 +17,26 @@ package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.UnassignUserFromGroupResponse;
 
-public interface UnassignUserFromGroupCommandStep1
-    extends FinalCommandStep<UnassignUserFromGroupResponse> {
+public interface UnassignUserFromGroupCommandStep1 {
 
   /**
    * Sets the username for the unassignment.
    *
    * @param username the username of the user
-   * @return the builder for this command. Call {@link #send()} to complete the command and send it
-   *     to the broker.
+   * @return the builder for this command.
    */
-  UnassignUserFromGroupCommandStep1 username(String username);
+  UnassignUserFromGroupCommandStep2 username(String username);
+
+  interface UnassignUserFromGroupCommandStep2
+      extends FinalCommandStep<UnassignUserFromGroupResponse> {
+
+    /**
+     * Sets the group ID for the unassignment.
+     *
+     * @param groupId the groupId of the group
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    UnassignUserFromGroupCommandStep2 groupId(String groupId);
+  }
 }
