@@ -31,7 +31,7 @@ import {
   IS_TENANT_GROUPS_SUPPORTED,
   IS_TENANT_ROLES_SUPPORTED,
 } from "src/feature-flags";
-import { isOIDC } from "src/configuration";
+import { isInternalGroupsEnabled, isOIDC } from "src/configuration";
 
 const Details: FC = () => {
   const { t } = useTranslate("tenants");
@@ -93,7 +93,7 @@ const Details: FC = () => {
                   label: t("users"),
                   content: <Members tenantId={tenant.tenantId} />,
                 },
-                ...(IS_TENANT_GROUPS_SUPPORTED
+                ...(IS_TENANT_GROUPS_SUPPORTED && isInternalGroupsEnabled
                   ? [
                       {
                         key: "groups",
