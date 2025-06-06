@@ -18,6 +18,7 @@ import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationItemProvider.Item;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
@@ -95,7 +96,11 @@ public class BatchOperationExecutionSchedulerTest {
 
     scheduler =
         new BatchOperationExecutionScheduler(
-            scheduledTaskStateFactory, entityKeyProvider, engineConfiguration, PARTITION_ID);
+            scheduledTaskStateFactory,
+            entityKeyProvider,
+            engineConfiguration,
+            PARTITION_ID,
+            mock(BatchOperationMetrics.class));
   }
 
   @Test

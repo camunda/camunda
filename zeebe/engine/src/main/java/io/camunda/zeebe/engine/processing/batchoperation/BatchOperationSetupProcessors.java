@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.batchoperation;
 
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.CancelProcessInstanceBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.MigrateProcessInstanceBatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.ModifyProcessInstanceBatchOperationExecutor;
@@ -42,7 +43,8 @@ public final class BatchOperationSetupProcessors {
       final ProcessingState processingState,
       final EngineConfiguration engineConfiguration,
       final int partitionId,
-      final RoutingInfo routingInfo) {
+      final RoutingInfo routingInfo,
+      final BatchOperationMetrics batchOperationMetrics) {
     final var batchExecutionHandlers =
         Map.of(
             BatchOperationType.CANCEL_PROCESS_INSTANCE,
@@ -66,16 +68,21 @@ public final class BatchOperationSetupProcessors {
                 keyGenerator,
                 commandDistributionBehavior,
                 authorizationCheckBehavior,
-                routingInfo))
+                routingInfo,
+                batchOperationMetrics))
         .onCommand(
             ValueType.BATCH_OPERATION_CREATION,
             BatchOperationIntent.START,
-            new BatchOperationStartProcessor(writers))
+            new BatchOperationStartProcessor(writers, batchOperationMetrics))
         .onCommand(
             ValueType.BATCH_OPERATION_CREATION,
             BatchOperationIntent.FAIL,
             new BatchOperationFailProcessor(
-                writers, commandDistributionBehavior, keyGenerator, partitionId))
+                writers,
+                commandDistributionBehavior,
+                keyGenerator,
+                partitionId,
+                batchOperationMetrics))
         .onCommand(
             ValueType.BATCH_OPERATION_CHUNK,
             BatchOperationChunkIntent.CREATE,
@@ -89,7 +96,8 @@ public final class BatchOperationSetupProcessors {
                 commandDistributionBehavior,
                 keyGenerator,
                 partitionId,
-                batchExecutionHandlers))
+                batchExecutionHandlers,
+                batchOperationMetrics))
         .onCommand(
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
             BatchOperationIntent.CANCEL,
@@ -98,7 +106,8 @@ public final class BatchOperationSetupProcessors {
                 commandDistributionBehavior,
                 processingState,
                 authorizationCheckBehavior,
-                keyGenerator))
+                keyGenerator,
+                batchOperationMetrics))
         .onCommand(
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
             BatchOperationIntent.SUSPEND,
@@ -107,7 +116,8 @@ public final class BatchOperationSetupProcessors {
                 commandDistributionBehavior,
                 processingState,
                 authorizationCheckBehavior,
-                keyGenerator))
+                keyGenerator,
+                batchOperationMetrics))
         .onCommand(
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
             BatchOperationIntent.RESUME,
@@ -116,22 +126,29 @@ public final class BatchOperationSetupProcessors {
                 commandDistributionBehavior,
                 processingState,
                 authorizationCheckBehavior,
-                keyGenerator))
+                keyGenerator,
+                batchOperationMetrics))
         .onCommand(
             ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
             BatchOperationIntent.COMPLETE_PARTITION,
             new BatchOperationPartitionCompleteProcessor(
-                writers, processingState, commandDistributionBehavior, partitionId))
+                writers,
+                processingState,
+                commandDistributionBehavior,
+                partitionId,
+                batchOperationMetrics))
         .onCommand(
             ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
             BatchOperationIntent.FAIL_PARTITION,
             new BatchOperationPartitionFailProcessor(
-                writers, processingState, commandDistributionBehavior))
+                writers, processingState, commandDistributionBehavior, batchOperationMetrics))
         .withListener(
             new BatchOperationExecutionScheduler(
                 scheduledTaskStateFactory,
-                new BatchOperationItemProvider(searchClientsProxy, engineConfiguration),
+                new BatchOperationItemProvider(
+                    searchClientsProxy, engineConfiguration, batchOperationMetrics),
                 engineConfiguration,
-                partitionId));
+                partitionId,
+                batchOperationMetrics));
   }
 }
