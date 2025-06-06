@@ -18,7 +18,6 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUse
 import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.incident.RetryTypedRecord;
-import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -277,9 +276,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
                                   variableDocumentKey,
                                   VariableDocumentIntent.UPDATE_DENIED,
                                   variableDocumentRecord,
-                                  FollowUpEventMetadata.builder()
-                                      .operationReference(request.operationReference())
-                                      .build());
+                                  m -> m.operationReference(request.operationReference()));
 
                               final var deniedReason =
                                   USER_TASK_VARIABLE_UPDATE_REJECTION.formatted(

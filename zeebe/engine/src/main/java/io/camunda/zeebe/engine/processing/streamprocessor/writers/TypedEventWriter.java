@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
+import java.util.function.Consumer;
 
 public interface TypedEventWriter {
 
@@ -78,6 +79,43 @@ public interface TypedEventWriter {
    */
   void appendFollowUpEvent(
       long key, Intent intent, RecordValue value, FollowUpEventMetadata metadata);
+
+  /**
+   * A convenient form of {@link #appendFollowUpEvent(long, Intent, RecordValue,
+   * FollowUpEventMetadata)}.
+   *
+   * <p>Allows configuring {@link FollowUpEventMetadata} using a builder-style lambda.
+   *
+   * <p>Example:
+   *
+   * <pre>{@code
+   * writer.appendFollowUpEvent(
+   *     key, intent, value, m -> m.operationReference(1234L));
+   * }</pre>
+   *
+   * <p>Equivalent to:
+   *
+   * <pre>{@code
+   * writer.appendFollowUpEvent(
+   *     key, intent, value,
+   *     FollowUpEventMetadata.builder().operationReference(1234L).build());
+   * }</pre>
+   *
+   * @param key the key of the event
+   * @param intent the intent of the event
+   * @param value the value of the event
+   * @param builderConsumer lambda to configure follow-up event metadata
+   * @throws ExceededBatchRecordSizeException if the event exceeds batch size
+   */
+  default void appendFollowUpEvent(
+      long key,
+      Intent intent,
+      RecordValue value,
+      Consumer<FollowUpEventMetadata.Builder> builderConsumer) {
+    final var builder = FollowUpEventMetadata.builder();
+    builderConsumer.accept(builder);
+    appendFollowUpEvent(key, intent, value, builder.build());
+  }
 
   /**
    * Use this to know whether you can write an event of this length.
