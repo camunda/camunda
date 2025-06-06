@@ -26,11 +26,7 @@ public class GetScaleUpProgress extends BrokerExecuteCommand<ScaleRecord> {
 
   public GetScaleUpProgress(final int desiredPartitionCount) {
     this();
-    setDesiredPartitionCount(desiredPartitionCount);
-  }
-
-  public void setDesiredPartitionCount(final int desiredPartitionCount) {
-    requestDto.setDesiredPartitionCount(desiredPartitionCount);
+    requestDto.status(desiredPartitionCount);
   }
 
   @Override

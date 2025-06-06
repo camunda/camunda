@@ -13,7 +13,6 @@ import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.util.buffer.BufferWriter;
-import java.util.List;
 import org.agrona.DirectBuffer;
 
 public class BrokerPartitionBootstrappedRequest extends BrokerExecuteCommand<ScaleRecord> {
@@ -22,7 +21,7 @@ public class BrokerPartitionBootstrappedRequest extends BrokerExecuteCommand<Sca
 
   public BrokerPartitionBootstrappedRequest(final int bootstrappedPartition) {
     super(ValueType.SCALE, ScaleIntent.MARK_PARTITION_BOOTSTRAPPED);
-    requestDto.setRedistributedPartitions(List.of(bootstrappedPartition));
+    requestDto.markPartitionBootstrapped(bootstrappedPartition);
 
     // set the target partition for this request
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
