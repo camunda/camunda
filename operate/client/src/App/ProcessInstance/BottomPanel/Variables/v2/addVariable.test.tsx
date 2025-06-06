@@ -16,6 +16,8 @@ import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariab
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
+import {mockVariablesV2} from '../index.setup';
 
 const instanceMock = createInstance({id: '1'});
 
@@ -401,6 +403,7 @@ describe('Add variable', () => {
   });
 
   it('clicking edit variables while add mode is open, should not display a validation error', async () => {
+    mockSearchVariables().withSuccess(mockVariablesV2);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
@@ -416,6 +419,9 @@ describe('Add variable', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(screen.getByRole('button', {name: /add variable/i}));
 
+    await waitFor(() => {
+      expect(screen.getByTestId('variable-clientNo')).toBeInTheDocument();
+    });
     const withinVariable = within(screen.getByTestId('variable-clientNo'));
     await user.click(
       withinVariable.getByRole('button', {name: /edit variable/i}),

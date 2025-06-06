@@ -10,7 +10,6 @@ import {useEffect} from 'react';
 import {observer} from 'mobx-react';
 
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {variablesStore} from 'modules/stores/variables';
 import {TabView} from 'modules/components/TabView';
 import {processInstanceListenersStore} from 'modules/stores/processInstanceListeners';
 import {useProcessInstancePageParams} from '../../../useProcessInstancePageParams';
@@ -18,13 +17,10 @@ import {InputOutputMappings} from '../InputOutputMappings';
 import {VariablesContent as VariablesContentV2} from './VariablesContent';
 import {Listeners} from '../Listeners';
 import {WarningFilled} from '../styled';
-import {init, startPolling} from 'modules/utils/variables';
-import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 
 const VariablePanel = observer(function VariablePanel() {
   const {processInstanceId = ''} = useProcessInstancePageParams();
-  const {data: processInstance} = useProcessInstance();
   const isRootNodeSelected = useIsRootNodeSelected();
 
   const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
@@ -45,14 +41,6 @@ const VariablePanel = observer(function VariablePanel() {
   useEffect(() => {
     reset();
   }, [flowNodeId, flowNodeInstanceId, reset]);
-
-  useEffect(() => {
-    init(processInstance);
-
-    return () => {
-      variablesStore.reset();
-    };
-  }, [processInstance]);
 
   useEffect(() => {
     if (shouldUseFlowNodeId) {
@@ -93,8 +81,6 @@ const VariablePanel = observer(function VariablePanel() {
           removePadding: true,
           onClick: () => {
             setListenerTabVisibility(false);
-            startPolling(processInstance);
-            variablesStore.refreshVariables(processInstanceId);
           },
         },
         ...(isRootNodeSelected
@@ -106,7 +92,6 @@ const VariablePanel = observer(function VariablePanel() {
                 content: <InputOutputMappings type="Input" />,
                 onClick: () => {
                   setListenerTabVisibility(false);
-                  return variablesStore.stopPolling;
                 },
               },
               {
@@ -115,7 +100,6 @@ const VariablePanel = observer(function VariablePanel() {
                 content: <InputOutputMappings type="Output" />,
                 onClick: () => {
                   setListenerTabVisibility(false);
-                  return variablesStore.stopPolling;
                 },
               },
             ]),
@@ -130,7 +114,6 @@ const VariablePanel = observer(function VariablePanel() {
           removePadding: true,
           onClick: () => {
             setListenerTabVisibility(true);
-            return variablesStore.stopPolling;
           },
         },
       ]}

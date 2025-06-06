@@ -23,7 +23,7 @@ import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {VariablesTable} from './VariablesTable';
 import {Footer} from './Footer';
 import {Skeleton} from './Skeleton';
-import {useDisplayStatus} from 'modules/hooks/variables';
+import {useDisplayStatusFromVariablesStore} from 'modules/hooks/variables';
 import {useNewScopeIdForFlowNode} from 'modules/hooks/modifications';
 import {getScopeId} from 'modules/utils/variables';
 
@@ -33,7 +33,7 @@ type Props = {
 
 const Variables: React.FC<Props> = observer(
   ({isVariableModificationAllowed = false}) => {
-    const displayStatus = useDisplayStatus();
+    const displayStatus = useDisplayStatusFromVariablesStore();
     const newScopeIdForFlowNode = useNewScopeIdForFlowNode(
       flowNodeSelectionStore.state.selection?.flowNodeId,
     );

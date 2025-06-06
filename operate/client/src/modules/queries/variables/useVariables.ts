@@ -6,32 +6,46 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useQuery, UseQueryResult} from '@tanstack/react-query';
-import {
-  QueryVariablesRequestBody,
-  QueryVariablesResponseBody,
-} from '@vzeta/camunda-api-zod-schemas/process-management';
-import {RequestError} from 'modules/request';
+import {useInfiniteQuery} from '@tanstack/react-query';
+import {QueryVariablesRequestBody} from '@vzeta/camunda-api-zod-schemas/process-management';
 import {searchVariables} from 'modules/api/v2/variables/searchVariables';
+import {MAX_VARIABLES_PER_REQUEST} from 'modules/constants/variables';
 
 const VARIABLES_SEARCH_QUERY_KEY = 'variablesSearch';
 
 function getQueryKey(payload: QueryVariablesRequestBody) {
+  const {filter = {}, page = {}, sort = []} = payload;
+
   return [
     VARIABLES_SEARCH_QUERY_KEY,
-    payload.filter?.processInstanceKey,
-    ...Object.values(payload),
+    ...Object.entries(filter).map(
+      ([key, value]) => `${key}:${Object.entries(value)}`,
+    ),
+    ...Object.entries(page).map(([key, value]) => `${key}:${value}`),
+    ...sort.flatMap((item) =>
+      Object.entries(item).map(([key, value]) => `${key}:${value}`),
+    ),
   ];
 }
 
-function useVariables<T = QueryVariablesResponseBody>(
+function useVariables(
   payload: QueryVariablesRequestBody,
-  select?: (data: QueryVariablesResponseBody) => T,
-): UseQueryResult<T, RequestError> {
-  return useQuery({
+  options?: {
+    refetchInterval?: number | false;
+  },
+) {
+  const {refetchInterval = false} = options ?? {};
+  return useInfiniteQuery({
     queryKey: getQueryKey(payload),
-    queryFn: async () => {
-      const {response, error} = await searchVariables(payload);
+    queryFn: async ({pageParam = 0}) => {
+      const {response, error} = await searchVariables({
+        ...payload,
+        page: {
+          ...payload.page,
+          from: pageParam,
+          limit: payload.page?.limit ?? MAX_VARIABLES_PER_REQUEST,
+        },
+      });
 
       if (response !== null) {
         return response;
@@ -39,7 +53,25 @@ function useVariables<T = QueryVariablesResponseBody>(
 
       throw error;
     },
-    select,
+    initialPageParam: 0,
+    getNextPageParam: (lastPage: any, _pages, lastPageParam) => {
+      const {page} = lastPage;
+      if (!page) return null;
+      const nextPage =
+        lastPageParam + (page.items?.size ?? MAX_VARIABLES_PER_REQUEST);
+      if (nextPage >= page.totalItems) {
+        return null;
+      }
+      return nextPage;
+    },
+    getPreviousPageParam: (_firstPage, _pages, firstPageParam) => {
+      const previousPage = firstPageParam - MAX_VARIABLES_PER_REQUEST;
+      if (previousPage < 0) {
+        return null;
+      }
+      return previousPage;
+    },
+    refetchInterval,
   });
 }
 

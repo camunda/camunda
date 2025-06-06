@@ -6,270 +6,201 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {useEffect, useRef} from 'react';
+import {useForm, useFormState} from 'react-final-form';
+import {Button, Loading} from '@carbon/react';
+import {Edit} from '@carbon/react/icons';
 import {StructuredList, VariableName, VariableValue} from '../styled';
 import {StructuredRows} from 'modules/components/StructuredList';
 import {OnLastVariableModificationRemoved} from '../OnLastVariableModificationRemoved';
 import {FieldArray} from 'react-final-form-arrays';
-import {variablesStore} from 'modules/stores/variables';
-import {observer} from 'mobx-react';
-import {modificationsStore} from 'modules/stores/modifications';
-import {useMemo, useRef} from 'react';
-import {Restricted} from 'modules/components/Restricted';
-import {Button, Loading} from '@carbon/react';
-import {useForm, useFormState} from 'react-final-form';
 import {Operations} from '../Operations';
-import {useProcessInstancePageParams} from '../../../useProcessInstancePageParams';
-import {Edit} from '@carbon/react/icons';
-import {VariableFormValues} from 'modules/types/variables';
 import {EditButtons} from '../EditButtons';
 import {ExistingVariableValue} from './ExistingVariableValue';
 import {Name} from '../NewVariableModification/v2/Name';
 import {Value} from '../NewVariableModification/v2/Value';
-import {Operation as OperationV2} from '../NewVariableModification/v2/Operation';
+import {Operation} from '../NewVariableModification/v2/Operation';
 import {ViewFullVariableButton} from '../ViewFullVariableButton';
-import {MAX_VARIABLES_STORED} from 'modules/constants/variables';
 import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIsProcessInstanceRunning';
 import {usePermissions} from 'modules/queries/permissions/usePermissions';
+import {Restricted} from 'modules/components/Restricted';
+import {VariableFormValues} from 'modules/types/variables';
+import {useVariablesContext} from '../../VariablePanel/v2/VariablesContext';
 
 type Props = {
   scopeId: string | null;
   isVariableModificationAllowed?: boolean;
 };
 
-const VariablesTable: React.FC<Props> = observer(
-  ({scopeId, isVariableModificationAllowed}) => {
-    const {
-      state: {items, loadingItemId},
-    } = variablesStore;
-    const {isModificationModeEnabled} = modificationsStore;
-    const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
-    const {data: permissions} = usePermissions();
+const VariablesTable: React.FC<Props> = ({
+  scopeId,
+  isVariableModificationAllowed,
+}) => {
+  const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
+  const {data: permissions} = usePermissions();
+  const {initialValues} = useFormState();
+  const form = useForm<VariableFormValues>();
+  const variableNameRef = useRef<HTMLDivElement>(null);
 
-    const addVariableModifications = useMemo(
-      () => modificationsStore.getAddVariableModifications(scopeId),
-      [scopeId],
-    );
+  const {variablesData, fetchNextPage, hasNextPage, isFetchingNextPage} =
+    useVariablesContext();
 
-    const {processInstanceId = ''} = useProcessInstancePageParams();
-    const {initialValues} = useFormState();
-    const variableNameRef = useRef<HTMLDivElement>(null);
+  const isEditMode = (variableName: string) =>
+    (initialValues?.name === variableName && isProcessInstanceRunning) ||
+    isVariableModificationAllowed;
 
-    const isEditMode = (variableName: string) =>
-      (initialValues?.name === variableName && isProcessInstanceRunning) ||
-      (isModificationModeEnabled && isVariableModificationAllowed);
-
-    const form = useForm<VariableFormValues>();
-
-    return (
-      <StructuredList
-        dataTestId="variables-list"
-        headerColumns={[
-          {cellContent: 'Name', width: '35%'},
-          {cellContent: 'Value', width: '55%'},
-          {cellContent: '', width: '10%'},
-        ]}
-        headerSize="sm"
-        verticalCellPadding="var(--cds-spacing-02)"
-        label="Variable List"
-        onVerticalScrollStartReach={async (scrollDown) => {
-          if (variablesStore.shouldFetchPreviousVariables() === false) {
-            return;
-          }
-          await variablesStore.fetchPreviousVariables(processInstanceId);
-
-          if (
-            variablesStore.state.items.length === MAX_VARIABLES_STORED &&
-            variablesStore.state.latestFetch.itemsCount !== 0
-          ) {
-            scrollDown(
-              variablesStore.state.latestFetch.itemsCount *
-                (variableNameRef.current?.closest<HTMLElement>('[role=row]')
-                  ?.offsetHeight ?? 0),
-            );
-          }
-        }}
-        onVerticalScrollEndReach={() => {
-          if (variablesStore.shouldFetchNextVariables() === false) {
-            return;
-          }
-          variablesStore.fetchNextVariables(processInstanceId);
-        }}
-        dynamicRows={
-          isModificationModeEnabled ? (
-            <>
-              <OnLastVariableModificationRemoved />
-              <FieldArray
-                name="newVariables"
-                initialValue={
-                  addVariableModifications.length > 0
-                    ? addVariableModifications
-                    : undefined
-                }
-              >
-                {({fields}) => (
-                  <StructuredRows
-                    verticalCellPadding="var(--cds-spacing-02)"
-                    rows={fields
-                      .map((variableName, index) => {
-                        return {
-                          key: fields.value[index]?.id ?? variableName,
-                          dataTestId: `variable-${variableName}`,
-                          columns: [
-                            {
-                              cellContent: (
-                                <Name
-                                  variableName={variableName}
-                                  scopeId={scopeId}
-                                />
-                              ),
-                              width: '35%',
-                            },
-                            {
-                              cellContent: (
-                                <Value
-                                  variableName={variableName}
-                                  scopeId={scopeId}
-                                />
-                              ),
-                              width: '55%',
-                            },
-                            {
-                              cellContent: (
-                                <OperationV2
-                                  variableName={variableName}
-                                  onRemove={() => {
-                                    fields.remove(index);
-                                  }}
-                                />
-                              ),
-                              width: '10%',
-                            },
-                          ],
-                        };
-                      })
-                      .reverse()}
-                  />
+  const rows =
+    variablesData?.pages?.flatMap((page) =>
+      page.items.map(({name, value, variableKey, isTruncated}) => ({
+        key: name,
+        dataTestId: `variable-${name}`,
+        columns: [
+          {
+            cellContent: (
+              <VariableName title={name} ref={variableNameRef}>
+                {name}
+              </VariableName>
+            ),
+            width: '35%',
+          },
+          {
+            cellContent: isEditMode(name) ? (
+              <ExistingVariableValue
+                id={variableKey}
+                variableName={name}
+                variableValue={value}
+                isPreview={isTruncated}
+              />
+            ) : (
+              <VariableValue $hasBackdrop={true}>
+                {isFetchingNextPage && (
+                  <Loading small data-testid="full-variable-loader" />
                 )}
-              </FieldArray>
-            </>
-          ) : undefined
-        }
-        rows={items.map(
-          ({
-            name: variableName,
-            value: variableValue,
-            hasActiveOperation,
-            isPreview,
-            id,
-          }) => ({
-            key: variableName,
-            dataTestId: `variable-${variableName}`,
-            columns: [
-              {
-                cellContent: (
-                  <VariableName title={variableName} ref={variableNameRef}>
-                    {variableName}
-                  </VariableName>
-                ),
-                width: '35%',
-              },
-              {
-                cellContent: isEditMode(variableName) ? (
-                  <ExistingVariableValue
-                    id={id}
-                    variableName={variableName}
-                    isPreview={isPreview}
-                  />
-                ) : (
-                  <VariableValue $hasBackdrop={true}>
-                    {loadingItemId === id && (
-                      <Loading small data-testid="full-variable-loader" />
-                    )}
-                    {variableValue}
-                  </VariableValue>
-                ),
-                width: '55%',
-              },
-              {
-                cellContent: (
-                  <Operations
-                    showLoadingIndicator={
-                      initialValues?.name !== variableName &&
-                      !isModificationModeEnabled &&
-                      hasActiveOperation
+                {value}
+              </VariableValue>
+            ),
+            width: '55%',
+          },
+          {
+            cellContent: (
+              <Operations>
+                {(() => {
+                  if (isVariableModificationAllowed) {
+                    return null;
+                  }
+
+                  if (!isProcessInstanceRunning) {
+                    if (isTruncated) {
+                      return <ViewFullVariableButton variableName={name} />;
                     }
-                  >
-                    {(() => {
-                      if (isModificationModeEnabled) {
-                        return null;
+                    return null;
+                  }
+
+                  if (initialValues?.name === name) {
+                    return <EditButtons />;
+                  }
+
+                  return (
+                    <Restricted
+                      resourceBasedRestrictions={{
+                        scopes: ['UPDATE_PROCESS_INSTANCE'],
+                        permissions,
+                      }}
+                      fallback={
+                        isTruncated ? (
+                          <ViewFullVariableButton variableName={name} />
+                        ) : null
                       }
+                    >
+                      <Button
+                        kind="ghost"
+                        size="sm"
+                        iconDescription={`Edit variable ${name}`}
+                        aria-label={`Edit variable ${name}`}
+                        disabled={isFetchingNextPage}
+                        onClick={async () => {
+                          form.reset({name, value});
+                          form.change('value', value);
+                        }}
+                        hasIconOnly
+                        renderIcon={Edit}
+                      />
+                    </Restricted>
+                  );
+                })()}
+              </Operations>
+            ),
+            width: '10%',
+          },
+        ],
+      })),
+    ) ?? [];
 
-                      if (!isProcessInstanceRunning) {
-                        if (isPreview) {
-                          return (
-                            <ViewFullVariableButton
-                              variableName={variableName}
-                            />
-                          );
-                        }
-
-                        return null;
-                      }
-
-                      if (initialValues?.name === variableName) {
-                        return <EditButtons />;
-                      }
-
-                      if (!hasActiveOperation) {
-                        return (
-                          <Restricted
-                            resourceBasedRestrictions={{
-                              scopes: ['UPDATE_PROCESS_INSTANCE'],
-                              permissions: permissions,
+  return (
+    <StructuredList
+      dataTestId="variables-list"
+      headerColumns={[
+        {cellContent: 'Name', width: '35%'},
+        {cellContent: 'Value', width: '55%'},
+        {cellContent: '', width: '10%'},
+      ]}
+      headerSize="sm"
+      verticalCellPadding="var(--cds-spacing-02)"
+      label="Variable List"
+      onVerticalScrollEndReach={() => {
+        if (hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      }}
+      dynamicRows={
+        isVariableModificationAllowed ? (
+          <>
+            <OnLastVariableModificationRemoved />
+            <FieldArray name="newVariables">
+              {({fields}) => (
+                <StructuredRows
+                  verticalCellPadding="var(--cds-spacing-02)"
+                  rows={fields.map((variableName, index) => ({
+                    key: fields.value[index]?.id ?? variableName,
+                    dataTestId: `variable-${variableName}`,
+                    columns: [
+                      {
+                        cellContent: (
+                          <Name variableName={variableName} scopeId={scopeId} />
+                        ),
+                        width: '35%',
+                      },
+                      {
+                        cellContent: (
+                          <Value
+                            variableName={variableName}
+                            scopeId={scopeId}
+                          />
+                        ),
+                        width: '55%',
+                      },
+                      {
+                        cellContent: (
+                          <Operation
+                            variableName={variableName}
+                            onRemove={() => {
+                              fields.remove(index);
                             }}
-                            fallback={
-                              isPreview ? (
-                                <ViewFullVariableButton
-                                  variableName={variableName}
-                                />
-                              ) : null
-                            }
-                          >
-                            <Button
-                              kind="ghost"
-                              size="sm"
-                              iconDescription={`Edit variable ${variableName}`}
-                              aria-label={`Edit variable ${variableName}`}
-                              disabled={
-                                variablesStore.state.loadingItemId !== null
-                              }
-                              onClick={async () => {
-                                let value = variableValue;
-
-                                form.reset({
-                                  name: variableName,
-                                  value,
-                                });
-                                form.change('value', value);
-                              }}
-                              hasIconOnly
-                              tooltipPosition="left"
-                              renderIcon={Edit}
-                            />
-                          </Restricted>
-                        );
-                      }
-                    })()}
-                  </Operations>
-                ),
-                width: '10%',
-              },
-            ],
-          }),
-        )}
-      />
-    );
-  },
-);
+                          />
+                        ),
+                        width: '10%',
+                      },
+                    ],
+                  }))}
+                />
+              )}
+            </FieldArray>
+          </>
+        ) : undefined
+      }
+      rows={rows}
+    />
+  );
+};
 
 export {VariablesTable};

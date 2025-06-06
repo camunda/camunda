@@ -14,7 +14,11 @@ import {
   waitFor,
 } from 'modules/testing-library';
 import {ProcessInstance} from './index';
-import {createBatchOperation, createVariable} from 'modules/testUtils';
+import {
+  createBatchOperation,
+  createVariable,
+  createVariableV2,
+} from 'modules/testUtils';
 import {storeStateLocally} from 'modules/utils/localStorage';
 import {variablesStore} from 'modules/stores/variables';
 import {incidentsStore} from 'modules/stores/incidents';
@@ -39,6 +43,7 @@ import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetc
 import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 
 const clearPollingStates = () => {
   variablesStore.isPollRequestRunning = false;
@@ -206,6 +211,14 @@ describe('ProcessInstance - modification mode', () => {
     await user.click(screen.getByRole('button', {name: 'Select flow node'}));
 
     mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+        firstSortValues: [0, 0],
+        lastSortValues: [0, 0],
+      },
+    });
 
     await user.click(
       await screen.findByRole('button', {
@@ -214,6 +227,14 @@ describe('ProcessInstance - modification mode', () => {
     );
 
     mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+        firstSortValues: [0, 0],
+        lastSortValues: [0, 0],
+      },
+    });
 
     await user.click(screen.getByTestId('apply-modifications-button'));
 
