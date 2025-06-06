@@ -485,6 +485,7 @@ public final class FileBasedSnapshotStoreImpl {
   }
 
   FileBasedSnapshot persistNewSnapshot(
+      final Path destination,
       final FileBasedSnapshotId snapshotId,
       final ImmutableChecksumsSFV immutableChecksumsSFV,
       final FileBasedSnapshotMetadata metadata) {
@@ -506,7 +507,6 @@ public final class FileBasedSnapshotStoreImpl {
     try (final var ignored = snapshotMetrics.startPersistTimer()) {
       // it's important to persist the checksum file only after the move is finished, since we use
       // it as a marker file to guarantee the move was complete and not partial
-      final var destination = buildSnapshotDirectory(snapshotId, isBootstrap);
       final var checksumPath =
           computeChecksum(snapshotId, immutableChecksumsSFV, destination, isBootstrap);
 
@@ -703,6 +703,14 @@ public final class FileBasedSnapshotStoreImpl {
     }
   }
 
+  public ActorFuture<Void> restore(final PersistedSnapshot snapshot) {
+    return actor.call(
+        () -> {
+          restore(snapshot.getId(), snapshot.files());
+          return null;
+        });
+  }
+
   private void moveNamedFileToDirectory(
       final String name, final Path source, final Path targetDirectory) {
     final var targetFilePath = targetDirectory.resolve(name);
@@ -743,7 +751,7 @@ public final class FileBasedSnapshotStoreImpl {
                 // created at a time
                 if (Files.exists(destinationFolder) || bootstrapSnapshot.isPresent()) {
                   return CompletableActorFuture.completedExceptionally(
-                      new SnapshotCopyForBootstrapException(
+                      new SnapshotAlreadyExistsException(
                           String.format(
                               """
                   Destination folder already exists: %s. Only one bootstrap snapshot can be taken at a time.\

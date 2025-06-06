@@ -14,7 +14,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferService;
 import io.camunda.zeebe.transport.RequestType;
-import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.transport.ServerTransport;
 import io.camunda.zeebe.util.Either;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,9 +25,9 @@ public class SnapshotApiRequestHandler
 
   private final ConcurrentMap<Integer, SnapshotTransferService> transferServices =
       new ConcurrentHashMap<>();
-  private final AtomixServerTransport serverTransport;
+  private final ServerTransport serverTransport;
 
-  protected SnapshotApiRequestHandler(final AtomixServerTransport serverTransport) {
+  public SnapshotApiRequestHandler(final ServerTransport serverTransport) {
     super(SnapshotApiRequestReader::new, SnapshotApiResponseWriter::new);
     this.serverTransport = serverTransport;
   }
