@@ -7,19 +7,13 @@
  */
 package io.camunda.zeebe.broker.partitioning.startup.steps;
 
-import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotTransferServiceClient;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
-import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
-import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
-import io.camunda.zeebe.snapshots.transfer.SnapshotTransfer;
-import io.camunda.zeebe.util.VisibleForTesting;
 
 public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
 
@@ -44,9 +38,7 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
             .submitActor(snapshotStore, SchedulingHints.ioBound())
             .thenApply(v -> context.snapshotStore(snapshotStore), context.concurrencyControl());
     if (context.isInitializeFromSnapshot()) {
-      result =
-          result.andThen(
-              ctx -> initializeFromSnapshot(ctx, snapshotStore), context.concurrencyControl());
+      result = result.andThen(this::initializeFromSnapshot, context.concurrencyControl());
     }
     return result;
   }
@@ -64,26 +56,14 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
   }
 
   ActorFuture<PartitionStartupContext> initializeFromSnapshot(
-      final PartitionStartupContext context, final FileBasedSnapshotStore snapshotStore) {
-    return receiveSnapshot(
-            context.partitionId(),
-            snapshotStore,
-            context.brokerClient(),
-            context.concurrencyControl())
-        .andThen(
-            snapshot -> snapshotStore.restore(snapshot).thenApply(ignored -> context),
-            context.concurrencyControl());
-  }
-
-  @VisibleForTesting
-  ActorFuture<PersistedSnapshot> receiveSnapshot(
-      final int partitionId,
-      final FileBasedSnapshotStore snapshotStore,
-      final BrokerClient brokerClient,
-      final ConcurrencyControl concurrency) {
-    final var transfer =
-        new SnapshotTransfer(
-            new SnapshotTransferServiceClient(brokerClient), snapshotStore, concurrency);
-    return transfer.getLatestSnapshot(partitionId);
+      final PartitionStartupContext context) {
+    final var fut = context.snapshotTransfer().getLatestSnapshot(context.partitionId());
+    return fut.andThen(
+        snapshot ->
+            context
+                .snapshotStore()
+                .restore(snapshot)
+                .thenApply(ignored -> context, context.concurrencyControl()),
+        context.concurrencyControl());
   }
 }

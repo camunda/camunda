@@ -26,7 +26,7 @@ import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotCopyUtil;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
-import io.camunda.zeebe.snapshots.transfer.SnapshotTransfer;
+import io.camunda.zeebe.snapshots.transfer.SnapshotTransferImpl;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferServiceImpl;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
@@ -136,7 +136,7 @@ public class SnapshotApiRequestHandlerTest {
     assertThat(takeFuture).succeedsWithin(Duration.ofSeconds(30));
 
     final var transfer =
-        new SnapshotTransfer(client, receiverSnapshotStore, (Actor) senderSnapshotStore);
+        new SnapshotTransferImpl(client, receiverSnapshotStore, (Actor) senderSnapshotStore);
     // when
     final var persistedSnapshot = transfer.getLatestSnapshot(partitionId);
     scheduler.workUntilDone();
