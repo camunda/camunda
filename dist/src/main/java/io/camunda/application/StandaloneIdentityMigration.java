@@ -28,7 +28,7 @@ public class StandaloneIdentityMigration {
     final SpringApplication application =
         new SpringApplicationBuilder()
             .logStartupInfo(true)
-            .web(WebApplicationType.SERVLET)
+            .web(WebApplicationType.NONE)
             .sources(MigrationsRunner.class)
             .profiles(Profile.IDENTITY_MIGRATION.getId())
             .addCommandLineProperties(true)
