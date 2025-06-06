@@ -92,7 +92,7 @@ public final class BatchOperationCreateProcessor
         key,
         BatchOperationIntent.CREATED,
         recordWithKey,
-        EventMetadata.of(b -> b.batchOperationKey(key)));
+        EventMetadata.of(b -> b.batchOperationReference(key)));
     responseWriter.writeEventOnCommand(key, BatchOperationIntent.CREATED, recordWithKey, command);
     commandDistributionBehavior
         .withKey(key)
@@ -109,7 +109,7 @@ public final class BatchOperationCreateProcessor
         command.getKey(),
         BatchOperationIntent.CREATED,
         command.getValue(),
-        EventMetadata.of(b -> b.batchOperationKey(command.getKey())));
+        EventMetadata.of(b -> b.batchOperationReference(command.getKey())));
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 

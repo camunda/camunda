@@ -15,7 +15,7 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.Au
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter.Metadata;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter.CommandMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter.EventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -151,7 +151,7 @@ public final class BatchOperationResumeProcessor
         resumeKey,
         BatchOperationIntent.RESUMED,
         recordValue,
-        EventMetadata.of(b -> b.batchOperationKey(recordValue.getBatchOperationKey())));
+        EventMetadata.of(b -> b.batchOperationReference(recordValue.getBatchOperationKey())));
 
     final var batchExecute = new BatchOperationExecutionRecord();
     batchExecute.setBatchOperationKey(batchOperation.getKey());
@@ -160,7 +160,7 @@ public final class BatchOperationResumeProcessor
           batchOperation.getKey(),
           BatchOperationExecutionIntent.EXECUTE,
           batchExecute,
-          Metadata.of(b -> b.batchOperationKey(batchOperation.getKey())));
+          CommandMetadata.of(b -> b.batchOperationReference(batchOperation.getKey())));
     }
   }
 

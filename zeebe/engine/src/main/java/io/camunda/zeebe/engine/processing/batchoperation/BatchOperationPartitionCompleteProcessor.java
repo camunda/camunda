@@ -104,7 +104,8 @@ public final class BatchOperationPartitionCompleteProcessor
             batchOperationKey,
             BatchOperationIntent.PARTITION_COMPLETED,
             command.getValue(),
-            EventMetadata.of(b -> b.batchOperationKey(command.getValue().getBatchOperationKey())));
+            EventMetadata.of(
+                b -> b.batchOperationReference(command.getValue().getBatchOperationKey())));
 
         if (bo.getFinishedPartitions().size() == bo.getPartitions().size()) {
           LOGGER.debug(
@@ -117,7 +118,7 @@ public final class BatchOperationPartitionCompleteProcessor
               BatchOperationIntent.COMPLETED,
               batchComplete,
               EventMetadata.of(
-                  b -> b.batchOperationKey(command.getValue().getBatchOperationKey())));
+                  b -> b.batchOperationReference(command.getValue().getBatchOperationKey())));
         }
       }
     }

@@ -143,7 +143,7 @@ public final class BatchOperationSuspendProcessor
         suspendKey,
         BatchOperationIntent.SUSPENDED,
         recordValue,
-        EventMetadata.of(b -> b.batchOperationKey(recordValue.getBatchOperationKey())));
+        EventMetadata.of(b -> b.batchOperationReference(recordValue.getBatchOperationKey())));
   }
 
   private void rejectInvalidState(
