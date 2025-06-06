@@ -78,16 +78,16 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
           "Access token expired, refresh token does not exist");
     }
 
+    final OAuth2AuthorizedClient refreshedAuthorizedClient;
     try {
-      refreshAccessToken(authenticationToken, authorizedClient);
+      refreshedAuthorizedClient = refreshAccessToken(authenticationToken, authorizedClient);
     } catch (final OAuth2AuthorizationException e) {
       authenticationToken.setAuthenticated(false);
       logoutHandler.logout(request, response, authenticationToken);
       throw new OAuth2AuthenticationException(new OAuth2Error("refresh_token_failed"), e);
     }
 
-    // TODO: Do we need this?
-    if (hasTokenExpired(authorizedClient)) {
+    if (refreshedAuthorizedClient == null || hasTokenExpired(refreshedAuthorizedClient)) {
       authenticationToken.setAuthenticated(false);
       logoutHandler.logout(request, response, authenticationToken);
       throw new OAuth2AuthenticationException(
@@ -127,7 +127,7 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
     return authorizedClient.getRefreshToken() != null;
   }
 
-  protected void refreshAccessToken(
+  protected OAuth2AuthorizedClient refreshAccessToken(
       final OAuth2AuthenticationToken authenticationToken,
       final OAuth2AuthorizedClient authorizedClient) {
     // TODO: do we need to pass any attributes?
@@ -135,6 +135,6 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
         OAuth2AuthorizeRequest.withAuthorizedClient(authorizedClient)
             .principal(authenticationToken)
             .build();
-    authorizedClientManager.authorize(authorizeRequest);
+    return authorizedClientManager.authorize(authorizeRequest);
   }
 }
