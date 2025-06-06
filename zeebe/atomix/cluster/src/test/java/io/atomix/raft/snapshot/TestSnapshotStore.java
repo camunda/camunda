@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 
 public class TestSnapshotStore implements ReceivableSnapshotStore {
 
@@ -151,5 +152,21 @@ public class TestSnapshotStore implements ReceivableSnapshotStore {
   /** The given interceptor wil be executed before the snapshot is committed. */
   public void interceptOnNewSnapshot(final Runnable interceptor) {
     interceptorOnNewSnapshot = interceptor;
+  }
+
+  @Override
+  public Optional<PersistedSnapshot> getBootstrapSnapshot() {
+    return Optional.empty();
+  }
+
+  @Override
+  public ActorFuture<PersistedSnapshot> copyForBootstrap(
+      final PersistedSnapshot persistedSnapshot, final BiConsumer<Path, Path> copySnapshot) {
+    return CompletableActorFuture.completed(null);
+  }
+
+  @Override
+  public ActorFuture<Void> deleteBootstrapSnapshots() {
+    return CompletableActorFuture.completed();
   }
 }
