@@ -21,10 +21,6 @@ import {
   Stack,
 } from './styled';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
-import {
-  MAX_LISTENERS_STORED,
-  processInstanceListenersStore,
-} from 'modules/stores/processInstanceListeners';
 import {formatDate} from 'modules/utils/date';
 import {useState} from 'react';
 import {Layer} from '@carbon/react';
@@ -56,8 +52,6 @@ type Props = {
   hasPreviousPage: boolean;
 };
 
-const ROW_HEIGHT = 46;
-
 const Listeners: React.FC<Props> = observer(
   ({
     jobs,
@@ -67,8 +61,6 @@ const Listeners: React.FC<Props> = observer(
     hasNextPage,
     hasPreviousPage,
   }) => {
-    const {latestFetch} = processInstanceListenersStore.state;
-
     const {metaData} = flowNodeMetaDataStore.state;
     const isUserTask = metaData?.instanceMetadata?.flowNodeType === 'USER_TASK';
 
@@ -132,27 +124,15 @@ const Listeners: React.FC<Props> = observer(
               headerSize="sm"
               verticalCellPadding="var(--cds-spacing-02)"
               label="Listeners List"
-              onVerticalScrollStartReach={async (scrollDown) => {
-                if (!hasPreviousPage) {
-                  return;
-                }
-
-                await fetchPreviousPage();
-
-                if (
-                  listeners?.length === MAX_LISTENERS_STORED &&
-                  latestFetch?.itemsCount !== 0 &&
-                  latestFetch !== null
-                ) {
-                  scrollDown(latestFetch.itemsCount * ROW_HEIGHT);
+              onVerticalScrollStartReach={() => {
+                if (hasPreviousPage) {
+                  fetchPreviousPage();
                 }
               }}
               onVerticalScrollEndReach={() => {
-                if (!hasNextPage) {
-                  return;
+                if (hasNextPage) {
+                  fetchNextPage();
                 }
-
-                fetchNextPage();
               }}
               rows={listeners?.map(
                 ({kind, jobKey, state, type, listenerEventType, endTime}) => {
