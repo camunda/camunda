@@ -8,10 +8,8 @@
 package io.camunda.zeebe.db.impl.rocksdb;
 
 import io.camunda.zeebe.db.SnapshotCopy;
-import io.camunda.zeebe.db.ZeebeDbFactory;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.RawTransactionalColumnFamily;
 import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransaction;
-import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
 import io.camunda.zeebe.protocol.ColumnFamilyScope;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.nio.file.Path;
@@ -23,19 +21,17 @@ import org.slf4j.LoggerFactory;
 public class RocksDBSnapshotCopy implements SnapshotCopy {
 
   private static final Logger LOG = LoggerFactory.getLogger(RocksDBSnapshotCopy.class);
-  private final ZeebeDbFactory<ZbColumnFamilies> factory;
+  private final ZeebeRocksDbFactory<ZbColumnFamilies> factory;
 
-  public RocksDBSnapshotCopy(final ZeebeDbFactory<ZbColumnFamilies> factory) {
+  public RocksDBSnapshotCopy(final ZeebeRocksDbFactory<ZbColumnFamilies> factory) {
     this.factory = factory;
   }
 
   @Override
   public void withContexts(
       final Path fromPath, final Path toDBPath, final CopyContextConsumer consumer) {
-    try (final var toDB =
-        (ZeebeTransactionDb<ZbColumnFamilies>) factory.createDb(toDBPath.toFile())) {
-      try (final var fromDB =
-          (ZeebeTransactionDb<ZbColumnFamilies>) factory.createDb(fromPath.toFile())) {
+    try (final var toDB = factory.createDb(toDBPath.toFile())) {
+      try (final var fromDB = factory.createDb(fromPath.toFile())) {
         final var fromCtx = fromDB.createContext();
         final var toCtx = toDB.createContext();
         consumer.accept(fromDB, fromCtx, toDB, toCtx);
