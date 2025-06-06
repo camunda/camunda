@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useQuery, UseQueryResult} from '@tanstack/react-query';
+import {useInfiniteQuery, UseInfiniteQueryResult} from '@tanstack/react-query';
 import {
   GetJobsRequestBody,
   GetJobsResponseBody,
@@ -14,6 +14,7 @@ import {
 import {RequestError} from 'modules/request';
 import {searchJobs} from 'modules/api/v2/jobs/searchJobs';
 
+const MAX_JOBS_PER_REQUEST = 50;
 const JOBS_SEARCH_QUERY_KEY = 'jobsSearch';
 
 function getQueryKey(payload: GetJobsRequestBody) {
@@ -22,20 +23,54 @@ function getQueryKey(payload: GetJobsRequestBody) {
 
 function useJobs<T = GetJobsResponseBody>(options: {
   payload: GetJobsRequestBody;
-  select?: (data: GetJobsResponseBody) => T;
+  select?: (data: {pages: GetJobsResponseBody[]; pageParams: unknown[]}) => T;
   disabled?: boolean;
-}): UseQueryResult<T, RequestError> {
+}): UseInfiniteQueryResult<T, RequestError> {
   const {payload, select, disabled} = options;
-  return useQuery({
+  return useInfiniteQuery<
+    GetJobsResponseBody,
+    RequestError,
+    T,
+    (string | unknown)[],
+    number
+  >({
     queryKey: getQueryKey(payload),
-    queryFn: async () => {
-      const {response, error} = await searchJobs(payload);
+    queryFn: async ({pageParam}) => {
+      const {response, error} = await searchJobs({
+        ...payload,
+        page: {
+          ...payload.page,
+          limit: MAX_JOBS_PER_REQUEST,
+          from: pageParam,
+        },
+      });
 
       if (response !== null) {
         return response;
       }
 
       throw error;
+    },
+    initialPageParam: 0,
+    placeholderData: (previousData) => previousData,
+    getNextPageParam: (lastPage, _, lastPageParam) => {
+      const {page} = lastPage;
+      const nextPage = lastPageParam + MAX_JOBS_PER_REQUEST;
+
+      if (nextPage > page.totalItems) {
+        return null;
+      }
+
+      return nextPage;
+    },
+    getPreviousPageParam: (_, __, firstPageParam) => {
+      const previousPage = firstPageParam - MAX_JOBS_PER_REQUEST;
+
+      if (previousPage < 0) {
+        return null;
+      }
+
+      return previousPage;
     },
     select,
     enabled: !disabled,

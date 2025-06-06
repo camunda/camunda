@@ -56,12 +56,19 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
       ...(listenerTypeFilter && {kind: {$eq: listenerTypeFilter}}),
     };
   }
-  const {data: jobs} = useJobs({
+  const {
+    data: jobs,
+    fetchNextPage,
+    fetchPreviousPage,
+    hasNextPage,
+    hasPreviousPage,
+  } = useJobs({
     payload: {filter: jobsFilter},
     disabled: !shouldUseFlowNodeId && !flowNodeInstanceId,
+    select: (data) => data.pages?.flatMap((page) => page.items),
   });
 
-  const hasFailedListeners = jobs?.items.some(({state}) => state === 'FAILED');
+  const hasFailedListeners = jobs?.some(({state}) => state === 'FAILED');
 
   useEffect(() => {
     init(processInstance);
@@ -118,6 +125,10 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
             <Listeners
               jobs={jobs}
               setListenerTypeFilter={setListenerTypeFilter}
+              fetchNextPage={fetchNextPage}
+              fetchPreviousPage={fetchPreviousPage}
+              hasNextPage={hasNextPage}
+              hasPreviousPage={hasPreviousPage}
             />
           ),
           removePadding: true,
