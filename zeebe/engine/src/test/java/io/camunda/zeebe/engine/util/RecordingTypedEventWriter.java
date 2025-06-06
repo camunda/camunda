@@ -34,8 +34,19 @@ public final class RecordingTypedEventWriter implements TypedEventWriter {
 
   @Override
   public void appendFollowUpEvent(
+      final long key,
+      final Intent intent,
+      final RecordValue value,
+      final EventMetadata eventMetadata) {
+    events.add(
+        new RecordedEvent<>(
+            key, intent, value, RecordMetadata.DEFAULT_RECORD_VERSION, eventMetadata));
+  }
+
+  @Override
+  public void appendFollowUpEvent(
       final long key, final Intent intent, final RecordValue value, final int recordVersion) {
-    events.add(new RecordedEvent<>(key, intent, value, recordVersion));
+    events.add(new RecordedEvent<>(key, intent, value, recordVersion, EventMetadata.of(b -> {})));
   }
 
   @Override
@@ -49,13 +60,19 @@ public final class RecordingTypedEventWriter implements TypedEventWriter {
     public final Intent intent;
     public final T value;
     private final int recordVersion;
+    private final EventMetadata metadata;
 
     public RecordedEvent(
-        final long key, final Intent intent, final T value, final int recordVersion) {
+        final long key,
+        final Intent intent,
+        final T value,
+        final int recordVersion,
+        final EventMetadata metadata) {
       this.key = key;
       this.intent = intent;
       this.value = (T) Records.cloneValue(value);
       this.recordVersion = recordVersion;
+      this.metadata = metadata;
     }
 
     @Override

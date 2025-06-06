@@ -44,6 +44,13 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
 
   @Override
   public void appendFollowUpEvent(
+      final long key, final Intent intent, final RecordValue value, final EventMetadata metadata) {
+    final int latestVersion = eventApplier.getLatestVersion(intent);
+    appendFollowUpEvent(key, intent, value, latestVersion, metadata);
+  }
+
+  @Override
+  public void appendFollowUpEvent(
       final long key, final Intent intent, final RecordValue value, final int recordVersion) {
     final var metadata =
         new RecordMetadata()
@@ -59,5 +66,24 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
   @Override
   public boolean canWriteEventOfLength(final int eventLength) {
     return resultBuilder().canWriteEventOfLength(eventLength);
+  }
+
+  private void appendFollowUpEvent(
+      final long key,
+      final Intent intent,
+      final RecordValue value,
+      final int recordVersion,
+      final EventMetadata eventMetadata) {
+    final var metadata =
+        new RecordMetadata()
+            .recordType(RecordType.EVENT)
+            .intent(intent)
+            .recordVersion(recordVersion)
+            .rejectionType(RejectionType.NULL_VAL)
+            .rejectionReason("")
+            .operationReference(eventMetadata.operationReference())
+            .batchOperationReference(eventMetadata.batchOperationReference());
+    resultBuilder().appendRecord(key, value, metadata);
+    eventApplier.applyState(key, intent, value, recordVersion);
   }
 }
