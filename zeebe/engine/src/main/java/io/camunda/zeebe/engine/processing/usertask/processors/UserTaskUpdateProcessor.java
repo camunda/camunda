@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.usertask.processors;
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -145,7 +146,12 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
         stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
         final long variableDocumentKey = variableDocumentState.getKey();
         stateWriter.appendFollowUpEvent(
-            variableDocumentKey, VariableDocumentIntent.UPDATED, variableDocumentRecord);
+            variableDocumentKey,
+            VariableDocumentIntent.UPDATED,
+            variableDocumentRecord,
+            FollowUpEventMetadata.builder()
+                .operationReference(request.operationReference())
+                .build());
 
         responseWriter.writeResponse(
             variableDocumentKey,
