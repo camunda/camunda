@@ -31,7 +31,6 @@ import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.Time;
-import org.opensearch.client.opensearch._types.aggregations.CalendarInterval;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
@@ -255,14 +254,6 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .field(idFieldName)
         .terms(terms -> terms.value(idValues.stream().map(FieldValue::of).toList()))
         .build();
-  }
-
-  private CalendarInterval mapCalendarInterval(final String alias) {
-    return Arrays.stream(CalendarInterval.values())
-        .filter(c -> c.aliases() != null)
-        .filter(c -> Arrays.binarySearch(c.aliases(), alias) >= 0)
-        .findFirst()
-        .orElseThrow();
   }
 
   private <T> CompletableFuture<T> sendRequestAsync(final RequestSender<T> sender) {
