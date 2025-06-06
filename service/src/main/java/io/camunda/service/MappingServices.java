@@ -34,7 +34,6 @@ public class MappingServices
     extends SearchQueryService<MappingServices, MappingQuery, MappingEntity> {
 
   private final MappingSearchClient mappingSearchClient;
-  private final MappingRuleMatcher mappingRuleMatcher = new MappingRuleMatcher();
 
   public MappingServices(
       final BrokerClient brokerClient,
@@ -119,7 +118,7 @@ public class MappingServices
   }
 
   public Stream<MappingEntity> getMatchingMappings(final Map<String, Object> claims) {
-    return mappingRuleMatcher.matchingRules(findAll(MappingQuery.of(q -> q)).stream(), claims);
+    return MappingRuleMatcher.matchingRules(findAll(MappingQuery.of(q -> q)).stream(), claims);
   }
 
   public record MappingDTO(String claimName, String claimValue, String name, String mappingId) {}

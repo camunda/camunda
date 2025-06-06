@@ -50,7 +50,6 @@ public final class AuthorizationCheckBehavior {
   private final AuthorizationState authorizationState;
   private final MappingState mappingState;
   private final MembershipState membershipState;
-  private final MappingRuleMatcher mappingRuleMatcher = new MappingRuleMatcher();
 
   private final boolean authorizationsEnabled;
   private final boolean multiTenancyEnabled;
@@ -396,7 +395,7 @@ public final class AuthorizationCheckBehavior {
     final var claims =
         (Map<String, Object>)
             command.getAuthorizations().getOrDefault(Authorization.USER_TOKEN_CLAIMS, Map.of());
-    return mappingRuleMatcher.matchingRules(mappingState.getAll().stream(), claims);
+    return MappingRuleMatcher.matchingRules(mappingState.getAll().stream(), claims);
   }
 
   public static final class AuthorizationRequest {

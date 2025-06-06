@@ -7,8 +7,6 @@
  */
 package io.camunda.security.auth;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.JsonPathException;
@@ -17,7 +15,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
-import net.jcip.annotations.NotThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,10 +22,7 @@ import org.slf4j.LoggerFactory;
  * Matches mapping rules against claims by evaluating JSONPath expressions for each mapping rule.
  * Keeps a cache of compiled JSONPath expressions to avoid recompiling the same expressions multiple
  * times.
- *
- * <p>This class is not thread-safe because compiled JSONPath expressions are not thread-safe.
  */
-@NotThreadSafe
 public final class MappingRuleMatcher {
   private static final Configuration CONFIGURATION =
       Configuration.builder()
@@ -38,15 +32,12 @@ public final class MappingRuleMatcher {
           .mappingProvider(null)
           .build();
   private static final Logger LOG = LoggerFactory.getLogger(MappingRuleMatcher.class);
-  private final CompilationCache compilationCache;
 
-  public MappingRuleMatcher() {
-    compilationCache = new CompilationCache();
-  }
+  private MappingRuleMatcher() {}
 
-  public <T extends MappingRule> Stream<T> matchingRules(
+  public static <T extends MappingRule> Stream<T> matchingRules(
       final Stream<T> mappingRules, final Map<String, Object> claims) {
-    final EvaluationCache evaluationCache = new EvaluationCache(compilationCache, claims);
+    final EvaluationCache evaluationCache = new EvaluationCache(claims);
     return mappingRules.filter(mappingRule -> matchRule(evaluationCache, mappingRule));
   }
 
@@ -65,56 +56,20 @@ public final class MappingRuleMatcher {
   }
 
   /**
-   * A long-lived cache for compiling expressions. This is used to avoid recompiling the same
-   * expression multiple times.
-   *
-   * <p>This cache is not thread-safe, mostly because <a
-   * href="https://github.com/json-path/JsonPath/issues/975">JsonPath is not thread safe</a>.
-   */
-  @NotThreadSafe
-  public static final class CompilationCache {
-    private final Cache<String, JsonPath> cache = Caffeine.newBuilder().maximumSize(1024).build();
-
-    public JsonPath compile(final String expression) {
-      try {
-        return cache.get(expression, JsonPath::compile);
-      } catch (final RuntimeException e) {
-        LOG.warn("Failed to compile expression {}", expression, e);
-        return null;
-      }
-    }
-  }
-
-  /**
    * A short-lived cache for evaluating many expressions against the same claims. Results are cached
    * so each expression is only evaluated once.
-   *
-   * <p>This cache is not thread-safe because the underlying {@link CompilationCache} is not
-   * thread-safe either.
    */
-  @NotThreadSafe
   private static final class EvaluationCache {
-    private final CompilationCache compilationCache;
     private final Map<String, Object> claims;
     private final Map<String, Object> evaluations = new HashMap<>();
 
-    public EvaluationCache(
-        final CompilationCache compilationCache, final Map<String, Object> claims) {
-      this.compilationCache = compilationCache;
+    public EvaluationCache(final Map<String, Object> claims) {
       this.claims = claims;
     }
 
     public Object evaluate(final String expression) {
       return evaluations.computeIfAbsent(
-          expression,
-          exp -> {
-            final var compiledExpression = compilationCache.compile(exp);
-            if (compiledExpression == null) {
-              // If the expression could not be compiled, we can't evaluate it either.
-              return null;
-            }
-            return compiledExpression.read(claims, CONFIGURATION);
-          });
+          expression, exp -> JsonPath.compile(exp).read(claims, CONFIGURATION));
     }
   }
 
