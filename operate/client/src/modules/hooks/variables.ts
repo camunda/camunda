@@ -30,7 +30,10 @@ const useHasNoContent = () => {
   );
 };
 
-const useDisplayStatus = () => {
+/**
+ * DEPRECATED: This hook is being migrated as part of Operate UI Migration. Use `useDisplayStatus` instead.
+ **/
+const useDisplayStatusFromVariablesStore = () => {
   const hasNoContent = useHasNoContent();
   const hasMultipleInstances = useHasMultipleInstances();
   const newTokenCountForSelectedNode = useNewTokenCountForSelectedNode();
@@ -79,4 +82,65 @@ const useDisplayStatus = () => {
   return 'error';
 };
 
-export {useDisplayStatus};
+const useDisplayStatus = ({
+  isLoading,
+  isFetching,
+  isFetchingNextPage,
+  isFetchingPreviousPage,
+  isFetched,
+  isError,
+  hasItems,
+}: {
+  isLoading: boolean;
+  isFetching: boolean;
+  isFetchingNextPage: boolean;
+  isFetchingPreviousPage: boolean;
+  isFetched: boolean;
+  isError: boolean;
+  hasItems: boolean;
+}) => {
+  const hasNoContent = useHasNoContent();
+  const hasMultipleInstances = useHasMultipleInstances();
+  const newTokenCountForSelectedNode = useNewTokenCountForSelectedNode();
+
+  if (isError) {
+    return 'error';
+  }
+
+  if (hasNoContent) {
+    return 'no-content';
+  }
+
+  if (hasMultipleInstances) {
+    return 'multi-instances';
+  }
+
+  if (
+    flowNodeSelectionStore.state.selection?.isPlaceholder ||
+    newTokenCountForSelectedNode === 1
+  ) {
+    return 'no-variables';
+  }
+
+  if (isLoading) {
+    return 'skeleton';
+  }
+
+  if (modificationsStore.isModificationModeEnabled && getScopeId() === null) {
+    return 'no-variables';
+  }
+  if (isFetching || getScopeId() === null) {
+    return 'spinner';
+  }
+  if (!hasItems) {
+    return 'no-variables';
+  }
+  if ((isFetched || isFetchingNextPage || isFetchingPreviousPage) && hasItems) {
+    return 'variables';
+  }
+
+  logger.error('Failed to show Variables');
+  return 'error';
+};
+
+export {useDisplayStatusFromVariablesStore, useDisplayStatus};

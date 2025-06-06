@@ -17,16 +17,46 @@ import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {Loading} from '@carbon/react';
 import {VariablesForm} from './VariablesForm';
 import {notificationsStore} from 'modules/stores/notifications';
-import {useDisplayStatus} from 'modules/hooks/variables';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {addVariable, getScopeId, updateVariable} from 'modules/utils/variables';
 import {useQueryClient} from '@tanstack/react-query';
-import {VARIABLES_SEARCH_QUERY_KEY} from 'modules/queries/variables/useVariables';
+import {
+  VARIABLES_SEARCH_QUERY_KEY,
+  useVariables,
+} from 'modules/queries/variables/useVariables';
+import {useDisplayStatus} from 'modules/hooks/variables';
+import {VariablesContext} from './VariablesContext';
 
 const VariablesContent: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
-  const displayStatus = useDisplayStatus();
   const queryClient = useQueryClient();
+
+  const {
+    isLoading,
+    isFetching,
+    isFetchingPreviousPage,
+    isFetched,
+    isError,
+    data: variablesData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useVariables({
+    filter: {
+      processInstanceKey: {$eq: processInstanceId},
+    },
+    sort: [{field: 'name', order: 'asc'}],
+  });
+
+  const displayStatus = useDisplayStatus({
+    isLoading,
+    isFetching,
+    isFetchingNextPage,
+    isFetchingPreviousPage,
+    isFetched,
+    isError,
+    hasItems: (variablesData?.pages?.[0]?.items?.length ?? 0) > 0,
+  });
 
   if (displayStatus === 'error') {
     return (
@@ -48,73 +78,89 @@ const VariablesContent: React.FC = observer(() => {
   }
 
   return (
-    <Content>
-      {displayStatus === 'spinner' && (
-        <Loading data-testid="variables-spinner" />
-      )}
-      <ReactFinalForm<VariableFormValues>
-        mutators={{
-          ...arrayMutators,
-          triggerValidation(fieldsToValidate: string[], state, {changeValue}) {
-            fieldsToValidate.forEach((fieldName) => {
-              changeValue(state, fieldName, (n) => n);
-            });
-          },
-        }}
-        key={getScopeId()}
-        render={(props) => <VariablesForm {...props} />}
-        onSubmit={async (values, form) => {
-          const {initialValues} = form.getState();
-
-          const {name, value} = values;
-
-          if (name === undefined || value === undefined) {
-            return;
-          }
-
-          const params = {
-            id: processInstanceId,
-            name,
-            value,
-            invalidateQueries: () => {
-              queryClient.invalidateQueries({
-                queryKey: [VARIABLES_SEARCH_QUERY_KEY, processInstanceId],
+    <VariablesContext.Provider
+      value={{
+        variablesData,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+        status: displayStatus,
+      }}
+    >
+      <Content>
+        {displayStatus === 'spinner' && (
+          <Loading data-testid="variables-spinner" />
+        )}
+        <ReactFinalForm<VariableFormValues>
+          mutators={{
+            ...arrayMutators,
+            triggerValidation(
+              fieldsToValidate: string[],
+              state,
+              {changeValue},
+            ) {
+              fieldsToValidate.forEach((fieldName) => {
+                changeValue(state, fieldName, (n) => n);
               });
             },
-            onSuccess: () => {
-              notificationsStore.displayNotification({
-                kind: 'success',
-                title: 'Variable added',
-                isDismissable: true,
-              });
+          }}
+          key={getScopeId()}
+          render={(props) => <VariablesForm {...props} />}
+          onSubmit={async (values, form) => {
+            const {initialValues} = form.getState();
 
-              form.reset({});
-            },
-            onError: (statusCode: number) => {
-              notificationsStore.displayNotification({
-                kind: 'error',
-                title: 'Variable could not be saved',
-                subtitle:
-                  statusCode === 403 ? 'You do not have permission' : undefined,
-                isDismissable: true,
-              });
+            const {name, value} = values;
 
-              form.reset({});
-            },
-          };
-
-          if (initialValues.name === '') {
-            const result = await addVariable(params);
-            if (result === 'VALIDATION_ERROR') {
-              return {name: 'Name should be unique'};
+            if (name === undefined || value === undefined) {
+              return;
             }
-          } else if (initialValues.name === name) {
-            updateVariable(params);
-            form.reset({});
-          }
-        }}
-      />
-    </Content>
+
+            const params = {
+              id: processInstanceId,
+              name,
+              value,
+              invalidateQueries: () => {
+                queryClient.invalidateQueries({
+                  queryKey: [VARIABLES_SEARCH_QUERY_KEY, processInstanceId],
+                });
+              },
+              onSuccess: () => {
+                notificationsStore.displayNotification({
+                  kind: 'success',
+                  title: 'Variable added',
+                  isDismissable: true,
+                });
+
+                form.reset({});
+              },
+              onError: (statusCode: number) => {
+                notificationsStore.displayNotification({
+                  kind: 'error',
+                  title: 'Variable could not be saved',
+                  subtitle:
+                    statusCode === 403
+                      ? 'You do not have permission'
+                      : undefined,
+                  isDismissable: true,
+                });
+
+                form.reset({});
+              },
+            };
+
+            if (initialValues.name === '') {
+              const result = await addVariable(params);
+              if (result === 'VALIDATION_ERROR') {
+                return {name: 'Name should be unique'};
+              }
+            } else if (initialValues.name === name) {
+              updateVariable(params);
+              form.reset({});
+            }
+          }}
+        />
+      </Content>
+    </VariablesContext.Provider>
   );
 });
 

@@ -10,15 +10,12 @@ import React, {useEffect, useState} from 'react';
 import {observer} from 'mobx-react';
 
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {variablesStore} from 'modules/stores/variables';
 import {TabView} from 'modules/components/TabView';
 import {useProcessInstancePageParams} from '../../../useProcessInstancePageParams';
 import {InputOutputMappings} from '../InputOutputMappings';
 import {VariablesContent as VariablesContentV2} from './VariablesContent';
 import {Listeners} from './Listeners';
 import {WarningFilled} from '../styled';
-import {init, startPolling} from 'modules/utils/variables';
-import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 
@@ -35,7 +32,6 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
   setListenerTabVisibility,
 }) {
   const {processInstanceId = ''} = useProcessInstancePageParams();
-  const {data: processInstance} = useProcessInstance();
   const isRootNodeSelected = useIsRootNodeSelected();
 
   const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
@@ -80,14 +76,6 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
   });
 
   const hasFailedListeners = jobs?.some(({state}) => state === 'FAILED');
-
-  useEffect(() => {
-    init(processInstance);
-
-    return () => {
-      variablesStore.reset();
-    };
-  }, [processInstance]);
 
   // TODO: remove when listeners tab is fully migrated to v2
   useEffect(() => {
@@ -139,8 +127,6 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
           removePadding: true,
           onClick: () => {
             setListenerTabVisibility(false);
-            startPolling(processInstance);
-            variablesStore.refreshVariables(processInstanceId);
           },
         },
         ...(isRootNodeSelected
@@ -152,7 +138,6 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
                 content: <InputOutputMappings type="Input" />,
                 onClick: () => {
                   setListenerTabVisibility(false);
-                  return variablesStore.stopPolling;
                 },
               },
               {
@@ -161,7 +146,6 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
                 content: <InputOutputMappings type="Output" />,
                 onClick: () => {
                   setListenerTabVisibility(false);
-                  return variablesStore.stopPolling;
                 },
               },
             ]),
@@ -187,7 +171,6 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
                 removePadding: true,
                 onClick: () => {
                   setListenerTabVisibility(true);
-                  return variablesStore.stopPolling;
                 },
               },
             ]
@@ -203,7 +186,6 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
                 removePadding: true,
                 onClick: () => {
                   setListenerTabVisibility(true);
-                  return variablesStore.stopPolling;
                 },
               },
             ]),

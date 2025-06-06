@@ -18,25 +18,28 @@ function getQueryKey(variableKey?: string) {
 }
 
 function useVariable<T = Variable>({
+  isPreview = true,
   variableKey,
   select,
 }: {
+  isPreview?: boolean;
   variableKey?: string;
   select?: (data: Variable) => T;
 }): UseQueryResult<T, RequestError> {
   return useQuery({
     queryKey: getQueryKey(variableKey),
-    queryFn: !!variableKey
-      ? async () => {
-          const {response, error} = await getVariable(variableKey);
+    queryFn:
+      !!variableKey && isPreview
+        ? async () => {
+            const {response, error} = await getVariable(variableKey);
 
-          if (response !== null) {
-            return response;
+            if (response !== null) {
+              return response;
+            }
+
+            throw error;
           }
-
-          throw error;
-        }
-      : skipToken,
+        : skipToken,
     select,
   });
 }

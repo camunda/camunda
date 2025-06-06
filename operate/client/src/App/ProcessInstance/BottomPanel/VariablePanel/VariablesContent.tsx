@@ -18,13 +18,13 @@ import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {Loading} from '@carbon/react';
 import {VariablesForm} from './VariablesForm';
 import {notificationsStore} from 'modules/stores/notifications';
-import {useDisplayStatus} from 'modules/hooks/variables';
+import {useDisplayStatusFromVariablesStore} from 'modules/hooks/variables';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {getScopeId} from 'modules/utils/variables';
 
 const VariablesContent: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
-  const displayStatus = useDisplayStatus();
+  const displayStatus = useDisplayStatusFromVariablesStore();
 
   if (displayStatus === 'error') {
     return (

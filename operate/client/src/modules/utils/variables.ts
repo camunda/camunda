@@ -6,94 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
-import {autorun, reaction, when} from 'mobx';
-import {MAX_VARIABLES_PER_REQUEST} from 'modules/constants/variables';
-import {modificationsStore} from 'modules/stores/modifications';
 import {variablesStore} from 'modules/stores/variables';
-import {isInstanceRunning, isRunning} from './instance';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {applyOperation} from 'modules/api/processInstances/operations';
-
-const init = (processInstance?: ProcessInstance) => {
-  variablesStore.instanceId = processInstance?.processInstanceKey || null;
-
-  variablesStore.variablesWithActiveOperationsDisposer = when(
-    () => processInstance?.state === 'TERMINATED',
-    variablesStore.removeVariablesWithActiveOperations,
-  );
-
-  variablesStore.disposer = autorun(() => {
-    if (
-      processInstance &&
-      isRunning(processInstance) &&
-      getScopeId() !== null
-    ) {
-      if (
-        variablesStore.intervalId === null &&
-        !modificationsStore.isModificationModeEnabled
-      ) {
-        startPolling(processInstance);
-      }
-    } else {
-      variablesStore.stopPolling();
-    }
-  });
-
-  variablesStore.fetchVariablesDisposer = reaction(
-    () => getScopeId(),
-    (scopeId) => {
-      variablesStore.clearItems();
-
-      if (scopeId !== null) {
-        variablesStore.setPendingItem(null);
-        variablesStore.fetchAbortController?.abort();
-
-        variablesStore.fetchVariables({
-          fetchType: 'initial',
-          instanceId: processInstance?.processInstanceKey,
-          payload: {
-            pageSize: MAX_VARIABLES_PER_REQUEST,
-            scopeId: scopeId ?? processInstance?.processInstanceKey,
-          },
-        });
-      }
-    },
-    {fireImmediately: true},
-  );
-
-  variablesStore.deleteFullVariablesDisposer = reaction(
-    () => modificationsStore.isModificationModeEnabled,
-    (isModification, prevIsModification) => {
-      if (!isModification && prevIsModification) {
-        variablesStore.clearFullVariableValues();
-      }
-    },
-  );
-};
-
-const startPolling = async (
-  processInstance?: ProcessInstance,
-  options: {runImmediately?: boolean} = {runImmediately: false},
-) => {
-  if (
-    document.visibilityState === 'hidden' ||
-    (processInstance && !isInstanceRunning(processInstance))
-  ) {
-    return;
-  }
-
-  if (options.runImmediately && processInstance) {
-    variablesStore.handlePolling(processInstance.processInstanceKey);
-  }
-
-  variablesStore.intervalId = setInterval(() => {
-    if (!variablesStore.isPollRequestRunning && processInstance) {
-      variablesStore.handlePolling(processInstance.processInstanceKey);
-    }
-  }, 5000);
-};
+import {InfiniteData} from '@tanstack/react-query';
+import {QueryVariablesResponseBody} from '@vzeta/camunda-api-zod-schemas';
 
 const getScopeId = () => {
   const {selection} = flowNodeSelectionStore.state;
@@ -136,8 +54,6 @@ const addVariable = async ({
   invalidateQueries();
 
   if (response.isSuccess) {
-    const {id} = response.data;
-    variablesStore.startPollingOperation({operationId: id, onSuccess, onError});
     return 'SUCCESSFUL';
   } else {
     variablesStore.setPendingItem(null);
@@ -177,4 +93,55 @@ const updateVariable = async ({
   }
 };
 
-export {init, startPolling, getScopeId, addVariable, updateVariable};
+/**
+ * Returns true if any of the variable values is truncated
+ */
+const isTruncated = (variables?: InfiniteData<QueryVariablesResponseBody>) => {
+  return variables?.pages[0]?.items.some((item) => {
+    return item.isTruncated;
+  });
+};
+
+/**
+ * Returns true if the list of variables is paginated (50 variables or more)
+ */
+const isPaginated = (variables?: InfiniteData<QueryVariablesResponseBody>) => {
+  return (variables?.pages && variables.pages.length >= 2) || false;
+};
+
+const hasItems = (variables?: InfiniteData<QueryVariablesResponseBody>) => {
+  return variables?.pages[0]?.items && variables.pages[0]?.items.length > 0;
+};
+
+const variablesAsJSON = (
+  variables?: InfiniteData<QueryVariablesResponseBody>,
+) => {
+  if (isPaginated(variables) || isTruncated(variables)) {
+    return '{}';
+  }
+
+  try {
+    const variableMap =
+      variables?.pages?.flatMap((page) =>
+        page.items.map((variable) => [
+          variable.name,
+          JSON.parse(variable.value),
+        ]),
+      ) ?? [];
+
+    return JSON.stringify(Object.fromEntries(variableMap));
+  } catch {
+    console.error('Error: Variable can not be stringified');
+    return '{}';
+  }
+};
+
+export {
+  getScopeId,
+  addVariable,
+  updateVariable,
+  isTruncated,
+  isPaginated,
+  hasItems,
+  variablesAsJSON,
+};
