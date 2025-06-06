@@ -13,6 +13,7 @@ import io.camunda.db.rdbms.sql.columns.ProcessInstanceSearchColumn;
 import io.camunda.db.rdbms.sql.columns.SearchColumn;
 import io.camunda.db.rdbms.sql.columns.SearchColumnUtils;
 import io.camunda.search.entities.ProcessInstanceEntity;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 import org.instancio.Instancio;
@@ -48,6 +49,18 @@ class CursorTest {
         List.of(
             ProcessInstanceSearchColumn.PROCESS_DEFINITION_NAME,
             ProcessInstanceSearchColumn.START_DATE);
+    final var entity = Instancio.create(ProcessInstanceEntity.class);
+
+    final var encodedCursor = cursor.encode(entity, columns);
+    final var decodedValues = cursor.decode(encodedCursor, columns);
+
+    final var encodedValue = columns.stream().map(c -> c.getPropertyValue(entity)).toArray();
+    assertThat(encodedValue).isEqualTo(decodedValues);
+  }
+
+  @Test
+  void encodeDecodeEmptySearchColumns() {
+    final List<SearchColumn> columns = Collections.emptyList();
     final var entity = Instancio.create(ProcessInstanceEntity.class);
 
     final var encodedCursor = cursor.encode(entity, columns);
