@@ -168,7 +168,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
                   snapshotId.getExportedPosition(),
                   lastFollowupEventPosition);
       writeMetadataAndUpdateChecksum(metadata);
-      snapshot = snapshotStore.persistNewSnapshot(snapshotId, checksum, metadata);
+      snapshot = snapshotStore.persistNewSnapshot(directory, snapshotId, checksum, metadata);
       future.complete(snapshot);
     } catch (final Exception e) {
       future.completeExceptionally(e);
