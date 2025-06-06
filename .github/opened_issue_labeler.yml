@@ -2,6 +2,8 @@ component/c8-api:
   '(C8-API-)'
 component/C8Run:
   '(C8Run-)'
+component/data-layer:
+  '(Data Layer-)'
 component/feel-js:
   '(Feel-)'
 component/feel-scala:
