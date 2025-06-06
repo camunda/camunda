@@ -9,10 +9,16 @@ package io.camunda.migration.identity.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = "camunda.migration.identity")
-public class IdentityMigrationProperties {
+@ConfigurationProperties(
+    prefix = IdentityMigrationProperties.CONFIG_PREFIX_CAMUNDA_MIGRATION_IDENTITY)
+public final class IdentityMigrationProperties {
+  public static final String CONFIG_PREFIX_CAMUNDA_MIGRATION_IDENTITY =
+      "camunda.migration.identity";
+  public static final String PROP_CAMUNDA_MIGRATION_IDENTITY_MODE =
+      CONFIG_PREFIX_CAMUNDA_MIGRATION_IDENTITY + ".mode";
   private ManagementIdentityProperties managementIdentity;
   private String organizationId;
+  private Mode mode = Mode.CLOUD;
 
   public ManagementIdentityProperties getManagementIdentity() {
     return managementIdentity;
@@ -28,5 +34,19 @@ public class IdentityMigrationProperties {
 
   public void setOrganizationId(final String organizationId) {
     this.organizationId = organizationId;
+  }
+
+  public Mode getMode() {
+    return mode;
+  }
+
+  public void setMode(final Mode mode) {
+    this.mode = mode;
+  }
+
+  public enum Mode {
+    CLOUD,
+    KEYCLOAK,
+    OIDC
   }
 }

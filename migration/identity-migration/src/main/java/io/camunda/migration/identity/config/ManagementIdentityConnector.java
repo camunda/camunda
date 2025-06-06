@@ -12,6 +12,7 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import java.io.IOException;
 import org.apache.commons.lang3.NotImplementedException;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,6 +24,7 @@ import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 
 @Configuration
+@EnableConfigurationProperties(IdentityMigrationProperties.class)
 public class ManagementIdentityConnector {
 
   @Bean

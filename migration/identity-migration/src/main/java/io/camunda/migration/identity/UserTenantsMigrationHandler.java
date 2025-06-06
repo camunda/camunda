@@ -19,9 +19,7 @@ import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
-import org.springframework.stereotype.Component;
 
-@Component
 public class UserTenantsMigrationHandler extends MigrationHandler<UserTenants> {
   private static final String USERNAME_CLAIM = "sub";
   private final ManagementIdentityClient managementIdentityClient;
