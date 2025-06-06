@@ -37,12 +37,20 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
   private static final Logger LOGGER = LoggerFactory.getLogger(UserTaskHandler.class);
   private static final Set<UserTaskIntent> SUPPORTED_INTENTS =
       EnumSet.of(
+          UserTaskIntent.CREATING,
           UserTaskIntent.CREATED,
+          UserTaskIntent.COMPLETING,
           UserTaskIntent.COMPLETED,
+          UserTaskIntent.CANCELING,
           UserTaskIntent.CANCELED,
           UserTaskIntent.MIGRATED,
+          UserTaskIntent.ASSIGNING,
           UserTaskIntent.ASSIGNED,
-          UserTaskIntent.UPDATED);
+          UserTaskIntent.UPDATING,
+          UserTaskIntent.UPDATED,
+          UserTaskIntent.ASSIGNMENT_DENIED,
+          UserTaskIntent.UPDATE_DENIED,
+          UserTaskIntent.COMPLETION_DENIED);
   private static final String UNMAPPED_USER_TASK_ATTRIBUTE_WARNING =
       "Attribute update not mapped while importing ZEEBE_USER_TASKS: {}";
 
@@ -97,13 +105,21 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     entity.setAction(record.getValue().getAction());
     entity.setKey(record.getKey());
 
-    switch (record.getIntent()) {
-      case UserTaskIntent.CREATED -> createTaskEntity(entity, record);
+    switch ((UserTaskIntent) record.getIntent()) {
+      case UserTaskIntent.CREATING -> createTaskEntity(entity, record);
+      case UserTaskIntent.CREATED -> handleCreated(record, entity);
       case UserTaskIntent.ASSIGNED, UserTaskIntent.UPDATED ->
           updateChangedAttributes(record, entity);
       case UserTaskIntent.COMPLETED -> handleCompletion(record, entity);
       case UserTaskIntent.CANCELED -> handleCancellation(record, entity);
       case UserTaskIntent.MIGRATED -> handleMigration(record, entity);
+      case UserTaskIntent.ASSIGNING, UserTaskIntent.CLAIMING ->
+          entity.setState(TaskState.ASSIGNING);
+      case UserTaskIntent.UPDATING -> entity.setState(TaskState.UPDATING);
+      case UserTaskIntent.COMPLETING -> entity.setState(TaskState.COMPLETING);
+      case UserTaskIntent.CANCELING -> entity.setState(TaskState.CANCELING);
+      case UserTaskIntent.ASSIGNMENT_DENIED, UPDATE_DENIED, COMPLETION_DENIED ->
+          entity.setState(TaskState.CREATED);
       default -> {}
     }
 
@@ -174,6 +190,10 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     if (entity.getBpmnProcessId() != null) {
       updateFields.put(TaskTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
     }
+    if (entity.getProcessDefinitionVersion() != null) {
+      updateFields.put(
+          TaskTemplate.PROCESS_DEFINITION_VERSION, entity.getProcessDefinitionVersion());
+    }
 
     return updateFields;
   }
@@ -184,10 +204,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
 
     entity
         .setImplementation(TaskImplementation.ZEEBE_USER_TASK)
-        .setState(TaskState.CREATED)
-        .setAssignee(getAssigneeOrNull(record))
-        .setDueDate(ExporterUtil.toOffsetDateTime(record.getValue().getDueDate()))
-        .setFollowUpDate(ExporterUtil.toOffsetDateTime(record.getValue().getFollowUpDate()))
+        .setState(TaskState.CREATING)
         .setFlowNodeInstanceId(String.valueOf(record.getValue().getElementInstanceKey()))
         .setProcessInstanceId(String.valueOf(record.getValue().getProcessInstanceKey()))
         .setFlowNodeBpmnId(record.getValue().getElementId())
@@ -200,7 +217,6 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
                 ? null
                 : record.getValue().getExternalFormReference())
         .setCustomHeaders(record.getValue().getCustomHeaders())
-        .setPriority(record.getValue().getPriority())
         .setPartitionId(record.getPartitionId())
         .setTenantId(record.getValue().getTenantId())
         .setPosition(record.getPosition())
@@ -210,14 +226,6 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
                 : record.getValue().getAction())
         .setCreationTime(
             ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-
-    if (!record.getValue().getCandidateGroupsList().isEmpty()) {
-      entity.setCandidateGroups(record.getValue().getCandidateGroupsList().toArray(new String[0]));
-    }
-
-    if (!record.getValue().getCandidateUsersList().isEmpty()) {
-      entity.setCandidateUsers(record.getValue().getCandidateUsersList().toArray(new String[0]));
-    }
 
     if (!ExporterUtil.isEmpty(formKey)) {
       formCache
@@ -274,6 +282,23 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     }
   }
 
+  private void handleCreated(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
+    entity
+        .setState(TaskState.CREATED)
+        .setAssignee(getAssigneeOrNull(record))
+        .setDueDate(ExporterUtil.toOffsetDateTime(record.getValue().getDueDate()))
+        .setFollowUpDate(ExporterUtil.toOffsetDateTime(record.getValue().getFollowUpDate()))
+        .setPriority(record.getValue().getPriority());
+
+    if (!record.getValue().getCandidateGroupsList().isEmpty()) {
+      entity.setCandidateGroups(record.getValue().getCandidateGroupsList().toArray(new String[0]));
+    }
+
+    if (!record.getValue().getCandidateUsersList().isEmpty()) {
+      entity.setCandidateUsers(record.getValue().getCandidateUsersList().toArray(new String[0]));
+    }
+  }
+
   private void handleCompletion(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
     entity
         .setState(TaskState.COMPLETED)
@@ -295,6 +320,6 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
         .setFlowNodeBpmnId(record.getValue().getElementId())
         .setBpmnProcessId(record.getValue().getBpmnProcessId())
         .setProcessDefinitionId(String.valueOf(record.getValue().getProcessDefinitionKey()))
-        .setState(TaskState.CREATED);
+        .setProcessDefinitionVersion(record.getValue().getProcessDefinitionVersion());
   }
 }
