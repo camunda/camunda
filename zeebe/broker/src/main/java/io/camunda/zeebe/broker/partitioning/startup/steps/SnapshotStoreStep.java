@@ -15,11 +15,16 @@ import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(SnapshotStoreStep.class);
 
   @Override
   public String getName() {
@@ -48,7 +53,7 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
                   ignored -> {
                     final var snapshotTransfer =
                         new SnapshotTransferImpl(
-                            new SnapshotTransferServiceClient(context.brokerClient()),
+                            actor -> new SnapshotTransferServiceClient(context.brokerClient()),
                             snapshotStore);
                     return context
                         .schedulingService()
@@ -77,11 +82,17 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
       final PartitionStartupContext context) {
     final var fut = context.snapshotTransfer().getLatestSnapshot(Protocol.DEPLOYMENT_PARTITION);
     return fut.andThen(
-        snapshot ->
-            context
-                .snapshotStore()
-                .restore(snapshot)
-                .thenApply(ignored -> context, context.concurrencyControl()),
-        context.concurrencyControl());
+            snapshot -> {
+              if (snapshot == null) {
+                LOG.info("Received no snapshot from leader, skipping restore from snapshot");
+                return CompletableActorFuture.completed();
+              } else {
+                LOG.info(
+                    "Received snapshot {} from leader, restoring from snapshot", snapshot.getId());
+                return context.snapshotStore().restore(snapshot);
+              }
+            },
+            context.concurrencyControl())
+        .thenApply(ignored -> context, context.concurrencyControl());
   }
 }

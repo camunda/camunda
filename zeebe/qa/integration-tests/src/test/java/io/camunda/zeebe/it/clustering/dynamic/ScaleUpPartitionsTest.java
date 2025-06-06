@@ -56,6 +56,7 @@ public class ScaleUpPartitionsTest {
 
   @Test
   void shouldDeployProcessesToNewPartitionsAndStartNewInstances() {
+    cluster.awaitHealthyTopology();
     // when
     final var response =
         clusterActuator.patchCluster(
