@@ -252,6 +252,15 @@ public interface TestApplication<T extends TestApplication<T>> extends AutoClose
   }
 
   /**
+   * Configures additional active Spring profiles.
+   *
+   * @return itself for chaining
+   */
+  default T withAdditionalProfiles(final Profile... profiles) {
+    return withAdditionalProfiles(List.of(profiles));
+  }
+
+  /**
    * @see #withAdditionalProfile(String)
    */
   default T withAdditionalProfile(final Profile profile) {
