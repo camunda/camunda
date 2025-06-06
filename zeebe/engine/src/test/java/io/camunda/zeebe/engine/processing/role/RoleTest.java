@@ -289,6 +289,7 @@ public class RoleTest {
         .newMapping(mappingId)
         .withClaimName("claimName")
         .withClaimValue("claimValue")
+        .withName("name")
         .create();
     final var roleId = UUID.randomUUID().toString();
     engine.role().newRole(roleId).create();
