@@ -36,7 +36,7 @@ public class ManagementIdentityConnector {
             properties.getClientId(),
             properties.getClientSecret(),
             properties.getAudience(),
-            properties.getIssuerType());
+            properties.getIssuerType().toUpperCase());
     return new Identity(configuration);
   }
 
