@@ -10,6 +10,7 @@ package io.camunda.zeebe.snapshots.transfer;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
@@ -39,7 +40,7 @@ public class SnapshotTransferImpl extends Actor implements SnapshotTransfer {
         .andThen(
             snapshot -> {
               if (snapshot == null) {
-                return null;
+                return CompletableActorFuture.completed(null);
               }
               return snapshotStore
                   .newReceivedSnapshot(snapshot.getSnapshotId())
@@ -52,6 +53,9 @@ public class SnapshotTransferImpl extends Actor implements SnapshotTransfer {
             actor)
         .andThen(
             tuple -> {
+              if (tuple == null) {
+                return CompletableActorFuture.completed(null);
+              }
               final var future =
                   receiveAllChunks(partitionId, tuple.getLeft(), tuple.getRight(), transferId);
               future.onError(error -> tuple.getRight().abort());

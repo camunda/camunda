@@ -59,6 +59,9 @@ public class SnapshotTransferServiceImpl implements SnapshotTransferService {
     return getLatestSnapshotForBootstrap(transferId)
         .andThen(
             snapshot -> {
+              if (snapshot == null) {
+                return CompletableActorFuture.completed(null);
+              }
               final var snapshotId = snapshot.getId();
               try {
                 final var reader = new FileBasedSnapshotChunkReader(snapshot.getPath());
@@ -123,8 +126,7 @@ public class SnapshotTransferServiceImpl implements SnapshotTransferService {
   private ActorFuture<PersistedSnapshot> createSnapshotForBootstrap(final UUID transferId) {
     final var lastPersistedSnapshot = snapshotStore.getLatestSnapshot();
     if (lastPersistedSnapshot.isEmpty()) {
-      return CompletableActorFuture.completedExceptionally(
-          new IllegalArgumentException(String.format("[%s] No snapshot found", transferId)));
+      return CompletableActorFuture.completed(null);
     } else {
       final var persistedSnapshot = lastPersistedSnapshot.get();
 
