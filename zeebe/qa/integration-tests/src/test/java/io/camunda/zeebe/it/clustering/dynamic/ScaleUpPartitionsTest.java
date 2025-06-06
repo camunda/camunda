@@ -8,11 +8,13 @@
 package io.camunda.zeebe.it.clustering.dynamic;
 
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.createInstanceWithAJobOnAllPartitions;
+import static io.camunda.zeebe.it.clustering.dynamic.Utils.deployProcessModel;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
+import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -23,6 +25,7 @@ import java.util.Objects;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
@@ -56,16 +59,33 @@ public class ScaleUpPartitionsTest {
 
   @Test
   void shouldDeployProcessesToNewPartitionsAndStartNewInstances() {
+    final var desiredPartitionCount = PARTITIONS_COUNT + 1;
     cluster.awaitHealthyTopology();
     // when
-    final var response =
-        clusterActuator.patchCluster(
-            new ClusterConfigPatchRequest()
-                .partitions(
-                    new ClusterConfigPatchRequestPartitions().count(5).replicationFactor(3)),
-            false,
-            false);
+    scaleToPartitions(desiredPartitionCount);
 
+    awaitScaleUpCompletion(desiredPartitionCount);
+    createInstanceWithAJobOnAllPartitions(camundaClient, JOB_TYPE, desiredPartitionCount);
+  }
+
+  @Test
+  @Disabled
+  // TODO Enable when the other PRs are merged
+  public void shouldStartProcessInstancesDeploymentBeforeScaleUp() {
+    // given
+    final var desiredPartitionCount = PARTITIONS_COUNT + 1;
+    cluster.awaitHealthyTopology();
+
+    // when
+    final var deploymentKey = deployProcessModel(camundaClient, JOB_TYPE, "processId");
+
+    scaleToPartitions(desiredPartitionCount);
+    awaitScaleUpCompletion(desiredPartitionCount);
+
+    createInstanceWithAJobOnAllPartitions(camundaClient, JOB_TYPE, desiredPartitionCount, false);
+  }
+
+  private void awaitScaleUpCompletion(final int desiredPartitionCount) {
     Awaitility.await("until scaling is done")
         .timeout(Duration.ofMinutes(5))
         .untilAsserted(
@@ -73,14 +93,23 @@ public class ScaleUpPartitionsTest {
               final var topology = clusterActuator.getTopology();
               if (Objects.requireNonNull(topology.getRouting().getRequestHandling())
                   instanceof final RequestHandlingAllPartitions allPartitions) {
-                assertThat(allPartitions.getPartitionCount()).isEqualTo(5);
+                assertThat(allPartitions.getPartitionCount()).isEqualTo(desiredPartitionCount);
               } else {
                 throw new AssertionError(
                     "Unexpected request handling mode: "
                         + topology.getRouting().getRequestHandling());
               }
             });
+  }
 
-    createInstanceWithAJobOnAllPartitions(camundaClient, JOB_TYPE, PARTITIONS_COUNT);
+  private PlannedOperationsResponse scaleToPartitions(final int desiredPartitionCount) {
+    return clusterActuator.patchCluster(
+        new ClusterConfigPatchRequest()
+            .partitions(
+                new ClusterConfigPatchRequestPartitions()
+                    .count(desiredPartitionCount)
+                    .replicationFactor(3)),
+        false,
+        false);
   }
 }
