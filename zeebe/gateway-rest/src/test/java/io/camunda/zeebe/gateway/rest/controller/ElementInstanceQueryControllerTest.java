@@ -80,6 +80,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                       OffsetDateTime.parse("2023-05-17T00:00:00Z"),
                       OffsetDateTime.parse("2023-05-23T00:00:00Z"),
                       "elementId",
+                      "elementName",
                       null,
                       FlowNodeType.SERVICE_TASK,
                       FlowNodeState.ACTIVE,
@@ -101,6 +102,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                    "startDate": "2023-05-17T10:10:10.000Z",
                    "endDate":"2023-05-23T10:10:10.000Z",
                    "elementId":"startEvent_1",
+                   "elementName":"elementName",
                    "type":"SERVICE_TASK",
                    "state":"ACTIVE",
                    "hasIncident":true,
@@ -117,6 +119,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
           OffsetDateTime.parse("2023-05-17T10:10:10Z"),
           OffsetDateTime.parse("2023-05-23T10:10:10Z"),
           "startEvent_1",
+          "StartEvent_1",
           null,
           FlowNodeType.SERVICE_TASK,
           FlowNodeState.ACTIVE,
@@ -239,6 +242,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                         .states(FlowNodeState.ACTIVE.name())
                         .types(FlowNodeType.SERVICE_TASK)
                         .flowNodeIds("StartEvent_1")
+                        .flowNodeNames("name")
                         .hasIncident(true)
                         .incidentKeys(2251799813685320L)
                         .tenantIds("default")

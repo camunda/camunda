@@ -14,6 +14,7 @@ import java.util.function.Function;
 public enum FlowNodeInstanceSearchColumn implements SearchColumn<FlowNodeInstanceEntity> {
   FLOW_NODE_INSTANCE_KEY("flowNodeInstanceKey", FlowNodeInstanceEntity::flowNodeInstanceKey),
   FLOW_NODE_ID("flowNodeId", FlowNodeInstanceEntity::flowNodeId),
+  FLOW_NODE_NAME("flowNodeName", FlowNodeInstanceEntity::flowNodeName),
   PROCESS_INSTANCE_KEY("processInstanceKey", FlowNodeInstanceEntity::processInstanceKey),
   PROCESS_DEFINITION_KEY("processDefinitionKey", FlowNodeInstanceEntity::processDefinitionKey),
   PROCESS_DEFINITION_ID("processDefinitionId", FlowNodeInstanceEntity::processDefinitionId),

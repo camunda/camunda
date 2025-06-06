@@ -6433,6 +6433,7 @@ components:
             - startDate
             - endDate
             - elementId
+            - elementName
             - type
             - state
             - incidentKey
@@ -6502,7 +6503,9 @@ components:
           description: The element ID for this element instance.
         elementName:
           type: string
-          description: The element name.
+          description: >
+            The element name. This only works for data created with 8.8 and onwards.
+            Instances from prior versions don't contain this data and cannot be found.
         hasIncident:
           type: boolean
           description: Shows whether this element instance has an incident related to.

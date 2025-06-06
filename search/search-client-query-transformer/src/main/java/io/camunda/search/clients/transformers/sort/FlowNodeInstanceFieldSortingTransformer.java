@@ -8,16 +8,7 @@
 package io.camunda.search.clients.transformers.sort;
 
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
-import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.BPMN_PROCESS_ID;
-import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.END_DATE;
-import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.FLOW_NODE_ID;
-import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.INCIDENT_KEY;
-import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.KEY;
-import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY;
-import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY;
-import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.START_DATE;
-import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.STATE;
-import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.TYPE;
+import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.*;
 
 public class FlowNodeInstanceFieldSortingTransformer implements FieldSortingTransformer {
 
@@ -31,6 +22,7 @@ public class FlowNodeInstanceFieldSortingTransformer implements FieldSortingTran
       case "startDate" -> START_DATE;
       case "endDate" -> END_DATE;
       case "flowNodeId" -> FLOW_NODE_ID;
+      case "flowNodeName" -> FLOW_NODE_NAME;
       case "type" -> TYPE;
       case "state" -> STATE;
       case "incidentKey" -> INCIDENT_KEY;
