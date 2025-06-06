@@ -419,11 +419,11 @@ public class BackupManagerOpenSearch extends BackupManager {
   }
 
   private void handleSnapshotResponse(final SnapshotInfo snapshotInfo) {
-    String snapshotId = getSnapshotId(snapshotInfo);
-    String snapshotState = Objects.requireNonNullElse(snapshotInfo.state(), "null");
+    final String snapshotId = getSnapshotId(snapshotInfo);
+    final String snapshotState = Objects.requireNonNullElse(snapshotInfo.state(), "null");
     switch (snapshotState) {
       case "SUCCESS" -> {
-        LOGGER.info("Snapshot done: " + snapshotId);
+        LOGGER.info("Snapshot done: {}", snapshotId);
         scheduleNextSnapshot();
       }
       case "FAILED" -> {
@@ -431,7 +431,7 @@ public class BackupManagerOpenSearch extends BackupManager {
         requestsQueue.clear(); // no need to continue
       }
       default -> {
-        LOGGER.error("Unexpected snapshot status '{}' for {}", snapshotState, snapshotId);
+        LOGGER.error("Unexpected snapshot state '{}' for {}", snapshotState, snapshotId);
         requestsQueue.clear();
       }
     }
