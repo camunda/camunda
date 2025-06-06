@@ -23,7 +23,6 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import org.springframework.util.StringUtils;
 
 public class MappingUpdateProcessor implements DistributedTypedRecordProcessor<MappingRecord> {
   private static final String MAPPING_NULL_VALUE_ERROR_MESSAGE =
@@ -61,10 +60,14 @@ public class MappingUpdateProcessor implements DistributedTypedRecordProcessor<M
 
     final var record = command.getValue();
     final var mappingId = record.getMappingId();
-    if (!StringUtils.hasText(record.getMappingId())
-        || !StringUtils.hasText(record.getName())
-        || !StringUtils.hasText(record.getClaimName())
-        || !StringUtils.hasText(record.getClaimValue())) {
+    if (record.getMappingId() == null
+        || record.getMappingId().isBlank()
+        || record.getName() == null
+        || record.getName().isBlank()
+        || record.getClaimName() == null
+        || record.getClaimName().isBlank()
+        || record.getClaimValue() == null
+        || record.getClaimValue().isBlank()) {
       final var errorMessage =
           MAPPING_NULL_VALUE_ERROR_MESSAGE.formatted(
               record.getClaimName(),
