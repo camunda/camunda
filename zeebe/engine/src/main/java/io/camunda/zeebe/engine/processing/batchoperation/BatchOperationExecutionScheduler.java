@@ -11,6 +11,7 @@ import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationItemProvider.Item;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
@@ -44,6 +45,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
   private final BatchOperationState batchOperationState;
   private ReadonlyStreamProcessorContext processingContext;
   private final BatchOperationItemProvider entityKeyProvider;
+  private final BatchOperationMetrics metrics;
   private final int partitionId;
 
   /** Marks if this scheduler is currently executing or not. */
@@ -53,11 +55,13 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
       final BatchOperationItemProvider entityKeyProvider,
       final EngineConfiguration engineConfiguration,
-      final int partitionId) {
+      final int partitionId,
+      final BatchOperationMetrics metrics) {
     batchOperationState = scheduledTaskStateFactory.get().getBatchOperationState();
     this.entityKeyProvider = entityKeyProvider;
     pollingInterval = engineConfiguration.getBatchOperationSchedulerInterval();
     chunkSize = engineConfiguration.getBatchOperationChunkSize();
+    this.metrics = metrics;
     this.partitionId = partitionId;
   }
 
@@ -107,14 +111,27 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
 
     try {
       // Then append the chunks
+      metrics.startTotalQueryLatencyMeasure(
+          batchOperation.getKey(), batchOperation.getBatchOperationType());
       final var keys = queryAllKeys(batchOperation);
+      metrics.stopQueryLatencyMeasure(batchOperation.getKey());
+
       for (int i = 0; i < keys.size(); i += chunkSize) {
         final Set<Item> chunkKeys =
             keys.stream().skip(i).limit(chunkSize).collect(Collectors.toSet());
         appendChunk(batchOperation.getKey(), taskResultBuilder, chunkKeys);
+        metrics.recordChunkCreated(batchOperation.getBatchOperationType());
       }
 
+      metrics.recordItemsPerPartition(
+          keys.size(), batchOperation.getKey(), batchOperation.getBatchOperationType());
+
       appendExecution(batchOperation.getKey(), taskResultBuilder);
+
+      metrics.startStartExecuteLatencyMeasure(
+          batchOperation.getKey(), batchOperation.getBatchOperationType());
+      metrics.startTotalExecutionLatencyMeasure(
+          batchOperation.getKey(), batchOperation.getBatchOperationType());
     } catch (final Exception e) {
       LOG.error(
           "Failed to append chunks for batch operation with key {}. It will be removed from queue",

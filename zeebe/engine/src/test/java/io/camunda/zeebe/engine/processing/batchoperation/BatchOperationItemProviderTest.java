@@ -25,6 +25,7 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationItemProvider.Item;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -52,7 +53,9 @@ class BatchOperationItemProviderTest {
 
     when(searchClientsProxy.withSecurityContext(any())).thenReturn(searchClientsProxy);
 
-    provider = new BatchOperationItemProvider(searchClientsProxy, engineConfiguration);
+    provider =
+        new BatchOperationItemProvider(
+            searchClientsProxy, engineConfiguration, mock(BatchOperationMetrics.class));
   }
 
   @Test
