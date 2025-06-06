@@ -266,6 +266,9 @@ jobs:
           ZCL_FROM_REV="${{ steps.prev_version.outputs.previous_version }}"
           ZCL_TARGET_REV="${{ inputs.releaseVersion }}"
 
+          echo "ZCL_FROM_REV=$ZCL_FROM_REV"
+          echo "ZCL_TARGET_REV=$ZCL_TARGET_REV"
+
           # The following command will add labels to the issues on GitHub.
           # You can verify this step by looking at closed issues. They should now be tagged with the release.
           ./zcl add-labels \
