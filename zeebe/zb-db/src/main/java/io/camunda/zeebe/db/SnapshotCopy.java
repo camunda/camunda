@@ -39,7 +39,7 @@ public interface SnapshotCopy {
    * @param toPath the path where the copied snapshot will be located
    * @param scope the scope of the columns to copy
    */
-  void copySnapshot(Path fromPath, Path toPath, Set<ColumnFamilyScope> scope) throws Exception;
+  void copySnapshot(Path fromPath, Path toPath, Set<ColumnFamilyScope> scope);
 
   interface CopyContextConsumer {
 
