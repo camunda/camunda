@@ -6,5 +6,4 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-// Tenant details page - Remove when endpoints are available - https://github.com/camunda/camunda/issues/26961
-export const IS_TENANT_GROUPS_SUPPORTED = false;
+export const featureFlags = [];

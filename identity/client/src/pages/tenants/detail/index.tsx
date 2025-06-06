@@ -27,7 +27,6 @@ import Groups from "src/pages/tenants/detail/groups";
 import Roles from "src/pages/tenants/detail/roles";
 import Mappings from "src/pages/tenants/detail/mappings";
 import Clients from "src/pages/tenants/detail/clients";
-import { IS_TENANT_GROUPS_SUPPORTED } from "src/feature-flags";
 import { isInternalGroupsEnabled, isOIDC } from "src/configuration";
 
 const Details: FC = () => {
@@ -90,7 +89,7 @@ const Details: FC = () => {
                   label: t("users"),
                   content: <Members tenantId={tenant.tenantId} />,
                 },
-                ...(IS_TENANT_GROUPS_SUPPORTED && isInternalGroupsEnabled
+                ...(isInternalGroupsEnabled
                   ? [
                       {
                         key: "groups",
