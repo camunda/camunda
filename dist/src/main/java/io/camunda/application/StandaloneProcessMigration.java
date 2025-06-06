@@ -14,7 +14,7 @@ import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
 @SpringBootConfiguration(proxyBeanMethods = false)
-public class StandaloneMigration {
+public class StandaloneProcessMigration {
 
   public static void main(final String[] args) {
     MainSupport.putSystemPropertyIfAbsent(
@@ -33,7 +33,7 @@ public class StandaloneMigration {
             .logStartupInfo(true)
             .web(WebApplicationType.SERVLET)
             .sources(MigrationsRunner.class)
-            .profiles(Profile.MIGRATION.getId())
+            .profiles(Profile.PROCESS_MIGRATION.getId())
             .addCommandLineProperties(true)
             .build(args);
 
