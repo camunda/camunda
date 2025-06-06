@@ -31,6 +31,8 @@ import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
+import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
+import io.camunda.zeebe.db.SnapshotCopy;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
@@ -88,6 +90,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private String brokerVersion = PartitionTransitionContext.super.getBrokerVersion();
   private boolean migrationsPerformed;
   private final ComponentTreeListener healthMetrics;
+  private SnapshotCopy snapshotCopy;
 
   public TestPartitionTransitionContext() {
     transitionMeterRegistry = MicrometerUtil.wrap(startupMeterRegistry, PartitionKeyNames.tags(1));
@@ -185,6 +188,11 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public void setDynamicPartitionConfig(final DynamicPartitionConfig partitionConfig) {
     this.partitionConfig = partitionConfig;
+  }
+
+  @Override
+  public SnapshotApiRequestHandler getSnapshotApiRequestHandler() {
+    return null;
   }
 
   @Override
@@ -484,6 +492,11 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public StateController getStateController() {
     return stateController;
+  }
+
+  @Override
+  public SnapshotCopy snapshotCopy() {
+    return snapshotCopy;
   }
 
   @Override

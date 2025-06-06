@@ -31,6 +31,7 @@ import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
+import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -79,6 +80,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private BrokerAdminServiceImpl brokerAdminService;
   private JobStreamService jobStreamService;
   private ClusterConfigurationService clusterConfigurationService;
+  private SnapshotApiRequestHandler snapshotApiRequestHandler;
 
   public BrokerStartupContextImpl(
       final BrokerInfo brokerInfo,
@@ -388,5 +390,16 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   @Override
   public JwtDecoder getJwtDecoder() {
     return jwtDecoder;
+  }
+
+  @Override
+  public SnapshotApiRequestHandler getSnapshotApiRequestHandler() {
+    return snapshotApiRequestHandler;
+  }
+
+  @Override
+  public void setSnapshotApiRequestHandler(
+      final SnapshotApiRequestHandler snapshotApiRequestHandler) {
+    this.snapshotApiRequestHandler = snapshotApiRequestHandler;
   }
 }
