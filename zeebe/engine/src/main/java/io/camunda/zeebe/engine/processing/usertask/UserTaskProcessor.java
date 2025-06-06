@@ -275,7 +275,8 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
                               stateWriter.appendFollowUpEvent(
                                   variableDocumentKey,
                                   VariableDocumentIntent.UPDATE_DENIED,
-                                  variableDocumentRecord);
+                                  variableDocumentRecord,
+                                  m -> m.operationReference(request.operationReference()));
 
                               final var deniedReason =
                                   USER_TASK_VARIABLE_UPDATE_REJECTION.formatted(

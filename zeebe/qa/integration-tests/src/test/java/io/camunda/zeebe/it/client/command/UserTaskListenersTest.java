@@ -388,8 +388,9 @@ public class UserTaskListenersTest {
   }
 
   @Test
-  void shouldRejectUserTaskUpdateWhenTriggeredByVariableUpdateAndListenerDeniesTheWork() {
+  void shouldPreserveOperationReferenceOnVariableUpdateDeniedEventAfterListenerDenial() {
     // given
+    final int operationReference = 456;
     final var listenerType = "updating_listener_with_denial";
     final var userTaskKey =
         resourcesHelper.createSingleUserTask(
@@ -412,13 +413,14 @@ public class UserTaskListenersTest {
                 .join();
     client.newWorker().jobType(listenerType).handler(completeJobWithDenialHandler).open();
 
-    // when: updating task element instance variables to trigger update transition
+    // when: triggering variable update with 'operationReference'
     final var updateVariablesFuture =
         client
             .newSetVariablesCommand(userTaskInstanceKey)
             .useRest()
             .variables(Map.of("approvalStatus", "APPROVED"))
             .local(true)
+            .operationReference(operationReference)
             .send();
 
     // then: TL job should be successfully completed with the result "denied" set correctly
@@ -445,17 +447,60 @@ public class UserTaskListenersTest {
               assertThat(ex.details().getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
             });
 
-    // and: verify the expected sequence of User Task intents
+    // and: expected user task transition sequence
     assertUserTaskIntentsSequence(
         UserTaskIntent.UPDATING, UserTaskIntent.DENY_TASK_LISTENER, UserTaskIntent.UPDATE_DENIED);
 
+    // and: the UPDATE_DENIED VariableDocument event should carry the original operationReference
     assertThat(
             RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATE_DENIED)
                 .withScopeKey(userTaskInstanceKey)
-                .exists())
+                .getFirst())
         .describedAs(
-            "Expect a VariableDocument.UPDATE_DENIED event when variables update was denied")
-        .isTrue();
+            "The VariableDocument.UPDATE_DENIED record should preserve the original 'operationReference'")
+        .hasOperationReference(operationReference);
+  }
+
+  @Test
+  void shouldPreserveOperationReferenceOnVariableUpdatedEventAfterHandlingUpdatingTaskListeners() {
+    // given
+    final int operationReference = 111;
+    final var listenerType = "updating_listener";
+    final var userTaskKey =
+        resourcesHelper.createSingleUserTask(
+            t -> t.zeebeTaskListener(l -> l.updating().type(listenerType)));
+    final var userTaskInstanceKey =
+        RecordingExporter.userTaskRecords()
+            .withRecordKey(userTaskKey)
+            .getFirst()
+            .getValue()
+            .getElementInstanceKey();
+
+    final JobHandler completeJob =
+        (jobClient, job) -> client.newCompleteCommand(job).withResult().send().join();
+    client.newWorker().jobType(listenerType).handler(completeJob).open();
+
+    // when: updating variables to trigger an update transition
+    final var updateVariablesFuture =
+        client
+            .newSetVariablesCommand(userTaskInstanceKey)
+            .variables(Map.of("approvalStatus", "APPROVED"))
+            .operationReference(operationReference)
+            .send();
+
+    ZeebeAssertHelper.assertJobCompleted(listenerType);
+    assertThatCode(updateVariablesFuture::join).doesNotThrowAnyException();
+
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.UPDATING, UserTaskIntent.COMPLETE_TASK_LISTENER, UserTaskIntent.UPDATED);
+
+    assertThat(
+            RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATED)
+                .withScopeKey(userTaskInstanceKey)
+                .getFirst())
+        .describedAs(
+            "VARIABLE_DOCUMENT:UPDATED record should preserve the original 'operationReference'")
+        .hasOperationReference(operationReference);
   }
 
   @Test
