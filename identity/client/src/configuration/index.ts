@@ -14,8 +14,11 @@ const apiBaseUrl = "/v2";
 
 const loginApiUrl = "/login";
 
-export const isOIDC = getEnvBoolean("IS_OIDC");
-export const isInternalGroupsEnabled = getEnvBoolean("INTERNAL_GROUPS_ENABLED");
+export const isOIDC = getEnvBoolean("IS_OIDC", false);
+export const isInternalGroupsEnabled = getEnvBoolean(
+  "INTERNAL_GROUPS_ENABLED",
+  true,
+);
 
 export const docsUrl = "https://docs.camunda.io";
 
