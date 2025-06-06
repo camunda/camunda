@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter.EventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -100,7 +101,10 @@ public final class BatchOperationPartitionCompleteProcessor
             command.getValue().getSourcePartitionId());
       } else {
         stateWriter.appendFollowUpEvent(
-            batchOperationKey, BatchOperationIntent.PARTITION_COMPLETED, command.getValue());
+            batchOperationKey,
+            BatchOperationIntent.PARTITION_COMPLETED,
+            command.getValue(),
+            EventMetadata.of(b -> b.batchOperationKey(command.getValue().getBatchOperationKey())));
 
         if (bo.getFinishedPartitions().size() == bo.getPartitions().size()) {
           LOGGER.debug(
@@ -109,7 +113,11 @@ public final class BatchOperationPartitionCompleteProcessor
           final var batchComplete = new BatchOperationLifecycleManagementRecord();
           batchComplete.setBatchOperationKey(batchOperationKey);
           stateWriter.appendFollowUpEvent(
-              batchOperationKey, BatchOperationIntent.COMPLETED, batchComplete);
+              batchOperationKey,
+              BatchOperationIntent.COMPLETED,
+              batchComplete,
+              EventMetadata.of(
+                  b -> b.batchOperationKey(command.getValue().getBatchOperationKey())));
         }
       }
     }

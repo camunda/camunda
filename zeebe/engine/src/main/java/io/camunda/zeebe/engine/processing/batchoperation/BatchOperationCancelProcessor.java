@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter.EventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -131,6 +132,10 @@ public final class BatchOperationCancelProcessor
 
   private void cancelBatchOperationEvent(
       final Long cancelKey, final BatchOperationLifecycleManagementRecord recordValue) {
-    stateWriter.appendFollowUpEvent(cancelKey, BatchOperationIntent.CANCELED, recordValue);
+    stateWriter.appendFollowUpEvent(
+        cancelKey,
+        BatchOperationIntent.CANCELED,
+        recordValue,
+        EventMetadata.of(b -> b.batchOperationKey(recordValue.getBatchOperationKey())));
   }
 }

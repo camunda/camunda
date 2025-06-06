@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter.EventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -87,7 +88,11 @@ public final class BatchOperationCreateProcessor
     recordWithKey.setBatchOperationKey(key);
     recordWithKey.setPartitionIds(routingInfo.partitions());
 
-    stateWriter.appendFollowUpEvent(key, BatchOperationIntent.CREATED, recordWithKey);
+    stateWriter.appendFollowUpEvent(
+        key,
+        BatchOperationIntent.CREATED,
+        recordWithKey,
+        EventMetadata.of(b -> b.batchOperationKey(key)));
     responseWriter.writeEventOnCommand(key, BatchOperationIntent.CREATED, recordWithKey, command);
     commandDistributionBehavior
         .withKey(key)
@@ -101,7 +106,10 @@ public final class BatchOperationCreateProcessor
 
     LOGGER.debug("Processing distributed command with key '{}': {}", command.getKey(), recordValue);
     stateWriter.appendFollowUpEvent(
-        command.getKey(), BatchOperationIntent.CREATED, command.getValue());
+        command.getKey(),
+        BatchOperationIntent.CREATED,
+        command.getValue(),
+        EventMetadata.of(b -> b.batchOperationKey(command.getKey())));
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
