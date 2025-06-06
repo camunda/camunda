@@ -116,11 +116,12 @@ public abstract class AsyncApiRequestHandler<R extends RequestReader<?>, W exten
                   .internalError(
                       "Failed to handle request due to internal error; see the broker logs for more")
                   .tryWriteResponse(serverOutput, partitionId, requestId);
-            }
-            if (result.isLeft()) {
-              result.getLeft().tryWriteResponse(serverOutput, partitionId, requestId);
             } else {
-              result.get().tryWriteResponse(serverOutput, partitionId, requestId);
+              if (result.isLeft()) {
+                result.getLeft().tryWriteResponse(serverOutput, partitionId, requestId);
+              } else {
+                result.get().tryWriteResponse(serverOutput, partitionId, requestId);
+              }
             }
           });
     } catch (final Exception e) {
