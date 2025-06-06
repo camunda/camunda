@@ -41,11 +41,6 @@ import {
   selectFlowNode,
 } from 'modules/utils/flowNodeSelection';
 
-jest.mock('modules/feature-flags', () => ({
-  ...jest.requireActual('modules/feature-flags'),
-  IS_PROCESS_INSTANCE_V2_ENABLED: true,
-}));
-
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
     displayNotification: jest.fn(() => () => {}),
