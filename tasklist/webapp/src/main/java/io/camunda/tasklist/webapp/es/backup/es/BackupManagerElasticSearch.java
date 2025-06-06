@@ -59,8 +59,10 @@ import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.sort.SortOrder;
+import org.elasticsearch.snapshots.SnapshotId;
 import org.elasticsearch.snapshots.SnapshotInfo;
 import org.elasticsearch.snapshots.SnapshotShardFailure;
+import org.elasticsearch.snapshots.SnapshotState;
 import org.elasticsearch.transport.TransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -526,22 +528,19 @@ public class BackupManagerElasticSearch extends BackupManager {
   }
 
   private boolean isSnapshotFinished(final SnapshotInfo snapshotInfo) {
-    switch (snapshotInfo.state()) {
+    final SnapshotState snapshotState = snapshotInfo.state();
+    final SnapshotId snapshotId = snapshotInfo.snapshotId();
+    switch (snapshotState) {
       case SUCCESS -> {
-        LOGGER.info("Snapshot done: " + snapshotInfo.snapshotId());
+        LOGGER.info("Snapshot done: {}", snapshotId);
         return true;
       }
       case FAILED -> {
-        LOGGER.error(
-            "Snapshot taking failed for {}, reason {}",
-            snapshotInfo.snapshotId(),
-            snapshotInfo.reason());
-        // no need to continue
-        return false;
+        LOGGER.error("Snapshot failed for {}, reason {}", snapshotId, snapshotInfo.reason());
+        return false; // no need to continue
       }
       default -> {
-        LOGGER.warn(
-            "Snapshot status {} for the {}", snapshotInfo.state(), snapshotInfo.snapshotId());
+        LOGGER.error("Unexpected snapshot state '{}' for {}", snapshotState, snapshotId);
         return false;
       }
     }
