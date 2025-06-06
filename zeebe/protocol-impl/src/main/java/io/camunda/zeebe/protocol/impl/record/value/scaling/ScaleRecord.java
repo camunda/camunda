@@ -14,6 +14,7 @@ import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
 import java.util.Collection;
+import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -86,6 +87,32 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
     for (final int partition : partitions) {
       redistributedPartitions.add().setValue(partition);
     }
+    return this;
+  }
+
+  //// Helpers to fill the required fields depending on the intent
+  public ScaleRecord scaleUp(final int desiredPartitionCount) {
+    setDesiredPartitionCount(desiredPartitionCount);
+    return this;
+  }
+
+  public ScaleRecord status(final int desiredPartitionCount) {
+    setDesiredPartitionCount(desiredPartitionCount);
+    return this;
+  }
+
+  public ScaleRecord statusResponse(
+      final int desiredPartitionCount,
+      final Collection<Integer> redistributedPartitions,
+      final long bootstrappedAt) {
+    setDesiredPartitionCount(desiredPartitionCount);
+    setRedistributedPartitions(redistributedPartitions);
+    setBootstrappedAt(bootstrappedAt);
+    return this;
+  }
+
+  public ScaleRecord markPartitionBootstrapped(final int partitionBootstrapped) {
+    setRedistributedPartitions(List.of(partitionBootstrapped));
     return this;
   }
 }

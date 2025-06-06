@@ -47,7 +47,7 @@ public class ScaleUpTest {
     // given
     final var command =
         RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3))
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(3))
             .key(Protocol.encodePartitionId(1, index++));
 
     command.recordMetadata().requestId(123);
@@ -66,14 +66,14 @@ public class ScaleUpTest {
 
     final var command =
         RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3))
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(3))
             .key(Protocol.encodePartitionId(1, index++));
 
     final var bootstrapPartitions =
         RecordToWrite.command()
             .scale(
                 ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
-                new ScaleRecord().setRedistributedPartitions(List.of(3)))
+                new ScaleRecord().markPartitionBootstrapped(3))
             .key(Protocol.encodePartitionId(1, index++));
     // when
     engine.writeRecords(command, bootstrapPartitions);
@@ -97,7 +97,7 @@ public class ScaleUpTest {
     engine.start();
     final var command =
         RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3))
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(3))
             .key(Protocol.encodePartitionId(1, index++));
 
     // when
@@ -141,7 +141,7 @@ public class ScaleUpTest {
 
     final var command =
         RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(10000))
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(10000))
             .key(Protocol.encodePartitionId(1, index++));
 
     // when
@@ -162,7 +162,7 @@ public class ScaleUpTest {
     // given
     final var command =
         RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(1))
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(1))
             .key(Protocol.encodePartitionId(1, index++));
 
     // when
@@ -188,7 +188,7 @@ public class ScaleUpTest {
     // when
     engine.writeRecords(
         RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3))
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(3))
             .key(Protocol.encodePartitionId(1, index++)));
 
     // then
@@ -233,16 +233,11 @@ public class ScaleUpTest {
     // given
     final var scaleUpCommand =
         RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(4))
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(4))
             .key(Protocol.encodePartitionId(1, index++));
 
     final var getStatusCommand =
-        RecordToWrite.command()
-            .scale(
-                ScaleIntent.STATUS,
-                new ScaleRecord()
-                    .setDesiredPartitionCount(4)
-                    .setRedistributedPartitions(List.of(3, 4)));
+        RecordToWrite.command().scale(ScaleIntent.STATUS, new ScaleRecord().status(4));
     // when
     final var key = engine.writeRecords(scaleUpCommand, getStatusCommand);
 
@@ -260,16 +255,12 @@ public class ScaleUpTest {
         RecordToWrite.command()
             .scale(
                 ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
-                new ScaleRecord()
-                    .setDesiredPartitionCount(4)
-                    .setRedistributedPartitions(List.of(3)));
+                new ScaleRecord().markPartitionBootstrapped(3));
     final var bootstrapPartition4 =
         RecordToWrite.command()
             .scale(
                 ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
-                new ScaleRecord()
-                    .setDesiredPartitionCount(4)
-                    .setRedistributedPartitions(List.of(4)));
+                new ScaleRecord().markPartitionBootstrapped(4));
     engine.writeRecords(bootstrapPartition3, bootstrapPartition4, getStatusCommand);
 
     // then
@@ -288,14 +279,14 @@ public class ScaleUpTest {
     var index = 1023;
     final var scaleTo3 =
         RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3))
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(3))
             .key(Protocol.encodePartitionId(1, index++));
 
     final var bootstrapPartitionsTo3 =
         RecordToWrite.command()
             .scale(
                 ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
-                new ScaleRecord().setRedistributedPartitions(List.of(3)))
+                new ScaleRecord().markPartitionBootstrapped(3))
             .key(Protocol.encodePartitionId(1, index++));
     // when
     engine.writeRecords(scaleTo3, bootstrapPartitionsTo3);
@@ -317,17 +308,13 @@ public class ScaleUpTest {
     // when scaling up again
     final var scaleTo4 =
         RecordToWrite.command()
-            .scale(
-                ScaleIntent.SCALE_UP,
-                new ScaleRecord()
-                    .setDesiredPartitionCount(4)
-                    .setRedistributedPartitions(List.of(4)))
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(4))
             .key(Protocol.encodePartitionId(1, index++));
     final var bootstrapPartitionsTo4 =
         RecordToWrite.command()
             .scale(
                 ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
-                new ScaleRecord().setRedistributedPartitions(List.of(4)))
+                new ScaleRecord().markPartitionBootstrapped(4))
             .key(Protocol.encodePartitionId(1, index++));
     engine.writeRecords(scaleTo4, bootstrapPartitionsTo4);
 
@@ -352,14 +339,14 @@ public class ScaleUpTest {
     var index = 99;
     final var scaleTo3 =
         RecordToWrite.command()
-            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().setDesiredPartitionCount(3))
+            .scale(ScaleIntent.SCALE_UP, new ScaleRecord().scaleUp(3))
             .key(Protocol.encodePartitionId(1, index++));
 
     final var bootstrapPartitionsTo3 =
         RecordToWrite.command()
             .scale(
                 ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
-                new ScaleRecord().setRedistributedPartitions(List.of(3)))
+                new ScaleRecord().markPartitionBootstrapped(3))
             .key(Protocol.encodePartitionId(1, index++));
     bootstrapPartitionsTo3.recordMetadata().requestId(1234);
     // when
