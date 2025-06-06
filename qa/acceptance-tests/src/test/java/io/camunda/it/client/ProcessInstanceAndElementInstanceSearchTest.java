@@ -1185,6 +1185,26 @@ public class ProcessInstanceAndElementInstanceSearchTest {
   }
 
   @Test
+  void shouldQueryElementInstanceByElementName() {
+    // given
+    final var elementName = elementInstance.getElementName();
+    // when
+    final var result =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.elementName(elementName))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().getFirst().getElementName()).isEqualTo(elementName);
+    assertThat(result.items().getFirst().getProcessDefinitionId()).isNotNull();
+    assertThat(result.items().getFirst().getProcessDefinitionId())
+        .isEqualTo(elementInstance.getProcessDefinitionId());
+  }
+
+  @Test
   void shouldSortElementInstanceByElementId() {
     // when
     final var resultAsc =
@@ -1200,6 +1220,24 @@ public class ProcessInstanceAndElementInstanceSearchTest {
             .send()
             .join();
     assertSorted(resultAsc, resultDesc, ElementInstance::getElementId);
+  }
+
+  @Test
+  void shouldSortElementInstanceByElementName() {
+    // when
+    final var resultAsc =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .sort(s -> s.elementName().asc())
+            .send()
+            .join();
+    final var resultDesc =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .sort(s -> s.elementName().desc())
+            .send()
+            .join();
+    assertSorted(resultAsc, resultDesc, ElementInstance::getElementName);
   }
 
   @Test

@@ -12,7 +12,7 @@
       <bpmn:incoming>Flow_0ohshru</bpmn:incoming>
       <bpmn:outgoing>Flow_1j9hrgw</bpmn:outgoing>
     </bpmn:callActivity>
-    <bpmn:endEvent id="Event_1p0nsc7">
+    <bpmn:endEvent id="Event_1p0nsc7" name="Event_1p0nsc7">
       <bpmn:incoming>Flow_1pr3266</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_1j9hrgw" sourceRef="call_activity" targetRef="taskY" />

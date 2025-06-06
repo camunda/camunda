@@ -62,6 +62,11 @@ public class ElementInstanceSortImpl extends SearchRequestSortBase<ElementInstan
   }
 
   @Override
+  public ElementInstanceSort elementName() {
+    return field("elementName");
+  }
+
+  @Override
   public ElementInstanceSort type() {
     return field("type");
   }

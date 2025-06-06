@@ -64,7 +64,8 @@ public interface ElementInstanceFilter extends SearchRequestFilter {
   ElementInstanceFilter elementId(final String value);
 
   /**
-   * Filters element instances by element name.
+   * Filters element instances by element name. This only works for data created with 8.8 and
+   * onwards. Instances from prior versions don't contain this data.
    *
    * @param value the element name of element instance
    * @return the updated filter
