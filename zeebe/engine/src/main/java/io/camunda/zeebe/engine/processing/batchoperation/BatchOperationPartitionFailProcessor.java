@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
@@ -34,15 +35,18 @@ public final class BatchOperationPartitionFailProcessor
   private final TypedCommandWriter commandWriter;
   private final BatchOperationState batchOperationState;
   private final CommandDistributionBehavior commandDistributionBehavior;
+  private final BatchOperationMetrics batchOperationMetrics;
 
   public BatchOperationPartitionFailProcessor(
       final Writers writers,
       final ProcessingState processingState,
-      final CommandDistributionBehavior commandDistributionBehavior) {
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final BatchOperationMetrics batchOperationMetrics) {
     stateWriter = writers.state();
     commandWriter = writers.command();
     batchOperationState = processingState.getBatchOperationState();
     this.commandDistributionBehavior = commandDistributionBehavior;
+    this.batchOperationMetrics = batchOperationMetrics;
   }
 
   /**
@@ -97,6 +101,7 @@ public final class BatchOperationPartitionFailProcessor
               batchFinished,
               FollowUpEventMetadata.of(
                   b -> b.batchOperationReference(command.getValue().getBatchOperationKey())));
+          batchOperationMetrics.recordFailed(oBatchOperation.get().getBatchOperationType());
         }
       }
     }

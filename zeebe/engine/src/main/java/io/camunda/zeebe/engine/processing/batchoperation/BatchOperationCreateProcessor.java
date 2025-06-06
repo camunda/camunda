@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
@@ -45,13 +46,15 @@ public final class BatchOperationCreateProcessor
   private final TypedResponseWriter responseWriter;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final RoutingInfo routingInfo;
+  private final BatchOperationMetrics metrics;
 
   public BatchOperationCreateProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
       final CommandDistributionBehavior commandDistributionBehavior,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final RoutingInfo routingInfo) {
+      final RoutingInfo routingInfo,
+      final BatchOperationMetrics metrics) {
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
@@ -59,6 +62,7 @@ public final class BatchOperationCreateProcessor
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.authCheckBehavior = authCheckBehavior;
     this.routingInfo = routingInfo;
+    this.metrics = metrics;
   }
 
   @Override
@@ -82,6 +86,7 @@ public final class BatchOperationCreateProcessor
     final long key = keyGenerator.nextKey();
     final var recordValue = command.getValue();
     LOGGER.debug("Processing new command with key '{}': {}", key, recordValue);
+    metrics.startTotalLatencyMeasure(key, recordValue.getBatchOperationType());
 
     final var recordWithKey = new BatchOperationCreationRecord();
     recordWithKey.wrap(recordValue);
@@ -98,6 +103,8 @@ public final class BatchOperationCreateProcessor
         .withKey(key)
         .inQueue(DistributionQueue.BATCH_OPERATION)
         .distribute(command.getValueType(), command.getIntent(), recordWithKey);
+
+    metrics.recordCreated(recordWithKey.getBatchOperationType());
   }
 
   @Override

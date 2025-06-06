@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.BatchOperationExecutor;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
@@ -50,6 +51,7 @@ public final class BatchOperationExecuteProcessor
   private final int partitionId;
   private final BatchOperationState batchOperationState;
   private final KeyGenerator keyGenerator;
+  private final BatchOperationMetrics metrics;
 
   private final Map<BatchOperationType, BatchOperationExecutor> handlers;
 
@@ -59,7 +61,8 @@ public final class BatchOperationExecuteProcessor
       final CommandDistributionBehavior commandDistributionBehavior,
       final KeyGenerator keyGenerator,
       final int partitionId,
-      final Map<BatchOperationType, BatchOperationExecutor> handlers) {
+      final Map<BatchOperationType, BatchOperationExecutor> handlers,
+      final BatchOperationMetrics metrics) {
     commandWriter = writers.command();
     stateWriter = writers.state();
     batchOperationState = processingState.getBatchOperationState();
@@ -67,6 +70,7 @@ public final class BatchOperationExecuteProcessor
     this.keyGenerator = keyGenerator;
     this.partitionId = partitionId;
     this.handlers = handlers;
+    this.metrics = metrics;
   }
 
   @Override
@@ -79,6 +83,10 @@ public final class BatchOperationExecuteProcessor
         partitionId,
         executionRecord);
     final long batchKey = executionRecord.getBatchOperationKey();
+
+    // Stop the measure for the batch operation execute cycle latency which was started the last
+    // time
+    metrics.stopExecuteCycleLatencyMeasure(batchKey);
 
     final var batchOperation = getBatchOperation(batchKey);
     if (batchOperation == null) {
@@ -98,8 +106,13 @@ public final class BatchOperationExecuteProcessor
 
       appendBatchOperationExecutionExecutedEvent(command.getValue(), Collections.emptySet());
       appendBatchOperationExecutionCompletedEvent(command.getValue());
+
+      metrics.stopTotalExecutionLatencyMeasure(batchKey);
       return;
     }
+
+    // This is only done for the first batch operation execution iteration
+    metrics.stopStartExecuteLatencyMeasure(batchKey);
 
     appendBatchOperationExecutionExecutingEvent(command.getValue(), Set.copyOf(entityKeys));
 
@@ -107,7 +120,24 @@ public final class BatchOperationExecuteProcessor
     entityKeys.forEach(entityKey -> handler.execute(entityKey, batchOperation));
 
     appendBatchOperationExecutionExecutedEvent(command.getValue(), Set.copyOf(entityKeys));
+    appendBatchOperationExecuteCommand(command, batchKey, batchOperation);
 
+    metrics.startExecuteCycleLatencyMeasure(batchKey, batchOperation.getBatchOperationType());
+  }
+
+  private PersistedBatchOperation getBatchOperation(final long batchOperationKey) {
+    return batchOperationState.get(batchOperationKey).orElse(null);
+  }
+
+  @Override
+  public boolean shouldProcessResultsInSeparateBatches() {
+    return true;
+  }
+
+  private void appendBatchOperationExecuteCommand(
+      final TypedRecord<BatchOperationExecutionRecord> command,
+      final long batchKey,
+      final PersistedBatchOperation batchOperation) {
     LOGGER.debug(
         "Scheduling next batch for BatchOperation {} on partition {}", batchKey, partitionId);
     final var followupCommand = new BatchOperationExecutionRecord();
@@ -117,15 +147,8 @@ public final class BatchOperationExecuteProcessor
         BatchOperationExecutionIntent.EXECUTE,
         followupCommand,
         FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperation.getKey())));
-  }
 
-  @Override
-  public boolean shouldProcessResultsInSeparateBatches() {
-    return true;
-  }
-
-  private PersistedBatchOperation getBatchOperation(final long batchOperationKey) {
-    return batchOperationState.get(batchOperationKey).orElse(null);
+    metrics.recordExecuted(batchOperation.getBatchOperationType());
   }
 
   private void appendBatchOperationExecutionExecutingEvent(

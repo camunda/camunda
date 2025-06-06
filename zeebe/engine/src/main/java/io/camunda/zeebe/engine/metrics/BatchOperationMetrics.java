@@ -101,7 +101,7 @@ public class BatchOperationMetrics {
         BatchOperationLatency.TOTAL_EXECUTION_LATENCY, batchOperationKey, batchOperationType);
   }
 
-  public void stopTotaleExecutionLatencyMeasure(final Long batchOperationKey) {
+  public void stopTotalExecutionLatencyMeasure(final Long batchOperationKey) {
     closeAndRemoveLatency(BatchOperationLatency.TOTAL_EXECUTION_LATENCY, batchOperationKey);
   }
 

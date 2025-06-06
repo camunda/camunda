@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -24,9 +25,11 @@ public final class BatchOperationStartProcessor
   private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationStartProcessor.class);
 
   private final StateWriter stateWriter;
+  private final BatchOperationMetrics metrics;
 
-  public BatchOperationStartProcessor(final Writers writers) {
+  public BatchOperationStartProcessor(final Writers writers, final BatchOperationMetrics metrics) {
     stateWriter = writers.state();
+    this.metrics = metrics;
   }
 
   @Override
@@ -35,5 +38,7 @@ public final class BatchOperationStartProcessor
     LOGGER.debug("Processing new command with key '{}': {}", command.getKey(), recordValue);
 
     stateWriter.appendFollowUpEvent(command.getKey(), BatchOperationIntent.STARTED, recordValue);
+
+    metrics.recordStarted(recordValue.getBatchOperationType());
   }
 }
