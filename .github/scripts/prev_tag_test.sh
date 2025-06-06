@@ -148,6 +148,7 @@ run_test "8.3.0-alpha1" "8.2.0" "ALPHA" # First alpha of a new minor version
 run_test "8.4.0-alpha2-rc3" "8.4.0-alpha2-rc2" "RC" # Alpha RC, next lower alpha RC tag
 run_test "8.4.0-alpha2-rc2" "8.4.0-alpha2-rc1" "RC" # Alpha RC, next lower alpha RC tag
 run_test "8.4.0-alpha2-rc1" "8.4.0-alpha1" "RC" # First alpha RC of a new alpha version
+run_test "8.4.0-alpha1-rc1" "8.3.0" "RC" # First alpha RC of first alpha version
 run_test "9.0.0-alpha2-rc1" "9.0.0-alpha1" "RC" # First alpha RC of a new alpha version
 run_test "9.0.0-alpha3-rc1" "9.0.0-alpha2" "RC" # First alpha RC of a new alpha version
 run_test "8.4.0-alpha1" "8.3.0" "ALPHA" # First alpha of a new alpha version
