@@ -186,6 +186,42 @@ public class AdHocSubProcessIncidentTest {
   }
 
   @Test
+  public void shouldCreateIncidentIfActiveElementsContainsBoundaryEvent() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
+              adHocSubProcess
+                  .serviceTask("A", t -> t.zeebeJobType("task"))
+                  .boundaryEvent("boundaryEvent", b -> b.error("error"))
+                  .intermediateThrowEvent("error");
+              adHocSubProcess.task("B");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("activateElements", List.of("boundaryEvent"))
+            .create();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasElementId(AD_HOC_SUB_PROCESS_ELEMENT_ID)
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Failed to activate ad-hoc elements. No BPMN elements found with ids: 'boundaryEvent'.");
+  }
+
+  @Test
   public void shouldCreateIncidentIfCompletionConditionDoesNotResolveToBoolean() {
     // given
     final BpmnModelInstance process =

@@ -17,6 +17,8 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformation.Transf
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.CompletionCondition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import java.util.Collection;
 import java.util.Optional;
 
@@ -67,7 +69,37 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
     childElements.stream()
         .filter(ExecutableFlowNode.class::isInstance)
         .map(ExecutableFlowNode.class::cast)
+        .filter(e -> isAdHocActivity(e.getElementType(), e.getEventType()))
         .filter(flowElement -> flowElement.getIncoming().isEmpty())
         .forEach(executableAdHocSubProcess::addAdHocActivity);
+  }
+
+  /**
+   * Returns true if the given element type and event type represent an element that can be
+   * activated as part of the ad-hoc sub-process, otherwise false.
+   */
+  @SuppressWarnings("DuplicateBranchesInSwitch")
+  private static boolean isAdHocActivity(
+      final BpmnElementType elementType, final BpmnEventType eventType) {
+    return switch (elementType) {
+      case UNSPECIFIED -> false;
+      case SEQUENCE_FLOW -> false;
+      case PROCESS, EVENT_SUB_PROCESS -> false;
+      case START_EVENT, BOUNDARY_EVENT, END_EVENT -> false;
+      case INTERMEDIATE_CATCH_EVENT ->
+          switch (eventType) {
+            case NONE -> true;
+            case UNSPECIFIED -> false;
+            case ERROR, LINK, MESSAGE, SIGNAL, TIMER -> false;
+            case COMPENSATION, CONDITIONAL, ESCALATION, TERMINATE -> false;
+          };
+      case SUB_PROCESS, AD_HOC_SUB_PROCESS -> true;
+      case TASK, MANUAL_TASK, SERVICE_TASK, USER_TASK, SCRIPT_TASK, BUSINESS_RULE_TASK -> true;
+      case SEND_TASK, RECEIVE_TASK -> true;
+      case EXCLUSIVE_GATEWAY, INCLUSIVE_GATEWAY, PARALLEL_GATEWAY, EVENT_BASED_GATEWAY -> true;
+      case MULTI_INSTANCE_BODY -> true;
+      case CALL_ACTIVITY -> true;
+      case INTERMEDIATE_THROW_EVENT -> true;
+    };
   }
 }
