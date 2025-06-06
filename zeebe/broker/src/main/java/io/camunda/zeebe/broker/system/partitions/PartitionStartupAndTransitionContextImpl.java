@@ -56,7 +56,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -149,7 +148,7 @@ public class PartitionStartupAndTransitionContextImpl
     this.raftPartition = raftPartition;
     messagingService = partitionCommunicationService;
     this.brokerCfg = brokerCfg;
-    this.snapshotApiRequestHandler = Objects.requireNonNull(snapshotApiRequestHandler);
+    this.snapshotApiRequestHandler = snapshotApiRequestHandler;
     this.stateController = stateController;
     this.snapshotCopy = snapshotCopy;
     this.typedRecordProcessorsFactory = typedRecordProcessorsFactory;
