@@ -18,15 +18,11 @@ import {hasPendingCancelOrMoveModification} from 'modules/utils/modifications';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {getFlowNodeName} from 'modules/utils/flowNodes';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
-import {IS_PROCESS_INSTANCE_V2_ENABLED} from 'modules/feature-flags';
 
 const useHasPendingCancelOrMoveModification = () => {
   const willAllFlowNodesBeCanceled = useWillAllFlowNodesBeCanceled();
   const modificationsByFlowNode = useModificationsByFlowNode();
-  const isRootNodeSelectedFromHook = useIsRootNodeSelected();
-  const isRootNodeSelected = IS_PROCESS_INSTANCE_V2_ENABLED
-    ? isRootNodeSelectedFromHook
-    : flowNodeSelectionStore.isRootNodeSelected;
+  const isRootNodeSelected = useIsRootNodeSelected();
   const currentSelection = flowNodeSelectionStore.state.selection;
 
   if (currentSelection === null) {

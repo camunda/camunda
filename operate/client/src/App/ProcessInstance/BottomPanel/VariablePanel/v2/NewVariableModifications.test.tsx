@@ -32,11 +32,6 @@ import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstan
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 
-jest.mock('modules/feature-flags', () => ({
-  ...jest.requireActual('modules/feature-flags'),
-  IS_PROCESS_INSTANCE_V2_ENABLED: true,
-}));
-
 const editNameFromTextfieldAndBlur = async (user: UserEvent, value: string) => {
   const [nameField] = screen.getAllByTestId('new-variable-name');
 
