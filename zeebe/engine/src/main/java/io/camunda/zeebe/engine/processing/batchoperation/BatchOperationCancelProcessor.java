@@ -136,6 +136,6 @@ public final class BatchOperationCancelProcessor
         cancelKey,
         BatchOperationIntent.CANCELED,
         recordValue,
-        EventMetadata.of(b -> b.batchOperationKey(recordValue.getBatchOperationKey())));
+        EventMetadata.of(b -> b.batchOperationReference(recordValue.getBatchOperationKey())));
   }
 }
