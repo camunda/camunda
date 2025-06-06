@@ -24,6 +24,7 @@ import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 public class NoopSnapshotStore implements ReceivableSnapshotStore {
 
@@ -84,4 +85,20 @@ public class NoopSnapshotStore implements ReceivableSnapshotStore {
 
   @Override
   public void close() {}
+
+  @Override
+  public Optional<PersistedSnapshot> getBootstrapSnapshot() {
+    return Optional.empty();
+  }
+
+  @Override
+  public ActorFuture<PersistedSnapshot> copyForBootstrap(
+      final PersistedSnapshot persistedSnapshot, final BiConsumer<Path, Path> copySnapshot) {
+    return null;
+  }
+
+  @Override
+  public ActorFuture<Void> deleteBootstrapSnapshots() {
+    return null;
+  }
 }

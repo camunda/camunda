@@ -19,7 +19,7 @@ import java.util.function.BiConsumer;
  *
  * <p>One backup can be taken at a time, as only one scaling up operation can be done at a time.
  */
-public interface BootstrapSnapshotStore extends PersistedSnapshotStore {
+public interface BootstrapSnapshotStore {
 
   /**
    * @return the latest snapshot that was copied if present.
