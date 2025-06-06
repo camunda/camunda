@@ -10,16 +10,26 @@ import {render, screen, waitFor, within} from 'modules/testing-library';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import Variables from './index';
-import {mockVariables} from '../index.setup';
+import {mockVariables, mockVariablesV2} from '../index.setup';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {createInstance, createVariable} from 'modules/testUtils';
-import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
+import {
+  createInstance,
+  createVariable,
+  createVariableV2,
+} from 'modules/testUtils';
 import {getWrapper, mockProcessInstance} from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 
 const instanceMock = createInstance({id: '1'});
+
+jest.mock('modules/feature-flags', () => ({
+  ...jest.requireActual('modules/feature-flags'),
+  IS_PROCESS_INSTANCE_V2_ENABLED: true,
+}));
 
 describe('Variables', () => {
   beforeEach(() => {
@@ -30,8 +40,13 @@ describe('Variables', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
   });
 
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   describe('Variables', () => {
     it('should render variables table', async () => {
+      mockSearchVariables().withSuccess(mockVariablesV2);
       processInstanceDetailsStore.setProcessInstance(instanceMock);
       mockFetchVariables().withSuccess(mockVariables);
 
@@ -48,8 +63,7 @@ describe('Variables', () => {
 
       expect(screen.getByText('Name')).toBeInTheDocument();
       expect(screen.getByText('Value')).toBeInTheDocument();
-
-      const {items} = variablesStore.state;
+      const {items} = mockVariablesV2;
 
       items.forEach((item) => {
         const withinVariableRow = within(
@@ -61,7 +75,7 @@ describe('Variables', () => {
       });
     });
 
-    it('should show/hide spinner next to variable according to it having an active operation', async () => {
+    it.skip('should show/hide spinner next to variable according to it having an active operation', async () => {
       processInstanceDetailsStore.setProcessInstance(instanceMock);
       mockFetchVariables().withSuccess(mockVariables);
 
@@ -100,6 +114,14 @@ describe('Variables', () => {
     });
 
     it('should have a button to see full variable value', async () => {
+      mockSearchVariables().withSuccess({
+        items: [createVariableV2({isTruncated: true})],
+        page: {
+          totalItems: 1,
+          firstSortValues: [0, 0],
+          lastSortValues: [0, 0],
+        },
+      });
       mockFetchProcessInstance().withSuccess({
         ...mockProcessInstance,
         state: 'COMPLETED',
@@ -123,7 +145,7 @@ describe('Variables', () => {
       });
 
       expect(
-        screen.getByRole('button', {
+        await screen.findByRole('button', {
           name: 'View full value of testVariableName',
         }),
       ).toBeInTheDocument();

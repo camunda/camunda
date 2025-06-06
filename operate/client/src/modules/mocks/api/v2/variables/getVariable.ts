@@ -6,14 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export const endpoints = {
-  queryVariables: {
-    method: 'POST',
-    getUrl: () => `/v2/variables/search`,
-  },
-  getVariable: {
-    method: 'GET',
-    getUrl: ({variableKey}: {variableKey: string}) =>
-      `/v2/variables/${variableKey}`,
-  },
-};
+import {mockGetRequest} from '../../mockRequest';
+import {Variable} from '@vzeta/camunda-api-zod-schemas/process-management';
+
+const mockGetVariable = (contextPath = '') =>
+  mockGetRequest<Variable>(`${contextPath}/v2/variables/:variableKey`);
+
+export {mockGetVariable};
