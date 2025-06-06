@@ -50,11 +50,6 @@ import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'mo
 
 const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
 
-jest.mock('modules/feature-flags', () => ({
-  ...jest.requireActual('modules/feature-flags'),
-  IS_PROCESS_INSTANCE_V2_ENABLED: true,
-}));
-
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
     displayNotification: jest.fn(() => () => {}),
@@ -138,6 +133,9 @@ describe('VariablePanel', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
+    mockFetchProcessInstanceDeprecated().withSuccess(
+      mockProcessInstanceDeprecated,
+    );
 
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: statistics,
@@ -149,6 +147,7 @@ describe('VariablePanel', () => {
       items: statistics,
     });
 
+    mockFetchVariables().withSuccess([createVariable()]);
     mockFetchVariables().withSuccess([createVariable()]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
@@ -169,7 +168,6 @@ describe('VariablePanel', () => {
   afterEach(async () => {
     jest.clearAllMocks();
     jest.clearAllTimers();
-    await new Promise(process.nextTick);
   });
 
   it('should render variables', async () => {
