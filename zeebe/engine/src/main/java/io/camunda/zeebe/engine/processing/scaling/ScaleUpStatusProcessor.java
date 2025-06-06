@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.scaling;
+package io.camunda.zeebe.engine.processing.scaling;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -45,10 +45,10 @@ public class ScaleUpStatusProcessor implements TypedRecordProcessor<ScaleRecord>
       writers.response().writeRejectionOnCommand(command, RejectionType.INVALID_ARGUMENT, message);
     } else {
       final var response = new ScaleRecord();
-      response
-          .setDesiredPartitionCount(desiredPartitions.size())
-          .setRedistributedPartitions(routingState.currentPartitions())
-          .setBootstrappedAt(routingState.bootstrappedAt(request.getDesiredPartitionCount()));
+      response.statusResponse(
+          desiredPartitions.size(),
+          routingState.currentPartitions(),
+          routingState.bootstrappedAt(request.getDesiredPartitionCount()));
       writers.state().appendFollowUpEvent(key, ScaleIntent.STATUS_RESPONSE, response);
       writers.response().writeEventOnCommand(key, ScaleIntent.STATUS_RESPONSE, response, command);
     }
