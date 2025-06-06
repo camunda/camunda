@@ -56,8 +56,8 @@ public sealed interface AuthenticationHandler {
           Objects.requireNonNull(oidcAuthenticationConfiguration);
       oidcPrincipalLoader =
           new OidcPrincipalLoader(
-              sanitizeClaimPath(oidcAuthenticationConfiguration.getUsernameClaim()),
-              sanitizeClaimPath(oidcAuthenticationConfiguration.getClientIdClaim()));
+              oidcAuthenticationConfiguration.getUsernameClaim(),
+              oidcAuthenticationConfiguration.getClientIdClaim());
     }
 
     @Override
