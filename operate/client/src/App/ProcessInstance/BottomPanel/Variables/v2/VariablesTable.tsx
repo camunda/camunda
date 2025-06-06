@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useRef} from 'react';
+import {useRef} from 'react';
 import {useForm, useFormState} from 'react-final-form';
 import {Button, Loading} from '@carbon/react';
 import {Edit} from '@carbon/react/icons';
