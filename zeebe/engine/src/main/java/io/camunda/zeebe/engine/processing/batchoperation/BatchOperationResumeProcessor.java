@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
@@ -55,6 +56,7 @@ public final class BatchOperationResumeProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
+  private final BatchOperationMetrics metrics;
 
   private final BatchOperationState batchOperationState;
 
@@ -63,7 +65,8 @@ public final class BatchOperationResumeProcessor
       final CommandDistributionBehavior commandDistributionBehavior,
       final ProcessingState processingState,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final KeyGenerator keyGenerator) {
+      final KeyGenerator keyGenerator,
+      final BatchOperationMetrics metrics) {
     stateWriter = writers.state();
     commandWriter = writers.command();
     responseWriter = writers.response();
@@ -72,6 +75,7 @@ public final class BatchOperationResumeProcessor
     this.commandDistributionBehavior = commandDistributionBehavior;
     batchOperationState = processingState.getBatchOperationState();
     this.authCheckBehavior = authCheckBehavior;
+    this.metrics = metrics;
   }
 
   @Override
@@ -115,6 +119,8 @@ public final class BatchOperationResumeProcessor
         .withKey(resumeKey)
         .inQueue(DistributionQueue.BATCH_OPERATION)
         .distribute(command);
+
+    metrics.recordResumed(batchOperation.get().getBatchOperationType());
   }
 
   @Override

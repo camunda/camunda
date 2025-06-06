@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.batchoperation;
 
 import static org.mockito.Mockito.*;
 
+import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -64,7 +65,13 @@ class BatchOperationSuspendProcessorTest {
 
     // Inject mocked writers
     processor =
-        new BatchOperationSuspendProcessor(writers, null, state, authCheckBehavior, keyGenerator);
+        new BatchOperationSuspendProcessor(
+            writers,
+            null,
+            state,
+            authCheckBehavior,
+            keyGenerator,
+            mock(BatchOperationMetrics.class));
   }
 
   @Test
