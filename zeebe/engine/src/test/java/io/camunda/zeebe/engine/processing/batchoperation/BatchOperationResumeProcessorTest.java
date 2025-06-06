@@ -9,9 +9,9 @@ package io.camunda.zeebe.engine.processing.batchoperation;
 
 import static org.mockito.Mockito.*;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter.EventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
@@ -70,7 +70,7 @@ class BatchOperationResumeProcessorTest {
             resumeKey,
             BatchOperationIntent.RESUMED,
             recordValue,
-            EventMetadata.of(m -> m.batchOperationReference(batchOperationKey)));
+            FollowUpEventMetadata.of(m -> m.batchOperationReference(batchOperationKey)));
     verify(commandWriter, never()).appendFollowUpCommand(anyLong(), any(), any(), any());
   }
 
@@ -96,7 +96,7 @@ class BatchOperationResumeProcessorTest {
             resumeKey,
             BatchOperationIntent.RESUMED,
             recordValue,
-            EventMetadata.of(m -> m.batchOperationReference(batchOperationKey)));
+            FollowUpEventMetadata.of(m -> m.batchOperationReference(batchOperationKey)));
 
     final ArgumentCaptor<BatchOperationExecutionRecord> captor =
         ArgumentCaptor.forClass(BatchOperationExecutionRecord.class);

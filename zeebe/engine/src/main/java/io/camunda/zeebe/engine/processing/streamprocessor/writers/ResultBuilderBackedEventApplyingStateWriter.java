@@ -67,7 +67,8 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
             .recordVersion(recordVersion)
             .rejectionType(RejectionType.NULL_VAL)
             .rejectionReason("")
-            .operationReference(metadata.getOperationReference());
+            .operationReference(metadata.getOperationReference())
+            .batchOperationReference(metadata.getBatchOperationReference());
 
     resultBuilder().appendRecord(key, value, recordMetadata);
     eventApplier.applyState(key, intent, value, recordVersion);
