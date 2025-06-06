@@ -29,6 +29,8 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
+import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -103,7 +105,8 @@ public class CamundaOAuthPrincipalService {
     final var clientId = principals.clientId();
 
     if (username == null && clientId == null) {
-      throw new IllegalArgumentException(
+      throw new OAuth2AuthenticationException(
+          new OAuth2Error(OAuth2ErrorCodes.INVALID_CLIENT),
           "Neither username claim (%s) nor clientId claim (%s) could be found in the claims. Please check your OIDC configuration."
               .formatted(usernameClaim, clientIdClaim));
     }
