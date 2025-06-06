@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.impl.broker.request;
+package io.camunda.zeebe.gateway.impl.broker.request.scaling;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.Protocol;
@@ -26,11 +26,7 @@ public class GetScaleUpProgress extends BrokerExecuteCommand<ScaleRecord> {
 
   public GetScaleUpProgress(final int desiredPartitionCount) {
     this();
-    setDesiredPartitionCount(desiredPartitionCount);
-  }
-
-  public void setDesiredPartitionCount(final int desiredPartitionCount) {
-    requestDto.setDesiredPartitionCount(desiredPartitionCount);
+    requestDto.status(desiredPartitionCount);
   }
 
   @Override
