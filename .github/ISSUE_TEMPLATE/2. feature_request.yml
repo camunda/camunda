@@ -1,6 +1,6 @@
 name: Feature Request
 description: Suggest an idea or a general improvement.
-labels: ["kind/feature"]
+labels: ["kind/feature-request"]
 type: feature
 body:
   - type: dropdown
