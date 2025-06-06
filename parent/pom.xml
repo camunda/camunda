@@ -138,7 +138,7 @@
     <version.jackson-annotations>2.18.3</version.jackson-annotations>
     <version.json-path>2.9.0</version.json-path>
     <version.swagger-annotations>2.2.29</version.swagger-annotations>
-    <version.checker-qual>3.49.1</version.checker-qual>
+    <version.checker-qual>3.49.4</version.checker-qual>
     <version.java-jwt>4.5.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.postgresql>42.7.6</version.postgresql>
