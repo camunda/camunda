@@ -36,20 +36,19 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
 
   @Override
   protected void process(final List<Group> batch) {
-    batch.forEach(this::processTask);
-  }
-
-  private void processTask(final Group group) {
-    try {
-      final var normalizedGroupId = normalizeGroupID(group);
-      final var groupDTO = new GroupDTO(normalizedGroupId, group.name(), "");
-      groupServices.createGroup(groupDTO);
-      assignUsersToGroup(group.id(), normalizedGroupId);
-    } catch (final Exception e) {
-      if (!isConflictError(e)) {
-        throw new RuntimeException("Failed to migrate group with ID: " + group.id(), e);
-      }
-    }
+    batch.forEach(
+        group -> {
+          try {
+            final var normalizedGroupId = normalizeGroupID(group);
+            final var groupDTO = new GroupDTO(normalizedGroupId, group.name(), "");
+            groupServices.createGroup(groupDTO);
+            assignUsersToGroup(group.id(), normalizedGroupId);
+          } catch (final Exception e) {
+            if (!isConflictError(e)) {
+              throw new RuntimeException("Failed to migrate group with ID: " + group.id(), e);
+            }
+          }
+        });
   }
 
   // Normalizes the group ID to ensure it meets the requirements for a valid group ID.
