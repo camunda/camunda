@@ -342,7 +342,9 @@ class RequestMapperTest {
                         .withGroups(List.of("g1", "g2"))
                         .build())),
             null,
-            null);
+            null,
+            null,
+            oAuth2AuthorizeRequest -> null);
     SecurityContextHolder.getContext().setAuthentication(token);
   }
 

@@ -11,40 +11,59 @@ import io.camunda.authentication.entity.CamundaJwtUser;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
-import org.springframework.security.oauth2.core.AbstractOAuth2Token;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.server.resource.authentication.AbstractOAuth2TokenAuthenticationToken;
 
-public class CamundaJwtAuthenticationToken extends AbstractOAuth2TokenAuthenticationToken<Jwt> {
+public class CamundaJwtAuthenticationTokenV2 extends AbstractAuthenticationToken {
 
-  private static final Logger LOG = LoggerFactory.getLogger(CamundaJwtAuthenticationToken.class);
-  final Function<OAuth2AuthorizeRequest, OAuth2AuthorizedClient> reAuthFunction;
+  private static final Logger LOG = LoggerFactory.getLogger(CamundaJwtAuthenticationTokenV2.class);
+
+  private Function<OAuth2AuthorizeRequest, OAuth2AuthorizedClient> reAuthFunction;
+  private Function<String, Jwt> stringTokenToJwt;
+
+  private CamundaJwtUser principal;
+  private Object credentials;
+
   private OAuth2AuthorizedClient authorizedClient;
 
-  public CamundaJwtAuthenticationToken(
-      final Jwt token,
+  private volatile Jwt accessToken;
+
+  public CamundaJwtAuthenticationTokenV2(
+      final Jwt accessToken,
       final CamundaJwtUser principal,
       final OAuth2AuthorizedClient authorizedClient,
       final Object credentials,
       final Collection<? extends GrantedAuthority> authorities,
-      final Function<OAuth2AuthorizeRequest, OAuth2AuthorizedClient> reAuthFunction) {
-    super(token, principal, credentials, authorities);
+      final Function<OAuth2AuthorizeRequest, OAuth2AuthorizedClient> reAuthFunction,
+      final Function<String, Jwt> stringTokenToJwt) {
+    super(authorities);
+    this.accessToken = accessToken;
+    this.principal = principal;
     this.authorizedClient = authorizedClient;
+    this.credentials = credentials;
     this.reAuthFunction = reAuthFunction;
+    this.stringTokenToJwt = stringTokenToJwt;
     setAuthenticated(true);
   }
 
+  public Jwt getAccessToken() {
+    return accessToken;
+  }
+
   @Override
-  public Map<String, Object> getTokenAttributes() {
-    return getToken().getClaims();
+  public Object getCredentials() {
+    return credentials;
+  }
+
+  @Override
+  public Object getPrincipal() {
+    return principal;
   }
 
   @Override
@@ -57,28 +76,33 @@ public class CamundaJwtAuthenticationToken extends AbstractOAuth2TokenAuthentica
       } catch (final Exception e) {
         LOG.error("Renewing access token failed with exception", e);
         setAuthenticated(false);
+        return false;
       }
     }
     return super.isAuthenticated();
   }
 
-  private boolean hasExpired() {
-    return Optional.ofNullable(authorizedClient)
-        .map(OAuth2AuthorizedClient::getAccessToken)
-        .map(AbstractOAuth2Token::getExpiresAt)
-        .map(ea -> ea.isBefore(Instant.now()))
-        .orElse(false);
-  }
-
+  // TODO: consider concurrency
   private void renewAccessToken() {
+    LOG.debug("Renewing access token...");
+
     final OAuth2AuthorizeRequest req =
         OAuth2AuthorizeRequest.withAuthorizedClient(authorizedClient).build();
+
     authorizedClient = reAuthFunction.apply(req);
     final var newAccessToken = authorizedClient.getAccessToken();
+    this.accessToken = stringTokenToJwt.apply(newAccessToken.getTokenValue());
+    this.principal.refreshJwt(accessToken);
 
-    final JwtDecoder decoder = null; // will pass decoder or function
-    final var jwtToken = decoder.decode(newAccessToken.getTokenValue());
-    // update this auth token
-    // update principal token
+    LOG.info(
+        "Access token renewed successfully. New expiration: {}", newAccessToken.getExpiresAt());
+  }
+
+  public Map<String, Object> getTokenAttributes() {
+    return accessToken.getClaims();
+  }
+
+  private boolean hasExpired() {
+    return accessToken.getExpiresAt().isAfter(Instant.now());
   }
 }
