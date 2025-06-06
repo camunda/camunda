@@ -29,6 +29,7 @@ public final class UserTaskFixtures extends CommonFixtures {
         new Builder()
             .userTaskKey(nextKey())
             .elementId(generateRandomString("elementBpmnId"))
+            .elementName(generateRandomString("elementBpmnName"))
             .processDefinitionId(generateRandomString("processDefinitionId"))
             .processInstanceKey(nextKey())
             .creationDate(NOW)

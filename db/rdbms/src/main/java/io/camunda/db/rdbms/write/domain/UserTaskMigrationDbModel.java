@@ -14,6 +14,7 @@ public record UserTaskMigrationDbModel(
     Long processDefinitionKey,
     String processDefinitionId,
     String elementId,
+    String elementName,
     Integer processDefinitionVersion) {
 
   public static class Builder implements ObjectBuilder<UserTaskMigrationDbModel> {
@@ -22,6 +23,7 @@ public record UserTaskMigrationDbModel(
     private Long processDefinitionKey;
     private String processDefinitionId;
     private String elementId;
+    private String elementName;
     private Integer processDefinitionVersion;
 
     public Builder userTaskKey(final Long userTaskKey) {
@@ -44,6 +46,11 @@ public record UserTaskMigrationDbModel(
       return this;
     }
 
+    public Builder elementName(final String elementName) {
+      this.elementName = elementName;
+      return this;
+    }
+
     public Builder processDefinitionVersion(final Integer processDefinitionVersion) {
       this.processDefinitionVersion = processDefinitionVersion;
       return this;
@@ -56,6 +63,7 @@ public record UserTaskMigrationDbModel(
           processDefinitionKey,
           processDefinitionId,
           elementId,
+          elementName,
           processDefinitionVersion);
     }
   }
