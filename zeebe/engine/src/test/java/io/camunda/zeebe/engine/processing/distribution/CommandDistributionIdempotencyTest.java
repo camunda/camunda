@@ -39,6 +39,8 @@ import io.camunda.zeebe.engine.processing.identity.RoleRemoveEntityProcessor;
 import io.camunda.zeebe.engine.processing.identity.RoleUpdateProcessor;
 import io.camunda.zeebe.engine.processing.message.MessageSubscriptionMigrateProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
+import io.camunda.zeebe.engine.processing.scaling.MarkPartitionBootstrappedProcessor;
+import io.camunda.zeebe.engine.processing.scaling.ScaleUpProcessor;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.tenant.TenantAddEntityProcessor;
@@ -71,6 +73,7 @@ import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
@@ -658,6 +661,27 @@ public class CommandDistributionIdempotencyTest {
                 MessageSubscriptionIntent.MIGRATE,
                 CommandDistributionIdempotencyTest::migrateMessageSubscription),
             MessageSubscriptionMigrateProcessor.class
+          },
+          {
+            "Scale.SCALE_UP is idempotent",
+            new Scenario(
+                ValueType.SCALE,
+                ScaleIntent.SCALE_UP,
+                () -> ENGINE.scale().scaleUp().scaleUp(3),
+                // distribution of SCALE_UP can't complete because it's only enqueued for partition
+                // 3.
+                false),
+            ScaleUpProcessor.class,
+          },
+          {
+            "Scale.MARK_PARTITION_BOOTSTRAPPED is idempotent",
+            new Scenario(
+                ValueType.SCALE,
+                ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
+                () -> ENGINE.scale().markPartitionBootstrapped().markBootstrapped(3),
+                // EngineRule does not support a dynamic number of partitions
+                false),
+            MarkPartitionBootstrappedProcessor.class
           }
         });
   }
@@ -708,12 +732,14 @@ public class CommandDistributionIdempotencyTest {
     RecordingExporter.setMaximumWaitTime(5000);
 
     // then we expect the distribution still finishes based on the second (retried) acknowledgement
-    assertThat(
-            RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
-                .withPartitionId(1)
-                .withRecordKey(distributionCommand.getKey())
-                .exists())
-        .isTrue();
+    if (scenario.assertDistributionFinishes) {
+      assertThat(
+              RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
+                  .withPartitionId(1)
+                  .withRecordKey(distributionCommand.getKey())
+                  .exists())
+          .isTrue();
+    }
   }
 
   private static Record<BatchOperationCreationRecordValue> createBatchOperation() {
@@ -839,7 +865,16 @@ public class CommandDistributionIdempotencyTest {
         .migrate();
   }
 
-  private record Scenario(ValueType valueType, Intent intent, CommandSender commandSender) {
+  private record Scenario(
+      ValueType valueType,
+      Intent intent,
+      CommandSender commandSender,
+      boolean assertDistributionFinishes) {
+
+    public Scenario(
+        final ValueType valueType, final Intent intent, final CommandSender commandSender) {
+      this(valueType, intent, commandSender, true);
+    }
 
     public boolean matches(final CommandDistributionRecordValue record) {
       return record.getValueType() == valueType && record.getIntent() == intent;
