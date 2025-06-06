@@ -8,8 +8,8 @@
 package io.camunda.zeebe.snapshots.transfer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.spy;
 
-import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.snapshots.SnapshotCopyUtil;
 import io.camunda.zeebe.snapshots.SnapshotTransferUtil;
@@ -33,7 +33,7 @@ public class SnapshotTransferTest {
   @TempDir Path temporaryFolder;
   FileBasedSnapshotStore senderSnapshotStore;
   FileBasedSnapshotStore receiverSnapshotStore;
-  private SnapshotTransfer snapshotTransfer;
+  private SnapshotTransferImpl snapshotTransfer;
 
   @BeforeEach
   public void beforeEach() throws Exception {
@@ -42,8 +42,13 @@ public class SnapshotTransferTest {
     final var receiverDirectory = temporaryFolder.resolve("receiver");
 
     senderSnapshotStore =
-        new FileBasedSnapshotStore(
-            0, partitionId, senderDirectory, snapshotPath -> Map.of(), new SimpleMeterRegistry());
+        spy(
+            new FileBasedSnapshotStore(
+                0,
+                partitionId,
+                senderDirectory,
+                snapshotPath -> Map.of(),
+                new SimpleMeterRegistry()));
     actorScheduler.submitActor(senderSnapshotStore);
     actorScheduler.workUntilDone();
 
@@ -53,12 +58,13 @@ public class SnapshotTransferTest {
 
     actorScheduler.submitActor(receiverSnapshotStore);
     actorScheduler.workUntilDone();
-    final ConcurrencyControl concurrencyControl = senderSnapshotStore;
-    final SnapshotTransferService transferService =
-        new SnapshotTransferServiceImpl(
-            senderSnapshotStore, 1, SnapshotCopyUtil.copyAllFiles(), concurrencyControl);
     snapshotTransfer =
-        new SnapshotTransfer(transferService, receiverSnapshotStore, concurrencyControl);
+        new SnapshotTransferImpl(
+            control ->
+                new SnapshotTransferServiceImpl(
+                    senderSnapshotStore, 1, SnapshotCopyUtil.copyAllFiles(), control),
+            receiverSnapshotStore);
+    actorScheduler.submitActor(snapshotTransfer);
 
     actorScheduler.workUntilDone();
   }

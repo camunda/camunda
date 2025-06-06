@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.snapshots.transfer;
 
-import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
@@ -17,19 +17,15 @@ import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.UUID;
 
-public class SnapshotTransferImpl implements SnapshotTransfer {
+public class SnapshotTransferImpl extends Actor implements SnapshotTransfer {
 
   private final SnapshotTransferService service;
   private final ReceivableSnapshotStore snapshotStore;
-  private final ConcurrencyControl concurrency;
 
   public SnapshotTransferImpl(
-      final SnapshotTransferService service,
-      final ReceivableSnapshotStore snapshotStore,
-      final ConcurrencyControl concurrency) {
+      final SnapshotTransferService service, final ReceivableSnapshotStore snapshotStore) {
     this.service = service;
     this.snapshotStore = snapshotStore;
-    this.concurrency = concurrency;
   }
 
   @Override
@@ -52,7 +48,7 @@ public class SnapshotTransferImpl implements SnapshotTransfer {
                         return new Tuple<>(snapshot, fbsnapshot);
                       });
             },
-            concurrency)
+            actor)
         .andThen(
             tuple -> {
               final var future =
@@ -60,7 +56,7 @@ public class SnapshotTransferImpl implements SnapshotTransfer {
               future.onError(error -> tuple.getRight().abort());
               return future;
             },
-            concurrency);
+            actor);
   }
 
   private ActorFuture<PersistedSnapshot> receiveAllChunks(
@@ -83,6 +79,6 @@ public class SnapshotTransferImpl implements SnapshotTransfer {
                 return receivedSnapshot.persist();
               }
             },
-            concurrency);
+            actor);
   }
 }

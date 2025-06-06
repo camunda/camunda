@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.snapshots.transfer;
 
+import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 
@@ -17,6 +18,6 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
  *
  * <p>Snapshots are received in the {@param snapshotStore}.
  */
-public interface SnapshotTransfer {
+public interface SnapshotTransfer extends AsyncClosable {
   ActorFuture<PersistedSnapshot> getLatestSnapshot(final int partitionId);
 }
