@@ -7,13 +7,17 @@
  */
 package io.camunda.zeebe.broker.partitioning.startup.steps;
 
+import static io.camunda.zeebe.scheduler.AsyncClosable.closeHelper;
+
+import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotTransferServiceClient;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
+import io.camunda.zeebe.snapshots.transfer.SnapshotTransferImpl;
 
 public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
 
@@ -38,26 +42,40 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
             .submitActor(snapshotStore, SchedulingHints.ioBound())
             .thenApply(v -> context.snapshotStore(snapshotStore), context.concurrencyControl());
     if (context.isInitializeFromSnapshot()) {
-      result = result.andThen(this::initializeFromSnapshot, context.concurrencyControl());
+      result =
+          result
+              .andThen(
+                  ignored -> {
+                    final var snapshotTransfer =
+                        new SnapshotTransferImpl(
+                            new SnapshotTransferServiceClient(context.brokerClient()),
+                            snapshotStore);
+                    return context
+                        .schedulingService()
+                        .submitActor(snapshotTransfer)
+                        .thenApply(
+                            empty -> {
+                              context.setSnapshotTransfer(snapshotTransfer);
+                              return context;
+                            },
+                            context.concurrencyControl());
+                  },
+                  context.concurrencyControl())
+              .andThen(this::initializeFromSnapshot, context.concurrencyControl());
     }
     return result;
   }
 
   @Override
   public ActorFuture<PartitionStartupContext> shutdown(final PartitionStartupContext context) {
-    final var snapshotStore = context.snapshotStore();
-    if (snapshotStore == null) {
-      return CompletableActorFuture.completed(context);
-    } else {
-      return snapshotStore
-          .closeAsync()
-          .thenApply(ignored -> context.snapshotStore(null), context.concurrencyControl());
-    }
+    return closeHelper(context.snapshotTransfer())
+        .andThen(ignore -> closeHelper(context.snapshotStore()), context.concurrencyControl())
+        .thenApply(ignored -> context.snapshotStore(null), context.concurrencyControl());
   }
 
   ActorFuture<PartitionStartupContext> initializeFromSnapshot(
       final PartitionStartupContext context) {
-    final var fut = context.snapshotTransfer().getLatestSnapshot(context.partitionId());
+    final var fut = context.snapshotTransfer().getLatestSnapshot(Protocol.DEPLOYMENT_PARTITION);
     return fut.andThen(
         snapshot ->
             context
