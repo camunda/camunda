@@ -1,0 +1,23 @@
+# This workflow builds the release, triggered by our engineering process automation cluster. It creates the release based on the
+# given input.
+#
+name: Repo dispatch test 32376
+
+# owner: @camunda/monorepo-devops-team
+
+on:
+  push:
+    branches:
+      - 32376-automate-changelog-generation-test
+
+jobs:
+  run-release:
+    name: "Release 8.8.0-alpha4 test"
+    uses: ./.github/workflows/camunda-platform-release.yml
+    secrets: inherit
+    with:
+      releaseVersion: "8.8.0-alpha1"
+      nextDevelopmentVersion: "8.8.0-alpha5"
+      isLatest: true
+      dryRun: false
+      releaseBranch: "32376-automate-changelog-generation-test"
