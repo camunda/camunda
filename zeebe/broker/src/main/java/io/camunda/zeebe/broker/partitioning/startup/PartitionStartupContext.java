@@ -11,7 +11,6 @@ import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotTransferServiceClient;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
@@ -22,7 +21,6 @@ import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransfer;
-import io.camunda.zeebe.snapshots.transfer.SnapshotTransferImpl;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.nio.file.Path;
@@ -49,6 +47,7 @@ public class PartitionStartupContext {
   private FileBasedSnapshotStore snapshotStore;
   private RaftPartition raftPartition;
   private ZeebePartition zeebePartition;
+  private SnapshotTransfer snapshotTransfer;
 
   public PartitionStartupContext(
       final ActorSchedulingService schedulingService,
@@ -192,8 +191,11 @@ public class PartitionStartupContext {
     return brokerClient;
   }
 
+  public void setSnapshotTransfer(final SnapshotTransfer snapshotTransfer) {
+    this.snapshotTransfer = snapshotTransfer;
+  }
+
   public SnapshotTransfer snapshotTransfer() {
-    return new SnapshotTransferImpl(
-        new SnapshotTransferServiceClient(brokerClient), snapshotStore, concurrencyControl);
+    return snapshotTransfer;
   }
 }

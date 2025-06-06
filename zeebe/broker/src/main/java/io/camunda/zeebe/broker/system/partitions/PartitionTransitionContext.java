@@ -25,6 +25,7 @@ import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
+import io.camunda.zeebe.db.SnapshotCopy;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.state.QueryService;
@@ -52,6 +53,8 @@ public interface PartitionTransitionContext extends PartitionContext {
   void setSnapshotDirector(AsyncSnapshotDirector snapshotDirector);
 
   StateController getStateController();
+
+  SnapshotCopy snapshotCopy();
 
   PersistedSnapshotStore getPersistedSnapshotStore();
 

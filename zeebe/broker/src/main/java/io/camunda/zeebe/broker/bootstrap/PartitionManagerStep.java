@@ -42,6 +42,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
             brokerStartupContext.getPartitionListeners(),
             brokerStartupContext.getPartitionRaftListeners(),
             brokerStartupContext.getCommandApiService(),
+            brokerStartupContext.getSnapshotApiRequestHandler(),
             brokerStartupContext.getExporterRepository(),
             brokerStartupContext.getGatewayBrokerTransport(),
             brokerStartupContext.getJobStreamService().jobStreamer(),
