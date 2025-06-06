@@ -271,13 +271,13 @@ jobs:
           --from="$ZCL_FROM_REV" \
           --target="$ZCL_TARGET_REV" \
           --label="version:$ZCL_TARGET_REV" \
-          --org camunda --repo zeebe
+          --org camunda --repo camunda
 
           # The following command will print the markdown code to sysout - we are storing this into our variable "changelog"
           changelog=$(./zcl generate \
           --token=${{ secrets.GITHUB_TOKEN }} \
           --label="version:$ZCL_TARGET_REV" \
-          --org camunda --repo zeebe)
+          --org camunda --repo camunda)
 
           # With multiline strings the output needs to be set differently.
           #
