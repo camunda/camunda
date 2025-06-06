@@ -58,7 +58,8 @@ public class SnapshotTransferTest {
         new SnapshotTransferServiceImpl(
             senderSnapshotStore, 1, SnapshotCopyUtil.copyAllFiles(), concurrencyControl);
     snapshotTransfer = new SnapshotTransferImpl(transferService, receiverSnapshotStore);
-    actorScheduler.submitActor(snapshotTransfer).join();
+    actorScheduler.submitActor(snapshotTransfer);
+    actorScheduler.workUntilDone();
 
     actorScheduler.workUntilDone();
   }
@@ -90,5 +91,20 @@ public class SnapshotTransferTest {
               assertThat(snapshot.isBootstrap()).isTrue();
               assertThat(snapshot.files()).isNotEmpty();
             });
+  }
+
+  @Test
+  public void shouldReturnNullWhenNoSnapshotIsPresent() {
+    // given
+    final int partitionId = 1;
+
+    // when
+    final var persistedSnapshotFuture = snapshotTransfer.getLatestSnapshot(partitionId);
+    actorScheduler.workUntilDone();
+
+    // then
+    assertThat(persistedSnapshotFuture)
+        .succeedsWithin(Duration.ofSeconds(30))
+        .satisfies(p -> assertThat(p).isNull());
   }
 }
