@@ -235,10 +235,12 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new UserTaskHandler(
                 indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),
                 formCache,
+                processCache,
                 exporterMetadata),
             new UserTaskJobBasedHandler(
                 indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),
                 formCache,
+                processCache,
                 exporterMetadata,
                 objectMapper),
             new UserTaskProcessInstanceHandler(

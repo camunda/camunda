@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.TestFormCache;
+import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
@@ -54,11 +55,12 @@ public class UserTaskJobBasedHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-tasklist-task";
   private final TestFormCache formCache = new TestFormCache();
+  private final TestProcessCache processCache = new TestProcessCache();
   private final ExporterMetadata exporterMetadata =
       new ExporterMetadata(TestObjectMapper.objectMapper());
   private final UserTaskJobBasedHandler underTest =
       new UserTaskJobBasedHandler(
-          indexName, formCache, exporterMetadata, TestObjectMapper.objectMapper());
+          indexName, formCache, processCache, exporterMetadata, TestObjectMapper.objectMapper());
 
   @BeforeEach
   void resetMetadata() {

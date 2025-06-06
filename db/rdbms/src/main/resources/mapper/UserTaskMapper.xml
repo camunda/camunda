@@ -15,14 +15,14 @@
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel"
     statementType="PREPARED">
-    INSERT INTO ${prefix}USER_TASK (USER_TASK_KEY, ELEMENT_ID, PROCESS_DEFINITION_ID, CREATION_DATE,
+    INSERT INTO ${prefix}USER_TASK (USER_TASK_KEY, ELEMENT_ID, ELEMENT_NAME, PROCESS_DEFINITION_ID, CREATION_DATE,
                            COMPLETION_DATE, ASSIGNEE, STATE,
                            FORM_KEY,
                            PROCESS_DEFINITION_KEY, PROCESS_INSTANCE_KEY,
                            ELEMENT_INSTANCE_KEY, TENANT_ID, DUE_DATE, FOLLOW_UP_DATE,
                            EXTERNAL_FORM_REFERENCE, PROCESS_DEFINITION_VERSION, CUSTOM_HEADERS,
                                     PRIORITY, PARTITION_ID, HISTORY_CLEANUP_DATE)
-    VALUES (#{userTaskKey}, #{elementId}, #{processDefinitionId}, #{creationDate},
+    VALUES (#{userTaskKey}, #{elementId}, #{elementName}, #{processDefinitionId}, #{creationDate},
             #{completionDate},
             #{assignee}, #{state}, #{formKey},
             #{processDefinitionKey}, #{processInstanceKey}, #{elementInstanceKey}, #{tenantId},
@@ -353,6 +353,7 @@
     statementType="PREPARED">
     UPDATE ${prefix}USER_TASK SET
     ELEMENT_ID = #{elementId},
+    ELEMENT_NAME = #{elementName},
     PROCESS_DEFINITION_ID = #{processDefinitionId},
     PROCESS_DEFINITION_KEY = #{processDefinitionKey},
     PROCESS_DEFINITION_VERSION = #{processDefinitionVersion}
