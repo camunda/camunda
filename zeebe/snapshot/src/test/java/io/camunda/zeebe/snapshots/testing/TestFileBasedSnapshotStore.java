@@ -11,6 +11,7 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshotListener;
@@ -31,6 +32,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.zip.CRC32C;
@@ -139,6 +141,22 @@ public class TestFileBasedSnapshotStore implements ReceivableSnapshotStore {
       throw new UncheckedIOException(e);
     }
     return true;
+  }
+
+  @Override
+  public Optional<PersistedSnapshot> getBootstrapSnapshot() {
+    return Optional.empty();
+  }
+
+  @Override
+  public ActorFuture<PersistedSnapshot> copyForBootstrap(
+      final PersistedSnapshot persistedSnapshot, final BiConsumer<Path, Path> copySnapshot) {
+    return CompletableActorFuture.completed(null);
+  }
+
+  @Override
+  public ActorFuture<Void> deleteBootstrapSnapshots() {
+    return CompletableActorFuture.completed();
   }
 
   private static final class TestChecksumProvider implements CRC32CChecksumProvider {
