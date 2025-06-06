@@ -496,7 +496,6 @@ public class AuthenticationInterceptorTest {
     final var jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class);
     final Map<String, Object> claims =
         Map.of("username", "test-user", "groups", List.of(Map.of("foo", "bar")));
-    ;
     when(jwt.getClaims()).thenReturn(claims);
 
     final var jwtDecoder = mock(JwtDecoder.class);
