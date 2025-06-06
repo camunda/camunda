@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.impl.broker.request;
+package io.camunda.zeebe.gateway.impl.broker.request.scaling;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.Protocol;
@@ -15,18 +15,16 @@ import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 
-public class GetScaleUpProgress extends BrokerExecuteCommand<ScaleRecord> {
+public class BrokerPartitionBootstrappedRequest extends BrokerExecuteCommand<ScaleRecord> {
 
   private final ScaleRecord requestDto = new ScaleRecord();
 
-  public GetScaleUpProgress() {
-    super(ValueType.SCALE, ScaleIntent.STATUS);
-    setPartitionId(Protocol.DEPLOYMENT_PARTITION);
-  }
+  public BrokerPartitionBootstrappedRequest(final int bootstrappedPartition) {
+    super(ValueType.SCALE, ScaleIntent.MARK_PARTITION_BOOTSTRAPPED);
+    requestDto.markPartitionBootstrapped(bootstrappedPartition);
 
-  public GetScaleUpProgress(final int desiredPartitionCount) {
-    this();
-    requestDto.status(desiredPartitionCount);
+    // set the target partition for this request
+    setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
   @Override
