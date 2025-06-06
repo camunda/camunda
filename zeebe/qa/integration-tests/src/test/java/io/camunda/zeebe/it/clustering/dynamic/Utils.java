@@ -93,10 +93,10 @@ final class Utils {
         .succeedsWithin(Duration.ofSeconds(2));
   }
 
-  static List<Long> createInstanceWithAJobOnAllPartitions(
-      final CamundaClient camundaClient, final String jobType, final int partitionsCount) {
+  static long deployProcessModel(
+      final CamundaClient camundaClient, final String jobType, final String processId) {
     final var process =
-        Bpmn.createExecutableProcess("processId")
+        Bpmn.createExecutableProcess(processId)
             .startEvent()
             .serviceTask("task", t -> t.zeebeJobType(jobType))
             .endEvent()
@@ -109,18 +109,35 @@ final class Utils {
             .join()
             .getKey();
     new ZeebeResourcesHelper(camundaClient).waitUntilDeploymentIsDone(deploymentKey);
+    return deploymentKey;
+  }
 
+  static List<Long> createInstanceWithAJobOnAllPartitions(
+      final CamundaClient camundaClient, final String jobType, final int partitionsCount) {
+    return createInstanceWithAJobOnAllPartitions(camundaClient, jobType, partitionsCount, true);
+  }
+
+  static List<Long> createInstanceWithAJobOnAllPartitions(
+      final CamundaClient camundaClient,
+      final String jobType,
+      final int partitionsCount,
+      final boolean deployProcess) {
+
+    final var processId = "processId";
+    if (deployProcess) {
+      deployProcessModel(camundaClient, jobType, processId);
+    }
     final List<Long> createdProcessInstances = new ArrayList<>();
     Awaitility.await("Process instances are created in all partitions")
         // Might throw exception when a partition has not yet received deployment distribution
         .ignoreExceptions()
-        .timeout(Duration.ofSeconds(20))
+        .timeout(Duration.ofSeconds(30))
         .until(
             () -> {
               final var result =
                   camundaClient
                       .newCreateInstanceCommand()
-                      .bpmnProcessId("processId")
+                      .bpmnProcessId(processId)
                       .latestVersion()
                       .send()
                       .join();
