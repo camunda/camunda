@@ -15,6 +15,8 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.Au
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter.Metadata;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter.EventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -145,13 +147,20 @@ public final class BatchOperationResumeProcessor
       final Long resumeKey,
       final PersistedBatchOperation batchOperation,
       final BatchOperationLifecycleManagementRecord recordValue) {
-    stateWriter.appendFollowUpEvent(resumeKey, BatchOperationIntent.RESUMED, recordValue);
+    stateWriter.appendFollowUpEvent(
+        resumeKey,
+        BatchOperationIntent.RESUMED,
+        recordValue,
+        EventMetadata.of(b -> b.batchOperationKey(recordValue.getBatchOperationKey())));
 
     final var batchExecute = new BatchOperationExecutionRecord();
     batchExecute.setBatchOperationKey(batchOperation.getKey());
     if (batchOperation.isInitialized()) {
       commandWriter.appendFollowUpCommand(
-          batchOperation.getKey(), BatchOperationExecutionIntent.EXECUTE, batchExecute);
+          batchOperation.getKey(),
+          BatchOperationExecutionIntent.EXECUTE,
+          batchExecute,
+          Metadata.of(b -> b.batchOperationKey(batchOperation.getKey())));
     }
   }
 

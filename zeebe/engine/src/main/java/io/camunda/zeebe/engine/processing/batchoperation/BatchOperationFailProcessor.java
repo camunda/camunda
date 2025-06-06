@@ -12,6 +12,8 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter.Metadata;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter.EventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.protocol.Protocol;
@@ -68,12 +70,14 @@ public final class BatchOperationFailProcessor
       commandWriter.appendFollowUpCommand(
           recordValue.getBatchOperationKey(),
           BatchOperationIntent.FAIL_PARTITION,
-          batchInternalFail);
+          batchInternalFail,
+          Metadata.of(b -> b.batchOperationKey(recordValue.getBatchOperationKey())));
     } else {
       stateWriter.appendFollowUpEvent(
           recordValue.getBatchOperationKey(),
           BatchOperationIntent.PARTITION_FAILED,
-          batchInternalFail);
+          batchInternalFail,
+          EventMetadata.of(b -> b.batchOperationKey(recordValue.getBatchOperationKey())));
       commandDistributionBehavior
           .withKey(keyGenerator.nextKey())
           .inQueue(DistributionQueue.BATCH_OPERATION)

@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter.CommandMetadata;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter.EventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
@@ -130,7 +131,8 @@ public final class BatchOperationExecuteProcessor
     stateWriter.appendFollowUpEvent(
         executionRecord.getBatchOperationKey(),
         BatchOperationExecutionIntent.EXECUTING,
-        batchExecute);
+        batchExecute,
+        EventMetadata.of(b -> b.batchOperationReference(executionRecord.getBatchOperationKey())));
   }
 
   private void appendBatchOperationExecutionExecutedEvent(
@@ -141,7 +143,8 @@ public final class BatchOperationExecuteProcessor
     stateWriter.appendFollowUpEvent(
         executionRecord.getBatchOperationKey(),
         BatchOperationExecutionIntent.EXECUTED,
-        batchExecute);
+        batchExecute,
+        EventMetadata.of(b -> b.batchOperationReference(executionRecord.getBatchOperationKey())));
   }
 
   private void appendBatchOperationExecutionCompletedEvent(
@@ -163,12 +166,15 @@ public final class BatchOperationExecuteProcessor
       commandWriter.appendFollowUpCommand(
           executionRecord.getBatchOperationKey(),
           BatchOperationIntent.COMPLETE_PARTITION,
-          batchInternalComplete);
+          batchInternalComplete,
+          CommandMetadata.of(
+              b -> b.batchOperationReference(executionRecord.getBatchOperationKey())));
     } else {
       stateWriter.appendFollowUpEvent(
           executionRecord.getBatchOperationKey(),
           BatchOperationIntent.PARTITION_COMPLETED,
-          batchInternalComplete);
+          batchInternalComplete,
+          EventMetadata.of(b -> b.batchOperationReference(executionRecord.getBatchOperationKey())));
       commandDistributionBehavior
           .withKey(keyGenerator.nextKey())
           .inQueue(DistributionQueue.BATCH_OPERATION)
