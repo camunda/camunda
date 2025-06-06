@@ -135,8 +135,7 @@ public class SnapshotApiRequestHandlerTest {
     scheduler.workUntilDone();
     assertThat(takeFuture).succeedsWithin(Duration.ofSeconds(30));
 
-    final var transfer =
-        new SnapshotTransferImpl(client, receiverSnapshotStore, (Actor) senderSnapshotStore);
+    final var transfer = new SnapshotTransferImpl(client, receiverSnapshotStore);
     // when
     final var persistedSnapshot = transfer.getLatestSnapshot(partitionId);
     scheduler.workUntilDone();
@@ -153,8 +152,6 @@ public class SnapshotApiRequestHandlerTest {
 
   private ActorFuture<PersistedSnapshot> takePersistedSnapshot() {
     return SnapshotTransferUtil.takePersistedSnapshot(
-        senderSnapshotStore,
-        SnapshotTransferUtil.SNAPSHOT_FILE_CONTENTS,
-        (Actor) receiverSnapshotStore);
+        senderSnapshotStore, SnapshotTransferUtil.SNAPSHOT_FILE_CONTENTS, receiverSnapshotStore);
   }
 }

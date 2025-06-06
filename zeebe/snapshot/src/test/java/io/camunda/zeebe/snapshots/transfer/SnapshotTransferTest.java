@@ -33,7 +33,7 @@ public class SnapshotTransferTest {
   @TempDir Path temporaryFolder;
   FileBasedSnapshotStore senderSnapshotStore;
   FileBasedSnapshotStore receiverSnapshotStore;
-  private SnapshotTransfer snapshotTransfer;
+  private SnapshotTransferImpl snapshotTransfer;
 
   @BeforeEach
   public void beforeEach() throws Exception {
@@ -57,8 +57,8 @@ public class SnapshotTransferTest {
     final SnapshotTransferService transferService =
         new SnapshotTransferServiceImpl(
             senderSnapshotStore, 1, SnapshotCopyUtil.copyAllFiles(), concurrencyControl);
-    snapshotTransfer =
-        new SnapshotTransfer(transferService, receiverSnapshotStore, concurrencyControl);
+    snapshotTransfer = new SnapshotTransferImpl(transferService, receiverSnapshotStore);
+    actorScheduler.submitActor(snapshotTransfer).join();
 
     actorScheduler.workUntilDone();
   }
