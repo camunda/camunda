@@ -11,7 +11,6 @@ import io.camunda.identity.sdk.users.dto.User;
 import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.dto.MappingRule.MappingRuleType;
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
-import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.dto.TenantMappingRule;
 import io.camunda.migration.identity.dto.UserResourceAuthorization;
@@ -30,7 +29,6 @@ public class ManagementIdentityClient {
   private static final String URL_PARAMS = "pageSize={0}";
   private static final String MIGRATION_MARK_STATUS_ENDPOINT = "/api/migration";
   private static final String MIGRATION_TENANTS_ENDPOINT = "/api/migration/tenant?" + URL_PARAMS;
-  private static final String MIGRATION_ROLES_ENDPOINT = "/api/migration/role?" + URL_PARAMS;
   private static final String MIGRATION_USER_TENANTS_ENDPOINT =
       "/api/migration/tenant/user?" + URL_PARAMS;
   private static final String MIGRATION_MAPPING_RULE_ENDPOINT =
@@ -84,13 +82,6 @@ public class ManagementIdentityClient {
             Objects.requireNonNull(
                 restTemplate.getForObject(
                     MIGRATION_GROUPS_ENDPOINT, Group[].class, page, organizationId)))
-        .toList();
-  }
-
-  public List<Role> fetchRoles(final int pageSize) {
-    return Arrays.stream(
-            Objects.requireNonNull(
-                restTemplate.getForObject(MIGRATION_ROLES_ENDPOINT, Role[].class, pageSize)))
         .toList();
   }
 
