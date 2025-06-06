@@ -16,11 +16,14 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
+import io.camunda.zeebe.protocol.impl.record.value.AsyncRequestRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -36,6 +39,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.assertj.core.groups.Tuple;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -687,13 +691,16 @@ public final class CamundaUserTaskTest {
             .getValue();
 
     assertThat(
-            RecordingExporter.userTaskRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(r -> r.getIntent() == UserTaskIntent.ASSIGNED))
+            RecordingExporter.records()
+                .filter(isTaskTransitionRelatedRecord(createdUserTask))
+                .skipUntil(r -> r.getIntent() == AsyncRequestIntent.RECEIVED)
+                .limit(r -> r.getIntent() == AsyncRequestIntent.PROCESSED))
         .extracting(Record::getValueType, Record::getIntent)
-        .containsSubsequence(
+        .contains(
+            tuple(ValueType.ASYNC_REQUEST, AsyncRequestIntent.RECEIVED),
             tuple(ValueType.USER_TASK, UserTaskIntent.ASSIGNING),
-            tuple(ValueType.USER_TASK, UserTaskIntent.ASSIGNED));
+            tuple(ValueType.USER_TASK, UserTaskIntent.ASSIGNED),
+            tuple(ValueType.ASYNC_REQUEST, AsyncRequestIntent.PROCESSED));
 
     Assertions.assertThat(
             RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
@@ -758,13 +765,16 @@ public final class CamundaUserTaskTest {
             .getValue();
 
     assertThat(
-            RecordingExporter.userTaskRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(r -> r.getIntent() == UserTaskIntent.ASSIGNED))
+            RecordingExporter.records()
+                .filter(isTaskTransitionRelatedRecord(createdUserTask))
+                .skipUntil(r -> r.getIntent() == AsyncRequestIntent.RECEIVED)
+                .limit(r -> r.getIntent() == AsyncRequestIntent.PROCESSED))
         .extracting(Record::getValueType, Record::getIntent)
-        .containsSubsequence(
+        .contains(
+            tuple(ValueType.ASYNC_REQUEST, AsyncRequestIntent.RECEIVED),
             tuple(ValueType.USER_TASK, UserTaskIntent.CLAIMING),
-            tuple(ValueType.USER_TASK, UserTaskIntent.ASSIGNED));
+            tuple(ValueType.USER_TASK, UserTaskIntent.ASSIGNED),
+            tuple(ValueType.ASYNC_REQUEST, AsyncRequestIntent.PROCESSED));
 
     Assertions.assertThat(
             RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
@@ -804,13 +814,16 @@ public final class CamundaUserTaskTest {
             .getValue();
 
     assertThat(
-            RecordingExporter.userTaskRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(r -> r.getIntent() == UserTaskIntent.UPDATED))
+            RecordingExporter.records()
+                .filter(isTaskTransitionRelatedRecord(createdUserTask))
+                .skipUntil(r -> r.getIntent() == AsyncRequestIntent.RECEIVED)
+                .limit(r -> r.getIntent() == AsyncRequestIntent.PROCESSED))
         .extracting(Record::getValueType, Record::getIntent)
-        .containsSubsequence(
+        .contains(
+            tuple(ValueType.ASYNC_REQUEST, AsyncRequestIntent.RECEIVED),
             tuple(ValueType.USER_TASK, UserTaskIntent.UPDATING),
-            tuple(ValueType.USER_TASK, UserTaskIntent.UPDATED));
+            tuple(ValueType.USER_TASK, UserTaskIntent.UPDATED),
+            tuple(ValueType.ASYNC_REQUEST, AsyncRequestIntent.PROCESSED));
 
     Assertions.assertThat(createdUserTask)
         .hasCandidateGroupsList("foo", "bar")
@@ -854,6 +867,12 @@ public final class CamundaUserTaskTest {
     // when
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
+    final UserTaskRecordValue createdUserTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst()
+            .getValue();
+
     ENGINE.userTask().ofInstance(processInstanceKey).complete();
 
     // then
@@ -869,13 +888,16 @@ public final class CamundaUserTaskTest {
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
 
     assertThat(
-            RecordingExporter.userTaskRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(r -> r.getIntent() == UserTaskIntent.COMPLETED))
+            RecordingExporter.records()
+                .filter(isTaskTransitionRelatedRecord(createdUserTask))
+                .skipUntil(r -> r.getIntent() == AsyncRequestIntent.RECEIVED)
+                .limit(r -> r.getIntent() == AsyncRequestIntent.PROCESSED))
         .extracting(Record::getValueType, Record::getIntent)
-        .containsSubsequence(
+        .contains(
+            tuple(ValueType.ASYNC_REQUEST, AsyncRequestIntent.RECEIVED),
             tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETING),
-            tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETED));
+            tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETED),
+            tuple(ValueType.ASYNC_REQUEST, AsyncRequestIntent.PROCESSED));
   }
 
   @Test
@@ -1026,16 +1048,17 @@ public final class CamundaUserTaskTest {
             .withVariables(Map.of("approvalStatus", "PENDING"))
             .create();
 
-    final var createdUserTaskRecord =
+    final var createdUserTask =
         RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
+            .getFirst()
+            .getValue();
 
     // when: updating task-scoped variables
     final var variableUpdateRecord =
         ENGINE
             .variables()
-            .ofScope(createdUserTaskRecord.getValue().getElementInstanceKey())
+            .ofScope(createdUserTask.getElementInstanceKey())
             .withDocument(Map.of("approvalStatus", "SUBMITTED"))
             .withLocalSemantic()
             .update();
@@ -1047,10 +1070,11 @@ public final class CamundaUserTaskTest {
         .hasIntent(VariableDocumentIntent.UPDATED)
         .hasValueType(ValueType.VARIABLE_DOCUMENT);
 
+    final var userTaskElementInstanceKey = createdUserTask.getElementInstanceKey();
     Assertions.assertThat(
             RecordingExporter.variableRecords(VariableIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .withScopeKey(createdUserTaskRecord.getValue().getElementInstanceKey())
+                .withScopeKey(userTaskElementInstanceKey)
                 .getFirst()
                 .getValue())
         .describedAs("Expect the variable to be created at the local scope of user task element")
@@ -1067,6 +1091,23 @@ public final class CamundaUserTaskTest {
         .containsSequence(
             Tuple.tuple(UserTaskIntent.UPDATING, List.of(UserTaskRecord.VARIABLES)),
             Tuple.tuple(UserTaskIntent.UPDATED, List.of(UserTaskRecord.VARIABLES)));
+
+    assertThat(
+            RecordingExporter.records()
+                .filter(isTaskTransitionRelatedRecord(createdUserTask))
+                .skipUntil(r -> r.getIntent() == VariableDocumentIntent.UPDATE)
+                .limit(r -> r.getIntent() == AsyncRequestIntent.PROCESSED))
+        .extracting(Record::getValueType, Record::getIntent)
+        .describedAs(
+            "Verify the expected sequence of UserTask, AsyncRequest and VariableDocument intents")
+        .containsExactly(
+            tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATE),
+            tuple(ValueType.ASYNC_REQUEST, AsyncRequestIntent.RECEIVED),
+            tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATING),
+            tuple(ValueType.USER_TASK, UserTaskIntent.UPDATING),
+            tuple(ValueType.USER_TASK, UserTaskIntent.UPDATED),
+            tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATED),
+            tuple(ValueType.ASYNC_REQUEST, AsyncRequestIntent.PROCESSED));
   }
 
   @Test
@@ -1081,15 +1122,16 @@ public final class CamundaUserTaskTest {
             .withVariables(Map.of("approvalStatus", "PENDING"))
             .create();
 
-    final var createdUserTaskRecord =
+    final var createdUserTask =
         RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
-            .getFirst();
+            .getFirst()
+            .getValue();
 
     // when: updating a process-level variable and creating a new one using `PROPAGATE` semantic
     ENGINE
         .variables()
-        .ofScope(createdUserTaskRecord.getValue().getElementInstanceKey())
+        .ofScope(createdUserTask.getElementInstanceKey())
         .withDocument(
             Map.of(
                 "approvalStatus", "SUBMITTED",
@@ -1121,5 +1163,35 @@ public final class CamundaUserTaskTest {
         .containsSequence(
             Tuple.tuple(UserTaskIntent.UPDATING, List.of(UserTaskRecord.VARIABLES)),
             Tuple.tuple(UserTaskIntent.UPDATED, List.of(UserTaskRecord.VARIABLES)));
+
+    assertThat(
+            RecordingExporter.records()
+                .filter(isTaskTransitionRelatedRecord(createdUserTask))
+                .skipUntil(r -> r.getIntent() == VariableDocumentIntent.UPDATE)
+                .limit(r -> r.getIntent() == AsyncRequestIntent.PROCESSED))
+        .extracting(Record::getValueType, Record::getIntent)
+        .describedAs(
+            "Verify the expected sequence of UserTask, AsyncRequest and VariableDocument intents")
+        .containsExactly(
+            tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATE),
+            tuple(ValueType.ASYNC_REQUEST, AsyncRequestIntent.RECEIVED),
+            tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATING),
+            tuple(ValueType.USER_TASK, UserTaskIntent.UPDATING),
+            tuple(ValueType.USER_TASK, UserTaskIntent.UPDATED),
+            tuple(ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATED),
+            tuple(ValueType.ASYNC_REQUEST, AsyncRequestIntent.PROCESSED));
+  }
+
+  private static Predicate<Record<?>> isTaskTransitionRelatedRecord(
+      final UserTaskRecordValue userTaskRecordValue) {
+    final var userTaskElementInstanceKey = userTaskRecordValue.getElementInstanceKey();
+
+    return r ->
+        switch (r.getValue()) {
+          case final UserTaskRecord u -> u.getElementInstanceKey() == userTaskElementInstanceKey;
+          case final AsyncRequestRecord a -> a.getScopeKey() == userTaskElementInstanceKey;
+          case final VariableDocumentRecord v -> v.getScopeKey() == userTaskElementInstanceKey;
+          default -> false;
+        };
   }
 }

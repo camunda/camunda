@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
+import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -21,14 +22,13 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.engine.state.instance.UserTaskTransitionTriggerRequestMetadata;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.spec.MsgpackReaderException;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -55,6 +55,7 @@ public final class VariableDocumentUpdateProcessor
   private final VariableBehavior variableBehavior;
   private final BpmnJobBehavior jobBehavior;
   private final Writers writers;
+  private final AsyncRequestBehavior asyncRequestBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
 
   public VariableDocumentUpdateProcessor(
@@ -63,6 +64,7 @@ public final class VariableDocumentUpdateProcessor
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
       final MutableUserTaskState userTaskState,
+      final AsyncRequestBehavior asyncRequestBehavior,
       final AuthorizationCheckBehavior authCheckBehavior) {
     this.elementInstanceState = processingState.getElementInstanceState();
     this.userTaskState = userTaskState;
@@ -71,6 +73,7 @@ public final class VariableDocumentUpdateProcessor
     this.variableBehavior = bpmnBehaviors.variableBehavior();
     this.jobBehavior = bpmnBehaviors.jobBehavior();
     this.writers = writers;
+    this.asyncRequestBehavior = asyncRequestBehavior;
     this.authCheckBehavior = authCheckBehavior;
   }
 
@@ -120,8 +123,10 @@ public final class VariableDocumentUpdateProcessor
         return;
       }
 
-      final long key = keyGenerator.nextKey();
-      writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATING, value);
+      final var asyncRequest =
+          asyncRequestBehavior.writeAsyncRequestReceived(value.getScopeKey(), record);
+      final long variableDocKey = keyGenerator.nextKey();
+      writers.state().appendFollowUpEvent(variableDocKey, VariableDocumentIntent.UPDATING, value);
 
       final var userTaskRecord = userTaskState.getUserTask(userTaskKey);
       if (hasVariables(value)) {
@@ -137,8 +142,6 @@ public final class VariableDocumentUpdateProcessor
               ExecutableUserTask.class);
 
       if (userTaskElement.hasTaskListeners(ZeebeTaskListenerEventType.updating)) {
-        storeRecordRequestMetadata(userTaskKey, record);
-
         final var listener =
             userTaskElement.getTaskListeners(ZeebeTaskListenerEventType.updating).getFirst();
         jobBehavior.createNewTaskListenerJob(
@@ -172,9 +175,14 @@ public final class VariableDocumentUpdateProcessor
       writers
           .state()
           .appendFollowUpEvent(scope.getUserTaskKey(), UserTaskIntent.UPDATED, userTaskRecord);
-
-      writers.state().appendFollowUpEvent(key, VariableDocumentIntent.UPDATED, value);
-      writers.response().writeEventOnCommand(key, VariableDocumentIntent.UPDATED, value, record);
+      writers.state().appendFollowUpEvent(variableDocKey, VariableDocumentIntent.UPDATED, value);
+      writers
+          .response()
+          .writeEventOnCommand(variableDocKey, VariableDocumentIntent.UPDATED, value, record);
+      writers
+          .state()
+          .appendFollowUpEvent(
+              asyncRequest.key(), AsyncRequestIntent.PROCESSED, asyncRequest.record());
       return;
     }
 
@@ -228,20 +236,5 @@ public final class VariableDocumentUpdateProcessor
     final var context = new BpmnElementContextImpl();
     context.init(elementInstance.getKey(), elementInstance.getValue(), elementInstance.getState());
     return context;
-  }
-
-  void storeRecordRequestMetadata(
-      final long userTaskKey, final TypedRecord<VariableDocumentRecord> command) {
-    if (!command.hasRequestMetadata()) {
-      return;
-    }
-
-    final var metadata =
-        new UserTaskTransitionTriggerRequestMetadata()
-            .setIntent(command.getIntent())
-            .setTriggerType(ValueType.VARIABLE_DOCUMENT)
-            .setRequestId(command.getRequestId())
-            .setRequestStreamId(command.getRequestStreamId());
-    userTaskState.storeRecordRequestMetadata(userTaskKey, metadata);
   }
 }

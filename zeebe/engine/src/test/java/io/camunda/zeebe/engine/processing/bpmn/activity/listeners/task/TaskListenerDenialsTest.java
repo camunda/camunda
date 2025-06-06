@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
@@ -66,13 +67,15 @@ public class TaskListenerDenialsTest {
         .withResult(new JobResult().setDenied(true))
         .complete();
 
-    // then: ensure that `DENY_TASK_LISTENER` and `ASSIGNMENT_DENIED`
-    // are written after `ASSIGNING` event
-    helper.assertUserTaskIntentsSequence(
+    // then: verify the expected sequence of UserTask and AsyncRequest intents occurred during
+    // task assignment denial
+    helper.assertUserTaskTransitionRelatedIntentsSequence(
         processInstanceKey,
+        AsyncRequestIntent.RECEIVED,
         UserTaskIntent.ASSIGNING,
         UserTaskIntent.DENY_TASK_LISTENER,
-        UserTaskIntent.ASSIGNMENT_DENIED);
+        UserTaskIntent.ASSIGNMENT_DENIED,
+        AsyncRequestIntent.PROCESSED);
 
     // validate the assignee
     assertThat(
@@ -290,13 +293,15 @@ public class TaskListenerDenialsTest {
         .withResult(new JobResult().setDenied(true))
         .complete();
 
-    // then: ensure that `DENY_TASK_LISTENER` and `UPDATE_DENIED`
-    // are written right after `UPDATING` event
-    helper.assertUserTaskIntentsSequence(
+    // then: verify the expected sequence of UserTask and AsyncRequest intents occurred during
+    // task update denial
+    helper.assertUserTaskTransitionRelatedIntentsSequence(
         processInstanceKey,
+        AsyncRequestIntent.RECEIVED,
         UserTaskIntent.UPDATING,
         UserTaskIntent.DENY_TASK_LISTENER,
-        UserTaskIntent.UPDATE_DENIED);
+        UserTaskIntent.UPDATE_DENIED,
+        AsyncRequestIntent.PROCESSED);
   }
 
   @Test
@@ -325,12 +330,18 @@ public class TaskListenerDenialsTest {
         .withResult(new JobResult().setDenied(true))
         .complete();
 
-    // verify that `DENY_TASK_LISTENER` and `UPDATE_DENIED` are written after `UPDATING`
-    helper.assertUserTaskIntentsSequence(
+    // verify the expected sequence of UserTask and AsyncRequest intents occurred during
+    // task update denial
+    helper.assertUserTaskTransitionRelatedIntentsSequence(
         processInstanceKey,
+        VariableDocumentIntent.UPDATE,
+        AsyncRequestIntent.RECEIVED,
+        VariableDocumentIntent.UPDATING,
         UserTaskIntent.UPDATING,
         UserTaskIntent.DENY_TASK_LISTENER,
-        UserTaskIntent.UPDATE_DENIED);
+        UserTaskIntent.UPDATE_DENIED,
+        VariableDocumentIntent.UPDATE_DENIED,
+        AsyncRequestIntent.PROCESSED);
 
     assertThat(
             RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATE_DENIED)
@@ -355,13 +366,15 @@ public class TaskListenerDenialsTest {
         .withResult(new JobResult().setDenied(true))
         .complete();
 
-    // then: ensure that `DENY_TASK_LISTENER` and `COMPLETION_DENIED`
-    // are written after `COMPLETING` event
-    helper.assertUserTaskIntentsSequence(
+    // then: verify the expected sequence of UserTask and AsyncRequest intents occurred during
+    // task completion denial
+    helper.assertUserTaskTransitionRelatedIntentsSequence(
         processInstanceKey,
+        AsyncRequestIntent.RECEIVED,
         UserTaskIntent.COMPLETING,
         UserTaskIntent.DENY_TASK_LISTENER,
-        UserTaskIntent.COMPLETION_DENIED);
+        UserTaskIntent.COMPLETION_DENIED,
+        AsyncRequestIntent.PROCESSED);
   }
 
   @Test
@@ -528,15 +541,28 @@ public class TaskListenerDenialsTest {
     // accept the transition this time
     helper.completeRecreatedJobWithType(processInstanceKey, listenerType);
 
-    // then: verify that `UPDATING`, `COMPLETE_TASK_LISTENER`, and `UPDATED` events are present
-    helper.assertUserTaskIntentsSequence(
+    // then: verify the expected sequence of UserTask and AsyncRequest intents occurred during
+    // task update denial
+    helper.assertUserTaskTransitionRelatedIntentsSequence(
         processInstanceKey,
+        // denied attempt
+        VariableDocumentIntent.UPDATE,
+        AsyncRequestIntent.RECEIVED,
+        VariableDocumentIntent.UPDATING,
         UserTaskIntent.UPDATING,
         UserTaskIntent.DENY_TASK_LISTENER,
         UserTaskIntent.UPDATE_DENIED,
+        VariableDocumentIntent.UPDATE_DENIED,
+        AsyncRequestIntent.PROCESSED,
+        // successful attempt
+        VariableDocumentIntent.UPDATE,
+        AsyncRequestIntent.RECEIVED,
+        VariableDocumentIntent.UPDATING,
         UserTaskIntent.UPDATING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
-        UserTaskIntent.UPDATED);
+        UserTaskIntent.UPDATED,
+        VariableDocumentIntent.UPDATED,
+        AsyncRequestIntent.PROCESSED);
 
     assertThat(
             RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATE_DENIED)
@@ -571,16 +597,20 @@ public class TaskListenerDenialsTest {
 
     helper.completeRecreatedJobWithType(processInstanceKey, listenerType);
 
-    // then: ensure that `COMPLETING` `COMPLETE_TASK_LISTENER` and `COMPLETED events
-    // are present after `DENY_TASK_LISTENER` and `COMPLETION_DENIED` events
-    helper.assertUserTaskIntentsSequence(
+    // then: verify the expected sequence of UserTask and AsyncRequest intents occurred during
+    // task completion denial
+    helper.assertUserTaskTransitionRelatedIntentsSequence(
         processInstanceKey,
+        AsyncRequestIntent.RECEIVED,
         UserTaskIntent.COMPLETING,
         UserTaskIntent.DENY_TASK_LISTENER,
         UserTaskIntent.COMPLETION_DENIED,
+        AsyncRequestIntent.PROCESSED,
+        AsyncRequestIntent.RECEIVED,
         UserTaskIntent.COMPLETING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
-        UserTaskIntent.COMPLETED);
+        UserTaskIntent.COMPLETED,
+        AsyncRequestIntent.PROCESSED);
   }
 
   @Test
@@ -603,18 +633,22 @@ public class TaskListenerDenialsTest {
     helper.completeRecreatedJobWithType(processInstanceKey, listenerType);
     helper.completeJobs(processInstanceKey, listenerType + "_2", listenerType + "_3");
 
-    // then: ensure that all three `COMPLETE_TASK_LISTENER` events were triggered after the
-    // rejection from the first Task Listener
-    helper.assertUserTaskIntentsSequence(
+    // then: verify the expected sequence of UserTask and AsyncRequest intents occurred during
+    // task completion denial
+    helper.assertUserTaskTransitionRelatedIntentsSequence(
         processInstanceKey,
+        AsyncRequestIntent.RECEIVED,
         UserTaskIntent.COMPLETING,
         UserTaskIntent.DENY_TASK_LISTENER,
         UserTaskIntent.COMPLETION_DENIED,
+        AsyncRequestIntent.PROCESSED,
+        AsyncRequestIntent.RECEIVED,
         UserTaskIntent.COMPLETING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
-        UserTaskIntent.COMPLETED);
+        UserTaskIntent.COMPLETED,
+        AsyncRequestIntent.PROCESSED);
   }
 
   @Test
@@ -636,19 +670,24 @@ public class TaskListenerDenialsTest {
 
     helper.completeRecreatedJobWithType(processInstanceKey, listenerType);
 
-    // then: ensure that user task could be assigned after completion was rejected from the
-    // `COMPLETE` Task Listener. Ensure that user task could be completed after assignment
-    // and `COMPLETE_TASK_LISTENER` event was triggered successfully
-    helper.assertUserTaskIntentsSequence(
+    // then: verify the expected sequence of UserTask and AsyncRequest intents occurred during
+    // task denial
+    helper.assertUserTaskTransitionRelatedIntentsSequence(
         processInstanceKey,
+        AsyncRequestIntent.RECEIVED,
         UserTaskIntent.COMPLETING,
         UserTaskIntent.DENY_TASK_LISTENER,
         UserTaskIntent.COMPLETION_DENIED,
+        AsyncRequestIntent.PROCESSED,
+        AsyncRequestIntent.RECEIVED,
         UserTaskIntent.ASSIGNING,
         UserTaskIntent.ASSIGNED,
+        AsyncRequestIntent.PROCESSED,
+        AsyncRequestIntent.RECEIVED,
         UserTaskIntent.COMPLETING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
-        UserTaskIntent.COMPLETED);
+        UserTaskIntent.COMPLETED,
+        AsyncRequestIntent.PROCESSED);
   }
 
   @Test

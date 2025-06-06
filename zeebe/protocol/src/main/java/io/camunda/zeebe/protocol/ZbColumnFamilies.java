@@ -217,7 +217,7 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
 
   MAPPINGS(108, ColumnFamilyScope.GLOBAL),
 
-  USER_TASK_TRANSITION_TRIGGER_REQUEST_METADATA(109),
+  ASYNC_REQUEST_METADATA(109),
 
   GROUPS(110, ColumnFamilyScope.GLOBAL),
 
