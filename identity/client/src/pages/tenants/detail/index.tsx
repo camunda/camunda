@@ -27,10 +27,7 @@ import Groups from "src/pages/tenants/detail/groups";
 import Roles from "src/pages/tenants/detail/roles";
 import Mappings from "src/pages/tenants/detail/mappings";
 import Clients from "src/pages/tenants/detail/clients";
-import {
-  IS_TENANT_GROUPS_SUPPORTED,
-  IS_TENANT_ROLES_SUPPORTED,
-} from "src/feature-flags";
+import { IS_TENANT_ROLES_SUPPORTED } from "src/feature-flags";
 import { isOIDC } from "src/configuration";
 
 const Details: FC = () => {
@@ -93,15 +90,11 @@ const Details: FC = () => {
                   label: t("users"),
                   content: <Members tenantId={tenant.tenantId} />,
                 },
-                ...(IS_TENANT_GROUPS_SUPPORTED
-                  ? [
-                      {
-                        key: "groups",
-                        label: t("groups"),
-                        content: <Groups tenantId={tenant.tenantId} />,
-                      },
-                    ]
-                  : []),
+                {
+                  key: "groups",
+                  label: t("groups"),
+                  content: <Groups tenantId={tenant.tenantId} />,
+                },
                 ...(IS_TENANT_ROLES_SUPPORTED
                   ? [
                       {
