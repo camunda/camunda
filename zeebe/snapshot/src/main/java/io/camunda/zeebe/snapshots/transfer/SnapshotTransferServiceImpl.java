@@ -63,6 +63,9 @@ public class SnapshotTransferServiceImpl implements SnapshotTransferService {
     return getLatestSnapshotForBootstrap(lastProcessedPosition, transferId)
         .andThen(
             snapshot -> {
+              if (snapshot == null) {
+                return CompletableActorFuture.completed(null);
+              }
               final var snapshotId = snapshot.getId();
               try {
                 final var reader = new FileBasedSnapshotChunkReader(snapshot.getPath());

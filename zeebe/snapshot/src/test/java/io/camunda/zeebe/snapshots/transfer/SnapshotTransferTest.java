@@ -77,6 +77,7 @@ public class SnapshotTransferTest {
                         control)),
             receiverSnapshotStore);
     actorScheduler.submitActor(snapshotTransfer);
+    actorScheduler.workUntilDone();
 
     actorScheduler.workUntilDone();
   }
