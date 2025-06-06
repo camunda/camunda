@@ -8,6 +8,7 @@
 package io.camunda.zeebe.scheduler;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 
 public interface AsyncClosable {
 
@@ -18,4 +19,12 @@ public interface AsyncClosable {
    * @return the future, which is completed when resources are closed
    */
   ActorFuture<Void> closeAsync();
+
+  static ActorFuture<Void> closeHelper(final AsyncClosable closeable) {
+    if (closeable != null) {
+      return closeable.closeAsync();
+    } else {
+      return CompletableActorFuture.completed();
+    }
+  }
 }
