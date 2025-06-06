@@ -42,8 +42,7 @@ public final class EventApplyingStateWriter implements StateWriter {
   @Override
   public void appendFollowUpEvent(
       final long key, final Intent intent, final RecordValue value, final int recordVersion) {
-    appendFollowUpEvent(
-        key, intent, value, FollowUpEventMetadata.builder().recordVersion(recordVersion).build());
+    appendFollowUpEvent(key, intent, value, m -> m.recordVersion(recordVersion));
   }
 
   @Override
