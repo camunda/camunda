@@ -30,8 +30,10 @@ public final class OidcPrincipalLoader {
   private final JsonPath clientIdPath;
 
   public OidcPrincipalLoader(final String usernameClaim, final String clientIdClaim) {
-    usernamePath = usernameClaim != null ? JsonPath.compile(usernameClaim) : null;
-    clientIdPath = clientIdClaim != null ? JsonPath.compile(clientIdClaim) : null;
+    usernamePath =
+        usernameClaim != null ? JsonPath.compile(sanitizeClaimPath(usernameClaim)) : null;
+    clientIdPath =
+        clientIdClaim != null ? JsonPath.compile(sanitizeClaimPath(clientIdClaim)) : null;
   }
 
   public OidcPrincipals load(final Map<String, Object> claims) {
@@ -56,6 +58,14 @@ public final class OidcPrincipalLoader {
       LOG.debug("Failed to evaluate expression {} on claims {}", path, claims, e);
       return null;
     }
+  }
+
+  private String sanitizeClaimPath(final String claim) {
+    // If the claim starts with a dollar sign, it is already a JSONPath expression.
+    // Otherwise, we wrap it with the dollar sign to denote a JSONPath.
+    // We also ensure that the claim is wrapped in single quotes to handle cases where the claim
+    // name contains special characters.
+    return claim.startsWith("$") ? claim : "$['" + claim + "']";
   }
 
   public record OidcPrincipals(String username, String clientId) {}
