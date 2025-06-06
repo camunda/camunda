@@ -7,7 +7,10 @@
  */
 
 import {observer} from 'mobx-react';
-import {GetJobsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
+import {Job} from '@vzeta/camunda-api-zod-schemas/operate';
+import {UseInfiniteQueryResult} from '@tanstack/react-query';
+import {RequestError} from 'modules/request';
+
 import {
   CellContainer,
   Content,
@@ -41,159 +44,167 @@ type SelectedItem = {
   selectedItem: FilterLabelMappingKeys;
 };
 
+type UseJobsResult = UseInfiniteQueryResult<Job[], RequestError>;
 type Props = {
-  jobs: GetJobsResponseBody | undefined;
+  jobs: Job[] | undefined;
   setListenerTypeFilter: React.Dispatch<
     React.SetStateAction<ListenerEntity['listenerType'] | undefined>
   >;
+  fetchNextPage: UseJobsResult['fetchNextPage'];
+  fetchPreviousPage: UseJobsResult['fetchPreviousPage'];
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
 };
 
 const ROW_HEIGHT = 46;
 
-const Listeners: React.FC<Props> = observer(({jobs, setListenerTypeFilter}) => {
-  const {
-    shouldFetchPreviousListeners,
-    fetchPreviousListeners,
-    shouldFetchNextListeners,
-    fetchNextListeners,
-  } = processInstanceListenersStore;
-  const {latestFetch} = processInstanceListenersStore.state;
+const Listeners: React.FC<Props> = observer(
+  ({
+    jobs,
+    setListenerTypeFilter,
+    fetchNextPage,
+    fetchPreviousPage,
+    hasNextPage,
+    hasPreviousPage,
+  }) => {
+    const {latestFetch} = processInstanceListenersStore.state;
 
-  const {metaData} = flowNodeMetaDataStore.state;
-  const isUserTask = metaData?.instanceMetadata?.flowNodeType === 'USER_TASK';
+    const {metaData} = flowNodeMetaDataStore.state;
+    const isUserTask = metaData?.instanceMetadata?.flowNodeType === 'USER_TASK';
 
-  const [selectedOption, setSelectedOption] =
-    useState<FilterLabelMappingKeys>('All listeners');
+    const [selectedOption, setSelectedOption] =
+      useState<FilterLabelMappingKeys>('All listeners');
 
-  const handleEmptyMessages = () => {
-    if (isUserTask) {
-      if (selectedOption === 'All listeners')
-        return 'This flow node has no execution listeners nor user task listeners';
+    const handleEmptyMessages = () => {
+      if (isUserTask) {
+        if (selectedOption === 'All listeners')
+          return 'This flow node has no execution listeners nor user task listeners';
 
-      if (selectedOption === 'User task listeners')
-        return 'This flow node has no user task listeners';
-    }
+        if (selectedOption === 'User task listeners')
+          return 'This flow node has no user task listeners';
+      }
 
-    return 'This flow node has no execution listeners';
-  };
+      return 'This flow node has no execution listeners';
+    };
 
-  const listeners = jobs?.items ?? [];
+    const listeners = jobs ?? [];
 
-  return (
-    <Content>
-      <Stack as={Layer} $isUserTask={isUserTask}>
-        {isUserTask && (
-          <Dropdown
-            id="listenerTypeFilter"
-            data-testid="listener-type-filter"
-            titleText="Listener type"
-            label="All listeners"
-            hideLabel
-            onChange={async ({selectedItem}: SelectedItem) => {
-              if (selectedItem !== selectedOption) {
-                setSelectedOption(selectedItem);
+    return (
+      <Content>
+        <Stack as={Layer} $isUserTask={isUserTask}>
+          {isUserTask && (
+            <Dropdown
+              id="listenerTypeFilter"
+              data-testid="listener-type-filter"
+              titleText="Listener type"
+              label="All listeners"
+              hideLabel
+              onChange={async ({selectedItem}: SelectedItem) => {
+                if (selectedItem !== selectedOption) {
+                  setSelectedOption(selectedItem);
 
-                if (FilterLabelMapping[selectedItem] !== 'ALL_LISTENERS') {
-                  setListenerTypeFilter(FilterLabelMapping[selectedItem]);
-                } else {
-                  setListenerTypeFilter(undefined);
+                  if (FilterLabelMapping[selectedItem] !== 'ALL_LISTENERS') {
+                    setListenerTypeFilter(FilterLabelMapping[selectedItem]);
+                  } else {
+                    setListenerTypeFilter(undefined);
+                  }
                 }
+              }}
+              items={Object.keys(FilterLabelMapping)}
+              size="sm"
+              selectedItem={selectedOption}
+              disabled={
+                selectedOption === 'All listeners' && listeners?.length === 0
               }
-            }}
-            items={Object.keys(FilterLabelMapping)}
-            size="sm"
-            selectedItem={selectedOption}
-            disabled={
-              selectedOption === 'All listeners' && listeners?.length === 0
-            }
-          />
-        )}
-        {listeners?.length > 0 ? (
-          <StructuredList
-            dataTestId="listeners-list"
-            headerColumns={[
-              {cellContent: 'Listener type', width: '20%'},
-              {cellContent: 'Listener key', width: '20%'},
-              {cellContent: 'State', width: '10%'},
-              {cellContent: 'Job type', width: '15%'},
-              {cellContent: 'Event', width: '15%'},
-              {cellContent: 'Time', width: '20%'},
-            ]}
-            headerSize="sm"
-            verticalCellPadding="var(--cds-spacing-02)"
-            label="Listeners List"
-            onVerticalScrollStartReach={async (scrollDown) => {
-              if (shouldFetchPreviousListeners() === false) {
-                return;
-              }
+            />
+          )}
+          {listeners?.length > 0 ? (
+            <StructuredList
+              dataTestId="listeners-list"
+              headerColumns={[
+                {cellContent: 'Listener type', width: '20%'},
+                {cellContent: 'Listener key', width: '20%'},
+                {cellContent: 'State', width: '10%'},
+                {cellContent: 'Job type', width: '15%'},
+                {cellContent: 'Event', width: '15%'},
+                {cellContent: 'Time', width: '20%'},
+              ]}
+              headerSize="sm"
+              verticalCellPadding="var(--cds-spacing-02)"
+              label="Listeners List"
+              onVerticalScrollStartReach={async (scrollDown) => {
+                if (!hasPreviousPage) {
+                  return;
+                }
 
-              await fetchPreviousListeners();
+                await fetchPreviousPage();
 
-              if (
-                listeners?.length === MAX_LISTENERS_STORED &&
-                latestFetch?.itemsCount !== 0 &&
-                latestFetch !== null
-              ) {
-                scrollDown(latestFetch.itemsCount * ROW_HEIGHT);
-              }
-            }}
-            onVerticalScrollEndReach={() => {
-              if (shouldFetchNextListeners() === false) {
-                return;
-              }
+                if (
+                  listeners?.length === MAX_LISTENERS_STORED &&
+                  latestFetch?.itemsCount !== 0 &&
+                  latestFetch !== null
+                ) {
+                  scrollDown(latestFetch.itemsCount * ROW_HEIGHT);
+                }
+              }}
+              onVerticalScrollEndReach={() => {
+                if (!hasNextPage) {
+                  return;
+                }
 
-              fetchNextListeners();
-            }}
-            rows={listeners?.map(
-              ({kind, jobKey, state, type, listenerEventType, endTime}) => {
-                return {
-                  key: jobKey,
-                  dataTestId: jobKey,
-                  columns: [
-                    {
-                      cellContent: (
-                        <CellContainer orientation="horizontal" gap={3}>
-                          {spaceAndCapitalize(kind)}
-                          {state === 'FAILED' && <WarningFilled />}
-                        </CellContainer>
-                      ),
-                    },
-                    {cellContent: <CellContainer>{jobKey}</CellContainer>},
-                    {
-                      cellContent: (
-                        <CellContainer>
-                          {spaceAndCapitalize(state)}
-                        </CellContainer>
-                      ),
-                    },
-                    {
-                      cellContent: <CellContainer>{type}</CellContainer>,
-                    },
-                    {
-                      cellContent: (
-                        <CellContainer>
-                          {spaceAndCapitalize(listenerEventType)}
-                        </CellContainer>
-                      ),
-                    },
-                    {
-                      cellContent: (
-                        <CellContainer>{formatDate(endTime)}</CellContainer>
-                      ),
-                    },
-                  ],
-                };
-              },
-            )}
-          />
-        ) : (
-          <EmptyMessageWrapper>
-            <EmptyMessage message={handleEmptyMessages()} />
-          </EmptyMessageWrapper>
-        )}
-      </Stack>
-    </Content>
-  );
-});
+                fetchNextPage();
+              }}
+              rows={listeners?.map(
+                ({kind, jobKey, state, type, listenerEventType, endTime}) => {
+                  return {
+                    key: jobKey,
+                    dataTestId: jobKey,
+                    columns: [
+                      {
+                        cellContent: (
+                          <CellContainer orientation="horizontal" gap={3}>
+                            {spaceAndCapitalize(kind)}
+                            {state === 'FAILED' && <WarningFilled />}
+                          </CellContainer>
+                        ),
+                      },
+                      {cellContent: <CellContainer>{jobKey}</CellContainer>},
+                      {
+                        cellContent: (
+                          <CellContainer>
+                            {spaceAndCapitalize(state)}
+                          </CellContainer>
+                        ),
+                      },
+                      {
+                        cellContent: <CellContainer>{type}</CellContainer>,
+                      },
+                      {
+                        cellContent: (
+                          <CellContainer>
+                            {spaceAndCapitalize(listenerEventType)}
+                          </CellContainer>
+                        ),
+                      },
+                      {
+                        cellContent: (
+                          <CellContainer>{formatDate(endTime)}</CellContainer>
+                        ),
+                      },
+                    ],
+                  };
+                },
+              )}
+            />
+          ) : (
+            <EmptyMessageWrapper>
+              <EmptyMessage message={handleEmptyMessages()} />
+            </EmptyMessageWrapper>
+          )}
+        </Stack>
+      </Content>
+    );
+  },
+);
 
 export {Listeners};
