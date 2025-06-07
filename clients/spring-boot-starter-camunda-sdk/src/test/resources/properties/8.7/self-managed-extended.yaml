@@ -1,0 +1,14 @@
+camunda:
+  client:
+    mode: self-managed
+    tenant-id: <default>
+    auth:
+      scope: scope # optional
+      audience: zeebe-api
+      client-id: <your client id>
+      client-secret: <your client secret>
+      token-url: http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token
+    enabled: true
+    grpc-address: http://localhost:26500
+    rest-address: http://localhost:8080
+    prefer-rest-over-grpc: false
