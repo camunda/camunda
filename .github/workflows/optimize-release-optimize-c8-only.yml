@@ -60,6 +60,21 @@ jobs:
           echo "DOCKER_LATEST: ${{ inputs.DOCKER_LATEST }}"
           echo "IS_DRY_RUN: ${{ inputs.IS_DRY_RUN }}"
 
+        # This step generates a GitHub App token to be used in Git operations as a workaround  for
+        # the known GitHub issue described in https://github.com/camunda/camunda/issues/28522
+      - name: Generate GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@v3.3.0
@@ -199,6 +214,12 @@ jobs:
         with:
           ref: ${{ env.BRANCH }}
           fetch-depth: 0
+          # Overriding the default GITHUB_TOKEN with a GitHub App token in order to workaround
+          # the known GitHub issue described in https://github.com/camunda/camunda/issues/28522
+          # NOTES:
+          # - This token will be used for all git operations in this job
+          # - This token expires after 1 hour (https://github.com/actions/create-github-app-token?tab=readme-ov-file#create-github-app-token)
+          token: ${{ steps.github-token.outputs.token }}
 
       - name: "Read Java / Version Info"
         id: "pom-info"
