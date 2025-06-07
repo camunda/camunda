@@ -112,7 +112,9 @@ public class OpensearchBackupRepository implements BackupRepository {
       response =
           richOpenSearchClient
               .snapshot()
-              .get(getSnapshotRequestBuilder(repositoryName, snapshot).build());
+              .get(getSnapshotRequestBuilder(repositoryName, snapshot)
+                  .verbose(false)
+                  .build());
     } catch (final Exception e) {
       if (isSnapshotMissingException(e)) {
         // no snapshot with given backupID exists
