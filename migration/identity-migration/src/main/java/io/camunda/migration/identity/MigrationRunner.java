@@ -54,12 +54,13 @@ public class MigrationRunner implements Migrator {
   private void migrate() {
     while (true) {
       try {
-        tenantMigrationHandler.migrate();
-        tenantMappingRuleMigrationHandler.migrate();
-        userTenantsMigrationHandler.migrate();
         groupMigrationHandler.migrate();
-        roleMigrationHandler.migrate();
-        authorizationMigrationHandler.migrate();
+        // TODO: the handlers will be revisited
+        //        tenantMigrationHandler.migrate();
+        //        tenantMappingRuleMigrationHandler.migrate();
+        //        userTenantsMigrationHandler.migrate();
+        //        roleMigrationHandler.migrate();
+        //        authorizationMigrationHandler.migrate();
         break;
       } catch (final NotImplementedException e) {
         LOGGER.error("Identity endpoint is not implemented {}", e.getCode());
