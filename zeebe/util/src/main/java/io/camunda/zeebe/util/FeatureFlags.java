@@ -47,6 +47,7 @@ public final class FeatureFlags {
   private static final boolean ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR = true;
   private static final boolean ENABLE_PARTITION_SCALING = false;
   private static final boolean ENABLE_IDENTITY_SETUP = true;
+  private static final boolean ENABLE_MESSAGE_BODY_ON_EXPIRED = false;
 
   private boolean yieldingDueDateChecker;
   private boolean enableActorMetrics;
@@ -55,6 +56,7 @@ public final class FeatureFlags {
   private boolean enableStraightThroughProcessingLoopDetector;
   private boolean enablePartitionScaling;
   private boolean enableIdentitySetup;
+  private boolean enableMessageBodyOnExpired;
 
   public FeatureFlags(
       final boolean yieldingDueDateChecker,
@@ -63,7 +65,8 @@ public final class FeatureFlags {
       final boolean enableTimerDueDateCheckerAsync,
       final boolean enableStraightThroughProcessingLoopDetector,
       final boolean enablePartitionScaling,
-      final boolean enableIdentitySetup
+      final boolean enableIdentitySetup,
+      final boolean enableMessageBodyOnExpired
       /*, boolean foo*/ ) {
     this.yieldingDueDateChecker = yieldingDueDateChecker;
     this.enableActorMetrics = enableActorMetrics;
@@ -72,6 +75,7 @@ public final class FeatureFlags {
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
     this.enablePartitionScaling = enablePartitionScaling;
     this.enableIdentitySetup = enableIdentitySetup;
+    this.enableMessageBodyOnExpired = enableMessageBodyOnExpired;
   }
 
   public static FeatureFlags createDefault() {
@@ -82,7 +86,8 @@ public final class FeatureFlags {
         ENABLE_DUE_DATE_CHECKER_ASYNC,
         ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR,
         ENABLE_PARTITION_SCALING,
-        ENABLE_IDENTITY_SETUP
+        ENABLE_IDENTITY_SETUP,
+        ENABLE_MESSAGE_BODY_ON_EXPIRED
         /*, FOO_DEFAULT*/ );
   }
 
@@ -99,7 +104,8 @@ public final class FeatureFlags {
         true, /* ENABLE_DUE_DATE_CHECKER_ASYNC */
         true, /* ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR */
         true, /* ENABLE_PARTITION_SCALING */
-        false /* ENABLE_IDENTITY_SETUP */
+        false, /* ENABLE_IDENTITY_SETUP */
+        false /* ENABLE_MESSAGE_BODY_ON_EXPIRED */
         /*, FOO_DEFAULT*/ );
   }
 
@@ -131,6 +137,10 @@ public final class FeatureFlags {
     return enableIdentitySetup;
   }
 
+  public boolean enableMessageBodyOnExpired() {
+    return enableMessageBodyOnExpired;
+  }
+
   public void setYieldingDueDateChecker(final boolean yieldingDueDateChecker) {
     this.yieldingDueDateChecker = yieldingDueDateChecker;
   }
@@ -158,6 +168,10 @@ public final class FeatureFlags {
 
   public void setEnableIdentitySetup(final boolean enableIdentitySetup) {
     this.enableIdentitySetup = enableIdentitySetup;
+  }
+
+  public void setEnableMessageBodyOnExpired(final boolean enableMessageBodyOnExpired) {
+    this.enableMessageBodyOnExpired = enableMessageBodyOnExpired;
   }
 
   @Override
