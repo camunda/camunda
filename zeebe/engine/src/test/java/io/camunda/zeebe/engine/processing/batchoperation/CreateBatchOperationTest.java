@@ -89,9 +89,9 @@ public final class CreateBatchOperationTest extends AbstractBatchOperationTest {
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(
                 List.of(
-                    mockProcessInstanceEntity(1L),
-                    mockProcessInstanceEntity(2L),
-                    mockProcessInstanceEntity(3L)))
+                    fakeProcessInstanceEntity(1L),
+                    fakeProcessInstanceEntity(2L),
+                    fakeProcessInstanceEntity(3L)))
             .total(3)
             .build();
 

@@ -25,6 +25,23 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
     return ProcessingError.UNEXPECTED_ERROR;
   }
 
+  /**
+   * A flag to indicate if records processed by this processor should be processed in a separate
+   * command batch.
+   *
+   * <p>This is useful for cases where
+   * <li>The processing of the records is complex, or requires additional resources, and you want to
+   *     ensure that they are not mixed with other records in the same batch
+   * <li>Various commands are independent of each other, and one failing shouldn't have an impact on
+   *     the other.
+   *
+   * @return <code>true</code> if the records should be processed in a separate batch, <code>false
+   *     </code>
+   */
+  default boolean shouldProcessInASeparateBatch() {
+    return false;
+  }
+
   enum ProcessingError {
     EXPECTED_ERROR,
     UNEXPECTED_ERROR
