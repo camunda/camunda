@@ -60,6 +60,7 @@ import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAss
 import {sequenceFlowsStore} from 'modules/stores/sequenceFlows';
 import {getSubprocessOverlayFromIncidentFlowNodes} from 'modules/utils/flowNodes';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
+import {useProcessSequenceFlows} from 'modules/queries/sequenceFlows/useProcessSequenceFlows';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -104,6 +105,8 @@ const TopPanel: React.FC = observer(() => {
   const affectedTokenCount = totalMoveOperationRunningInstances || 1;
   const visibleAffectedTokenCount =
     totalMoveOperationRunningInstancesVisible || 1;
+  const {data: processedSequenceFlows} =
+    useProcessSequenceFlows(processInstanceId);
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const isRootNodeSelected = useIsRootNodeSelected();
 
@@ -197,7 +200,6 @@ const TopPanel: React.FC = observer(() => {
     }, []),
   );
 
-  const {items: processedSequenceFlows} = sequenceFlowsStore.state;
   const {processInstance} = processInstanceDetailsStore.state;
   const stateOverlays = diagramOverlaysStore.state.overlays.filter(
     ({type}) => type === OVERLAY_TYPE_STATE,
@@ -346,7 +348,7 @@ const TopPanel: React.FC = observer(() => {
                 )
               }
               highlightedSequenceFlows={[
-                ...processedSequenceFlows,
+                ...(processedSequenceFlows || []),
                 ...compensationAssociationIds,
               ]}
               highlightedFlowNodeIds={executedFlowNodes?.map(
