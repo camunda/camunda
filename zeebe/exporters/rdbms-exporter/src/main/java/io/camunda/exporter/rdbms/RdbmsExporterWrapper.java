@@ -244,7 +244,8 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(
         ValueType.VARIABLE, new VariableExportHandler(rdbmsWriter.getVariableWriter()));
     builder.withHandler(
-        ValueType.USER_TASK, new UserTaskExportHandler(rdbmsWriter.getUserTaskWriter()));
+        ValueType.USER_TASK,
+        new UserTaskExportHandler(rdbmsWriter.getUserTaskWriter(), processCache));
     builder.withHandler(ValueType.FORM, new FormExportHandler(rdbmsWriter.getFormWriter()));
     builder.withHandler(ValueType.JOB, new JobExportHandler(rdbmsWriter.getJobWriter()));
     builder.withHandler(
