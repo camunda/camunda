@@ -9,11 +9,11 @@ package io.camunda.zeebe.snapshots.transfer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
-import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
-import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.camunda.zeebe.snapshots.SnapshotCopyUtil;
 import io.camunda.zeebe.snapshots.SnapshotTransferUtil;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
@@ -31,8 +31,8 @@ public class SnapshotTransferTest {
       new ControlledActorSchedulerExtension();
 
   @TempDir Path temporaryFolder;
-  ConstructableSnapshotStore senderSnapshotStore;
-  ReceivableSnapshotStore receiverSnapshotStore;
+  FileBasedSnapshotStore senderSnapshotStore;
+  FileBasedSnapshotStore receiverSnapshotStore;
   private SnapshotTransfer snapshotTransfer;
 
   @BeforeEach
@@ -44,19 +44,21 @@ public class SnapshotTransferTest {
     senderSnapshotStore =
         new FileBasedSnapshotStore(
             0, partitionId, senderDirectory, snapshotPath -> Map.of(), new SimpleMeterRegistry());
-    actorScheduler.submitActor((Actor) senderSnapshotStore);
+    actorScheduler.submitActor(senderSnapshotStore);
     actorScheduler.workUntilDone();
 
     receiverSnapshotStore =
         new FileBasedSnapshotStore(
             0, partitionId, receiverDirectory, snapshotPath -> Map.of(), new SimpleMeterRegistry());
 
-    actorScheduler.submitActor((Actor) receiverSnapshotStore);
+    actorScheduler.submitActor(receiverSnapshotStore);
     actorScheduler.workUntilDone();
+    final ConcurrencyControl concurrencyControl = senderSnapshotStore;
     final SnapshotTransferService transferService =
-        new SnapshotTransferServiceImpl(senderSnapshotStore, 1);
+        new SnapshotTransferServiceImpl(
+            senderSnapshotStore, 1, SnapshotCopyUtil.copyAllFiles(), concurrencyControl);
     snapshotTransfer =
-        new SnapshotTransfer(transferService, receiverSnapshotStore, (Actor) senderSnapshotStore);
+        new SnapshotTransfer(transferService, receiverSnapshotStore, concurrencyControl);
 
     actorScheduler.workUntilDone();
   }
@@ -69,7 +71,7 @@ public class SnapshotTransferTest {
         SnapshotTransferUtil.takePersistedSnapshot(
             senderSnapshotStore,
             SnapshotTransferUtil.SNAPSHOT_FILE_CONTENTS,
-            (Actor) receiverSnapshotStore);
+            receiverSnapshotStore);
     actorScheduler.workUntilDone();
     assertThat(takeSnapshotFuture).succeedsWithin(Duration.ofSeconds(3));
     // when
@@ -81,8 +83,12 @@ public class SnapshotTransferTest {
     assertThat(persistedSnapshotFuture)
         .succeedsWithin(Duration.ofSeconds(30))
         .satisfies(
-            snapshot ->
-                assertThat(snapshot.getId())
-                    .isEqualTo(senderSnapshotStore.getLatestSnapshot().get().getId()));
+            snapshot -> {
+              assertThat(snapshot.getId()).isEqualTo("0-0-0-0-0");
+              assertThat(snapshot.getMetadata())
+                  .isEqualTo(FileBasedSnapshotMetadata.forBootstrap(1));
+              assertThat(snapshot.isBootstrap()).isTrue();
+              assertThat(snapshot.files()).isNotEmpty();
+            });
   }
 }

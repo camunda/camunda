@@ -23,9 +23,8 @@ import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotTransferSer
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
-import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
-import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.camunda.zeebe.snapshots.SnapshotCopyUtil;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransfer;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferServiceImpl;
@@ -54,8 +53,8 @@ public class SnapshotApiRequestHandlerTest {
   @AutoClose MeterRegistry registry = new SimpleMeterRegistry();
   @TempDir Path temporaryFolder;
   final int partitionId = 1;
-  ConstructableSnapshotStore senderSnapshotStore;
-  ReceivableSnapshotStore receiverSnapshotStore;
+  FileBasedSnapshotStore senderSnapshotStore;
+  FileBasedSnapshotStore receiverSnapshotStore;
   private AtomixClientTransportAdapter clientTransport;
   private String serverAddress;
   private AtomixServerTransport serverTransport;
@@ -113,7 +112,9 @@ public class SnapshotApiRequestHandlerTest {
     scheduler.submitActor((Actor) senderSnapshotStore);
     scheduler.workUntilDone();
 
-    final var transferService = new SnapshotTransferServiceImpl(senderSnapshotStore, 1);
+    final var transferService =
+        new SnapshotTransferServiceImpl(
+            senderSnapshotStore, 1, SnapshotCopyUtil.copyAllFiles(), senderSnapshotStore);
     snapshotHandler.addTransferService(1, transferService);
 
     receiverSnapshotStore =
