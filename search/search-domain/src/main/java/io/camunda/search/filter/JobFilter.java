@@ -49,6 +49,10 @@ public record JobFilter(
       return jobKeyOperations(collectValues(operation, operations));
     }
 
+    public Builder jobKeys(final Long value, final Long... values) {
+      return jobKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
     public Builder kindOperations(final List<Operation<String>> operations) {
       kindOperations = addValuesToList(kindOperations, operations);
       return this;
@@ -58,6 +62,10 @@ public record JobFilter(
     public final Builder kindOperations(
         final Operation<String> operation, final Operation<String>... operations) {
       return kindOperations(collectValues(operation, operations));
+    }
+
+    public Builder kinds(final String value, final String... values) {
+      return kindOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     public Builder listenerEventTypeOperations(final List<Operation<String>> operations) {
@@ -71,6 +79,10 @@ public record JobFilter(
       return listenerEventTypeOperations(collectValues(operation, operations));
     }
 
+    public Builder listenerEventTypes(final String value, final String... values) {
+      return listenerEventTypeOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
     public Builder processDefinitionIdOperations(final List<Operation<String>> operations) {
       processDefinitionIdOperations = addValuesToList(processDefinitionIdOperations, operations);
       return this;
@@ -80,6 +92,10 @@ public record JobFilter(
     public final Builder processDefinitionIdOperations(
         final Operation<String> operation, final Operation<String>... operations) {
       return processDefinitionIdOperations(collectValues(operation, operations));
+    }
+
+    public Builder processDefinitionIds(final String value, final String... values) {
+      return processDefinitionIdOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     public Builder tenantIdOperations(final List<Operation<String>> operations) {
@@ -93,6 +109,10 @@ public record JobFilter(
       return tenantIdOperations(collectValues(operation, operations));
     }
 
+    public Builder tenantIds(final String value, final String... values) {
+      return tenantIdOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
     public Builder stateOperations(final List<Operation<String>> operations) {
       stateOperations = addValuesToList(stateOperations, operations);
       return this;
@@ -102,6 +122,10 @@ public record JobFilter(
     public final Builder stateOperations(
         final Operation<String> operation, final Operation<String>... operations) {
       return stateOperations(collectValues(operation, operations));
+    }
+
+    public Builder states(final String value, final String... values) {
+      return stateOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     public Builder typeOperations(final List<Operation<String>> operations) {
@@ -128,6 +152,10 @@ public record JobFilter(
     public final Builder workerOperations(
         final Operation<String> operation, final Operation<String>... operations) {
       return workerOperations(collectValues(operation, operations));
+    }
+
+    public Builder workers(final String value, final String... values) {
+      return workerOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     public Builder processInstanceKeyOperations(final List<Operation<Long>> operations) {
@@ -171,9 +199,17 @@ public record JobFilter(
       return elementInstanceKeyOperations(collectValues(operation, operations));
     }
 
+    public Builder elementInstanceKeys(final Long value, final Long... values) {
+      return elementInstanceKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
     public Builder elementIdOperations(final List<Operation<String>> operations) {
       elementIdOperation = addValuesToList(elementIdOperation, operations);
       return this;
+    }
+
+    public Builder elementIds(final String value, final String... values) {
+      return elementIdOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     @SafeVarargs
