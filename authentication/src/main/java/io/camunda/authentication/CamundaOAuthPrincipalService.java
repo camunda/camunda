@@ -12,6 +12,7 @@ import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.auth.OidcPrincipalLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
@@ -22,6 +23,7 @@ import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -32,6 +34,7 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
@@ -45,8 +48,10 @@ public class CamundaOAuthPrincipalService {
   private final GroupServices groupServices;
   private final AuthorizationServices authorizationServices;
   private final OidcPrincipalLoader oidcPrincipalLoader;
+  private final OidcGroupsLoader oidcGroupsLoader;
   private final String usernameClaim;
   private final String clientIdClaim;
+  private final String groupsClaim;
 
   public CamundaOAuthPrincipalService(
       final MappingServices mappingServices,
@@ -60,12 +65,11 @@ public class CamundaOAuthPrincipalService {
     this.roleServices = roleServices;
     this.groupServices = groupServices;
     this.authorizationServices = authorizationServices;
-    oidcPrincipalLoader =
-        new OidcPrincipalLoader(
-            securityConfiguration.getAuthentication().getOidc().getUsernameClaim(),
-            securityConfiguration.getAuthentication().getOidc().getClientIdClaim());
     usernameClaim = securityConfiguration.getAuthentication().getOidc().getUsernameClaim();
     clientIdClaim = securityConfiguration.getAuthentication().getOidc().getClientIdClaim();
+    groupsClaim = securityConfiguration.getAuthentication().getOidc().getGroupsClaim();
+    oidcPrincipalLoader = new OidcPrincipalLoader(usernameClaim, clientIdClaim);
+    oidcGroupsLoader = new OidcGroupsLoader(groupsClaim);
   }
 
   public OAuthContext loadOAuthContext(final Map<String, Object> claims)
@@ -77,10 +81,15 @@ public class CamundaOAuthPrincipalService {
       LOG.debug("No mappings found for these claims: {}", claims);
     }
 
-    final var groups =
-        groupServices.getGroupsByMemberIds(mappingIds, EntityType.MAPPING).stream()
-            .map(GroupEntity::groupId)
-            .collect(Collectors.toSet());
+    final Set<String> groups;
+    if (StringUtils.hasText(groupsClaim)) {
+      groups = new HashSet<>(oidcGroupsLoader.load(claims));
+    } else {
+      groups =
+          groupServices.getGroupsByMemberIds(mappingIds, EntityType.MAPPING).stream()
+              .map(GroupEntity::groupId)
+              .collect(Collectors.toSet());
+    }
 
     final var roles = roleServices.getRolesByMappingsAndGroups(mappingIds, groups);
     final var roleIds = roles.stream().map(RoleEntity::roleId).collect(Collectors.toSet());

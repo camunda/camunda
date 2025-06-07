@@ -7,6 +7,7 @@
  */
 package io.camunda.security.configuration;
 
+import io.camunda.security.auth.OidcGroupsLoader;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -23,6 +24,7 @@ public class OidcAuthenticationConfiguration {
   private Set<String> audiences;
   private String usernameClaim = "sub";
   private String clientIdClaim;
+  private String groupsClaim;
   private String organizationId;
 
   public String getIssuerUri() {
@@ -119,5 +121,14 @@ public class OidcAuthenticationConfiguration {
 
   public void setOrganizationId(final String organizationId) {
     this.organizationId = organizationId;
+  }
+
+  public String getGroupsClaim() {
+    return groupsClaim;
+  }
+
+  public void setGroupsClaim(final String groupsClaim) {
+    new OidcGroupsLoader(groupsClaim);
+    this.groupsClaim = groupsClaim;
   }
 }
