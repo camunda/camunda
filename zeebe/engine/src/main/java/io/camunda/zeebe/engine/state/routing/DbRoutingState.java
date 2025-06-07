@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -86,7 +87,7 @@ public final class DbRoutingState implements MutableRoutingState {
     final var partitions =
         IntStream.rangeClosed(Protocol.START_PARTITION_ID, partitionCount)
             .boxed()
-            .collect(Collectors.toSet());
+            .collect(Collectors.toCollection(TreeSet::new));
 
     key.wrapString(CURRENT_KEY);
     currentRoutingInfo.reset();
@@ -100,7 +101,7 @@ public final class DbRoutingState implements MutableRoutingState {
   public void setDesiredPartitions(final Set<Integer> partitions, final long eventKey) {
     final var currentMessageCorrelation = messageCorrelation();
     desiredRoutingInfo.reset();
-    desiredRoutingInfo.setPartitions(partitions);
+    desiredRoutingInfo.setPartitions(new TreeSet<>(partitions));
     desiredRoutingInfo.setMessageCorrelation(currentMessageCorrelation);
 
     setBootstrappedAt(partitions.size(), eventKey);
@@ -109,11 +110,20 @@ public final class DbRoutingState implements MutableRoutingState {
   }
 
   @Override
-  public void arriveAtDesiredState() {
+  public boolean activatePartition(final int partitionId) {
     key.wrapString(DESIRED_KEY);
-    final var desiredPartitions = columnFamily.get(key);
-    key.wrapString(CURRENT_KEY);
-    columnFamily.update(key, desiredPartitions);
+    final var desiredState = columnFamily.get(key);
+    if (desiredState.getPartitions().contains(partitionId)) {
+      key.wrapString(CURRENT_KEY);
+      final var current = columnFamily.get(key);
+      final var newPartitions = new TreeSet<>(current.getPartitions());
+      newPartitions.add(partitionId);
+      current.setPartitions(newPartitions);
+      columnFamily.update(key, current);
+      return newPartitions.equals(desiredState.getPartitions());
+    } else {
+      return false;
+    }
   }
 
   private void setBootstrappedAt(final int partitionCount, final long key) {

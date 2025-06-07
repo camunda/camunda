@@ -30,8 +30,12 @@ public interface MutableRoutingState extends RoutingState {
   void setDesiredPartitions(Set<Integer> partitions, long key);
 
   /**
-   * Copies the desired state to the current state. The desired state must be set via {@link
-   * #setDesiredPartitions(Set, long)} before calling this method.
+   * Move {@param partitionId} from the desired set of partition to the current partitions. The
+   * partitions must be activated in order as the partitions must be contiguous.
+   *
+   * @param partitionId the partition to move
+   * @return true if the partition was the last remaining partition in order to arrive at desired
+   *     state, false otherwise
    */
-  void arriveAtDesiredState();
+  boolean activatePartition(int partitionId);
 }

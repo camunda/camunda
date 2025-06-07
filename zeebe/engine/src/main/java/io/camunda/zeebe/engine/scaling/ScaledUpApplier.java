@@ -21,6 +21,6 @@ public class ScaledUpApplier implements TypedEventApplier<ScaleIntent, ScaleReco
 
   @Override
   public void applyState(final long key, final ScaleRecord value) {
-    routingState.arriveAtDesiredState();
+    // TODO: when relocation is done, apply the changes to the routing state
   }
 }

@@ -28,10 +28,12 @@ public interface PartitionScalingChangeExecutor {
   ActorFuture<Void> awaitRedistributionCompletion(
       int desiredPartitionCount, Set<Integer> redistributedPartitions, Duration timeout);
 
+  ActorFuture<Void> notifyPartitionBootstrapped(int partitionId);
+
   final class NoopPartitionScalingChangeExecutor implements PartitionScalingChangeExecutor {
     @Override
     public ActorFuture<Void> initiateScaleUp(final int desiredPartitionCount) {
-      return CompletableActorFuture.completed(null);
+      return CompletableActorFuture.completed();
     }
 
     @Override
@@ -39,7 +41,12 @@ public interface PartitionScalingChangeExecutor {
         final int desiredPartitionCount,
         final Set<Integer> redistributedPartitions,
         final Duration timeout) {
-      return CompletableActorFuture.completed(null);
+      return CompletableActorFuture.completed();
+    }
+
+    @Override
+    public ActorFuture<Void> notifyPartitionBootstrapped(final int partitionId) {
+      return CompletableActorFuture.completed();
     }
   }
 }
