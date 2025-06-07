@@ -21,7 +21,7 @@ import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("migration | identity-migration | process-migration")
+@Profile("identity-migration | process-migration")
 @ComponentScan(basePackages = "io.camunda.application.commons.migration")
 public class MigrationsRunner implements ApplicationRunner {
 

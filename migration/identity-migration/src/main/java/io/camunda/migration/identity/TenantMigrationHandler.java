@@ -15,9 +15,7 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import java.util.List;
-import org.springframework.stereotype.Component;
 
-@Component
 public class TenantMigrationHandler extends MigrationHandler<Tenant> {
 
   private final ManagementIdentityClient managementIdentityClient;
