@@ -430,7 +430,13 @@ public class CommandDistributionIdempotencyTest {
                 MappingIntent.UPDATE,
                 () -> {
                   final var mapping = createMapping();
-                  return ENGINE.mapping().updateMapping(mapping.getValue().getMappingId()).update();
+                  return ENGINE
+                      .mapping()
+                      .updateMapping(mapping.getValue().getMappingId())
+                      .withName(mapping.getValue().getName())
+                      .withClaimName(mapping.getValue().getClaimName())
+                      .withClaimValue(mapping.getValue().getClaimValue())
+                      .update();
                 }),
             MappingUpdateProcessor.class
           },
@@ -771,6 +777,7 @@ public class CommandDistributionIdempotencyTest {
         .newMapping(UUID.randomUUID().toString())
         .withClaimName(UUID.randomUUID().toString())
         .withClaimValue(UUID.randomUUID().toString())
+        .withName(UUID.randomUUID().toString())
         .create();
   }
 
