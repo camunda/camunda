@@ -135,6 +135,11 @@ public final class MockTypedRecord<T extends UnifiedRecordValue> implements Type
   }
 
   @Override
+  public long getBatchOperationReference() {
+    return metadata.getBatchOperationReference();
+  }
+
+  @Override
   public Record<T> copyOf() {
     throw new UnsupportedOperationException("not yet implemented");
   }

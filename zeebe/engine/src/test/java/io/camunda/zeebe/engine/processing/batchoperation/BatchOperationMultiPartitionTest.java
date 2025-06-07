@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -276,7 +277,7 @@ public final class BatchOperationMultiPartitionTest {
   public void shouldResumeOnAllPartitions() {
     // given
     final long batchOperationKey = createDistributedBatchOperation();
-    suspendDistributedBatchOperation(batchOperationKey);
+    suspendDistributedBatchOperation(batchOperationKey, true);
 
     // when
     engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).resume();
@@ -296,6 +297,84 @@ public final class BatchOperationMultiPartitionTest {
           .extracting(Record::getIntent)
           .containsExactly(BatchOperationIntent.RESUME, BatchOperationIntent.RESUMED);
     }
+  }
+
+  @Test
+  public void shouldResumeOnRemainingPartitionsIfOneFailed() {
+    // given
+    final long batchOperationKey = createDistributedBatchOperation();
+
+    // fail one partition
+    engine
+        .batchOperation()
+        .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+        .withBatchOperationKey(batchOperationKey)
+        .onPartition(PARTITION_COUNT)
+        .fail();
+
+    suspendDistributedBatchOperation(batchOperationKey, false);
+
+    // when
+    engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).resume();
+
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .limitByCount(
+                    record ->
+                        record.getIntent().equals(BatchOperationIntent.RESUME)
+                            || record.getIntent().equals(BatchOperationIntent.RESUMED),
+                    5)
+                .collect(Collectors.toList()))
+        .extracting(Record::getIntent)
+        .contains(
+            BatchOperationIntent.RESUME,
+            BatchOperationIntent.RESUME,
+            BatchOperationIntent.RESUME,
+            BatchOperationIntent.RESUMED,
+            BatchOperationIntent.RESUMED);
+
+    // partition 1 and 2 execute
+    for (int i = 1; i <= PARTITION_COUNT - 1; i++) {
+      engine
+          .batchOperation()
+          .newExecution()
+          .onPartition(i)
+          .withBatchOperationKey(batchOperationKey)
+          .execute();
+    }
+
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .onlyEvents()
+                .limit(record -> record.getIntent().equals(BatchOperationIntent.COMPLETED))
+                .collect(Collectors.toList()))
+        .allSatisfy(
+            record -> assertThat(record.getBatchOperationReference()).isEqualTo(batchOperationKey));
+
+    assertThat(
+            RecordingExporter.batchOperationExecutionRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .onlyEvents()
+                .limitByCount(
+                    record -> record.getIntent().equals(BatchOperationExecutionIntent.EXECUTED), 2)
+                .collect(Collectors.toList()))
+        .allSatisfy(
+            record -> assertThat(record.getBatchOperationReference()).isEqualTo(batchOperationKey));
+
+    assertThat(
+            RecordingExporter.batchOperationPartitionLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .onlyEvents()
+                .limitByCount(
+                    record ->
+                        record.getIntent().equals(BatchOperationIntent.PARTITION_COMPLETED)
+                            || record.getIntent().equals(BatchOperationIntent.PARTITION_FAILED),
+                    PARTITION_COUNT + 1)
+                .collect(Collectors.toList()))
+        .allSatisfy(
+            record -> assertThat(record.getBatchOperationReference()).isEqualTo(batchOperationKey));
   }
 
   private long createDistributedBatchOperation() {
@@ -320,7 +399,7 @@ public final class BatchOperationMultiPartitionTest {
     return batchOperationKey;
   }
 
-  private void suspendDistributedBatchOperation(final long batchOperationKey) {
+  private void suspendDistributedBatchOperation(final long batchOperationKey, final boolean reset) {
     engine.batchOperation().newLifecycle().withBatchOperationKey(batchOperationKey).suspend();
 
     assertThat(
@@ -330,7 +409,9 @@ public final class BatchOperationMultiPartitionTest {
         .extracting(Record::getIntent)
         .endsWith(CommandDistributionIntent.FINISHED);
 
-    RecordingExporter.reset();
+    if (reset) {
+      RecordingExporter.reset();
+    }
   }
 
   private void assertThatCommandIsDistributedCorrectly(

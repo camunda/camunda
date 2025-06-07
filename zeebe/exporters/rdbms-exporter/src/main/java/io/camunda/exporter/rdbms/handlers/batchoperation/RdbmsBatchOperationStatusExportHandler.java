@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.rdbms.handlers.batchoperation;
 
-import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationReferenceNullValue;
+import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperationReferenceNullValue;
 
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
@@ -28,7 +28,7 @@ public abstract class RdbmsBatchOperationStatusExportHandler<T extends RecordVal
 
   @Override
   public boolean canExport(final Record<T> record) {
-    return record.getOperationReference() != operationReferenceNullValue()
+    return record.getBatchOperationReference() != batchOperationReferenceNullValue()
         && (isCompleted(record) || isFailed(record));
   }
 
@@ -36,14 +36,14 @@ public abstract class RdbmsBatchOperationStatusExportHandler<T extends RecordVal
   public void export(final Record<T> record) {
     if (isCompleted(record)) {
       batchOperationWriter.updateItem(
-          String.valueOf(record.getOperationReference()),
+          String.valueOf(record.getBatchOperationReference()),
           getItemKey(record),
           BatchOperationItemState.COMPLETED,
           DateUtil.toOffsetDateTime(record.getTimestamp()),
           null);
     } else if (isFailed(record)) {
       batchOperationWriter.updateItem(
-          String.valueOf(record.getOperationReference()),
+          String.valueOf(record.getBatchOperationReference()),
           getItemKey(record),
           BatchOperationItemState.FAILED,
           DateUtil.toOffsetDateTime(record.getTimestamp()),

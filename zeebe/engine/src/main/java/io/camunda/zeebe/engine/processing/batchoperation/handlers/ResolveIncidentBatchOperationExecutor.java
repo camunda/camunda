@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.batchoperation.handlers;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter.CommandMetadata;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -46,7 +47,9 @@ public class ResolveIncidentBatchOperationExecutor implements BatchOperationExec
         itemKey,
         IncidentIntent.RESOLVE,
         command,
-        batchOperation.getKey(),
-        batchOperation.getAuthentication().claims());
+        CommandMetadata.of(
+            b ->
+                b.batchOperationReference(batchOperation.getKey())
+                    .claims(batchOperation.getAuthentication().claims())));
   }
 }
