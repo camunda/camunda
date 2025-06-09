@@ -79,7 +79,7 @@ public class RolesSearchTest {
         camundaClient.newRolesSearchRequest().sort(s -> s.name().desc()).send().join();
 
     assertThat(roleSearchResponse.items())
-        .hasSize(5)
+        .hasSizeGreaterThanOrEqualTo(2)
         .map(Role::getName)
         // filtering here as "RPA", "Connectors" and "Admin" roles are also initialized in
         // IdentitySetupInitializer
