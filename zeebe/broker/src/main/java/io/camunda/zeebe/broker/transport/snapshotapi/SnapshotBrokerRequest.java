@@ -47,7 +47,7 @@ public class SnapshotBrokerRequest extends BrokerRequest<SnapshotResponse> {
     };
   }
 
-  public SnapshotRequest getRequest() {
+  public SnapshotRequest getRequest(){
     return request;
   }
 
