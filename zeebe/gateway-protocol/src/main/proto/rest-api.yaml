@@ -8498,12 +8498,15 @@ components:
           allOf:
             - $ref: "#/components/schemas/StringFilterProperty"
         state:
+          description: The state of the job.
           allOf:
             - $ref: "#/components/schemas/JobStateFilterProperty"
         kind:
+          description: The kind of the job.
           allOf:
             - $ref: "#/components/schemas/JobKindFilterProperty"
         listenerEventType:
+          description: The listener event type of the job.
           allOf:
             - $ref: "#/components/schemas/JobListenerEventTypeFilterProperty"
         processDefinitionId:
