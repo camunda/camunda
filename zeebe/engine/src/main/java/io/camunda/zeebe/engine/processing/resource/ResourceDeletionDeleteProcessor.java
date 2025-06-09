@@ -12,11 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationException;
-import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.StartEventSubscriptionManager;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
@@ -43,7 +39,6 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ResourceState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
-import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
@@ -62,7 +57,6 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -82,7 +76,7 @@ public class ResourceDeletionDeleteProcessor
   private final TimerInstanceState timerInstanceState;
   private final BannedInstanceState bannedInstanceState;
   private final CatchEventBehavior catchEventBehavior;
-  private final ExpressionProcessor expressionProcessor;
+  private final StartEventSubscriptions startEventSubscriptions;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final StartEventSubscriptionManager startEventSubscriptionManager;
   private final FormState formState;
@@ -107,10 +101,12 @@ public class ResourceDeletionDeleteProcessor
     timerInstanceState = processingState.getTimerState();
     bannedInstanceState = processingState.getBannedInstanceState();
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
-    expressionProcessor = bpmnBehaviors.expressionBehavior();
     this.authCheckBehavior = authCheckBehavior;
     startEventSubscriptionManager =
         new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
+    startEventSubscriptions =
+        new StartEventSubscriptions(
+            bpmnBehaviors.expressionBehavior(), catchEventBehavior, startEventSubscriptionManager);
     formState = processingState.getFormState();
     resourceState = processingState.getResourceState();
     tenantState = processingState.getTenantState();
@@ -318,7 +314,7 @@ public class ResourceDeletionDeleteProcessor
         final var previousProcess =
             processState.getProcessByProcessIdAndVersion(
                 processIdBuffer, previousVersion.get(), process.getTenantId());
-        resubscribeStartEvents(previousProcess);
+        startEventSubscriptions.resubscribeToStartEvents(previousProcess);
       }
     }
 
@@ -346,35 +342,6 @@ public class ResourceDeletionDeleteProcessor
     }
 
     startEventSubscriptionManager.closeStartEventSubscriptions(deployedProcess);
-  }
-
-  private void resubscribeStartEvents(final DeployedProcess deployedProcess) {
-    final var process = deployedProcess.getProcess();
-    if (process.hasTimerStartEvent()) {
-      process.getStartEvents().stream()
-          .filter(ExecutableCatchEventElement::isTimer)
-          .forEach(
-              timerStartEvent -> {
-                final Either<Failure, Timer> failureOrTimer =
-                    timerStartEvent
-                        .getTimerFactory()
-                        .apply(expressionProcessor, NO_ELEMENT_INSTANCE);
-
-                if (failureOrTimer.isLeft()) {
-                  throw new EvaluationException(failureOrTimer.getLeft().getMessage());
-                }
-
-                catchEventBehavior.subscribeToTimerEvent(
-                    NO_ELEMENT_INSTANCE,
-                    NO_ELEMENT_INSTANCE,
-                    deployedProcess.getKey(),
-                    timerStartEvent.getId(),
-                    deployedProcess.getTenantId(),
-                    failureOrTimer.get());
-              });
-    }
-
-    startEventSubscriptionManager.openStartEventSubscriptions(deployedProcess);
   }
 
   private void deleteForm(final PersistedForm persistedForm) {
