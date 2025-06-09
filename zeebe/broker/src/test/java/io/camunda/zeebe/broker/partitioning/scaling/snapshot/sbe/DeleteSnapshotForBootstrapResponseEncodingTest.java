@@ -9,32 +9,28 @@ package io.camunda.zeebe.broker.partitioning.scaling.snapshot.sbe;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotRequest.GetSnapshotChunk;
+import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotResponse.DeleteSnapshotForBootstrapResponse;
 import java.nio.ByteBuffer;
-import java.util.Optional;
-import java.util.UUID;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-public class GetSnapshotChunkEncodingTest {
+public class DeleteSnapshotForBootstrapResponseEncodingTest {
 
   @ParameterizedTest
-  @ValueSource(strings = {"", "a", "abc"})
-  public void shouldSerializeAndDeserializeGetSnapshotChunkRequest(final String lastChunkName) {
-    final Optional<String> optionalChunkName =
-        lastChunkName.isEmpty() ? Optional.empty() : Optional.of(lastChunkName);
-    final var request =
-        new GetSnapshotChunk(23, UUID.randomUUID(), optionalChunkName, optionalChunkName);
-    final var serializer = new GetSnapshotChunkSerializer();
-    final var deserializer = new GetSnapshotChunkDeserializer();
+  @ValueSource(ints = {1, 23, 100, 999})
+  public void shouldSerializeAndDeserializeDeleteSnapshotForBootstrapResponse(
+      final int partitionId) {
+    final var response = new DeleteSnapshotForBootstrapResponse(partitionId);
+    final var serializer = new DeleteSnapshotForBootstrapResponseSerializer();
+    final var deserializer = new DeleteSnapshotForBootstrapResponseDeserializer();
     final var buffer = ByteBuffer.allocate(4096);
 
     // when
-    final var bytesWritten = serializer.serialize(request, new UnsafeBuffer(buffer), 123);
+    final var bytesWritten = serializer.serialize(response, new UnsafeBuffer(buffer), 123);
     final var deserialized = deserializer.deserialize(new UnsafeBuffer(buffer), 123, bytesWritten);
 
     // then
-    assertThat(deserialized).isEqualTo(request);
+    assertThat(deserialized).isEqualTo(response);
   }
 }
