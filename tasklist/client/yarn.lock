@@ -1350,6 +1350,11 @@
   resolved "https://registry.yarnpkg.com/@protobufjs/utf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
   integrity sha512-Vvn3zZrhQZkkBE8LSuW3em98c0FwgO4nxzv6OdSxPKJIEKY2bGbHn+mhGIPerzI4twdxaP8/0+06HBpwf345Lw==
 
+"@rolldown/pluginutils@1.0.0-beta.9":
+  version "1.0.0-beta.9"
+  resolved "https://registry.yarnpkg.com/@rolldown/pluginutils/-/pluginutils-1.0.0-beta.9.tgz#68ef9fff5a9791a642cea0dc4380ce6cb487a84a"
+  integrity sha512-e9MeMtVWo186sgvFFJOPGy7/d2j2mZhLJIdVW0C/xDluuOvymEATqz6zKsP0ZmXGzQtqlyjz5sC1sYQUoJG98w==
+
 "@rollup/pluginutils@^5.1.3":
   version "5.1.3"
   resolved "https://registry.yarnpkg.com/@rollup/pluginutils/-/pluginutils-5.1.3.tgz#3001bf1a03f3ad24457591f2c259c8e514e0dbdf"
@@ -1911,14 +1916,15 @@
   resolved "https://registry.yarnpkg.com/@uidotdev/usehooks/-/usehooks-2.4.1.tgz#4b733eaeae09a7be143c6c9ca158b56cc1ea75bf"
   integrity sha512-1I+RwWyS+kdv3Mv0Vmc+p0dPYH0DTRAo04HLyXReYBL9AeseDWUJyi4THuksBJcu9F0Pih69Ak150VDnqbVnXg==
 
-"@vitejs/plugin-react@4.4.1":
-  version "4.4.1"
-  resolved "https://registry.yarnpkg.com/@vitejs/plugin-react/-/plugin-react-4.4.1.tgz#d7d1e9c9616d7536b0953637edfee7c6cbe2fe0f"
-  integrity sha512-IpEm5ZmeXAP/osiBXVVP5KjFMzbWOonMs0NaQQl+xYnUAcq4oHUBsF2+p4MgKWG4YMmFYJU8A6sxRPuowllm6w==
+"@vitejs/plugin-react@4.5.1":
+  version "4.5.1"
+  resolved "https://registry.yarnpkg.com/@vitejs/plugin-react/-/plugin-react-4.5.1.tgz#19432712467ad3b81f24c85d695a6febf8d4cc11"
+  integrity sha512-uPZBqSI0YD4lpkIru6M35sIfylLGTyhGHvDZbNLuMA73lMlwJKz5xweH7FajfcCAc2HnINciejA9qTz0dr0M7A==
   dependencies:
     "@babel/core" "^7.26.10"
     "@babel/plugin-transform-react-jsx-self" "^7.25.9"
     "@babel/plugin-transform-react-jsx-source" "^7.25.9"
+    "@rolldown/pluginutils" "1.0.0-beta.9"
     "@types/babel__core" "^7.20.5"
     react-refresh "^0.17.0"
 
