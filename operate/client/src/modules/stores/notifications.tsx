@@ -9,7 +9,7 @@
 import {action, observable, makeObservable} from 'mobx';
 import {ToastNotification} from '@carbon/react';
 
-const NOTIFICATION_TIMEOUT = 5000;
+const NOTIFICATION_TIMEOUT = 10000;
 const MAX_VISIBLE_NOTIFICATIONS = 5;
 
 type Notification = {

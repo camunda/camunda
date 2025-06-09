@@ -13,7 +13,7 @@ import { ToastNotification } from "@carbon/react";
 import { spacing03 } from "@carbon/elements";
 import { NotificationOptions } from "./NotificationContext";
 
-const NOTIFICATION_TIMEOUT = 5000;
+const NOTIFICATION_TIMEOUT = 10000;
 const TRANSITION_DURATION = 300;
 
 const StyledCSSTransition = styled(CSSTransition)`
