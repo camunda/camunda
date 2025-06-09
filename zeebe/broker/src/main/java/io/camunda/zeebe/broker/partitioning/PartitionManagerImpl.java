@@ -382,29 +382,28 @@ public final class PartitionManagerImpl
         () ->
             bootstrapPartition(partitionMetadata, partitionConfig, initializeFromSnapshot)
                 .onComplete(future));
-    if (initializeFromSnapshot) {
-      return future
-          .andThen(ignored -> notifyPartitionBootstrapped(partitionId), concurrencyControl)
-          .andThen(
-              (ignored, error) -> {
-                if (error != null) {
-                  if (error instanceof PartitionAlreadyExistsException) {
-                    return CompletableActorFuture.completedExceptionally(error);
-                  } else {
-                    // bootstrap has failed, let's stop and return the error.
-                    return stopPartition(partitionId)
-                        .andThen(
-                            none -> CompletableActorFuture.completedExceptionally(error),
-                            concurrencyControl);
-                  }
-                } else {
-                  return CompletableActorFuture.completed();
-                }
-              },
-              concurrencyControl);
-    } else {
+    if (!initializeFromSnapshot) {
       return future;
     }
+    return future
+        .andThen(ignored -> notifyPartitionBootstrapped(partitionId), concurrencyControl)
+        .andThen(
+            (ignored, error) -> {
+              if (error != null) {
+                if (error instanceof PartitionAlreadyExistsException) {
+                  return CompletableActorFuture.completedExceptionally(error);
+                } else {
+                  // bootstrap has failed, let's stop and return the error.
+                  return stopPartition(partitionId)
+                      .andThen(
+                          none -> CompletableActorFuture.completedExceptionally(error),
+                          concurrencyControl);
+                }
+              } else {
+                return CompletableActorFuture.completed();
+              }
+            },
+            concurrencyControl);
   }
 
   @Override

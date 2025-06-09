@@ -19,6 +19,8 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.collection.Tuple;
+import java.util.Optional;
 
 public class MarkPartitionBootstrappedProcessor implements TypedRecordProcessor<ScaleRecord> {
 
@@ -43,8 +45,9 @@ public class MarkPartitionBootstrappedProcessor implements TypedRecordProcessor<
   public void processRecord(final TypedRecord<ScaleRecord> command) {
     final var scaleUp = command.getValue();
 
-    final var reason = validate(command);
-    if (reason != null) {
+    final var rejection = validate(command);
+    if (rejection.isPresent()) {
+      rejectWith(command, rejection.get().getLeft(), rejection.get().getRight());
       return;
     }
     final var scalingKey = keyGenerator.nextKey();
@@ -59,34 +62,28 @@ public class MarkPartitionBootstrappedProcessor implements TypedRecordProcessor<
     }
   }
 
-  private String validate(final TypedRecord<ScaleRecord> command) {
+  private Optional<Tuple<RejectionType, String>> validate(final TypedRecord<ScaleRecord> command) {
     final var scaleUp = command.getValue();
     if (scaleUp.getRedistributedPartitions().size() != 1) {
       final var reason =
-          String.format(
-              "Only one partition can be marked as bootstrapped at a time. The redistributed partitions are %s.",
-              scaleUp.getRedistributedPartitions());
-      rejectWith(command, RejectionType.INVALID_ARGUMENT, reason);
-      return reason;
+          "Only one partition can be marked as bootstrapped at a time. The redistributed partitions are %s."
+              .formatted(scaleUp.getRedistributedPartitions());
+      return Optional.of(new Tuple<>(RejectionType.INVALID_ARGUMENT, reason));
     }
     final var partition = scaleUp.getRedistributedPartitions().getFirst();
     if (partition > routingState.desiredPartitions().size()) {
       final var reason =
-          String.format(
-              "The redistributed partitions do not match the desired partitions. "
-                  + "The redistributed partition is %s, the desired partitions are %s.",
-              partition, routingState.desiredPartitions());
-      rejectWith(command, RejectionType.INVALID_STATE, reason);
-      return reason;
+          "The redistributed partitions do not match the desired partitions. The redistributed partition is %s, the desired partitions are %s."
+              .formatted(partition, routingState.desiredPartitions());
+      return Optional.of(new Tuple<>(RejectionType.INVALID_STATE, reason));
     }
     if (!routingState.desiredPartitions().contains(partition)
         && !routingState.currentPartitions().contains(partition)) {
-      final var reason = String.format("Partition %d is not a valid partition.", partition);
-      rejectWith(command, RejectionType.INVALID_ARGUMENT, reason);
-      return reason;
+      final var reason = "Partition %d is not a valid partition.".formatted(partition);
+      return Optional.of(new Tuple<>(RejectionType.INVALID_ARGUMENT, reason));
     }
 
-    return null;
+    return Optional.empty();
   }
 
   private boolean areAllPartitionsBootstrapped() {
