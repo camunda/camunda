@@ -7,12 +7,14 @@
  */
 package io.camunda.zeebe.broker.partitioning.scaling.snapshot;
 
+import io.camunda.zeebe.snapshots.SnapshotChunk;
 import java.util.Optional;
 import java.util.UUID;
 
-public record GetSnapshotChunk(
-    int partitionId, UUID transferId, Optional<String> snapshotId, Optional<String> lastChunkName) {
-  public GetSnapshotChunk withPartitionId(final int partitionId) {
-    return new GetSnapshotChunk(partitionId, transferId, snapshotId, lastChunkName);
-  }
+public sealed interface SnapshotResponse {
+
+  record SnapshotChunkResponse(UUID transferId, Optional<SnapshotChunk> chunk)
+      implements SnapshotResponse {}
+
+  record DeleteSnapshotForBootstrapResponse(int partitionId) implements SnapshotResponse {}
 }
