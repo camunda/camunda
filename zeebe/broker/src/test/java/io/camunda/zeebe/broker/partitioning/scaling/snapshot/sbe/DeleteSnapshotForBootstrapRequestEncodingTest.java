@@ -9,25 +9,21 @@ package io.camunda.zeebe.broker.partitioning.scaling.snapshot.sbe;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotRequest.GetSnapshotChunk;
+import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotRequest.DeleteSnapshotForBootstrapRequest;
 import java.nio.ByteBuffer;
-import java.util.Optional;
-import java.util.UUID;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-public class GetSnapshotChunkEncodingTest {
+public class DeleteSnapshotForBootstrapRequestEncodingTest {
 
   @ParameterizedTest
-  @ValueSource(strings = {"", "a", "abc"})
-  public void shouldSerializeAndDeserializeGetSnapshotChunkRequest(final String lastChunkName) {
-    final Optional<String> optionalChunkName =
-        lastChunkName.isEmpty() ? Optional.empty() : Optional.of(lastChunkName);
-    final var request =
-        new GetSnapshotChunk(23, UUID.randomUUID(), optionalChunkName, optionalChunkName);
-    final var serializer = new GetSnapshotChunkSerializer();
-    final var deserializer = new GetSnapshotChunkDeserializer();
+  @ValueSource(ints = {1, 23, 100, 999})
+  public void shouldSerializeAndDeserializeDeleteSnapshotForBootstrapRequest(
+      final int partitionId) {
+    final var request = new DeleteSnapshotForBootstrapRequest(partitionId);
+    final var serializer = new DeleteSnapshotForBootstrapRequestSerializer();
+    final var deserializer = new DeleteSnapshotForBootstrapRequestDeserializer();
     final var buffer = ByteBuffer.allocate(4096);
 
     // when

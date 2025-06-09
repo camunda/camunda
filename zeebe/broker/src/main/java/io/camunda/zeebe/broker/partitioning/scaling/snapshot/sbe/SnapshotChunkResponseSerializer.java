@@ -8,14 +8,31 @@
 package io.camunda.zeebe.broker.partitioning.scaling.snapshot.sbe;
 
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotChunkRecord;
-import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotChunkResponse;
+import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotResponse.SnapshotChunkResponse;
 import org.agrona.MutableDirectBuffer;
 
-public class SnapshotChunkResponseSerializer {
+public class SnapshotChunkResponseSerializer implements SbeSerializer<SnapshotChunkResponse> {
 
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final SnapshotChunkResponseEncoder encoder = new SnapshotChunkResponseEncoder();
 
+  @Override
+  public int size(final SnapshotChunkResponse snapshotChunk) {
+    int length =
+        MessageHeaderEncoder.ENCODED_LENGTH
+            + SnapshotChunkResponseEncoder.BLOCK_LENGTH
+            + Integer.BYTES * 3;
+    if (snapshotChunk.chunk().isPresent()) {
+      final var chunk = snapshotChunk.chunk().get();
+      length +=
+          chunk.getChunkName().length()
+              + chunk.getSnapshotId().length()
+              + chunk.getContent().length;
+    }
+    return length;
+  }
+
+  @Override
   public int serialize(
       final SnapshotChunkResponse response, final MutableDirectBuffer buffer, final int offset) {
     final var transferId = response.transferId();
@@ -34,20 +51,5 @@ public class SnapshotChunkResponseSerializer {
         .chunkName(chunk.getChunkName());
     encoder.putContent(chunk.getContent(), 0, chunk.getContent().length);
     return encoder.encodedLength() + headerEncoder.encodedLength();
-  }
-
-  public int size(final SnapshotChunkResponse snapshotChunk) {
-    int length =
-        MessageHeaderEncoder.ENCODED_LENGTH
-            + SnapshotChunkResponseEncoder.BLOCK_LENGTH
-            + Integer.BYTES * 3;
-    if (snapshotChunk.chunk().isPresent()) {
-      final var chunk = snapshotChunk.chunk().get();
-      length +=
-          chunk.getChunkName().length()
-              + chunk.getSnapshotId().length()
-              + chunk.getContent().length;
-    }
-    return length;
   }
 }
