@@ -8,12 +8,13 @@
 package io.camunda.zeebe.snapshots.transfer;
 
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
+import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
 import java.util.UUID;
 
-public interface SnapshotTransferService {
+public interface SnapshotTransferService extends AsyncClosable {
 
   /**
    * Initiate the transfer of the latest snapshot for a partition.
@@ -53,4 +54,10 @@ public interface SnapshotTransferService {
     ActorFuture<PersistedSnapshot> takeSnapshot(
         int partition, long lastProcessedPosition, ConcurrencyControl control);
   }
+  /**
+   * Delete the underlying snapshot for bootstrap and terminate all pending transfers
+   *
+   * @param partitionId the partition for which to delete snapshots
+   */
+  ActorFuture<Void> deleteSnapshots(int partitionId);
 }
