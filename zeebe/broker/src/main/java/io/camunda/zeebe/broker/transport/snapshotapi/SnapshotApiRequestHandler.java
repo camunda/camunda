@@ -7,7 +7,10 @@
  */
 package io.camunda.zeebe.broker.transport.snapshotapi;
 
-import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotChunkResponse;
+import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotRequest.DeleteSnapshotForBootstrapRequest;
+import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotRequest.GetSnapshotChunk;
+import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotResponse.DeleteSnapshotForBootstrapResponse;
+import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotResponse.SnapshotChunkResponse;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -40,7 +43,8 @@ public class SnapshotApiRequestHandler
 
   public void removeTransferService(final int partitionId) {
     serverTransport.unsubscribe(partitionId, RequestType.SNAPSHOT);
-    transferServices.remove(partitionId);
+    final var service = transferServices.remove(partitionId);
+    service.closeAsync();
   }
 
   @Override
@@ -56,29 +60,63 @@ public class SnapshotApiRequestHandler
           Either.left(errorWriter.partitionUnavailable(partitionId)));
     } else {
       final var request = requestReader.getRequest();
-      if (request.lastChunkName().isPresent() && request.snapshotId().isPresent()) {
-        return service
-            .getNextChunk(
-                partitionId,
-                request.snapshotId().get(),
-                request.lastChunkName().get(),
-                request.transferId())
-            .thenApply(
-                chunk -> {
-                  responseWriter.setResponse(
-                      new SnapshotChunkResponse(request.transferId(), Optional.ofNullable(chunk)));
-                  return Either.right(responseWriter);
-                });
-      } else {
-        return service
-            .getLatestSnapshot(partitionId, request.transferId())
-            .thenApply(
-                chunk -> {
-                  responseWriter.setResponse(
-                      new SnapshotChunkResponse(request.transferId(), Optional.ofNullable(chunk)));
-                  return Either.right(responseWriter);
-                });
-      }
+      return switch (request) {
+        case final GetSnapshotChunk snapshotChunkRequest ->
+            handleGet(snapshotChunkRequest, partitionId, responseWriter, service);
+        case final DeleteSnapshotForBootstrapRequest deleteRequest ->
+            handleDelete(partitionId, responseWriter, errorWriter, service);
+      };
+    }
+  }
+
+  private ActorFuture<Either<ErrorResponseWriter, SnapshotApiResponseWriter>> handleDelete(
+      final int partitionId,
+      final SnapshotApiResponseWriter responseWriter,
+      final ErrorResponseWriter errorWriter,
+      final SnapshotTransferService service) {
+    return service
+        .deleteSnapshots(partitionId)
+        .andThen(
+            (response, error) -> {
+              final Either<ErrorResponseWriter, SnapshotApiResponseWriter> result;
+              if (error != null) {
+                result = Either.left(errorWriter.internalError(error.getMessage()));
+              } else {
+                responseWriter.setResponse(new DeleteSnapshotForBootstrapResponse(partitionId));
+                result = Either.right(responseWriter);
+              }
+              return CompletableActorFuture.completed(result);
+            },
+            actor);
+  }
+
+  private ActorFuture<Either<ErrorResponseWriter, SnapshotApiResponseWriter>> handleGet(
+      final GetSnapshotChunk request,
+      final int partitionId,
+      final SnapshotApiResponseWriter responseWriter,
+      final SnapshotTransferService service) {
+    if (request.lastChunkName().isPresent() && request.snapshotId().isPresent()) {
+      return service
+          .getNextChunk(
+              partitionId,
+              request.snapshotId().get(),
+              request.lastChunkName().get(),
+              request.transferId())
+          .thenApply(
+              chunk -> {
+                responseWriter.setResponse(
+                    new SnapshotChunkResponse(request.transferId(), Optional.ofNullable(chunk)));
+                return Either.right(responseWriter);
+              });
+    } else {
+      return service
+          .getLatestSnapshot(partitionId, request.transferId())
+          .thenApply(
+              chunk -> {
+                responseWriter.setResponse(
+                    new SnapshotChunkResponse(request.transferId(), Optional.ofNullable(chunk)));
+                return Either.right(responseWriter);
+              });
     }
   }
 

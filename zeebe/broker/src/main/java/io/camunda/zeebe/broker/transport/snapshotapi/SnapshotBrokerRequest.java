@@ -11,11 +11,14 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejectionResponse;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
-import io.camunda.zeebe.broker.partitioning.scaling.snapshot.GetSnapshotChunk;
-import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotChunkResponse;
-import io.camunda.zeebe.broker.partitioning.scaling.snapshot.sbe.GetSnapshotChunkSerializer;
-import io.camunda.zeebe.broker.partitioning.scaling.snapshot.sbe.SnapshotChunkResponseDeserializer;
+import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotRequest;
+import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotRequest.DeleteSnapshotForBootstrapRequest;
+import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotRequest.GetSnapshotChunk;
+import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotResponse;
+import io.camunda.zeebe.broker.partitioning.scaling.snapshot.sbe.DeleteSnapshotForBootstrapResponseEncoder;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.sbe.SnapshotChunkResponseEncoder;
+import io.camunda.zeebe.broker.partitioning.scaling.snapshot.sbe.SnapshotRequestSerializer;
+import io.camunda.zeebe.broker.partitioning.scaling.snapshot.sbe.SnapshotResponseDeserializer;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteCommandResponse;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.transport.RequestType;
@@ -23,18 +26,29 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class GetSnapshotChunkBrokerRequest extends BrokerRequest<SnapshotChunkResponse> {
+public class SnapshotBrokerRequest extends BrokerRequest<SnapshotResponse> {
 
-  final GetSnapshotChunkSerializer serializer = new GetSnapshotChunkSerializer();
-  final SnapshotChunkResponseDeserializer responseDeserializer =
-      new SnapshotChunkResponseDeserializer();
+  final SnapshotRequestSerializer serializer = new SnapshotRequestSerializer();
+  final SnapshotResponseDeserializer responseDeserializer = new SnapshotResponseDeserializer();
   ExecuteCommandResponse response = new ExecuteCommandResponse();
-  SnapshotChunkResponse chunkResponse;
-  private GetSnapshotChunk request;
+  SnapshotResponse snapshotResponse;
+  private SnapshotRequest request;
 
-  public GetSnapshotChunkBrokerRequest(final GetSnapshotChunk request) {
-    super(SnapshotChunkResponseEncoder.SCHEMA_ID, SnapshotChunkResponseEncoder.TEMPLATE_ID);
+  public SnapshotBrokerRequest(final SnapshotRequest request) {
+    super(SnapshotChunkResponseEncoder.SCHEMA_ID, templateId(request));
     this.request = request;
+  }
+
+  private static int templateId(final SnapshotRequest request) {
+    return switch (request) {
+      case final DeleteSnapshotForBootstrapRequest r ->
+          DeleteSnapshotForBootstrapResponseEncoder.TEMPLATE_ID;
+      case final GetSnapshotChunk r -> SnapshotChunkResponseEncoder.TEMPLATE_ID;
+    };
+  }
+
+  public SnapshotRequest getRequest() {
+    return request;
   }
 
   public void setRequest(final GetSnapshotChunk request) {
@@ -58,12 +72,12 @@ public class GetSnapshotChunkBrokerRequest extends BrokerRequest<SnapshotChunkRe
 
   @Override
   public boolean addressesSpecificPartition() {
-    return true;
+    return request.addressesSpecificPartition();
   }
 
   @Override
   public boolean requiresPartitionId() {
-    return true;
+    return request.requiresPartitionId();
   }
 
   @Override
@@ -78,11 +92,11 @@ public class GetSnapshotChunkBrokerRequest extends BrokerRequest<SnapshotChunkRe
 
   @Override
   protected void wrapResponse(final DirectBuffer buffer) {
-    chunkResponse = responseDeserializer.deserialize(buffer, 0, buffer.capacity());
+    snapshotResponse = responseDeserializer.deserialize(buffer, 0, buffer.capacity());
   }
 
   @Override
-  protected BrokerResponse<SnapshotChunkResponse> readResponse() {
+  protected BrokerResponse<SnapshotResponse> readResponse() {
     if (response.getRecordType() == RecordType.COMMAND_REJECTION) {
       final BrokerRejection brokerRejection =
           new BrokerRejection(null, -1, response.getRejectionType(), response.getRejectionReason());
@@ -94,8 +108,8 @@ public class GetSnapshotChunkBrokerRequest extends BrokerRequest<SnapshotChunkRe
   }
 
   @Override
-  protected SnapshotChunkResponse toResponseDto(final DirectBuffer buffer) {
-    return chunkResponse;
+  protected SnapshotResponse toResponseDto(final DirectBuffer buffer) {
+    return snapshotResponse;
   }
 
   @Override
