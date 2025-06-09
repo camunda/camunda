@@ -11,10 +11,13 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotRequest.DeleteSnapshotForBootstrapRequest;
+import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotBrokerRequest;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.gateway.impl.broker.request.scaling.BrokerPartitionBootstrappedRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.scaling.BrokerPartitionScaleUpRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.scaling.GetScaleUpProgress;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -65,8 +68,37 @@ public class BrokerClientPartitionScalingExecutor implements PartitionScalingCha
       final int desiredPartitionCount,
       final Set<Integer> redistributedPartitions,
       final Duration timeout) {
-    final var result = concurrencyControl.<Void>createFuture();
+    return awaitRedistributionProgress(desiredPartitionCount, redistributedPartitions)
+        .andThen(ignored -> deleteSnapshot(), concurrencyControl);
+  }
 
+  @Override
+  public ActorFuture<Void> notifyPartitionBootstrapped(final int partitionId) {
+    final ActorFuture<BrokerResponse<ScaleRecord>> bootstrapFuture =
+        concurrencyControl.createFuture();
+
+    brokerClient
+        .sendRequestWithRetry(new BrokerPartitionBootstrappedRequest(partitionId))
+        .whenComplete(bootstrapFuture);
+    return bootstrapFuture.andThen(
+        response -> {
+          LOGGER.debug("Received response from partition bootstrap request {}", response);
+          if (response.isError()) {
+            return CompletableActorFuture.completedExceptionally(
+                new BrokerErrorException(response.getError()));
+          } else if (response.isRejection()) {
+            return CompletableActorFuture.completedExceptionally(
+                new BrokerRejectionException(response.getRejection()));
+          } else {
+            return CompletableActorFuture.completed();
+          }
+        },
+        concurrencyControl);
+  }
+
+  private ActorFuture<Void> awaitRedistributionProgress(
+      final int desiredPartitionCount, final Set<Integer> redistributedPartitions) {
+    final var result = concurrencyControl.<Void>createFuture();
     brokerClient.sendRequestWithRetry(
         new GetScaleUpProgress(),
         (key, response) -> {
@@ -104,27 +136,27 @@ public class BrokerClientPartitionScalingExecutor implements PartitionScalingCha
     return result;
   }
 
-  @Override
-  public ActorFuture<Void> notifyPartitionBootstrapped(final int partitionId) {
-    final ActorFuture<BrokerResponse<ScaleRecord>> bootstrapFuture =
-        concurrencyControl.createFuture();
+  private ActorFuture<Void> deleteSnapshot() {
 
-    brokerClient
-        .sendRequestWithRetry(new BrokerPartitionBootstrappedRequest(partitionId))
-        .whenComplete(bootstrapFuture);
-    return bootstrapFuture.andThen(
-        response -> {
-          LOGGER.debug("Received response from partition bootstrap request {}", response);
-          if (response.isError()) {
-            return CompletableActorFuture.completedExceptionally(
-                new BrokerErrorException(response.getError()));
-          } else if (response.isRejection()) {
-            return CompletableActorFuture.completedExceptionally(
-                new BrokerRejectionException(response.getRejection()));
+    LOGGER.debug("Sending delete snapshot request for deployment partition");
+    final var request =
+        new SnapshotBrokerRequest(
+            new DeleteSnapshotForBootstrapRequest(Protocol.DEPLOYMENT_PARTITION));
+    final var future = concurrencyControl.<Void>createFuture();
+    brokerClient.sendRequestWithRetry(
+        request,
+        (key, response) -> future.complete(null),
+        error -> {
+          if (error instanceof final BrokerRejectionException rejection
+              && rejection.getRejection().type() == RejectionType.INVALID_ARGUMENT) {
+            // complete the future, retrying will not fix the issue and no cluster change operation
+            // can occur
+            LOGGER.debug("Await redistribution request is invalid", rejection);
+            future.complete(null);
           } else {
-            return CompletableActorFuture.completed();
+            future.completeExceptionally(error);
           }
-        },
-        concurrencyControl);
+        });
+    return future;
   }
 }
