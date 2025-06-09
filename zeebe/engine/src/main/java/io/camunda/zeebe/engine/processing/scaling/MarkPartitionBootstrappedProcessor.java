@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.scaling;
 
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.Optional;
 
+@ExcludeAuthorizationCheck
 public class MarkPartitionBootstrappedProcessor
     implements DistributedTypedRecordProcessor<ScaleRecord> {
 
