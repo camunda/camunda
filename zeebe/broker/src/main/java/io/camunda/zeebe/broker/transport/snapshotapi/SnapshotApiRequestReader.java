@@ -8,12 +8,11 @@
 package io.camunda.zeebe.broker.transport.snapshotapi;
 
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.GetSnapshotChunk;
-import io.camunda.zeebe.broker.partitioning.scaling.snapshot.sbe.GetSnapshotChunkDecoder;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.sbe.GetSnapshotChunkDeserializer;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.RequestReader;
 import org.agrona.DirectBuffer;
 
-public class SnapshotApiRequestReader implements RequestReader<GetSnapshotChunkDecoder> {
+public class SnapshotApiRequestReader implements RequestReader {
 
   GetSnapshotChunkDeserializer deserializer = new GetSnapshotChunkDeserializer();
 
@@ -26,12 +25,6 @@ public class SnapshotApiRequestReader implements RequestReader<GetSnapshotChunkD
   @Override
   public void reset() {
     request = null;
-  }
-
-  @Override
-  public GetSnapshotChunkDecoder getMessageDecoder() {
-    // who cares?
-    return null;
   }
 
   @Override

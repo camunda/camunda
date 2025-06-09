@@ -19,7 +19,6 @@ import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
-import org.agrona.sbe.MessageDecoderFlyweight;
 import org.slf4j.Logger;
 
 /**
@@ -29,7 +28,7 @@ import org.slf4j.Logger;
  * @param <R> a {@link RequestReader} that reads the request
  * @param <W> a {@link ResponseWriter} that writes the response
  */
-public abstract class AsyncApiRequestHandler<R extends RequestReader<?>, W extends ResponseWriter>
+public abstract class AsyncApiRequestHandler<R extends RequestReader, W extends ResponseWriter>
     extends Actor implements RequestHandler {
 
   public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
@@ -155,19 +154,11 @@ public abstract class AsyncApiRequestHandler<R extends RequestReader<?>, W exten
   /**
    * Extension of {@link BufferReader} that provides extra methods used by {@link
    * AsyncApiRequestHandler} implementations.
-   *
-   * @param <T> the type of the message decoder.
    */
-  public interface RequestReader<T extends MessageDecoderFlyweight> extends BufferReader {
+  public interface RequestReader extends BufferReader {
 
     /** Reset all internal state to prepare for reading the next request. */
     void reset();
-
-    /**
-     * @return The message decoder which can be used by {@link AsyncApiRequestHandler}
-     *     implementations to get access to the request data.
-     */
-    T getMessageDecoder();
 
     /**
      * @param buffer the buffer to read from

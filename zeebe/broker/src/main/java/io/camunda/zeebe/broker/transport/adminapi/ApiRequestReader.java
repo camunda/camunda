@@ -12,7 +12,7 @@ import io.camunda.zeebe.protocol.management.AdminRequestDecoder;
 import io.camunda.zeebe.protocol.management.MessageHeaderDecoder;
 import org.agrona.DirectBuffer;
 
-public class ApiRequestReader implements RequestReader<AdminRequestDecoder> {
+public class ApiRequestReader implements RequestReader {
   private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   private final AdminRequestDecoder messageDecoder = new AdminRequestDecoder();
 
@@ -20,13 +20,12 @@ public class ApiRequestReader implements RequestReader<AdminRequestDecoder> {
   public void reset() {}
 
   @Override
-  public AdminRequestDecoder getMessageDecoder() {
-    return messageDecoder;
-  }
-
-  @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     messageDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
+  }
+
+  public AdminRequestDecoder getMessageDecoder() {
+    return messageDecoder;
   }
 
   public long key() {

@@ -12,7 +12,7 @@ import io.camunda.zeebe.protocol.record.ExecuteQueryRequestDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import org.agrona.DirectBuffer;
 
-public class QueryRequestReader implements RequestReader<ExecuteQueryRequestDecoder> {
+public class QueryRequestReader implements RequestReader {
   private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   private final ExecuteQueryRequestDecoder messageDecoder = new ExecuteQueryRequestDecoder();
 
@@ -22,12 +22,11 @@ public class QueryRequestReader implements RequestReader<ExecuteQueryRequestDeco
   }
 
   @Override
-  public ExecuteQueryRequestDecoder getMessageDecoder() {
-    return messageDecoder;
-  }
-
-  @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     messageDecoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
+  }
+
+  public ExecuteQueryRequestDecoder getMessageDecoder() {
+    return messageDecoder;
   }
 }
