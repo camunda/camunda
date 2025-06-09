@@ -90,7 +90,7 @@
     "@vitest/ui": "3.1.3",
     "@vzeta/rollup-plugin-sbom": "2.0.0",
     "axe-core": "4.10.3",
-    "browserslist": "4.24.5",
+    "browserslist": "4.25.0",
     "browserslist-to-esbuild": "2.1.1",
     "diagram-js": "15.3.0",
     "eslint": "9.26.0",
