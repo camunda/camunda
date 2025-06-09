@@ -55,7 +55,7 @@ public class SnapshotApiRequestHandler
 
   public void removeTransferService(final int partitionId) {
     serverTransport.unsubscribe(partitionId, RequestType.SNAPSHOT);
-    transferServices.remove(partitionId);
+    final var service = transferServices.remove(partitionId);
     LOG.debug("Removed SnapshotTransferService for partition {}.", partitionId);
     service.closeAsync();
   }
