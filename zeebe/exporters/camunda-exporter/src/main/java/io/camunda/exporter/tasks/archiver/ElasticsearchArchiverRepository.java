@@ -14,7 +14,6 @@ import co.elastic.clients.elasticsearch._types.Slices;
 import co.elastic.clients.elasticsearch._types.SlicesCalculation;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.Time;
-import co.elastic.clients.elasticsearch._types.aggregations.CalendarInterval;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
@@ -30,12 +29,12 @@ import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
+import io.camunda.exporter.tasks.util.FormHistoricalArchiveDate;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.micrometer.core.instrument.Timer;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -51,7 +50,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final Slices AUTO_SLICES =
       Slices.of(slices -> slices.computed(SlicesCalculation.Auto));
-
   private final int partitionId;
   private final HistoryConfiguration config;
   private final RetentionConfiguration retention;
@@ -59,6 +57,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private final String processInstanceIndex;
   private final String batchOperationIndex;
   private final CamundaExporterMetrics metrics;
+  private String lastHistoricalArchiverDate = null;
 
   public ElasticsearchArchiverRepository(
       final int partitionId,
@@ -229,7 +228,16 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     if (hits.isEmpty()) {
       return new ArchiveBatch(null, List.of());
     }
-    final var endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
+    final String rolloverInterval = config.getRolloverInterval();
+
+    final String endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
+    lastHistoricalArchiverDate =
+        FormHistoricalArchiveDate.getHistoricalArchiverDate(
+            endDate,
+            lastHistoricalArchiverDate,
+            rolloverInterval,
+            config.getElsRolloverDateFormat());
+
     final var ids =
         hits.stream()
             .takeWhile(
@@ -237,7 +245,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             .map(Hit::id)
             .toList();
 
-    return new ArchiveBatch(endDate, ids);
+    return new ArchiveBatch(lastHistoricalArchiverDate, ids);
   }
 
   private TermsQuery buildIdTermsQuery(final String idFieldName, final List<String> idValues) {
@@ -245,14 +253,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .field(idFieldName)
         .terms(terms -> terms.value(idValues.stream().map(FieldValue::of).toList()))
         .build();
-  }
-
-  private CalendarInterval mapCalendarInterval(final String alias) {
-    return Arrays.stream(CalendarInterval.values())
-        .filter(c -> c.aliases() != null)
-        .filter(c -> Arrays.binarySearch(c.aliases(), alias) >= 0)
-        .findFirst()
-        .orElseThrow();
   }
 
   private SearchRequest createFinishedBatchOperationsSearchRequest() {
