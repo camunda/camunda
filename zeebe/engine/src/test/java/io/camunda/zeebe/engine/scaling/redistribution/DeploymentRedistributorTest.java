@@ -141,7 +141,7 @@ public class DeploymentRedistributorTest {
 
     // then
     // Partition 3 is now scaled up, so it should be redistributed
-    routingState.arriveAtDesiredState();
+    routingState.activatePartition(3);
 
     // run the scheduled task twice, since first one always does not try distributing the records
     scheduledTask.run();

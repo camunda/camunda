@@ -61,7 +61,6 @@ public class ScaleUpProcessor implements TypedRecordProcessor<ScaleRecord> {
     scaleUp.setBootstrappedAt(command.getKey());
     stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.SCALING_UP, scaleUp);
     responseWriter.writeEventOnCommand(scalingKey, ScaleIntent.SCALING_UP, scaleUp, command);
-    stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.SCALED_UP, scaleUp);
   }
 
   private Optional<Rejection> validateCommand(final TypedRecord<ScaleRecord> command) {
