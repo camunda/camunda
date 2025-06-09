@@ -49,11 +49,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-search-client</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>camunda-search-domain</artifactId>
     </dependency>
 
@@ -126,6 +121,13 @@
       <artifactId>camunda-security-services</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+
 
     <!-- rest api dependencies -->
     <dependency>
