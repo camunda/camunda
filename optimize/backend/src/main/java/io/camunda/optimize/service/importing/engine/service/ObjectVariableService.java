@@ -71,19 +71,7 @@ public class ObjectVariableService {
           formatJsonObjectVariableAndAddToResult(variableUpdateDto, resultList);
         }
       } else {
-        final ProcessVariableDto processVariableDto = createSkeletonVariableDto(variableUpdateDto);
-        processVariableDto.setId(variableUpdateDto.getId());
-        processVariableDto.setName(variableUpdateDto.getName());
-        if (variableUpdateDto.getType().equals(STRING_TYPE)) {
-          parseStringOrDateVariableAndSet(
-              variableUpdateDto.getValue(),
-              Collections.singletonList(variableUpdateDto.getValue()),
-              processVariableDto);
-        } else {
-          processVariableDto.setType(variableUpdateDto.getType());
-          processVariableDto.setValue(Collections.singletonList(variableUpdateDto.getValue()));
-        }
-        resultList.add(processVariableDto);
+        formatNativeVariableAndAddToResult(variableUpdateDto, resultList);
       }
     }
     return resultList;
@@ -129,6 +117,23 @@ public class ObjectVariableService {
           variableUpdate.getName(),
           e);
     }
+  }
+
+  private void formatNativeVariableAndAddToResult(
+      final ProcessVariableUpdateDto variableUpdateDto, final List<ProcessVariableDto> resultList) {
+    final ProcessVariableDto processVariableDto = createSkeletonVariableDto(variableUpdateDto);
+    processVariableDto.setId(variableUpdateDto.getId());
+    processVariableDto.setName(variableUpdateDto.getName());
+    if (variableUpdateDto.getType().equals(STRING_TYPE)) {
+      parseStringOrDateVariableAndSet(
+          variableUpdateDto.getValue(),
+          Collections.singletonList(variableUpdateDto.getValue()),
+          processVariableDto);
+    } else {
+      processVariableDto.setType(variableUpdateDto.getType());
+      processVariableDto.setValue(Collections.singletonList(variableUpdateDto.getValue()));
+    }
+    resultList.add(processVariableDto);
   }
 
   @SuppressWarnings(UNCHECKED_CAST)
