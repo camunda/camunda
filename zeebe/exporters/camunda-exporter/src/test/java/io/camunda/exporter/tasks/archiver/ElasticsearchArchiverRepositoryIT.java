@@ -349,6 +349,50 @@ final class ElasticsearchArchiverRepositoryIT {
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
   }
 
+  @Test
+  void shouldSetTheCorrectFinishDateWithRollover() throws IOException {
+    // given a rollover of 3 days:
+    config.setRolloverInterval("3d");
+    final var destIndexName = UUID.randomUUID().toString();
+    final var now = Instant.now();
+    final var fourDaysAgo = now.minus(Duration.ofDays(4)).toString();
+    final var twoDaysAgo = now.minus(Duration.ofDays(2)).toString();
+    final var repository = createRepository();
+    final var documents =
+        List.of(new TestBatchOperation("1", fourDaysAgo), new TestBatchOperation("2", fourDaysAgo));
+
+    createBatchOperationIndex();
+    documents.forEach(doc -> index(batchOperationIndex, doc));
+    testClient.indices().refresh(r -> r.index(batchOperationIndex));
+
+    // when
+    var result = repository.getBatchOperationsNextBatch();
+    repository
+        .moveDocuments(batchOperationIndex, destIndexName, "id", List.of("1", "2"), Runnable::run)
+        .join();
+
+    final var dateFormatter =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    var batch = result.join();
+    assertThat(batch.ids()).containsExactly("1", "2");
+    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(4))));
+
+    final var secondBatchDocuments =
+        List.of(new TestBatchOperation("3", twoDaysAgo), new TestBatchOperation("4", twoDaysAgo));
+
+    secondBatchDocuments.forEach(doc -> index(batchOperationIndex, doc));
+    testClient.indices().refresh(r -> r.index(batchOperationIndex));
+
+    // when
+    result = repository.getBatchOperationsNextBatch();
+    batch = result.join();
+    assertThat(batch.ids()).containsExactly("3", "4");
+    // it should still have the same finish date since the rollover window is three days, and the
+    // difference of both batches is only 2 days.
+    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(4))));
+  }
+
   private <T extends TDocument> void index(final String index, final T document) {
     try {
       testClient.index(b -> b.index(index).document(document).id(document.id()));
