@@ -353,10 +353,13 @@ final class ElasticsearchArchiverRepositoryIT {
   void shouldSetTheCorrectFinishDateWithRollover() throws IOException {
     // given a rollover of 3 days:
     config.setRolloverInterval("3d");
+    final var dateFormatter =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
     final var destIndexName = UUID.randomUUID().toString();
     final var now = Instant.now();
     final var fourDaysAgo = now.minus(Duration.ofDays(4)).toString();
     final var twoDaysAgo = now.minus(Duration.ofDays(2)).toString();
+    final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
     final var repository = createRepository();
     final var documents =
         List.of(new TestBatchOperation("1", fourDaysAgo), new TestBatchOperation("2", fourDaysAgo));
@@ -371,8 +374,6 @@ final class ElasticsearchArchiverRepositoryIT {
         .moveDocuments(batchOperationIndex, destIndexName, "id", List.of("1", "2"), Runnable::run)
         .join();
 
-    final var dateFormatter =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     var batch = result.join();
     assertThat(batch.ids()).containsExactly("1", "2");
@@ -384,13 +385,31 @@ final class ElasticsearchArchiverRepositoryIT {
     secondBatchDocuments.forEach(doc -> index(batchOperationIndex, doc));
     testClient.indices().refresh(r -> r.index(batchOperationIndex));
 
-    // when
+    // then
     result = repository.getBatchOperationsNextBatch();
+    repository
+        .moveDocuments(batchOperationIndex, destIndexName, "id", List.of("3", "4"), Runnable::run)
+        .join();
     batch = result.join();
     assertThat(batch.ids()).containsExactly("3", "4");
     // it should still have the same finish date since the rollover window is three days, and the
     // difference of both batches is only 2 days.
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(4))));
+
+    // we create another batch of documents, which is two hours ago, since the default archive point
+    // is after 1 hour
+    final var thirdBatchDocuments =
+        List.of(new TestBatchOperation("5", twoHoursAgo), new TestBatchOperation("6", twoHoursAgo));
+
+    thirdBatchDocuments.forEach(doc -> index(batchOperationIndex, doc));
+    testClient.indices().refresh(r -> r.index(batchOperationIndex));
+
+    // then
+    result = repository.getBatchOperationsNextBatch();
+
+    batch = result.join();
+    assertThat(batch.ids()).containsExactly("5", "6");
+    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
   }
 
   private <T extends TDocument> void index(final String index, final T document) {
