@@ -73,6 +73,8 @@ public class GroupMigrationHandlerTest {
     when(managementIdentityClient.fetchGroups(anyInt()))
         .thenReturn(List.of(new Group("id1", "t1"), new Group("id2", "t2")))
         .thenReturn(List.of());
+    when(groupService.createGroup(any(GroupDTO.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     migrationHandler.migrate();
@@ -187,6 +189,8 @@ public class GroupMigrationHandlerTest {
     when(managementIdentityClient.fetchGroupUsers(groupId))
         .thenReturn(List.of(new User("user1", "username", "name", "email@email.com")));
     when(groupService.createGroup(any(GroupDTO.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(groupService.assignMember(any(GroupMemberDTO.class)))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     // when

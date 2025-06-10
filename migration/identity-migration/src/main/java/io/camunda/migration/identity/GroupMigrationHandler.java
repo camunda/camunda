@@ -41,7 +41,7 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
           try {
             final var normalizedGroupId = normalizeGroupID(group);
             final var groupDTO = new GroupDTO(normalizedGroupId, group.name(), "");
-            groupServices.createGroup(groupDTO);
+            groupServices.createGroup(groupDTO).join();
             assignUsersToGroup(group.id(), normalizedGroupId);
           } catch (final Exception e) {
             if (!isConflictError(e)) {
@@ -76,7 +76,7 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
           try {
             final var groupMember =
                 new GroupMemberDTO(targetGroupId, user.getEmail(), EntityType.USER);
-            groupServices.assignMember(groupMember);
+            groupServices.assignMember(groupMember).join();
           } catch (final Exception e) {
             if (!isConflictError(e)) {
               throw new RuntimeException(
