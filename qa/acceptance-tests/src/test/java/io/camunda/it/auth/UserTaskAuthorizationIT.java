@@ -209,6 +209,22 @@ class UserTaskAuthorizationIT {
             () -> {
               assertThat(
                       camundaClient
+                          .newProcessDefinitionSearchRequest()
+                          .filter(filter -> filter.processDefinitionId(PROCESS_ID_1))
+                          .send()
+                          .join()
+                          .items())
+                  .hasSize(1);
+              assertThat(
+                      camundaClient
+                          .newProcessDefinitionSearchRequest()
+                          .filter(filter -> filter.processDefinitionId(PROCESS_ID_2))
+                          .send()
+                          .join()
+                          .items())
+                  .hasSize(1);
+              assertThat(
+                      camundaClient
                           .newProcessInstanceSearchRequest()
                           .filter(
                               filter ->
