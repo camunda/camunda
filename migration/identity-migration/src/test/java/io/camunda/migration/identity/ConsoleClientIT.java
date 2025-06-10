@@ -8,7 +8,6 @@
 package io.camunda.migration.identity;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.configureFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
@@ -17,7 +16,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
+import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import io.camunda.migration.identity.config.ConsoleConnectorConfig.TokenInterceptor;
 import io.camunda.migration.identity.config.ConsoleProperties;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
@@ -25,32 +25,18 @@ import io.camunda.migration.identity.console.ConsoleClient;
 import io.camunda.migration.identity.console.ConsoleClient.Permission;
 import io.camunda.migration.identity.console.ConsoleClient.Role;
 import java.text.MessageFormat;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.web.client.RestTemplate;
 
+@WireMockTest
 public class ConsoleClientIT {
 
-  private static WireMockServer wireMockServer;
   private ConsoleClient consoleClient;
 
-  @BeforeAll
-  static void setupServer() {
-    wireMockServer = new WireMockServer(0); // Dynamic port
-    wireMockServer.start();
-    configureFor("localhost", wireMockServer.port());
-  }
-
-  @AfterAll
-  static void stopServer() {
-    wireMockServer.stop();
-  }
-
   @BeforeEach
-  void setup() throws Exception {
+  void setup(final WireMockRuntimeInfo wmRuntimeInfo) throws Exception {
     final String token = "mocked-access-token";
 
     stubFor(
@@ -97,8 +83,8 @@ public class ConsoleClientIT {
                     .withBody(responseJson)));
 
     final ConsoleProperties consoleProps = new ConsoleProperties();
-    consoleProps.setBaseUrl("http://localhost:" + wireMockServer.port());
-    consoleProps.setIssuerBackendUrl("http://localhost:" + wireMockServer.port() + "/oauth/token");
+    consoleProps.setBaseUrl("http://localhost:" + wmRuntimeInfo.getHttpPort());
+    consoleProps.setIssuerBackendUrl("http://localhost:" + wmRuntimeInfo.getHttpPort() + "/oauth/token");
     consoleProps.setClientId("client-id");
     consoleProps.setClientSecret("client-secret");
     consoleProps.setAudience("test-audience");
