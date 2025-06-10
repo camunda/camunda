@@ -22,13 +22,14 @@ import java.time.Duration;
 import java.util.Map;
 import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.util.unit.DataSize;
 
 @Deprecated(forRemoval = true, since = "8.8")
 public class ZeebeClientProperties extends ApiProperties {
   private Integer executionThreads;
   private Duration messageTimeToLive;
-  private Integer maxMessageSize;
-  private Integer maxMetadataSize;
+  private DataSize maxMessageSize;
+  private DataSize maxMetadataSize;
   private Duration requestTimeout;
   private String caCertificatePath;
   private Duration keepAlive;
@@ -113,20 +114,20 @@ public class ZeebeClientProperties extends ApiProperties {
   }
 
   @DeprecatedConfigurationProperty(replacement = "camunda.client.max-message-size")
-  public Integer getMaxMessageSize() {
+  public DataSize getMaxMessageSize() {
     return maxMessageSize;
   }
 
-  public void setMaxMessageSize(final Integer maxMessageSize) {
+  public void setMaxMessageSize(final DataSize maxMessageSize) {
     this.maxMessageSize = maxMessageSize;
   }
 
   @DeprecatedConfigurationProperty(replacement = "camunda.client.max-metadata-size")
-  public Integer getMaxMetadataSize() {
+  public DataSize getMaxMetadataSize() {
     return maxMetadataSize;
   }
 
-  public void setMaxMetadataSize(final Integer maxMetadataSize) {
+  public void setMaxMetadataSize(final DataSize maxMetadataSize) {
     this.maxMetadataSize = maxMetadataSize;
   }
 

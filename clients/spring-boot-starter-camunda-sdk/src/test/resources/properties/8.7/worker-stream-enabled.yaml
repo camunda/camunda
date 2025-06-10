@@ -1,0 +1,6 @@
+camunda:
+  client:
+    zeebe:
+      override:
+        foo:
+          stream-enabled: true

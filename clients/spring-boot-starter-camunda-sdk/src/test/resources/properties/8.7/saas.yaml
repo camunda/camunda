@@ -1,0 +1,9 @@
+camunda:
+  client:
+    mode: saas
+    auth:
+      client-id: <your client id>
+      client-secret: <your client secret>
+    cloud:
+      cluster-id: your-cluster-id
+      region: your-cluster-region-id

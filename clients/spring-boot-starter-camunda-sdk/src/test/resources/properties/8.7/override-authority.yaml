@@ -1,0 +1,4 @@
+camunda:
+  client:
+    zeebe:
+      override-authority: host:port

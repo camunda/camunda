@@ -1,0 +1,6 @@
+camunda:
+  client:
+    zeebe:
+      override:
+        foo:
+          timeout: PT10S
