@@ -16,8 +16,6 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +27,6 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.AbstractOAuth2Token;
-import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2AuthorizationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.web.authentication.logout.CookieClearingLogoutHandler;
@@ -45,15 +42,6 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
   private final OAuth2AuthorizedClientManager authorizedClientManager;
   private final LogoutHandler logoutHandler;
   private final Supplier<SecurityContext> securityContextSupplier;
-
-  // Locks for specific principals
-  private final ConcurrentHashMap<String, ReentrantLock> principalLocks = new ConcurrentHashMap<>();
-
-  // Principal and its related authorized client
-  private final ConcurrentHashMap<String, ClientWithExpiryEntry> principalAuthorizedClients =
-      new ConcurrentHashMap<>();
-
-  private final Duration cacheEntryTtl = Duration.ofSeconds(30L);
 
   public OAuth2RefreshTokenFilter(
       final OAuth2AuthorizedClientService authorizedClientService,
@@ -95,10 +83,12 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
 
     final var authorizedClient = getAuthorizedClient(authenticationToken, request);
     if (authorizedClient == null) {
-      authenticationToken.setAuthenticated(false);
-      logoutHandler.logout(request, response, authenticationToken);
-      throw new OAuth2AuthorizationException(
-          new OAuth2Error("unauthorized_client"), "No client could be authorized");
+      logoutAndThrowAuthorizationException(
+          request,
+          response,
+          authenticationToken,
+          "unauthorized_client",
+          "No client could be authorized");
     }
 
     if (!hasTokenExpired(authorizedClient)) {
@@ -107,84 +97,34 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
     }
 
     if (!existsRefreshToken(authorizedClient)) {
-      authenticationToken.setAuthenticated(false);
-      logoutHandler.logout(request, response, authenticationToken);
-      throw new OAuth2AuthenticationException(
-          new OAuth2Error("access_token_expired"),
+      logoutAndThrowAuthorizationException(
+          request,
+          response,
+          authenticationToken,
+          "access_token_expired",
           "Access token expired, refresh token does not exist");
     }
 
-    final var refreshedAuthorizedClient =
-        maybeReAuthenticateClient(request, response, authenticationToken, authorizedClient);
+    OAuth2AuthorizedClient refreshedAuthorizedClient = null;
+    try {
+      // TODO: debug only REMOVE after testing
+      LOG.warn("Requesting access token for URL {}", request.getRequestURI());
+      refreshedAuthorizedClient = refreshAccessToken(authenticationToken, authorizedClient);
+      // TODO: debug only REMOVE after testing
+      LOG.warn(
+          "Access token refreshed for user {}",
+          refreshedAuthorizedClient.getAccessToken().getTokenValue());
+    } catch (final OAuth2AuthorizationException e) {
+      logoutAndThrowAuthorizationException(
+          request, response, authenticationToken, "refresh_token_failed", e.getMessage());
+    }
 
     if (refreshedAuthorizedClient == null || hasTokenExpired(refreshedAuthorizedClient)) {
-      authenticationToken.setAuthenticated(false);
-      logoutHandler.logout(request, response, authenticationToken);
-      throw new OAuth2AuthenticationException(
-          new OAuth2Error("access_token_expired"), "Access token expired");
+      logoutAndThrowAuthorizationException(
+          request, response, authenticationToken, "access_token_expired", "Access token expired");
     }
 
     filterChain.doFilter(request, response);
-  }
-
-  private OAuth2AuthorizedClient maybeReAuthenticateClient(
-      final HttpServletRequest request,
-      final HttpServletResponse response,
-      final OAuth2AuthenticationToken authenticationToken,
-      final OAuth2AuthorizedClient authorizedClient) {
-    final var principalName = authenticationToken.getPrincipal().getName();
-    // Locking only for context principal
-    final var lock = principalLocks.computeIfAbsent(principalName, k -> new ReentrantLock());
-
-    lock.lock();
-    try {
-      // Pull from cache when applicable
-      final var cachedClient = principalAuthorizedClients.get(principalName);
-      if (cachedClient != null
-          && !cachedClient.isExpired()
-          && !hasTokenExpired(cachedClient.getAuthorizedClient())) {
-        LOG.debug(
-            "Using cached refreshed token for {}",
-            cachedClient.getAuthorizedClient().getPrincipalName());
-        return cachedClient.getAuthorizedClient();
-      }
-
-      final OAuth2AuthorizedClient refreshedAuthorizedClient;
-      try {
-        LOG.debug(
-            "Attempting to refresh access token for principal: {}",
-            authenticationToken.getPrincipal().getName());
-        refreshedAuthorizedClient = refreshAccessToken(authenticationToken, authorizedClient);
-        if (refreshedAuthorizedClient != null) {
-          LOG.debug(
-              "Successfully refreshed token for {}", refreshedAuthorizedClient.getPrincipalName());
-          // Cache the refreshed token
-          principalAuthorizedClients.put(
-              principalName,
-              new ClientWithExpiryEntry(
-                  refreshedAuthorizedClient, Instant.now().plus(cacheEntryTtl)));
-
-          // Clean up expired cache entries periodically
-          cleanupExpiredCacheEntries();
-        }
-      } catch (final OAuth2AuthorizationException e) {
-        authenticationToken.setAuthenticated(false);
-        logoutHandler.logout(request, response, authenticationToken);
-        throw new OAuth2AuthenticationException(new OAuth2Error("refresh_token_failed"), e);
-      }
-
-      return refreshedAuthorizedClient;
-    } finally {
-      lock.unlock();
-      if (!lock.hasQueuedThreads()) {
-        principalLocks.remove(principalName, lock);
-      }
-    }
-  }
-
-  private void cleanupExpiredCacheEntries() {
-    final var now = Instant.now();
-    principalAuthorizedClients.entrySet().removeIf(entry -> entry.getValue().isExpiredAt(now));
   }
 
   protected OAuth2AuthenticationToken getAuthenticationToken() {
@@ -235,26 +175,14 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
     return authorizedClientManager.authorize(authorizeRequest);
   }
 
-  private static class ClientWithExpiryEntry {
-    private final OAuth2AuthorizedClient authorizedClient;
-    private final Instant expiresAt;
-
-    public ClientWithExpiryEntry(
-        final OAuth2AuthorizedClient authorizedClient, final Instant expiresAt) {
-      this.authorizedClient = authorizedClient;
-      this.expiresAt = expiresAt;
-    }
-
-    public OAuth2AuthorizedClient getAuthorizedClient() {
-      return authorizedClient;
-    }
-
-    public boolean isExpired() {
-      return isExpiredAt(Instant.now());
-    }
-
-    public boolean isExpiredAt(final Instant now) {
-      return now.isAfter(expiresAt);
-    }
+  private void logoutAndThrowAuthorizationException(
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final OAuth2AuthenticationToken authenticationToken,
+      final String reasonCode,
+      final String reasonMessage) {
+    authenticationToken.setAuthenticated(false);
+    logoutHandler.logout(request, response, authenticationToken);
+    throw new OAuth2AuthorizationException(new OAuth2Error(reasonCode), reasonMessage);
   }
 }

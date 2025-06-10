@@ -16,9 +16,13 @@ import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnProtectedApi;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
 import io.camunda.authentication.filters.AdminUserCheckFilter;
+import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
+import io.camunda.authentication.oauth.ConditionalOnPersistentAuthorizedClientsEnabled;
+import io.camunda.authentication.oauth.PersistedOAuth2AuthorizedClientService;
+import io.camunda.search.clients.PersistentOAuth2AuthorizedClientsClient;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
 import io.camunda.security.configuration.headers.values.FrameOptionMode;
@@ -72,16 +76,6 @@ import org.springframework.security.web.header.writers.CrossOriginEmbedderPolicy
 import org.springframework.security.web.header.writers.CrossOriginOpenerPolicyHeaderWriter.CrossOriginOpenerPolicy;
 import org.springframework.security.web.header.writers.CrossOriginResourcePolicyHeaderWriter.CrossOriginResourcePolicy;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
-import io.camunda.authentication.oauth.ConditionalOnPersistentAuthorizedClientsEnabled;
-import io.camunda.authentication.oauth.PersistedOAuth2AuthorizedClientService;
-import io.camunda.search.clients.PersistentOAuth2AuthorizedClientsClient;
-import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
-import io.camunda.authentication.oauth.ConditionalOnPersistentAuthorizedClientsEnabled;
-import io.camunda.authentication.oauth.PersistedOAuth2AuthorizedClientService;
-import io.camunda.search.clients.PersistentOAuth2AuthorizedClientsClient;
-import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 
 @Configuration
 @EnableWebSecurity
