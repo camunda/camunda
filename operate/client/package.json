@@ -105,7 +105,7 @@
     "source-map-explorer": "2.5.3",
     "ts-toolbelt": "9.6.0",
     "typescript": "5.8.2",
-    "zod": "3.24.1"
+    "zod": "3.25.57"
   },
   "lint-staged": {
     "*": [
