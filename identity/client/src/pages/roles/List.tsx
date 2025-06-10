@@ -32,11 +32,7 @@ const List: FC = () => {
   const showDetails = ({ roleId }: Role) => navigate(roleId);
 
   const pageHeader = (
-    <PageHeader
-      title={t("roles")}
-      linkText="roles"
-      linkUrl="/concepts/roles/"
-    />
+    <PageHeader title={t("roles")} linkText="roles" linkUrl="" />
   );
 
   if (success && !roles?.items.length) {
@@ -51,7 +47,7 @@ const List: FC = () => {
             onClick: addRole,
           }}
           link={{
-            href: documentationHref("/concepts/roles/", ""),
+            href: documentationHref("https://docs.camunda.io/", ""),
             label: t("learnMoreAboutRoles"),
           }}
         />

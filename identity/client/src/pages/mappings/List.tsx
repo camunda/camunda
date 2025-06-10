@@ -38,11 +38,7 @@ const List: FC = () => {
   );
 
   const pageHeader = (
-    <PageHeader
-      title={t("mappings")}
-      linkText={t("mappings")}
-      linkUrl="/concepts/mappings/"
-    />
+    <PageHeader title={t("mappings")} linkText={t("mappings")} linkUrl="" />
   );
 
   if (success && !mappingSearchResults?.items.length) {
@@ -58,7 +54,7 @@ const List: FC = () => {
             icon: Add,
           }}
           link={{
-            href: documentationHref("/concepts/mapping/", ""),
+            href: documentationHref("https://docs.camunda.io/", ""),
             label: t("learnMoreMapping"),
           }}
         />

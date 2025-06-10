@@ -35,11 +35,7 @@ const List: FC = () => {
 
   return (
     <Page>
-      <PageHeader
-        title="Authorizations"
-        linkText="authorizations"
-        linkUrl="/concepts/authorizations/"
-      />
+      <PageHeader title="Authorizations" linkText="authorizations" linkUrl="" />
       <TabsTitle>{t("resourceType")}</TabsTitle>
       <TabsContainer>
         <TabsVertical

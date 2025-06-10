@@ -68,7 +68,7 @@ const Clients: FC<ClientsProps> = ({ tenantId }) => {
           }}
           link={{
             label: t("learnMoreAboutTenants"),
-            href: `/identity/concepts/access-control/tenants`,
+            href: "https://docs.camunda.io/",
           }}
         />
         {assignClientModal}

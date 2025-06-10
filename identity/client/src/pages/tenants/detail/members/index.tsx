@@ -70,7 +70,7 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
           }}
           link={{
             label: t("learnMoreAboutTenants"),
-            href: `/identity/concepts/access-control/tenants`,
+            href: "https://docs.camunda.io/",
           }}
         />
         {assignUsersModal}

@@ -62,7 +62,7 @@ const Clients: FC<ClientsProps> = ({ groupId }) => {
           }}
           link={{
             label: t("learnMoreAboutGroups"),
-            href: `/identity/concepts/access-control/groups`,
+            href: "https://docs.camunda.io/",
           }}
         />
         {assignClientModal}
