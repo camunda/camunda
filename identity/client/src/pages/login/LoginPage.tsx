@@ -82,6 +82,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
           hideCloseButton
           kind="error"
           role="alert"
+          lowContrast
         />
       )}
       <TextInput
