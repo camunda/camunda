@@ -18,7 +18,6 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerResponseConsumer;
 import io.camunda.zeebe.broker.client.api.BrokerResponseException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.scaling.GetScaleUpProgress;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotResponse.DeleteSnapshotForBootstrapResponse;
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotBrokerRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.scaling.GetScaleUpProgress;
