@@ -59,7 +59,7 @@
     "rollup-plugin-license": "^3.5.3",
     "sass": "1.89.2",
     "typescript": "5.8.2",
-    "vite": "6.2.7",
+    "vite": "6.3.5",
     "vite-plugin-svgr": "^4.3.0"
   },
   "packageManager": "yarn@4.3.1",
