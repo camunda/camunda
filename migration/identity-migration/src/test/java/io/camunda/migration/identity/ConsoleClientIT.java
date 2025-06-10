@@ -22,9 +22,9 @@ import io.camunda.migration.identity.config.ConsoleConnectorConfig.ConsoleTokenS
 import io.camunda.migration.identity.config.ConsoleConnectorConfig.TokenInterceptor;
 import io.camunda.migration.identity.config.ConsoleProperties;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
-import io.camunda.migration.identity.midentity.ConsoleClient;
-import io.camunda.migration.identity.midentity.ConsoleClient.Permission;
-import io.camunda.migration.identity.midentity.ConsoleClient.Role;
+import io.camunda.migration.identity.console.ConsoleClient;
+import io.camunda.migration.identity.console.ConsoleClient.Permission;
+import io.camunda.migration.identity.console.ConsoleClient.Role;
 import java.text.MessageFormat;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

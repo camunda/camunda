@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.identity.midentity;
+package io.camunda.migration.identity.console;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -61,8 +61,8 @@ public class ConsoleClient {
     }
 
     @JsonCreator
-    public static Permission fromValue(String value) {
-      for (Permission permission : Permission.values()) {
+    public static Permission fromValue(final String value) {
+      for (final Permission permission : Permission.values()) {
         if (permission.name.equalsIgnoreCase(value)) {
           return permission;
         }
@@ -97,8 +97,8 @@ public class ConsoleClient {
     }
 
     @JsonCreator
-    public static Role fromValue(String value) {
-      for (Role role : Role.values()) {
+    public static Role fromValue(final String value) {
+      for (final Role role : Role.values()) {
         if (role.name.equalsIgnoreCase(value)) {
           return role;
         }

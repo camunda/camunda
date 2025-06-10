@@ -7,7 +7,7 @@
  */
 package io.camunda.migration.identity.config;
 
-import io.camunda.migration.identity.midentity.ConsoleClient;
+import io.camunda.migration.identity.console.ConsoleClient;
 import java.io.IOException;
 import java.util.Map;
 import org.springframework.boot.web.client.RestTemplateBuilder;
