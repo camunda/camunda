@@ -58,16 +58,19 @@ public class OpenSearchSnapshotOperations extends OpenSearchSyncOperation {
           snapshots.getFirst());
     }
     final var snapshot = snapshots.getFirst();
+
+    final String path;
+    if (verbose != null) {
+      path = String.format("/_snapshot/%s/%s?verbose=%s", repository, snapshot, verbose);
+    } else {
+      path = String.format("/_snapshot/%s/%s", repository, snapshot);
+    }
+
     final var result =
         withExtendedOpenSearchClient(
             extendedOpenSearchClient ->
                 safe(
-                    () ->
-                        extendedOpenSearchClient.arbitraryRequest(
-                            "GET",
-                            String.format(
-                                "/_snapshot/%s/%s?verbose=%s", repository, snapshot, verbose),
-                            "{}"),
+                    () -> extendedOpenSearchClient.arbitraryRequest("GET", path, "{}"),
                     e ->
                         format(
                             "Failed to get snapshot %s in repository %s", snapshot, repository)));
