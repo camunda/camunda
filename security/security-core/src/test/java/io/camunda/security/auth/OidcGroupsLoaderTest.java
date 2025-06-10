@@ -34,9 +34,9 @@ final class OidcGroupsLoaderTest {
   }
 
   @Test
-  void shouldThrowOnInvalidRegex() {
-    assertThatThrownBy(() -> new OidcGroupsLoader(".gg.ee..."))
-        .isInstanceOf(IllegalArgumentException.class);
+  void shouldSanitizeInvalidRegex() {
+    final var loader = new OidcGroupsLoader(".gg.ee...");
+    assertThat(loader.getGroupsClaim()).isEqualTo("$['.gg.ee...']");
   }
 
   @Test
@@ -48,7 +48,7 @@ final class OidcGroupsLoaderTest {
     assertThatThrownBy(() -> loader.load(claims))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining(
-            "Configured claim for groups ($.group) is not a string or string array. Please check your OIDC configuration.");
+            "Group's list derived from ($.group) is not a string array. Please check your OIDC configuration.");
   }
 
   @Test
