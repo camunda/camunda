@@ -8,7 +8,9 @@
 package io.camunda.zeebe.snapshots.transfer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.snapshots.SnapshotCopyUtil;
@@ -42,13 +44,8 @@ public class SnapshotTransferTest {
     final var receiverDirectory = temporaryFolder.resolve("receiver");
 
     senderSnapshotStore =
-        spy(
-            new FileBasedSnapshotStore(
-                0,
-                partitionId,
-                senderDirectory,
-                snapshotPath -> Map.of(),
-                new SimpleMeterRegistry()));
+        new FileBasedSnapshotStore(
+            0, partitionId, senderDirectory, snapshotPath -> Map.of(), new SimpleMeterRegistry());
     actorScheduler.submitActor(senderSnapshotStore);
     actorScheduler.workUntilDone();
 
@@ -61,8 +58,9 @@ public class SnapshotTransferTest {
     snapshotTransfer =
         new SnapshotTransferImpl(
             control ->
-                new SnapshotTransferServiceImpl(
-                    senderSnapshotStore, 1, SnapshotCopyUtil.copyAllFiles(), control),
+                spy(
+                    new SnapshotTransferServiceImpl(
+                        senderSnapshotStore, 1, SnapshotCopyUtil.copyAllFiles(), control)),
             receiverSnapshotStore);
     actorScheduler.submitActor(snapshotTransfer);
 
@@ -80,6 +78,7 @@ public class SnapshotTransferTest {
             receiverSnapshotStore);
     actorScheduler.workUntilDone();
     assertThat(takeSnapshotFuture).succeedsWithin(Duration.ofSeconds(3));
+
     // when
     final var persistedSnapshotFuture = snapshotTransfer.getLatestSnapshot(partitionId);
 
@@ -96,5 +95,7 @@ public class SnapshotTransferTest {
               assertThat(snapshot.isBootstrap()).isTrue();
               assertThat(snapshot.files()).isNotEmpty();
             });
+    verify((SnapshotTransferServiceImpl) snapshotTransfer.snapshotTransferService())
+        .withReservation(any(), any());
   }
 }

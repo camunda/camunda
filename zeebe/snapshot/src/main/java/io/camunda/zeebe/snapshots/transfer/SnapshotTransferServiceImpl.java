@@ -5,6 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
+
 package io.camunda.zeebe.snapshots.transfer;
 
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -16,12 +17,14 @@ import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotChunkReader;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 import org.agrona.CloseHelper;
 
 public class SnapshotTransferServiceImpl implements SnapshotTransferService {
@@ -123,23 +126,65 @@ public class SnapshotTransferServiceImpl implements SnapshotTransferService {
       return CompletableActorFuture.completedExceptionally(
           new IllegalArgumentException(String.format("[%s] No snapshot found", transferId)));
     } else {
-      return snapshotStore
-          .copyForBootstrap(lastPersistedSnapshot.get(), copyForBootstrap)
-          .andThen(
-              (snapshot, error) -> {
-                if (error != null) {
-                  if (error instanceof SnapshotAlreadyExistsException) {
-                    return CompletableActorFuture.completed(
-                        snapshotStore.getBootstrapSnapshot().orElse(null));
-                  } else {
-                    return CompletableActorFuture.completedExceptionally(error);
-                  }
-                } else {
-                  return CompletableActorFuture.completed(snapshot);
-                }
-              },
-              concurrency);
+      final var persistedSnapshot = lastPersistedSnapshot.get();
+
+      return withReservation(
+          persistedSnapshot,
+          () ->
+              snapshotStore
+                  .copyForBootstrap(persistedSnapshot, copyForBootstrap)
+                  .andThen(
+                      (snapshot, error) -> {
+                        if (error != null) {
+                          if (error instanceof SnapshotAlreadyExistsException) {
+                            return CompletableActorFuture.completed(
+                                snapshotStore.getBootstrapSnapshot().orElse(null));
+                          } else {
+                            return CompletableActorFuture.completedExceptionally(error);
+                          }
+                        } else {
+                          return CompletableActorFuture.completed(snapshot);
+                        }
+                      },
+                      concurrency));
     }
+  }
+
+  /**
+   * Run a () -> ActorFuture<A> while the reservation of the persisted snapshot is active. Ensure
+   * that the reservation is released even in case of errors
+   */
+  @VisibleForTesting
+  <A> ActorFuture<A> withReservation(
+      final PersistedSnapshot persistedSnapshot, final Supplier<ActorFuture<A>> supplier) {
+    return persistedSnapshot
+        .reserve()
+        .andThen(
+            reservation -> {
+              try {
+                return supplier
+                    .get()
+                    .andThen(
+                        (result, error) ->
+                            // release even if an error happens
+                            reservation
+                                .release()
+                                .andThen(
+                                    ignored -> {
+                                      if (error != null) {
+                                        return CompletableActorFuture.completedExceptionally(error);
+                                      } else {
+                                        return CompletableActorFuture.completed(result);
+                                      }
+                                    },
+                                    concurrency),
+                        concurrency);
+              } catch (final Exception e) {
+                reservation.release();
+                return CompletableActorFuture.completedExceptionally(e);
+              }
+            },
+            concurrency);
   }
 
   private static class PendingTransfer {
