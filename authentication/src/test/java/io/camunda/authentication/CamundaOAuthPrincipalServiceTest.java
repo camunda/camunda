@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication;
 
-import static io.camunda.security.auth.OidcGroupsLoader.CLAIM_NOT_STRING_OR_STRING_ARRAY;
+import static io.camunda.security.auth.OidcGroupsLoader.DERIVED_GROUPS_ARE_NOT_STRING_ARRAY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
@@ -290,7 +290,7 @@ public class CamundaOAuthPrincipalServiceTest {
 
   @Nested
   class GroupsClaimConfiguration {
-    private static final String GROUPS_CLAIM = ".groups[*].['name']";
+    private static final String GROUPS_CLAIM = "$.groups[*].['name']";
     @Mock private MappingServices mappingServices;
     @Mock private TenantServices tenantServices;
     @Mock private RoleServices roleServices;
@@ -348,7 +348,7 @@ public class CamundaOAuthPrincipalServiceTest {
     @Test
     public void shouldLoadGroupWhenGroupsClaimIsAString() {
       // given
-      when(oidcAuthenticationConfiguration.getGroupsClaim()).thenReturn(".groups['name']");
+      when(oidcAuthenticationConfiguration.getGroupsClaim()).thenReturn("$.groups['name']");
 
       camundaOAuthPrincipalService =
           new CamundaOAuthPrincipalService(
@@ -385,7 +385,7 @@ public class CamundaOAuthPrincipalServiceTest {
               () -> camundaOAuthPrincipalService.loadOAuthContext(claims));
 
       assertThat(exception.getMessage())
-          .isEqualTo(CLAIM_NOT_STRING_OR_STRING_ARRAY.formatted("groups", GROUPS_CLAIM));
+          .isEqualTo(DERIVED_GROUPS_ARE_NOT_STRING_ARRAY.formatted(GROUPS_CLAIM));
     }
   }
 }

@@ -15,7 +15,6 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Collections;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
@@ -23,7 +22,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("identity-auth")
 public final class IdentityAuthenticationManager implements AuthenticationManager {
 
   private final Identity identity;
