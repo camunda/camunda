@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import org.junit.jupiter.api.Test;
 
-public class FormHistoricalArchiveDateIT {
+public class DateOfArchivedDocumentsUtilIT {
 
   @Test
   void shouldReturnTheLatestDateDuringInitialization() {
