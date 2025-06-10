@@ -257,7 +257,7 @@ public class JunitExtensionTest {
 
     final CamundaProcessTestExtension extension =
         new CamundaProcessTestExtension(camundaRuntimeBuilder, NOOP)
-            .withCamundaVersion(camundaVersion)
+            .withCamundaDockerImageVersion(camundaVersion)
             .withCamundaDockerImageName(camundaDockerImageName)
             .withCamundaEnv(camundaEnvVars)
             .withCamundaEnv("env-3", "test-3")
