@@ -20,9 +20,7 @@ import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
-import org.springframework.stereotype.Component;
 
-@Component
 public class TenantMappingRuleMigrationHandler extends MigrationHandler<TenantMappingRule> {
 
   private final ManagementIdentityClient managementIdentityClient;

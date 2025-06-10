@@ -15,9 +15,7 @@ import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
-import org.springframework.stereotype.Component;
 
-@Component
 public class GroupMigrationHandler extends MigrationHandler<Group> {
 
   private final ManagementIdentityClient managementIdentityClient;
