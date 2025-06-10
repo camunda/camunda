@@ -21,7 +21,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
-import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
@@ -50,8 +49,7 @@ public class ConsoleConnectorConfig {
     final ConsoleProperties consoleProperties;
     final RestTemplate restTemplate;
 
-    public TokenInterceptor(
-        final ConsoleProperties consoleProperties) {
+    public TokenInterceptor(final ConsoleProperties consoleProperties) {
       this.consoleProperties = consoleProperties;
       restTemplate = new RestTemplate();
     }

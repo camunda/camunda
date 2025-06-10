@@ -9,7 +9,6 @@ package io.camunda.migration.identity.console;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import io.camunda.migration.identity.MigrationRunner;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import java.util.List;
 import org.slf4j.Logger;
@@ -71,8 +70,7 @@ public class ConsoleClient {
           return permission;
         }
       }
-      LOGGER.warn(
-          "Unknown permission '{}' in migration data, defaulting to IGNORED", value);
+      LOGGER.warn("Unknown permission '{}' in migration data, defaulting to IGNORED", value);
       return IGNORED;
     }
   }

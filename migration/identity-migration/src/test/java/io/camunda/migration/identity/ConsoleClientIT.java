@@ -84,7 +84,8 @@ public class ConsoleClientIT {
 
     final ConsoleProperties consoleProps = new ConsoleProperties();
     consoleProps.setBaseUrl("http://localhost:" + wmRuntimeInfo.getHttpPort());
-    consoleProps.setIssuerBackendUrl("http://localhost:" + wmRuntimeInfo.getHttpPort() + "/oauth/token");
+    consoleProps.setIssuerBackendUrl(
+        "http://localhost:" + wmRuntimeInfo.getHttpPort() + "/oauth/token");
     consoleProps.setClientId("client-id");
     consoleProps.setClientSecret("client-secret");
     consoleProps.setAudience("test-audience");
