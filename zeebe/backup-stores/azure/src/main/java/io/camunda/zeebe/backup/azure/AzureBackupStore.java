@@ -58,10 +58,10 @@ public final class AzureBackupStore implements BackupStore {
 
   public AzureBackupStore(final AzureStore azureStoreConfig, final BlobServiceClient client) {
     executor = Executors.newVirtualThreadPerTaskExecutor();
-    final BlobContainerClient blobContainerClient = getContainerClient(client, config);
+    final BlobContainerClient blobContainerClient = getContainerClient(client, azureStoreConfig);
 
-    fileSetManager = new FileSetManager(blobContainerClient, isCreateContainer(config));
-    manifestManager = new ManifestManager(blobContainerClient, isCreateContainer(config));
+    fileSetManager = new FileSetManager(blobContainerClient, isCreateContainer(azureStoreConfig));
+    manifestManager = new ManifestManager(blobContainerClient, isCreateContainer(azureStoreConfig));
   }
 
   public static BlobServiceClient buildClient(final AzureStore azureStoreConfig) {
@@ -99,17 +99,18 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   BlobContainerClient getContainerClient(
-      final BlobServiceClient client, final AzureStore azureStoreConfig) {
+      final BlobServiceClient client,
+      final AzureStore azureStoreConfig) {
     final BlobContainerClient blobContainerClient =
         client.getBlobContainerClient(azureStoreConfig.getContainerName());
 
-    if (!config.createContainer()) {
+    if (!azureStoreConfig.isCreateContainer()) {
       LOG.debug(
           "Setting up Azure Store with existing container: {}",
           blobContainerClient.getBlobContainerName());
       // (delegation and service) sas token don't have the permissions to list containers,
       //  we trust that the user has created the container beforehand.
-      if ((config.sasTokenConfig() == null || config.sasTokenConfig().type().isAccount())
+      if ((azureStoreConfig.getSasTokenType() == null || "account".equals(azureStoreConfig.getSasTokenType()))
           && !blobContainerClient.exists()) {
         throw new ContainerDoesNotExist(
             ("The container %s does not exist. Please create it before using "
