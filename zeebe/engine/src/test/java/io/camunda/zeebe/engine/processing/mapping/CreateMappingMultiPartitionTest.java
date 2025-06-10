@@ -42,9 +42,11 @@ public class CreateMappingMultiPartitionTest {
     final var mappingId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
+    final var name = UUID.randomUUID().toString();
     engine
         .mapping()
         .newMapping(mappingId)
+        .withName(name)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
         .create();
@@ -94,11 +96,13 @@ public class CreateMappingMultiPartitionTest {
     final var mappingId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
+    final var name = UUID.randomUUID().toString();
     engine
         .mapping()
         .newMapping(mappingId)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
+        .withName(name)
         .create();
 
     // then
@@ -122,11 +126,13 @@ public class CreateMappingMultiPartitionTest {
     final var mappingId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
+    final var name = UUID.randomUUID().toString();
     engine
         .mapping()
         .newMapping(mappingId)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
+        .withName(name)
         .create();
 
     // Increase time to trigger a redistribution

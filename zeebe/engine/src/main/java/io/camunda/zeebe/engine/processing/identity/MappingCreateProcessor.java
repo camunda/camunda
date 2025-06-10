@@ -26,6 +26,8 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class MappingCreateProcessor implements DistributedTypedRecordProcessor<MappingRecord> {
 
+  private static final String MAPPING_NULL_VALUE_ERROR_MESSAGE =
+      "Expected to create mappingRule with claimName '%s' and claimValue '%s' and name '%s' and mappingRuleId '%s', but at least one of them is null.";
   private static final String MAPPING_SAME_CLAIM_ALREADY_EXISTS_ERROR_MESSAGE =
       "Expected to create mapping with claimName '%s' and claimValue '%s', but a mapping with this claim already exists.";
   private static final String MAPPING_SAME_ID_ALREADY_EXISTS_ERROR_MESSAGE =
@@ -68,6 +70,25 @@ public class MappingCreateProcessor implements DistributedTypedRecordProcessor<M
     }
 
     final var record = command.getValue();
+    if (record.getMappingId() == null
+        || record.getMappingId().isBlank()
+        || record.getName() == null
+        || record.getName().isBlank()
+        || record.getClaimName() == null
+        || record.getClaimName().isBlank()
+        || record.getClaimValue() == null
+        || record.getClaimValue().isBlank()) {
+      final var errorMessage =
+          MAPPING_NULL_VALUE_ERROR_MESSAGE.formatted(
+              record.getClaimName(),
+              record.getClaimValue(),
+              record.getName(),
+              record.getMappingId());
+      rejectionWriter.appendRejection(command, RejectionType.NULL_VAL, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.NULL_VAL, errorMessage);
+      return;
+    }
+
     final var persistedMappingWithSameClaim =
         mappingState.get(record.getClaimName(), record.getClaimValue());
     if (persistedMappingWithSameClaim.isPresent()) {
