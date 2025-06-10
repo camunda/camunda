@@ -21,6 +21,7 @@ import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   createInstance,
   createVariable,
+  createVariableV2,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -40,6 +41,7 @@ import {init} from 'modules/utils/flowNodeMetadata';
 import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -172,7 +174,11 @@ describe('VariablePanel spinner', () => {
 
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchVariables().withDelay([createVariable({name: 'test2'})]);
+    mockSearchVariables().withDelay({
+      items: [createVariableV2({name: 'test2'})],
+    });
 
+    // TODO : the set selection might not be triggering a new variable fetch see getScopeId() method
     act(() => {
       flowNodeSelectionStore.setSelection({
         flowNodeInstanceId: 'another_flow_node',
@@ -193,6 +199,9 @@ describe('VariablePanel spinner', () => {
   });
 
   it('should display spinner on second variable fetch', async () => {
+    mockSearchVariables().withDelay({
+      items: [createVariableV2()],
+    });
     render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
       wrapper: getWrapper(),
     });
@@ -209,6 +218,7 @@ describe('VariablePanel spinner', () => {
       });
     });
 
+    // TODO : the spinner doesn't show up even though isLoading is true
     expect(screen.getByTestId('variables-spinner')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(() =>
@@ -218,6 +228,12 @@ describe('VariablePanel spinner', () => {
 
   it('should not display spinner for variables tab when switching between tabs if scope does not exist', async () => {
     modificationsStore.enableModificationMode();
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+    });
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+    });
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={jest.fn()} />,
