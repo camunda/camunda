@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.exporter.tasks.util.FormHistoricalArchiveDate;
 import org.junit.jupiter.api.Test;
 
-public class FromHistoricalArchiveDateIT {
+public class FormHistoricalArchiveDateIT {
 
   @Test
   void shouldReturnTheLatestDateDuringInitialization() {
@@ -57,6 +57,10 @@ public class FromHistoricalArchiveDateIT {
             FormHistoricalArchiveDate.getHistoricalArchiverDate(
                 "2023-09-03-22", "2023-09-03-20", "1h", "yyyy-MM-dd-HH"))
         .isEqualTo("2023-09-03-22");
+    assertThat(
+            FormHistoricalArchiveDate.getHistoricalArchiverDate(
+                "2023-09-04-09", "2023-09-03-20", "12h", "yyyy-MM-dd-HH"))
+        .isEqualTo("2023-09-04-09");
     assertThat(
             FormHistoricalArchiveDate.getHistoricalArchiverDate(
                 "2023-09-03", "2023-09-01", "1d", "yyyy-MM-dd"))

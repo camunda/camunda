@@ -30,6 +30,8 @@ public class FormHistoricalArchiveDate {
       final String rolloverInterval,
       final String elsRolloverDateFormat) {
 
+    // if historicalDate is not set, or rolloverInterval is not valid,
+    // we default to the endDate.
     if (historicalDate == null
         || historicalDate.isEmpty()
         || rolloverInterval == null
@@ -40,7 +42,7 @@ public class FormHistoricalArchiveDate {
 
     if (calendarInterval == CalendarInterval.Minute
         || calendarInterval == CalendarInterval.Second) {
-      // For minute and seconds, we use date as is, minimum unit should be hours.
+      // For minute and seconds, we use date as is, minimum amount should be hours.
       return endDate;
     }
 
@@ -49,11 +51,12 @@ public class FormHistoricalArchiveDate {
 
     final Temp temporalAmount = parseTemporalAmount(rolloverInterval);
 
-    final LocalDateTime rollover = lastEndDate.plus(temporalAmount.unit, temporalAmount.chronoUnit);
+    final LocalDateTime rollover =
+        lastEndDate.plus(temporalAmount.amount, temporalAmount.chronoUnit);
     try {
       if (endDateTime.isAfter(rollover)) {
-        // If the end date is after the last historical archiver date, then a new one needs to be
-        // set.
+        // If the end date is after the last historical archiver date plus
+        // the rollover, then a new one needs to be set.
         final var previousDate = historicalDate;
         historicalDate = endDate;
         LOGGER.debug(
@@ -74,7 +77,6 @@ public class FormHistoricalArchiveDate {
   }
 
   private static CalendarInterval mapCalendarInterval(final String alias) {
-
     return Arrays.stream(CalendarInterval.values())
         .filter(c -> c.aliases() != null)
         .filter(
@@ -86,7 +88,7 @@ public class FormHistoricalArchiveDate {
             () -> new IllegalArgumentException("Unsupported rollover interval alias: " + alias));
   }
 
-  public static Temp parseTemporalAmount(final String input) throws IllegalArgumentException {
+  private static Temp parseTemporalAmount(final String input) throws IllegalArgumentException {
     final Matcher matcher = TEMPORAL_PATTERN.matcher(input);
 
     if (!matcher.matches()) {
@@ -96,22 +98,13 @@ public class FormHistoricalArchiveDate {
     final int amount = Integer.parseInt(matcher.group(1));
     final String unit = matcher.group(2);
 
-    switch (unit) {
-      case "s":
-        return new Temp(amount, ChronoUnit.SECONDS);
-      case "m":
-        return new Temp(amount, ChronoUnit.MINUTES);
-      case "h":
-        return new Temp(amount, ChronoUnit.HOURS);
-      case "d":
-        return new Temp(amount, ChronoUnit.DAYS);
-      case "w":
-        return new Temp(amount * 7, ChronoUnit.DAYS);
-      case "M":
-        return new Temp(amount, ChronoUnit.MONTHS);
-      default:
-        throw new IllegalArgumentException("Unsupported time unit: " + unit);
-    }
+    return switch (unit) {
+      case "h" -> new Temp(amount, ChronoUnit.HOURS);
+      case "d" -> new Temp(amount, ChronoUnit.DAYS);
+      case "w" -> new Temp(amount * 7, ChronoUnit.DAYS);
+      case "M" -> new Temp(amount, ChronoUnit.MONTHS);
+      default -> throw new IllegalArgumentException("Unsupported time amount: " + unit);
+    };
   }
 
   public static LocalDateTime parseFlexibleDateTime(final String dateStr, final String pattern) {
@@ -123,10 +116,11 @@ public class FormHistoricalArchiveDate {
         final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
         return LocalDateTime.parse(dateStr, formatter);
       }
-    } catch (final Exception ignored) {
-      throw new IllegalArgumentException("Invalid date format: " + dateStr);
+    } catch (final Exception exception) {
+      throw new IllegalArgumentException(
+          "Invalid date format: " + dateStr + " with pattern: " + pattern, exception);
     }
   }
 
-  private record Temp(int unit, ChronoUnit chronoUnit) {}
+  private record Temp(int amount, ChronoUnit chronoUnit) {}
 }
