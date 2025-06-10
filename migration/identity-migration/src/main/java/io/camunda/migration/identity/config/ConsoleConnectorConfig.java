@@ -27,6 +27,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 @Configuration
+@ConditionalOnCloud
 public class ConsoleConnectorConfig {
 
   @Bean
