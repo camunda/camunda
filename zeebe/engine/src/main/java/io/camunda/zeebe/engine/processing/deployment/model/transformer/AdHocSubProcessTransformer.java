@@ -86,13 +86,6 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
       case SEQUENCE_FLOW -> false;
       case PROCESS, EVENT_SUB_PROCESS -> false;
       case START_EVENT, BOUNDARY_EVENT, END_EVENT -> false;
-      case INTERMEDIATE_CATCH_EVENT ->
-          switch (eventType) {
-            case NONE -> true;
-            case UNSPECIFIED -> false;
-            case ERROR, LINK, MESSAGE, SIGNAL, TIMER -> false;
-            case COMPENSATION, CONDITIONAL, ESCALATION, TERMINATE -> false;
-          };
       case SUB_PROCESS, AD_HOC_SUB_PROCESS -> true;
       case TASK, MANUAL_TASK, SERVICE_TASK, USER_TASK, SCRIPT_TASK, BUSINESS_RULE_TASK -> true;
       case SEND_TASK, RECEIVE_TASK -> true;
@@ -100,6 +93,7 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
       case MULTI_INSTANCE_BODY -> true;
       case CALL_ACTIVITY -> true;
       case INTERMEDIATE_THROW_EVENT -> true;
+      case INTERMEDIATE_CATCH_EVENT -> true;
     };
   }
 }
