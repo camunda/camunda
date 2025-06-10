@@ -10,7 +10,7 @@ package io.camunda.exporter.tasks.archiver;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.exporter.tasks.util.FormHistoricalArchiveDate;
+import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
@@ -243,7 +243,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final var endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
 
     lastHistoricalArchiverDate =
-        FormHistoricalArchiveDate.getHistoricalArchiverDate(
+        DateOfArchivedDocumentsUtil.getDateOfDocumentsInArchiveBatch(
             endDate,
             lastHistoricalArchiverDate,
             config.getRolloverInterval(),

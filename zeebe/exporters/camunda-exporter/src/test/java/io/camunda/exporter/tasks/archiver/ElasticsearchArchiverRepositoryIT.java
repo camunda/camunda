@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.http.HttpHost;
+import org.awaitility.Awaitility;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.AfterEach;
@@ -369,15 +370,20 @@ final class ElasticsearchArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(batchOperationIndex));
 
     // when
-    var result = repository.getBatchOperationsNextBatch();
+    final var firstBatch = repository.getBatchOperationsNextBatch();
+    Awaitility.await("waiting for first batch operation to be complete")
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () ->
+                firstBatch.isDone()
+                    && firstBatch.get().ids().containsAll(List.of("1", "2"))
+                    && firstBatch
+                        .get()
+                        .finishDate()
+                        .equals(dateFormatter.format(now.minus(Duration.ofDays(4)))));
     repository
         .moveDocuments(batchOperationIndex, destIndexName, "id", List.of("1", "2"), Runnable::run)
         .join();
-
-    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    var batch = result.join();
-    assertThat(batch.ids()).containsExactly("1", "2");
-    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(4))));
 
     final var secondBatchDocuments =
         List.of(new TestBatchOperation("3", twoDaysAgo), new TestBatchOperation("4", twoDaysAgo));
@@ -386,15 +392,22 @@ final class ElasticsearchArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(batchOperationIndex));
 
     // then
-    result = repository.getBatchOperationsNextBatch();
+    final var secondBatch = repository.getBatchOperationsNextBatch();
+    Awaitility.await("waiting for second batch operation to be complete")
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () ->
+                secondBatch.isDone()
+                    && secondBatch.get().ids().containsAll(List.of("3", "4"))
+                    && secondBatch
+                        .get()
+                        .finishDate()
+                        .equals(dateFormatter.format(now.minus(Duration.ofDays(4)))));
+    // it should still have the same finish date since the rollover window is three days, and the
+    // difference of both batches is only 2 days.
     repository
         .moveDocuments(batchOperationIndex, destIndexName, "id", List.of("3", "4"), Runnable::run)
         .join();
-    batch = result.join();
-    assertThat(batch.ids()).containsExactly("3", "4");
-    // it should still have the same finish date since the rollover window is three days, and the
-    // difference of both batches is only 2 days.
-    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(4))));
 
     // we create another batch of documents, which is two hours ago, since the default archive point
     // is after 1 hour
@@ -405,11 +418,18 @@ final class ElasticsearchArchiverRepositoryIT {
     testClient.indices().refresh(r -> r.index(batchOperationIndex));
 
     // then
-    result = repository.getBatchOperationsNextBatch();
+    final var thirdBatch = repository.getBatchOperationsNextBatch();
 
-    batch = result.join();
-    assertThat(batch.ids()).containsExactly("5", "6");
-    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
+    Awaitility.await("waiting for third batch operation to be complete")
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () ->
+                thirdBatch.isDone()
+                    && thirdBatch.get().ids().containsAll(List.of("5", "6"))
+                    && thirdBatch
+                        .get()
+                        .finishDate()
+                        .equals(dateFormatter.format(now.minus(Duration.ofHours(2)))));
   }
 
   private <T extends TDocument> void index(final String index, final T document) {

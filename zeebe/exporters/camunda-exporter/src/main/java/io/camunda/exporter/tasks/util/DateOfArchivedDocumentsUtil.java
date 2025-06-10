@@ -7,47 +7,37 @@
  */
 package io.camunda.exporter.tasks.util;
 
-import co.elastic.clients.elasticsearch._types.aggregations.CalendarInterval;
-import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FormHistoricalArchiveDate {
-  private static final Logger LOGGER = LoggerFactory.getLogger(FormHistoricalArchiveDate.class);
+public final class DateOfArchivedDocumentsUtil {
+  private static final Logger LOGGER = LoggerFactory.getLogger(DateOfArchivedDocumentsUtil.class);
   private static final Pattern TEMPORAL_PATTERN = Pattern.compile("(\\d+)" + "([smhdwMy])");
 
-  @VisibleForTesting
-  public static String getHistoricalArchiverDate(
+  public static String getDateOfDocumentsInArchiveBatch(
       final String endDate,
-      String historicalDate,
+      String dateOfMostRecentArchiveIndex,
       final String rolloverInterval,
       final String elsRolloverDateFormat) {
 
     // if historicalDate is not set, or rolloverInterval is not valid,
     // we default to the endDate.
-    if (historicalDate == null
-        || historicalDate.isEmpty()
+    if (dateOfMostRecentArchiveIndex == null
+        || dateOfMostRecentArchiveIndex.isEmpty()
         || rolloverInterval == null
         || rolloverInterval.isEmpty()) {
       return endDate;
     }
-    final CalendarInterval calendarInterval = mapCalendarInterval(rolloverInterval);
-
-    if (calendarInterval == CalendarInterval.Minute
-        || calendarInterval == CalendarInterval.Second) {
-      // For minute and seconds, we use date as is, minimum amount should be hours.
-      return endDate;
-    }
 
     final LocalDateTime endDateTime = parseFlexibleDateTime(endDate, elsRolloverDateFormat);
-    final LocalDateTime lastEndDate = parseFlexibleDateTime(historicalDate, elsRolloverDateFormat);
+    final LocalDateTime lastEndDate =
+        parseFlexibleDateTime(dateOfMostRecentArchiveIndex, elsRolloverDateFormat);
 
     final Temp temporalAmount = parseTemporalAmount(rolloverInterval);
 
@@ -57,35 +47,23 @@ public class FormHistoricalArchiveDate {
       if (endDateTime.isAfter(rollover)) {
         // If the end date is after the last historical archiver date plus
         // the rollover, then a new one needs to be set.
-        final var previousDate = historicalDate;
-        historicalDate = endDate;
+        final var previousDate = dateOfMostRecentArchiveIndex;
+        dateOfMostRecentArchiveIndex = endDate;
         LOGGER.debug(
             "Rolling over historical archive date from {} date to: {}",
             previousDate,
-            historicalDate);
+            dateOfMostRecentArchiveIndex);
       }
 
     } catch (final IllegalArgumentException e) {
       LOGGER.error(
           "Error parsing rollover interval '{}'. Please check the format. Using the last historical date: {}",
           rolloverInterval,
-          historicalDate,
+          dateOfMostRecentArchiveIndex,
           e);
     }
 
-    return historicalDate;
-  }
-
-  private static CalendarInterval mapCalendarInterval(final String alias) {
-    return Arrays.stream(CalendarInterval.values())
-        .filter(c -> c.aliases() != null)
-        .filter(
-            c ->
-                Arrays.stream(c.aliases())
-                    .anyMatch(e -> e.endsWith(alias.substring(alias.length() - 1))))
-        .findFirst()
-        .orElseThrow(
-            () -> new IllegalArgumentException("Unsupported rollover interval alias: " + alias));
+    return dateOfMostRecentArchiveIndex;
   }
 
   private static Temp parseTemporalAmount(final String input) throws IllegalArgumentException {
@@ -107,9 +85,9 @@ public class FormHistoricalArchiveDate {
     };
   }
 
-  public static LocalDateTime parseFlexibleDateTime(final String dateStr, final String pattern) {
+  private static LocalDateTime parseFlexibleDateTime(final String dateStr, final String pattern) {
     try {
-      if ("yyyy-MM-dd".equals(pattern) || "date".equals(pattern)) {
+      if ("date".equals(pattern)) {
         final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         return LocalDate.parse(dateStr, formatter).atStartOfDay();
       } else {

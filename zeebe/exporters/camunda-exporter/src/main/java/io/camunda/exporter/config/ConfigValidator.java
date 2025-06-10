@@ -13,6 +13,8 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 public final class ConfigValidator {
+  private static final String PATTERN_DATE_INTERVAL_FORMAT = "^(?:[1-9]\\d*)([hdwMy])$";
+
   /**
    * Supported pattern for min_age property of ILM, we only support: days, hours, minutes and
    * seconds. Everything below seconds we don't expect as useful.
@@ -21,8 +23,6 @@ public final class ConfigValidator {
    * https://www.elastic.co/guide/en/elasticsearch/reference/current/api-conventions.html#time-units
    */
   private static final String PATTERN_MIN_AGE_FORMAT = "^[0-9]+[dhms]$";
-
-  private static final String PATTERN_DATE_INTERVAL_FORMAT = "^(?:[1-9]\\d*)([smhdwMy])$";
 
   private static final Predicate<String> CHECKER_MIN_AGE =
       Pattern.compile(PATTERN_MIN_AGE_FORMAT).asPredicate();

@@ -126,7 +126,30 @@ public class ConfigValidatorTest {
     assertThatCode(() -> ConfigValidator.validate(config))
         .isInstanceOf(ExporterException.class)
         .hasMessageContaining(
-            "CamundaExporter archiver.rolloverInterval '1day' must match pattern '^(?:[1-9]\\d*)([smhdwMy])$', but didn't.");
+            "CamundaExporter archiver.rolloverInterval '1day' must match pattern '^(?:[1-9]\\d*)([hdwMy])$', but didn't.");
+  }
+
+  @Test
+  void shouldAssureRolloverIsNotInMinutesOrSeconds() {
+    // given
+    // Rollover interval must match pattern '%d{timeunit}', where timeunit is one of 'd', 'h',
+    // 'm', 's'. A valid rollover interval should be for example "1d" or
+    // "1h". Zero or negative time units are not allowed.
+    config.getHistory().setRolloverInterval("1m");
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining(
+            "CamundaExporter archiver.rolloverInterval '1m' must match pattern '^(?:[1-9]\\d*)([hdwMy])$', but didn't.");
+
+    config.getHistory().setRolloverInterval("1s");
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining(
+            "CamundaExporter archiver.rolloverInterval '1s' must match pattern '^(?:[1-9]\\d*)([hdwMy])$', but didn't.");
   }
 
   @ParameterizedTest(name = "{0}")

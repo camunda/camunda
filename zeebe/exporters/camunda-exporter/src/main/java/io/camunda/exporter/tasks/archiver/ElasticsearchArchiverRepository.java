@@ -28,8 +28,8 @@ import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
-import io.camunda.exporter.tasks.util.FormHistoricalArchiveDate;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
@@ -231,7 +231,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
 
     final String endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
     lastHistoricalArchiverDate =
-        FormHistoricalArchiveDate.getHistoricalArchiverDate(
+        DateOfArchivedDocumentsUtil.getDateOfDocumentsInArchiveBatch(
             endDate,
             lastHistoricalArchiverDate,
             config.getRolloverInterval(),
