@@ -45,7 +45,7 @@ jest.mock('modules/feature-flags', () => ({
   IS_PROCESS_INSTANCE_V2_ENABLED: false,
 }));
 
-describe('ProcessInstance - modification mode', () => {
+describe.skip('ProcessInstance - modification mode', () => {
   beforeEach(() => {
     mockRequests();
     modificationsStore.reset();

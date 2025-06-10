@@ -15,7 +15,6 @@ import {
   within,
 } from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
@@ -24,6 +23,7 @@ import {
   createInstance,
   createOperation,
   createVariable,
+  createVariableV2,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -47,6 +47,7 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {init} from 'modules/utils/flowNodeMetadata';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 
 const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
 
@@ -69,7 +70,6 @@ const getWrapper = (
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
-        variablesStore.reset();
         flowNodeSelectionStore.reset();
         flowNodeMetaDataStore.reset();
         modificationsStore.reset();
@@ -174,6 +174,9 @@ describe('VariablePanel', () => {
 
   it('should render variables', async () => {
     mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+    });
 
     render(<VariablePanel />, {wrapper: getWrapper()});
 
@@ -221,6 +224,9 @@ describe('VariablePanel', () => {
     );
 
     mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+    });
 
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
@@ -242,6 +248,16 @@ describe('VariablePanel', () => {
         sortValues: ['foo'],
       }),
     ]);
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariableV2(),
+        createVariableV2({
+          variableKey: '2251799813725337-foo',
+          name: 'foo',
+          value: '"bar"',
+        }),
+      ],
+    });
 
     mockApplyOperation().withSuccess(
       createBatchOperation({id: 'batch-operation-id'}),
@@ -269,6 +285,7 @@ describe('VariablePanel', () => {
     const withinVariablesList = within(screen.getByTestId('variables-list'));
     expect(withinVariablesList.queryByTestId('foo')).not.toBeInTheDocument();
 
+    // TODO : fix the below, it's stuck
     await waitForElementToBeRemoved(
       within(screen.getByTestId('foo')).getByTestId(
         'variable-operation-spinner',
@@ -340,6 +357,9 @@ describe('VariablePanel', () => {
     );
 
     mockFetchVariables().withSuccess([]);
+    mockSearchVariables().withSuccess({
+      items: [],
+    });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockApplyOperation().withSuccess(
       createBatchOperation({id: 'batch-operation-id'}),
@@ -370,6 +390,9 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([]);
+    mockSearchVariables().withSuccess({
+      items: [],
+    });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     act(() => {
@@ -379,6 +402,7 @@ describe('VariablePanel', () => {
       });
     });
 
+    // TODO : fix stuck here
     expect(await screen.findByTestId('variables-spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(() =>
       screen.getByTestId('variables-spinner'),
@@ -399,6 +423,9 @@ describe('VariablePanel', () => {
 
   it('should display validation error if backend validation fails while adding variable', async () => {
     mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+    });
 
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() =>
@@ -526,6 +553,9 @@ describe('VariablePanel', () => {
     );
 
     mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+    });
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockApplyOperation().withSuccess(createBatchOperation());
 
@@ -557,10 +587,21 @@ describe('VariablePanel', () => {
       createVariable(),
       createVariable({id: 'instance_id-foo', name: 'foo', value: 'bar'}),
     ]);
+    mockSearchVariables().withSuccess({
+      items: [
+        createVariableV2(),
+        createVariableV2({
+          variableKey: 'instance_id-foo',
+          name: 'foo',
+          value: 'bar',
+        }),
+      ],
+    });
 
     mockGetOperation().withSuccess([createOperation()]);
 
     jest.runOnlyPendingTimers();
+    // TODO : fix the below, it's stuck
     await waitForElementToBeRemoved(
       screen.getByTestId('variable-operation-spinner'),
     );
@@ -595,6 +636,9 @@ describe('VariablePanel', () => {
       items: statistics,
     });
     mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+    });
 
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() => {
@@ -603,6 +647,9 @@ describe('VariablePanel', () => {
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2({name: 'test2'})],
+    });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchProcessDefinitionXml().withSuccess('');
 
@@ -620,6 +667,9 @@ describe('VariablePanel', () => {
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2({name: 'test2'})],
+    });
     mockFetchProcessDefinitionXml().withSuccess('');
 
     act(() => {
@@ -633,11 +683,13 @@ describe('VariablePanel', () => {
         'Event_0bonl61',
       ),
     );
-    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
 
     expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2({name: 'test2'})],
+    });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     act(() => {
@@ -654,10 +706,12 @@ describe('VariablePanel', () => {
     expect(
       screen.queryByRole('tab', {name: 'Output Mappings'}),
     ).not.toBeInTheDocument();
-    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
 
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchVariables().withSuccess([]);
+    mockSearchVariables().withSuccess({
+      items: [],
+    });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     act(() => {
@@ -681,7 +735,5 @@ describe('VariablePanel', () => {
     expect(
       screen.getByRole('tab', {name: 'Output Mappings'}),
     ).toBeInTheDocument();
-
-    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
   });
 });
