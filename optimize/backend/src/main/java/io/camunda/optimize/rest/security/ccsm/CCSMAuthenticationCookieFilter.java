@@ -101,10 +101,12 @@ public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProc
         .flatMap(
             cookies ->
                 AuthCookieService.extractJoinedCookieValueFromCookies(Arrays.asList(cookies))
+                    .flatMap(this::validToken)
                     .map(ccsmTokenService::getSubjectFromToken))
         .orElseGet(
             () ->
                 AuthCookieService.getAuthCookieToken(request)
+                    .flatMap(this::validToken)
                     .map(ccsmTokenService::getSubjectFromToken)
                     .orElse(null));
   }
@@ -116,6 +118,15 @@ public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProc
             cookies ->
                 AuthCookieService.extractJoinedCookieValueFromCookies(Arrays.asList(cookies)))
         .orElseGet(() -> AuthCookieService.getAuthCookieToken(request).orElse(null));
+  }
+
+  private Optional<String> validToken(final String token) {
+    try {
+      ccsmTokenService.verifyToken(token);
+    } catch (final Exception e) {
+      return Optional.empty();
+    }
+    return Optional.ofNullable(token);
   }
 
   private void tryCookieRenewal(
