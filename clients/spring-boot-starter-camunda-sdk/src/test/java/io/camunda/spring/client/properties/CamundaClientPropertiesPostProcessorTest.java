@@ -17,6 +17,7 @@ package io.camunda.spring.client.properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.spring.client.properties.CamundaClientProperties.ClientMode;
 import java.net.URI;
 import java.time.Duration;
 import org.junit.jupiter.api.Nested;
@@ -34,7 +35,9 @@ public class CamundaClientPropertiesPostProcessorTest {
         "zeebe.client.broker.grpc-address=http://legacy:26500",
         "camunda.client.zeebe.grpc-address=http://newer:26500",
         "zeebe.client.requestTimeout=PT1M",
-        "camunda.client.tenant-ids=<default>, another one"
+        "camunda.client.tenant-ids=<default>, another one",
+        "camunda.client.zeebe.defaults.fetch-variables[0]=variable1",
+        "camunda.client.zeebe.defaults.fetch-variables[1]=variable2",
       })
   @Nested
   class BehaviourTest {
@@ -55,6 +58,12 @@ public class CamundaClientPropertiesPostProcessorTest {
     void shouldMapLists() {
       assertThat(camundaClientProperties.getWorker().getDefaults().getTenantIds())
           .contains("<default>", "another one");
+    }
+
+    @Test
+    void shouldMapListsFromYaml() {
+      assertThat(camundaClientProperties.getWorker().getDefaults().getFetchVariables())
+          .contains("variable1", "variable2");
     }
   }
 
@@ -1083,6 +1092,147 @@ public class CamundaClientPropertiesPostProcessorTest {
       void shouldReadGrpcAddress() {
         assertThat(camundaClientProperties.getRestAddress())
             .isEqualTo(URI.create("http://localhost:8080"));
+      }
+    }
+
+    @SpringBootTest(
+        properties = "spring.config.location=classpath:properties/8.7/max-jobs-active.yaml")
+    @Nested
+    class MaxJobsActive {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadMaxJobsActive() {
+        assertThat(camundaClientProperties.getWorker().getDefaults().getMaxJobsActive())
+            .isEqualTo(32);
+      }
+    }
+
+    @SpringBootTest(
+        properties = "spring.config.location=classpath:properties/8.7/worker-disabled.yaml")
+    @Nested
+    class DisabledWorker {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadDisabled() {
+        assertThat(camundaClientProperties.getWorker().getOverride().get("foo").getEnabled())
+            .isFalse();
+      }
+    }
+
+    @SpringBootTest(
+        properties = "spring.config.location=classpath:properties/8.7/default-disabled.yaml")
+    @Nested
+    class DefaultDisabledWorker {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadDisabled() {
+        assertThat(camundaClientProperties.getWorker().getDefaults().getEnabled()).isFalse();
+      }
+    }
+
+    @SpringBootTest(
+        properties = "spring.config.location=classpath:properties/8.7/worker-timeout.yaml")
+    @Nested
+    class WorkerTimeout {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadWorkerTimeout() {
+        assertThat(camundaClientProperties.getWorker().getOverride().get("foo").getTimeout())
+            .isEqualTo(Duration.ofSeconds(10));
+      }
+    }
+
+    @SpringBootTest(
+        properties = "spring.config.location=classpath:properties/8.7/worker-stream-enabled.yaml")
+    @Nested
+    class WorkerStreamEnabled {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadWorkerStreamEnabled() {
+        assertThat(camundaClientProperties.getWorker().getOverride().get("foo").getStreamEnabled())
+            .isTrue();
+      }
+    }
+
+    @SpringBootTest(
+        properties = "spring.config.location=classpath:properties/8.7/default-stream-enabled.yaml")
+    @Nested
+    class DefaultStreamEnabled {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadDefaultStreamEnabled() {
+        assertThat(camundaClientProperties.getWorker().getDefaults().getStreamEnabled()).isTrue();
+      }
+    }
+
+    @SpringBootTest(properties = "spring.config.location=classpath:properties/8.7/tenant-id.yaml")
+    @Nested
+    class TenantId {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadTenantId() {
+        assertThat(camundaClientProperties.getTenantId()).isEqualTo("foo");
+      }
+    }
+
+    @SpringBootTest(
+        properties = "spring.config.location=classpath:properties/8.7/default-tenant-ids.yaml")
+    @Nested
+    class DefaultTenantIds {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadDefaultTenantIds() {
+        assertThat(camundaClientProperties.getWorker().getDefaults().getTenantIds())
+            .containsExactly("<default>", "foo");
+      }
+    }
+
+    @SpringBootTest(
+        properties = "spring.config.location=classpath:properties/8.7/worker-tenant-ids.yaml")
+    @Nested
+    class WorkerTenantIds {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadWorkerTenantIds() {
+        assertThat(camundaClientProperties.getWorker().getOverride().get("foo").getTenantIds())
+            .containsExactly("<default>", "foo");
+      }
+    }
+
+    @SpringBootTest(
+        properties = {
+          "spring.config.location=classpath:properties/8.7/mode-saas.yaml",
+          // cluster id is required to build the urls
+          "camunda.client.cloud.cluster-id=abc"
+        })
+    @Nested
+    class ModeSaas {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadModeSaas() {
+        assertThat(camundaClientProperties.getMode()).isEqualTo(ClientMode.saas);
+      }
+    }
+
+    @SpringBootTest(
+        properties = "spring.config.location=classpath:properties/8.7/mode-self-managed.yaml")
+    @Nested
+    class ModeSelfManaged {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadModeSelfManaged() {
+        assertThat(camundaClientProperties.getMode()).isEqualTo(ClientMode.selfManaged);
       }
     }
   }

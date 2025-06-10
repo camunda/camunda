@@ -1,0 +1,3 @@
+camunda:
+  client:
+    mode: self-managed
