@@ -1,0 +1,55 @@
+{
+  "aliases": {},
+  "mappings": {
+    "dynamic": "true",
+    "properties": {
+      "id": {
+        "type": "keyword",
+        "index": true
+      },
+      "clientRegistrationId": {
+        "type": "keyword",
+        "index": true
+      },
+      "principalName": {
+        "type": "keyword",
+        "index": true
+      },
+      "accessTokenValue": {
+        "type": "text",
+        "index": false,
+        "store": true
+      },
+      "accessTokenType": {
+        "type": "keyword",
+        "index": true
+      },
+      "accessTokenIssuedAt": {
+        "type": "date",
+        "format": "strict_date_optional_time||epoch_millis"
+      },
+      "accessTokenExpiresAt": {
+        "type": "date",
+        "format": "strict_date_optional_time||epoch_millis"
+      },
+      "accessTokenScopes": {
+        "type": "keyword",
+        "index": true
+      },
+      "refreshTokenValue": {
+        "type": "text",
+        "index": false,
+        "store": true
+      },
+      "refreshTokenIssuedAt": {
+        "type": "date",
+        "format": "strict_date_optional_time||epoch_millis"
+      },
+      "refreshTokenExpiresAt": {
+        "type": "date",
+        "format": "strict_date_optional_time||epoch_millis"
+      }
+    }
+  }
+}
+

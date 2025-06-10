@@ -24,8 +24,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.AbstractOAuth2Token;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2AuthorizationException;
@@ -38,7 +38,7 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
   private static final Logger LOG = LoggerFactory.getLogger(OAuth2RefreshTokenFilter.class);
 
   private final Duration clockSkew = Duration.ofSeconds(60L);
-  private final OAuth2AuthorizedClientService authorizedClientService;
+  private final OAuth2AuthorizedClientRepository authorizedClientRepository;
   private final OAuth2AuthorizedClientManager authorizedClientManager;
   private final CookieClearingLogoutHandler logoutHandler;
 
@@ -52,9 +52,9 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
   private final Duration cacheEntryTtl = Duration.ofSeconds(30L);
 
   public OAuth2RefreshTokenFilter(
-      final OAuth2AuthorizedClientService authorizedClientService,
+      final OAuth2AuthorizedClientRepository authorizedClientRepository,
       final OAuth2AuthorizedClientManager authorizedClientManager) {
-    this.authorizedClientService = authorizedClientService;
+    this.authorizedClientRepository = authorizedClientRepository;
     this.authorizedClientManager = authorizedClientManager;
     logoutHandler = new CookieClearingLogoutHandler(WebSecurityConfig.SESSION_COOKIE);
   }
@@ -74,7 +74,7 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
       return;
     }
 
-    final var authorizedClient = getAuthorizedClient(authenticationToken);
+    final var authorizedClient = getAuthorizedClient(authenticationToken, request);
     if (authorizedClient == null) {
       authenticationToken.setAuthenticated(false);
       logoutHandler.logout(request, response, authenticationToken);
@@ -176,10 +176,11 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
   }
 
   protected OAuth2AuthorizedClient getAuthorizedClient(
-      final OAuth2AuthenticationToken authenticationToken) {
+      final OAuth2AuthenticationToken authenticationToken, final HttpServletRequest request) {
     final var clientRegistrationId = authenticationToken.getAuthorizedClientRegistrationId();
-    final var principalName = authenticationToken.getName();
-    return authorizedClientService.loadAuthorizedClient(clientRegistrationId, principalName);
+    final var authentication = SecurityContextHolder.getContext().getAuthentication();
+    return authorizedClientRepository.loadAuthorizedClient(
+        clientRegistrationId, authentication, request);
   }
 
   protected boolean hasTokenExpired(final OAuth2AuthorizedClient authorizedClient) {
