@@ -8,6 +8,10 @@
 package io.camunda.unifiedconfig;
 
 public class AzureStore {
+
+  public static final String SAS_TOKEN_TYPE_ACCOUNT = "account";
+  public static final String SAS_TOKEN_TYPE_SERVICE = "service";
+
   private String accountKey;
   private String accountName;
   private String basePath;
