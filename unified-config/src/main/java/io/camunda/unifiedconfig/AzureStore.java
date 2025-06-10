@@ -27,6 +27,11 @@ public class AzureStore {
   }
 
   public String getAccountKey() {
+    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.backup.azure.accountKey");
+    if (deprecated != null) {
+      return deprecated;
+    }
+
     return accountKey;
   }
 
@@ -35,6 +40,11 @@ public class AzureStore {
   }
 
   public String getAccountName() {
+    String deprecated =  UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.backup.azure.accountName");
+    if (deprecated != null) {
+      return deprecated;
+    }
+
     return accountName;
   }
 
@@ -43,6 +53,11 @@ public class AzureStore {
   }
 
   public String getBasePath() {
+    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.backup.azure.basePath");
+    if (deprecated != null) {
+      return deprecated;
+    }
+
     return basePath;
   }
 
@@ -51,6 +66,11 @@ public class AzureStore {
   }
 
   public String getConnectionString() {
+    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.backup.azure.connectionString");
+    if (deprecated != null) {
+      return deprecated;
+    }
+
     return connectionString;
   }
 
@@ -59,6 +79,11 @@ public class AzureStore {
   }
 
   public boolean isCreateContainer() {
+    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.backup.azure.createContainer");
+    if (deprecated != null) {
+      return Boolean.parseBoolean(deprecated);
+    }
+
     return createContainer;
   }
 
@@ -67,6 +92,11 @@ public class AzureStore {
   }
 
   public String getEndpoint() {
+    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.backup.azure.endpoint");
+    if (deprecated != null) {
+      return deprecated;
+    }
+
     return endpoint;
   }
 
@@ -75,6 +105,11 @@ public class AzureStore {
   }
 
   public String getSasTokenType() {
+    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.backup.azure.sasToken.type");
+    if (deprecated != null) {
+      return deprecated;
+    }
+
     return sasTokenType;
   }
 
@@ -83,6 +118,11 @@ public class AzureStore {
   }
 
   public String getSasToken() {
+    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.backup.azure.sasToken.value");
+    if (deprecated != null) {
+      return deprecated;
+    }
+
     return sasToken;
   }
 
