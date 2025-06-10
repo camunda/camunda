@@ -44,8 +44,8 @@ final class PartitionJoinTest {
 
               clusterCfg.setClusterSize(1);
               clusterCfg.setNodeId(0);
-              clusterCfg.setPartitionsCount(1);
-              clusterCfg.setReplicationFactor(1);
+              clusterCfg.setPartitionsCount(2);
+              clusterCfg.setReplicationFactor(3);
             });
 
     final var initialContactPoint =
@@ -62,11 +62,11 @@ final class PartitionJoinTest {
               clusterCfg.setInitialContactPoints(
                   List.of(initialContactPoint.getHostName() + ":" + initialContactPoint.getPort()));
 
-              // Static configuration initially results in a broker without any partitions
+              // Static configuration initially results in a broker with only 1 partition
               clusterCfg.setClusterSize(1);
               clusterCfg.setNodeId(1);
-              clusterCfg.setPartitionsCount(0);
-              clusterCfg.setReplicationFactor(0);
+              clusterCfg.setPartitionsCount(2);
+              clusterCfg.setReplicationFactor(1);
             });
 
     // when
