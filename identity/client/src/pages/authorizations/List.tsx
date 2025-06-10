@@ -26,7 +26,9 @@ import AuthorizationList from "./AuthorizationsList";
 
 const List: FC = () => {
   const { t } = useTranslate("authorizations");
-  const [activeTab, setActiveTab] = useState<string>(ResourceType.APPLICATION);
+  const [activeTab, setActiveTab] = useState<string>(
+    ResourceType.AUTHORIZATION,
+  );
   const { data, loading, reload, success } = useApi(searchAuthorization, {
     filter: { resourceType: activeTab },
   });
