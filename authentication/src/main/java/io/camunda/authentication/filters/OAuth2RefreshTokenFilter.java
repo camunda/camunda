@@ -18,8 +18,10 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
@@ -31,6 +33,7 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2AuthorizationException;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.web.authentication.logout.CookieClearingLogoutHandler;
+import org.springframework.security.web.authentication.logout.LogoutHandler;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
@@ -40,7 +43,8 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
   private final Duration clockSkew = Duration.ofSeconds(60L);
   private final OAuth2AuthorizedClientService authorizedClientService;
   private final OAuth2AuthorizedClientManager authorizedClientManager;
-  private final CookieClearingLogoutHandler logoutHandler;
+  private final LogoutHandler logoutHandler;
+  private final Supplier<SecurityContext> securityContextSupplier;
 
   // Locks for specific principals
   private final ConcurrentHashMap<String, ReentrantLock> principalLocks = new ConcurrentHashMap<>();
@@ -54,9 +58,23 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
   public OAuth2RefreshTokenFilter(
       final OAuth2AuthorizedClientService authorizedClientService,
       final OAuth2AuthorizedClientManager authorizedClientManager) {
+    this(
+        authorizedClientService,
+        authorizedClientManager,
+        new CookieClearingLogoutHandler(WebSecurityConfig.SESSION_COOKIE),
+        SecurityContextHolder::getContext);
+  }
+
+  // This constructor is for testing
+  public OAuth2RefreshTokenFilter(
+      final OAuth2AuthorizedClientService authorizedClientService,
+      final OAuth2AuthorizedClientManager authorizedClientManager,
+      final LogoutHandler logoutHandler,
+      final Supplier<SecurityContext> securityContextSupplier) {
     this.authorizedClientService = authorizedClientService;
     this.authorizedClientManager = authorizedClientManager;
-    logoutHandler = new CookieClearingLogoutHandler(WebSecurityConfig.SESSION_COOKIE);
+    this.logoutHandler = logoutHandler;
+    this.securityContextSupplier = securityContextSupplier;
   }
 
   @Override
@@ -70,11 +88,12 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
 
     // Continue if it's not OAuth2 authentication
     if (authenticationToken == null) {
+      LOG.debug("No OAuth2 authentication found in request");
       filterChain.doFilter(request, response);
       return;
     }
 
-    final var authorizedClient = getAuthorizedClient(authenticationToken);
+    final var authorizedClient = getAuthorizedClient(authenticationToken, request);
     if (authorizedClient == null) {
       authenticationToken.setAuthenticated(false);
       logoutHandler.logout(request, response, authenticationToken);
@@ -132,12 +151,12 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
 
       final OAuth2AuthorizedClient refreshedAuthorizedClient;
       try {
-        LOG.info(
+        LOG.debug(
             "Attempting to refresh access token for principal: {}",
             authenticationToken.getPrincipal().getName());
         refreshedAuthorizedClient = refreshAccessToken(authenticationToken, authorizedClient);
         if (refreshedAuthorizedClient != null) {
-          LOG.info(
+          LOG.debug(
               "Successfully refreshed token for {}", refreshedAuthorizedClient.getPrincipalName());
           // Cache the refreshed token
           principalAuthorizedClients.put(
@@ -169,17 +188,18 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
   }
 
   protected OAuth2AuthenticationToken getAuthenticationToken() {
-    final var authentication = SecurityContextHolder.getContext().getAuthentication();
+    final var authentication = securityContextSupplier.get().getAuthentication();
     return authentication instanceof final OAuth2AuthenticationToken oauth2AuthenticationToken
         ? oauth2AuthenticationToken
         : null;
   }
 
   protected OAuth2AuthorizedClient getAuthorizedClient(
-      final OAuth2AuthenticationToken authenticationToken) {
+      final OAuth2AuthenticationToken authenticationToken, final HttpServletRequest request) {
     final var clientRegistrationId = authenticationToken.getAuthorizedClientRegistrationId();
-    final var principalName = authenticationToken.getName();
-    return authorizedClientService.loadAuthorizedClient(clientRegistrationId, principalName);
+    final var authentication = securityContextSupplier.get().getAuthentication();
+    return authorizedClientService.loadAuthorizedClient(
+        clientRegistrationId, authentication.getName());
   }
 
   protected boolean hasTokenExpired(final OAuth2AuthorizedClient authorizedClient) {
@@ -191,7 +211,7 @@ public class OAuth2RefreshTokenFilter extends OncePerRequestFilter {
             .orElse(false);
 
     if (tokenExpired) {
-      LOG.info("Token expired for {}", authorizedClient.getPrincipalName());
+      LOG.debug("Token expired for {}", authorizedClient.getPrincipalName());
     }
 
     return tokenExpired;

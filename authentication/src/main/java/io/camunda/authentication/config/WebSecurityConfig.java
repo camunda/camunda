@@ -12,11 +12,14 @@ import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnProtectedApi;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
-import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
 import io.camunda.authentication.filters.AdminUserCheckFilter;
+import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
+import io.camunda.authentication.oauth.ConditionalOnPersistentAuthorizedClientsEnabled;
+import io.camunda.authentication.oauth.PersistedOAuth2AuthorizedClientService;
+import io.camunda.search.clients.PersistentOAuth2AuthorizedClientsClient;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.AuthorizationServices;
@@ -51,7 +54,6 @@ import org.springframework.security.oauth2.client.oidc.authentication.OidcIdToke
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
-import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -353,10 +355,19 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    @ConditionalOnPersistentAuthorizedClientsEnabled
+    public OAuth2AuthorizedClientService oAuth2AuthorizedClientRepository(
+        final ClientRegistrationRepository clientRegistrationRepository,
+        final PersistentOAuth2AuthorizedClientsClient authorizedClientsClient) {
+      return new PersistedOAuth2AuthorizedClientService(
+          authorizedClientsClient, clientRegistrationRepository);
+    }
+
+    @Bean
     public OAuth2RefreshTokenFilter oauth2RefreshTokenFilter(
-        final OAuth2AuthorizedClientService oAuth2AuthorizedClientService,
+        final OAuth2AuthorizedClientService authorizedClientService,
         final OAuth2AuthorizedClientManager authorizedClientManager) {
-      return new OAuth2RefreshTokenFilter(oAuth2AuthorizedClientService, authorizedClientManager);
+      return new OAuth2RefreshTokenFilter(authorizedClientService, authorizedClientManager);
     }
 
     @Bean
@@ -404,7 +415,7 @@ public class WebSecurityConfig {
         final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter,
         final JwtDecoder jwtDecoder,
         final CamundaJwtAuthenticationConverter converter,
-        final OAuth2AuthorizedClientRepository authorizedClientRepository,
+        final OAuth2AuthorizedClientService authorizedClientService,
         final OAuth2RefreshTokenFilter oauth2RefreshTokenFilter)
         throws Exception {
       return httpSecurity
@@ -432,7 +443,7 @@ public class WebSecurityConfig {
               oauthLoginConfigurer -> {
                 oauthLoginConfigurer
                     .clientRegistrationRepository(clientRegistrationRepository)
-                    .authorizedClientRepository(authorizedClientRepository)
+                    .authorizedClientService(authorizedClientService)
                     .redirectionEndpoint(
                         redirectionEndpointConfig ->
                             redirectionEndpointConfig.baseUri("/sso-callback"));
