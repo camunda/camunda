@@ -262,7 +262,7 @@ public class OpensearchBackupRepository implements BackupRepository {
                     // No need to continue
                     onFailure.run();
                     break;
-                  } else if (STARTED.equals(maybeCurrentSnapshot.get().getState())) {
+                  } else if (IN_PROGRESS.equals(maybeCurrentSnapshot.get().getState())) {
                     ThreadUtil.sleepFor(100);
                   } else {
                     handleSnapshotReceived(maybeCurrentSnapshot.get(), onSuccess, onFailure);
@@ -370,7 +370,9 @@ public class OpensearchBackupRepository implements BackupRepository {
         .map(OpenSearchSnapshotInfo::getState)
         .anyMatch(s -> FAILED.equals(s) || PARTIAL.equals(s))) {
       return BackupStateDto.FAILED;
-    } else if (snapshots.stream().map(OpenSearchSnapshotInfo::getState).anyMatch(STARTED::equals)) {
+    } else if (snapshots.stream()
+        .map(OpenSearchSnapshotInfo::getState)
+        .anyMatch(IN_PROGRESS::equals)) {
       return BackupStateDto.IN_PROGRESS;
     } else if (snapshots.size() < expectedSnapshotsCount) {
       return BackupStateDto.INCOMPLETE;

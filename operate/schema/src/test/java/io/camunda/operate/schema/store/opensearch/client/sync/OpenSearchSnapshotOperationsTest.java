@@ -98,7 +98,7 @@ class OpenSearchSnapshotOperationsTest {
                     "uuid",
                     "uuid-value",
                     "state",
-                    "STARTED",
+                    "IN_PROGRESS",
                     "start_time_in_millis",
                     23L,
                     "metadata",
@@ -136,7 +136,7 @@ class OpenSearchSnapshotOperationsTest {
   }
 
   private void assertSnapshotInfo(final OpenSearchSnapshotInfo snapshotInfo) {
-    assertThat(snapshotInfo.getState()).isEqualTo(SnapshotState.STARTED);
+    assertThat(snapshotInfo.getState()).isEqualTo(SnapshotState.IN_PROGRESS);
     assertThat(snapshotInfo.getStartTimeInMillis()).isEqualTo(23L);
     assertThat(snapshotInfo.getMetadata()).isEmpty();
     assertThat(snapshotInfo.getFailures()).isEmpty();
