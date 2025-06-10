@@ -337,8 +337,6 @@ public final class BpmnUserTaskBehavior {
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELED, userTaskRecord);
   }
 
-
-
   public void userTaskCreated(final UserTaskRecord userTaskRecord) {
     final long userTaskKey = userTaskRecord.getUserTaskKey();
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATED, userTaskRecord);

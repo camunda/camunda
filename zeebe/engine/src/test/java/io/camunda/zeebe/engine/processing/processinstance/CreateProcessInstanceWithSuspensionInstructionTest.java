@@ -25,15 +25,13 @@ import org.junit.Test;
 
 public class CreateProcessInstanceWithSuspensionInstructionTest {
 
-  @ClassRule
-  public static final EngineRule ENGINE = EngineRule.singlePartition();
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  @Rule
-  public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   @Test
   public void shouldSuspendProcessInstanceWhenElementIsCompleted() {
@@ -59,7 +57,7 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
             .create();
 
     // then
-    var result =
+    final var result =
         RecordingExporter.processInstanceRecords()
             .onlyEvents()
             .withProcessInstanceKey(processInstanceKey)
@@ -75,27 +73,28 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
             Tuple.tuple(ProcessInstanceIntent.ELEMENT_COMPLETED, elementToSuspend),
             Tuple.tuple(ProcessInstanceIntent.ELEMENT_SUSPENDED, processId));
 
-    var processInstanceRecord = RecordingExporter.processInstanceRecords(
-            ProcessInstanceIntent.ELEMENT_SUSPENDED).withProcessInstanceKey(processInstanceKey)
-        .getFirst();
+    final var processInstanceRecord =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_SUSPENDED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
 
-    ENGINE.writeRecords(RecordToWrite.command().key(processInstanceKey)
-        .processInstance(ProcessInstanceIntent.COMPLETE_ELEMENT, processInstanceRecord.getValue()));
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .key(processInstanceKey)
+            .processInstance(
+                ProcessInstanceIntent.COMPLETE_ELEMENT, processInstanceRecord.getValue()));
 
-    var rejectedCommandRecord = RecordingExporter.processInstanceRecords(ProcessInstanceIntent.COMPLETE_ELEMENT).withProcessInstanceKey(processInstanceKey).onlyCommandRejections().getFirst();
+    final var rejectedCommandRecord =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.COMPLETE_ELEMENT)
+            .withProcessInstanceKey(processInstanceKey)
+            .onlyCommandRejections()
+            .getFirst();
 
     assertThat(rejectedCommandRecord).isNotNull();
     assert false;
   }
 
-  /**
-   * TODO
-   * shouldCancelJobWhenProcessInstanceIsSuspended
-   * unsubscribeFromEvents
-   * resolve incidents
-   *
-   */
-
+  /** TODO shouldCancelJobWhenProcessInstanceIsSuspended unsubscribeFromEvents resolve incidents */
   @Test
   public void shouldCancelJobWhenProcessInstanceIsSuspended() {
     // given
@@ -124,12 +123,45 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
             .create();
 
     // then
-    var result = RecordingExporter.jobRecords(JobIntent.CANCELED)
-        .withProcessInstanceKey(processInstanceKey)
-        .getFirst();
+    final var result =
+        RecordingExporter.jobRecords(JobIntent.CANCELED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
 
     assertThat(result.getValue().getElementId()).isEqualTo("task");
   }
 
+  // TODO: parallel gateway and see if the other branch continues executing
 
+  @Test
+  public void parallel() {
+    final String processId = "process";
+    final String elementToSuspend = "element";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .parallelGateway()
+                .task("task1")
+                .task("task2")
+                .task("task3")
+                .task("task4")
+                .endEvent()
+                .moveToLastGateway()
+                .manualTask(elementToSuspend)
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withRuntimeSuspendInstruction(elementToSuspend)
+            .create();
+
+    assert false;
+  }
 }

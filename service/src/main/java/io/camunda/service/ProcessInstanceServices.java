@@ -178,7 +178,8 @@ public final class ProcessInstanceServices
             .setVersion(request.version())
             .setTenantId(request.tenantId())
             .setVariables(getDocumentOrEmpty(request.variables()))
-            .setInstructions(request.startInstructions());
+            .setStartInstructionsFromProtocol(request.startInstructions())
+            .setRuntimeInstructions(request.runtimeInstructions());
 
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());

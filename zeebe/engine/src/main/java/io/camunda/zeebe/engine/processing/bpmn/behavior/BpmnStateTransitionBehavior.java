@@ -24,7 +24,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
-import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
@@ -323,7 +322,8 @@ public final class BpmnStateTransitionBehavior {
 
       final var dequeue = new ArrayDeque<BpmnElementContext>();
       final var processInstanceContext = new BpmnElementContextImpl();
-      processInstanceContext.init(processInstance.getKey(), processInstance.getValue(), processInstance.getState());
+      processInstanceContext.init(
+          processInstance.getKey(), processInstance.getValue(), processInstance.getState());
       dequeue.add(processInstanceContext);
 
       // recurse through the process instance tree without causing stack overflow
