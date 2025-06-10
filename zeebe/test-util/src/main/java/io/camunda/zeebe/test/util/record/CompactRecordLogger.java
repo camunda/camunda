@@ -56,6 +56,7 @@ import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
@@ -73,6 +74,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -127,6 +129,7 @@ public class CompactRecordLogger {
           entry(RecordType.COMMAND_REJECTION, 'R'));
 
   private final Map<ValueType, Function<Record<?>, String>> valueLoggers = new HashMap<>();
+
   private final int keyDigits;
   private final int valueTypeChars;
   private final int intentChars;
@@ -139,6 +142,8 @@ public class CompactRecordLogger {
   private ObjectMapper objectMapper;
 
   {
+    valueLoggers.put(ValueType.NULL_VAL, this::summarizeMiscValue);
+    valueLoggers.put(ValueType.SBE_UNKNOWN, this::summarizeMiscValue);
     valueLoggers.put(ValueType.DEPLOYMENT, this::summarizeDeployment);
     valueLoggers.put(ValueType.DEPLOYMENT_DISTRIBUTION, this::summarizeDeploymentDistribution);
     valueLoggers.put(ValueType.PROCESS, this::summarizeProcess);
@@ -176,6 +181,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.TENANT, this::summarizeTenant);
     valueLoggers.put(ValueType.GROUP, this::summarizeGroup);
     valueLoggers.put(ValueType.MAPPING, this::summarizeMapping);
+    valueLoggers.put(ValueType.USER, this::summarizeUser);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -183,7 +189,7 @@ public class CompactRecordLogger {
     multiPartition = isMultiPartition();
     hasTimerEvents = records.stream().anyMatch(r -> r.getValueType() == ValueType.TIMER);
 
-    final var highestPosition = this.records.getLast().getPosition();
+    final var highestPosition = this.records.isEmpty() ? 0 : this.records.getLast().getPosition();
 
     int digits = 0;
     long num = highestPosition;
@@ -212,6 +218,10 @@ public class CompactRecordLogger {
             .mapToInt(String::length)
             .max()
             .orElse(0);
+  }
+
+  public Set<ValueType> getSupportedValueTypes() {
+    return valueLoggers.keySet();
   }
 
   public void log() {
@@ -1077,6 +1087,25 @@ public class CompactRecordLogger {
         .append(", claimValue=")
         .append(value.getClaimValue())
         .append("]");
+
+    return builder.toString();
+  }
+
+  private String summarizeUser(final Record<?> record) {
+    final var value = (UserRecordValue) record.getValue();
+
+    final StringBuilder builder = new StringBuilder();
+    if (record.getKey() != value.getUserKey()) {
+      builder.append(shortenKey(value.getUserKey())).append(" ");
+    }
+
+    builder
+        .append("u=")
+        .append(formatId(value.getUsername()))
+        .append(" @=")
+        .append(value.getEmail())
+        .append(" n=")
+        .append(value.getName());
 
     return builder.toString();
   }
