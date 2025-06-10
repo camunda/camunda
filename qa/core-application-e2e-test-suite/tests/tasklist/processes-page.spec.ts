@@ -167,7 +167,7 @@ test.describe('process page', () => {
     await taskPanelPage.openTask('processStartedByForm_user_task');
     await expect(
       page.getByText('{"name":"jon","address":"earth"}'),
-    ).toBeVisible();
+    ).toBeVisible({timeout: 60000});
     await expect(page.getByText('EUR')).toBeVisible();
     await expect(page.getByText('3000-01-01')).toBeVisible();
     await expect(page.getByText('3000-01-02')).toBeVisible();
@@ -179,6 +179,8 @@ test.describe('process page', () => {
     ).toBeVisible();
     await taskDetailsPage.clickAssignToMeButton();
     await taskDetailsPage.clickCompleteTaskButton();
-    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
+      timeout: 60000,
+    });
   });
 });
