@@ -18,7 +18,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
-import io.camunda.migration.identity.config.ConsoleConnectorConfig.ConsoleTokenService;
 import io.camunda.migration.identity.config.ConsoleConnectorConfig.TokenInterceptor;
 import io.camunda.migration.identity.config.ConsoleProperties;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
@@ -110,11 +109,10 @@ public class ConsoleClientIT {
     props.setOrganizationId("org123");
     props.setConsole(consoleProps);
 
-    final ConsoleTokenService tokenService = new ConsoleTokenService(props);
     final RestTemplate restTemplate =
         new RestTemplateBuilder()
             .rootUri(consoleProps.getBaseUrl())
-            .interceptors(new TokenInterceptor(consoleProps, tokenService))
+            .interceptors(new TokenInterceptor(consoleProps))
             .defaultHeader("Content-Type", "application/json")
             .defaultHeader("Accept", "application/json")
             .build();

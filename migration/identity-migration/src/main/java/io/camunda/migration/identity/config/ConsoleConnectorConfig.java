@@ -32,13 +32,12 @@ public class ConsoleConnectorConfig {
   @Bean
   public ConsoleClient consoleClient(
       final RestTemplateBuilder builder,
-      final IdentityMigrationProperties identityMigrationProperties,
-      final ConsoleTokenService consoleTokenService) {
+      final IdentityMigrationProperties identityMigrationProperties) {
     final var consoleProperties = identityMigrationProperties.getConsole();
     final var restTemplate =
         builder
             .rootUri(consoleProperties.getBaseUrl())
-            .interceptors(new TokenInterceptor(consoleProperties, consoleTokenService))
+            .interceptors(new TokenInterceptor(consoleProperties))
             .defaultHeader("Content-Type", "application/json")
             .defaultHeader("Accept", "application/json")
             .build();
@@ -48,37 +47,25 @@ public class ConsoleConnectorConfig {
   public static final class TokenInterceptor implements ClientHttpRequestInterceptor {
 
     final ConsoleProperties consoleProperties;
-    final ConsoleTokenService consoleTokenService;
+    final RestTemplate restTemplate;
 
     public TokenInterceptor(
-        final ConsoleProperties consoleProperties, final ConsoleTokenService consoleTokenService) {
+        final ConsoleProperties consoleProperties) {
       this.consoleProperties = consoleProperties;
-      this.consoleTokenService = consoleTokenService;
+      restTemplate = new RestTemplate();
     }
 
     @Override
     public ClientHttpResponse intercept(
         final HttpRequest request, final byte[] body, final ClientHttpRequestExecution execution)
         throws IOException {
-      final var token = consoleTokenService.getAccessToken();
+      final var token = getAccessToken();
       final var headers = request.getHeaders();
       headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + token);
       return execution.execute(request, body);
     }
-  }
-
-  @Service
-  public static class ConsoleTokenService {
-
-    private final RestTemplate restTemplate = new RestTemplate();
-    private final IdentityMigrationProperties managementIdentityProperties;
-
-    public ConsoleTokenService(final IdentityMigrationProperties managementIdentityProperties) {
-      this.managementIdentityProperties = managementIdentityProperties;
-    }
 
     public String getAccessToken() {
-      final var consoleProperties = managementIdentityProperties.getConsole();
       final var headers = new HttpHeaders();
       headers.setContentType(MediaType.APPLICATION_JSON);
 
