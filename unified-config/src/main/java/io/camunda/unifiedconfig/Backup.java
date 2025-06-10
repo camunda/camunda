@@ -7,46 +7,49 @@
  */
 package io.camunda.unifiedconfig;
 
-public class Backup {
-  private BackupStoreType store = BackupStoreType.NONE;
+import java.util.List;
 
-  public BackupStoreType getStore() {
+public class Backup {
+  public static final String STORE_TYPE_NONE = "none";
+  public static final String STORE_TYPE_GCS = "gcs";
+  public static final String STORE_TYPE_AZURE = "azure";
+  public static final String STORE_TYPE_S3 = "s3";
+  public static final String STORE_TYPE_FILESYSTEM = "filesystem";
+
+  private static final List<String> VALID_STORE_TYPES = List.of(
+      STORE_TYPE_NONE,
+      STORE_TYPE_GCS,
+      STORE_TYPE_AZURE,
+      STORE_TYPE_S3,
+      STORE_TYPE_FILESYSTEM
+  );
+
+  private String storeType = STORE_TYPE_NONE;
+
+  public AzureStore getAzure() {
+    return azure;
+  }
+
+  public void setAzure(final AzureStore azure) {
+    this.azure = azure;
+  }
+
+  private AzureStore azure;
+
+  public String getStoreType() {
     String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.backup.store");
-    if (deprecated != null && store == null) {
-      return BackupStoreType.valueOf(deprecated);
+    if (deprecated != null) {
+      return deprecated;
     }
 
-    return store;
+    return storeType;
   }
 
-  public void setStore(BackupStoreType store) {
-    this.store = store;
-  }
+  public void setStoreType(String storeType) {
+    if (!VALID_STORE_TYPES.contains(storeType)) {
+      throw new IllegalStateException("Invalid store type: " + storeType);
+    }
 
-  public enum BackupStoreType {
-    /**
-     * When type = S3, {@link io.camunda.zeebe.backup.s3.S3BackupStore} will be used as the backup
-     * store
-     */
-    S3,
-
-    /**
-     * When type = GCS, {@link io.camunda.zeebe.backup.gcs.GcsBackupStore} will be used as the
-     * backup store
-     */
-    GCS,
-    /**
-     * When type = AZURE, {@link io.camunda.zeebe.backup.azure.AzureBackupStore} will be used as the
-     * backup store
-     */
-    AZURE,
-    /**
-     * When type = FILESYSTEM, {@link io.camunda.zeebe.backup.filesystem.FilesystemBackupStore} will
-     * be used as the backup store
-     */
-    FILESYSTEM,
-
-    /** Set type = NONE when no backup store is available. No backup will be taken. */
-    NONE
+    this.storeType = storeType;
   }
 }

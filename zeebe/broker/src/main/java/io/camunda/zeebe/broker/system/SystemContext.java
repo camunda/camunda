@@ -14,6 +14,7 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
+import io.camunda.unifiedconfig.Backup;
 import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
@@ -23,12 +24,9 @@ import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
-import io.camunda.zeebe.broker.system.configuration.DataCfg;
-import io.camunda.zeebe.broker.system.configuration.DiskCfg.FreeSpaceCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
-import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
@@ -236,22 +234,25 @@ public final class SystemContext {
       }
     }
 
-    validateBackupCfg(brokerCfg.getData().getBackup());
+    validateBackupCfg(config, brokerCfg.getData().getBackup());
   }
 
-  private void validateBackupCfg(final BackupStoreCfg backup) {
+  private void validateBackupCfg(final UnifiedConfiguration config, BackupStoreCfg backup) {
     try {
-      switch (backup.getStore()) {
-        case NONE -> LOG.warn("No backup store is configured. Backups will not be taken");
-        case S3 -> S3BackupStore.validateConfig(S3BackupStoreConfig.toStoreConfig(backup.getS3()));
-        case GCS ->
-            GcsBackupStore.validateConfig(GcsBackupStoreConfig.toStoreConfig(backup.getGcs()));
-        case AZURE ->
-            AzureBackupStore.validateConfig(
-                AzureBackupStoreConfig.toStoreConfig(backup.getAzure()));
-        case FILESYSTEM ->
+      switch (config.getCamunda().getData().getBackup().getStoreType()) {
+        case Backup.STORE_TYPE_NONE -> LOG.warn("No backup store is configured. Backups will not be taken");
+        case Backup.STORE_TYPE_S3 ->
+            S3BackupStore.validateConfig(
+                S3BackupStoreConfig.toStoreConfig(backup.getS3()));
+        case Backup.STORE_TYPE_GCS ->
+            GcsBackupStore.validateConfig(
+                GcsBackupStoreConfig.toStoreConfig(backup.getGcs()));
+        case Backup.STORE_TYPE_AZURE ->
+            AzureBackupStore.validateConfig(config.getCamunda().getData().getBackup().getAzure());
+        case Backup.STORE_TYPE_FILESYSTEM ->
             FilesystemBackupStore.validateConfig(
-                FilesystemBackupStoreConfig.toStoreConfig(backup.getFilesystem()));
+                FilesystemBackupStoreConfig.toStoreConfig(
+                    backup.getFilesystem()));
         default ->
             throw new UnsupportedOperationException(
                 "Does not support validating configuration of backup store %s"

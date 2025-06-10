@@ -1,0 +1,92 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.unifiedconfig;
+
+public class AzureStore {
+  private String accountKey;
+  private String accountName;
+  private String basePath;
+  private String connectionString;
+  private boolean createContainer;
+  private String containerName;
+  private String endpoint;
+  private String sasTokenType;
+  private String sasToken;
+
+  public String getContainerName() {
+    return containerName;
+  }
+
+  public void setContainerName(final String containerName) {
+    this.containerName = containerName;
+  }
+
+  public String getAccountKey() {
+    return accountKey;
+  }
+
+  public void setAccountKey(final String accountKey) {
+    this.accountKey = accountKey;
+  }
+
+  public String getAccountName() {
+    return accountName;
+  }
+
+  public void setAccountName(final String accountName) {
+    this.accountName = accountName;
+  }
+
+  public String getBasePath() {
+    return basePath;
+  }
+
+  public void setBasePath(final String basePath) {
+    this.basePath = basePath;
+  }
+
+  public String getConnectionString() {
+    return connectionString;
+  }
+
+  public void setConnectionString(final String connectionString) {
+    this.connectionString = connectionString;
+  }
+
+  public boolean isCreateContainer() {
+    return createContainer;
+  }
+
+  public void setCreateContainer(final boolean createContainer) {
+    this.createContainer = createContainer;
+  }
+
+  public String getEndpoint() {
+    return endpoint;
+  }
+
+  public void setEndpoint(final String endpoint) {
+    this.endpoint = endpoint;
+  }
+
+  public String getSasTokenType() {
+    return sasTokenType;
+  }
+
+  public void setSasTokenType(final String sasTokenType) {
+    this.sasTokenType = sasTokenType;
+  }
+
+  public String getSasToken() {
+    return sasToken;
+  }
+
+  public void setSasToken(final String sasToken) {
+    this.sasToken = sasToken;
+  }
+}
