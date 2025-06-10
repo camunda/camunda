@@ -57,7 +57,7 @@
     "prettier": "3.3.3",
     "rollup": "4.35.0",
     "rollup-plugin-license": "^3.5.3",
-    "sass": "1.85.1",
+    "sass": "1.89.2",
     "typescript": "5.8.2",
     "vite": "6.2.7",
     "vite-plugin-svgr": "^4.3.0"
