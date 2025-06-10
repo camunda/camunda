@@ -87,9 +87,9 @@ public class DbAsyncRequestState implements MutableAsyncRequestState {
     return values.stream().map(AsyncRequest::new);
   }
 
-  private static final class ScopeKeyAndValueTypeValue extends DbCompositeKey<DbLong, DbShort> {
+  private static final class ScopeKeyAndValueType extends DbCompositeKey<DbLong, DbShort> {
 
-    public ScopeKeyAndValueTypeValue() {
+    public ScopeKeyAndValueType() {
       super(new DbLong(), new DbShort());
     }
 
@@ -108,10 +108,10 @@ public class DbAsyncRequestState implements MutableAsyncRequestState {
   }
 
   private static final class AsyncRequestMetadataKey
-      extends DbCompositeKey<ScopeKeyAndValueTypeValue, DbShort> {
+      extends DbCompositeKey<ScopeKeyAndValueType, DbShort> {
 
     public AsyncRequestMetadataKey() {
-      super(new ScopeKeyAndValueTypeValue(), new DbShort());
+      super(new ScopeKeyAndValueType(), new DbShort());
     }
 
     public void setAll(final AsyncRequestRecord record) {
