@@ -8,4 +8,3 @@
 
 // Tenant details page - Remove when endpoints are available - https://github.com/camunda/camunda/issues/26961
 export const IS_TENANT_GROUPS_SUPPORTED = false;
-export const IS_TENANT_ROLES_SUPPORTED = false;
