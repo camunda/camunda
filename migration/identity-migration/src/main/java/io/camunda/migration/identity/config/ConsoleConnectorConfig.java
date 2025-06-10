@@ -27,7 +27,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 @Configuration
-public class ConsoleConnector {
+public class ConsoleConnectorConfig {
 
   @Bean
   public ConsoleClient consoleClient(

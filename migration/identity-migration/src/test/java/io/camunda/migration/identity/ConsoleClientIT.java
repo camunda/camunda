@@ -18,8 +18,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
-import io.camunda.migration.identity.config.ConsoleConnector.ConsoleTokenService;
-import io.camunda.migration.identity.config.ConsoleConnector.TokenInterceptor;
+import io.camunda.migration.identity.config.ConsoleConnectorConfig.ConsoleTokenService;
+import io.camunda.migration.identity.config.ConsoleConnectorConfig.TokenInterceptor;
 import io.camunda.migration.identity.config.ConsoleProperties;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.midentity.ConsoleClient;
