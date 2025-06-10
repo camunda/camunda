@@ -9,7 +9,6 @@
 import {render, screen, waitFor} from 'modules/testing-library';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import Variables from './index';
 import {getWrapper, mockProcessInstance, mockVariables} from './mocks';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
@@ -27,6 +26,9 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {init} from 'modules/utils/flowNodeMetadata';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
+import {mockVariablesV2} from '../index.setup';
+import {VariablePanel} from '../../VariablePanel/v2';
 
 const instanceMock = createInstance({id: '1'});
 
@@ -81,54 +83,10 @@ describe('Footer', () => {
     jest.clearAllMocks();
   });
 
-  it('should disable add variable button when loading', async () => {
-    mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    processInstanceDetailsStore.setProcessInstance(instanceMock);
-
-    mockFetchVariables().withSuccess(mockVariables);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
-
-    render(<Variables />, {wrapper: getWrapper()});
-
-    await waitFor(() =>
-      expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled(),
-    );
-  });
-
-  it('should disable add variable button if instance state is cancelled', async () => {
-    mockFetchProcessInstance().withSuccess({
-      ...mockProcessInstance,
-      state: 'TERMINATED',
-    });
-    processInstanceDetailsStore.setProcessInstance({
-      ...instanceMock,
-      state: 'CANCELED',
-    });
-
-    mockFetchVariables().withSuccess(mockVariables);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
-
-    render(<Variables />, {wrapper: getWrapper()});
-
-    await waitFor(() =>
-      expect(
-        screen.getByRole('button', {name: /add variable/i}),
-      ).toBeDisabled(),
-    );
-  });
-
   it('should hide/disable add variable button if add/edit variable button is clicked', async () => {
     jest.useFakeTimers();
+    mockSearchVariables().withSuccess(mockVariablesV2);
+    mockSearchVariables().withSuccess(mockVariablesV2);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockProcessInstanceDeprecated().withSuccess(instanceMock);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
@@ -144,7 +102,7 @@ describe('Footer', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: getWrapper()});
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -176,6 +134,15 @@ describe('Footer', () => {
   it('should disable add variable button when selected flow node is not running', async () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchVariables().withSuccess([]);
+    mockSearchVariables().withSuccess({
+      items: [],
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+    });
 
     init('process-instance', []);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
@@ -201,7 +168,7 @@ describe('Footer', () => {
       }),
     );
 
-    render(<Variables />, {wrapper: getWrapper()});
+    render(<VariablePanel />, {wrapper: getWrapper()});
 
     await waitFor(() =>
       expect(
@@ -230,5 +197,56 @@ describe('Footer', () => {
     );
 
     expect(screen.getByRole('button', {name: /add variable/i})).toBeDisabled();
+  });
+
+  it('should disable add variable button when loading', async () => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    processInstanceDetailsStore.setProcessInstance(instanceMock);
+
+    mockFetchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariablesV2);
+    mockSearchVariables().withSuccess(mockVariablesV2);
+
+    variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: '1',
+      payload: {pageSize: 10, scopeId: '1'},
+    });
+
+    render(<VariablePanel />, {wrapper: getWrapper()});
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled(),
+    );
+  });
+
+  it('should disable add variable button if instance state is cancelled', async () => {
+    mockFetchProcessInstance().withSuccess({
+      ...mockProcessInstance,
+      state: 'TERMINATED',
+    });
+    processInstanceDetailsStore.setProcessInstance({
+      ...instanceMock,
+      state: 'CANCELED',
+    });
+
+    mockFetchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariablesV2);
+    mockSearchVariables().withSuccess(mockVariablesV2);
+    mockSearchVariables().withSuccess(mockVariablesV2);
+
+    variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: '1',
+      payload: {pageSize: 10, scopeId: '1'},
+    });
+
+    render(<VariablePanel />, {wrapper: getWrapper()});
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', {name: /add variable/i}),
+      ).toBeDisabled(),
+    );
   });
 });

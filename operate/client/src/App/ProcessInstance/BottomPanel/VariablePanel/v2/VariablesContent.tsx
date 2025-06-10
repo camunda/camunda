@@ -29,6 +29,7 @@ import {VariablesContext} from './VariablesContext';
 
 const VariablesContent: React.FC = observer(() => {
   const {processInstanceId = ''} = useProcessInstancePageParams();
+  const scopeId = getScopeId();
   const queryClient = useQueryClient();
 
   const {
@@ -44,6 +45,7 @@ const VariablesContent: React.FC = observer(() => {
   } = useVariables({
     filter: {
       processInstanceKey: {$eq: processInstanceId},
+      scopeKey: {$eq: scopeId ?? undefined},
     },
     sort: [{field: 'name', order: 'asc'}],
   });

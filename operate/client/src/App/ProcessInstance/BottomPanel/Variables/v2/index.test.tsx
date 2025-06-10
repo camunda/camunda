@@ -9,7 +9,6 @@
 import {render, screen, waitFor, within} from 'modules/testing-library';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import Variables from './index';
 import {mockVariables, mockVariablesV2} from '../index.setup';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {
@@ -23,6 +22,7 @@ import {mockFetchProcessInstance as mockProcessInstanceDeprecated} from 'modules
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
+import {VariablePanel} from '../../VariablePanel/v2';
 
 const instanceMock = createInstance({id: '1'});
 
@@ -44,111 +44,104 @@ describe('Variables', () => {
     jest.clearAllMocks();
   });
 
-  describe('Variables', () => {
-    it('should render variables table', async () => {
-      mockSearchVariables().withSuccess(mockVariablesV2);
-      processInstanceDetailsStore.setProcessInstance(instanceMock);
-      mockFetchVariables().withSuccess(mockVariables);
+  it('should render variables table', async () => {
+    mockSearchVariables().withSuccess(mockVariablesV2);
+    processInstanceDetailsStore.setProcessInstance(instanceMock);
+    mockFetchVariables().withSuccess(mockVariables);
 
-      variablesStore.fetchVariables({
-        fetchType: 'initial',
-        instanceId: '1',
-        payload: {pageSize: 10, scopeId: '1'},
-      });
-
-      render(<Variables />, {wrapper: getWrapper()});
-      await waitFor(() => {
-        expect(screen.getByTestId('variables-list')).toBeInTheDocument();
-      });
-
-      expect(screen.getByText('Name')).toBeInTheDocument();
-      expect(screen.getByText('Value')).toBeInTheDocument();
-      const {items} = mockVariablesV2;
-
-      items.forEach((item) => {
-        const withinVariableRow = within(
-          screen.getByTestId(`variable-${item.name}`),
-        );
-
-        expect(withinVariableRow.getByText(item.name)).toBeInTheDocument();
-        expect(withinVariableRow.getByText(item.value)).toBeInTheDocument();
-      });
+    variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: '1',
+      payload: {pageSize: 10, scopeId: '1'},
     });
 
-    it.skip('should show/hide spinner next to variable according to it having an active operation', async () => {
-      processInstanceDetailsStore.setProcessInstance(instanceMock);
-      mockFetchVariables().withSuccess(mockVariables);
+    render(<VariablePanel />, {wrapper: getWrapper()});
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
 
-      variablesStore.fetchVariables({
-        fetchType: 'initial',
-        instanceId: '1',
-        payload: {pageSize: 10, scopeId: '1'},
-      });
+    expect(screen.getByText('Name')).toBeInTheDocument();
+    expect(screen.getByText('Value')).toBeInTheDocument();
+    const {items} = mockVariablesV2;
 
-      render(<Variables />, {wrapper: getWrapper()});
-      await waitFor(() => {
-        expect(screen.getByTestId('variables-list')).toBeInTheDocument();
-      });
-      const {items} = variablesStore.state;
-      const [activeOperationVariable] = items.filter(
-        ({hasActiveOperation}) => hasActiveOperation,
+    items.forEach((item) => {
+      const withinVariableRow = within(
+        screen.getByTestId(`variable-${item.name}`),
       );
 
-      expect(activeOperationVariable).toBeDefined();
-      expect(
-        within(
-          screen.getByTestId(`variable-${activeOperationVariable!.name}`),
-        ).getByTestId('variable-operation-spinner'),
-      ).toBeInTheDocument();
+      expect(withinVariableRow.getByText(item.name)).toBeInTheDocument();
+      expect(withinVariableRow.getByText(item.value)).toBeInTheDocument();
+    });
+  });
 
-      const [inactiveOperationVariable] = items.filter(
-        ({hasActiveOperation}) => !hasActiveOperation,
-      );
+  it.skip('should show/hide spinner next to variable according to it having an active operation', async () => {
+    processInstanceDetailsStore.setProcessInstance(instanceMock);
+    mockFetchVariables().withSuccess(mockVariables);
 
-      expect(
-        within(
-          // eslint-disable-next-line testing-library/prefer-presence-queries
-          screen.getByTestId(`variable-${inactiveOperationVariable!.name!}`),
-        ).queryByTestId('variable-operation-spinner'),
-      ).not.toBeInTheDocument();
+    variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: '1',
+      payload: {pageSize: 10, scopeId: '1'},
     });
 
-    it('should have a button to see full variable value', async () => {
-      mockSearchVariables().withSuccess({
-        items: [createVariableV2({isTruncated: true})],
-        page: {
-          totalItems: 1,
-          firstSortValues: [0, 0],
-          lastSortValues: [0, 0],
-        },
-      });
-      mockFetchProcessInstance().withSuccess({
-        ...mockProcessInstance,
-        state: 'COMPLETED',
-      });
-      processInstanceDetailsStore.setProcessInstance({
-        ...instanceMock,
-        state: 'COMPLETED',
-      });
-
-      mockFetchVariables().withSuccess([createVariable({isPreview: true})]);
-
-      variablesStore.fetchVariables({
-        fetchType: 'initial',
-        instanceId: '1',
-        payload: {pageSize: 10, scopeId: '1'},
-      });
-
-      render(<Variables />, {wrapper: getWrapper()});
-      await waitFor(() => {
-        expect(screen.getByTestId('variables-list')).toBeInTheDocument();
-      });
-
-      expect(
-        await screen.findByRole('button', {
-          name: 'View full value of testVariableName',
-        }),
-      ).toBeInTheDocument();
+    render(<VariablePanel />, {wrapper: getWrapper()});
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
+    const {items} = variablesStore.state;
+    const [activeOperationVariable] = items.filter(
+      ({hasActiveOperation}) => hasActiveOperation,
+    );
+
+    expect(activeOperationVariable).toBeDefined();
+    expect(
+      within(
+        screen.getByTestId(`variable-${activeOperationVariable!.name}`),
+      ).getByTestId('variable-operation-spinner'),
+    ).toBeInTheDocument();
+
+    const [inactiveOperationVariable] = items.filter(
+      ({hasActiveOperation}) => !hasActiveOperation,
+    );
+
+    expect(
+      within(
+        // eslint-disable-next-line testing-library/prefer-presence-queries
+        screen.getByTestId(`variable-${inactiveOperationVariable!.name!}`),
+      ).queryByTestId('variable-operation-spinner'),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should have a button to see full variable value', async () => {
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2({isTruncated: true})],
+    });
+    mockFetchProcessInstance().withSuccess({
+      ...mockProcessInstance,
+      state: 'COMPLETED',
+    });
+    processInstanceDetailsStore.setProcessInstance({
+      ...instanceMock,
+      state: 'COMPLETED',
+    });
+
+    mockFetchVariables().withSuccess([createVariable({isPreview: true})]);
+
+    variablesStore.fetchVariables({
+      fetchType: 'initial',
+      instanceId: '1',
+      payload: {pageSize: 10, scopeId: '1'},
+    });
+
+    render(<VariablePanel />, {wrapper: getWrapper()});
+    await waitFor(() => {
+      expect(screen.getByTestId('variables-list')).toBeInTheDocument();
+    });
+
+    expect(
+      await screen.findByRole('button', {
+        name: 'View full value of testVariableName',
+      }),
+    ).toBeInTheDocument();
   });
 });

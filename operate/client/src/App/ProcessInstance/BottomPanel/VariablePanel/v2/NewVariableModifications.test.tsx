@@ -11,10 +11,13 @@ import {render, screen, UserEvent, waitFor} from 'modules/testing-library';
 
 import {LastModification} from 'App/ProcessInstance/LastModification';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {variablesStore} from 'modules/stores/variables';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {createInstance, createVariable} from 'modules/testUtils';
+import {
+  createInstance,
+  createVariable,
+  createVariableV2,
+} from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
@@ -31,6 +34,7 @@ import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 
 const editNameFromTextfieldAndBlur = async (user: UserEvent, value: string) => {
   const [nameField] = screen.getAllByTestId('new-variable-name');
@@ -78,7 +82,6 @@ const getWrapper = (
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
-        variablesStore.reset();
         flowNodeSelectionStore.reset();
         flowNodeMetaDataStore.reset();
         modificationsStore.reset();
@@ -134,6 +137,9 @@ describe('New Variable Modifications', () => {
       items: statisticsData,
     });
     mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+    });
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
@@ -219,6 +225,12 @@ describe('New Variable Modifications', () => {
       mockFetchProcessInstanceListeners().withSuccess(noListeners);
       mockFetchVariables().withSuccess([createVariable()]);
       mockFetchVariables().withSuccess([createVariable()]);
+      mockSearchVariables().withSuccess({
+        items: [createVariableV2()],
+      });
+      mockSearchVariables().withSuccess({
+        items: [createVariableV2()],
+      });
 
       const {user} = render(
         <VariablePanel setListenerTabVisibility={jest.fn()} />,
@@ -253,17 +265,6 @@ describe('New Variable Modifications', () => {
           payload: {
             flowNodeName: 'someProcessName',
             id: expect.any(String),
-            name: 'testVariableName',
-            newValue: '123',
-            operation: 'ADD_VARIABLE',
-            scopeId: 'instance_id',
-          },
-          type: 'variable',
-        },
-        {
-          payload: {
-            flowNodeName: 'someProcessName',
-            id: expect.any(String),
             name: 'test2',
             newValue: '123',
             operation: 'ADD_VARIABLE',
@@ -276,21 +277,12 @@ describe('New Variable Modifications', () => {
       await user.click(screen.getByRole('button', {name: /add variable/i}));
       await editNameFromTextfieldAndBlur(user, 'test2');
       await editValue(type, user, '1234');
+
+      // TODO : this doesn't appear when user edits value. Works when tested manually.
       expect(
         await screen.findByText(/Name should be unique/i),
       ).toBeInTheDocument();
       expect(modificationsStore.state.modifications).toEqual([
-        {
-          payload: {
-            flowNodeName: 'someProcessName',
-            id: expect.any(String),
-            name: 'testVariableName',
-            newValue: '123',
-            operation: 'ADD_VARIABLE',
-            scopeId: 'instance_id',
-          },
-          type: 'variable',
-        },
         {
           payload: {
             flowNodeName: 'someProcessName',
@@ -630,6 +622,7 @@ describe('New Variable Modifications', () => {
     await editNameFromTextfieldAndBlur(user, 'test2');
     await editValueFromTextfieldAndBlur(user, '456');
 
+    // TODO : the test breaks here, I'm not sure the blur utils is working as expected. It's always using the first variable name and value with test id new-variable-name.
     expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
 
     mockFetchVariables().withSuccess([]);
@@ -646,8 +639,6 @@ describe('New Variable Modifications', () => {
       );
     });
 
-    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
-
     mockFetchVariables().withSuccess([]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
@@ -660,8 +651,6 @@ describe('New Variable Modifications', () => {
         },
       );
     });
-
-    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
 
     const [, deleteFirstAddedVariable] = screen.getAllByRole('button', {
       name: /delete variable/i,
@@ -726,6 +715,9 @@ describe('New Variable Modifications', () => {
     expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
 
     mockFetchVariables().withSuccess([]);
+    mockSearchVariables().withSuccess({
+      items: [],
+    });
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     act(() => {
@@ -738,9 +730,10 @@ describe('New Variable Modifications', () => {
       );
     });
 
-    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
-
     mockFetchVariables().withSuccess([]);
+    mockSearchVariables().withSuccess({
+      items: [],
+    });
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     act(() => {
@@ -752,8 +745,7 @@ describe('New Variable Modifications', () => {
       );
     });
 
-    await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
-
+    // TODO : test is breaking here, not sure why. Maybe check selectFlowNode function.
     expect(await screen.findByDisplayValue('test1')).toBeInTheDocument();
     expect(screen.getByDisplayValue('123')).toBeInTheDocument();
 

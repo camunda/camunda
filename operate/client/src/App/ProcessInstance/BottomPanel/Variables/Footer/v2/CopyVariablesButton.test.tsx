@@ -65,19 +65,9 @@ describe('CopyVariableButton', () => {
             pages: [
               {
                 items: variables,
-                page: {
-                  totalItems: 100,
-                  firstSortValues: [0, 0],
-                  lastSortValues: [0, 0],
-                },
               },
               {
                 items: variables,
-                page: {
-                  totalItems: 100,
-                  firstSortValues: [0, 0],
-                  lastSortValues: [0, 0],
-                },
               },
             ],
             pageParams: [],
@@ -101,11 +91,6 @@ describe('CopyVariableButton', () => {
             pages: [
               {
                 items: [createVariableV2({isTruncated: true})],
-                page: {
-                  totalItems: 1,
-                  firstSortValues: [0, 0],
-                  lastSortValues: [0, 0],
-                },
               },
             ],
             pageParams: [],
@@ -144,11 +129,6 @@ describe('CopyVariableButton', () => {
                     value: '"text"',
                   }),
                 ],
-                page: {
-                  totalItems: 3,
-                  firstSortValues: [0, 0],
-                  lastSortValues: [0, 0],
-                },
               },
             ],
             pageParams: [],
