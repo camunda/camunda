@@ -9,11 +9,16 @@ package io.camunda.migration.identity.console;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import io.camunda.migration.identity.MigrationRunner;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.client.RestTemplate;
 
 public class ConsoleClient {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(ConsoleClient.class);
 
   private static final String MIGRATION_DATA_ENDPOINT =
       "/external/organizations/{0}/clusters/{1}/migrationData/{2}";
@@ -46,8 +51,7 @@ public class ConsoleClient {
     ZEEBE("Zeebe"),
     OPERATE("Operate"),
     TASKLIST("Tasklist"),
-    OPTIMIZE("Optimize"),
-    SECRETS("Secrets");
+    IGNORED("ignored");
 
     private final String name;
 
@@ -67,23 +71,20 @@ public class ConsoleClient {
           return permission;
         }
       }
-      throw new IllegalArgumentException("Unknown permission: " + value);
+      LOGGER.warn(
+          "Unknown permission '{}' in migration data, defaulting to IGNORED", value);
+      return IGNORED;
     }
   }
 
   public enum Role {
-    MEMBER("member"),
     ADMIN("admin"),
-    ORGANIZATION_ADMIN("organizationadmin"),
-    ORGANIZATION_OWNER("organizationowner"),
     OWNER("owner"),
-    SUPPORT_AGENT("supportagent"),
     OPERATIONS_ENGINEER("operationsengineer"),
     TASK_USER("taskuser"),
-    ANALYST("analyst"),
     DEVELOPER("developer"),
     VISITOR("visitor"),
-    MODELER("modeler");
+    IGNORED("ignored");
 
     private final String name;
 
@@ -103,7 +104,8 @@ public class ConsoleClient {
           return role;
         }
       }
-      throw new IllegalArgumentException("Unknown role: " + value);
+      LOGGER.warn("Unknown role '{}' in migration data, defaulting to IGNORED", value);
+      return IGNORED;
     }
   }
 }
