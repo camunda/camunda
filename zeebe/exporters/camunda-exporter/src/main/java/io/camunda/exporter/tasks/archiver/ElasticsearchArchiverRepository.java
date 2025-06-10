@@ -228,14 +228,13 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     if (hits.isEmpty()) {
       return new ArchiveBatch(null, List.of());
     }
-    final String rolloverInterval = config.getRolloverInterval();
 
     final String endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
     lastHistoricalArchiverDate =
         FormHistoricalArchiveDate.getHistoricalArchiverDate(
             endDate,
             lastHistoricalArchiverDate,
-            rolloverInterval,
+            config.getRolloverInterval(),
             config.getElsRolloverDateFormat());
 
     final var ids =

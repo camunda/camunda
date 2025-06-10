@@ -10,6 +10,7 @@ package io.camunda.exporter.tasks.archiver;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.util.FormHistoricalArchiveDate;
 import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
@@ -31,7 +32,6 @@ import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.Time;
-import org.opensearch.client.opensearch._types.aggregations.CalendarInterval;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
@@ -61,6 +61,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private final String batchOperationIndex;
   private final CamundaExporterMetrics metrics;
   private final OpenSearchGenericClient genericClient;
+  private String lastHistoricalArchiverDate = null;
 
   public OpenSearchArchiverRepository(
       final int partitionId,
@@ -240,6 +241,14 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       return new ArchiveBatch(null, List.of());
     }
     final var endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
+
+    lastHistoricalArchiverDate =
+        FormHistoricalArchiveDate.getHistoricalArchiverDate(
+            endDate,
+            lastHistoricalArchiverDate,
+            config.getRolloverInterval(),
+            config.getElsRolloverDateFormat());
+
     final var ids =
         hits.stream()
             .takeWhile(
@@ -247,7 +256,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             .map(Hit::id)
             .toList();
 
-    return new ArchiveBatch(endDate, ids);
+    return new ArchiveBatch(lastHistoricalArchiverDate, ids);
   }
 
   private TermsQuery buildIdTermsQuery(final String idFieldName, final List<String> idValues) {
@@ -255,14 +264,6 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .field(idFieldName)
         .terms(terms -> terms.value(idValues.stream().map(FieldValue::of).toList()))
         .build();
-  }
-
-  private CalendarInterval mapCalendarInterval(final String alias) {
-    return Arrays.stream(CalendarInterval.values())
-        .filter(c -> c.aliases() != null)
-        .filter(c -> Arrays.binarySearch(c.aliases(), alias) >= 0)
-        .findFirst()
-        .orElseThrow();
   }
 
   private <T> CompletableFuture<T> sendRequestAsync(final RequestSender<T> sender) {
