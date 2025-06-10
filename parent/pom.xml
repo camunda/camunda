@@ -1223,7 +1223,7 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
-        <version>3.6.17</version>
+        <version>3.6.18</version>
       </dependency>
 
       <!-- between com.github.dasniko:testcontainers-keycloak and its own dependencies -->
