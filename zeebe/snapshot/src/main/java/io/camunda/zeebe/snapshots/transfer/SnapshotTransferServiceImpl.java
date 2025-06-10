@@ -203,6 +203,8 @@ public class SnapshotTransferServiceImpl implements SnapshotTransferService {
               }
             },
             concurrency);
+  }
+
   @Override
   public ActorFuture<Void> closeAsync() {
     return deleteSnapshots(partitionId);
