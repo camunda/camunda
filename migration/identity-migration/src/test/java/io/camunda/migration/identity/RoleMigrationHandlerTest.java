@@ -60,7 +60,7 @@ public class RoleMigrationHandlerTest {
   }
 
   @Test
-  public void shouldContinueMigrationIfOnRoleAlreadyExists() {
+  public void shouldContinueMigrationIfOneRoleAlreadyExists() {
     doReturn(CompletableFuture.completedFuture(null))
         .doReturn(
             CompletableFuture.failedFuture(
