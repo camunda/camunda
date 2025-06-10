@@ -122,7 +122,7 @@ public class CompactRecordLogger {
           entry("ROLE", "RL"),
           entry("GROUP", "GR"),
           entry("MAPPING", "MAP"),
-          entry("ASYNC_REQUEST", "ASY_REQ"));
+          entry("ASYNC_REQUEST", "ASYNC"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
