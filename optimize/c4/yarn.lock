@@ -1439,7 +1439,7 @@ __metadata:
     "@storybook/addon-links": "npm:^8.4.5"
     "@storybook/addon-mdx-gfm": "npm:^8.4.5"
     "@storybook/addon-styling-webpack": "npm:^1.0.1"
-    "@storybook/addon-webpack5-compiler-swc": "npm:^2.0.0"
+    "@storybook/addon-webpack5-compiler-swc": "npm:^3.0.0"
     "@storybook/blocks": "npm:^8.4.5"
     "@storybook/react": "npm:^8.4.5"
     "@storybook/react-webpack5": "npm:^8.4.5"
@@ -2303,13 +2303,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@storybook/addon-webpack5-compiler-swc@npm:^2.0.0":
-  version: 2.1.0
-  resolution: "@storybook/addon-webpack5-compiler-swc@npm:2.1.0"
+"@storybook/addon-webpack5-compiler-swc@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "@storybook/addon-webpack5-compiler-swc@npm:3.0.0"
   dependencies:
     "@swc/core": "npm:^1.10.8"
     swc-loader: "npm:^0.2.6"
-  checksum: 10c0/095573c57888c1a7250dea2b0433544212253ca718bbb4293b0d08b5b822f52c10ab2a1a3d36ae80f9b1e77ce3a32de6df0620e804c00dfb95ccce6ba8ce0719
+  checksum: 10c0/1c44dd3e79771e887b23c7651d961baf9b36704b7989bc1f9539060521eed01525be9604740a428efe0b97bdbfa55bdb7ee0af1a9d173ad4cb9aecd799fdf3fd
   languageName: node
   linkType: hard
 
