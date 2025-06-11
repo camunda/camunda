@@ -36,5 +36,11 @@ public enum JobKind {
    * events of BPMN tasks, such as task creation, assignment, or completion. Task listeners allow
    * for custom logic to be executed in response to these events.
    */
-  TASK_LISTENER
+  TASK_LISTENER,
+
+  /**
+   * Represents jobs created for ad-hoc sub-processes. Job workers can control the execution of
+   * ad-hoc sub-processes by processing these jobs.
+   */
+  AD_HOC_SUB_PROCESS
 }
