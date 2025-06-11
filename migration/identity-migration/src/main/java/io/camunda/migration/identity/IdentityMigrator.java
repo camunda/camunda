@@ -15,11 +15,11 @@ import org.springframework.stereotype.Component;
 
 @EnableConfigurationProperties(IdentityMigrationProperties.class)
 @Component("identity-migrator")
-public class MigrationRunner implements Migrator {
+public class IdentityMigrator implements Migrator {
 
   private final List<MigrationHandler<?>> handlers;
 
-  public MigrationRunner(final List<MigrationHandler<?>> handlers) {
+  public IdentityMigrator(final List<MigrationHandler<?>> handlers) {
     this.handlers = handlers;
   }
 

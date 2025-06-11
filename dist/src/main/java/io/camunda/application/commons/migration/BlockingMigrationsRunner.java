@@ -9,6 +9,7 @@ package io.camunda.application.commons.migration;
 
 import io.camunda.migration.api.Migrator;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.ComponentScan;
@@ -29,13 +30,16 @@ public class BlockingMigrationsRunner implements Runnable {
 
   @Override
   public void run() {
-    LOG.info("Starting {} migrations: {}", migrators.size(), migrators);
+    LOG.info(
+        "Starting {} migrations: {}",
+        migrators.size(),
+        migrators.stream().map(Migrator::getName).collect(Collectors.joining(", ")));
 
     for (final Migrator migrator : migrators) {
       try {
         migrator.call();
       } catch (final Exception e) {
-        LOG.error("Migrator {} failed with: {}", migrator.getName(), e.getMessage());
+        LOG.error("{} failed with: {}", migrator.getName(), e.getMessage());
         LOG.error(
             "The cause for the failed migration was: {}", e.getCause().getMessage(), e.getCause());
         LOG.info(
