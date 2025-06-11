@@ -7,16 +7,23 @@
  */
 package io.camunda.operate.qa.backup;
 
+import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
 import static io.camunda.operate.util.CollectionUtil.asMap;
 import static io.camunda.webapps.backup.BackupStateDto.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.util.RetryOperation;
+<<<<<<< HEAD
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
 import io.camunda.webapps.backup.TakeBackupResponseDto;
+=======
+import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
+import io.camunda.operate.webapp.management.dto.TakeBackupResponseDto;
+>>>>>>> 3c027c59 (ci: resurrect Operate backup restore CI)
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -47,11 +54,11 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 public class BackupRestoreTest {
 
   public static final String ZEEBE_INDEX_PREFIX = "backup-restore-test";
-  public static final String VERSION = "SNAPSHOT";
+  public static final String VERSION = "current-test";
   public static final String REPOSITORY_NAME = "testRepository";
   public static final Long BACKUP_ID = 123L;
   private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreTest.class);
-  private static final String OPERATE_TEST_DOCKER_IMAGE = "camunda/operate";
+  private static final String OPERATE_TEST_DOCKER_IMAGE = "localhost:5000/camunda/operate";
   @Autowired private OperateAPICaller operateAPICaller;
 
   @Autowired private DataGenerator dataGenerator;
@@ -144,11 +151,16 @@ public class BackupRestoreTest {
                 new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))));
     createSnapshotRepository(testContext);
 
+<<<<<<< HEAD
     String zeebeVersion = CamundaClient.class.getPackage().getImplementationVersion();
     // zeebeVersion can be null if tests are launched from the IDE
     if (zeebeVersion == null || zeebeVersion.toLowerCase().contains("snapshot")) {
       zeebeVersion = "SNAPSHOT";
     }
+=======
+    final String zeebeVersion =
+        ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_PROPERTY_NAME);
+>>>>>>> 3c027c59 (ci: resurrect Operate backup restore CI)
     testContainerUtil.startZeebe(zeebeVersion, testContext);
 
     operateContainer =
