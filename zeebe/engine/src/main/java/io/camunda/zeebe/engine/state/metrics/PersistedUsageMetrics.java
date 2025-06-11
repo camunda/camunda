@@ -16,13 +16,13 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
-public class UsageMetricStateValue extends UnpackedObject implements DbValue {
+public class PersistedUsageMetrics extends UnpackedObject implements DbValue {
 
   private final LongProperty fromTimeProp = new LongProperty("fromTime");
   private final LongProperty toTimeProp = new LongProperty("toTime");
   private final DocumentProperty tenantRPIMapProp = new DocumentProperty("tenantRPI");
 
-  public UsageMetricStateValue() {
+  public PersistedUsageMetrics() {
     super(3);
     declareProperty(fromTimeProp).declareProperty(toTimeProp).declareProperty(tenantRPIMapProp);
   }
@@ -31,7 +31,7 @@ public class UsageMetricStateValue extends UnpackedObject implements DbValue {
     return fromTimeProp.getValue();
   }
 
-  public UsageMetricStateValue setFromTime(final long fromTime) {
+  public PersistedUsageMetrics setFromTime(final long fromTime) {
     fromTimeProp.setValue(fromTime);
     return this;
   }
@@ -40,7 +40,7 @@ public class UsageMetricStateValue extends UnpackedObject implements DbValue {
     return toTimeProp.getValue();
   }
 
-  public UsageMetricStateValue setToTime(final long toTime) {
+  public PersistedUsageMetrics setToTime(final long toTime) {
     toTimeProp.setValue(toTime);
     return this;
   }
@@ -53,13 +53,13 @@ public class UsageMetricStateValue extends UnpackedObject implements DbValue {
     return MsgPackConverter.convertToLongMap(tenantRPIMapProp.getValue());
   }
 
-  public UsageMetricStateValue setTenantRPIMap(final Map<String, Long> tenantRPIMap) {
+  public PersistedUsageMetrics setTenantRPIMap(final Map<String, Long> tenantRPIMap) {
     tenantRPIMapProp.setValue(
         BufferUtil.wrapArray(MsgPackConverter.convertToMsgPack(tenantRPIMap)));
     return this;
   }
 
-  public UsageMetricStateValue recordRPI(final String tenantId) {
+  public PersistedUsageMetrics recordRPI(final String tenantId) {
     final var tenantRPIMap = getTenantRPIMap();
     tenantRPIMap.merge(tenantId, 1L, Long::sum);
     setTenantRPIMap(tenantRPIMap);

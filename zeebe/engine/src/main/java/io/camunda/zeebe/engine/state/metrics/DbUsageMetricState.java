@@ -20,7 +20,7 @@ public class DbUsageMetricState implements MutableUsageMetricState {
 
   private final Duration exportInterval;
 
-  private final ColumnFamily<DbEnumValue<IntervalType>, UsageMetricStateValue>
+  private final ColumnFamily<DbEnumValue<IntervalType>, PersistedUsageMetrics>
       metricsBucketColumnFamily;
   private final DbEnumValue<IntervalType> metricsBucketKey;
   private final InstantSource clock;
@@ -40,16 +40,16 @@ public class DbUsageMetricState implements MutableUsageMetricState {
             ZbColumnFamilies.USAGE_METRICS,
             transactionContext,
             metricsBucketKey,
-            new UsageMetricStateValue());
+            new PersistedUsageMetrics());
   }
 
   @Override
-  public UsageMetricStateValue getActiveBucket() {
+  public PersistedUsageMetrics getActiveBucket() {
     setActiveBucketKeys();
     return metricsBucketColumnFamily.get(metricsBucketKey);
   }
 
-  public void updateActiveBucket(final UsageMetricStateValue bucket) {
+  public void updateActiveBucket(final PersistedUsageMetrics bucket) {
     setActiveBucketKeys();
     metricsBucketColumnFamily.update(metricsBucketKey, bucket);
   }
@@ -69,12 +69,12 @@ public class DbUsageMetricState implements MutableUsageMetricState {
     metricsBucketColumnFamily.deleteExisting(metricsBucketKey);
   }
 
-  private UsageMetricStateValue getOrCreateActiveBucket() {
+  private PersistedUsageMetrics getOrCreateActiveBucket() {
     var bucket = getActiveBucket();
     if (bucket == null) {
       final long millis = clock.millis();
       bucket =
-          new UsageMetricStateValue()
+          new PersistedUsageMetrics()
               .setFromTime(millis)
               .setToTime(millis + exportInterval.toMillis());
       metricsBucketColumnFamily.insert(metricsBucketKey, bucket);
