@@ -19,5 +19,10 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
  * <p>Snapshots are received in the {@param snapshotStore}.
  */
 public interface SnapshotTransfer extends AsyncClosable {
+
+  /**
+   * @param partitionId the partition to get the snapshot from
+   * @return a persisted snapshot satisfying the parameters' requirements
+   */
   ActorFuture<PersistedSnapshot> getLatestSnapshot(final int partitionId);
 }

@@ -9,12 +9,16 @@ package io.camunda.zeebe.snapshots.transfer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.snapshots.SnapshotCopyUtil;
 import io.camunda.zeebe.snapshots.SnapshotTransferUtil;
@@ -113,11 +117,13 @@ public class SnapshotTransferTest {
   public void shouldTakeSnapshotIfNoneIsPresent() {
     // given
     final int partitionId = 1;
+    when(takeSnapshotMock.takeSnapshot(anyInt(), anyLong()))
+        .thenReturn(CompletableActorFuture.completed(null));
 
     // when
     final var persistedSnapshotFuture = snapshotTransfer.getLatestSnapshot(partitionId);
 
     // then
-    verify(takeSnapshotMock, timeout(5000)).takeSnapshot(eq(1));
+    verify(takeSnapshotMock, timeout(5000)).takeSnapshot(eq(1), eq(-1L));
   }
 }
