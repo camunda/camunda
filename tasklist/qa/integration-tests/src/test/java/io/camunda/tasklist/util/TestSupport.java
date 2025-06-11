@@ -71,6 +71,7 @@ public final class TestSupport {
       case BATCH_OPERATION_PARTITION_LIFECYCLE -> config.batchOperationPartitionLifecycle = value;
       case AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION ->
           config.adHocSubProcessActivityActivation = value;
+      case ASYNC_REQUEST -> config.asyncRequest = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);
@@ -126,6 +127,7 @@ public final class TestSupport {
       case BATCH_OPERATION_PARTITION_LIFECYCLE -> config.batchOperationPartitionLifecycle = value;
       case AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION ->
           config.adHocSubProcessActivityActivation = value;
+      case ASYNC_REQUEST -> config.asyncRequest = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);
