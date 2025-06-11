@@ -233,6 +233,11 @@ public final class RaftPartition implements Partition, HealthMonitorable {
     }
   }
 
+  @Override
+  public PartitionMetadata partitionMetadata() {
+    return partitionMetadata;
+  }
+
   public Role getRole() {
     return server != null ? server.getRole() : null;
   }
