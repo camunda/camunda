@@ -134,7 +134,7 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
       final var storeFilesystemConfig =
           FilesystemBackupStoreConfig.toStoreConfig(brokerFilesystemConfig);
       final var filesystemStore =
-          new FilesystemBackupStore(
+          FilesystemBackupStore.of(
               storeFilesystemConfig, Executors.newVirtualThreadPerTaskExecutor());
       context.setBackupStore(filesystemStore);
       installed.complete(null);
