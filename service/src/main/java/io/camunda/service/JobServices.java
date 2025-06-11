@@ -91,13 +91,13 @@ public final class JobServices<T> extends ApiServices<JobServices<T>> {
   }
 
   public CompletableFuture<JobRecord> updateJob(
-      final long jobKey, final UpdateJobChangeset changeset, final Long operationReference) {
-    final var request =
+      final long jobKey, final Long operationReference, final UpdateJobChangeset changeset) {
+    final var brokerRequest =
         new BrokerUpdateJobRequest(jobKey, changeset.retries(), changeset.timeout());
     if (operationReference != null) {
-      request.setOperationReference(operationReference);
+      brokerRequest.setOperationReference(operationReference);
     }
-    return sendBrokerRequest(request);
+    return sendBrokerRequest(brokerRequest);
   }
 
   public record ActivateJobsRequest(

@@ -308,6 +308,7 @@ public class RequestMapper {
         () ->
             new UpdateJobRequest(
                 jobKey,
+                updateRequest.getOperationReference(),
                 new UpdateJobChangeset(
                     updateRequest.getChangeset().getRetries(),
                     updateRequest.getChangeset().getTimeout())));
@@ -1107,7 +1108,8 @@ public class RequestMapper {
 
   public record CompleteJobRequest(long jobKey, Map<String, Object> variables, JobResult result) {}
 
-  public record UpdateJobRequest(long jobKey, UpdateJobChangeset changeset) {}
+  public record UpdateJobRequest(
+      long jobKey, Long operationReference, UpdateJobChangeset changeset) {}
 
   public record BroadcastSignalRequest(
       String signalName, Map<String, Object> variables, String tenantId) {}

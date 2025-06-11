@@ -46,18 +46,24 @@ public class IncidentControllerTest extends RestControllerTest {
     when(incidentServices.resolveIncident(anyLong(), any()))
         .thenReturn(CompletableFuture.completedFuture(new IncidentRecord()));
 
+    final String request =
+        """
+            {
+              "operationReference": 12345678
+            }""";
+
     // when/then
     webClient
         .post()
         .uri(INCIDENT_BASE_URL + "/1/resolution")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
         .exchange()
         .expectStatus()
         .isNoContent();
 
-    // TODO: provide operation reference: https://github.com/camunda/camunda/issues/32270
-    Mockito.verify(incidentServices).resolveIncident(1L, null);
+    Mockito.verify(incidentServices).resolveIncident(1L, 12345678L);
   }
 
   @Test
@@ -98,7 +104,6 @@ public class IncidentControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody);
 
-    // TODO: provide operation reference: https://github.com/camunda/camunda/issues/32270
     Mockito.verify(incidentServices).resolveIncident(1L, null);
   }
 }
