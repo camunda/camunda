@@ -57,7 +57,7 @@ jobs:
             secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
 
       - name: Send failure Slack notification
-        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
+        uses: slackapi/slack-github-action@b0fa283ad8fea605de13dc3f449259339835fc52 # v2.1.0
         if: ${{ always() && needs.dry-run-release.result != 'success' && github.event_name == 'schedule' }}
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
