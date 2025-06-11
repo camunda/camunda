@@ -52,11 +52,11 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 public class BackupRestoreTest {
 
   public static final String ZEEBE_INDEX_PREFIX = "backup-restore-test";
-  public static final String VERSION = "SNAPSHOT";
+  public static final String VERSION = "current-test";
   public static final String REPOSITORY_NAME = "testRepository";
   public static final Long BACKUP_ID = 123L;
   private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreTest.class);
-  private static final String TASKLIST_TEST_DOCKER_IMAGE = "camunda/tasklist";
+  private static final String TASKLIST_TEST_DOCKER_IMAGE = "localhost:5000/camunda/tasklist";
 
   @Autowired private TasklistAPICaller tasklistAPICaller;
 
