@@ -71,6 +71,7 @@ import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.util.FilterUtil;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
@@ -285,7 +286,10 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
     // Search for active incidents that match the given error message hash codes
     final var incidentFilter =
         FilterBuilders.incident(
-            f -> f.errorMessageHashes(incidentErrorHashCodes).states(IncidentState.ACTIVE));
+            f ->
+                f.errorMessageHashOperations(
+                        FilterUtil.mapDefaultToOperation(incidentErrorHashCodes))
+                    .states(IncidentState.ACTIVE.name()));
 
     final var incidentResult = searchIncidents(IncidentQuery.of(f -> f.filter(incidentFilter)));
 

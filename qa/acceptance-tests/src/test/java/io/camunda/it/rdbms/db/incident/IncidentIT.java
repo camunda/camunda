@@ -21,7 +21,7 @@ import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.IncidentEntity;
-import io.camunda.search.filter.DateValueFilter;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.sort.IncidentSort;
 import java.time.OffsetDateTime;
@@ -150,18 +150,17 @@ public class IncidentIT {
                                     .processInstanceKeys(original.processInstanceKey())
                                     .processDefinitionIds(original.processDefinitionId())
                                     .processDefinitionKeys(original.processDefinitionKey())
-                                    .states(original.state())
-                                    .errorTypes(original.errorType())
+                                    .states(original.state().name())
+                                    .errorTypes(original.errorType().name())
                                     .errorMessages(original.errorMessage())
                                     .errorMessageHashes(original.errorMessageHash())
                                     .flowNodeInstanceKeys(original.flowNodeInstanceKey())
                                     .flowNodeIds(original.flowNodeId())
                                     .jobKeys(original.jobKey())
                                     .tenantIds(original.tenantId())
-                                    .creationTime(
-                                        new DateValueFilter(
-                                            original.creationDate().minusSeconds(1),
-                                            original.creationDate().plusSeconds(1))))
+                                    .creationTimeOperations(
+                                        Operation.gt(original.creationDate().minusSeconds(1)),
+                                        Operation.lt(original.creationDate().plusSeconds(1))))
                         .sort(s -> s)
                         .page(p -> p.from(0).size(5))));
 

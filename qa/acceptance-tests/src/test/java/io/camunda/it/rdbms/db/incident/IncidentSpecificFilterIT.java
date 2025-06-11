@@ -21,8 +21,8 @@ import io.camunda.it.rdbms.db.fixtures.IncidentFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
-import io.camunda.search.filter.DateValueFilter;
 import io.camunda.search.filter.IncidentFilter;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.sort.IncidentSort;
@@ -96,14 +96,14 @@ public class IncidentSpecificFilterIT {
         new IncidentFilter.Builder().processInstanceKeys(3000L).build(),
         new IncidentFilter.Builder().flowNodeIds("sorting-flow-node").build(),
         new IncidentFilter.Builder().flowNodeInstanceKeys(4000L).build(),
-        new IncidentFilter.Builder().errorTypes(ErrorType.JOB_NO_RETRIES).build(),
+        new IncidentFilter.Builder().errorTypes(ErrorType.JOB_NO_RETRIES.name()).build(),
         new IncidentFilter.Builder().errorMessages("error-message-5000").build(),
-        new IncidentFilter.Builder().states(IncidentState.ACTIVE).build(),
+        new IncidentFilter.Builder().states(IncidentState.ACTIVE.name()).build(),
         new IncidentFilter.Builder().jobKeys(6000L).build(),
         new IncidentFilter.Builder()
-            .creationTime(
-                new DateValueFilter(
-                    NOW.minus(1, ChronoUnit.MILLIS), NOW.plus(1, ChronoUnit.MILLIS)))
+            .creationTimeOperations(
+                Operation.gt(NOW.minus(1, ChronoUnit.MILLIS)),
+                Operation.lt(NOW.plus(1, ChronoUnit.MILLIS)))
             .build(),
         new IncidentFilter.Builder().tenantIds("sorting-tenant1").build());
   }

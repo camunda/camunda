@@ -17,7 +17,6 @@ import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.SequenceFlowEntity;
-import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.IncidentQuery;
@@ -311,11 +310,11 @@ public final class ProcessInstanceServices
             securityContextProvider.provideSecurityContext(
                 authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
         .searchIncidents(
-            new IncidentQuery.Builder()
-                .filter(new IncidentFilter.Builder().treePath(treePath).build())
-                .page(query.page())
-                .sort(query.sort())
-                .build());
+            IncidentQuery.of(
+                b ->
+                    b.filter(f -> f.treePathOperations(Operation.like("*" + treePath + "*")))
+                        .page(query.page())
+                        .sort(query.sort())));
   }
 
   public record ProcessInstanceCreateRequest(
