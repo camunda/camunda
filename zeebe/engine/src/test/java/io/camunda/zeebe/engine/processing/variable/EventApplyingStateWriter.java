@@ -52,7 +52,9 @@ public final class EventApplyingStateWriter implements StateWriter {
       final RecordValue value,
       final FollowUpEventMetadata metadata) {
     final int recordVersion =
-        metadata.getRecordVersion().orElse(RecordMetadata.DEFAULT_RECORD_VERSION);
+        metadata.getRecordVersion() == FollowUpEventMetadata.VERSION_NOT_SET
+            ? RecordMetadata.DEFAULT_RECORD_VERSION
+            : metadata.getRecordVersion();
 
     eventWriter.appendFollowUpEvent(key, intent, value, recordVersion);
     eventApplier.applyState(key, intent, value, recordVersion);

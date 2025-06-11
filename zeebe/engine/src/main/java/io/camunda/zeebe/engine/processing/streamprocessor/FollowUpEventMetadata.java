@@ -7,8 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
-import java.util.OptionalInt;
-import java.util.OptionalLong;
+import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 
 /**
  * Metadata for customizing the writing of follow-up event.
@@ -20,7 +19,7 @@ import java.util.OptionalLong;
  */
 public final class FollowUpEventMetadata {
 
-  private static final int NOT_SET = -1;
+  public static final int VERSION_NOT_SET = -1;
 
   private final long operationReference;
   private final int recordVersion;
@@ -30,14 +29,12 @@ public final class FollowUpEventMetadata {
     this.recordVersion = builder.recordVersion;
   }
 
-  public OptionalLong getOperationReference() {
-    return operationReference == NOT_SET
-        ? OptionalLong.empty()
-        : OptionalLong.of(operationReference);
+  public long getOperationReference() {
+    return operationReference;
   }
 
-  public OptionalInt getRecordVersion() {
-    return recordVersion == NOT_SET ? OptionalInt.empty() : OptionalInt.of(recordVersion);
+  public int getRecordVersion() {
+    return recordVersion;
   }
 
   public static Builder builder() {
@@ -46,8 +43,8 @@ public final class FollowUpEventMetadata {
 
   public static final class Builder {
 
-    private long operationReference = NOT_SET;
-    private int recordVersion = NOT_SET;
+    private long operationReference = RecordMetadataDecoder.operationReferenceNullValue();
+    private int recordVersion = VERSION_NOT_SET;
 
     public Builder operationReference(final long operationReference) {
       this.operationReference = operationReference;

@@ -58,7 +58,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
       final long key, final RecordValue value, final RecordMetadata metadata) {
 
     // `operationReference` from `metadata` should have a higher precedence
-    if (metadata.getOperationReference() == -1) {
+    if (metadata.getOperationReference() == operationReferenceNullValue()) {
       if (operationReference != operationReferenceNullValue()) {
         metadata.operationReference(operationReference);
       }

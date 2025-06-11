@@ -56,7 +56,9 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
       final RecordValue value,
       final FollowUpEventMetadata metadata) {
     final int recordVersion =
-        metadata.getRecordVersion().orElseGet(() -> eventApplier.getLatestVersion(intent));
+        metadata.getRecordVersion() == FollowUpEventMetadata.VERSION_NOT_SET
+            ? eventApplier.getLatestVersion(intent)
+            : metadata.getRecordVersion();
 
     final var recordMetadata =
         new RecordMetadata()
@@ -64,8 +66,8 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
             .intent(intent)
             .recordVersion(recordVersion)
             .rejectionType(RejectionType.NULL_VAL)
-            .rejectionReason("");
-    metadata.getOperationReference().ifPresent(recordMetadata::operationReference);
+            .rejectionReason("")
+            .operationReference(metadata.getOperationReference());
 
     resultBuilder().appendRecord(key, value, recordMetadata);
     eventApplier.applyState(key, intent, value, recordVersion);

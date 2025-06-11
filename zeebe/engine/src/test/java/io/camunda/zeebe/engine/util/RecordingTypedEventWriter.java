@@ -48,7 +48,9 @@ public final class RecordingTypedEventWriter implements TypedEventWriter {
       final FollowUpEventMetadata metadata) {
 
     final int recordVersion =
-        metadata.getRecordVersion().orElse(RecordMetadata.DEFAULT_RECORD_VERSION);
+        metadata.getRecordVersion() == FollowUpEventMetadata.VERSION_NOT_SET
+            ? RecordMetadata.DEFAULT_RECORD_VERSION
+            : metadata.getRecordVersion();
     events.add(new RecordedEvent<>(key, intent, value, recordVersion));
   }
 
