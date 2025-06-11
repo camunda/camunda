@@ -25,6 +25,23 @@ public interface TypedRecordProcessor<T extends UnifiedRecordValue> {
     return ProcessingError.UNEXPECTED_ERROR;
   }
 
+  /**
+   * Indicates whether follow-up records (commands produced during processing) should be scheduled
+   * for processing in separate, new command batches instead of in the current batch.
+   *
+   * <p>This can be useful when follow-up commands are independent, and isolating their execution
+   * improves consistency and error isolation (e.g., a failure in one follow-up command does not
+   * affect others). While this may reduce overall throughput, it allows for finer control of batch
+   * boundaries, potential interleaving of other user or system operations, and clearer error
+   * handling.
+   *
+   * @return {@code true} if the results/follow-up commands should be processed in separate command
+   *     batches; {@code false} otherwise
+   */
+  default boolean shouldProcessResultsInSeparateBatches() {
+    return false;
+  }
+
   enum ProcessingError {
     EXPECTED_ERROR,
     UNEXPECTED_ERROR
