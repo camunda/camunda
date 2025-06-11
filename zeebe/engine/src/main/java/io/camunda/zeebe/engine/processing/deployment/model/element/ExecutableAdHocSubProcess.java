@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
 import io.camunda.zeebe.el.Expression;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,6 +18,8 @@ public class ExecutableAdHocSubProcess extends ExecutableFlowElementContainer {
   private Expression activeElementsCollection;
   private Expression completionCondition;
   private boolean cancelRemainingInstances;
+
+  private ZeebeAdHocImplementationType implementationType;
 
   private final Map<String, ExecutableFlowNode> adHocActivitiesById = new HashMap<>();
 
@@ -55,5 +58,13 @@ public class ExecutableAdHocSubProcess extends ExecutableFlowElementContainer {
   public void addAdHocActivity(final ExecutableFlowNode adHocActivity) {
     final String elementId = BufferUtil.bufferAsString(adHocActivity.getId());
     adHocActivitiesById.put(elementId, adHocActivity);
+  }
+
+  public ZeebeAdHocImplementationType getImplementationType() {
+    return implementationType;
+  }
+
+  public void setImplementationType(final ZeebeAdHocImplementationType implementationType) {
+    this.implementationType = implementationType;
   }
 }

@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformation.Transf
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.CompletionCondition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import java.util.Collection;
@@ -49,6 +50,8 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
     final Collection<AbstractFlowElement> childElements =
         executableAdHocSubProcess.getChildElements();
     setAdHocActivities(executableAdHocSubProcess, childElements);
+
+    setImplementationType(executableAdHocSubProcess, element);
   }
 
   private static void setActiveElementsCollection(
@@ -85,6 +88,7 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
       case UNSPECIFIED -> false;
       case SEQUENCE_FLOW -> false;
       case PROCESS, EVENT_SUB_PROCESS -> false;
+      case AD_HOC_SUB_PROCESS_INNER_INSTANCE -> false;
       case START_EVENT, BOUNDARY_EVENT, END_EVENT -> false;
       case SUB_PROCESS, AD_HOC_SUB_PROCESS -> true;
       case TASK, MANUAL_TASK, SERVICE_TASK, USER_TASK, SCRIPT_TASK, BUSINESS_RULE_TASK -> true;
@@ -96,4 +100,16 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
       case INTERMEDIATE_CATCH_EVENT -> true;
     };
   }
+
+  private static void setImplementationType(
+      final ExecutableAdHocSubProcess executableAdHocSubProcess, final AdHocSubProcess element) {
+
+    final ZeebeAdHocImplementationType implementationType =
+        Optional.ofNullable(element.getSingleExtensionElement(ZeebeAdHoc.class))
+            .map(ZeebeAdHoc::getImplementationType)
+            .orElse(ZeebeAdHocImplementationType.BPMN);
+
+    executableAdHocSubProcess.setImplementationType(implementationType);
+  }
+
 }
