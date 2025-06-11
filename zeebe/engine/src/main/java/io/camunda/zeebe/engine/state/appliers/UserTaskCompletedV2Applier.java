@@ -31,7 +31,6 @@ public final class UserTaskCompletedV2Applier
   public void applyState(final long key, final UserTaskRecord value) {
     userTaskState.delete(key);
     userTaskState.deleteIntermediateState(key);
-    userTaskState.deleteRecordRequestMetadata(key);
 
     final long elementInstanceKey = value.getElementInstanceKey();
     final ElementInstance elementInstance = elementInstanceState.getInstance(elementInstanceKey);

@@ -125,6 +125,8 @@ public final class EngineProcessors {
         new DecisionBehavior(
             DecisionEngineFactory.createDecisionEngine(), processingState, processEngineMetrics);
     final var authCheckBehavior = new AuthorizationCheckBehavior(processingState, securityConfig);
+    final var asyncRequestBehavior =
+        new AsyncRequestBehavior(processingState.getKeyGenerator(), writers.state());
     final var transientProcessMessageSubscriptionState =
         typedRecordProcessorContext.getTransientProcessMessageSubscriptionState();
     final BpmnBehaviorsImpl bpmnBehaviors =
@@ -194,6 +196,7 @@ public final class EngineProcessors {
             routingInfo,
             clock,
             config,
+            asyncRequestBehavior,
             authCheckBehavior,
             transientProcessMessageSubscriptionState,
             processEngineMetrics);
@@ -213,7 +216,8 @@ public final class EngineProcessors {
         authCheckBehavior);
 
     final var userTaskProcessor =
-        createUserTaskProcessor(processingState, bpmnBehaviors, writers, authCheckBehavior);
+        createUserTaskProcessor(
+            processingState, bpmnBehaviors, writers, asyncRequestBehavior, authCheckBehavior);
     addUserTaskProcessors(typedRecordProcessors, userTaskProcessor);
 
     addIncidentProcessors(
@@ -330,6 +334,7 @@ public final class EngineProcessors {
       final MutableProcessingState processingState,
       final BpmnBehaviorsImpl bpmnBehaviors,
       final Writers writers,
+      final AsyncRequestBehavior asyncRequestBehavior,
       final AuthorizationCheckBehavior authCheckBehavior) {
     return new UserTaskProcessor(
         processingState,
@@ -337,6 +342,7 @@ public final class EngineProcessors {
         processingState.getKeyGenerator(),
         bpmnBehaviors,
         writers,
+        asyncRequestBehavior,
         authCheckBehavior);
   }
 
@@ -379,6 +385,7 @@ public final class EngineProcessors {
       final RoutingInfo routingInfo,
       final InstantSource clock,
       final EngineConfiguration config,
+      final AsyncRequestBehavior asyncRequestBehavior,
       final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final ProcessEngineMetrics processEngineMetrics) {
@@ -395,6 +402,7 @@ public final class EngineProcessors {
         routingInfo,
         clock,
         config,
+        asyncRequestBehavior,
         authCheckBehavior,
         transientProcessMessageSubscriptionState,
         processEngineMetrics);
