@@ -9,15 +9,17 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
+import java.util.Set;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record PersistentOAuth2AuthorizedClientEntity(
     String clientRegistrationId,
     String principalName,
-    String accessTokenType,
     String accessTokenValue,
+    String accessTokenType,
     OffsetDateTime accessTokenIssuedAt,
     OffsetDateTime accessTokenExpiresAt,
-    String accessTokenScopes,
+    Set<String> accessTokenScopes,
     String refreshTokenValue,
-    OffsetDateTime refreshTokenIssuedAt) {}
+    OffsetDateTime refreshTokenIssuedAt,
+    OffsetDateTime refreshTokenExpiresAt) {}

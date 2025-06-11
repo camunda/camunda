@@ -50,6 +50,7 @@ import org.springframework.security.oauth2.client.oidc.authentication.OidcIdToke
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -302,6 +303,14 @@ public class WebSecurityConfig {
           OidcClientRegistration.create(securityConfiguration.getAuthentication().getOidc()));
     }
 
+    //    @Bean
+    //    public OAuth2AuthorizedClientService oAuth2AuthorizedClientService(
+    //        final ClientRegistrationRepository clientRegistrationRepository,
+    //        final PersistentOAuth2AuthorizedClientsClient authorizedClientsClient) {
+    //      return new PersistedCamundaOAuth2AuthorizedClientService(
+    //          clientRegistrationRepository, authorizedClientsClient);
+    //    }
+
     @Bean
     public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(
         final SecurityConfiguration securityConfiguration) {
@@ -346,12 +355,12 @@ public class WebSecurityConfig {
       return JwtValidators.createDefault();
     }
 
-    @Bean
-    public OAuth2RefreshTokenFilter oauth2RefreshTokenFilter(
-        final OAuth2AuthorizedClientService oAuth2AuthorizedClientService,
-        final OAuth2AuthorizedClientManager authorizedClientManager) {
-      return new OAuth2RefreshTokenFilter(oAuth2AuthorizedClientService, authorizedClientManager);
-    }
+//    @Bean
+//    public OAuth2RefreshTokenFilter oauth2RefreshTokenFilter(
+//        final OAuth2AuthorizedClientService oAuth2AuthorizedClientService,
+//        final OAuth2AuthorizedClientManager authorizedClientManager) {
+//      return new OAuth2RefreshTokenFilter(oAuth2AuthorizedClientService, authorizedClientManager);
+//    }
 
     @Bean
     @Order(ORDER_WEBAPP_API)
@@ -398,8 +407,9 @@ public class WebSecurityConfig {
         final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter,
         final JwtDecoder jwtDecoder,
         final CamundaJwtAuthenticationConverter converter,
-        final OAuth2AuthorizedClientRepository authorizedClientRepository,
-        final OAuth2RefreshTokenFilter oauth2RefreshTokenFilter)
+        final OAuth2AuthorizedClientRepository authorizedClientRepository
+//        final OAuth2RefreshTokenFilter oauth2RefreshTokenFilter
+    )
         throws Exception {
       return httpSecurity
           .securityMatcher(WEBAPP_PATHS.toArray(new String[0]))
@@ -439,7 +449,7 @@ public class WebSecurityConfig {
                       .logoutSuccessHandler(WebSecurityConfig::noContentSuccessHandler)
                       .deleteCookies())
           .addFilterAfter(webApplicationAuthorizationCheckFilter, AuthorizationFilter.class)
-          .addFilterAfter(oauth2RefreshTokenFilter, AuthorizationFilter.class)
+          //.addFilterAfter(oauth2RefreshTokenFilter, AuthorizationFilter.class)
           .build();
     }
   }

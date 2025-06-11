@@ -16,6 +16,7 @@ import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.MappingIndex;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.OperateUserIndex;
+import io.camunda.webapps.schema.descriptors.index.PersistentAuthorizedClientIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.PersistentWebSessionIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
@@ -71,6 +72,7 @@ public class IndexDescriptors {
                 new OperateUserIndex(indexPrefix, isElasticsearch),
                 new OperationTemplate(indexPrefix, isElasticsearch),
                 new PersistentWebSessionIndexDescriptor(indexPrefix, isElasticsearch),
+                new PersistentAuthorizedClientIndexDescriptor(indexPrefix, isElasticsearch),
                 new PostImporterQueueTemplate(indexPrefix, isElasticsearch),
                 new ProcessIndex(indexPrefix, isElasticsearch),
                 new RoleIndex(indexPrefix, isElasticsearch),
