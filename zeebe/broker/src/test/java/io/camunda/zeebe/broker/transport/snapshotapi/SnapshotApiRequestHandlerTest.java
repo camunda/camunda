@@ -27,6 +27,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotCopyUtil;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferImpl;
+import io.camunda.zeebe.snapshots.transfer.SnapshotTransferService.TakeSnapshot;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferServiceImpl;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
@@ -61,6 +62,7 @@ public class SnapshotApiRequestHandlerTest {
   private SnapshotApiRequestHandler snapshotHandler;
   private SnapshotTransferServiceClient client;
   private BrokerClientImpl brokerClient;
+  private TakeSnapshot takeSnapshotMock;
 
   @BeforeEach
   void setup() {
@@ -100,6 +102,7 @@ public class SnapshotApiRequestHandlerTest {
 
     snapshotHandler = submitActor(new SnapshotApiRequestHandler(serverTransport));
 
+    takeSnapshotMock = mock(TakeSnapshot.class);
     // Snapshot actors:
     final var senderDirectory = temporaryFolder.resolve("sender");
     final var receiverDirectory = temporaryFolder.resolve("receiver");
@@ -114,7 +117,11 @@ public class SnapshotApiRequestHandlerTest {
 
     final var transferService =
         new SnapshotTransferServiceImpl(
-            senderSnapshotStore, 1, SnapshotCopyUtil::copyAllFiles, snapshotHandler);
+            senderSnapshotStore,
+            takeSnapshotMock,
+            1,
+            SnapshotCopyUtil::copyAllFiles,
+            snapshotHandler);
     snapshotHandler.addTransferService(1, transferService);
 
     receiverSnapshotStore =
@@ -156,9 +163,7 @@ public class SnapshotApiRequestHandlerTest {
 
   private ActorFuture<PersistedSnapshot> takePersistedSnapshot() {
     return SnapshotTransferUtil.takePersistedSnapshot(
-        senderSnapshotStore,
-        SnapshotTransferUtil.SNAPSHOT_FILE_CONTENTS,
-        (Actor) receiverSnapshotStore);
+        senderSnapshotStore, SnapshotTransferUtil.SNAPSHOT_FILE_CONTENTS, receiverSnapshotStore);
   }
 
   private <A extends Actor> A submitActor(final A actor) {

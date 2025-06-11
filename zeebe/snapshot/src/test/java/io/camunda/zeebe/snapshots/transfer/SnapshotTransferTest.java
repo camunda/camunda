@@ -9,7 +9,10 @@ package io.camunda.zeebe.snapshots.transfer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
@@ -17,6 +20,7 @@ import io.camunda.zeebe.snapshots.SnapshotCopyUtil;
 import io.camunda.zeebe.snapshots.SnapshotTransferUtil;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
+import io.camunda.zeebe.snapshots.transfer.SnapshotTransferService.TakeSnapshot;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -36,6 +40,7 @@ public class SnapshotTransferTest {
   FileBasedSnapshotStore senderSnapshotStore;
   FileBasedSnapshotStore receiverSnapshotStore;
   private SnapshotTransferImpl snapshotTransfer;
+  private TakeSnapshot takeSnapshotMock;
 
   @BeforeEach
   public void beforeEach() throws Exception {
@@ -55,12 +60,17 @@ public class SnapshotTransferTest {
 
     actorScheduler.submitActor(receiverSnapshotStore);
     actorScheduler.workUntilDone();
+    takeSnapshotMock = mock(TakeSnapshot.class);
     snapshotTransfer =
         new SnapshotTransferImpl(
             control ->
                 spy(
                     new SnapshotTransferServiceImpl(
-                        senderSnapshotStore, 1, SnapshotCopyUtil::copyAllFiles, control)),
+                        senderSnapshotStore,
+                        takeSnapshotMock,
+                        1,
+                        SnapshotCopyUtil::copyAllFiles,
+                        control)),
             receiverSnapshotStore);
     actorScheduler.submitActor(snapshotTransfer);
 
@@ -97,5 +107,17 @@ public class SnapshotTransferTest {
             });
     verify((SnapshotTransferServiceImpl) snapshotTransfer.snapshotTransferService())
         .withReservation(any(), any());
+  }
+
+  @Test
+  public void shouldTakeSnapshotIfNoneIsPresent() {
+    // given
+    final int partitionId = 1;
+
+    // when
+    final var persistedSnapshotFuture = snapshotTransfer.getLatestSnapshot(partitionId);
+
+    // then
+    verify(takeSnapshotMock, timeout(5000)).takeSnapshot(eq(1));
   }
 }
