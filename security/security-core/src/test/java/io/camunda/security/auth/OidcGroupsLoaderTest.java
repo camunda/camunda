@@ -52,6 +52,22 @@ final class OidcGroupsLoaderTest {
   }
 
   @Test
+  void shouldLoadGroupsWithSpecialCharsExpression() {
+    // given
+    final var claims =
+        Map.<String, Object>of(
+            "http://test.com/groups", List.of("g1", "g2"), "other_claim", "other_value");
+
+    final var loader = new OidcGroupsLoader("http://test.com/groups");
+
+    // when
+    final var groups = loader.load(claims);
+
+    // then
+    assertThat(groups).containsExactlyInAnyOrder("g1", "g2");
+  }
+
+  @Test
   void shouldLoadGroupsWithSimpleExpression() {
     // given
     final var claims =
