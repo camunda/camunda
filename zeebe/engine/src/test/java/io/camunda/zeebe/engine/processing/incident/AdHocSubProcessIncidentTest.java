@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AdHocSubProcessBuilder;
+import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -34,6 +35,8 @@ public class AdHocSubProcessIncidentTest {
 
   private static final String PROCESS_ID = "process";
   private static final String AD_HOC_SUB_PROCESS_ELEMENT_ID = "ad-hoc";
+  private static final String AD_HOC_SUB_PROCESS_INNER_INSTANCE_ELEMENT_ID =
+      AD_HOC_SUB_PROCESS_ELEMENT_ID + ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
 
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 
@@ -249,11 +252,10 @@ public class AdHocSubProcessIncidentTest {
     final var incidentCreated =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
-            .withElementId("A")
             .getFirst();
 
     Assertions.assertThat(incidentCreated.getValue())
-        .hasElementId("A")
+        .hasElementId(AD_HOC_SUB_PROCESS_INNER_INSTANCE_ELEMENT_ID)
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
             "Failed to evaluate completion condition. Expected result of the expression 'completionCondition' to be 'BOOLEAN', but was 'STRING'.");
@@ -321,7 +323,7 @@ public class AdHocSubProcessIncidentTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .limit("B", ProcessInstanceIntent.ELEMENT_ACTIVATED))
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
-        .containsSequence(
+        .containsSubsequence(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ACTIVATE_ELEMENT),
