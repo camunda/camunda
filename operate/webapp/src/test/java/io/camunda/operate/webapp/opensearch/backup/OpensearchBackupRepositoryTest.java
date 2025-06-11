@@ -93,7 +93,7 @@ class OpensearchBackupRepositoryTest {
         List.of(
             new OpenSearchSnapshotInfo()
                 .setSnapshot("test-snapshot")
-                .setState(SnapshotState.STARTED)
+                .setState(SnapshotState.IN_PROGRESS)
                 .setStartTimeInMillis(23L));
     final var response = new OpenSearchGetSnapshotResponse(snapshotInfos);
 
@@ -112,7 +112,7 @@ class OpensearchBackupRepositoryTest {
     assertThat(snapshotDtoDetails).hasSize(1);
     final var snapshotDtoDetail = snapshotDtoDetails.get(0);
     assertThat(snapshotDtoDetail.getSnapshotName()).isEqualTo("test-snapshot");
-    assertThat(snapshotDtoDetail.getState()).isEqualTo("STARTED");
+    assertThat(snapshotDtoDetail.getState()).isEqualTo("IN_PROGRESS");
     assertThat(snapshotDtoDetail.getFailures()).isNull();
     assertThat(snapshotDtoDetail.getStartTime().toInstant().toEpochMilli()).isEqualTo(23L);
   }
@@ -125,7 +125,7 @@ class OpensearchBackupRepositoryTest {
         List.of(
             new OpenSearchSnapshotInfo()
                 .setSnapshot("test-snapshot")
-                .setState(SnapshotState.STARTED));
+                .setState(SnapshotState.IN_PROGRESS));
     final var response = new OpenSearchGetSnapshotResponse(snapshotInfos);
     mockObjectMapperForMetadata(metadata);
     when(openSearchSnapshotOperations.get(any())).thenReturn(response);
@@ -151,7 +151,7 @@ class OpensearchBackupRepositoryTest {
         List.of(
             new OpenSearchSnapshotInfo()
                 .setSnapshot("test-snapshot")
-                .setState(SnapshotState.STARTED));
+                .setState(SnapshotState.IN_PROGRESS));
     final var response = new OpenSearchGetSnapshotResponse(snapshotInfos);
     mockObjectMapperForMetadata(metadata);
     when(openSearchSnapshotOperations.get(any())).thenReturn(response);
