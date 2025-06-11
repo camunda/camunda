@@ -142,8 +142,53 @@ public final class SearchResponseMapper {
       final SearchQueryPageResponse pageResponse) {
     return new SearchResponsePageImpl(
         pageResponse.getTotalItems(),
-        pageResponse.getFirstSortValues(),
-        pageResponse.getLastSortValues());
+        toSortObjects(pageResponse.getFirstSortValues()),
+        toSortObjects(pageResponse.getLastSortValues()));
+  }
+
+  private static List<Object> toSortObjects(final List<SearchQuerySortItem> sortItems) {
+    if (sortItems == null) {
+      return null;
+    }
+
+    return sortItems.stream().map(SearchResponseMapper::toSortObject).collect(Collectors.toList());
+  }
+
+  private static Object toSortObject(final SearchQuerySortItem sortItem) {
+    if (sortItem == null || sortItem.getValue() == null) {
+      return null;
+    }
+
+    final Object sortObject;
+    final String value = sortItem.getValue();
+    final String type = sortItem.getType();
+    if (type == null) {
+      throw new RuntimeException(String.format("Unsupported sort item type: %s", type));
+    }
+    switch (type) {
+      case "boolean":
+        sortObject = Boolean.valueOf(value);
+        break;
+      case "int32":
+        sortObject = Integer.valueOf(value);
+        break;
+      case "int64":
+        sortObject = Long.valueOf(value);
+        break;
+      case "float":
+        sortObject = Float.valueOf(value);
+        break;
+      case "double":
+        sortObject = Double.valueOf(value);
+        break;
+      case "string":
+        sortObject = String.valueOf(value);
+        break;
+      default:
+        throw new RuntimeException(String.format("Unsupported sort item type: %s", type));
+    }
+
+    return sortObject;
   }
 
   public static SearchResponse<DecisionRequirements> toDecisionRequirementsSearchResponse(
