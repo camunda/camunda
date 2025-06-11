@@ -15,7 +15,6 @@ import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.filter.DateValueFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -222,16 +221,12 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                         .processDefinitionKeys(23L)
                         .processDefinitionIds("complexProcess")
                         .processInstanceKeys(42L)
-                        .errorTypes(ErrorType.JOB_NO_RETRIES)
+                        .errorTypes(ErrorType.JOB_NO_RETRIES.name())
                         .errorMessages("No retries left.")
                         .flowNodeIds("elementId")
                         .flowNodeInstanceKeys(17L)
-                        .creationTime(
-                            new DateValueFilter.Builder()
-                                .before(creationTime)
-                                .after(creationTime)
-                                .build())
-                        .states(IncidentState.ACTIVE)
+                        .creationTime(creationTime)
+                        .states(IncidentState.ACTIVE.name())
                         .jobKeys(101L)
                         .tenantIds("tenantId")
                         .build())

@@ -9,11 +9,9 @@ package io.camunda.search.clients.transformers.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
-import io.camunda.search.filter.DateValueFilter;
 import io.camunda.search.filter.FilterBuilders;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -97,7 +95,7 @@ public final class IncidentQueryTransformerTest extends AbstractTransformerTest 
 
   @Test
   public void shouldQueryByErrorType() {
-    final var filter = FilterBuilders.incident(f -> f.errorTypes(ErrorType.JOB_NO_RETRIES));
+    final var filter = FilterBuilders.incident(f -> f.errorTypes(ErrorType.JOB_NO_RETRIES.name()));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -115,7 +113,8 @@ public final class IncidentQueryTransformerTest extends AbstractTransformerTest 
 
   @Test
   public void shouldQueryByResourceNotFoundErrorType() {
-    final var filter = FilterBuilders.incident(f -> f.errorTypes(ErrorType.RESOURCE_NOT_FOUND));
+    final var filter =
+        FilterBuilders.incident(f -> f.errorTypes(ErrorType.RESOURCE_NOT_FOUND.name()));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -189,8 +188,7 @@ public final class IncidentQueryTransformerTest extends AbstractTransformerTest 
   public void shouldQueryByCreationTime() {
     final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
     final var date = OffsetDateTime.ofInstant(Instant.now(), ZoneId.systemDefault());
-    final var dateFilter = new DateValueFilter.Builder().before(date).after(date).build();
-    final var filter = FilterBuilders.incident(f -> f.creationTime(dateFilter));
+    final var filter = FilterBuilders.incident(f -> f.creationTime(date));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -199,16 +197,16 @@ public final class IncidentQueryTransformerTest extends AbstractTransformerTest 
     final var queryVariant = searchRequest.queryOption();
     assertThat(queryVariant)
         .isInstanceOfSatisfying(
-            SearchRangeQuery.class,
+            SearchTermQuery.class,
             t -> {
               assertThat(t.field()).isEqualTo("creationTime");
-              assertThat(t.gte().toString()).isEqualTo(date.format(formatter));
+              assertThat(t.value().stringValue()).isEqualTo(date.format(formatter));
             });
   }
 
   @Test
   public void shouldQueryByState() {
-    final var filter = FilterBuilders.incident(f -> f.states(IncidentState.ACTIVE));
+    final var filter = FilterBuilders.incident(f -> f.states(IncidentState.ACTIVE.name()));
 
     // when
     final var searchRequest = transformQuery(filter);
