@@ -13,13 +13,16 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ExecutableAdHocSubProcess extends ExecutableFlowElementContainer {
+public class ExecutableAdHocSubProcess extends ExecutableFlowElementContainer
+    implements ExecutableJobWorkerElement {
 
   private Expression activeElementsCollection;
   private Expression completionCondition;
   private boolean cancelRemainingInstances;
 
   private ZeebeAdHocImplementationType implementationType;
+
+  private JobWorkerProperties jobWorkerProperties;
 
   private final Map<String, ExecutableFlowNode> adHocActivitiesById = new HashMap<>();
 
@@ -66,5 +69,15 @@ public class ExecutableAdHocSubProcess extends ExecutableFlowElementContainer {
 
   public void setImplementationType(final ZeebeAdHocImplementationType implementationType) {
     this.implementationType = implementationType;
+  }
+
+  @Override
+  public JobWorkerProperties getJobWorkerProperties() {
+    return jobWorkerProperties;
+  }
+
+  @Override
+  public void setJobWorkerProperties(final JobWorkerProperties jobWorkerProperties) {
+    this.jobWorkerProperties = jobWorkerProperties;
   }
 }
