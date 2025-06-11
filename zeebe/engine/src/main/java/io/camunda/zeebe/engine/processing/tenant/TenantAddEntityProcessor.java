@@ -96,7 +96,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
 
     final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!isEntityPresent(entityId, entityType, isGroupsClaimEnabled(command))) {
+    if (!isEntityPresent(entityId, entityType, isInternalGroupsEnabled(command))) {
       createEntityNotExistRejectCommand(command, entityId, entityType, tenantId);
       return;
     }
@@ -135,12 +135,12 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   }
 
   private boolean isEntityPresent(
-      final String entityId, final EntityType entityType, final boolean groupsClaimEnabled) {
+      final String entityId, final EntityType entityType, final boolean internalGroupsEnabled) {
     return switch (entityType) {
       case USER -> true; // With simple mappings, any username can be assigned
       case CLIENT -> true; // With simple mappings, any client id can be assigned
       case MAPPING -> mappingState.get(entityId).isPresent();
-      case GROUP -> groupsClaimEnabled || groupState.get(entityId).isPresent();
+      case GROUP -> !internalGroupsEnabled || groupState.get(entityId).isPresent();
       case ROLE -> roleState.getRole(entityId).isPresent();
       default -> false;
     };
@@ -205,8 +205,8 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
         .distribute(command);
   }
 
-  private boolean isGroupsClaimEnabled(final TypedRecord<TenantRecord> command) {
+  private boolean isInternalGroupsEnabled(final TypedRecord<TenantRecord> command) {
     return Boolean.getBoolean(
-        (String) command.getAuthorizations().get(Authorization.GROUPS_CLAIM_ENABLED));
+        (String) command.getAuthorizations().get(Authorization.INTERNAL_GROUPS_ENABLED));
   }
 }

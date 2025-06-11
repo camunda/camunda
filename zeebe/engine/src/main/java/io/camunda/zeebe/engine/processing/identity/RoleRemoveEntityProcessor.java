@@ -92,7 +92,7 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
 
     final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!isEntityPresent(entityId, entityType, isGroupsClaimEnabled(command))) {
+    if (!isEntityPresent(entityId, entityType, isInternalGroupsEnabled(command))) {
       final var errorMessage =
           ENTITY_NOT_FOUND_ERROR_MESSAGE.formatted(entityId, entityType, record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
@@ -139,17 +139,17 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
         record.getEntityType(), record.getEntityId(), RelationType.ROLE, record.getRoleId());
   }
 
-  private boolean isGroupsClaimEnabled(final TypedRecord<RoleRecord> command) {
+  private boolean isInternalGroupsEnabled(final TypedRecord<RoleRecord> command) {
     return Boolean.getBoolean(
-        (String) command.getAuthorizations().get(Authorization.GROUPS_CLAIM_ENABLED));
+        (String) command.getAuthorizations().get(Authorization.INTERNAL_GROUPS_ENABLED));
   }
 
   private boolean isEntityPresent(
-      final String entityId, final EntityType entityType, final boolean groupsClaimEnabled) {
+      final String entityId, final EntityType entityType, final boolean internalGroupsEnabled) {
     return switch (entityType) {
       case USER, CLIENT -> true; // With simple mappings, any username or client id can be assigned
       case MAPPING -> mappingState.get(entityId).isPresent();
-      case GROUP -> groupsClaimEnabled || groupState.get(entityId).isPresent();
+      case GROUP -> !internalGroupsEnabled || groupState.get(entityId).isPresent();
       default -> false;
     };
   }

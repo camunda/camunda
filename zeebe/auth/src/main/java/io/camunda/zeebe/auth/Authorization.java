@@ -15,5 +15,4 @@ public class Authorization {
   public static final String AUTHORIZED_CLIENT_ID = "authorized_client_id";
   public static final String USER_TOKEN_CLAIMS = "user_token_claims";
   public static final String USER_GROUPS_CLAIMS = "user_groups_claims";
-  public static final String GROUPS_CLAIM_ENABLED = "groups_claim_enabled";
 }
