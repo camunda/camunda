@@ -24,7 +24,6 @@ import org.apache.http.HttpHost;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
-import org.elasticsearch.client.ElasticsearchClient;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -285,13 +284,11 @@ public class TestContainerUtil {
     LOGGER.info("************ Starting Elasticsearch ************");
     elsContainer =
         new ElasticsearchContainer(
-                String.format(
-                    "%s:%s",
-                    DOCKER_ELASTICSEARCH_IMAGE_NAME,
-                    ElasticsearchClient.class.getPackage().getImplementationVersion()))
+                String.format("%s:%s", DOCKER_ELASTICSEARCH_IMAGE_NAME, "8.13.4"))
             .withNetwork(Network.SHARED)
             .withEnv("xpack.security.enabled", "false")
             .withEnv("path.repo", "~/")
+            .withEnv("action.destructive_requires_name", "false")
             .withNetworkAliases(ELS_NETWORK_ALIAS)
             .withExposedPorts(ELS_PORT);
     elsContainer.setWaitStrategy(

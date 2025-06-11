@@ -1,19 +1,30 @@
 # Backup and restore tests workflow
 # This workflow is designed to automate the backup and restore tests for databases.
 
-name: Tasklist Backup and restore tests
+name: "[Legacy] Tasklist / Test Backup Restore"
 
-# This workflow can be triggered manually using the GitHub UI
-# and is also scheduled to run daily at 03:00 AM.
 on:
   workflow_dispatch:
-  schedule:
-  # Define schedule to run this workflow every day at 03:00 AM.
-    - cron: '0 3 * * *'
-
-# define constants for later use
-env:
-  JAVA_VERSION: "21"
+  push:
+    branches:
+      - "stable/**"
+    paths:
+      - ".github/actions/**"
+      - ".github/workflows/tasklist-*"
+      - "bom/*"
+      - "parent/*"
+      - "pom.xml"
+      - "tasklist/**"
+      - "tasklist.Dockerfile"
+  pull_request:
+    paths:
+      - ".github/actions/**"
+      - ".github/workflows/tasklist-*"
+      - "bom/*"
+      - "parent/*"
+      - "pom.xml"
+      - "tasklist/**"
+      - "tasklist.Dockerfile"
 
 jobs:
   elasticsearch:
