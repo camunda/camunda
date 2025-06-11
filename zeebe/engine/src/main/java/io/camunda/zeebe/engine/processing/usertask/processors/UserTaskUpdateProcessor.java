@@ -145,7 +145,10 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
         stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
         final long variableDocumentKey = variableDocumentState.getKey();
         stateWriter.appendFollowUpEvent(
-            variableDocumentKey, VariableDocumentIntent.UPDATED, variableDocumentRecord);
+            variableDocumentKey,
+            VariableDocumentIntent.UPDATED,
+            variableDocumentRecord,
+            m -> m.operationReference(request.operationReference()));
 
         responseWriter.writeResponse(
             variableDocumentKey,
