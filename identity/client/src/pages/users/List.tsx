@@ -41,11 +41,7 @@ const List: FC = () => {
   const showDetails = ({ username }: User) => navigate(`${username}`);
 
   const pageHeader = (
-    <PageHeader
-      title={t("users")}
-      linkText="users"
-      linkUrl="/concepts/users/"
-    />
+    <PageHeader title={t("users")} linkText="users" linkUrl="" />
   );
 
   if (success && !userSearchResults?.items.length) {
@@ -57,7 +53,7 @@ const List: FC = () => {
           description={
             <>
               {t("startBy")}{" "}
-              <DocumentationLink path="/concepts/access-control/users">
+              <DocumentationLink path="">
                 {t("creatingANewUser")}
               </DocumentationLink>{" "}
               {t("toGetStarted")}
@@ -69,7 +65,7 @@ const List: FC = () => {
             icon: Add,
           }}
           link={{
-            href: documentationHref("/concepts/access-control/users", ""),
+            href: documentationHref("https://docs.camunda.io/", ""),
             label: t("learnMoreAboutUsers"),
           }}
         />

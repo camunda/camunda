@@ -72,7 +72,7 @@ const Roles: FC<RolesProps> = ({ tenantId }) => {
           }}
           link={{
             label: t("learnMoreAboutTenants"),
-            href: `/identity/concepts/access-control/tenants`,
+            href: "https://docs.camunda.io/",
           }}
         />
         {assignRolesModal}

@@ -183,7 +183,7 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
           <PermissionsSectionLabel>
             <Translate i18nKey="selectPermission">
               Select at least one permission. Visit{" "}
-              <DocumentationLink path="/concepts/authorizations/" withIcon>
+              <DocumentationLink path="" withIcon>
                 authorizations
               </DocumentationLink>{" "}
               for a full overview.

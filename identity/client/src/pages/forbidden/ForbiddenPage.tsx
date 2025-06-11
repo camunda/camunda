@@ -32,7 +32,7 @@ const ForbiddenPage: FC = () => {
           </Description>
         </Stack>
         <Link
-          href="https://docs.camunda.io/docs/next/components/concepts/access-control/authorizations/"
+          href="https://docs.camunda.io/"
           target="_blank"
           renderIcon={Launch}
         >
