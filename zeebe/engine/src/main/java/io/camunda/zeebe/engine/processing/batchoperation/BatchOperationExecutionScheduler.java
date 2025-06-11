@@ -108,10 +108,22 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
     try {
       // Then append the chunks
       final var keys = queryAllKeys(batchOperation);
-      for (int i = 0; i < keys.size(); i += chunkSize) {
-        final Set<Item> chunkKeys =
-            keys.stream().skip(i).limit(chunkSize).collect(Collectors.toSet());
-        appendChunk(batchOperation.getKey(), taskResultBuilder, chunkKeys);
+      if (!keys.isEmpty()) {
+        LOG.debug(
+            "Found {} items for batch operation with key {} on partition {}.",
+            keys.size(),
+            batchOperation.getKey(),
+            partitionId);
+        for (int i = 0; i < keys.size(); i += chunkSize) {
+          final Set<Item> chunkKeys =
+              keys.stream().skip(i).limit(chunkSize).collect(Collectors.toSet());
+          appendChunk(batchOperation.getKey(), taskResultBuilder, chunkKeys);
+        }
+      } else {
+        LOG.debug(
+            "No items found for batch operation with key {} on partition {}.",
+            batchOperation.getKey(),
+            partitionId);
       }
 
       appendExecution(batchOperation.getKey(), taskResultBuilder);
@@ -159,8 +171,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
                         .setProcessInstanceKey(i.processInstanceKey()))
             .collect(Collectors.toSet()));
 
-    LOG.debug(
-        "Appending batch operation {} subbatch with {} items.", batchOperationKey, items.size());
+    LOG.debug("Appending batch operation {} chunk with {} items.", batchOperationKey, items.size());
     taskResultBuilder.appendCommandRecord(
         batchOperationKey, BatchOperationChunkIntent.CREATE, command);
   }

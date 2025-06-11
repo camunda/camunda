@@ -75,6 +75,11 @@ public class BatchOperationItemProvider {
       final Supplier<Boolean> shouldAbort) {
     final var processInstanceFilter = filter.toBuilder().partitionId(partitionId).build();
 
+    LOG.debug(
+        "Fetching process instance items for partition {} with filter: {}",
+        partitionId,
+        processInstanceFilter);
+
     return fetchEntityItems(
         new ProcessInstancePageFetcher(), processInstanceFilter, authentication, shouldAbort);
   }
@@ -93,6 +98,8 @@ public class BatchOperationItemProvider {
       final IncidentFilter filter,
       final Authentication authentication,
       final Supplier<Boolean> shouldAbort) {
+
+    LOG.debug("Fetching incident items with filter: {}", filter);
     return fetchEntityItems(new IncidentPageFetcher(), filter, authentication, shouldAbort);
   }
 
