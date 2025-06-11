@@ -19,7 +19,7 @@ jobs:
         project:
         - name: optimize
           path: ./optimize
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
     - uses: actions/checkout@v4
     # Import FOSSA_API_KEY secret from Vault
