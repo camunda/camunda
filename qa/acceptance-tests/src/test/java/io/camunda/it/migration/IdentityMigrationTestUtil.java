@@ -8,12 +8,14 @@
 package io.camunda.it.migration;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.time.Duration;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
+import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.images.PullPolicy;
 import org.testcontainers.utility.DockerImageName;
 
@@ -30,6 +32,13 @@ final class IdentityMigrationTestUtil {
   private static final String KEYCLOAK_USER = "admin";
   private static final String KEYCLOAK_PASSWORD = "admin";
   private static final Network NETWORK = Network.newNetwork();
+
+  static ElasticsearchContainer getElastic() {
+    return TestSearchContainers.createDefeaultElasticsearchContainer()
+        .withNetwork(NETWORK)
+        .withNetworkAliases("elastic")
+        .withStartupTimeout(Duration.ofMinutes(5));
+  }
 
   static KeycloakContainer getKeycloak() {
     return new KeycloakContainer()

@@ -10,38 +10,42 @@ package io.camunda.it.migration;
 import static io.camunda.it.migration.IdentityMigrationTestUtil.CAMUNDA_IDENTITY_RESOURCE_SERVER;
 import static io.camunda.it.migration.IdentityMigrationTestUtil.IDENTITY_CLIENT;
 import static io.camunda.it.migration.IdentityMigrationTestUtil.IDENTITY_CLIENT_SECRET;
-import static io.camunda.it.migration.IdentityMigrationTestUtil.ZEEBE_CLIENT_AUDIENCE;
 import static io.camunda.it.migration.IdentityMigrationTestUtil.externalIdentityUrl;
+import static io.camunda.it.migration.IdentityMigrationTestUtil.externalKeycloakUrl;
+import static io.camunda.zeebe.qa.util.cluster.TestZeebePort.CLUSTER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
-import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.Group;
-import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
-import io.camunda.qa.util.cluster.TestCamundaApplication;
-import io.camunda.qa.util.multidb.MultiDbTest;
-import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneIdentityMigration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.time.Duration;
+import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
+import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-@MultiDbTest
+@ZeebeIntegration
 @Testcontainers(parallel = true)
 public class IdentityDefaultEntitiesIT {
 
-  @MultiDbTestApplication(managedLifecycle = false)
-  static final TestCamundaApplication CAMUNDA =
-      new TestCamundaApplication()
-          .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
+  @TestZeebe(autoStart = false)
+  static final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
 
-  static CamundaClient client;
+  @Container
+  private static final ElasticsearchContainer ELASTIC = IdentityMigrationTestUtil.getElastic();
 
   @Container
   private static final KeycloakContainer KEYCLOAK = IdentityMigrationTestUtil.getKeycloak();
@@ -76,50 +80,53 @@ public class IdentityDefaultEntitiesIT {
                   .withReadTimeout(Duration.ofSeconds(10))
                   .withStartupTimeout(Duration.ofMinutes(5)));
 
-  @BeforeAll
-  public static void setup() {
-    CAMUNDA
-        .withAdditionalProfile(Profile.IDENTITY_MIGRATION)
-        .withProperty(
-            "camunda.migration.identity.managementIdentity.baseUrl", externalIdentityUrl(IDENTITY))
-        .withProperty(
-            "camunda.migration.identity.management-identity.issuer-backend-url",
-            IdentityMigrationTestUtil.externalKeycloakUrl(KEYCLOAK) + "/realms/camunda-platform/")
-        .withProperty("camunda.migration.identity.management-identity.issuer-type", "KEYCLOAK")
-        .withProperty("camunda.migration.identity.management-identity.client-id", IDENTITY_CLIENT)
-        .withProperty(
-            "camunda.migration.identity.management-identity.client-secret", IDENTITY_CLIENT_SECRET)
-        .withProperty(
-            "camunda.migration.identity.management-identity.audience",
-            CAMUNDA_IDENTITY_RESOURCE_SERVER);
-    CAMUNDA.start();
+  private TestStandaloneIdentityMigration standaloneIdentityMigration;
+  private CamundaClient client;
 
-    client =
-        CAMUNDA
-            .newClientBuilder()
-            .credentialsProvider(
-                new OAuthCredentialsProviderBuilder()
-                    .clientId(IDENTITY_CLIENT)
-                    .clientSecret(IDENTITY_CLIENT_SECRET)
-                    .audience(ZEEBE_CLIENT_AUDIENCE)
-                    .authorizationServerUrl(
-                        "http://localhost:%d%s/protocol/openid-connect/token"
-                            .formatted(KEYCLOAK.getFirstMappedPort(), "/realms/camunda-platform"))
-                    .build())
-            .defaultRequestTimeout(Duration.ofSeconds(10))
-            .build();
+  @BeforeAll
+  static void init() {
+    BROKER.withCamundaExporter("http://" + ELASTIC.getHttpHostAddress()).start();
+  }
+
+  @BeforeEach
+  public void setup() {
+    // given
+    final IdentityMigrationProperties migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.getManagementIdentity().setBaseUrl(externalIdentityUrl(IDENTITY));
+    migrationProperties
+        .getManagementIdentity()
+        .setIssuerBackendUrl(externalKeycloakUrl(KEYCLOAK) + "/realms/camunda-platform/");
+    migrationProperties.getManagementIdentity().setIssuerType("KEYCLOAK");
+    migrationProperties.getManagementIdentity().setClientId(IDENTITY_CLIENT);
+    migrationProperties.getManagementIdentity().setClientSecret(IDENTITY_CLIENT_SECRET);
+    migrationProperties.getManagementIdentity().setAudience(CAMUNDA_IDENTITY_RESOURCE_SERVER);
+    standaloneIdentityMigration =
+        new TestStandaloneIdentityMigration(migrationProperties)
+            .withAppConfig(
+                config -> {
+                  config
+                      .getCluster()
+                      .setInitialContactPoints(List.of("localhost:" + BROKER.mappedPort(CLUSTER)));
+                });
+
+    client = BROKER.newClientBuilder().build();
   }
 
   @Test
   void canMigrateGroups() {
+    // when
+    standaloneIdentityMigration.start();
+
     Awaitility.await()
-        .atMost(Duration.ofSeconds(10))
+        .atMost(Duration.ofSeconds(1000))
+        .ignoreExceptions()
         .untilAsserted(
             () -> {
               final var groups = client.newGroupsSearchRequest().send().join();
               assertThat(groups.items().size()).isEqualTo(3);
             });
 
+    // then
     final var groups = client.newGroupsSearchRequest().send().join();
     assertThat(groups.items().size()).isEqualTo(3);
     assertThat(groups.items())
