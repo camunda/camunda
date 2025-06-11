@@ -14,14 +14,22 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskDefinitionTransformer;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.TaskHeadersTransformer;
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.CompletionCondition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import java.util.Collection;
 import java.util.Optional;
 
 public final class AdHocSubProcessTransformer implements ModelElementTransformer<AdHocSubProcess> {
+
+  private final TaskDefinitionTransformer taskDefinitionTransformer =
+      new TaskDefinitionTransformer();
+  private final TaskHeadersTransformer taskHeadersTransformer = new TaskHeadersTransformer();
 
   @Override
   public Class<AdHocSubProcess> getType() {
@@ -50,6 +58,8 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
     setAdHocActivities(executableAdHocSubProcess, childElements);
 
     setImplementationType(executableAdHocSubProcess, element);
+
+    setJobWorkerProperties(executableAdHocSubProcess, element, context);
   }
 
   private static void setActiveElementsCollection(
@@ -85,4 +95,15 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
     executableAdHocSubProcess.setImplementationType(implementationType);
   }
 
+  private void setJobWorkerProperties(
+      final ExecutableAdHocSubProcess executableAdHocSubProcess,
+      final AdHocSubProcess element,
+      final TransformContext context) {
+
+    final var taskDefinition = element.getSingleExtensionElement(ZeebeTaskDefinition.class);
+    taskDefinitionTransformer.transform(executableAdHocSubProcess, context, taskDefinition);
+
+    final var taskHeaders = element.getSingleExtensionElement(ZeebeTaskHeaders.class);
+    taskHeadersTransformer.transform(executableAdHocSubProcess, taskHeaders, element);
+  }
 }
