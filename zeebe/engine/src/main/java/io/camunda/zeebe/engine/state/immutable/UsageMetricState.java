@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-import io.camunda.zeebe.engine.state.metrics.UsageMetricStateValue;
+import io.camunda.zeebe.engine.state.metrics.PersistedUsageMetrics;
 
 public interface UsageMetricState {
 
-  UsageMetricStateValue getActiveBucket();
+  PersistedUsageMetrics getActiveBucket();
 }
