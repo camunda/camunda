@@ -291,5 +291,6 @@ public class FailOverReplicationTest {
     data.setLogSegmentSize(maxSize);
     data.setLogIndexDensity(1);
     brokerCfg.getNetwork().setMaxMessageSize(maxSize);
+    brokerCfg.getExperimental().getFeatures().setEnableIdentitySetup(false);
   }
 }
