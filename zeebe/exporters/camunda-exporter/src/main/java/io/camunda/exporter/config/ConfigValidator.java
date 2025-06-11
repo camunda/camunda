@@ -13,7 +13,8 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 public final class ConfigValidator {
-  private static final String PATTERN_DATE_INTERVAL_FORMAT = "^(?:[1-9]\\d*)([hdwMy])$";
+  private static final String PATTERN_DATE_INTERVAL_FORMAT = "^(?:[1-9]\\d*)" + "([smhdwMy])$";
+  private static final String PATTERN_ROLLOVER_INTERVAL_FORMAT = "^(?:[1-9]\\d*)([hdwMy])$";
 
   /**
    * Supported pattern for min_age property of ILM, we only support: days, hours, minutes and
@@ -29,6 +30,8 @@ public final class ConfigValidator {
 
   private static final Predicate<String> CHECK_DATE_INTERVAL =
       Pattern.compile(PATTERN_DATE_INTERVAL_FORMAT).asPredicate();
+  private static final Predicate<String> CHECK_ROLLOVER_INTERVAL =
+      Pattern.compile(PATTERN_ROLLOVER_INTERVAL_FORMAT).asPredicate();
 
   private ConfigValidator() {}
 
@@ -76,11 +79,11 @@ public final class ConfigValidator {
     }
 
     final String rolloverInterval = configuration.getHistory().getRolloverInterval();
-    if (rolloverInterval != null && !CHECK_DATE_INTERVAL.test(rolloverInterval)) {
+    if (rolloverInterval != null && !CHECK_ROLLOVER_INTERVAL.test(rolloverInterval)) {
       throw new ExporterException(
           String.format(
               "CamundaExporter archiver.rolloverInterval '%s' must match pattern '%s', but didn't.",
-              rolloverInterval, PATTERN_DATE_INTERVAL_FORMAT));
+              rolloverInterval, PATTERN_ROLLOVER_INTERVAL_FORMAT));
     }
 
     final String waitPeriodBeforeArchiving =

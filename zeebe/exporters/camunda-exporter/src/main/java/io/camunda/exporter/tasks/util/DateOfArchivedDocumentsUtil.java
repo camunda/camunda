@@ -88,7 +88,7 @@ public final class DateOfArchivedDocumentsUtil {
 
   private static LocalDateTime parseFlexibleDateTime(final String dateStr, final String pattern) {
     try {
-      if ("date".equals(pattern)) {
+      if ("date".equals(pattern) || "yyyy-MM-dd".equals(pattern)) {
         final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         return LocalDate.parse(dateStr, formatter).atStartOfDay();
       } else {
