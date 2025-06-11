@@ -19,7 +19,7 @@ public final class IdentityMigrationProperties {
   private ManagementIdentityProperties managementIdentity = new ManagementIdentityProperties();
   private String organizationId;
   private Mode mode = Mode.CLOUD;
-  private ConsoleProperties console;
+  private ConsoleProperties console = new ConsoleProperties();
 
   public ManagementIdentityProperties getManagementIdentity() {
     return managementIdentity;
