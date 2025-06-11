@@ -7,17 +7,18 @@
  */
 package io.camunda.operate.qa.backup;
 
+import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
 import static io.camunda.operate.util.CollectionUtil.asMap;
 import static io.camunda.operate.webapp.management.dto.BackupStateDto.COMPLETED;
 import static io.camunda.operate.webapp.management.dto.BackupStateDto.IN_PROGRESS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.util.RetryOperation;
 import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
 import io.camunda.operate.webapp.management.dto.TakeBackupResponseDto;
-import io.camunda.zeebe.client.ZeebeClient;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -48,11 +49,11 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 public class BackupRestoreTest {
 
   public static final String ZEEBE_INDEX_PREFIX = "backup-restore-test";
-  public static final String VERSION = "SNAPSHOT";
+  public static final String VERSION = "current-test";
   public static final String REPOSITORY_NAME = "testRepository";
   public static final Long BACKUP_ID = 123L;
   private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreTest.class);
-  private static final String OPERATE_TEST_DOCKER_IMAGE = "camunda/operate";
+  private static final String OPERATE_TEST_DOCKER_IMAGE = "localhost:5000/camunda/operate";
   @Autowired private OperateAPICaller operateAPICaller;
 
   @Autowired private DataGenerator dataGenerator;
@@ -145,10 +146,8 @@ public class BackupRestoreTest {
                 new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))));
     createSnapshotRepository(testContext);
 
-    String zeebeVersion = ZeebeClient.class.getPackage().getImplementationVersion();
-    if (zeebeVersion.toLowerCase().contains("snapshot")) {
-      zeebeVersion = "SNAPSHOT";
-    }
+    final String zeebeVersion =
+        ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_PROPERTY_NAME);
     testContainerUtil.startZeebe(zeebeVersion, testContext);
 
     operateContainer =
