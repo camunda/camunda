@@ -3600,10 +3600,10 @@ fill-range@^7.1.1:
   dependencies:
     to-regex-range "^5.0.1"
 
-final-form-arrays@3.1.0:
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/final-form-arrays/-/final-form-arrays-3.1.0.tgz#8bdace2fccedd61f3cbd032ae429813ae5ea37af"
-  integrity sha512-TWBvun+AopgBLw9zfTFHBllnKMVNEwCEyDawphPuBGGqNsuhGzhT7yewHys64KFFwzIs6KEteGLpKOwvTQEscQ==
+final-form-arrays@4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/final-form-arrays/-/final-form-arrays-4.0.0.tgz#cca8533756c3647c53db77da0145a57b717a1ba3"
+  integrity sha512-ya1mbjTmEcmZ8ettYHp/eB4UpfuSjpLJ+grpaQsgxqi1P0wrm+syr/7qLbbslxNLSDA1zoSUthWVCB1O6B9fqg==
 
 final-form@4.20.10:
   version "4.20.10"
