@@ -196,6 +196,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
       case JobKind.BPMN_ELEMENT -> ErrorType.JOB_NO_RETRIES;
       case JobKind.EXECUTION_LISTENER -> ErrorType.EXECUTION_LISTENER_NO_RETRIES;
       case JobKind.TASK_LISTENER -> ErrorType.TASK_LISTENER_NO_RETRIES;
+      case JobKind.AD_HOC_SUB_PROCESS -> ErrorType.AD_HOC_SUB_PROCESS_NO_RETRIES;
     };
   }
 
