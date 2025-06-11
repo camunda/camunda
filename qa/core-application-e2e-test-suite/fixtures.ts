@@ -18,6 +18,7 @@ import {TaskDetailsPage} from '@pages/TaskDetailsPage';
 import {TasklistHeader} from '@pages/TasklistHeader';
 import {TasklistProcessesPage} from '@pages/TasklistProcessesPage';
 import {PublicFormsPage} from '@pages/PublicFormsPage';
+import {OperateFiltersPanel} from '@pages/operateFiltersPanel';
 import {sleep} from 'utils/sleep';
 
 type PlaywrightFixtures = {
@@ -25,6 +26,7 @@ type PlaywrightFixtures = {
   resetData: () => Promise<void>;
   operateLoginPage: OperateLoginPage;
   operateHomePage: OperateHomePage;
+  operateFiltersPanel: OperateFiltersPanel;
   taskListLoginPage: TaskListLoginPage;
   taskPanelPage: TaskPanelPage;
   operateProcessesPage: OperateProcessesPage;
@@ -65,6 +67,9 @@ const test = base.extend<PlaywrightFixtures>({
   },
   operateProcessInstancePage: async ({page}, use) => {
     await use(new OperateProcessInstancePage(page));
+  },
+  operateFiltersPanel: async ({page}, use) => {
+    await use(new OperateFiltersPanel(page));
   },
   taskDetailsPage: async ({page}, use) => {
     await use(new TaskDetailsPage(page));
