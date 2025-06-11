@@ -29,9 +29,11 @@ import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.io.entity.HttpEntities;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+@Disabled("Disabled until the Connector container startup issue is solved")
 public class CamundaProcessTestConnectorsIT {
 
   // The ID is part of the connector configuration in the BPMN element
