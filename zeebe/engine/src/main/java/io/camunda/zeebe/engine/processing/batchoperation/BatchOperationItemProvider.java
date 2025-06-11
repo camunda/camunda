@@ -149,7 +149,10 @@ public class BatchOperationItemProvider {
       items.addAll(result.items);
       searchValues = result.lastSortValues();
 
-      if (items.size() >= result.total() || result.items.isEmpty()) {
+      // the result.total count can be incorrect when using elasticsearch and could be capped at
+      // 10_000. If the result.total is smaller than the queryPageSize, we can assume that we have
+      // fetched all items. Otherwise, we fetch again until we fetch an empty page
+      if (result.items.isEmpty() || result.total < queryPageSize) {
         break;
       }
     }
