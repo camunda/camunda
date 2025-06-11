@@ -66,10 +66,9 @@ final class BackupStoreComponent {
     return AzureBackupStore.of(storeConfig);
   }
 
-  private static FilesystemBackupStore buildFilesystemBackupStore(
-      final BackupStoreCfg backupStoreCfg) {
+  private static BackupStore buildFilesystemBackupStore(final BackupStoreCfg backupStoreCfg) {
     final var storeConfig =
         FilesystemBackupStoreConfig.toStoreConfig(backupStoreCfg.getFilesystem());
-    return new FilesystemBackupStore(storeConfig, Executors.newVirtualThreadPerTaskExecutor());
+    return FilesystemBackupStore.of(storeConfig, Executors.newVirtualThreadPerTaskExecutor());
   }
 }

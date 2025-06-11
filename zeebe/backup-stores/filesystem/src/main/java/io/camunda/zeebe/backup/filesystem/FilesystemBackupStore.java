@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 
 /**
  * {@link BackupStore} for local filesystem. Stores all backups in a given baseDir.
@@ -44,8 +45,7 @@ public final class FilesystemBackupStore implements BackupStore {
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
 
-  public FilesystemBackupStore(
-      final FilesystemBackupConfig config, final ExecutorService executor) {
+  FilesystemBackupStore(final FilesystemBackupConfig config, final ExecutorService executor) {
     validateConfig(config);
 
     this.executor = executor;
@@ -162,5 +162,10 @@ public final class FilesystemBackupStore implements BackupStore {
     if (config.basePath() == null || config.basePath().isBlank()) {
       throw new IllegalArgumentException("Base directory is required");
     }
+  }
+
+  public static BackupStore of(
+      final FilesystemBackupConfig storeConfig, final ExecutorService executorService) {
+    return new FilesystemBackupStore(storeConfig, executorService).logging(LOG, Level.INFO);
   }
 }
