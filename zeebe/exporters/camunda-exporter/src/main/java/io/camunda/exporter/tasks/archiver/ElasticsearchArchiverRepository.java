@@ -231,7 +231,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
 
     final String endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
     lastHistoricalArchiverDate =
-        DateOfArchivedDocumentsUtil.getDateOfDocumentsInArchiveBatch(
+        DateOfArchivedDocumentsUtil.calculateDateOfArchiveIndexForBatch(
             endDate,
             lastHistoricalArchiverDate,
             config.getRolloverInterval(),

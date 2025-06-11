@@ -20,8 +20,8 @@ public final class DateOfArchivedDocumentsUtil {
   private static final Logger LOGGER = LoggerFactory.getLogger(DateOfArchivedDocumentsUtil.class);
   private static final Pattern TEMPORAL_PATTERN = Pattern.compile("(\\d+)" + "([smhdwMy])");
 
-  public static String getDateOfDocumentsInArchiveBatch(
-      final String endDate,
+  public static String calculateDateOfArchiveIndexForBatch(
+      final String dateOfArchiveBatch,
       String dateOfMostRecentArchiveIndex,
       final String rolloverInterval,
       final String elsRolloverDateFormat) {
@@ -32,10 +32,11 @@ public final class DateOfArchivedDocumentsUtil {
         || dateOfMostRecentArchiveIndex.isEmpty()
         || rolloverInterval == null
         || rolloverInterval.isEmpty()) {
-      return endDate;
+      return dateOfArchiveBatch;
     }
 
-    final LocalDateTime endDateTime = parseFlexibleDateTime(endDate, elsRolloverDateFormat);
+    final LocalDateTime endDateTime =
+        parseFlexibleDateTime(dateOfArchiveBatch, elsRolloverDateFormat);
     final LocalDateTime lastEndDate =
         parseFlexibleDateTime(dateOfMostRecentArchiveIndex, elsRolloverDateFormat);
 
@@ -48,7 +49,7 @@ public final class DateOfArchivedDocumentsUtil {
         // If the end date is after the last historical archiver date plus
         // the rollover, then a new one needs to be set.
         final var previousDate = dateOfMostRecentArchiveIndex;
-        dateOfMostRecentArchiveIndex = endDate;
+        dateOfMostRecentArchiveIndex = dateOfArchiveBatch;
         LOGGER.debug(
             "Rolling over historical archive date from {} date to: {}",
             previousDate,

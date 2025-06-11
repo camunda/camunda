@@ -243,7 +243,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final var endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
 
     lastHistoricalArchiverDate =
-        DateOfArchivedDocumentsUtil.getDateOfDocumentsInArchiveBatch(
+        DateOfArchivedDocumentsUtil.calculateDateOfArchiveIndexForBatch(
             endDate,
             lastHistoricalArchiverDate,
             config.getRolloverInterval(),
