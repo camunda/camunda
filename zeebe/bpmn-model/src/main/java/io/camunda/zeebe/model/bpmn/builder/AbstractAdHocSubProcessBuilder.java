@@ -23,6 +23,7 @@ import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
 import io.camunda.zeebe.model.bpmn.instance.dc.Bounds;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
 
 public class AbstractAdHocSubProcessBuilder<B extends AbstractAdHocSubProcessBuilder<B>>
     extends AbstractSubProcessBuilder<B> {
@@ -68,6 +69,18 @@ public class AbstractAdHocSubProcessBuilder<B extends AbstractAdHocSubProcessBui
    */
   public B cancelRemainingInstances(final boolean cancelRemainingInstances) {
     ((AdHocSubProcess) element).setCancelRemainingInstances(cancelRemainingInstances);
+    return myself;
+  }
+
+  /**
+   * Sets the implementation type of the ad-hoc sub-process.
+   *
+   * @param implementationType the type of implementation
+   * @return the builder object
+   */
+  public B zeebeImplementation(final ZeebeAdHocImplementationType implementationType) {
+    final ZeebeAdHoc adHoc = getCreateSingleExtensionElement(ZeebeAdHoc.class);
+    adHoc.setImplementationType(implementationType);
     return myself;
   }
 
