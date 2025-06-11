@@ -149,7 +149,6 @@
     <dependency>
       <groupId>io.camunda.migration</groupId>
       <artifactId>identity-migration</artifactId>
-      <scope>runtime</scope>
     </dependency>
 
     <dependency>

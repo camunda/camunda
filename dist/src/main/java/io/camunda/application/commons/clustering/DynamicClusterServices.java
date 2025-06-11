@@ -47,7 +47,7 @@ public class DynamicClusterServices {
   }
 
   @Bean
-  @Profile("!broker")
+  @Profile({"!broker & !identity-migration"})
   public GatewayClusterConfigurationService gatewayClusterTopologyService(
       final BrokerTopologyManager brokerTopologyManager, final GatewayCfg gatewayCfg) {
     final var service =

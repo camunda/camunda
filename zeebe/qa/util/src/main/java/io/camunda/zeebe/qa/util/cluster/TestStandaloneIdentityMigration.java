@@ -9,7 +9,6 @@ package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
-import io.camunda.application.commons.configuration.GatewayBasedConfiguration.GatewayBasedProperties;
 import io.camunda.application.commons.migration.MigrationsRunner;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
@@ -24,21 +23,18 @@ public final class TestStandaloneIdentityMigration
   private static final Logger LOGGER =
       LoggerFactory.getLogger(TestStandaloneIdentityMigration.class);
 
-  private final GatewayBasedProperties config;
+  private final IdentityMigrationProperties config;
 
   public TestStandaloneIdentityMigration(final IdentityMigrationProperties migrationProperties) {
     super(MigrationsRunner.class);
-    config = new GatewayBasedProperties();
+    config = migrationProperties;
 
-    config.getNetwork().setHost("0.0.0.0");
-    config.getCluster().setMemberId("migration");
-    config.getCluster().setPort(SocketUtil.getNextAddress().getPort());
+    migrationProperties.getCluster().setPort(SocketUtil.getNextAddress().getPort());
 
     LOGGER.info("-> Cluster Port: {}", mappedPort(TestZeebePort.CLUSTER));
 
     //noinspection resource
-    withBean("config", config, GatewayBasedProperties.class)
-        .withBean("migrationConfig", migrationProperties, IdentityMigrationProperties.class)
+    withBean("migrationConfig", migrationProperties, IdentityMigrationProperties.class)
         .withAdditionalProfile(Profile.IDENTITY_MIGRATION);
   }
 
@@ -54,7 +50,7 @@ public final class TestStandaloneIdentityMigration
 
   @Override
   public String host() {
-    return config.getNetwork().getHost();
+    return config.getCluster().getHost();
   }
 
   @Override
@@ -68,7 +64,7 @@ public final class TestStandaloneIdentityMigration
   }
 
   public TestStandaloneIdentityMigration withAppConfig(
-      final Consumer<GatewayBasedProperties> modifier) {
+      final Consumer<IdentityMigrationProperties> modifier) {
     modifier.accept(config);
     return this;
   }
