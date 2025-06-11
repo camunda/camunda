@@ -11,7 +11,6 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbEnumValue;
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.time.Duration;
@@ -19,7 +18,7 @@ import java.time.InstantSource;
 
 public class DbUsageMetricState implements MutableUsageMetricState {
 
-  private final Duration usageMetricsExportInterval;
+  private final Duration exportInterval;
 
   private final ColumnFamily<DbEnumValue<IntervalType>, UsageMetricStateValue>
       metricsBucketColumnFamily;
@@ -29,11 +28,11 @@ public class DbUsageMetricState implements MutableUsageMetricState {
   public DbUsageMetricState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
-      final EngineConfiguration config,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final Duration exportInterval) {
 
-    usageMetricsExportInterval = config.getUsageMetricsExportInterval();
     this.clock = clock;
+    this.exportInterval = exportInterval;
 
     metricsBucketKey = new DbEnumValue<>(IntervalType.class);
     metricsBucketColumnFamily =
@@ -45,45 +44,45 @@ public class DbUsageMetricState implements MutableUsageMetricState {
   }
 
   @Override
-  public UsageMetricStateValue getRollingBucket() {
-    setRollingBucketKeys();
+  public UsageMetricStateValue getActiveBucket() {
+    setActiveBucketKeys();
     return metricsBucketColumnFamily.get(metricsBucketKey);
   }
 
-  public void updateRollingBucket(final UsageMetricStateValue bucket) {
-    setRollingBucketKeys();
+  public void updateActiveBucket(final UsageMetricStateValue bucket) {
+    setActiveBucketKeys();
     metricsBucketColumnFamily.update(metricsBucketKey, bucket);
   }
 
-  private void setRollingBucketKeys() {
-    metricsBucketKey.setValue(IntervalType.ROLLING);
+  private void setActiveBucketKeys() {
+    metricsBucketKey.setValue(IntervalType.ACTIVE);
   }
 
   @Override
   public void recordRPIMetric(final String tenantId) {
-    updateRollingBucket(getOrCreateRollingBucket().recordRPI(tenantId));
+    updateActiveBucket(getOrCreateActiveBucket().recordRPI(tenantId));
   }
 
   @Override
-  public void deleteRollingBucket() {
-    setRollingBucketKeys();
+  public void deleteActiveBucket() {
+    setActiveBucketKeys();
     metricsBucketColumnFamily.deleteExisting(metricsBucketKey);
   }
 
-  private UsageMetricStateValue getOrCreateRollingBucket() {
-    var bucket = getRollingBucket();
+  private UsageMetricStateValue getOrCreateActiveBucket() {
+    var bucket = getActiveBucket();
     if (bucket == null) {
       final long millis = clock.millis();
       bucket =
           new UsageMetricStateValue()
               .setFromTime(millis)
-              .setToTime(millis + usageMetricsExportInterval.toMillis());
+              .setToTime(millis + exportInterval.toMillis());
       metricsBucketColumnFamily.insert(metricsBucketKey, bucket);
     }
     return bucket;
   }
 
   enum IntervalType {
-    ROLLING
+    ACTIVE
   }
 }

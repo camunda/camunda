@@ -11,5 +11,5 @@ import io.camunda.zeebe.engine.state.metrics.UsageMetricStateValue;
 
 public interface UsageMetricState {
 
-  UsageMetricStateValue getRollingBucket();
+  UsageMetricStateValue getActiveBucket();
 }
