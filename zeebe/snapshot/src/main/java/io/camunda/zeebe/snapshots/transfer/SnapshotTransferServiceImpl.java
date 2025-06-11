@@ -11,8 +11,8 @@ package io.camunda.zeebe.snapshots.transfer;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.snapshots.BootstrapSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
@@ -29,14 +29,14 @@ import org.agrona.CloseHelper;
 
 public class SnapshotTransferServiceImpl implements SnapshotTransferService {
 
-  private final BootstrapSnapshotStore snapshotStore;
+  private final PersistedSnapshotStore snapshotStore;
   private final Map<UUID, PendingTransfer> pendingTransfers = new HashMap<>();
   private final int partitionId;
   private final BiConsumer<Path, Path> copyForBootstrap;
   private final ConcurrencyControl concurrency;
 
   public SnapshotTransferServiceImpl(
-      final BootstrapSnapshotStore snapshotStore,
+      final PersistedSnapshotStore snapshotStore,
       final int partitionId,
       final BiConsumer<Path, Path> copyForBootstrap,
       final ConcurrencyControl concurrency) {
@@ -59,6 +59,9 @@ public class SnapshotTransferServiceImpl implements SnapshotTransferService {
     return getLatestSnapshotForBootstrap(transferId)
         .andThen(
             snapshot -> {
+              if (snapshot == null) {
+                return CompletableActorFuture.completed(null);
+              }
               final var snapshotId = snapshot.getId();
               try {
                 final var reader = new FileBasedSnapshotChunkReader(snapshot.getPath());
@@ -123,8 +126,7 @@ public class SnapshotTransferServiceImpl implements SnapshotTransferService {
   private ActorFuture<PersistedSnapshot> createSnapshotForBootstrap(final UUID transferId) {
     final var lastPersistedSnapshot = snapshotStore.getLatestSnapshot();
     if (lastPersistedSnapshot.isEmpty()) {
-      return CompletableActorFuture.completedExceptionally(
-          new IllegalArgumentException(String.format("[%s] No snapshot found", transferId)));
+      return CompletableActorFuture.completed(null);
     } else {
       final var persistedSnapshot = lastPersistedSnapshot.get();
 

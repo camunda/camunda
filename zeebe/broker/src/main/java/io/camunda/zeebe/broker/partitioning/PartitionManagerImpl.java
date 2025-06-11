@@ -30,6 +30,7 @@ import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
+import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.dynamic.config.changes.PartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -69,6 +70,7 @@ public final class PartitionManagerImpl
   private final Map<Integer, Partition> partitions = new ConcurrentHashMap<>();
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final BrokerClient brokerClient;
+  private final SnapshotApiRequestHandler snapshotApiRequestHandler;
   private final DefaultPartitionManagementService managementService;
   private final BrokerCfg brokerCfg;
   private final ZeebePartitionFactory zeebePartitionFactory;
@@ -88,6 +90,7 @@ public final class PartitionManagerImpl
       final List<PartitionListener> partitionListeners,
       final List<PartitionRaftListener> partitionRaftListeners,
       final CommandApiService commandApiService,
+      final SnapshotApiRequestHandler snapshotApiRequestHandler,
       final ExporterRepository exporterRepository,
       final AtomixServerTransport gatewayBrokerTransport,
       final JobStreamer jobStreamer,
@@ -102,6 +105,7 @@ public final class PartitionManagerImpl
     this.healthCheckService = healthCheckService;
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.brokerClient = brokerClient;
+    this.snapshotApiRequestHandler = snapshotApiRequestHandler;
     scalingExecutor = new BrokerClientPartitionScalingExecutor(brokerClient, concurrencyControl);
     final var featureFlags = brokerCfg.getExperimental().getFeatures().toFeatureFlags();
     this.clusterConfigurationService = clusterConfigurationService;
@@ -118,6 +122,7 @@ public final class PartitionManagerImpl
             brokerCfg,
             localBroker,
             commandApiService,
+            snapshotApiRequestHandler,
             clusterServices,
             exporterRepository,
             diskSpaceUsageMonitor,
@@ -176,7 +181,8 @@ public final class PartitionManagerImpl
             brokerCfg,
             initialPartitionConfig,
             initializeFromSnapshot,
-            brokerMeterRegistry);
+            brokerMeterRegistry,
+            brokerClient);
     final var partition = Partition.bootstrapping(context);
     if (partitions.putIfAbsent(id, partition) != null) {
       result.completeExceptionally(
@@ -208,7 +214,8 @@ public final class PartitionManagerImpl
             brokerCfg,
             initialPartitionConfig,
             false,
-            brokerMeterRegistry);
+            brokerMeterRegistry,
+            brokerClient);
     final var partition = Partition.joining(context);
     final var previousPartition = partitions.putIfAbsent(id, partition);
     if (previousPartition != null) {
