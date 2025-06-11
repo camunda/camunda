@@ -25,7 +25,7 @@ import org.springframework.http.client.ClientHttpResponse;
 
 @Configuration
 @EnableConfigurationProperties(IdentityMigrationProperties.class)
-public class ManagementIdentityConnector {
+public class ManagementIdentityConnectorConfig {
 
   @Bean
   public Identity identity(final IdentityMigrationProperties identityMigrationProperties) {

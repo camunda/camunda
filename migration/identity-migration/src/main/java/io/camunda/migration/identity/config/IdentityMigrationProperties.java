@@ -19,6 +19,7 @@ public final class IdentityMigrationProperties {
   private ManagementIdentityProperties managementIdentity;
   private String organizationId;
   private Mode mode = Mode.CLOUD;
+  private ConsoleProperties console;
 
   public ManagementIdentityProperties getManagementIdentity() {
     return managementIdentity;
@@ -42,6 +43,14 @@ public final class IdentityMigrationProperties {
 
   public void setMode(final Mode mode) {
     this.mode = mode;
+  }
+
+  public ConsoleProperties getConsole() {
+    return console;
+  }
+
+  public void setConsole(final ConsoleProperties console) {
+    this.console = console;
   }
 
   public enum Mode {
