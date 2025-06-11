@@ -11,6 +11,7 @@ import static java.util.function.Predicate.isEqual;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
+import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupConfig;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
@@ -77,7 +78,7 @@ class BackupMultiPartitionTest {
           .endEvent()
           .done();
   private static final String CORRELATION_KEY_VALUE_FOR_PARTITION_2 = "item-1";
-  private S3BackupStore s3BackupStore;
+  private BackupStore s3BackupStore;
   private S3BackupConfig s3ClientConfig;
   private String bucketName = null;
   private GrpcClientRule client;
@@ -128,7 +129,7 @@ class BackupMultiPartitionTest {
             .withApiCallTimeout(Duration.ofSeconds(15))
             .forcePathStyleAccess(true)
             .build();
-    s3BackupStore = new S3BackupStore(s3ClientConfig);
+    s3BackupStore = S3BackupStore.of(s3ClientConfig);
     try (final var s3Client = S3BackupStore.buildClient(s3ClientConfig)) {
       s3Client.createBucket(builder -> builder.bucket(bucketName).build()).join();
     }

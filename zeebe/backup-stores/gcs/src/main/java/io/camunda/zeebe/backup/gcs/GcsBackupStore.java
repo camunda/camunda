@@ -30,6 +30,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 
 public final class GcsBackupStore implements BackupStore {
   public static final String ERROR_MSG_BACKUP_NOT_FOUND =
@@ -46,11 +47,11 @@ public final class GcsBackupStore implements BackupStore {
   private final FileSetManager fileSetManager;
   private final Storage client;
 
-  public GcsBackupStore(final GcsBackupConfig config) {
+  GcsBackupStore(final GcsBackupConfig config) {
     this(config, buildClient(config));
   }
 
-  public GcsBackupStore(final GcsBackupConfig config, final Storage client) {
+  GcsBackupStore(final GcsBackupConfig config, final Storage client) {
     final var bucketInfo = BucketInfo.of(config.bucketName());
     final var basePath = Optional.ofNullable(config.basePath()).map(s -> s + "/").orElse("");
     this.client = client;
@@ -59,8 +60,13 @@ public final class GcsBackupStore implements BackupStore {
     fileSetManager = new FileSetManager(client, bucketInfo, basePath);
   }
 
+  public static BackupStore of(final GcsBackupConfig config) {
+    return new GcsBackupStore(config).logging(LOG, Level.INFO);
+  }
+
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
+    LOG.info("Saving {}", backup.id());
     return CompletableFuture.runAsync(
         () -> {
           final var persistedManifest = manifestManager.createInitialManifest(backup);
