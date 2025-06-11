@@ -161,12 +161,17 @@
   dependencies:
     "@babel/helper-plugin-utils" "^7.25.9"
 
-"@babel/runtime@^7.10.0", "@babel/runtime@^7.12.5", "@babel/runtime@^7.15.4", "@babel/runtime@^7.19.4", "@babel/runtime@^7.23.2", "@babel/runtime@^7.24.5", "@babel/runtime@^7.24.7", "@babel/runtime@^7.25.0", "@babel/runtime@^7.26.10", "@babel/runtime@^7.5.5", "@babel/runtime@^7.8.7":
+"@babel/runtime@^7.10.0", "@babel/runtime@^7.12.5", "@babel/runtime@^7.15.4", "@babel/runtime@^7.19.4", "@babel/runtime@^7.23.2", "@babel/runtime@^7.24.5", "@babel/runtime@^7.24.7", "@babel/runtime@^7.25.0", "@babel/runtime@^7.5.5", "@babel/runtime@^7.8.7":
   version "7.26.10"
   resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.26.10.tgz#a07b4d8fa27af131a633d7b3524db803eb4764c2"
   integrity sha512-2WJMeRQPHKSPemqk/awGrAiuFfzBmOIPXKizAsVhWH9YJqLZ0H+HS4c8loHGgW6utJ3E/ejXQUsiGaQy2NZ9Fw==
   dependencies:
     regenerator-runtime "^0.14.0"
+
+"@babel/runtime@^7.27.1":
+  version "7.27.6"
+  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.27.6.tgz#ec4070a04d76bae8ddbb10770ba55714a417b7c6"
+  integrity sha512-vbavdySgbTTrmFE+EsiqUTzlOr5bzlnJtUv9PynGCAKvfQqjIXbvFdumPM/GxMDfyuGMJaJAU6TO4zc1Jf1i8Q==
 
 "@babel/template@^7.27.1":
   version "7.27.2"
@@ -3971,12 +3976,12 @@ i18next-browser-languagedetector@8.2.0:
   dependencies:
     "@babel/runtime" "^7.23.2"
 
-i18next@25.1.2:
-  version "25.1.2"
-  resolved "https://registry.yarnpkg.com/i18next/-/i18next-25.1.2.tgz#c667b814ed1b4dbea76976a4c746a87922ac6ceb"
-  integrity sha512-SP63m8LzdjkrAjruH7SCI3ndPSgjt4/wX7ouUUOzCW/eY+HzlIo19IQSfYA9X3qRiRP1SYtaTsg/Oz/PGsfD8w==
+i18next@25.2.1:
+  version "25.2.1"
+  resolved "https://registry.yarnpkg.com/i18next/-/i18next-25.2.1.tgz#23cf8794904f551f577558d93c84b0fb6cd489a2"
+  integrity sha512-+UoXK5wh+VlE1Zy5p6MjcvctHXAhRwQKCxiJD8noKZzIXmnAX8gdHX5fLPA3MEVxEN4vbZkQFy8N0LyD9tUqPw==
   dependencies:
-    "@babel/runtime" "^7.26.10"
+    "@babel/runtime" "^7.27.1"
 
 iconv-lite@0.6.3, iconv-lite@^0.6.3:
   version "0.6.3"
