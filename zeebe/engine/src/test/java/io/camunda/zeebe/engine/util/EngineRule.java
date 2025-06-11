@@ -41,6 +41,7 @@ import io.camunda.zeebe.engine.util.client.PublishMessageClient;
 import io.camunda.zeebe.engine.util.client.ResourceDeletionClient;
 import io.camunda.zeebe.engine.util.client.ResourceFetchClient;
 import io.camunda.zeebe.engine.util.client.RoleClient;
+import io.camunda.zeebe.engine.util.client.ScaleClient;
 import io.camunda.zeebe.engine.util.client.SignalClient;
 import io.camunda.zeebe.engine.util.client.TenantClient;
 import io.camunda.zeebe.engine.util.client.UserClient;
@@ -607,6 +608,10 @@ public final class EngineRule extends ExternalResource {
 
   public ClockClient clock() {
     return new ClockClient(environmentRule);
+  }
+
+  public ScaleClient scale() {
+    return new ScaleClient(environmentRule);
   }
 
   public ActorScheduler actorScheduler() {
