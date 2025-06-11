@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
@@ -62,6 +63,8 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
     setImplementationType(executableAdHocSubProcess, element);
 
     setJobWorkerProperties(executableAdHocSubProcess, element, context);
+
+    setInnerInstance(executableAdHocSubProcess, childElements, process);
   }
 
   private static void setActiveElementsCollection(
@@ -132,5 +135,27 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
 
     final var taskHeaders = element.getSingleExtensionElement(ZeebeTaskHeaders.class);
     taskHeadersTransformer.transform(executableAdHocSubProcess, taskHeaders, element);
+  }
+
+  private static void setInnerInstance(
+      final ExecutableAdHocSubProcess executableAdHocSubProcess,
+      final Collection<AbstractFlowElement> childElements,
+      final ExecutableProcess process) {
+
+    final ExecutableFlowElementContainer adHocSubProcessInnerInstance =
+        new ExecutableFlowElementContainer(executableAdHocSubProcess.getInnerInstanceId());
+    adHocSubProcessInnerInstance.setElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE);
+    adHocSubProcessInnerInstance.setFlowScope(executableAdHocSubProcess);
+
+    childElements.forEach(
+        childElement -> {
+          childElement.setFlowScope(adHocSubProcessInnerInstance);
+          adHocSubProcessInnerInstance.addChildElement(childElement);
+        });
+
+    executableAdHocSubProcess.getChildElements().clear();
+    executableAdHocSubProcess.addChildElement(adHocSubProcessInnerInstance);
+
+    process.addFlowElement(adHocSubProcessInnerInstance);
   }
 }

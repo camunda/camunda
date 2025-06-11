@@ -28,6 +28,7 @@ public enum BpmnElementType {
   SUB_PROCESS("subProcess"),
   EVENT_SUB_PROCESS(null),
   AD_HOC_SUB_PROCESS("adHocSubProcess"),
+  AD_HOC_SUB_PROCESS_INNER_INSTANCE(null),
 
   // Events
   START_EVENT("startEvent"),
