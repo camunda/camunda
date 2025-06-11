@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.tenant;
 
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
@@ -112,7 +113,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final TypedRecord<TenantRecord> command, final String tenantId) {
     final var entityType = command.getValue().getEntityType();
     final var entityId = command.getValue().getEntityId();
-    if (!entityIsPresent(entityType, entityId)) {
+    if (!entityIsPresent(entityType, entityId, isInternalGroupsEnabled(command))) {
       createEntityNotExistRejectCommand(command, entityId, entityType, tenantId);
       return false;
     }
@@ -123,12 +124,18 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
     return true;
   }
 
-  private boolean entityIsPresent(final EntityType entityType, final String entityId) {
+  private boolean entityIsPresent(
+      final EntityType entityType, final String entityId, final boolean internalGroupsEnabled) {
     return switch (entityType) {
-      case GROUP -> groupState.get(entityId).isPresent();
+      case GROUP -> !internalGroupsEnabled || groupState.get(entityId).isPresent();
       case MAPPING -> mappingState.get(entityId).isPresent();
       default -> true;
     };
+  }
+
+  private boolean isInternalGroupsEnabled(final TypedRecord<TenantRecord> command) {
+    return Boolean.getBoolean(
+        (String) command.getAuthorizations().get(Authorization.INTERNAL_GROUPS_ENABLED));
   }
 
   private void createEntityNotExistRejectCommand(
