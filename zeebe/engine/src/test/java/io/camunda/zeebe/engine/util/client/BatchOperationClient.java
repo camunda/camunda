@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.BatchOperationProcessInstanceMigrationPlanValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationExecutionRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationPartitionLifecycleRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Random;
@@ -113,6 +114,11 @@ public final class BatchOperationClient {
       return this;
     }
 
+    public BatchOperationCreationClient withBatchOperationKey(final long batchOperationKey) {
+      batchOperationCreationRecord.setBatchOperationKey(batchOperationKey);
+      return this;
+    }
+
     /**
      * This is needed if we want to make sure that the scheduler does it's work and created chunks
      *
@@ -159,6 +165,33 @@ public final class BatchOperationClient {
       return resultingRecord;
     }
 
+    public Record<BatchOperationPartitionLifecycleRecordValue> fail() {
+      return fail(
+          AuthorizationUtil.getAuthInfoWithClaim(Authorization.AUTHORIZED_ANONYMOUS_USER, true));
+    }
+
+    public Record<BatchOperationPartitionLifecycleRecordValue> fail(final String username) {
+      return fail(AuthorizationUtil.getAuthInfo(username));
+    }
+
+    public Record<BatchOperationPartitionLifecycleRecordValue> fail(final AuthInfo authorizations) {
+      final long position =
+          writer.writeCommandOnPartition(
+              partition,
+              r ->
+                  r.intent(BatchOperationIntent.FAIL)
+                      .event(batchOperationCreationRecord)
+                      .authorizations(authorizations)
+                      .requestId(new Random().nextLong())
+                      .requestStreamId(new Random().nextInt()));
+
+      return RecordingExporter.batchOperationPartitionLifecycleRecords()
+          .withIntent(BatchOperationIntent.PARTITION_FAILED)
+          .withSourceRecordPosition(position)
+          .withPartitionId(partition)
+          .getFirst();
+    }
+
     public BatchOperationCreationClient expectRejection() {
       expectation = REJECTION_EXPECTATION;
       return this;
@@ -202,14 +235,6 @@ public final class BatchOperationClient {
 
   public static class BatchOperationExecutionClient {
 
-    private static final Function<Long, Record<BatchOperationExecutionRecordValue>>
-        EXECUTION_SUCCESS_EXPECTATION =
-            (position) ->
-                RecordingExporter.batchOperationExecutionRecords()
-                    .withIntent(BatchOperationExecutionIntent.EXECUTED)
-                    .withSourceRecordPosition(position)
-                    .getFirst();
-
     private final CommandWriter writer;
     private final BatchOperationExecutionRecord batchOperationExecutionRecord;
     private int partition = DEFAULT_PARTITION;
@@ -244,8 +269,11 @@ public final class BatchOperationClient {
                       .authorizations(authorizations)
                       .requestId(new Random().nextLong())
                       .requestStreamId(new Random().nextInt()));
-
-      return EXECUTION_SUCCESS_EXPECTATION.apply(position);
+      return RecordingExporter.batchOperationExecutionRecords()
+          .withIntent(BatchOperationExecutionIntent.EXECUTED)
+          .withSourceRecordPosition(position)
+          .withPartitionId(partition)
+          .getFirst();
     }
 
     public void executeWithoutExpectation() {

@@ -39,6 +39,7 @@ const compensationProcessInstance: InstanceMock = {
     tenantId: '<default>',
     hasIncident: false,
   },
+  callHierarchy: [],
   flowNodeInstances: {
     '9007199254744341': {
       children: [

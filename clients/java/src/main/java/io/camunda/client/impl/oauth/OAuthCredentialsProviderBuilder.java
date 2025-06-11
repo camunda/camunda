@@ -22,6 +22,8 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CONNECT_TIMEOUT;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_READ_TIMEOUT;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_CERT_PASSWORD;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_CERT_PATH;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_KEY_SECRET;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_PATH;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_SECRET;
@@ -34,8 +36,13 @@ import io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 import java.time.Duration;
 import java.util.Objects;
 
@@ -61,6 +68,8 @@ public final class OAuthCredentialsProviderBuilder {
   private Duration connectTimeout;
   private Duration readTimeout;
   private boolean applyEnvironmentOverrides = true;
+  private Path sslClientCertPath;
+  private String sslClientCertPassword;
 
   /** Client id to be used when requesting access token from OAuth authorization server. */
   public OAuthCredentialsProviderBuilder clientId(final String clientId) {
@@ -269,6 +278,34 @@ public final class OAuthCredentialsProviderBuilder {
     return readTimeout;
   }
 
+  public OAuthCredentialsProviderBuilder sslClientCertPath(final String entraCertificatePath) {
+    if (entraCertificatePath != null) {
+      this.sslClientCertPath = Paths.get(entraCertificatePath);
+    }
+    return this;
+  }
+
+  public Path getSslClientCertPath() {
+    return sslClientCertPath;
+  }
+
+  public OAuthCredentialsProviderBuilder sslClientCertPassword(
+      final String entraCertificatePassword) {
+    this.sslClientCertPassword = entraCertificatePassword;
+    return this;
+  }
+
+  public String getSslClientCertPassword() {
+    return sslClientCertPassword;
+  }
+
+  public boolean sslClientCertConfigurationProvided() {
+    return sslClientCertPassword != null
+        && !sslClientCertPassword.isEmpty()
+        && sslClientCertPath != null
+        && sslClientCertPath.toFile().exists();
+  }
+
   public OAuthCredentialsProviderBuilder applyEnvironmentOverrides(
       final boolean applyEnvironmentOverrides) {
     this.applyEnvironmentOverrides = applyEnvironmentOverrides;
@@ -283,9 +320,15 @@ public final class OAuthCredentialsProviderBuilder {
       checkEnvironmentOverrides();
     }
     applyDefaults();
+    applySSLClientCertConfiguration();
 
     validate();
     return new OAuthCredentialsProvider(this);
+  }
+
+  private void applySSLClientCertConfiguration() {
+    applyEnvironmentValueIfNotNull(this::sslClientCertPath, OAUTH_ENV_SSL_CLIENT_CERT_PATH);
+    applyEnvironmentValueIfNotNull(this::sslClientCertPassword, OAUTH_ENV_SSL_CLIENT_CERT_PASSWORD);
   }
 
   private void checkEnvironmentOverrides() {
@@ -363,7 +406,15 @@ public final class OAuthCredentialsProviderBuilder {
   private void validate() {
     try {
       Objects.requireNonNull(clientId, String.format(INVALID_ARGUMENT_MSG, "client id"));
-      Objects.requireNonNull(clientSecret, String.format(INVALID_ARGUMENT_MSG, "client secret"));
+      if (sslClientCertConfigurationProvided()) {
+        // loading the certificate from the provided path to ensure it exists and is valid
+        final KeyStore keyStore = KeyStore.getInstance("PKCS12");
+        keyStore.load(
+            Files.newInputStream(Paths.get(sslClientCertPath.toAbsolutePath().toString())),
+            sslClientCertPassword.toCharArray());
+      } else {
+        Objects.requireNonNull(clientSecret, String.format(INVALID_ARGUMENT_MSG, "client secret"));
+      }
       Objects.requireNonNull(audience, String.format(INVALID_ARGUMENT_MSG, "audience"));
       Objects.requireNonNull(
           authorizationServerUrl, String.format(INVALID_ARGUMENT_MSG, "authorization server URL"));
@@ -386,7 +437,11 @@ public final class OAuthCredentialsProviderBuilder {
       }
       validateTimeout(connectTimeout, "ConnectTimeout");
       validateTimeout(readTimeout, "ReadTimeout");
-    } catch (final NullPointerException | IOException e) {
+    } catch (final NullPointerException
+        | IOException
+        | KeyStoreException
+        | NoSuchAlgorithmException
+        | CertificateException e) {
       throw new IllegalArgumentException(e);
     }
   }

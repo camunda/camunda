@@ -16,6 +16,7 @@
 package io.camunda.client.user;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
@@ -40,5 +41,32 @@ public class SearchUsersTest extends ClientRestTest {
     final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getUrl()).isEqualTo("/v2/users/search");
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
+  }
+
+  @Test
+  public void shouldSearchUserByUsername() {
+    // when
+    client.newUserGetRequest("username").send().join();
+
+    // then
+    final LoggedRequest request = gatewayService.getLastRequest();
+    assertThat(request.getUrl()).isEqualTo("/v2/users/" + "username");
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
+  }
+
+  @Test
+  void shouldRaiseExceptionOnNullUsername() {
+    // when / then
+    assertThatThrownBy(() -> client.newUserGetRequest(null).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("username must not be null");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnEmptyUsername() {
+    // when / then
+    assertThatThrownBy(() -> client.newUserGetRequest("").send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("username must not be empty");
   }
 }

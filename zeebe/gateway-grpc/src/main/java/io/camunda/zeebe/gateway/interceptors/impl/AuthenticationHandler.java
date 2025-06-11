@@ -107,6 +107,14 @@ public sealed interface AuthenticationHandler {
                       oidcAuthenticationConfiguration.getUsernameClaim(),
                       oidcAuthenticationConfiguration.getClientIdClaim())));
     }
+
+    private String sanitizeClaimPath(final String claim) {
+      // If the claim starts with a dollar sign, it is already a JSONPath expression.
+      // Otherwise, we wrap it with the dollar sign to denote a JSONPath.
+      // We also ensure that the claim is wrapped in single quotes to handle cases where the claim
+      // name contains special characters.
+      return claim.startsWith("$") ? claim : "$['" + claim + "']";
+    }
   }
 
   final class BasicAuth implements AuthenticationHandler {

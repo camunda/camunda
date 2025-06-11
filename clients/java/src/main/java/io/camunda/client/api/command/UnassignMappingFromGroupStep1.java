@@ -17,15 +17,25 @@ package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.UnassignMappingFromGroupResponse;
 
-public interface UnassignMappingFromGroupStep1
-    extends FinalCommandStep<UnassignMappingFromGroupResponse> {
+public interface UnassignMappingFromGroupStep1 {
 
   /**
    * Sets the mapping ID for the unassignment.
    *
    * @param mappingId the ID of the mapping to unassign
-   * @return the builder for this command. Call {@link #send()} to complete the command and send it
-   *     to the broker.
+   * @return the builder for this command.
    */
-  UnassignMappingFromGroupStep1 mappingId(String mappingId);
+  UnassignMappingFromGroupStep2 mappingId(String mappingId);
+
+  interface UnassignMappingFromGroupStep2
+      extends FinalCommandStep<UnassignMappingFromGroupResponse> {
+    /**
+     * Sets the group ID.
+     *
+     * @param groupId the id of the group
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker.
+     */
+    UnassignMappingFromGroupStep2 groupId(String groupId);
+  }
 }

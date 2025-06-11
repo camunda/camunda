@@ -8,13 +8,18 @@
 package io.camunda.zeebe.broker.partitioning.scaling;
 
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerPartitionBootstrappedRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPartitionScaleUpRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.GetScaleUpProgress;
+import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.time.Duration;
 import java.util.Set;
 import java.util.TreeSet;
@@ -97,5 +102,29 @@ public class BrokerClientPartitionScalingExecutor implements PartitionScalingCha
         });
 
     return result;
+  }
+
+  @Override
+  public ActorFuture<Void> notifyPartitionBootstrapped(final int partitionId) {
+    final ActorFuture<BrokerResponse<ScaleRecord>> bootstrapFuture =
+        concurrencyControl.createFuture();
+
+    brokerClient
+        .sendRequestWithRetry(new BrokerPartitionBootstrappedRequest(partitionId))
+        .whenComplete(bootstrapFuture);
+    return bootstrapFuture.andThen(
+        response -> {
+          LOGGER.debug("Received response from partition bootstrap request {}", response);
+          if (response.isError()) {
+            return CompletableActorFuture.completedExceptionally(
+                new BrokerErrorException(response.getError()));
+          } else if (response.isRejection()) {
+            return CompletableActorFuture.completedExceptionally(
+                new BrokerRejectionException(response.getRejection()));
+          } else {
+            return CompletableActorFuture.completed();
+          }
+        },
+        concurrencyControl);
   }
 }

@@ -22,6 +22,7 @@ import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
@@ -161,5 +162,30 @@ class UserAuthorizationIT {
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("403: 'Forbidden'");
+  }
+
+  @Test
+  void getUserByUsernameShouldReturnNotFoundIfUnauthorized(
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
+    assertThatThrownBy(() -> camundaClient.newUserGetRequest(USER_1.username()).send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("404: 'Not Found'");
+  }
+
+  @Test
+  void getUserByUsernameShouldReturnNotFoundForNonExistentUsername(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () -> camundaClient.newUserGetRequest(Strings.newRandomValidIdentityId()).send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("404: 'Not Found'");
+  }
+
+  @Test
+  void getUserByUsernameShouldReturnUserIfAuthorized(
+      @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
+    final var user = camundaClient.newUserGetRequest(USER_1.username()).send().join();
+
+    assertThat(user.getUsername()).isEqualTo(USER_1.username());
   }
 }

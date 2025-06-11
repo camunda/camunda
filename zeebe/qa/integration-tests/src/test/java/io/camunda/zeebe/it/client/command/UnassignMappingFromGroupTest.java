@@ -63,7 +63,7 @@ public class UnassignMappingFromGroupTest {
   @Test
   void shouldUnassignMappingFromGroup() {
     // when
-    client.newUnassignMappingFromGroupCommand(groupId).mappingId(mappingId).send().join();
+    client.newUnassignMappingFromGroupCommand().mappingId(mappingId).groupId(groupId).send().join();
 
     // then
     ZeebeAssertHelper.assertEntityUnassignedFromGroup(
@@ -83,8 +83,9 @@ public class UnassignMappingFromGroupTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignMappingFromGroupCommand(nonExistentGroupId)
+                    .newUnassignMappingFromGroupCommand()
                     .mappingId(mappingId)
+                    .groupId(nonExistentGroupId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -99,7 +100,12 @@ public class UnassignMappingFromGroupTest {
     // when / then
     assertThatThrownBy(
             () ->
-                client.newUnassignMappingFromGroupCommand(null).mappingId(mappingId).send().join())
+                client
+                    .newUnassignMappingFromGroupCommand()
+                    .mappingId(mappingId)
+                    .groupId(null)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be null");
   }
@@ -108,7 +114,13 @@ public class UnassignMappingFromGroupTest {
   void shouldRejectIfEmptyGroupId() {
     // when / then
     assertThatThrownBy(
-            () -> client.newUnassignMappingFromGroupCommand("").mappingId(mappingId).send().join())
+            () ->
+                client
+                    .newUnassignMappingFromGroupCommand()
+                    .mappingId(mappingId)
+                    .groupId("")
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be empty");
   }
@@ -118,7 +130,12 @@ public class UnassignMappingFromGroupTest {
     // when / then
     assertThatThrownBy(
             () ->
-                client.newUnassignMappingFromGroupCommand("groupId").mappingId(null).send().join())
+                client
+                    .newUnassignMappingFromGroupCommand()
+                    .mappingId(null)
+                    .groupId(groupId)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("mappingId must not be null");
   }
@@ -127,7 +144,13 @@ public class UnassignMappingFromGroupTest {
   void shouldRejectIfEmptyMappingId() {
     // when / then
     assertThatThrownBy(
-            () -> client.newUnassignMappingFromGroupCommand("groupId").mappingId("").send().join())
+            () ->
+                client
+                    .newUnassignMappingFromGroupCommand()
+                    .mappingId("")
+                    .groupId(groupId)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("mappingId must not be empty");
   }

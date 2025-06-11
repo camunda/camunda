@@ -35,7 +35,7 @@ public class UnassignMemberGroupTest extends ClientRestTest {
   @Test
   void shouldUnassignUserFromGroup() {
     // when
-    client.newUnassignUserFromGroupCommand(GROUP_ID).username(USERNAME).send().join();
+    client.newUnassignUserFromGroupCommand().username(USERNAME).groupId(GROUP_ID).send().join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
@@ -50,9 +50,75 @@ public class UnassignMemberGroupTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newUnassignUserFromGroupCommand(GROUP_ID).username(USERNAME).send().join())
+            () ->
+                client
+                    .newUnassignUserFromGroupCommand()
+                    .username(USERNAME)
+                    .groupId(GROUP_ID)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnNullUsername() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUnassignUserFromGroupCommand()
+                    .username(null)
+                    .groupId(GROUP_ID)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("username must not be null");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnEmptyUsername() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUnassignUserFromGroupCommand()
+                    .username("")
+                    .groupId(GROUP_ID)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("username must not be empty");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnNullGroupId() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUnassignUserFromGroupCommand()
+                    .username(USERNAME)
+                    .groupId(null)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("groupId must not be null");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnEmptyGroupId() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUnassignUserFromGroupCommand()
+                    .username(USERNAME)
+                    .groupId("")
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("groupId must not be empty");
   }
 
   @Test
@@ -96,7 +162,12 @@ public class UnassignMemberGroupTest extends ClientRestTest {
   @Test
   void shouldUnassignMappingFromGroup() {
     // when
-    client.newUnassignMappingFromGroupCommand(GROUP_ID).mappingId(MAPPING_ID).send().join();
+    client
+        .newUnassignMappingFromGroupCommand()
+        .mappingId(MAPPING_ID)
+        .groupId(GROUP_ID)
+        .send()
+        .join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
@@ -113,8 +184,9 @@ public class UnassignMemberGroupTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignMappingFromGroupCommand(GROUP_ID)
+                    .newUnassignMappingFromGroupCommand()
                     .mappingId(MAPPING_ID)
+                    .groupId(GROUP_ID)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -131,8 +203,9 @@ public class UnassignMemberGroupTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignMappingFromGroupCommand(GROUP_ID)
+                    .newUnassignMappingFromGroupCommand()
                     .mappingId(MAPPING_ID)
+                    .groupId(GROUP_ID)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -149,11 +222,42 @@ public class UnassignMemberGroupTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignMappingFromGroupCommand(GROUP_ID)
+                    .newUnassignMappingFromGroupCommand()
                     .mappingId(MAPPING_ID)
+                    .groupId(GROUP_ID)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnNullMappingId() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUnassignMappingFromGroupCommand()
+                    .mappingId(null)
+                    .groupId(GROUP_ID)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("mappingId must not be null");
+  }
+
+  @Test
+  void shouldRaiseExceptionOnEmptyMappingId() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUnassignMappingFromGroupCommand()
+                    .mappingId("")
+                    .groupId(GROUP_ID)
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("mappingId must not be empty");
   }
 }

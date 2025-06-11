@@ -38,7 +38,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
 
   opensearch:
-    image: opensearchproject/opensearch:2.19.1
+    image: opensearchproject/opensearch:2.19.2
     container_name: opensearch
     environment:
       - cluster.name=opensearch-cluster
@@ -75,7 +75,7 @@ services:
     depends_on:
       - postgres
     container_name: keycloak
-    image: bitnami/keycloak:26.1.4
+    image: bitnami/keycloak:26.2.5
     ports:
       - '18080:8080'
     environment:

@@ -67,6 +67,12 @@ public class ElementInstanceFilterImpl
   }
 
   @Override
+  public ElementInstanceFilter elementName(final String value) {
+    filter.setElementName(value);
+    return this;
+  }
+
+  @Override
   public ElementInstanceFilter state(final ElementInstanceState value) {
     return state(b -> b.eq(value));
   }

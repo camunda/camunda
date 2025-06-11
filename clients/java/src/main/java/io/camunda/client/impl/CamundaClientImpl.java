@@ -111,6 +111,7 @@ import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
 import io.camunda.client.api.fetch.RoleGetRequest;
 import io.camunda.client.api.fetch.RolesByGroupSearchRequest;
 import io.camunda.client.api.fetch.RolesSearchRequest;
+import io.camunda.client.api.fetch.UserGetRequest;
 import io.camunda.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.UsersByGroupSearchRequest;
@@ -222,6 +223,7 @@ import io.camunda.client.impl.fetch.ProcessDefinitionGetXmlRequestImpl;
 import io.camunda.client.impl.fetch.ProcessInstanceGetCallHierarchyRequestImpl;
 import io.camunda.client.impl.fetch.ProcessInstanceGetRequestImpl;
 import io.camunda.client.impl.fetch.RoleGetRequestImpl;
+import io.camunda.client.impl.fetch.UserGetRequestImpl;
 import io.camunda.client.impl.fetch.UserTaskGetFormRequestImpl;
 import io.camunda.client.impl.fetch.UserTaskGetRequestImpl;
 import io.camunda.client.impl.fetch.VariableGetRequestImpl;
@@ -956,8 +958,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public UnassignUserFromGroupCommandStep1 newUnassignUserFromGroupCommand(final String groupId) {
-    return new UnassignUserFromGroupCommandImpl(groupId, httpClient);
+  public UnassignUserFromGroupCommandStep1 newUnassignUserFromGroupCommand() {
+    return new UnassignUserFromGroupCommandImpl(httpClient);
   }
 
   @Override
@@ -973,6 +975,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public UpdateUserCommandStep1 newUpdateUserCommand(final String username) {
     return new UpdateUserCommandImpl(httpClient, username, jsonMapper);
+  }
+
+  @Override
+  public UserGetRequest newUserGetRequest(final String username) {
+    return new UserGetRequestImpl(httpClient, username);
   }
 
   @Override
@@ -1089,18 +1096,18 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public AssignMappingToTenantCommandStep1 newAssignMappingToTenantCommand(final String tenantId) {
-    return new AssignMappingToTenantCommandImpl(httpClient, tenantId);
+  public AssignMappingToTenantCommandStep1 newAssignMappingToTenantCommand() {
+    return new AssignMappingToTenantCommandImpl(httpClient);
   }
 
   @Override
-  public AssignUserToTenantCommandStep1 newAssignUserToTenantCommand(final String tenantId) {
-    return new AssignUserToTenantCommandImpl(httpClient, tenantId);
+  public AssignUserToTenantCommandStep1 newAssignUserToTenantCommand() {
+    return new AssignUserToTenantCommandImpl(httpClient);
   }
 
   @Override
-  public RemoveUserFromTenantCommandStep1 newUnassignUserFromTenantCommand(final String tenantId) {
-    return new RemoveUserFromTenantCommandImpl(httpClient, tenantId);
+  public RemoveUserFromTenantCommandStep1 newUnassignUserFromTenantCommand() {
+    return new RemoveUserFromTenantCommandImpl(httpClient);
   }
 
   @Override
@@ -1157,8 +1164,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public UnassignMappingFromGroupStep1 newUnassignMappingFromGroupCommand(final String groupId) {
-    return new UnassignMappingFromGroupCommandImpl(httpClient, groupId);
+  public UnassignMappingFromGroupStep1 newUnassignMappingFromGroupCommand() {
+    return new UnassignMappingFromGroupCommandImpl(httpClient);
   }
 
   @Override

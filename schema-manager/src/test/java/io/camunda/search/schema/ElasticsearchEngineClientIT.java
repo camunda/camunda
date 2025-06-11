@@ -69,10 +69,13 @@ public class ElasticsearchEngineClientIT {
   void shouldPutMappingCorrectly() throws IOException {
     // given
     final var indexName = "test";
-    elsClient.indices().create(req -> req.index(indexName));
+    final var indexAlias = "test_alias";
+    elsClient
+        .indices()
+        .create(req -> req.index(indexName).aliases(indexAlias, a -> a.isWriteIndex(false)));
 
     final var descriptor = mock(IndexDescriptor.class);
-    doReturn(indexName).when(descriptor).getFullQualifiedName();
+    doReturn(indexAlias).when(descriptor).getAlias();
 
     final Set<IndexMappingProperty> newProperties = new HashSet<>();
     newProperties.add(new IndexMappingProperty("email", Map.of("type", "keyword")));

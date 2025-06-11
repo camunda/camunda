@@ -125,7 +125,7 @@ public class OperateMultiTenancyIT {
         .join()
         .getTenantKey();
     for (final var username : usernames) {
-      client.newAssignUserToTenantCommand(tenantId).username(username).send().join();
+      client.newAssignUserToTenantCommand().username(username).tenantId(tenantId).send().join();
     }
   }
 

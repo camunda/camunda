@@ -29,6 +29,7 @@ public record IncidentFilter(
     List<Long> flowNodeInstanceKeys,
     DateValueFilter creationTime,
     List<IncidentState> states,
+    String treePath,
     List<Long> jobKeys,
     List<String> tenantIds)
     implements FilterBase {
@@ -46,6 +47,7 @@ public record IncidentFilter(
     private List<Long> flowNodeInstanceKeys;
     private DateValueFilter creationTimeFilter;
     private List<IncidentState> states;
+    private String treePath;
     private List<Long> jobKeys;
     private List<String> tenantIds;
 
@@ -144,6 +146,11 @@ public record IncidentFilter(
       return this;
     }
 
+    public Builder treePath(final String value) {
+      treePath = value;
+      return this;
+    }
+
     public Builder jobKeys(final Long value, final Long... values) {
       return jobKeys(collectValues(value, values));
     }
@@ -176,6 +183,7 @@ public record IncidentFilter(
           Objects.requireNonNullElse(flowNodeInstanceKeys, Collections.emptyList()),
           creationTimeFilter,
           Objects.requireNonNullElse(states, Collections.emptyList()),
+          treePath,
           Objects.requireNonNullElse(jobKeys, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()));
     }

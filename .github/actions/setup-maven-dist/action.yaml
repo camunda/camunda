@@ -29,5 +29,5 @@ runs:
         MAVEN_VERSION: ${{ inputs.maven-version }}
         MAVEN_WRAPPER_PROPERTIES_PATH: .mvn/wrapper/maven-wrapper.properties
       run: |
-        sed -i "/distributionUrl=/ s/[[:digit:]]\.[[:digit:]]\.[[:digit:]]/${MAVEN_VERSION}/g" "${MAVEN_WRAPPER_PROPERTIES_PATH}"
+        sed -i "/distributionUrl=/ s/[[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+/${MAVEN_VERSION}/g" "${MAVEN_WRAPPER_PROPERTIES_PATH}"
         cat "${MAVEN_WRAPPER_PROPERTIES_PATH}"

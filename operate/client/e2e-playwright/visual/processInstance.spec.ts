@@ -43,6 +43,8 @@ test.describe('process instance page', () => {
         URL_API_PATTERN,
         mockResponses({
           processInstanceDetail: runningInstance.detail,
+          processInstanceDetailV2: runningInstance.detailV2,
+          callHierarchy: runningInstance.callHierarchy,
           xml: runningInstance.xml,
         }),
       );
@@ -68,6 +70,8 @@ test.describe('process instance page', () => {
         URL_API_PATTERN,
         mockResponses({
           processInstanceDetail: runningInstance.detail,
+          processInstanceDetailV2: runningInstance.detailV2,
+          callHierarchy: runningInstance.callHierarchy,
           flowNodeInstances: runningInstance.flowNodeInstances,
           statisticsV2: runningInstance.statisticsV2,
           sequenceFlows: runningInstance.sequenceFlows,
@@ -98,6 +102,8 @@ test.describe('process instance page', () => {
         URL_API_PATTERN,
         mockResponses({
           processInstanceDetail: runningInstance.detail,
+          processInstanceDetailV2: runningInstance.detailV2,
+          callHierarchy: runningInstance.callHierarchy,
           flowNodeInstances: runningInstance.flowNodeInstances,
           statisticsV2: runningInstance.statisticsV2,
           sequenceFlows: runningInstance.sequenceFlows,
@@ -129,6 +135,8 @@ test.describe('process instance page', () => {
         URL_API_PATTERN,
         mockResponses({
           processInstanceDetail: runningInstance.detail,
+          processInstanceDetailV2: runningInstance.detailV2,
+          callHierarchy: runningInstance.callHierarchy,
           flowNodeInstances: runningInstance.flowNodeInstances,
           statisticsV2: runningInstance.statisticsV2,
           sequenceFlows: runningInstance.sequenceFlows,
@@ -165,6 +173,8 @@ test.describe('process instance page', () => {
         URL_API_PATTERN,
         mockResponses({
           processInstanceDetail: instanceWithIncident.detail,
+          processInstanceDetailV2: instanceWithIncident.detailV2,
+          callHierarchy: instanceWithIncident.callHierarchy,
           flowNodeInstances: instanceWithIncident.flowNodeInstances,
           statisticsV2: instanceWithIncident.statisticsV2,
           sequenceFlows: instanceWithIncident.sequenceFlows,
@@ -181,6 +191,12 @@ test.describe('process instance page', () => {
           waitUntil: 'networkidle',
         },
       });
+
+      await page
+        .getByRole('button', {
+          name: /reset diagram zoom/i,
+        })
+        .click();
 
       await page
         .getByRole('button', {
@@ -202,6 +218,8 @@ test.describe('process instance page', () => {
         URL_API_PATTERN,
         mockResponses({
           processInstanceDetail: completedInstance.detail,
+          processInstanceDetailV2: completedInstance.detailV2,
+          callHierarchy: completedInstance.callHierarchy,
           flowNodeInstances: completedInstance.flowNodeInstances,
           statisticsV2: completedInstance.statisticsV2,
           sequenceFlows: completedInstance.sequenceFlows,
@@ -237,6 +255,8 @@ test.describe('process instance page', () => {
         URL_API_PATTERN,
         mockResponses({
           processInstanceDetail: compensationProcessInstance.detail,
+          processInstanceDetailV2: compensationProcessInstance.detailV2,
+          callHierarchy: compensationProcessInstance.callHierarchy,
           flowNodeInstances: compensationProcessInstance.flowNodeInstances,
           statisticsV2: compensationProcessInstance.statisticsV2,
           sequenceFlows: compensationProcessInstance.sequenceFlows,

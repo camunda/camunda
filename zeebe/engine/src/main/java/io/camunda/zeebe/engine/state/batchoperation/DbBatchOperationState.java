@@ -191,13 +191,13 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
-  public void completePartition(final long batchOperationKey, final int partitionId) {
+  public void finishPartition(final long batchOperationKey, final int partitionId) {
     LOGGER.trace(
-        "Complete batch operation with key {} on partition {}", batchOperationKey, partitionId);
+        "Finish batch operation with key {} on partition {}", batchOperationKey, partitionId);
     batchKey.wrapLong(batchOperationKey);
 
     final var batch = batchOperationColumnFamily.get(batchKey);
-    batch.addCompletedPartition(partitionId);
+    batch.addFinishedPartition(partitionId);
     batchOperationColumnFamily.update(batchKey, batch);
   }
 

@@ -17,9 +17,7 @@ import io.camunda.service.RoleServices;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
-@Component
 public class RoleMigrationHandler extends MigrationHandler<Role> {
   private static final Logger LOG = LoggerFactory.getLogger(RoleMigrationHandler.class);
   private final RoleServices roleServices;
@@ -39,8 +37,9 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
     this.managementIdentityTransformer = managementIdentityTransformer;
   }
 
+  // TODO: this will be revisited
   @Override
-  protected List<Role> fetchBatch() {
+  protected List<Role> fetchBatch(final int page) {
     return managementIdentityClient.fetchRoles(SIZE);
   }
 

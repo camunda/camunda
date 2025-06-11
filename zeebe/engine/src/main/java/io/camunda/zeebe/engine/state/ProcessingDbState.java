@@ -12,8 +12,6 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.scaling.redistribution.DbRedistributionState;
-import io.camunda.zeebe.engine.scaling.redistribution.MutableRedistributionState;
 import io.camunda.zeebe.engine.state.authorization.DbAuthorizationState;
 import io.camunda.zeebe.engine.state.authorization.DbMappingState;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState;
@@ -120,7 +118,6 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableClockState clockState;
   private final MutableAuthorizationState authorizationState;
   private final MutableRoutingState routingState;
-  private final MutableRedistributionState redistributionState;
   private final MutableTenantState tenantState;
   private final MutableRoleState roleState;
   private final MutableGroupState groupState;
@@ -177,7 +174,6 @@ public class ProcessingDbState implements MutableProcessingState {
     clockState = new DbClockState(zeebeDb, transactionContext);
     authorizationState = new DbAuthorizationState(zeebeDb, transactionContext);
     routingState = new DbRoutingState(zeebeDb, transactionContext);
-    redistributionState = new DbRedistributionState(zeebeDb, transactionContext);
     roleState = new DbRoleState(zeebeDb, transactionContext);
     groupState = new DbGroupState(zeebeDb, transactionContext);
     tenantState = new DbTenantState(zeebeDb, transactionContext);
@@ -319,11 +315,6 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableRoutingState getRoutingState() {
     return routingState;
-  }
-
-  @Override
-  public MutableRedistributionState getRedistributionState() {
-    return redistributionState;
   }
 
   @Override

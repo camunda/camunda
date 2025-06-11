@@ -72,7 +72,7 @@ public class SchemaManagerConcurrencyIT {
 
     index =
         SchemaTestUtil.mockIndex(
-            CONFIG_PREFIX + "-qualified_name", "alias", "index_name", "/mappings.json");
+            CONFIG_PREFIX + "-index-qualified_name", "alias", "index_name", "/mappings.json");
 
     when(indexTemplate.getFullQualifiedName()).thenReturn(CONFIG_PREFIX + "-qualified_name");
   }
@@ -163,9 +163,9 @@ public class SchemaManagerConcurrencyIT {
 
     // then
     assertThat(exceptions).isEmpty();
-    // assert that both schema managers detected a diff in the index mapping
-    assertThat(PostMethodPauseAdvice.getReturnedValueBeforePause(thread1, Map.class)).hasSize(1);
-    assertThat(PostMethodPauseAdvice.getReturnedValueBeforePause(thread2, Map.class)).hasSize(1);
+    // assert that both schema managers detected diffs in the index and index template mappings
+    assertThat(PostMethodPauseAdvice.getReturnedValueBeforePause(thread1, Map.class)).hasSize(2);
+    assertThat(PostMethodPauseAdvice.getReturnedValueBeforePause(thread2, Map.class)).hasSize(2);
     // assert that the schema was correctly updated
     final var retrievedIndex = clientAdapter.getIndexAsNode(index.getFullQualifiedName());
     final var retrievedIndexTemplate =

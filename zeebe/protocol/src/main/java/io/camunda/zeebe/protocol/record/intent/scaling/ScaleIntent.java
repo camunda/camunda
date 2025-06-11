@@ -22,7 +22,9 @@ public enum ScaleIntent implements Intent {
   SCALING_UP((short) 2, true),
   SCALED_UP((short) 3, true),
   STATUS((short) 4, false),
-  STATUS_RESPONSE((short) 5, true);
+  STATUS_RESPONSE((short) 5, true),
+  MARK_PARTITION_BOOTSTRAPPED((short) 6, false),
+  PARTITION_BOOTSTRAPPED((short) 7, true);
 
   // A static field is needed as values() would allocate at every call
   private static final ScaleIntent[] INTENTS = values();

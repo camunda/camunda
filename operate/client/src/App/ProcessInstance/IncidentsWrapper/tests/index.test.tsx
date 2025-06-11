@@ -12,6 +12,11 @@ import {mockIncidents, Wrapper} from './mocks';
 import {incidentsStore} from 'modules/stores/incidents';
 import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
 
+jest.mock('modules/feature-flags', () => ({
+  ...jest.requireActual('modules/feature-flags'),
+  IS_PROCESS_INSTANCE_V2_ENABLED: false,
+}));
+
 describe('IncidentsFilter', () => {
   beforeEach(async () => {
     mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);

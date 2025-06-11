@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
@@ -39,8 +40,9 @@ import org.junit.jupiter.params.provider.EnumSource.Mode;
 public class FlowNodeInstanceFromProcessInstanceHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-list-view";
+  private final TestProcessCache processCache = new TestProcessCache();
   private final FlowNodeInstanceFromProcessInstanceHandler underTest =
-      new FlowNodeInstanceFromProcessInstanceHandler(indexName);
+      new FlowNodeInstanceFromProcessInstanceHandler(indexName, processCache);
 
   @Test
   public void testGetHandledValueType() {
@@ -167,6 +169,7 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
             .setType(FlowNodeType.SERVICE_TASK)
             .setState(FlowNodeState.ACTIVE)
             .setFlowNodeId("flowNode1")
+            .setFlowNodeName("flowNodeName")
             .setProcessDefinitionKey(222L)
             .setBpmnProcessId("bpmnId")
             .setTenantId("tenantId")
@@ -183,6 +186,8 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(FlowNodeInstanceTemplate.TYPE, inputEntity.getType());
     expectedUpdateFields.put(FlowNodeInstanceTemplate.STATE, inputEntity.getState());
     expectedUpdateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, inputEntity.getFlowNodeId());
+    expectedUpdateFields.put(
+        FlowNodeInstanceTemplate.FLOW_NODE_NAME, inputEntity.getFlowNodeName());
     expectedUpdateFields.put(
         FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, inputEntity.getProcessDefinitionKey());
     expectedUpdateFields.put(
@@ -211,6 +216,7 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
             .setType(FlowNodeType.SERVICE_TASK)
             .setState(FlowNodeState.ACTIVE)
             .setFlowNodeId("flowNode1")
+            .setFlowNodeId("flowNodeName")
             .setProcessDefinitionKey(222L)
             .setBpmnProcessId("bpmnId");
     final BatchRequest mockRequest = mock(BatchRequest.class);
@@ -221,6 +227,8 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(FlowNodeInstanceTemplate.TYPE, inputEntity.getType());
     expectedUpdateFields.put(FlowNodeInstanceTemplate.STATE, inputEntity.getState());
     expectedUpdateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, inputEntity.getFlowNodeId());
+    expectedUpdateFields.put(
+        FlowNodeInstanceTemplate.FLOW_NODE_NAME, inputEntity.getFlowNodeName());
     expectedUpdateFields.put(
         FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, inputEntity.getProcessDefinitionKey());
     expectedUpdateFields.put(

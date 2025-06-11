@@ -11,7 +11,10 @@ import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.JsonPathException;
 import com.jayway.jsonpath.Option;
+import io.camunda.zeebe.util.LockUtil;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
+import net.jcip.annotations.GuardedBy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,17 +29,29 @@ public final class OidcPrincipalLoader {
 
   private static final Logger LOG = LoggerFactory.getLogger(OidcPrincipalLoader.class);
 
+  @GuardedBy("evaluationLock")
   private final JsonPath usernamePath;
+
+  @GuardedBy("evaluationLock")
   private final JsonPath clientIdPath;
 
+  // Lock to prevent concurrent evaluation of compiled JSONPath expressions. Necessary due to
+  // https://github.com/json-path/JsonPath/issues/975
+  private final ReentrantLock evaluationLock = new ReentrantLock();
+
   public OidcPrincipalLoader(final String usernameClaim, final String clientIdClaim) {
-    usernamePath = usernameClaim != null ? JsonPath.compile(usernameClaim) : null;
-    clientIdPath = clientIdClaim != null ? JsonPath.compile(clientIdClaim) : null;
+    usernamePath =
+        usernameClaim != null ? JsonPath.compile(sanitizeClaimPath(usernameClaim)) : null;
+    clientIdPath =
+        clientIdClaim != null ? JsonPath.compile(sanitizeClaimPath(clientIdClaim)) : null;
   }
 
   public OidcPrincipals load(final Map<String, Object> claims) {
-    return new OidcPrincipals(
-        tryReadJsonPath(claims, usernamePath), tryReadJsonPath(claims, clientIdPath));
+    return LockUtil.withLock(
+        evaluationLock,
+        () ->
+            new OidcPrincipals(
+                tryReadJsonPath(claims, usernamePath), tryReadJsonPath(claims, clientIdPath)));
   }
 
   private static String tryReadJsonPath(final Map<String, Object> claims, final JsonPath path) {
@@ -56,6 +71,14 @@ public final class OidcPrincipalLoader {
       LOG.debug("Failed to evaluate expression {} on claims {}", path, claims, e);
       return null;
     }
+  }
+
+  private String sanitizeClaimPath(final String claim) {
+    // If the claim starts with a dollar sign, it is already a JSONPath expression.
+    // Otherwise, we wrap it with the dollar sign to denote a JSONPath.
+    // We also ensure that the claim is wrapped in single quotes to handle cases where the claim
+    // name contains special characters.
+    return claim.startsWith("$") ? claim : "$['" + claim + "']";
   }
 
   public record OidcPrincipals(String username, String clientId) {}

@@ -686,7 +686,7 @@ public final class SearchQueryResponseMapper {
         .toList();
   }
 
-  private static List<IncidentResult> toIncidents(final List<IncidentEntity> incidents) {
+  public static List<IncidentResult> toIncidents(final List<IncidentEntity> incidents) {
     return incidents.stream().map(SearchQueryResponseMapper::toIncident).toList();
   }
 

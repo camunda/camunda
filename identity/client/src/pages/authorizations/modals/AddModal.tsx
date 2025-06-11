@@ -71,9 +71,7 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
   const [apiCall, { loading, error }] = useApiCall(createAuthorization, {
     suppressErrorNotification: true,
   });
-  const [ownerType, setOwnerType] = useState<OwnerType>(
-    isOIDC ? OwnerType.MAPPING : OwnerType.USER,
-  );
+  const [ownerType, setOwnerType] = useState<OwnerType>(OwnerType.USER);
   const [ownerId, setOwnerId] = useState("");
   const [resourceId, setResourceId] = useState("");
   const [resourceType, setResourceType] =
@@ -132,7 +130,7 @@ const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
           titleText={t("ownerType")}
           items={ownerTypeItems.filter((ownerType) => {
             const excludedType = isOIDC
-              ? [OwnerType.USER]
+              ? []
               : [OwnerType.MAPPING, OwnerType.CLIENT];
 
             return !excludedType.includes(ownerType);

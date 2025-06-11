@@ -66,6 +66,26 @@ final class OidcPrincipalLoaderTest {
   }
 
   @Test
+  void shouldLoadUsernameAndClientIdWhenConfigurationIsNotJsonPath() {
+    // given
+    final var claims =
+        Map.<String, Object>of(
+            "username", "testuser",
+            "client_id", "testclient",
+            "other_claim", "other_value",
+            "http://example.com/username", "testuser");
+
+    final var loader = new OidcPrincipalLoader("http://example.com/username", "client_id");
+
+    // when
+    final var principals = loader.load(claims);
+
+    // then
+    assertThat(principals.username()).isEqualTo("testuser");
+    assertThat(principals.clientId()).isEqualTo("testclient");
+  }
+
+  @Test
   void shouldLoadUsernameAndClientId() {
     // given
     final var claims =

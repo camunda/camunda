@@ -22,9 +22,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
-@Component
 public class AuthorizationMigrationHandler extends MigrationHandler<UserResourceAuthorization> {
 
   private static final Logger LOG = LoggerFactory.getLogger(AuthorizationMigrationHandler.class);
@@ -39,8 +37,9 @@ public class AuthorizationMigrationHandler extends MigrationHandler<UserResource
     this.authorizationService = authorizationService.withAuthentication(authentication);
   }
 
+  // TODO: this will be revisited
   @Override
-  protected List<UserResourceAuthorization> fetchBatch() {
+  protected List<UserResourceAuthorization> fetchBatch(final int page) {
     return managementIdentityClient.fetchUserResourceAuthorizations(SIZE);
   }
 

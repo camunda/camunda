@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.stream.Collectors;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Rule;
@@ -38,11 +39,16 @@ public final class BatchOperationMultiPartitionTest {
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
-  @Rule public final EngineRule engine = EngineRule.multiplePartition(PARTITION_COUNT);
+  @Rule
+  public final EngineRule engine =
+      EngineRule.multiplePartition(PARTITION_COUNT)
+          .withEngineConfig(
+              config -> config.setBatchOperationSchedulerInterval(Duration.ofDays(1)));
 
   @Test
   public void shouldCreateOnAllPartitions() {
     // given
+    // nothing
 
     // when
     final long batchOperationKey =
@@ -134,6 +140,85 @@ public final class BatchOperationMultiPartitionTest {
       assertThat(engine.getProcessingState(i).getBatchOperationState().get(batchOperationKey))
           .isEmpty();
     }
+  }
+
+  @Test
+  public void shouldTreatFailedAsFinished() {
+    // given
+    final long batchOperationKey = createDistributedBatchOperation();
+
+    // when
+    // fail partition 3 and complete the others
+    engine
+        .batchOperation()
+        .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+        .withBatchOperationKey(batchOperationKey)
+        .onPartition(PARTITION_COUNT)
+        .fail();
+    for (int i = 1; i < PARTITION_COUNT; i++) {
+      engine
+          .batchOperation()
+          .newExecution()
+          .onPartition(i)
+          .withBatchOperationKey(batchOperationKey)
+          .execute();
+    }
+
+    // then
+    assertThat(
+            RecordingExporter.batchOperationPartitionLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .withPartitionId(1)
+                .limitByCount(
+                    record ->
+                        record.getIntent().equals(BatchOperationIntent.PARTITION_FAILED)
+                            || record.getIntent().equals(BatchOperationIntent.PARTITION_COMPLETED),
+                    3)
+                .collect(Collectors.toList()))
+        .extracting(Record::getIntent)
+        .containsExactlyInAnyOrder(
+            BatchOperationIntent.FAIL_PARTITION,
+            BatchOperationIntent.COMPLETE_PARTITION,
+            BatchOperationIntent.COMPLETE_PARTITION,
+            BatchOperationIntent.PARTITION_FAILED,
+            BatchOperationIntent.PARTITION_COMPLETED,
+            BatchOperationIntent.PARTITION_COMPLETED);
+
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .withPartitionId(1)
+                .limit(record -> record.getIntent().equals(BatchOperationIntent.COMPLETED))
+                .collect(Collectors.toList()))
+        .extracting(Record::getIntent)
+        .contains(BatchOperationIntent.COMPLETED);
+
+    // partitions 1 and 2 are completed
+    for (int i = 1; i < PARTITION_COUNT; i++) {
+      assertThat(
+              RecordingExporter.batchOperationPartitionLifecycleRecords()
+                  .withBatchOperationKey(batchOperationKey)
+                  .withPartitionId(i)
+                  .limit(
+                      record -> record.getIntent().equals(BatchOperationIntent.PARTITION_COMPLETED))
+                  .collect(Collectors.toList()))
+          .extracting(Record::getIntent)
+          .contains(BatchOperationIntent.PARTITION_COMPLETED);
+      assertThat(engine.getProcessingState(i).getBatchOperationState().get(batchOperationKey))
+          .isEmpty();
+    }
+
+    // partitions 3 is failed
+    assertThat(
+            RecordingExporter.batchOperationPartitionLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .withPartitionId(3)
+                .limit(record -> record.getIntent().equals(BatchOperationIntent.PARTITION_FAILED))
+                .collect(Collectors.toList()))
+        .extracting(Record::getIntent)
+        .contains(BatchOperationIntent.PARTITION_FAILED);
+    assertThat(engine.getProcessingState(3).getBatchOperationState().get(batchOperationKey))
+        .isEmpty();
   }
 
   @Test

@@ -124,7 +124,7 @@ public class TaskController extends ApiErrorController {
         && !currentUser.getUserId().isEmpty()) {
       final List<String> listOfUserGroups = userGroupService.getUserGroups();
       if (!listOfUserGroups.contains(IdentityProperties.FULL_GROUP_ACCESS)) {
-        final String userName = userReader.getCurrentUserId();
+        final String userName = currentUser.getUserId();
         final TaskByCandidateUserOrGroup taskByCandidateUserOrGroup =
             new TaskByCandidateUserOrGroup();
         taskByCandidateUserOrGroup.setUserGroups(listOfUserGroups.toArray(String[]::new));

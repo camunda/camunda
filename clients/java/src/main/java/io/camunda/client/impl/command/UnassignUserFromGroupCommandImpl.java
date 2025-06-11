@@ -18,6 +18,7 @@ package io.camunda.client.impl.command;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
+import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1.UnassignUserFromGroupCommandStep2;
 import io.camunda.client.api.response.UnassignUserFromGroupResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
@@ -25,22 +26,28 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class UnassignUserFromGroupCommandImpl implements UnassignUserFromGroupCommandStep1 {
+public class UnassignUserFromGroupCommandImpl
+    implements UnassignUserFromGroupCommandStep1, UnassignUserFromGroupCommandStep2 {
 
-  private final String groupId;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
   private String username;
+  private String groupId;
 
-  public UnassignUserFromGroupCommandImpl(final String groupId, final HttpClient httpClient) {
-    this.groupId = groupId;
+  public UnassignUserFromGroupCommandImpl(final HttpClient httpClient) {
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
   }
 
   @Override
-  public UnassignUserFromGroupCommandStep1 username(final String username) {
+  public UnassignUserFromGroupCommandStep2 username(final String username) {
     this.username = username;
+    return this;
+  }
+
+  @Override
+  public UnassignUserFromGroupCommandStep2 groupId(final String groupId) {
+    this.groupId = groupId;
     return this;
   }
 

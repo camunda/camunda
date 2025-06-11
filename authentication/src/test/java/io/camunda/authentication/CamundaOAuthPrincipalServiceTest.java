@@ -40,6 +40,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 
 @TestInstance(Lifecycle.PER_CLASS)
 public class CamundaOAuthPrincipalServiceTest {
@@ -87,7 +88,7 @@ public class CamundaOAuthPrincipalServiceTest {
       // when
       final var exception =
           assertThrows(
-              IllegalArgumentException.class,
+              OAuth2AuthenticationException.class,
               () -> camundaOAuthPrincipalService.loadOAuthContext(claims));
 
       assertThat(exception.getMessage())
@@ -169,7 +170,7 @@ public class CamundaOAuthPrincipalServiceTest {
       // when
       final var exception =
           assertThrows(
-              IllegalArgumentException.class,
+              OAuth2AuthenticationException.class,
               () -> camundaOAuthPrincipalService.loadOAuthContext(claims));
 
       assertThat(exception.getMessage())

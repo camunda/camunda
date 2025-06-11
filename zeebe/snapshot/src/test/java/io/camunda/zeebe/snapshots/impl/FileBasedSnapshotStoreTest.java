@@ -18,14 +18,19 @@ import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.zip.CRC32C;
 import org.junit.Before;
 import org.junit.Rule;
@@ -409,6 +414,101 @@ public class FileBasedSnapshotStoreTest {
         .hasValueSatisfying(s -> assertThat(s.getId()).isEqualTo(persistedSnapshot.getId()));
   }
 
+  @Test
+  public void shouldCreateASnapshotForBootstrap() throws IOException {
+    // given
+    final var transientSnapshot = takeTransientSnapshotWithFiles(123L);
+    final var persistedSnapshot = transientSnapshot.persist().join();
+
+    // when
+    final var copiedSnapshot =
+        snapshotStore.copyForBootstrap(persistedSnapshot, copyAllFiles()).join();
+
+    // then
+    assertThat(copiedSnapshot)
+        .satisfies(
+            s -> {
+              assertThat(s.getId()).isEqualTo("0-0-0-0-0");
+              assertThat(s.getPath().getFileName().toString()).isEqualTo("0-0-0-0-0");
+              assertThat(s.getMetadata())
+                  .isEqualTo(
+                      FileBasedSnapshotMetadata.forBootstrap(FileBasedSnapshotStoreImpl.VERSION));
+            });
+
+    assertThat(snapshotStore.getBootstrapSnapshot())
+        .isPresent()
+        .satisfies(sn -> assertThat(sn.get().getId()).isEqualTo(copiedSnapshot.getId()));
+  }
+
+  @Test
+  public void shouldRestoreASnapshotForBootstrapCorrectly() throws IOException {
+    // given
+    final var transientSnapshot = takeTransientSnapshotWithFiles(123L);
+    final var persistedSnapshot = transientSnapshot.persist().join();
+
+    // when
+    final var copiedSnapshot =
+        snapshotStore.copyForBootstrap(persistedSnapshot, copyAllFiles()).join();
+
+    final var files = copiedSnapshot.files();
+    snapshotStore.restore(copiedSnapshot.getId(), files);
+
+    // then
+    assertThat(snapshotStore.getBootstrapSnapshot())
+        .isPresent()
+        .satisfies(sn -> assertThat(sn.get().getId()).isEqualTo(copiedSnapshot.getId()));
+
+    assertThat(snapshotStore.getLatestSnapshot())
+        .isPresent()
+        .satisfies(s -> assertThat(s.get().getId()).isEqualTo(copiedSnapshot.getId()));
+
+    assertThat(rootDirectory.resolve("snapshots"))
+        .isDirectoryContaining(p -> p.getFileName().startsWith("0-0-0-0-0"));
+  }
+
+  @Test
+  public void shouldDeleteAllBootstrapSnapshots() throws IOException {
+    // given
+    final var persistedSnapshot = takeTransientSnapshotWithFiles(2L).persist().join();
+    final var copied = snapshotStore.copyForBootstrap(persistedSnapshot, copyAllFiles()).join();
+
+    assertThat(copied)
+        .satisfies(
+            snapshot -> {
+              final var path = snapshot.getPath();
+              assertThat(path).exists();
+              assertThat(path.getParent().getFileName().toString())
+                  .isEqualTo("bootstrap-snapshots");
+            });
+
+    // when
+    snapshotStore.deleteBootstrapSnapshots().join();
+
+    // then
+    assertThat(copied)
+        .satisfies(
+            snapshot -> {
+              final var path = snapshot.getPath();
+              assertThat(path).doesNotExist();
+            });
+
+    assertThat(snapshotStore.getBootstrapSnapshot()).isEmpty();
+  }
+
+  @Test
+  public void shouldNotTakeMoreThanOneSnapshotForBootstrap() throws IOException {
+    // given
+    final var transientSnapshot = takeTransientSnapshotWithFiles(123L);
+    final var persistedSnapshot = transientSnapshot.persist().join();
+    // when
+    snapshotStore.copyForBootstrap(persistedSnapshot, copyAllFiles()).join();
+
+    // then
+    assertThatThrownBy(
+            (() -> snapshotStore.copyForBootstrap(persistedSnapshot, copyAllFiles()).join()))
+        .hasMessageContaining("Destination folder already exists");
+  }
+
   private boolean createSnapshotDir(final Path path) {
     try {
       FileUtil.ensureDirectoryExists(path);
@@ -425,6 +525,54 @@ public class FileBasedSnapshotStoreTest {
 
   private TransientSnapshot takeTransientSnapshot() {
     return takeTransientSnapshot(1L, snapshotStore);
+  }
+
+  private TransientSnapshot takeTransientSnapshotWithFiles(final long index) {
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(index, 1, 123L, 0).get();
+
+    final var snapshotFileNames =
+        List.of("zeebe.metadata", "table-0.sst", "table-1.sst", "table-2.sst");
+    transientSnapshot
+        .take(
+            path -> {
+              try {
+                FileUtil.ensureDirectoryExists(path);
+                for (final var filename : snapshotFileNames) {
+                  final var file = new File(path.toString(), filename);
+                  file.createNewFile();
+                  try (final var fos = new FileOutputStream(file)) {
+                    fos.write("test".getBytes());
+                    fos.flush();
+                  }
+                }
+                FileUtil.flushDirectory(path);
+              } catch (final IOException e) {
+                throw new RuntimeException(e);
+              }
+            })
+        .join();
+    return transientSnapshot;
+  }
+
+  private BiConsumer<Path, Path> copyAllFiles() {
+    return (source, target) -> {
+      try (final var stream = Files.walk(source)) {
+        stream.forEach(
+            path -> {
+              if (!source.equals(path)) {
+                try {
+                  final var relativePath = source.relativize(path);
+                  final var targetPath = target.resolve(relativePath);
+                  Files.copy(path, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                } catch (final IOException e) {
+                  throw new UncheckedIOException(e);
+                }
+              }
+            });
+      } catch (final IOException e) {
+        throw new RuntimeException(e);
+      }
+    };
   }
 
   private TransientSnapshot takeTransientSnapshot(

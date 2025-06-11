@@ -171,7 +171,7 @@ public class CommandRedistributorTest {
 
       // then
       // Partition 3 is now scaled up, so it should be redistributed to
-      routingState.arriveAtDesiredState();
+      routingState.activatePartition(3);
 
       // run cycle twice, since first one always does not try distributing the records
       commandRedistributor.runRetryCycle();

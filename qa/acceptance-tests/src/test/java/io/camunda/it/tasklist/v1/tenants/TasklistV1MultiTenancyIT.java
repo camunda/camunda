@@ -93,11 +93,16 @@ public class TasklistV1MultiTenancyIT {
 
     // User ONE <-> Tenant ONE
     adminClient.newCreateTenantCommand().tenantId(TENANT_ID_1).name(TENANT_ID_1).send().join();
-    adminClient.newAssignUserToTenantCommand(TENANT_ID_1).username("demo").send().join();
+    adminClient.newAssignUserToTenantCommand().username("demo").tenantId(TENANT_ID_1).send().join();
 
     // User TWO <-> Tenant TWO
     adminClient.newCreateTenantCommand().tenantId(TENANT_ID_2).name(TENANT_ID_2).send().join();
-    adminClient.newAssignUserToTenantCommand(TENANT_ID_2).username(USERNAME_2).send().join();
+    adminClient
+        .newAssignUserToTenantCommand()
+        .username(USERNAME_2)
+        .tenantId(TENANT_ID_2)
+        .send()
+        .join();
 
     // deploy
     final var processTenant1 =

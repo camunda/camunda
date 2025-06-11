@@ -20,9 +20,7 @@ import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
-import org.springframework.stereotype.Component;
 
-@Component
 public class TenantMappingRuleMigrationHandler extends MigrationHandler<TenantMappingRule> {
 
   private final ManagementIdentityClient managementIdentityClient;
@@ -42,8 +40,9 @@ public class TenantMappingRuleMigrationHandler extends MigrationHandler<TenantMa
     this.mappingServices = mappingServices.withAuthentication(authentication);
   }
 
+  // TODO: this will be revisited
   @Override
-  protected List<TenantMappingRule> fetchBatch() {
+  protected List<TenantMappingRule> fetchBatch(final int page) {
     return managementIdentityClient.fetchTenantMappingRules(SIZE);
   }
 

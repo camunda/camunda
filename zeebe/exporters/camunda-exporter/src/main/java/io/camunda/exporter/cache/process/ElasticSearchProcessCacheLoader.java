@@ -9,8 +9,9 @@ package io.camunda.exporter.cache.process;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.github.benmanes.caffeine.cache.CacheLoader;
-import io.camunda.exporter.utils.ProcessCacheUtil;
 import io.camunda.webapps.schema.entities.ProcessEntity;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,10 +37,12 @@ public class ElasticSearchProcessCacheLoader implements CacheLoader<Long, Cached
             ProcessEntity.class);
     if (response.found()) {
       final var processEntity = response.source();
+      final var processDiagramData = ProcessCacheUtil.extractProcessDiagramData(processEntity);
       return new CachedProcessEntity(
           processEntity.getName(),
           processEntity.getVersionTag(),
-          ProcessCacheUtil.extractCallActivityIdsFromDiagram(processEntity));
+          processDiagramData.callActivityIds(),
+          processDiagramData.flowNodesMap());
     } else {
       // This should only happen if the process was deleted from ElasticSearch which should never
       // happen. Normally, the process is exported before the process instance is exporter. So the

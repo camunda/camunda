@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.33.1">
   <bpmn:process id="service_tasks_v2" name="Service tasks v2" isExecutable="true">
-    <bpmn:startEvent id="startEvent">
+    <bpmn:startEvent id="startEvent" name="StartEvent">
       <bpmn:outgoing>SequenceFlow_1sz6737</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="SequenceFlow_1sz6737" sourceRef="startEvent" targetRef="exclusiveGateway" />
@@ -10,7 +10,7 @@
     <bpmn:endEvent id="EndEvent_0szldfv">
       <bpmn:incoming>SequenceFlow_1oh45y7</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:serviceTask id="taskA" name="task A">
+    <bpmn:serviceTask id="taskA" name="Task A">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="taskA" />
         <zeebe:ioMapping>
@@ -21,7 +21,7 @@
       <bpmn:incoming>SequenceFlow_0fudgdq</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_06ytcxw</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:serviceTask id="taskB" name="task B">
+    <bpmn:serviceTask id="taskB" name="Task B">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="taskB" />
       </bpmn:extensionElements>
@@ -31,7 +31,7 @@
     <bpmn:sequenceFlow id="SequenceFlow_0fudgdq" sourceRef="exclusiveGateway" targetRef="taskA">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=path=111</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:serviceTask id="taskC" name="task C">
+    <bpmn:serviceTask id="taskC" name="Task C">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="taskC" />
       </bpmn:extensionElements>
@@ -46,7 +46,7 @@
       <bpmn:incoming>SequenceFlow_1d16jk6</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="SequenceFlow_1d16jk6" sourceRef="taskC" targetRef="EndEvent_0szlrpq" />
-    <bpmn:exclusiveGateway id="exclusiveGateway">
+    <bpmn:exclusiveGateway id="exclusiveGateway" name="ExclusiveGateway">
       <bpmn:incoming>SequenceFlow_1sz6737</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0fudgdq</bpmn:outgoing>
       <bpmn:outgoing>SequenceFlow_0u35j69</bpmn:outgoing>

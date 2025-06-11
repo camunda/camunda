@@ -7,6 +7,7 @@
  */
 package io.camunda.it.spring;
 
+import io.camunda.application.Profile;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -23,7 +24,12 @@ final class CamundaApplicationSpringDependenciesTest extends AbstractSpringDepen
   private static final TestCamundaApplication CAMUNDA_APPLICATION =
       new TestCamundaApplication()
           .withProperty("management.endpoint.beans.access", "unrestricted")
-          .withCreateSchema(false);
+          .withAdditionalProfiles(
+              Profile.CONSOLIDATED_AUTH,
+              Profile.BROKER,
+              Profile.OPERATE,
+              Profile.TASKLIST,
+              Profile.IDENTITY);
 
   @BeforeEach
   void setUp() {

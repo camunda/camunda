@@ -32,4 +32,10 @@ public interface SnapshotMetadata {
    *     system can recover from the snapshot and the logstream.
    */
   long lastFollowupEventPosition();
+
+  /**
+   * @return true if the snapshot is a bootstrap snapshot, i.e. a snapshot used to bootstrap a new
+   *     partition with the "global" data from another partition
+   */
+  boolean isBootstrap();
 }

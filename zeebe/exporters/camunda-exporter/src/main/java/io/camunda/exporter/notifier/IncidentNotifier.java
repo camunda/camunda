@@ -10,10 +10,10 @@ package io.camunda.exporter.notifier;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import io.camunda.exporter.cache.ExporterEntityCache;
-import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.config.ExporterConfiguration.IncidentNotifierConfiguration;
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import org.apache.commons.lang3.StringUtils;
@@ -145,12 +144,18 @@ public class IncidentNotifier {
       incidentFields.put(FIELD_NAME_FLOW_NODE_INSTANCE_KEY, inc.getFlowNodeInstanceKey());
       incidentFields.put(FIELD_NAME_JOB_KEY, inc.getJobKey());
       incidentFields.put(FIELD_NAME_PROCESS_KEY, inc.getProcessDefinitionKey());
-      final Optional<CachedProcessEntity> process = processCache.get(inc.getProcessDefinitionKey());
-      if (process.isPresent()) {
-        incidentFields.put(FIELD_NAME_BPMN_PROCESS_ID, inc.getBpmnProcessId());
-        incidentFields.put(FIELD_NAME_PROCESS_NAME, process.get().name());
-        incidentFields.put(FIELD_NAME_PROCESS_VERSION, process.get().versionTag());
-      }
+      processCache
+          .get(inc.getProcessDefinitionKey())
+          .ifPresent(
+              cachedProcess -> {
+                incidentFields.put(FIELD_NAME_BPMN_PROCESS_ID, inc.getBpmnProcessId());
+                incidentFields.put(FIELD_NAME_PROCESS_NAME, cachedProcess.name());
+                final var processVersionField =
+                    cachedProcess.versionTag() != null
+                        ? cachedProcess.versionTag()
+                        : cachedProcess.version();
+                incidentFields.put(FIELD_NAME_PROCESS_VERSION, processVersionField);
+              });
       incidentList.add(incidentFields);
     }
     return objectWriter.writeValueAsString(Map.of(FIELD_NAME_ALERTS, incidentList));

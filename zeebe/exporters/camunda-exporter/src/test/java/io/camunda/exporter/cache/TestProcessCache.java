@@ -7,8 +7,10 @@
  */
 package io.camunda.exporter.cache;
 
-import io.camunda.exporter.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 public class TestProcessCache implements ExporterEntityCache<Long, CachedProcessEntity> {
@@ -18,6 +20,13 @@ public class TestProcessCache implements ExporterEntityCache<Long, CachedProcess
   @Override
   public Optional<CachedProcessEntity> get(final Long entityKey) {
     return Optional.ofNullable(cache.get(entityKey));
+  }
+
+  @Override
+  public Map<Long, CachedProcessEntity> getAll(Iterable<Long> keys) {
+    final Map<Long, CachedProcessEntity> map = new HashMap<>();
+    keys.forEach(k -> map.put(k, get(k).orElse(null)));
+    return map;
   }
 
   @Override

@@ -62,7 +62,7 @@ public class UnassignUserFromGroupTest {
   @Test
   void shouldUnassignUserFromGroup() {
     // when
-    client.newUnassignUserFromGroupCommand(groupId).username(username).send().join();
+    client.newUnassignUserFromGroupCommand().username(username).groupId(groupId).send().join();
 
     // then
     ZeebeAssertHelper.assertEntityUnassignedFromGroup(
@@ -82,8 +82,9 @@ public class UnassignUserFromGroupTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignUserFromGroupCommand(nonExistentGroupId)
+                    .newUnassignUserFromGroupCommand()
                     .username(username)
+                    .groupId(nonExistentGroupId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -97,7 +98,13 @@ public class UnassignUserFromGroupTest {
   void shouldRejectIfMissingGroupId() {
     // when / then
     assertThatThrownBy(
-            () -> client.newUnassignUserFromGroupCommand(null).username("username").send().join())
+            () ->
+                client
+                    .newUnassignUserFromGroupCommand()
+                    .username("username")
+                    .groupId(null)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be null");
   }
@@ -106,7 +113,13 @@ public class UnassignUserFromGroupTest {
   void shouldRejectIfEmptyGroupId() {
     // when / then
     assertThatThrownBy(
-            () -> client.newUnassignUserFromGroupCommand("").username("username").send().join())
+            () ->
+                client
+                    .newUnassignUserFromGroupCommand()
+                    .username("username")
+                    .groupId("")
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be empty");
   }
@@ -115,7 +128,13 @@ public class UnassignUserFromGroupTest {
   void shouldRejectIfMissingUsername() {
     // when / then
     assertThatThrownBy(
-            () -> client.newUnassignUserFromGroupCommand("groupId").username(null).send().join())
+            () ->
+                client
+                    .newUnassignUserFromGroupCommand()
+                    .username(null)
+                    .groupId(groupId)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("username must not be null");
   }
@@ -124,7 +143,13 @@ public class UnassignUserFromGroupTest {
   void shouldRejectIfEmptyUsername() {
     // when / then
     assertThatThrownBy(
-            () -> client.newUnassignUserFromGroupCommand("groupId").username("").send().join())
+            () ->
+                client
+                    .newUnassignUserFromGroupCommand()
+                    .username("")
+                    .groupId(groupId)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("username must not be empty");
   }

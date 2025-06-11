@@ -7,13 +7,12 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
-import static io.camunda.exporter.rdbms.utils.ProcessCacheUtil.sortedCallActivityIds;
-
 import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
-import io.camunda.exporter.rdbms.cache.CachedProcessEntity;
-import io.camunda.exporter.rdbms.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
@@ -57,9 +56,11 @@ public class ProcessExportHandler implements RdbmsExportHandler<Process> {
         ProcessModelReader.of(value.getResource(), value.getBpmnProcessId());
     processModelReader.ifPresent(
         reader -> {
-          final var activities = sortedCallActivityIds(reader.extractCallActivities());
+          final var activities =
+              ProcessCacheUtil.sortedCallActivityIds(reader.extractCallActivities());
+          final var flowNodesMap = ProcessCacheUtil.getFlowNodesMap(reader.extractFlowNodes());
           final var cachedProcessEntity =
-              new CachedProcessEntity(resourceName, versionTag, activities);
+              new CachedProcessEntity(resourceName, versionTag, activities, flowNodesMap);
           processCache.put(value.getProcessDefinitionKey(), cachedProcessEntity);
         });
   }

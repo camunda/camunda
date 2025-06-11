@@ -44,8 +44,8 @@
     color: var(--grey-lighten-56);
   }
 
-  .djs-element.hover .djs-outline,
-  .djs-element.selected .djs-outline {
+  .djs-element.hover .djs-visual > :nth-child(1),
+  .djs-element.selected .djs-visual > :nth-child(1) {
     stroke-width: 0;
   }
 }

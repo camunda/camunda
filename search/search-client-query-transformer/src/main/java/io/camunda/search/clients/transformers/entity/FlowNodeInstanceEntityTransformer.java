@@ -56,6 +56,7 @@ public class FlowNodeInstanceEntityTransformer
         value.getStartDate(),
         value.getEndDate(),
         value.getFlowNodeId(),
+        value.getFlowNodeName(),
         value.getTreePath(),
         toType(value.getType()),
         toState(value.getState()),

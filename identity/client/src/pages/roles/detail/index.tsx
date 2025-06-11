@@ -22,10 +22,6 @@ import { getRoleDetails } from "src/utility/api/roles";
 import { useEntityModal } from "src/components/modal";
 import DeleteModal from "src/pages/roles/modals/DeleteModal";
 import { Description } from "src/components/layout/DetailsPageDescription";
-import {
-  IS_ROLES_USERS_SUPPORTED,
-  IS_ROLES_MAPPINGS_SUPPORTED,
-} from "src/feature-flags";
 import Members from "src/pages/roles/detail/members";
 import Mappings from "src/pages/roles/detail/mappings";
 import Clients from "src/pages/roles/detail/clients";
@@ -85,36 +81,28 @@ const Details: FC = () => {
             </Flex>
           )}
         </Stack>
-        {(IS_ROLES_USERS_SUPPORTED || IS_ROLES_MAPPINGS_SUPPORTED) && role && (
+        {role && (
           <Section>
             {!isOIDC ? (
               <Members roleId={role.roleId} />
             ) : (
               <Tabs
                 tabs={[
-                  ...(IS_ROLES_USERS_SUPPORTED
-                    ? [
-                        {
-                          key: "users",
-                          label: t("users"),
-                          content: <Members roleId={role.roleId} />,
-                        },
-                      ]
-                    : []),
-                  ...(IS_ROLES_MAPPINGS_SUPPORTED
-                    ? [
-                        {
-                          key: "mappings",
-                          label: t("mappings"),
-                          content: <Mappings roleId={role.roleId} />,
-                        },
-                        {
-                          key: "clients",
-                          label: t("clients"),
-                          content: <Clients roleId={role.roleId} />,
-                        },
-                      ]
-                    : []),
+                  {
+                    key: "users",
+                    label: t("users"),
+                    content: <Members roleId={role.roleId} />,
+                  },
+                  {
+                    key: "mappings",
+                    label: t("mappings"),
+                    content: <Mappings roleId={role.roleId} />,
+                  },
+                  {
+                    key: "clients",
+                    label: t("clients"),
+                    content: <Clients roleId={role.roleId} />,
+                  },
                 ]}
                 selectedTabKey={tab}
                 path={`../${id}`}

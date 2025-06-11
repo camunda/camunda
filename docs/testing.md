@@ -27,16 +27,26 @@ have:
 
 ## General conventions
 
+Conventions are here to help make the code base clearer and consistent, we want to stick to the conventions until there are good reasons not to.
+
 - Every public change should be verified via an automated test.
   - Every bug fix should be verified via a regression test.
+- Make sure to test one behavior at a time, not combining properties or behaviors
+  - If you test names that contain something like `And`, `Or`, etc., this is likely a code smell.
+- Prefix your tests with `should...`
+  - This is to ensure consistency in our code base and make sure that you're testing a behavior.
+- Divide your test into separate sections, using comments: `given, when, then`.
+  - This is to make the test clearer, separate concerns, and to highlight what exactly is tested. Future readers will appreciate it.
 - It's perfectly fine to repeat yourself in tests; the focus is on readability.
-  - One caveat here, is with acceptance tests, where set up can be expensive.
-- Where possible, use junit 5 to write tests.
+  - One caveat here is with acceptance tests, where set up can be expensive.
+- Where possible, use JUnit 5 to write tests.
   - When modifying an existing junit 4 test, if possible, first take the time to migrate it to junit 5.
-  - If it is too time-consuming to migrate (e.g. uses lots of custom junit 4 rules), you can omit that.
+  - If it is too time-consuming to migrate (e.g., uses lots of custom JUnit 4 rules), you can omit that.
 - Where possible, avoid waiting for something to happen; this will reduce flakiness.
   - If you have to, use [Awaitility](http://www.awaitility.org/) to await conditions, **do not use `Thread.sleep` or the likes**.
-- Avoid using any shaded dependencies, and use direct ones.
+- Avoid using any shaded dependencies*, and use direct ones.
+
+_*Shaded dependency: is a dependency that is repackaged in a different dependency/library. For example, Testcontainer does this with Awaitility, to be independent of version updates. We should ensure that we do not use such shaded dependencies, as we would be conflicting with versions and usage if we would use the shaded and the explicit ones._
 
 [//]: # (### Add rules of thumb when writing tests, e.g. use junit 5 where possible, etc.)
 
@@ -44,22 +54,22 @@ have:
 
 [//]: # (### What is a unit test)
 
-A test which validates/verified the behavior of just one component or unit, without dependencies is
+A test that validates/verifies the behavior of just one component or unit, without dependencies, is
 a unit test.
 
 > [!Note]
 >
-> A unit or component can be just one class, but doesn't need necessarily.
+> A unit or component can be just one class, but doesn't necessarily need.
 
 **Key properties:**
 
-* Small scoped:
-  * one unit test should validate one behavior
+* Small-scope:
+  * One unit test should validate one behavior
   * Testing without dependencies
 * Fast: A unit test should be quick in execution
-  * Comes with small scoped
+  * Comes with a small scope
 * Most of our tests should be unit tests (see testing pyramid above)
-  * As they should be fast and small scoped we can have many of them
+  * As they should be fast and small-scope, we can have many of them
 
 > [!Note]
 >
@@ -76,19 +86,20 @@ a unit test.
 > The expectation is that for unit tests that set up code is fast, and test should be itself fast.
 > If this is not the case, there might be something off with your test itself.
 
-### Small scoped
+### Small-scope
 
 **Why:**
 
 * To separate concerns
-  - To make sure we test on component/unit in isolation, building confidence that this unit itself
+  - To make sure we test on the component/unit in isolation, building confidence that this unit itself
     behaves correctly. The test behavior is more controllable and observable
-  - A test fail shows specific that one unit and behavior is affected. If not small scoped we might
+  - A test failure shows specifically that one unit and behavior is affected. If not small-scoped, we might
     not test one unit, and can't be sure whether any other behavior influences the test
-* Allows to be quick in execution time, when focusing on one small unit with little setup
+* Allows to be quick execution time, when focusing on one small unit with little setup
 * Reduces the maintainability/readability
   - as tests are not affected by changes in other components
-  - it makes clear and understandable what is tested
+  - It makes it clear and understandable what is tested
+* We can separately test business logic from the integration with asynchronous code
 
 #### Do's:
 
@@ -242,6 +253,19 @@ public void shouldSubstractAfterAdd() {
 }
 ```
 
+#### Dont's: Testing asynchronous code
+
+If we do not separate asynchronous code and the business logic, we have to test our code asynchronously.
+This means we have a harder time testing our logic, as they are non-deterministic and are likely to become flaky.
+
+The tests are no longer small-scoped and have a dependency on, for example, a scheduler/executor, etc.
+
+Good examples of the separation of business logic and asynchronous code to test synchronously.
+
+* [Asynchronous code](https://github.com/camunda/camunda/blob/main/zeebe/transport/src/main/java/io/camunda/zeebe/transport/stream/impl/RemoteStreamTransport.java), where the wiring of the business logic happens
+* [Business code](https://github.com/camunda/camunda/blob/main/zeebe/transport/src/main/java/io/camunda/zeebe/transport/stream/impl/RemoteStreamApiHandler.java), which can be separately tested
+* [Unit tests](https://github.com/camunda/camunda/blob/main/zeebe/transport/src/test/java/io/camunda/zeebe/transport/stream/impl/RemoteStreamApiHandlerTest.java) of the business code, making sure to validate each behavior
+
 ### Where should unit tests live
 
 Typically, unit tests will live in the same module and package as the unit under test, but under the
@@ -328,10 +352,6 @@ logic too simple, but it's also essentially testing a Java feature, not our own 
 
 Additionally, testing the `#liveConnections()` method, while our own code, is also much too simple
 as it simply delegates to the underlying server stream member.
-
-### Unit test conventions
-
-[//]: # (TODO: General thing &#40;move later&#41; If you see yourself fixing a bug, you must write at least one test.)
 
 ## Integration test
 

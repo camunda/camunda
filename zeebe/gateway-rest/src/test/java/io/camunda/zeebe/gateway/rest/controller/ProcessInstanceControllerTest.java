@@ -12,9 +12,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.IncidentEntity.ErrorType;
+import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
@@ -32,6 +37,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
@@ -1553,5 +1559,77 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .json(response);
 
     verify(processInstanceServices).sequenceFlows(processInstanceKey);
+  }
+
+  @Test
+  public void shouldGetProcessInstanceIncidents() {
+    // given
+    final long processInstanceKey = 1L;
+    final var queryResult =
+        new SearchQueryResult.Builder<IncidentEntity>()
+            .total(1)
+            .items(
+                List.of(
+                    new IncidentEntity(
+                        2251799814751259L,
+                        2251799814751221L,
+                        "def_id",
+                        2251799814751255L,
+                        ErrorType.FORM_NOT_FOUND,
+                        "Form not found",
+                        "Activity_07rrek1",
+                        2251799814751258L,
+                        OffsetDateTime.parse("2025-05-23T17:41:24.406Z"),
+                        IncidentState.ACTIVE,
+                        1L,
+                        "<default>")))
+            .firstSortValues(new Object[] {2251799814751259L})
+            .lastSortValues(new Object[] {2251799814751259L})
+            .build();
+    final var query = new IncidentQuery.Builder().build();
+    when(processInstanceServices.searchIncidents(processInstanceKey, query))
+        .thenReturn(queryResult);
+    final var expectedResponse =
+        """
+    {
+        "items": [
+            {
+                "processDefinitionId": "def_id",
+                "errorType": "FORM_NOT_FOUND",
+                "errorMessage": "Form not found",
+                "elementId": "Activity_07rrek1",
+                "creationTime": "2025-05-23T17:41:24.406Z",
+                "state": "ACTIVE",
+                "tenantId": "<default>",
+                "incidentKey": "2251799814751259",
+                "processDefinitionKey": "2251799814751221",
+                "processInstanceKey": "2251799814751255",
+                "elementInstanceKey": "2251799814751258",
+                "jobKey": "1"
+            }
+        ],
+        "page": {
+            "totalItems": 1,
+            "firstSortValues": [2251799814751259],
+            "lastSortValues": [
+                2251799814751259
+            ]
+        }
+    }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/%d/incidents/search".formatted(PROCESS_INSTANCES_START_URL, processInstanceKey))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(expectedResponse);
+
+    verify(processInstanceServices).searchIncidents(processInstanceKey, query);
   }
 }

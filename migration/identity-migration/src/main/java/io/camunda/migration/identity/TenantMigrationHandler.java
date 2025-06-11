@@ -15,9 +15,7 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import java.util.List;
-import org.springframework.stereotype.Component;
 
-@Component
 public class TenantMigrationHandler extends MigrationHandler<Tenant> {
 
   private final ManagementIdentityClient managementIdentityClient;
@@ -34,8 +32,9 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
     this.tenantServices = tenantServices.withAuthentication(authentication);
   }
 
+  // TODO: this will be revisited
   @Override
-  protected List<Tenant> fetchBatch() {
+  protected List<Tenant> fetchBatch(final int page) {
     return managementIdentityClient.fetchTenants(SIZE);
   }
 

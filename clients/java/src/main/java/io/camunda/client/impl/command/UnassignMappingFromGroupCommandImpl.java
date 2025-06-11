@@ -18,6 +18,7 @@ package io.camunda.client.impl.command;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.UnassignMappingFromGroupStep1;
+import io.camunda.client.api.command.UnassignMappingFromGroupStep1.UnassignMappingFromGroupStep2;
 import io.camunda.client.api.response.UnassignMappingFromGroupResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
@@ -25,22 +26,28 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class UnassignMappingFromGroupCommandImpl implements UnassignMappingFromGroupStep1 {
+public class UnassignMappingFromGroupCommandImpl
+    implements UnassignMappingFromGroupStep1, UnassignMappingFromGroupStep2 {
 
-  private final String groupId;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
   private String mappingId;
+  private String groupId;
 
-  public UnassignMappingFromGroupCommandImpl(final HttpClient httpClient, final String groupId) {
-    this.groupId = groupId;
+  public UnassignMappingFromGroupCommandImpl(final HttpClient httpClient) {
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
   }
 
   @Override
-  public UnassignMappingFromGroupStep1 mappingId(final String mappingId) {
+  public UnassignMappingFromGroupStep2 mappingId(final String mappingId) {
     this.mappingId = mappingId;
+    return this;
+  }
+
+  @Override
+  public UnassignMappingFromGroupStep2 groupId(final String groupId) {
+    this.groupId = groupId;
     return this;
   }
 

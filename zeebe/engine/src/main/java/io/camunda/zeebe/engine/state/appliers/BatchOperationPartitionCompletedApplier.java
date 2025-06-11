@@ -30,7 +30,7 @@ public class BatchOperationPartitionCompletedApplier
   public void applyState(
       final long batchOperationKey, final BatchOperationPartitionLifecycleRecord value) {
     if (isOnLeadPartition(batchOperationKey)) {
-      batchOperationState.completePartition(batchOperationKey, value.getSourcePartitionId());
+      batchOperationState.finishPartition(batchOperationKey, value.getSourcePartitionId());
     } else {
       batchOperationState.complete(batchOperationKey);
     }

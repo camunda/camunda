@@ -40,6 +40,10 @@ jest.mock('modules/utils/bpmn');
 jest.mock('modules/stores/process', () => ({
   processStore: {state: {process: {}}, fetchProcess: jest.fn()},
 }));
+jest.mock('modules/feature-flags', () => ({
+  ...jest.requireActual('modules/feature-flags'),
+  IS_PROCESS_INSTANCE_V2_ENABLED: false,
+}));
 
 describe('ProcessInstance - modification mode', () => {
   beforeEach(() => {

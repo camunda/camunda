@@ -775,6 +775,14 @@
               <id>prefix-migration</id>
               <mainClass>io.camunda.application.StandalonePrefixMigration</mainClass>
             </program>
+            <program>
+              <id>identity-migration</id>
+              <mainClass>io.camunda.application.StandaloneIdentityMigration</mainClass>
+            </program>
+            <program>
+              <id>process-migration</id>
+              <mainClass>io.camunda.application.StandaloneProcessMigration</mainClass>
+            </program>
           </programs>
           <repositoryLayout>flat</repositoryLayout>
           <repositoryName>lib</repositoryName>

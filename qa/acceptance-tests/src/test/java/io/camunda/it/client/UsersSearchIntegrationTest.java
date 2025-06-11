@@ -8,6 +8,7 @@
 package io.camunda.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
@@ -51,6 +52,24 @@ public class UsersSearchIntegrationTest {
         .send()
         .join();
     assertUserCreated(USERNAME_2);
+  }
+
+  @Test
+  void shouldGetUserByUsername() {
+    final User user = camundaClient.newUserGetRequest(USERNAME_1).send().join();
+
+    assertThat(user.getUsername()).isEqualTo(USERNAME_1);
+    assertThat(user.getEmail()).isEqualTo(EMAIL_1);
+    assertThat(user.getName()).isEqualTo(NAME_1);
+  }
+
+  @Test
+  void shouldReturnNotFoundWhenGettingUserThatDoesNotExist() {
+    // when / then
+    assertThatThrownBy(() -> camundaClient.newUserGetRequest("testUsername").send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 404: 'Not Found'")
+        .hasMessageContaining("User with username testUsername not found");
   }
 
   @Test

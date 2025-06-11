@@ -14,8 +14,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatException;
 
 import io.camunda.exporter.DefaultExporterResourceProvider;
-import io.camunda.exporter.cache.ExporterEntityCache.CacheLoaderFailedException;
-import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.cache.process.ElasticSearchProcessCacheLoader;
 import io.camunda.exporter.cache.process.OpenSearchProcessCacheLoader;
 import io.camunda.search.schema.config.IndexConfiguration;
@@ -23,11 +21,18 @@ import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.webapps.schema.entities.ProcessEntity;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache.CacheLoaderFailedException;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
+import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -76,29 +81,43 @@ class ProcessCacheImplIT {
   @MethodSource("provideProcessCache")
   void shouldLoadProcessEntityFromBackend(final ProcessCacheArgument processCacheArgument) {
     // given
+    final BpmnModelInstance modelInstance =
+        createBpmnWithCallActivities("test", List.of("Banana", "apple", "Cherry"));
+    final String startEventId =
+        modelInstance.getModelElementsByType(FlowNode.class).stream()
+            .filter(x -> x.getId().startsWith("startEvent"))
+            .findFirst()
+            .get()
+            .getId();
     final var processEntity =
         new ProcessEntity()
             .setId("3")
             .setName("test")
             .setVersionTag("v1")
             .setBpmnProcessId("test")
-            .setBpmnXml(createBpmnWithCallActivities("test", List.of("Banana", "apple", "Cherry")));
+            .setBpmnXml(convertToString(modelInstance));
     processCacheArgument.indexer().accept(processEntity);
 
     // when
     final var process = processCacheArgument.processCache().get(3L);
 
     // then
+    final var expectedFlowNodesMap = new LinkedHashMap<String, String>();
+    expectedFlowNodesMap.put("Banana", "Banana");
+    expectedFlowNodesMap.put("Cherry", "Cherry");
+    expectedFlowNodesMap.put("apple", "apple");
+    expectedFlowNodesMap.put(startEventId, null);
     final var expectedCachedProcessEntity =
-        new CachedProcessEntity("test", "v1", List.of("Banana", "Cherry", "apple"));
+        new CachedProcessEntity(
+            "test", "v1", List.of("Banana", "Cherry", "apple"), expectedFlowNodesMap);
     assertThat(process).isPresent().get().isEqualTo(expectedCachedProcessEntity);
   }
 
-  private String createBpmnWithCallActivities(
+  private BpmnModelInstance createBpmnWithCallActivities(
       final String bpmnProcessId, final List<String> callActivityIds) {
     final StartEventBuilder seb = Bpmn.createExecutableProcess(bpmnProcessId).startEvent();
     callActivityIds.forEach(ca -> seb.callActivity(ca).zeebeProcessId(ca));
-    return convertToString(seb.done());
+    return seb.done();
   }
 
   @ParameterizedTest

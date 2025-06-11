@@ -100,6 +100,7 @@ import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
 import io.camunda.client.api.fetch.RoleGetRequest;
 import io.camunda.client.api.fetch.RolesByGroupSearchRequest;
 import io.camunda.client.api.fetch.RolesSearchRequest;
+import io.camunda.client.api.fetch.UserGetRequest;
 import io.camunda.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.UsersByGroupSearchRequest;
@@ -1566,8 +1567,9 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    *
    * camundaClient
-   *  .newUnassignUserFromGroupCommand("groupId")
+   *  .newUnassignUserFromGroupCommand()
    *  .username("username")
+   *  .groupId("groupId")
    *  .send();
    * </pre>
    *
@@ -1575,7 +1577,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  UnassignUserFromGroupCommandStep1 newUnassignUserFromGroupCommand(String groupId);
+  UnassignUserFromGroupCommandStep1 newUnassignUserFromGroupCommand();
 
   /**
    * Command to create a user.
@@ -1630,6 +1632,21 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   UpdateUserCommandStep1 newUpdateUserCommand(String username);
+
+  /**
+   * Request to get a user by username.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newUserGetRequest("username")
+   *  .send();
+   * </pre>
+   *
+   * @param username the username of the user
+   * @return a builder for the request to get a user
+   */
+  UserGetRequest newUserGetRequest(String username);
 
   /**
    * Command to create a mapping rule.
@@ -2014,18 +2031,18 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newAssignMappingToTenantCommand(tenantId)
-   *   .mappingId(mappingId)
+   *   .newAssignMappingToTenantCommand()
+   *   .mappingId("mappingId")
+   *   .tenantId("tenantId")
    *   .send();
    * </pre>
    *
    * <p>This command sends an HTTP PUT request to assign the specified mapping rule to the given
    * tenant.
    *
-   * @param tenantId the unique identifier of the tenant
    * @return a builder for the assign mapping rule to tenant command
    */
-  AssignMappingToTenantCommandStep1 newAssignMappingToTenantCommand(String tenantId);
+  AssignMappingToTenantCommandStep1 newAssignMappingToTenantCommand();
 
   /**
    * Command to assign a user to a tenant.
@@ -2034,17 +2051,17 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newAssignUserToTenantCommand(tenantId)
+   *   .newAssignUserToTenantCommand()
    *   .username(username)
+   *   .tenantId(tenantId)
    *   .send();
    * </pre>
    *
    * <p>This command sends an HTTP PUT request to assign the specified user to the given tenant.
    *
-   * @param tenantId the unique identifier of the tenant
    * @return a builder for the assign user to tenant command
    */
-  AssignUserToTenantCommandStep1 newAssignUserToTenantCommand(String tenantId);
+  AssignUserToTenantCommandStep1 newAssignUserToTenantCommand();
 
   /**
    * Command to remove a user from a tenant.
@@ -2053,18 +2070,18 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newUnassignUserFromTenantCommand(tenantId)
+   *   .newUnassignUserFromTenantCommand()
    *   .username(username)
+   *   .tenantId(tenantId)
    *   .send();
    * </pre>
    *
    * <p>This command sends an HTTP DELETE request to remove the specified user from the given
    * tenant.
    *
-   * @param tenantId the unique identifier of the tenant
    * @return a builder for the remove user from tenant command
    */
-  RemoveUserFromTenantCommandStep1 newUnassignUserFromTenantCommand(String tenantId);
+  RemoveUserFromTenantCommandStep1 newUnassignUserFromTenantCommand();
 
   /**
    * Command to assign a group to a tenant.
@@ -2248,8 +2265,9 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    *
    * camundaClient
-   *  .newUnassignMappingFromGroupCommand(groupId)
+   *  .newUnassignMappingFromGroupCommand()
    *  .mappingId(mappingId)
+   *  .groupId(groupId)
    *  .send();
    * </pre>
    *
@@ -2257,7 +2275,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  UnassignMappingFromGroupStep1 newUnassignMappingFromGroupCommand(String groupId);
+  UnassignMappingFromGroupStep1 newUnassignMappingFromGroupCommand();
 
   /**
    * Request to get a group by group ID.

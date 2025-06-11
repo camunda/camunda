@@ -28,10 +28,7 @@ import {createBrowserHistory} from 'history';
 import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
 import {ForbiddenPage} from 'modules/components/ForbiddenPage';
 import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
-import {
-  IS_PROCESS_INSTANCE_V2_ENABLED,
-  IS_PROCESS_SEQUENCE_FLOWS_V2_ENABLED,
-} from 'modules/feature-flags';
+import {IS_PROCESS_INSTANCE_V2_ENABLED} from 'modules/feature-flags';
 
 const CarbonLogin = loadable(() => import('./Login/index'), {
   resolveComponent: (components) => components.Login,
@@ -113,7 +110,6 @@ const App: React.FC = () => {
               <Route
                 path={Paths.processInstance()}
                 element={
-                  IS_PROCESS_SEQUENCE_FLOWS_V2_ENABLED ||
                   IS_PROCESS_INSTANCE_V2_ENABLED ? (
                     <CarbonProcessInstanceV2 />
                   ) : (

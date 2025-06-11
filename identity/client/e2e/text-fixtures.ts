@@ -11,17 +11,21 @@ import { Header } from "./pages/Header";
 import { LoginPage } from "./pages/LoginPage";
 import { UsersPage } from "./pages/UsersPage";
 import { GroupsPage } from "./pages/GroupsPage";
+import { TenantsPage } from "./pages/TenantsPage";
 import { createFixture } from "./utils/createFixture";
 import { RolesPage } from "./pages/RolesPage";
 import { MappingsPage } from "./pages/MappingsPage";
+import { AuthorizationsPage } from "./pages/AuthorizationsPage";
 
 type Fixtures = {
   header: Header;
   loginPage: LoginPage;
   usersPage: UsersPage;
   groupsPage: GroupsPage;
+  tenantsPage: TenantsPage;
   rolesPage: RolesPage;
   mappingsPage: MappingsPage;
+  authorizationsPage: AuthorizationsPage;
 };
 
 export const test = base.extend<Fixtures>({
@@ -29,6 +33,8 @@ export const test = base.extend<Fixtures>({
   loginPage: createFixture(LoginPage),
   usersPage: createFixture(UsersPage),
   groupsPage: createFixture(GroupsPage),
+  tenantsPage: createFixture(TenantsPage),
   rolesPage: createFixture(RolesPage),
   mappingsPage: createFixture(MappingsPage),
+  authorizationsPage: createFixture(AuthorizationsPage),
 });
