@@ -8,6 +8,7 @@
 package io.camunda.zeebe.snapshots.transfer;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
 import java.util.UUID;
 
@@ -33,4 +34,8 @@ public interface SnapshotTransferService {
    */
   ActorFuture<SnapshotChunk> getNextChunk(
       int partition, String snapshotId, String previousChunkName, UUID transferId);
+
+  interface TakeSnapshot {
+    ActorFuture<PersistedSnapshot> takeSnapshot(int partition);
+  }
 }
