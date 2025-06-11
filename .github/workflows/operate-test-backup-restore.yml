@@ -1,11 +1,65 @@
-name: Operate Run Test Backup/Restore
+name: "[Legacy] Operate / Test Backup Restore"
 on:
-  schedule:
-    - cron: "0 5 * * *"
   workflow_dispatch:
+  push:
+    branches:
+      - 'stable/**'
+    paths:
+      - '.ci/**'
+      - '.github/actions/**'
+      - '.github/workflows/operate-*'
+      - 'bom/*'
+      - 'operate.Dockerfile'
+      - 'operate/**'
+      - 'parent/*'
+      - 'pom.xml'
+      - 'webapps-common/**'
+  pull_request:
+    paths:
+      - '.ci/**'
+      - '.github/actions/**'
+      - '.github/workflows/operate-*'
+      - 'bom/*'
+      - 'operate/**'
+      - 'pom.xml'
+      - 'operate.Dockerfile'
+      - 'parent/*'
+      - 'webapps-common/**'
 jobs:
   run-backup-restore-tests:
-    uses: ./.github/workflows/operate-run-tests.yml
-    with:
-      command: mvn -B -f operate/qa/backup-restore-tests -P -docker,-skipTests verify
-    secrets: inherit
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    permissions: {}  # GITHUB_TOKEN unused in this job
+    env:
+      DOCKER_IMAGE_TAG: current-test
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-build
+        with:
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
+      - uses: ./.github/actions/build-platform-docker
+        id: build-operate-docker
+        with:
+          repository: localhost:5000/camunda/operate
+          version: ${{ env.DOCKER_IMAGE_TAG }}
+          dockerfile: operate.Dockerfile
+          push: true
+          distball: ${{ steps.build-zeebe.outputs.distball }}
+      - name: Run Operate backup restore Tests
+        run: ./mvnw -B -pl operate/qa/backup-restore-tests -DskipChecks -P -docker,-skipTests verify
+      - name: Upload Test Report
+        if: failure()
+        uses: ./.github/actions/collect-test-artifacts
+        with:
+          name: "[Legacy] Operate Test Backup Restore"
