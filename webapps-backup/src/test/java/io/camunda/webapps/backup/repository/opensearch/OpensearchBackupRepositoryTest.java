@@ -93,7 +93,7 @@ class OpensearchBackupRepositoryTest {
                 bi ->
                     defaultFields(bi, metadata)
                         .snapshot("test-snapshot")
-                        .state(SnapshotState.STARTED.name())
+                        .state(SnapshotState.IN_PROGRESS.name())
                         .startTimeInMillis("23")));
     final var response = GetSnapshotResponse.of(b -> defaultFields(b).snapshots(snapshotInfos));
 
@@ -110,7 +110,7 @@ class OpensearchBackupRepositoryTest {
     assertThat(snapshotDtoDetails).hasSize(1);
     final var snapshotDtoDetail = snapshotDtoDetails.get(0);
     assertThat(snapshotDtoDetail.getSnapshotName()).isEqualTo("test-snapshot");
-    assertThat(snapshotDtoDetail.getState()).isEqualTo("STARTED");
+    assertThat(snapshotDtoDetail.getState()).isEqualTo("IN_PROGRESS");
     assertThat(snapshotDtoDetail.getFailures()).isNull();
     assertThat(snapshotDtoDetail.getStartTime().toInstant().toEpochMilli()).isEqualTo(23L);
   }
@@ -455,7 +455,7 @@ class OpensearchBackupRepositoryTest {
         .satisfies(
             backup -> {
               assertThat(backup.getBackupId()).isEqualTo(5L);
-              assertThat(backup.getState()).isEqualTo(BackupStateDto.INCOMPLETE);
+              assertThat(backup.getState()).isEqualTo(BackupStateDto.IN_PROGRESS);
               assertThat(backup.getDetails())
                   .allSatisfy(
                       d -> {

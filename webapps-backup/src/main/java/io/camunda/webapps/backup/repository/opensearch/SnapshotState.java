@@ -10,7 +10,6 @@ package io.camunda.webapps.backup.repository.opensearch;
 public enum SnapshotState {
   FAILED,
   PARTIAL,
-  STARTED,
-  SUCCESS,
-  IN_PROGRESS;
+  IN_PROGRESS,
+  SUCCESS;
 }
