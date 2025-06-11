@@ -95,34 +95,37 @@ public class SnapshotApiRequestHandlerTest {
             metrics);
     brokerClient.start();
 
-    serverTransport = new AtomixServerTransport(messagingService, new SnowflakeIdGenerator(1L));
-    scheduler.submitActor(serverTransport);
-    scheduler.workUntilDone();
+    serverTransport =
+        submitActor(new AtomixServerTransport(messagingService, new SnowflakeIdGenerator(1L)));
 
-    snapshotHandler = new SnapshotApiRequestHandler(serverTransport);
-    scheduler.submitActor(snapshotHandler);
-    scheduler.workUntilDone();
+    snapshotHandler = submitActor(new SnapshotApiRequestHandler(serverTransport));
 
     // Snapshot actors:
     final var senderDirectory = temporaryFolder.resolve("sender");
     final var receiverDirectory = temporaryFolder.resolve("receiver");
     senderSnapshotStore =
-        new FileBasedSnapshotStore(
-            0, partitionId, senderDirectory, snapshotPath -> Map.of(), new SimpleMeterRegistry());
-    scheduler.submitActor((Actor) senderSnapshotStore);
-    scheduler.workUntilDone();
+        submitActor(
+            new FileBasedSnapshotStore(
+                0,
+                partitionId,
+                senderDirectory,
+                snapshotPath -> Map.of(),
+                new SimpleMeterRegistry()));
 
     final var transferService =
         new SnapshotTransferServiceImpl(
-            senderSnapshotStore, 1, SnapshotCopyUtil.copyAllFiles(), senderSnapshotStore);
+            senderSnapshotStore, 1, SnapshotCopyUtil.copyAllFiles(), snapshotHandler);
     snapshotHandler.addTransferService(1, transferService);
 
     receiverSnapshotStore =
-        new FileBasedSnapshotStore(
-            0, partitionId, receiverDirectory, snapshotPath -> Map.of(), new SimpleMeterRegistry());
+        submitActor(
+            new FileBasedSnapshotStore(
+                0,
+                partitionId,
+                receiverDirectory,
+                snapshotPath -> Map.of(),
+                new SimpleMeterRegistry()));
 
-    scheduler.submitActor((Actor) receiverSnapshotStore);
-    scheduler.workUntilDone();
     client = new SnapshotTransferServiceClient(brokerClient);
 
     scheduler.workUntilDone();
@@ -135,7 +138,8 @@ public class SnapshotApiRequestHandlerTest {
     scheduler.workUntilDone();
     assertThat(takeFuture).succeedsWithin(Duration.ofSeconds(30));
 
-    final var transfer = new SnapshotTransferImpl(ignored -> client, receiverSnapshotStore);
+    final var transfer =
+        submitActor(new SnapshotTransferImpl(ignore -> client, receiverSnapshotStore));
     // when
     final var persistedSnapshot = transfer.getLatestSnapshot(partitionId);
     scheduler.workUntilDone();
@@ -155,5 +159,12 @@ public class SnapshotApiRequestHandlerTest {
         senderSnapshotStore,
         SnapshotTransferUtil.SNAPSHOT_FILE_CONTENTS,
         (Actor) receiverSnapshotStore);
+  }
+
+  private <A extends Actor> A submitActor(final A actor) {
+    final var future = scheduler.submitActor(actor);
+    scheduler.workUntilDone();
+    assertThat(future).succeedsWithin(Duration.ofSeconds(30));
+    return actor;
   }
 }
