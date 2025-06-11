@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.TestFormCache;
+import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
@@ -23,6 +24,7 @@ import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.webapps.schema.entities.usertask.TaskState;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -54,10 +56,11 @@ public class UserTaskHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-tasklist-task";
   private final TestFormCache formCache = new TestFormCache();
+  private final TestProcessCache processCache = new TestProcessCache();
   private final ExporterMetadata exporterMetadata =
       new ExporterMetadata(TestObjectMapper.objectMapper());
   private final UserTaskHandler underTest =
-      new UserTaskHandler(indexName, formCache, exporterMetadata);
+      new UserTaskHandler(indexName, formCache, processCache, exporterMetadata);
 
   @BeforeEach
   void resetMetadata() {
@@ -238,11 +241,13 @@ public class UserTaskHandlerTest {
   void shouldUpdateEntityFromRecord() {
     // given
     final long processInstanceKey = 123;
+    final long processDefinitionKey = 555;
     final long flowNodeInstanceKey = 456;
     final long recordKey = 110;
     exporterMetadata.setFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK, 100);
     final var dateTime = OffsetDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
     final var formKey = 456L;
+    final var elementId = "elementId";
     final UserTaskRecordValue taskRecordValue =
         ImmutableUserTaskRecordValue.builder()
             .from(factory.generateObject(UserTaskRecordValue.class))
@@ -251,8 +256,10 @@ public class UserTaskHandlerTest {
             .withCandidateGroupsList(Arrays.asList("group1", "group2"))
             .withCandidateUsersList(Arrays.asList("user1", "user2"))
             .withProcessInstanceKey(processInstanceKey)
+            .withProcessDefinitionKey(processDefinitionKey)
             .withElementInstanceKey(flowNodeInstanceKey)
             .withFormKey(formKey)
+            .withElementId(elementId)
             .build();
 
     final Record<UserTaskRecordValue> taskRecord =
@@ -265,6 +272,9 @@ public class UserTaskHandlerTest {
                     .withTimestamp(System.currentTimeMillis()));
 
     formCache.put(String.valueOf(formKey), new CachedFormEntity("my-form", 987L));
+    processCache.put(
+        processDefinitionKey,
+        new CachedProcessEntity("my-process", "v1", List.of(), Map.of(elementId, "my-flow-node")));
 
     // when
     final TaskEntity taskEntity =
@@ -280,6 +290,7 @@ public class UserTaskHandlerTest {
     assertThat(taskEntity.getPosition()).isEqualTo(taskRecord.getPosition());
     assertThat(taskEntity.getProcessInstanceId()).isEqualTo(String.valueOf(processInstanceKey));
     assertThat(taskEntity.getFlowNodeBpmnId()).isEqualTo(taskRecordValue.getElementId());
+    assertThat(taskEntity.getFlowNodeName()).isEqualTo("my-flow-node");
     assertThat(taskEntity.getBpmnProcessId()).isEqualTo(taskRecordValue.getBpmnProcessId());
     assertThat(taskEntity.getProcessDefinitionId())
         .isEqualTo(String.valueOf(taskRecordValue.getProcessDefinitionKey()));

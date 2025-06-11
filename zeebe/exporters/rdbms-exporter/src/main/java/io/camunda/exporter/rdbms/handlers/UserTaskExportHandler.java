@@ -18,6 +18,9 @@ import io.camunda.db.rdbms.write.domain.UserTaskMigrationDbModel;
 import io.camunda.db.rdbms.write.service.UserTaskWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.exporter.rdbms.utils.DateUtil;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
@@ -38,9 +41,13 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
           UserTaskIntent.MIGRATED);
 
   private final UserTaskWriter userTaskWriter;
+  private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
 
-  public UserTaskExportHandler(final UserTaskWriter userTaskWriter) {
+  public UserTaskExportHandler(
+      final UserTaskWriter userTaskWriter,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
     this.userTaskWriter = userTaskWriter;
+    this.processCache = processCache;
   }
 
   @Override
@@ -76,6 +83,10 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
                   .processDefinitionKey(value.getProcessDefinitionKey())
                   .processDefinitionId(value.getBpmnProcessId())
                   .elementId(value.getElementId())
+                  .elementName(
+                      ProcessCacheUtil.getFlowNodeName(
+                              processCache, value.getProcessDefinitionKey(), value.getElementId())
+                          .orElse(null))
                   .processDefinitionVersion(value.getProcessDefinitionVersion())
                   .build());
       default -> userTaskWriter.update(map(record, null, null));
@@ -90,6 +101,10 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
     return new UserTaskDbModel.Builder()
         .userTaskKey(value.getUserTaskKey())
         .elementId(value.getElementId())
+        .elementName(
+            ProcessCacheUtil.getFlowNodeName(
+                    processCache, value.getProcessDefinitionKey(), value.getElementId())
+                .orElse(null))
         .processDefinitionId(value.getBpmnProcessId())
         .creationDate(DateUtil.toOffsetDateTime(value.getCreationTimestamp()))
         .completionDate(completionTime)

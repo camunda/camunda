@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.cache.TestFormCache;
+import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
@@ -23,6 +24,7 @@ import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.webapps.schema.entities.usertask.TaskState;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -36,6 +38,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,11 +57,12 @@ public class UserTaskJobBasedHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-tasklist-task";
   private final TestFormCache formCache = new TestFormCache();
+  private final TestProcessCache processCache = new TestProcessCache();
   private final ExporterMetadata exporterMetadata =
       new ExporterMetadata(TestObjectMapper.objectMapper());
   private final UserTaskJobBasedHandler underTest =
       new UserTaskJobBasedHandler(
-          indexName, formCache, exporterMetadata, TestObjectMapper.objectMapper());
+          indexName, formCache, processCache, exporterMetadata, TestObjectMapper.objectMapper());
 
   @BeforeEach
   void resetMetadata() {
@@ -260,12 +264,14 @@ public class UserTaskJobBasedHandlerTest {
   void shouldUpdateEntityFromRecord() {
     // given
     final long processInstanceKey = 123;
+    final long processDefinitionKey = 555;
     final long flowNodeInstanceKey = 456;
     final long recordKey = 110;
     exporterMetadata.setFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK, 100);
     final var dateTime = OffsetDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
     final var assignee = "foo";
     final var formKey = "my-local-form-key";
+    final var elementId = "elementId";
 
     final var customerHeaders = new HashMap<String, String>();
     customerHeaders.put(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, assignee);
@@ -281,7 +287,9 @@ public class UserTaskJobBasedHandlerTest {
             .from(factory.generateObject(JobRecordValue.class))
             .withCustomHeaders(customerHeaders)
             .withProcessInstanceKey(processInstanceKey)
+            .withProcessDefinitionKey(processDefinitionKey)
             .withElementInstanceKey(flowNodeInstanceKey)
+            .withElementId(elementId)
             .build();
 
     final Record<JobRecordValue> jobRecord =
@@ -294,6 +302,9 @@ public class UserTaskJobBasedHandlerTest {
                     .withTimestamp(System.currentTimeMillis()));
 
     formCache.put(formKey, new CachedFormEntity("my-form", 987L));
+    processCache.put(
+        processDefinitionKey,
+        new CachedProcessEntity("my-process", "v1", List.of(), Map.of(elementId, "my-flow-node")));
 
     // when
     final TaskEntity taskEntity = new TaskEntity().setId(String.valueOf(recordKey));
@@ -307,6 +318,7 @@ public class UserTaskJobBasedHandlerTest {
     assertThat(taskEntity.getPosition()).isEqualTo(jobRecord.getPosition());
     assertThat(taskEntity.getProcessInstanceId()).isEqualTo(String.valueOf(processInstanceKey));
     assertThat(taskEntity.getFlowNodeBpmnId()).isEqualTo(jobRecordValue.getElementId());
+    assertThat(taskEntity.getFlowNodeName()).isEqualTo("my-flow-node");
     assertThat(taskEntity.getBpmnProcessId()).isEqualTo(jobRecordValue.getBpmnProcessId());
     assertThat(taskEntity.getProcessDefinitionId())
         .isEqualTo(String.valueOf(jobRecordValue.getProcessDefinitionKey()));
