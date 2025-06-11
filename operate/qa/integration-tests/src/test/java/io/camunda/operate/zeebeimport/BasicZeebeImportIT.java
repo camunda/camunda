@@ -682,8 +682,8 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
     assertThat(entity.getDecisionRequirementsKey()).isNotNull();
     assertThat(entity.getElementId()).isEqualTo(elementId);
     assertThat(entity.getElementInstanceKey()).isNotNull();
-    assertThat(entity.getEvaluationFailure()).isNotNull();
-    assertThat(entity.getEvaluationFailure())
+    assertThat(entity.getEvaluationFailureMessage()).isNotNull();
+    assertThat(entity.getEvaluationFailureMessage())
         .containsIgnoringCase("no variable found for name 'amount'");
     assertThat(entity.getEvaluationDate()).isNotNull();
     assertThat(entity.getPosition()).isNotNull();
@@ -828,6 +828,7 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
     assertThat(entity.getElementId()).isEqualTo(elementId);
     assertThat(entity.getElementInstanceKey()).isNotNull();
     assertThat(entity.getEvaluationFailure()).isNull();
+    assertThat(entity.getEvaluationFailureMessage()).isNull();
     assertThat(entity.getEvaluationDate()).isNotNull();
     assertThat(entity.getPosition()).isNotNull();
     assertThat(entity.getProcessDefinitionKey()).isNotNull();
