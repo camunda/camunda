@@ -131,6 +131,11 @@ public final class RecordingExporterTest {
     }
 
     @Override
+    public long getBatchOperationReference() {
+      return 0;
+    }
+
+    @Override
     public Record<TestValue> copyOf() {
       return this;
     }

@@ -35,6 +35,7 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
   private final AuthInfo authorization;
   private final int recordVersion;
   private final long operationReference;
+  private final long batchOperationKey;
 
   public CopiedRecord(
       final T recordValue,
@@ -60,6 +61,7 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
     authorization = metadata.getAuthorization();
     recordVersion = metadata.getRecordVersion();
     operationReference = metadata.getOperationReference();
+    batchOperationKey = metadata.getBatchOperationReference();
   }
 
   private CopiedRecord(final CopiedRecord<T> copiedRecord) {
@@ -95,6 +97,7 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
     authorization = copiedRecord.authorization;
     recordVersion = copiedRecord.recordVersion;
     operationReference = copiedRecord.operationReference;
+    batchOperationKey = copiedRecord.batchOperationKey;
   }
 
   @Override
@@ -170,6 +173,11 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
   @Override
   public long getOperationReference() {
     return operationReference;
+  }
+
+  @Override
+  public long getBatchOperationReference() {
+    return batchOperationKey;
   }
 
   @Override
