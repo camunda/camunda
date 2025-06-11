@@ -12,7 +12,6 @@ import static org.mockito.Mockito.*;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -34,14 +33,12 @@ public class DbUsageMetricStateTest {
 
   @BeforeEach
   void beforeEach() {
-    final var mockEngineConfiguration = mock(EngineConfiguration.class);
-    when(mockEngineConfiguration.getUsageMetricsExportInterval()).thenReturn(Duration.ofSeconds(1));
     mockClock = mock(InstantSource.class);
-    state = new DbUsageMetricState(zeebeDb, transactionContext, mockEngineConfiguration, mockClock);
+    state = new DbUsageMetricState(zeebeDb, transactionContext, mockClock, Duration.ofSeconds(1));
   }
 
   @Test
-  public void shouldCreateRollingBucket() {
+  public void shouldCreateActiveBucket() {
     // given
     final var eventTime = InstantSource.system().millis();
     when(mockClock.millis()).thenReturn(eventTime);
@@ -50,7 +47,7 @@ public class DbUsageMetricStateTest {
     state.recordRPIMetric(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     // then
-    final var actual = state.getRollingBucket();
+    final var actual = state.getActiveBucket();
     assertThat(actual.getFromTime()).isEqualTo(eventTime);
     assertThat(actual.getToTime()).isEqualTo(eventTime + 1000);
     assertThat(actual.getTenantRPIMap())
@@ -72,7 +69,7 @@ public class DbUsageMetricStateTest {
     state.recordRPIMetric("tenant2");
 
     // then
-    final var actual = state.getRollingBucket();
+    final var actual = state.getActiveBucket();
     assertThat(actual.getFromTime()).isEqualTo(eventTime);
     assertThat(actual.getToTime()).isEqualTo(eventTime + 1000);
     assertThat(actual.getTenantRPIMap())
@@ -81,20 +78,20 @@ public class DbUsageMetricStateTest {
   }
 
   @Test
-  public void shouldDeleteRollingBucket() {
+  public void shouldDeleteActiveBucket() {
     // given
     final var eventTime = InstantSource.system().millis();
     when(mockClock.millis()).thenReturn(eventTime);
     state.recordRPIMetric(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    final var bucket = state.getRollingBucket();
+    final var bucket = state.getActiveBucket();
     assertThat(bucket.getTenantRPIMap())
         .containsExactlyInAnyOrderEntriesOf(Map.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 1L));
 
     // when
-    state.deleteRollingBucket();
+    state.deleteActiveBucket();
 
     // then
-    final var actual = state.getRollingBucket();
+    final var actual = state.getActiveBucket();
     assertThat(actual).isNull();
   }
 }
