@@ -291,6 +291,7 @@ public class TestContainerUtil {
             .withNetwork(Network.SHARED)
             .withEnv("xpack.security.enabled", "false")
             .withEnv("path.repo", "~/")
+            .withEnv("action.destructive_requires_name", "false")
             .withNetworkAliases(ELS_NETWORK_ALIAS)
             .withExposedPorts(ELS_PORT);
     elsContainer.setWaitStrategy(
