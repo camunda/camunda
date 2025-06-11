@@ -50,7 +50,8 @@ public class SnapshotTransferServiceImpl implements SnapshotTransferService {
   }
 
   @Override
-  public ActorFuture<SnapshotChunk> getLatestSnapshot(final int partition, final UUID transferId) {
+  public ActorFuture<SnapshotChunk> getLatestSnapshot(
+      final int partition, final long lastProcessedPosition, final UUID transferId) {
     if (partition != partitionId) {
       return CompletableActorFuture.completedExceptionally(
           new IllegalArgumentException(
@@ -59,7 +60,7 @@ public class SnapshotTransferServiceImpl implements SnapshotTransferService {
                   transferId, partition, partitionId)));
     }
 
-    return getLatestSnapshotForBootstrap(transferId)
+    return getLatestSnapshotForBootstrap(lastProcessedPosition, transferId)
         .andThen(
             snapshot -> {
               final var snapshotId = snapshot.getId();
@@ -111,12 +112,13 @@ public class SnapshotTransferServiceImpl implements SnapshotTransferService {
     }
   }
 
-  private ActorFuture<PersistedSnapshot> getLatestSnapshotForBootstrap(final UUID transferId) {
+  private ActorFuture<PersistedSnapshot> getLatestSnapshotForBootstrap(
+      final long lastProcessedPosition, final UUID transferId) {
     final ActorFuture<PersistedSnapshot> lastSnapshotFuture = concurrency.createFuture();
 
     final var lastSnapshot = snapshotStore.getBootstrapSnapshot();
     if (lastSnapshot.isEmpty()) {
-      createSnapshotForBootstrap(partitionId, transferId)
+      createSnapshotForBootstrap(partitionId, lastProcessedPosition)
           .onComplete(lastSnapshotFuture, concurrency);
     } else {
       lastSnapshotFuture.complete(lastSnapshot.get());
@@ -125,13 +127,13 @@ public class SnapshotTransferServiceImpl implements SnapshotTransferService {
   }
 
   private ActorFuture<PersistedSnapshot> createSnapshotForBootstrap(
-      final int partitionId, final UUID transferId) {
+      final int partitionId, final long lastProcessedPosition) {
     final var lastPersistedSnapshot = snapshotStore.getLatestSnapshot();
     final ActorFuture<PersistedSnapshot> lastSnapshot =
         lastPersistedSnapshot.isEmpty()
-            ?
-            // TODO Add retries later and check if required idx is present in snapshot
-            takeSnapshot.takeSnapshot(partitionId)
+                || lastPersistedSnapshot.get().getMetadata().processedPosition()
+                    < lastProcessedPosition
+            ? takeSnapshot.takeSnapshot(partitionId, lastProcessedPosition)
             : CompletableActorFuture.completed(lastPersistedSnapshot.get());
 
     return lastSnapshot.andThen(
