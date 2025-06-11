@@ -12,6 +12,7 @@ import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnProtectedApi;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
+import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
@@ -250,7 +251,8 @@ public class WebSecurityConfig {
     public SecurityFilterChain httpBasicWebappAuthSecurityFilterChain(
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
-        final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter)
+        final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter,
+        final SecurityConfiguration securityConfiguration)
         throws Exception {
       LOG.info("Web Applications Login/Logout is setup.");
       return httpSecurity
@@ -284,6 +286,8 @@ public class WebSecurityConfig {
                       .authenticationEntryPoint(authFailureHandler)
                       .accessDeniedHandler(authFailureHandler))
           .addFilterAfter(webApplicationAuthorizationCheckFilter, AuthorizationFilter.class)
+          .addFilterBefore(
+              new AdminUserCheckFilter(securityConfiguration), AuthorizationFilter.class)
           .build();
     }
   }
