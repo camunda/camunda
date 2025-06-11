@@ -33,9 +33,9 @@ public class ManagementIdentityClient {
       "/api/migration/tenant/user?" + URL_PARAMS;
   private static final String MIGRATION_MAPPING_RULE_ENDPOINT =
       "/api/migration/mapping-rule?" + URL_PARAMS + "&type={1}";
-  private static final String MIGRATION_GROUPS_ENDPOINT = "/api/group?page={0}&organizationId={1}";
+  private static final String MIGRATION_GROUPS_ENDPOINT = "/api/groups?page={0}&organizationId={1}";
   private static final String MIGRATION_USER_GROUPS_ENDPOINT =
-      "/api/group/{0}/users?organizationId={1}";
+      "/api/groups/{0}/users?organizationId={1}";
 
   private final String organizationId;
   private final RestTemplate restTemplate;

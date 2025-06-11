@@ -16,10 +16,10 @@ public final class IdentityMigrationProperties {
       "camunda.migration.identity";
   public static final String PROP_CAMUNDA_MIGRATION_IDENTITY_MODE =
       CONFIG_PREFIX_CAMUNDA_MIGRATION_IDENTITY + ".mode";
-  private ManagementIdentityProperties managementIdentity;
+  private ManagementIdentityProperties managementIdentity = new ManagementIdentityProperties();
   private String organizationId;
   private Mode mode = Mode.CLOUD;
-  private ConsoleProperties console;
+  private ConsoleProperties console = new ConsoleProperties();
 
   public ManagementIdentityProperties getManagementIdentity() {
     return managementIdentity;
