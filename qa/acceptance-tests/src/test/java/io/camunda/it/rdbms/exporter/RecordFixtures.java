@@ -567,7 +567,7 @@ public class RecordFixtures {
         .withKey(processInstanceKey)
         .withPosition(position)
         .withTimestamp(System.currentTimeMillis())
-        .withOperationReference(batchOperationKey)
+        .withBatchOperationReference(batchOperationKey)
         .withValue(
             ImmutableProcessInstanceRecordValue.builder()
                 .from((ImmutableProcessInstanceRecordValue) recordValueRecord.getValue())
@@ -590,7 +590,7 @@ public class RecordFixtures {
         .withKey(processInstanceKey)
         .withPosition(position)
         .withTimestamp(System.currentTimeMillis())
-        .withOperationReference(batchOperationKey)
+        .withBatchOperationReference(batchOperationKey)
         .withValue(
             ImmutableProcessInstanceRecordValue.builder()
                 .from((ImmutableProcessInstanceRecordValue) recordValueRecord.getValue())
@@ -611,7 +611,7 @@ public class RecordFixtures {
         .withKey(incidentKey)
         .withPosition(position)
         .withTimestamp(System.currentTimeMillis())
-        .withOperationReference(batchOperationKey)
+        .withBatchOperationReference(batchOperationKey)
         .build();
   }
 
@@ -626,7 +626,7 @@ public class RecordFixtures {
         .withKey(incidentKey)
         .withPosition(position)
         .withTimestamp(System.currentTimeMillis())
-        .withOperationReference(batchOperationKey)
+        .withBatchOperationReference(batchOperationKey)
         .build();
   }
 
@@ -641,7 +641,7 @@ public class RecordFixtures {
         .withKey(processInstanceKey)
         .withPosition(position)
         .withTimestamp(System.currentTimeMillis())
-        .withOperationReference(batchOperationKey)
+        .withBatchOperationReference(batchOperationKey)
         .withValue(
             ImmutableProcessInstanceMigrationRecordValue.builder()
                 .from((ImmutableProcessInstanceMigrationRecordValue) recordValueRecord.getValue())
@@ -662,7 +662,7 @@ public class RecordFixtures {
         .withKey(processInstanceKey)
         .withPosition(position)
         .withTimestamp(System.currentTimeMillis())
-        .withOperationReference(batchOperationKey)
+        .withBatchOperationReference(batchOperationKey)
         .withValue(
             ImmutableProcessInstanceMigrationRecordValue.builder()
                 .from((ImmutableProcessInstanceMigrationRecordValue) recordValueRecord.getValue())
@@ -682,7 +682,7 @@ public class RecordFixtures {
         .withKey(processInstanceKey)
         .withPosition(position)
         .withTimestamp(System.currentTimeMillis())
-        .withOperationReference(batchOperationKey)
+        .withBatchOperationReference(batchOperationKey)
         .withValue(
             ImmutableProcessInstanceModificationRecordValue.builder()
                 .from(
@@ -704,7 +704,7 @@ public class RecordFixtures {
         .withKey(processInstanceKey)
         .withPosition(position)
         .withTimestamp(System.currentTimeMillis())
-        .withOperationReference(batchOperationKey)
+        .withBatchOperationReference(batchOperationKey)
         .withValue(
             ImmutableProcessInstanceModificationRecordValue.builder()
                 .from(

@@ -74,6 +74,7 @@ public final class ModifyProcessInstanceBatchExecutorTest extends AbstractBatchO
             .getFirst();
     assertThat(modificationCommand.getIntent()).isEqualTo(ProcessInstanceModificationIntent.MODIFY);
     assertThat(modificationCommand.getAuthorizations()).isEqualTo(claims);
+    assertThat(modificationCommand.getBatchOperationReference()).isEqualTo(batchOperationKey);
   }
 
   @Test
@@ -134,8 +135,8 @@ public final class ModifyProcessInstanceBatchExecutorTest extends AbstractBatchO
                 .withRecordKey(processInstanceKey)
                 .onlyCommandRejections()
                 .limit(r -> r.getIntent() == ProcessInstanceModificationIntent.MODIFY))
-        .extracting(Record::getIntent)
-        .containsSequence(ProcessInstanceModificationIntent.MODIFY);
+        .hasSize(1)
+        .allSatisfy(r -> assertThat(r.getBatchOperationReference()).isEqualTo(batchOperationKey));
   }
 
   @Test
@@ -165,13 +166,13 @@ public final class ModifyProcessInstanceBatchExecutorTest extends AbstractBatchO
         .extracting(Record::getIntent)
         .containsSequence(BatchOperationExecutionIntent.EXECUTE);
 
-    // and we have a modified event
+    // and we have a rejected command
     assertThat(
             RecordingExporter.processInstanceModificationRecords()
                 .withRecordKey(42L)
                 .onlyCommandRejections()
                 .limit(r -> r.getIntent() == ProcessInstanceModificationIntent.MODIFY))
-        .extracting(Record::getIntent)
-        .containsSequence(ProcessInstanceModificationIntent.MODIFY);
+        .hasSize(1)
+        .allSatisfy(r -> assertThat(r.getBatchOperationReference()).isEqualTo(batchOperationKey));
   }
 }
