@@ -21,7 +21,7 @@
     "eslint-plugin-playwright": "2.2.0",
     "eslint-plugin-prettier": "5.4.1",
     "husky": "^9.1.7",
-    "lint-staged": "^15.4.3",
+    "lint-staged": "^16.0.0",
     "playwright-slack-report": "^1.1.89",
     "prettier": "3.5.3",
     "typescript": "5.8.2",
