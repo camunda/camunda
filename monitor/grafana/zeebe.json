@@ -1438,7 +1438,7 @@
               "placement": "bottom",
               "showLegend": true
             },
-            "orientation": "vertical",
+            "orientation": "horizontal",
             "reduceOptions": {
               "calcs": [
                 "lastNotNull"
