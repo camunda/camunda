@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AdHocSubProcessBuilder;
+import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
@@ -46,6 +47,8 @@ public final class AdHocSubProcessTest {
 
   private static final String PROCESS_ID = "process";
   private static final String AD_HOC_SUB_PROCESS_ELEMENT_ID = "ad-hoc";
+  private static final String AD_HOC_SUB_PROCESS_INNER_INSTANCE_ELEMENT_ID =
+      AD_HOC_SUB_PROCESS_ELEMENT_ID + ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
 
   @Rule public final RecordingExporterTestWatcher watcher = new RecordingExporterTestWatcher();
 
@@ -140,7 +143,19 @@ public final class AdHocSubProcessTest {
         .containsSubsequence(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                AD_HOC_SUB_PROCESS_INNER_INSTANCE_ELEMENT_ID,
+                ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(
+                AD_HOC_SUB_PROCESS_INNER_INSTANCE_ELEMENT_ID,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(
+                AD_HOC_SUB_PROCESS_INNER_INSTANCE_ELEMENT_ID,
+                ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(
+                AD_HOC_SUB_PROCESS_INNER_INSTANCE_ELEMENT_ID,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("C", ProcessInstanceIntent.ACTIVATE_ELEMENT),
             tuple("A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("C", ProcessInstanceIntent.ELEMENT_ACTIVATED));
@@ -151,14 +166,39 @@ public final class AdHocSubProcessTest {
             .withElementId(AD_HOC_SUB_PROCESS_ELEMENT_ID)
             .getFirst();
 
+    final List<Long> adHocSubProcessInnerInstanceKeys =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
+            .limit(2)
+            .map(Record::getKey)
+            .toList();
+
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .withFlowScopeKey(adHocSubProcessActivated.getKey())
-                .limit(2))
-        .hasSize(2)
-        .extracting(r -> r.getValue().getElementId())
-        .contains("A", "C");
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .limit("C", ProcessInstanceIntent.ELEMENT_ACTIVATED))
+        .extracting(Record::getValue)
+        .extracting(
+            ProcessInstanceRecordValue::getElementId,
+            ProcessInstanceRecordValue::getBpmnElementType,
+            ProcessInstanceRecordValue::getFlowScopeKey)
+        .containsSequence(
+            tuple(
+                AD_HOC_SUB_PROCESS_ELEMENT_ID,
+                BpmnElementType.AD_HOC_SUB_PROCESS,
+                processInstanceKey),
+            tuple(
+                AD_HOC_SUB_PROCESS_INNER_INSTANCE_ELEMENT_ID,
+                BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE,
+                adHocSubProcessActivated.getKey()),
+            tuple(
+                AD_HOC_SUB_PROCESS_INNER_INSTANCE_ELEMENT_ID,
+                BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE,
+                adHocSubProcessActivated.getKey()),
+            tuple("A", BpmnElementType.TASK, adHocSubProcessInnerInstanceKeys.get(0)),
+            tuple("C", BpmnElementType.TASK, adHocSubProcessInnerInstanceKeys.get(1)));
   }
 
   @Test
@@ -571,7 +611,19 @@ public final class AdHocSubProcessTest {
         .containsSequence(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                AD_HOC_SUB_PROCESS_INNER_INSTANCE_ELEMENT_ID,
+                ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(
+                AD_HOC_SUB_PROCESS_INNER_INSTANCE_ELEMENT_ID,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(
+                AD_HOC_SUB_PROCESS_INNER_INSTANCE_ELEMENT_ID,
+                ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(
+                AD_HOC_SUB_PROCESS_INNER_INSTANCE_ELEMENT_ID,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("B", ProcessInstanceIntent.ACTIVATE_ELEMENT));
   }
 
@@ -659,7 +711,19 @@ public final class AdHocSubProcessTest {
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(
+                AD_HOC_SUB_PROCESS_INNER_INSTANCE_ELEMENT_ID,
+                ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(
+                AD_HOC_SUB_PROCESS_INNER_INSTANCE_ELEMENT_ID,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(
+                AD_HOC_SUB_PROCESS_INNER_INSTANCE_ELEMENT_ID,
+                ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(
+                AD_HOC_SUB_PROCESS_INNER_INSTANCE_ELEMENT_ID,
+                ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("B", ProcessInstanceIntent.ACTIVATE_ELEMENT));
 
     final Record<VariableRecordValue> variableCreated =
@@ -854,10 +918,10 @@ public final class AdHocSubProcessTest {
             tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
 
-    final List<Long> adHocSubProcessKeys =
+    final List<Long> adHocSubProcessInnerInstanceKeys =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstanceKey)
-            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
             .limit(3)
             .map(Record::getKey)
             .toList();
@@ -873,9 +937,9 @@ public final class AdHocSubProcessTest {
             ProcessInstanceRecordValue::getElementId, ProcessInstanceRecordValue::getFlowScopeKey)
         .hasSize(3)
         .containsExactly(
-            tuple("A", adHocSubProcessKeys.get(0)),
-            tuple("B", adHocSubProcessKeys.get(1)),
-            tuple("C", adHocSubProcessKeys.get(2)));
+            tuple("A", adHocSubProcessInnerInstanceKeys.get(0)),
+            tuple("B", adHocSubProcessInnerInstanceKeys.get(1)),
+            tuple("C", adHocSubProcessInnerInstanceKeys.get(2)));
   }
 
   @Test

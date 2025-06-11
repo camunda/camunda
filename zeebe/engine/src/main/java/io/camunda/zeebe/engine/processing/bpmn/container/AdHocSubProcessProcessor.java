@@ -21,7 +21,10 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehav
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import java.util.Collections;
@@ -200,9 +203,32 @@ public class AdHocSubProcessProcessor
 
     elementsToActivate.stream()
         .map(element.getAdHocActivitiesById()::get)
-        .forEach(
-            elementToActivate ->
-                stateTransitionBehavior.activateChildInstance(context, elementToActivate));
+        .forEach(elementToActivate -> activateElement(element, context, elementToActivate));
+  }
+
+  private void activateElement(
+      final ExecutableAdHocSubProcess element,
+      final BpmnElementContext context,
+      final ExecutableFlowNode elementToActivate) {
+
+    // create an inner instance
+    final ProcessInstanceRecord adHocSubprocessInnerInstance = new ProcessInstanceRecord();
+    adHocSubprocessInnerInstance.wrap(context.getRecordValue());
+    adHocSubprocessInnerInstance.setBpmnElementType(
+        BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE);
+    adHocSubprocessInnerInstance.setElementId(element.getInnerInstanceId());
+    adHocSubprocessInnerInstance.setFlowScopeKey(context.getElementInstanceKey());
+
+    final BpmnElementContext innerInstanceContext =
+        context.copy(-1, adHocSubprocessInnerInstance, ProcessInstanceIntent.ACTIVATE_ELEMENT);
+    final BpmnElementContext innerInstanceActivating =
+        stateTransitionBehavior.transitionToActivating(innerInstanceContext);
+    final BpmnElementContext innerInstanceActivated =
+        stateTransitionBehavior.transitionToActivated(
+            innerInstanceActivating, adHocSubprocessInnerInstance.getBpmnEventType());
+
+    // activate the element inside the inner instance
+    stateTransitionBehavior.activateChildInstance(innerInstanceActivated, elementToActivate);
   }
 
   @Override
