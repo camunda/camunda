@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
@@ -92,7 +93,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
 
     final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!isEntityPresent(entityId, entityType)) {
+    if (!isEntityPresent(entityId, entityType, isInternalGroupsEnabled(command))) {
       final var errorMessage =
           ENTITY_NOT_FOUND_ERROR_MESSAGE.formatted(entityId, entityType, record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
@@ -133,13 +134,19 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private boolean isEntityPresent(final String entityId, final EntityType entityType) {
+  private boolean isEntityPresent(
+      final String entityId, final EntityType entityType, final boolean internalGroupsEnabled) {
     return switch (entityType) {
       case USER, CLIENT -> true; // With simple mappings, any username and client id can be assigned
       case MAPPING -> mappingState.get(entityId).isPresent();
-      case GROUP -> groupState.get(entityId).isPresent();
+      case GROUP -> !internalGroupsEnabled || groupState.get(entityId).isPresent();
       default -> false;
     };
+  }
+
+  private boolean isInternalGroupsEnabled(final TypedRecord<RoleRecord> command) {
+    return Boolean.getBoolean(
+        (String) command.getAuthorizations().get(Authorization.INTERNAL_GROUPS_ENABLED));
   }
 
   private boolean isEntityAssigned(final RoleRecord record) {

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.tenant;
 
+import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
@@ -95,7 +96,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
 
     final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!isEntityPresent(entityId, entityType)) {
+    if (!isEntityPresent(entityId, entityType, isInternalGroupsEnabled(command))) {
       createEntityNotExistRejectCommand(command, entityId, entityType, tenantId);
       return;
     }
@@ -133,12 +134,13 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
         .orElseGet(() -> Either.left(TENANT_NOT_FOUND_ERROR_MESSAGE.formatted(tenantId)));
   }
 
-  private boolean isEntityPresent(final String entityId, final EntityType entityType) {
+  private boolean isEntityPresent(
+      final String entityId, final EntityType entityType, final boolean internalGroupsEnabled) {
     return switch (entityType) {
       case USER -> true; // With simple mappings, any username can be assigned
       case CLIENT -> true; // With simple mappings, any client id can be assigned
       case MAPPING -> mappingState.get(entityId).isPresent();
-      case GROUP -> groupState.get(entityId).isPresent();
+      case GROUP -> !internalGroupsEnabled || groupState.get(entityId).isPresent();
       case ROLE -> roleState.getRole(entityId).isPresent();
       default -> false;
     };
@@ -201,5 +203,10 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
         .withKey(keyGenerator.nextKey())
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
         .distribute(command);
+  }
+
+  private boolean isInternalGroupsEnabled(final TypedRecord<TenantRecord> command) {
+    return Boolean.getBoolean(
+        (String) command.getAuthorizations().get(Authorization.INTERNAL_GROUPS_ENABLED));
   }
 }
