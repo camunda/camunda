@@ -18,10 +18,8 @@ package io.camunda.process.test.impl.assertions;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.NullNode;
+import io.camunda.process.test.impl.assertions.util.AssertionJsonMapper;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -38,8 +36,6 @@ import org.awaitility.core.ConditionTimeoutException;
 import org.awaitility.core.TerminalFailureException;
 
 public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
-
-  private final ObjectMapper jsonMapper = new ObjectMapper();
 
   private final CamundaDataSource dataSource;
 
@@ -84,7 +80,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
 
   public void hasVariable(
       final long processInstanceKey, final String variableName, final Object variableValue) {
-    final JsonNode expectedValue = toJson(variableValue);
+    final JsonNode expectedValue = AssertionJsonMapper.toJson(variableValue);
 
     final AtomicReference<Map<String, String>> reference =
         new AtomicReference<>(Collections.emptyMap());
@@ -99,7 +95,8 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
 
                 assertThat(variables).containsKey(variableName);
 
-                final JsonNode actualValue = readJson(variables.get(variableName));
+                final JsonNode actualValue =
+                    AssertionJsonMapper.readJson(variables.get(variableName));
                 assertThat(actualValue).isEqualTo(expectedValue);
               });
 
@@ -124,7 +121,9 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final long processInstanceKey, final Map<String, Object> expectedVariables) {
     final Map<String, JsonNode> expectedValues =
         expectedVariables.entrySet().stream()
-            .collect(Collectors.toMap(Entry::getKey, entry -> toJson(entry.getValue())));
+            .collect(
+                Collectors.toMap(
+                    Entry::getKey, entry -> AssertionJsonMapper.toJson(entry.getValue())));
 
     final Set<String> expectedVariableNames = expectedVariables.keySet();
 
@@ -139,7 +138,9 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
                     getProcessInstanceVariables(processInstanceKey).entrySet().stream()
                         .filter(entry -> expectedVariableNames.contains(entry.getKey()))
                         .collect(
-                            Collectors.toMap(Entry::getKey, entry -> readJson(entry.getValue())));
+                            Collectors.toMap(
+                                Entry::getKey,
+                                entry -> AssertionJsonMapper.readJson(entry.getValue())));
                 reference.set(actualValues);
 
                 assertThat(actualValues).containsAllEntriesOf(expectedValues);
@@ -165,8 +166,8 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
           String.format(
               "%s should have the variables %s but was %s.%s",
               actual,
-              toJson(expectedVariables),
-              toJson(actualVariables),
+              AssertionJsonMapper.toJson(expectedVariables),
+              AssertionJsonMapper.toJson(actualVariables),
               formattedMissingVariables);
       fail(failureMessage);
     }
@@ -179,26 +180,5 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
         // However, the toMap collector does not allow null values and would throw an exception.
         // See this Stack Overflow issue for more context: https://stackoverflow.com/a/24634007
         .collect(HashMap::new, (m, v) -> m.put(v.getName(), v.getValue()), HashMap::putAll);
-  }
-
-  private JsonNode readJson(final String value) {
-    if (value == null) {
-      return NullNode.getInstance();
-    }
-
-    try {
-      return jsonMapper.readValue(value, JsonNode.class);
-    } catch (final JsonProcessingException e) {
-      throw new RuntimeException(String.format("Failed to read JSON: '%s'", value), e);
-    }
-  }
-
-  private JsonNode toJson(final Object value) {
-    try {
-      return jsonMapper.convertValue(value, JsonNode.class);
-    } catch (final IllegalArgumentException e) {
-      throw new RuntimeException(
-          String.format("Failed to transform value to JSON: '%s'", value), e);
-    }
   }
 }
