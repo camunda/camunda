@@ -7,7 +7,10 @@
  */
 package io.camunda.authentication.filters;
 
+import io.camunda.search.query.RoleQuery;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.RoleServices;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,12 +23,17 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 public class AdminUserCheckFilter extends OncePerRequestFilter {
-  private static final Logger LOG = LoggerFactory.getLogger(AdminUserCheckFilter.class);
-  public static final String USER_MEMBERS = "users";
-  private final SecurityConfiguration securityConfig;
 
-  public AdminUserCheckFilter(final SecurityConfiguration securityConfig) {
+  public static final String ADMIN_ROLE_ID = DefaultRole.ADMIN.getId();
+  public static final String USER_MEMBERS = "users";
+  private static final Logger LOG = LoggerFactory.getLogger(AdminUserCheckFilter.class);
+  private final SecurityConfiguration securityConfig;
+  private final RoleServices roleServices;
+
+  public AdminUserCheckFilter(
+      final SecurityConfiguration securityConfig, final RoleServices roleServices) {
     this.securityConfig = securityConfig;
+    this.roleServices = roleServices;
   }
 
   @Override
@@ -42,9 +50,34 @@ public class AdminUserCheckFilter extends OncePerRequestFilter {
             .getOrDefault(USER_MEMBERS, Set.of())
             .isEmpty();
 
-    if (!hasConfiguredAdminUser) {
-      LOG.info("No admin user configured. Redirecting to identity setup page.");
-      response.sendRedirect(String.format("%s/identity/setup", request.getContextPath()));
+    if (hasConfiguredAdminUser) {
+      LOG.debug("Admin user has been configured.");
+      filterChain.doFilter(request, response);
+      return;
+    }
+
+    try {
+      final var adminRoleHasMembers =
+          roleServices
+                  .searchMembers(
+                      RoleQuery.of(
+                          builder ->
+                              builder.filter(
+                                  filter ->
+                                      filter.joinParentId("admin").memberType(EntityType.USER))))
+                  .total()
+              > 0;
+
+      if (!adminRoleHasMembers) {
+        LOG.debug("No user with admin role exists. Redirecting to identity setup page.");
+        response.sendRedirect(String.format("%s/identity/setup", request.getContextPath()));
+        return;
+      }
+    } catch (final RuntimeException ex) {
+      // Don't redirect the request if an error occurs while checking for admin role members.
+      LOG.error(
+          "Error while searching for admin role members. This might indicate that secondary storage is down.",
+          ex);
     }
 
     filterChain.doFilter(request, response);

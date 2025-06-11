@@ -252,7 +252,8 @@ public class WebSecurityConfig {
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
         final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter,
-        final SecurityConfiguration securityConfiguration)
+        final SecurityConfiguration securityConfiguration,
+        final RoleServices roleServices)
         throws Exception {
       LOG.info("Web Applications Login/Logout is setup.");
       return httpSecurity
@@ -287,7 +288,8 @@ public class WebSecurityConfig {
                       .accessDeniedHandler(authFailureHandler))
           .addFilterAfter(webApplicationAuthorizationCheckFilter, AuthorizationFilter.class)
           .addFilterBefore(
-              new AdminUserCheckFilter(securityConfiguration), AuthorizationFilter.class)
+              new AdminUserCheckFilter(securityConfiguration, roleServices),
+              AuthorizationFilter.class)
           .build();
     }
   }
