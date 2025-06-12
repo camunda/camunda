@@ -79,4 +79,8 @@ public final class TestStandaloneIdentityMigration
       default -> super.mappedPort(port);
     };
   }
+
+  public int getExitCode() {
+    return springContext.getBean(StandaloneIdentityMigration.class).getExitCode();
+  }
 }

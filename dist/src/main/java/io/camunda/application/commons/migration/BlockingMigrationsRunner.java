@@ -41,7 +41,7 @@ public class BlockingMigrationsRunner implements Runnable {
       } catch (final Exception e) {
         LOG.error("{} failed with: {}", migrator.getName(), e.getMessage());
         LOG.error(
-            "The cause for the failed migration was: {}", e.getCause().getMessage(), e.getCause());
+            "The cause of the failed migration was: {}", e.getCause().getMessage(), e.getCause());
         LOG.info(
             "Please assess the cause, take potential corrective action and rerun the migration.");
         throw new RuntimeException(e);
