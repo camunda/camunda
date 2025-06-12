@@ -105,7 +105,7 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
   @Override
   public void appendItemKeys(final long batchOperationKey, final Set<Long> itemKeys) {
-    LOGGER.trace(
+    LOGGER.debug(
         "Appending {} item keys to batch operation with key {}",
         itemKeys.size(),
         batchOperationKey);
