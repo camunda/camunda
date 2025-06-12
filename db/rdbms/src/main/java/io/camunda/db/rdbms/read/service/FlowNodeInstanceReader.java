@@ -24,7 +24,7 @@ public class FlowNodeInstanceReader extends AbstractEntityReader<FlowNodeInstanc
   private final FlowNodeInstanceMapper flowNodeInstanceMapper;
 
   public FlowNodeInstanceReader(final FlowNodeInstanceMapper flowNodeInstanceMapper) {
-    super(FlowNodeInstanceSearchColumn::findByProperty);
+    super(FlowNodeInstanceSearchColumn.values());
     this.flowNodeInstanceMapper = flowNodeInstanceMapper;
   }
 

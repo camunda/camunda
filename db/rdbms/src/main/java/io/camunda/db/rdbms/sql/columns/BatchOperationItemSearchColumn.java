@@ -8,54 +8,27 @@
 package io.camunda.db.rdbms.sql.columns;
 
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
-import java.util.function.Function;
 
 public enum BatchOperationItemSearchColumn implements SearchColumn<BatchOperationItemEntity> {
-  BATCH_OPERATION_ID("batchOperationId", BatchOperationItemEntity::batchOperationId),
-  ITEM_KEY("itemKey", BatchOperationItemEntity::itemKey),
-  PROCESS_INSTANCE_KEY("processInstanceKey", BatchOperationItemEntity::processInstanceKey),
-  STATE("state", BatchOperationItemEntity::state),
-  PROCESSED_DATE("processedDate", BatchOperationItemEntity::processedDate);
+  BATCH_OPERATION_ID("batchOperationId"),
+  ITEM_KEY("itemKey"),
+  PROCESS_INSTANCE_KEY("processInstanceKey"),
+  STATE("state"),
+  PROCESSED_DATE("processedDate");
 
   private final String property;
-  private final Function<BatchOperationItemEntity, Object> propertyReader;
-  private final Function<Object, Object> sortOptionConverter;
 
-  BatchOperationItemSearchColumn(
-      final String property, final Function<BatchOperationItemEntity, Object> propertyReader) {
-    this(property, propertyReader, Function.identity());
-  }
-
-  BatchOperationItemSearchColumn(
-      final String property,
-      final Function<BatchOperationItemEntity, Object> propertyReader,
-      final Function<Object, Object> sortOptionConverter) {
+  BatchOperationItemSearchColumn(final String property) {
     this.property = property;
-    this.propertyReader = propertyReader;
-    this.sortOptionConverter = sortOptionConverter;
   }
 
   @Override
-  public Object getPropertyValue(final BatchOperationItemEntity entity) {
-    return propertyReader.apply(entity);
+  public String property() {
+    return property;
   }
 
   @Override
-  public Object convertSortOption(final Object object) {
-    if (object == null) {
-      return null;
-    }
-
-    return sortOptionConverter.apply(object);
-  }
-
-  public static BatchOperationItemSearchColumn findByProperty(final String property) {
-    for (final BatchOperationItemSearchColumn column : BatchOperationItemSearchColumn.values()) {
-      if (column.property.equals(property)) {
-        return column;
-      }
-    }
-
-    return null;
+  public Class<BatchOperationItemEntity> getEntityClass() {
+    return BatchOperationItemEntity.class;
   }
 }

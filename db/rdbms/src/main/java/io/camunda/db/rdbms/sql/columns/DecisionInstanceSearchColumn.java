@@ -8,68 +8,35 @@
 package io.camunda.db.rdbms.sql.columns;
 
 import io.camunda.search.entities.DecisionInstanceEntity;
-import io.camunda.zeebe.util.DateUtil;
-import java.util.function.Function;
 
 public enum DecisionInstanceSearchColumn implements SearchColumn<DecisionInstanceEntity> {
-  DECISION_INSTANCE_ID("decisionInstanceId", DecisionInstanceEntity::decisionInstanceId),
-  DECISION_INSTANCE_KEY("decisionInstanceKey", DecisionInstanceEntity::decisionInstanceKey),
-  PROCESS_DEFINITION_KEY("processDefinitionKey", DecisionInstanceEntity::processDefinitionKey),
-  DECISION_DEFINITION_NAME(
-      "decisionDefinitionName", DecisionInstanceEntity::decisionDefinitionName),
-  DECISION_DEFINITION_ID("decisionDefinitionId", DecisionInstanceEntity::decisionDefinitionId),
-  DECISION_DEFINITION_KEY("decisionDefinitionKey", DecisionInstanceEntity::decisionDefinitionKey),
-  DECISION_DEFINITION_VERSION(
-      "decisionDefinitionVersion", DecisionInstanceEntity::decisionDefinitionVersion),
-  DECISION_DEFINITION_TYPE(
-      "decisionDefinitionType", DecisionInstanceEntity::decisionDefinitionType),
-  TENANT_ID("tenantId", DecisionInstanceEntity::tenantId),
-  EVALUATION_DATE(
-      "evaluationDate", DecisionInstanceEntity::evaluationDate, DateUtil::fuzzyToOffsetDateTime),
-  STATE("state", DecisionInstanceEntity::state),
-  RESULT("result", DecisionInstanceEntity::result),
-  EVALUATION_FAILURE("evaluationFailure", DecisionInstanceEntity::evaluationFailure),
-  EVALUATION_FAILURE_MESSAGE(
-      "evaluationFailureMessage", DecisionInstanceEntity::evaluationFailureMessage);
+  DECISION_INSTANCE_ID("decisionInstanceId"),
+  DECISION_INSTANCE_KEY("decisionInstanceKey"),
+  PROCESS_DEFINITION_KEY("processDefinitionKey"),
+  DECISION_DEFINITION_NAME("decisionDefinitionName"),
+  DECISION_DEFINITION_ID("decisionDefinitionId"),
+  DECISION_DEFINITION_KEY("decisionDefinitionKey"),
+  DECISION_DEFINITION_VERSION("decisionDefinitionVersion"),
+  DECISION_DEFINITION_TYPE("decisionDefinitionType"),
+  TENANT_ID("tenantId"),
+  EVALUATION_DATE("evaluationDate"),
+  STATE("state"),
+  RESULT("result"),
+  EVALUATION_FAILURE("evaluationFailure"),
+  EVALUATION_FAILURE_MESSAGE("evaluationFailureMessage");
   private final String property;
-  private final Function<DecisionInstanceEntity, Object> propertyReader;
-  private final Function<Object, Object> sortOptionConverter;
 
-  DecisionInstanceSearchColumn(
-      final String property, final Function<DecisionInstanceEntity, Object> propertyReader) {
-    this(property, propertyReader, Function.identity());
-  }
-
-  DecisionInstanceSearchColumn(
-      final String property,
-      final Function<DecisionInstanceEntity, Object> propertyReader,
-      final Function<Object, Object> sortOptionConverter) {
+  DecisionInstanceSearchColumn(final String property) {
     this.property = property;
-    this.propertyReader = propertyReader;
-    this.sortOptionConverter = sortOptionConverter;
   }
 
   @Override
-  public Object getPropertyValue(final DecisionInstanceEntity entity) {
-    return propertyReader.apply(entity);
+  public String property() {
+    return property;
   }
 
   @Override
-  public Object convertSortOption(final Object object) {
-    if (object == null) {
-      return null;
-    }
-
-    return sortOptionConverter.apply(object);
-  }
-
-  public static DecisionInstanceSearchColumn findByProperty(final String property) {
-    for (final DecisionInstanceSearchColumn column : DecisionInstanceSearchColumn.values()) {
-      if (column.property.equals(property)) {
-        return column;
-      }
-    }
-
-    return null;
+  public Class<DecisionInstanceEntity> getEntityClass() {
+    return DecisionInstanceEntity.class;
   }
 }
