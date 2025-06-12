@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.backup;
 
+import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
@@ -63,7 +64,7 @@ final class S3BackupAcceptanceIT implements BackupAcceptance {
           .withNodeConfig(this::configureNode)
           .build();
 
-  private S3BackupStore store;
+  private BackupStore store;
 
   @BeforeEach
   void beforeEach() {
@@ -76,7 +77,7 @@ final class S3BackupAcceptanceIT implements BackupAcceptance {
             .withApiCallTimeout(Duration.ofSeconds(25))
             .forcePathStyleAccess(true)
             .build();
-    store = new S3BackupStore(config);
+    store = S3BackupStore.of(config);
 
     try (final var client = S3BackupStore.buildClient(config)) {
       // it's possible to query to fast and get a 503 from the server here, so simply retry after

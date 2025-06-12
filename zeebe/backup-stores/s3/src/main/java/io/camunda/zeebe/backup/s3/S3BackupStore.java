@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.awscore.defaultsmode.DefaultsMode;
@@ -85,11 +86,11 @@ public final class S3BackupStore implements BackupStore {
   private final S3AsyncClient client;
   private final FileSetManager fileSetManager;
 
-  public S3BackupStore(final S3BackupConfig config) {
+  S3BackupStore(final S3BackupConfig config) {
     this(config, buildClient(config));
   }
 
-  public S3BackupStore(final S3BackupConfig config, final S3AsyncClient client) {
+  S3BackupStore(final S3BackupConfig config, final S3AsyncClient client) {
     this.config = config;
     this.client = client;
     fileSetManager = new FileSetManager(client, config);
@@ -99,6 +100,10 @@ public final class S3BackupStore implements BackupStore {
             "^"
                 + basePath.map(base -> base + "/").map(Pattern::quote).orElse("")
                 + "(?<partitionId>\\d+)/(?<checkpointId>\\d+)/(?<nodeId>\\d+).*");
+  }
+
+  public static BackupStore of(final S3BackupConfig config) {
+    return new S3BackupStore(config).logging(LOG, Level.INFO);
   }
 
   private Optional<BackupIdentifier> tryParseKeyAsId(final String key) {
@@ -167,7 +172,6 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
-    LOG.info("Saving {}", backup.id());
     return updateManifestObject(
             backup.id(), Manifest::expectNoBackup, manifest -> manifest.asInProgress(backup))
         .thenComposeAsync(
@@ -196,7 +200,6 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<BackupStatus> getStatus(final BackupIdentifier id) {
-    LOG.info("Querying status of {}", id);
     return readManifestObject(id).thenApply(Manifest::toStatus);
   }
 
@@ -205,14 +208,12 @@ public final class S3BackupStore implements BackupStore {
    */
   @Override
   public CompletableFuture<Collection<BackupStatus>> list(final BackupIdentifierWildcard wildcard) {
-    LOG.info("Querying status of {}", wildcard);
     return readManifestObjects(wildcard)
         .thenApplyAsync(manifests -> manifests.stream().map(Manifest::toStatus).toList());
   }
 
   @Override
   public CompletableFuture<Void> delete(final BackupIdentifier id) {
-    LOG.info("Deleting {}", id);
     return readManifestObject(id)
         .thenApply(
             manifest -> {
@@ -230,7 +231,6 @@ public final class S3BackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Backup> restore(final BackupIdentifier id, final Path targetFolder) {
-    LOG.info("Restoring {} to {}", id, targetFolder);
     final var backupPrefix = objectPrefix(id);
     return readManifestObject(id)
         .thenApply(Manifest::expectCompleted)
@@ -248,7 +248,6 @@ public final class S3BackupStore implements BackupStore {
   @Override
   public CompletableFuture<BackupStatusCode> markFailed(
       final BackupIdentifier id, final String failureReason) {
-    LOG.info("Marking {} as failed", id);
     return updateManifestObject(id, manifest -> manifest.asFailed(failureReason))
         .thenApply(Manifest::statusCode);
   }
@@ -260,7 +259,6 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private CompletableFuture<List<ObjectIdentifier>> listBackupObjects(final BackupIdentifier id) {
-    LOG.debug("Listing objects of {}", id);
     return client
         .listObjectsV2(req -> req.bucket(config.bucketName()).prefix(objectPrefix(id)))
         .thenApplyAsync(
