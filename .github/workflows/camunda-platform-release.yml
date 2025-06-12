@@ -324,7 +324,7 @@ jobs:
         run: |
           shopt -s nocasematch # set matching to case insensitive
           PRE_RELEASE=false
-          if [[ "${RELEASE_VERSION}" =~ ^.*-(alpha|rc|SNAPSHOT)[\d]*$ ]]; then
+          if [[ "${RELEASE_VERSION}" =~ ^.*-(alpha|rc|SNAPSHOT).*$ ]]; then
             PRE_RELEASE=true
           fi
           shopt -u nocasematch # reset it
