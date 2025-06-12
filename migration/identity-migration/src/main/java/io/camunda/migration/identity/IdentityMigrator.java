@@ -7,6 +7,7 @@
  */
 package io.camunda.migration.identity;
 
+import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.api.Migrator;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.config.cluster.ClusterProperties;
@@ -44,7 +45,13 @@ public class IdentityMigrator implements Migrator {
 
   private void migrate() {
     for (final MigrationHandler<?> handler : handlers) {
-      handler.migrate();
+      LOG.info("Starting {}", handler.getName());
+      try {
+        handler.migrate();
+      } catch (final Exception e) {
+        throw new MigrationException("Execution of %s failed".formatted(handler.getName()), e);
+      }
+      LOG.info("Completed {}", handler.getName());
     }
   }
 
@@ -73,7 +80,7 @@ public class IdentityMigrator implements Migrator {
                       .getAwaitClusterJoinRetryInterval()
                       .multipliedBy(clusterConfig.getAwaitClusterJoinMaxAttempts()));
       LOG.error(message);
-      throw new RuntimeException(message);
+      throw new MigrationException(message);
     }
   }
 }
