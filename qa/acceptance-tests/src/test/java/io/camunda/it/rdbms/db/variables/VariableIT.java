@@ -207,27 +207,22 @@ public class VariableIT {
             VariableQuery.of(
                 b -> b.filter(f -> f.names(varName)).sort(sort).page(p -> p.from(0).size(20))));
 
-    final var instanceAfter = searchResult.items().get(9);
+    final var firstPage =
+        variableReader.search(
+            VariableQuery.of(
+                b -> b.filter(f -> f.names(varName)).sort(sort).page(p -> p.size(15))));
+
     final var nextPage =
         variableReader.search(
             VariableQuery.of(
                 b ->
                     b.filter(f -> f.names(varName))
                         .sort(sort)
-                        .page(
-                            p ->
-                                p.size(5)
-                                    .searchAfter(
-                                        new Object[] {
-                                          instanceAfter.scopeKey(),
-                                          instanceAfter.value(),
-                                          instanceAfter.processInstanceKey(),
-                                          instanceAfter.variableKey()
-                                        }))));
+                        .page(p -> p.size(5).searchAfter(firstPage.searchAfterCursor()))));
 
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
-    assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(10, 15));
+    assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
   }
 
   @TestTemplate

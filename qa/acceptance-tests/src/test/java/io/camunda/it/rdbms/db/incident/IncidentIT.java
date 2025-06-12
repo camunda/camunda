@@ -116,18 +116,6 @@ public class IncidentIT {
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(20);
     assertThat(searchResult.items()).hasSize(5);
-
-    final var firstInstance = searchResult.items().getFirst();
-    assertThat(searchResult.firstSortValues()).hasSize(3);
-    assertThat(searchResult.firstSortValues())
-        .containsExactly(
-            firstInstance.creationTime(), firstInstance.flowNodeId(), firstInstance.incidentKey());
-
-    final var lastInstance = searchResult.items().getLast();
-    assertThat(searchResult.lastSortValues()).hasSize(3);
-    assertThat(searchResult.lastSortValues())
-        .containsExactly(
-            lastInstance.creationTime(), lastInstance.flowNodeId(), lastInstance.incidentKey());
   }
 
   @TestTemplate
@@ -186,27 +174,25 @@ public class IncidentIT {
                         .sort(sort)
                         .page(p -> p.from(0).size(20))));
 
-    final var instanceAfter = searchResult.items().get(9);
+    final var firstPage =
+        processInstanceReader.search(
+            IncidentQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(processDefinitionKey))
+                        .sort(sort)
+                        .page(p -> p.size(15))));
+
     final var nextPage =
         processInstanceReader.search(
             IncidentQuery.of(
                 b ->
                     b.filter(f -> f.processDefinitionKeys(processDefinitionKey))
                         .sort(sort)
-                        .page(
-                            p ->
-                                p.size(5)
-                                    .searchAfter(
-                                        new Object[] {
-                                          instanceAfter.state(),
-                                          instanceAfter.creationTime(),
-                                          instanceAfter.flowNodeId(),
-                                          instanceAfter.processInstanceKey()
-                                        }))));
+                        .page(p -> p.size(5).searchAfter(firstPage.searchAfterCursor()))));
 
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
-    assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(10, 15));
+    assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
   }
 
   private void compareIncident(final IncidentEntity instance, final IncidentDbModel original) {

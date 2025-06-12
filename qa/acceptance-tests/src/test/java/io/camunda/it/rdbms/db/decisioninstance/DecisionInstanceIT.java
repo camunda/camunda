@@ -92,21 +92,6 @@ public class DecisionInstanceIT {
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(20);
     assertThat(searchResult.items()).hasSize(5);
-
-    final var firstInstance = searchResult.items().getFirst();
-    assertThat(searchResult.firstSortValues()).hasSize(3);
-    assertThat(searchResult.firstSortValues())
-        .containsExactly(
-            firstInstance.evaluationDate(),
-            firstInstance.decisionDefinitionName(),
-            firstInstance.decisionInstanceId());
-    final var lastInstance = searchResult.items().getLast();
-    assertThat(searchResult.lastSortValues()).hasSize(3);
-    assertThat(searchResult.lastSortValues())
-        .containsExactly(
-            lastInstance.evaluationDate(),
-            lastInstance.decisionDefinitionName(),
-            lastInstance.decisionInstanceId());
   }
 
   @TestTemplate
@@ -181,10 +166,17 @@ public class DecisionInstanceIT {
                 b ->
                     b.filter(
                             f -> f.decisionDefinitionIds(decisionDefinition.decisionDefinitionId()))
-                        .sort(sort)
-                        .page(p -> p.from(0).size(20))));
+                        .sort(sort)));
 
-    final var instanceAfter = searchResult.items().get(9);
+    final var firstPage =
+        decisionInstanceReader.search(
+            DecisionInstanceQuery.of(
+                b ->
+                    b.filter(
+                            f -> f.decisionDefinitionIds(decisionDefinition.decisionDefinitionId()))
+                        .sort(sort)
+                        .page(p -> p.size(15))));
+
     final var nextPage =
         decisionInstanceReader.search(
             DecisionInstanceQuery.of(
@@ -192,20 +184,11 @@ public class DecisionInstanceIT {
                     b.filter(
                             f -> f.decisionDefinitionIds(decisionDefinition.decisionDefinitionId()))
                         .sort(sort)
-                        .page(
-                            p ->
-                                p.size(5)
-                                    .searchAfter(
-                                        new Object[] {
-                                          instanceAfter.decisionDefinitionName(),
-                                          instanceAfter.decisionDefinitionVersion(),
-                                          instanceAfter.evaluationDate(),
-                                          instanceAfter.decisionInstanceId()
-                                        }))));
+                        .page(p -> p.size(5).searchAfter(firstPage.searchAfterCursor()))));
 
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
-    assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(10, 15));
+    assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
   }
 
   @TestTemplate

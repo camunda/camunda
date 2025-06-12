@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -493,17 +492,17 @@ class DecisionSearchTest {
     final var resultAfter =
         camundaClient
             .newDecisionRequirementsSearchRequest()
-            .page(p -> p.searchAfter(Collections.singletonList(key)))
+            .page(p -> p.searchAfter(result.page().searchAfterCursor()))
             .send()
             .join();
 
     assertThat(resultAfter.items().size()).isEqualTo(2);
-    final var keyAfter = resultAfter.items().getFirst().getDecisionRequirementsKey();
+
     // apply searchBefore
     final var resultBefore =
         camundaClient
             .newDecisionRequirementsSearchRequest()
-            .page(p -> p.searchBefore(Collections.singletonList(keyAfter)))
+            .page(p -> p.searchBefore(resultAfter.page().searchBeforeCursor()))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);

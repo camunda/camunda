@@ -202,21 +202,6 @@ public class ProcessInstanceIT {
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(20);
     assertThat(searchResult.items()).hasSize(5);
-
-    final var firstInstance = searchResult.items().getFirst();
-    assertThat(searchResult.firstSortValues()).hasSize(3);
-    assertThat(searchResult.firstSortValues())
-        .containsExactly(
-            firstInstance.startDate(),
-            firstInstance.processDefinitionName(),
-            firstInstance.processInstanceKey());
-    final var lastInstance = searchResult.items().getLast();
-    assertThat(searchResult.lastSortValues()).hasSize(3);
-    assertThat(searchResult.lastSortValues())
-        .containsExactly(
-            lastInstance.startDate(),
-            lastInstance.processDefinitionName(),
-            lastInstance.processInstanceKey());
   }
 
   @TestTemplate
@@ -295,27 +280,25 @@ public class ProcessInstanceIT {
                         .sort(sort)
                         .page(p -> p.from(0).size(20))));
 
-    final var instanceAfter = searchResult.items().get(9);
+    final var firstPage =
+        processInstanceReader.search(
+            ProcessInstanceQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionIds(processDefinition.processDefinitionId()))
+                        .sort(sort)
+                        .page(p -> p.from(0).size(10))));
+
     final var nextPage =
         processInstanceReader.search(
             ProcessInstanceQuery.of(
                 b ->
                     b.filter(f -> f.processDefinitionIds(processDefinition.processDefinitionId()))
                         .sort(sort)
-                        .page(
-                            p ->
-                                p.size(5)
-                                    .searchAfter(
-                                        new Object[] {
-                                          instanceAfter.processDefinitionName(),
-                                          instanceAfter.processDefinitionVersion(),
-                                          instanceAfter.startDate(),
-                                          instanceAfter.processInstanceKey()
-                                        }))));
+                        .page(p -> p.size(10).searchAfter(firstPage.searchAfterCursor()))));
 
     assertThat(nextPage.total()).isEqualTo(20);
-    assertThat(nextPage.items()).hasSize(5);
-    assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(10, 15));
+    assertThat(nextPage.items()).hasSize(10);
+    assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(10, 20));
   }
 
   @TestTemplate
