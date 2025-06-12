@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Decision;
@@ -673,7 +674,7 @@ public class CamundaProcessTestContextIT {
   }
 
   private BpmnModelInstance processModelWithServiceTask() {
-    return Bpmn.createExecutableProcess("test-process")
+    return Bpmn.createExecutableProcess("test-process-with-service-task")
         .startEvent()
         .serviceTask("service-task-1")
         .zeebeJobType("test")
@@ -691,7 +692,7 @@ public class CamundaProcessTestContextIT {
 
   private BpmnModelInstance processModelWithUserTask(
       final String taskName, final String elementId) {
-    return Bpmn.createExecutableProcess("test-process")
+    return Bpmn.createExecutableProcess("test-process-with-user-task")
         .startEvent()
         .userTask(elementId)
         .name(taskName)
@@ -854,7 +855,7 @@ public class CamundaProcessTestContextIT {
 
   private BpmnModelInstance processModelWithBusinessRuleTask(
       final String decisionId, final String resultVariable) {
-    return Bpmn.createExecutableProcess("test-process")
+    return Bpmn.createExecutableProcess("test-process" + UUID.randomUUID().toString())
         .startEvent()
         .businessRuleTask("business-rule-1")
         .zeebeCalledDecisionId(decisionId)

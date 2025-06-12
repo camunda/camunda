@@ -16,6 +16,8 @@
 package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.process.test.api.coverage.ProcessEngineCoverage;
+import io.camunda.process.test.api.coverage.ProcessEngineCoverageBuilder;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
@@ -79,14 +81,19 @@ public class CamundaProcessTestExtension
   /** The JUnit extension store key of the context. */
   public static final String STORE_KEY_CONTEXT = "camunda-process-test-context";
 
+  /** The JUnit extension store key of the process engine coverage. */
+  public static final String STORE_KEY_COVERAGE = "camunda-process-test-coverage";
+
   private static final Logger LOG = LoggerFactory.getLogger(CamundaProcessTestExtension.class);
 
   private final List<AutoCloseable> createdClients = new ArrayList<>();
 
   private final CamundaContainerRuntimeBuilder containerRuntimeBuilder;
   private final CamundaProcessTestResultPrinter processTestResultPrinter;
+  private final ProcessEngineCoverageBuilder processEngineCoverageBuilder;
 
   private CamundaContainerRuntime containerRuntime;
+  private ProcessEngineCoverage processEngineCoverage;
   private CamundaProcessTestResultCollector processTestResultCollector;
 
   private CamundaManagementClient camundaManagementClient;
@@ -94,8 +101,18 @@ public class CamundaProcessTestExtension
 
   CamundaProcessTestExtension(
       final CamundaContainerRuntimeBuilder containerRuntimeBuilder,
+      final ProcessEngineCoverageBuilder processEngineCoverageBuilder,
       final Consumer<String> testResultPrintStream) {
     this.containerRuntimeBuilder = containerRuntimeBuilder;
+    this.processEngineCoverageBuilder = processEngineCoverageBuilder;
+    processTestResultPrinter = new CamundaProcessTestResultPrinter(testResultPrintStream);
+  }
+
+  CamundaProcessTestExtension(
+      final CamundaContainerRuntimeBuilder containerRuntimeBuilder,
+      final Consumer<String> testResultPrintStream) {
+    this.containerRuntimeBuilder = containerRuntimeBuilder;
+    processEngineCoverageBuilder = ProcessEngineCoverage.newBuilder();
     processTestResultPrinter = new CamundaProcessTestResultPrinter(testResultPrintStream);
   }
 
@@ -115,7 +132,10 @@ public class CamundaProcessTestExtension
    * </pre>
    */
   public CamundaProcessTestExtension() {
-    this(CamundaContainerRuntime.newBuilder(), System.err::println);
+    this(
+        CamundaContainerRuntime.newBuilder(),
+        ProcessEngineCoverage.newBuilder(),
+        System.err::println);
   }
 
   @Override
@@ -135,6 +155,12 @@ public class CamundaProcessTestExtension
             containerRuntime.getConnectorsContainer(),
             createdClients::add,
             camundaManagementClient);
+
+    // create coverage
+    processEngineCoverage = processEngineCoverageBuilder.build();
+    processEngineCoverage.setDataSourceSupplier(
+        () -> new CamundaDataSource(camundaProcessTestContext.createClient()));
+    processEngineCoverage.beginTestSuiteCoverage(context);
 
     // put in store
     final Store store = context.getStore(NAMESPACE);
@@ -165,6 +191,9 @@ public class CamundaProcessTestExtension
     final CamundaDataSource dataSource =
         new CamundaDataSource(camundaProcessTestContext.createClient());
     CamundaAssert.initialize(dataSource);
+
+    // initialize test method coverage
+    processEngineCoverage.beginTestMethodCoverage(context);
 
     // initialize result collector
     processTestResultCollector = new CamundaProcessTestResultCollector(dataSource);
@@ -207,6 +236,8 @@ public class CamundaProcessTestExtension
       // Skip if the runtime is not created.
       return;
     }
+
+    processEngineCoverage.endTestMethodCoverage(extensionContext);
 
     if (isTestFailed(extensionContext)) {
       printTestResults();
@@ -252,6 +283,7 @@ public class CamundaProcessTestExtension
       // Skip if the runtime is not created.
       return;
     }
+    processEngineCoverage.endTestSuiteCoverage(context);
     containerRuntime.close();
   }
 
@@ -385,6 +417,80 @@ public class CamundaProcessTestExtension
    */
   public CamundaProcessTestExtension withConnectorsSecret(final String name, final String value) {
     containerRuntimeBuilder.withConnectorsSecret(name, value);
+    return this;
+  }
+
+  /**
+   * Enables detailed coverage logging in debug scope.
+   *
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withDetailedCoverageLogging() {
+    processEngineCoverageBuilder.withDetailedCoverageLogging();
+    return this;
+  }
+
+  /**
+   * Controls whether test method coverage should be evaluated. When enabled, coverage statistics
+   * will be calculated per test method.
+   *
+   * @param handleTestMethodCoverage set {@code true} to enable test method coverage (enabled by
+   *     default)
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension handleTestMethodCoverage(
+      final boolean handleTestMethodCoverage) {
+    processEngineCoverageBuilder.handleTestMethodCoverage(handleTestMethodCoverage);
+    return this;
+  }
+
+  /**
+   * Asserts that the class coverage is greater than or equal to the specified percentage. The test
+   * will fail if the coverage is below this threshold.
+   *
+   * @param percentage minimal percentage for class coverage (between 0.0 and 1.0)
+   * @return the extension builder
+   * @throws RuntimeException if the percentage is not between 0.0 and 1.0
+   */
+  public CamundaProcessTestExtension coverageClassAssertAtLeast(final double percentage) {
+    processEngineCoverageBuilder.coverageClassAssertAtLeast(percentage);
+    return this;
+  }
+
+  /**
+   * Specifies process definition keys that should be excluded from coverage analysis. These
+   * processes will not be considered when calculating coverage metrics.
+   *
+   * @param processDefinitionKeys an array of process definition keys to exclude
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension excludeProcessDefinitionKeys(
+      final String... processDefinitionKeys) {
+    processEngineCoverageBuilder.excludeProcessDefinitionKeys(processDefinitionKeys);
+    return this;
+  }
+
+  /**
+   * Specifies the key of the system property for configuring minimum coverage assertion. Coverage
+   * ratio threshold can be configured via a system property instead of in code.
+   *
+   * @param property the system property key to read the coverage threshold from
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension coverageAssertAtLeastProperty(final String property) {
+    processEngineCoverageBuilder.coverageAssertAtLeastProperty(property);
+    return this;
+  }
+
+  /**
+   * Specifies the output directory for coverage reports. Coverage reports will be generated and
+   * saved to this directory after test execution.
+   *
+   * @param reportDirectory the directory path where reports should be saved
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withReportDirectory(final String reportDirectory) {
+    processEngineCoverageBuilder.reportDirectory(reportDirectory);
     return this;
   }
 
