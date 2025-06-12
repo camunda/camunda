@@ -23,6 +23,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.process.test.api.coverage.ProcessCoverage;
+import io.camunda.process.test.api.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
@@ -59,6 +61,10 @@ public class JunitExtensionTest {
   @Mock(answer = Answers.RETURNS_SELF)
   private CamundaProcessTestRuntimeBuilder camundaRuntimeBuilder;
 
+  @Mock(answer = Answers.RETURNS_SELF)
+  private ProcessCoverageBuilder processCoverageBuilder;
+
+  @Mock private ProcessCoverage processCoverage;
   @Mock private CamundaProcessTestContainerRuntime camundaContainerRuntime;
   @Mock private CamundaManagementClient camundaManagementClient;
   @Mock private CamundaProcessTestResultCollector camundaProcessTestResultCollector;
@@ -88,13 +94,14 @@ public class JunitExtensionTest {
     when(extensionContext.getRequiredTestInstances()).thenReturn(testInstances);
     when(testInstances.getAllInstances()).thenReturn(Collections.singletonList(this));
     when(extensionContext.getStore(any())).thenReturn(store);
+    when(processCoverageBuilder.build()).thenReturn(processCoverage);
   }
 
   @Test
   void shouldInjectCamundaClientAndZeebeClient() throws Exception {
     // given
     final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(camundaRuntimeBuilder, NOOP);
+        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
 
     // when
     extension.beforeAll(extensionContext);
@@ -120,7 +127,7 @@ public class JunitExtensionTest {
         .thenReturn(connectorsRestApiAddress);
 
     final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(camundaRuntimeBuilder, NOOP);
+        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
 
     // when
     extension.beforeAll(extensionContext);
@@ -138,7 +145,7 @@ public class JunitExtensionTest {
   void shouldCreateCamundaClientFromContext() throws Exception {
     // given
     final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(camundaRuntimeBuilder, NOOP);
+        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
 
     // when
     extension.beforeAll(extensionContext);
@@ -157,7 +164,7 @@ public class JunitExtensionTest {
   void shouldCreateZeebeClientFromContext() throws Exception {
     // given
     final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(camundaRuntimeBuilder, NOOP);
+        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
 
     // when
     extension.beforeAll(extensionContext);
@@ -176,7 +183,7 @@ public class JunitExtensionTest {
   void shouldCreateCustomCamundaClientFromContext() throws Exception {
     // given
     final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(camundaRuntimeBuilder, NOOP);
+        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
 
     // when
     extension.beforeAll(extensionContext);
@@ -197,7 +204,7 @@ public class JunitExtensionTest {
   void shouldCreateCustomZeebeClientFromContext() throws Exception {
     // given
     final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(camundaRuntimeBuilder, NOOP);
+        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
 
     // when
     extension.beforeAll(extensionContext);
@@ -219,7 +226,7 @@ public class JunitExtensionTest {
   void shouldStartAndCloseRuntime() throws Exception {
     // given
     final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(camundaRuntimeBuilder, NOOP);
+        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
 
     // when
     extension.beforeAll(extensionContext);
@@ -235,7 +242,7 @@ public class JunitExtensionTest {
   void shouldStoreRuntimeAndContext() throws Exception {
     // given
     final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(camundaRuntimeBuilder, NOOP);
+        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
 
     // when
     extension.beforeAll(extensionContext);
@@ -256,7 +263,7 @@ public class JunitExtensionTest {
     camundaEnvVars.put("env-2", "test-2");
 
     final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(camundaRuntimeBuilder, NOOP)
+        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP)
             .withCamundaDockerImageVersion(camundaVersion)
             .withCamundaDockerImageName(camundaDockerImageName)
             .withConnectorsDockerImageVersion(camundaVersion)
@@ -292,7 +299,7 @@ public class JunitExtensionTest {
     connectorsEnvVars.put("env-2", "test-2");
 
     final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(camundaRuntimeBuilder, NOOP)
+        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP)
             .withConnectorsEnabled(true)
             .withConnectorsDockerImageName(connectorsDockerImageName)
             .withConnectorsDockerImageVersion(connectorsVersion)
@@ -323,7 +330,8 @@ public class JunitExtensionTest {
     // given
     final StringBuilder outputBuilder = new StringBuilder();
     final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(camundaRuntimeBuilder, outputBuilder::append);
+        new CamundaProcessTestExtension(
+            camundaRuntimeBuilder, processCoverageBuilder, outputBuilder::append);
 
     when(camundaProcessTestResultCollector.collect()).thenReturn(new ProcessTestResult());
 
@@ -350,7 +358,8 @@ public class JunitExtensionTest {
     // given
     final StringBuilder outputBuilder = new StringBuilder();
     final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(camundaRuntimeBuilder, outputBuilder::append);
+        new CamundaProcessTestExtension(
+            camundaRuntimeBuilder, processCoverageBuilder, outputBuilder::append);
 
     // when
     extension.beforeAll(extensionContext);
@@ -373,7 +382,7 @@ public class JunitExtensionTest {
   void shouldPurgeTheClusterInBetweenTests() throws Exception {
     // given
     final CamundaProcessTestExtension extension =
-        new CamundaProcessTestExtension(camundaRuntimeBuilder, NOOP);
+        new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
 
     // when
     extension.beforeAll(extensionContext);
