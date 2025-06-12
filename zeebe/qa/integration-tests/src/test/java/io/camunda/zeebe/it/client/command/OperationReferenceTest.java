@@ -150,6 +150,47 @@ public class OperationReferenceTest {
   }
 
   @Test
+  void shouldPreserveOperationRefOnElementTerminatedAfterCancelingUserTaskWithCancelingListeners() {
+    // Given
+    final var helper = new ZeebeResourcesHelper(client);
+    final var listenerType = "canceling_listener";
+
+    final var userTaskKey =
+        helper.createSingleUserTask(
+            t -> t.zeebeTaskListener(l -> l.canceling().type(listenerType)));
+
+    final var processInstanceKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withRecordKey(userTaskKey)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+
+    client
+        .newWorker()
+        .jobType(listenerType)
+        .handler((jobClient, job) -> jobClient.newCompleteCommand(job).withResult().send().join())
+        .open();
+
+    // When
+    final var cancelFuture =
+        client
+            .newCancelInstanceCommand(processInstanceKey)
+            .operationReference(OPERATION_REFERENCE)
+            .send();
+
+    assertThatCode(cancelFuture::join).doesNotThrowAnyException();
+
+    // Then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withRecordKey(processInstanceKey)
+                .getFirst())
+        .describedAs("PI:ELEMENT_TERMINATED should carry original 'operationReference'")
+        .hasOperationReference(OPERATION_REFERENCE);
+  }
+
+  @Test
   void shouldPreserveOperationReferenceOnVariableUpdatedEventAfterUpdatingUserTaskWithListeners() {
     // Given
     final var helper = new ZeebeResourcesHelper(client);
