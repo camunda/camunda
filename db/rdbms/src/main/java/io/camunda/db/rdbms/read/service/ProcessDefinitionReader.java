@@ -27,7 +27,7 @@ public class ProcessDefinitionReader extends AbstractEntityReader<ProcessDefinit
   private final ProcessDefinitionMapper processDefinitionMapper;
 
   public ProcessDefinitionReader(final ProcessDefinitionMapper processDefinitionMapper) {
-    super(ProcessDefinitionSearchColumn::findByProperty);
+    super(ProcessDefinitionSearchColumn.values());
     this.processDefinitionMapper = processDefinitionMapper;
   }
 

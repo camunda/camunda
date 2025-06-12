@@ -21,6 +21,10 @@ public record DbQuerySorting<T>(List<SortingEntry<T>> orderings) {
     return fn.apply(new DbQuerySorting.Builder<>()).build();
   }
 
+  public List<SearchColumn<T>> columns() {
+    return orderings.stream().map(SortingEntry::column).toList();
+  }
+
   public static final class Builder<T> implements ObjectBuilder<DbQuerySorting<T>> {
 
     private final List<SortingEntry<T>> entries;

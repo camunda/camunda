@@ -8,50 +8,23 @@
 package io.camunda.db.rdbms.sql.columns;
 
 import io.camunda.search.entities.BatchOperationEntity;
-import java.util.function.Function;
 
 public enum BatchOperationSearchColumn implements SearchColumn<BatchOperationEntity> {
-  BATCH_OPERATION_ID("batchOperationId", BatchOperationEntity::batchOperationId);
+  BATCH_OPERATION_ID("batchOperationId");
 
   private final String property;
-  private final Function<BatchOperationEntity, Object> propertyReader;
-  private final Function<Object, Object> sortOptionConverter;
 
-  BatchOperationSearchColumn(
-      final String property, final Function<BatchOperationEntity, Object> propertyReader) {
-    this(property, propertyReader, Function.identity());
-  }
-
-  BatchOperationSearchColumn(
-      final String property,
-      final Function<BatchOperationEntity, Object> propertyReader,
-      final Function<Object, Object> sortOptionConverter) {
+  BatchOperationSearchColumn(final String property) {
     this.property = property;
-    this.propertyReader = propertyReader;
-    this.sortOptionConverter = sortOptionConverter;
   }
 
   @Override
-  public Object getPropertyValue(final BatchOperationEntity entity) {
-    return propertyReader.apply(entity);
+  public String property() {
+    return property;
   }
 
   @Override
-  public Object convertSortOption(final Object object) {
-    if (object == null) {
-      return null;
-    }
-
-    return sortOptionConverter.apply(object);
-  }
-
-  public static BatchOperationSearchColumn findByProperty(final String property) {
-    for (final BatchOperationSearchColumn column : BatchOperationSearchColumn.values()) {
-      if (column.property.equals(property)) {
-        return column;
-      }
-    }
-
-    return null;
+  public Class<BatchOperationEntity> getEntityClass() {
+    return BatchOperationEntity.class;
   }
 }

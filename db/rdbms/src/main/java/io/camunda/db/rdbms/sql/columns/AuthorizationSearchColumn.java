@@ -8,52 +8,25 @@
 package io.camunda.db.rdbms.sql.columns;
 
 import io.camunda.search.entities.AuthorizationEntity;
-import java.util.function.Function;
 
 public enum AuthorizationSearchColumn implements SearchColumn<AuthorizationEntity> {
-  OWNER_ID("ownerId", AuthorizationEntity::ownerId),
-  OWNER_TYPE("ownerType", AuthorizationEntity::ownerType),
-  RESOURCE_TYPE("resourceType", AuthorizationEntity::resourceType);
+  OWNER_ID("ownerId"),
+  OWNER_TYPE("ownerType"),
+  RESOURCE_TYPE("resourceType");
 
   private final String property;
-  private final Function<AuthorizationEntity, Object> propertyReader;
-  private final Function<Object, Object> sortOptionConverter;
 
-  AuthorizationSearchColumn(
-      final String property, final Function<AuthorizationEntity, Object> propertyReader) {
-    this(property, propertyReader, Function.identity());
-  }
-
-  AuthorizationSearchColumn(
-      final String property,
-      final Function<AuthorizationEntity, Object> propertyReader,
-      final Function<Object, Object> sortOptionConverter) {
+  AuthorizationSearchColumn(final String property) {
     this.property = property;
-    this.propertyReader = propertyReader;
-    this.sortOptionConverter = sortOptionConverter;
   }
 
   @Override
-  public Object getPropertyValue(final AuthorizationEntity entity) {
-    return propertyReader.apply(entity);
+  public String property() {
+    return property;
   }
 
   @Override
-  public Object convertSortOption(final Object object) {
-    if (object == null) {
-      return null;
-    }
-
-    return sortOptionConverter.apply(object);
-  }
-
-  public static AuthorizationSearchColumn findByProperty(final String property) {
-    for (final AuthorizationSearchColumn column : AuthorizationSearchColumn.values()) {
-      if (column.property.equals(property)) {
-        return column;
-      }
-    }
-
-    return null;
+  public Class<AuthorizationEntity> getEntityClass() {
+    return AuthorizationEntity.class;
   }
 }
