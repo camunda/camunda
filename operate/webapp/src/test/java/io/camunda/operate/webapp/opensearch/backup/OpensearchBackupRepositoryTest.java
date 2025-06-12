@@ -82,7 +82,7 @@ class OpensearchBackupRepositoryTest {
     final var response = new OpenSearchGetSnapshotResponse();
     when(openSearchSnapshotOperations.get(any())).thenReturn(response);
 
-    assertThat(repository.getBackups("repo")).isEmpty();
+    assertThat(repository.getBackups("repo", true, null, id -> false)).isEmpty();
   }
 
   @Test
@@ -101,7 +101,7 @@ class OpensearchBackupRepositoryTest {
     when(openSearchSnapshotOperations.get(any())).thenReturn(response);
     mockSynchronSnapshotOperations();
 
-    final var snapshotDtoList = repository.getBackups("repo");
+    final var snapshotDtoList = repository.getBackups("repo", true, null, id -> false);
     assertThat(snapshotDtoList).hasSize(1);
 
     final var snapshotDto = snapshotDtoList.get(0);
@@ -130,7 +130,7 @@ class OpensearchBackupRepositoryTest {
     mockObjectMapperForMetadata(metadata);
     when(openSearchSnapshotOperations.get(any())).thenReturn(response);
     mockSynchronSnapshotOperations();
-    final var snapshotDtoList = repository.getBackups("repo", false, null);
+    final var snapshotDtoList = repository.getBackups("repo", false, null, id -> false);
     verify(openSearchSnapshotOperations).get(argThat(req -> !req.verbose()));
 
     assertThat(snapshotDtoList)
@@ -158,7 +158,7 @@ class OpensearchBackupRepositoryTest {
     mockSynchronSnapshotOperations();
 
     // when
-    repository.getBackups("repo", false, "2023*");
+    repository.getBackups("repo", false, "2023*", id -> false);
 
     // then
     verify(openSearchSnapshotOperations)
@@ -252,7 +252,7 @@ class OpensearchBackupRepositoryTest {
                         .setState(SnapshotState.SUCCESS)
                         .setStartTimeInMillis(23L))));
 
-    final var response = repository.getBackupState("repo", 5L);
+    final var response = repository.getBackupState("repo", 5L, id -> false);
 
     assertThat(response).isNotNull();
     assertThat(response.getState()).isEqualTo(BackupStateDto.INCOMPLETE);
@@ -317,5 +317,45 @@ class OpensearchBackupRepositoryTest {
             () -> repository.validateNoDuplicateBackupId("repo", 42L));
     assertThat(exception.getMessage())
         .isEqualTo("A backup with ID [42] already exists. Found snapshots: [test]");
+  }
+
+  @Test
+  void shouldReturnInProgressWhenFewerSnapshotsSuccessAndBackupPendingInMemory() {
+    mockSynchronSnapshotOperations();
+    mockObjectMapperForMetadata(new Metadata().setPartNo(1).setVersion("8.7.0").setPartCount(3));
+
+    when(openSearchSnapshotOperations.get(any()))
+        .thenReturn(
+            new OpenSearchGetSnapshotResponse(
+                List.of(
+                    new OpenSearchSnapshotInfo()
+                        .setSnapshot("snapshot")
+                        .setState(SnapshotState.SUCCESS)
+                        .setStartTimeInMillis(23L))));
+
+    final long backupId = 5L;
+    final var response = repository.getBackupState("repo", backupId, id -> id.equals(backupId));
+
+    assertThat(response.getState()).isEqualTo(BackupStateDto.IN_PROGRESS);
+  }
+
+  @Test
+  void shouldReturnIncompleteWhenFewerSnapshotsSuccessAndBackupNotPendingInMemory() {
+    mockSynchronSnapshotOperations();
+    mockObjectMapperForMetadata(new Metadata().setPartNo(1).setVersion("8.7.0").setPartCount(3));
+
+    when(openSearchSnapshotOperations.get(any()))
+        .thenReturn(
+            new OpenSearchGetSnapshotResponse(
+                List.of(
+                    new OpenSearchSnapshotInfo()
+                        .setSnapshot("snapshot")
+                        .setState(SnapshotState.SUCCESS)
+                        .setStartTimeInMillis(23L))));
+
+    final long backupId = 5L;
+    final var response = repository.getBackupState("repo", backupId, id -> false);
+
+    assertThat(response.getState()).isEqualTo(BackupStateDto.INCOMPLETE);
   }
 }

@@ -122,8 +122,10 @@ public class BackupRestoreTest {
     snapshots = backupResponse.getScheduledSnapshots();
 
     RetryOperation.newBuilder()
-        .noOfRetry(10)
-        .delayInterval(2000, TimeUnit.MILLISECONDS)
+        .noOfRetry(100)
+        .delayInterval(
+            10,
+            TimeUnit.MILLISECONDS) // short delay to verify that INCOMPLETE state is not returned
         .retryPredicate(result -> !(boolean) result)
         .retryConsumer(
             () -> {

@@ -33,6 +33,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.OpenSearchException;
@@ -138,14 +139,20 @@ public class OpensearchBackupRepository implements BackupRepository {
 
   @Override
   public GetBackupStateResponseDto getBackupState(
-      final String repositoryName, final Long backupId) {
+      final String repositoryName,
+      final Long backupId,
+      final Predicate<Long> isBackupInProgressPredicate) {
+    final boolean isBackupInProgress = isBackupInProgressPredicate.test(backupId);
     final List<OpenSearchSnapshotInfo> snapshots = findSnapshots(repositoryName, backupId);
-    return toGetBackupStateResponseDto(backupId, snapshots);
+    return toGetBackupStateResponseDto(backupId, snapshots, isBackupInProgress);
   }
 
   @Override
   public List<GetBackupStateResponseDto> getBackups(
-      final String repositoryName, final boolean verbose, final String pattern) {
+      final String repositoryName,
+      final boolean verbose,
+      final String pattern,
+      final Predicate<Long> isBackupInProgressPredicate) {
     final var validatedPattern = BackupRepository.validPattern(pattern);
 
     validatedPattern.ifLeft(
@@ -188,7 +195,12 @@ public class OpensearchBackupRepository implements BackupRepository {
                       toList()));
 
       return groupedSnapshotInfos.entrySet().stream()
-          .map(entry -> toGetBackupStateResponseDto(entry.getKey(), entry.getValue()))
+          .map(
+              entry ->
+                  toGetBackupStateResponseDto(
+                      entry.getKey(),
+                      entry.getValue(),
+                      isBackupInProgressPredicate.test(entry.getKey())))
           .toList();
 
     } catch (final Exception e) {
@@ -362,7 +374,9 @@ public class OpensearchBackupRepository implements BackupRepository {
   }
 
   private BackupStateDto getState(
-      final List<OpenSearchSnapshotInfo> snapshots, final Integer expectedSnapshotsCount) {
+      final List<OpenSearchSnapshotInfo> snapshots,
+      final Integer expectedSnapshotsCount,
+      final boolean isBackupInProgress) {
     if (snapshots.size() == expectedSnapshotsCount
         && snapshots.stream().map(OpenSearchSnapshotInfo::getState).allMatch(SUCCESS::equals)) {
       return BackupStateDto.COMPLETED;
@@ -370,9 +384,8 @@ public class OpensearchBackupRepository implements BackupRepository {
         .map(OpenSearchSnapshotInfo::getState)
         .anyMatch(s -> FAILED.equals(s) || PARTIAL.equals(s))) {
       return BackupStateDto.FAILED;
-    } else if (snapshots.stream()
-        .map(OpenSearchSnapshotInfo::getState)
-        .anyMatch(IN_PROGRESS::equals)) {
+    } else if (isBackupInProgress
+        || snapshots.stream().map(OpenSearchSnapshotInfo::getState).anyMatch(IN_PROGRESS::equals)) {
       return BackupStateDto.IN_PROGRESS;
     } else if (snapshots.size() < expectedSnapshotsCount) {
       return BackupStateDto.INCOMPLETE;
@@ -382,14 +395,16 @@ public class OpensearchBackupRepository implements BackupRepository {
   }
 
   private GetBackupStateResponseDto toGetBackupStateResponseDto(
-      final Long backupId, final List<OpenSearchSnapshotInfo> snapshots) {
+      final Long backupId,
+      final List<OpenSearchSnapshotInfo> snapshots,
+      final boolean isBackupInProgress) {
     final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
     final Metadata metadata =
         Metadata.extractFromMetadataOrName(
             objectMapper, snapshots.getFirst().getMetadata(), snapshots.getFirst().getSnapshot());
     final Integer expectedSnapshotsCount = metadata.getPartCount();
 
-    response.setState(getState(snapshots, expectedSnapshotsCount));
+    response.setState(getState(snapshots, expectedSnapshotsCount, isBackupInProgress));
     response.setDetails(getBackupStateDetails(snapshots));
 
     final var failureReason =

@@ -43,7 +43,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -78,6 +80,7 @@ public class BackupManagerOpenSearch extends BackupManager {
   private static final Logger LOGGER = LoggerFactory.getLogger(BackupManagerOpenSearch.class);
   private static final String REPOSITORY_MISSING_EXCEPTION_TYPE = "repository_missing_exception";
   private final Queue<CreateSnapshotRequest> requestsQueue = new ConcurrentLinkedQueue<>();
+  private final AtomicReference<CreateSnapshotRequest> currentRequest = new AtomicReference<>(null);
 
   @Autowired private TasklistProperties tasklistProperties;
 
@@ -134,8 +137,9 @@ public class BackupManagerOpenSearch extends BackupManager {
 
   @Override
   public GetBackupStateResponseDto getBackupState(final Long backupId) {
+    final boolean isBackupInProgress = isBackupInProgress(backupId);
     final List<SnapshotInfo> snapshots = findSnapshots(backupId);
-    return getBackupResponse(backupId, snapshots);
+    return getBackupResponse(backupId, snapshots, isBackupInProgress);
   }
 
   @Override
@@ -180,7 +184,10 @@ public class BackupManagerOpenSearch extends BackupManager {
                       toList()));
 
       return groupedSnapshotInfos.entrySet().stream()
-          .map(entry -> getBackupResponse(entry.getKey(), entry.getValue()))
+          .map(
+              entry ->
+                  getBackupResponse(
+                      entry.getKey(), entry.getValue(), isBackupInProgress(entry.getKey())))
           .collect(toList());
     } catch (final IOException ex) {
       final String reason =
@@ -353,6 +360,7 @@ public class BackupManagerOpenSearch extends BackupManager {
 
   private void scheduleNextSnapshot() {
     final CreateSnapshotRequest nextRequest = requestsQueue.poll();
+    currentRequest.set(nextRequest); // if the queue is empty, currentRequest will be set to null
     if (nextRequest != null) {
       getTaskExecutor().submit(() -> executeSnapshotting(nextRequest));
       LOGGER.debug(
@@ -395,12 +403,12 @@ public class BackupManagerOpenSearch extends BackupManager {
                             "Expected (but not found) snapshot [%s] for backupId [%d].",
                             snapshotRequest.snapshot(), backupId));
                     // No need to continue
-                    requestsQueue.clear();
+                    onSnapshotFailure();
                   } else if (isSnapshotFinishedWithinTimeout(
                       maybeCurrentSnapshot.get().snapshot())) {
                     scheduleNextSnapshot();
                   } else {
-                    requestsQueue.clear();
+                    onSnapshotFailure();
                   }
                 } else {
                   LOGGER.error(
@@ -409,13 +417,18 @@ public class BackupManagerOpenSearch extends BackupManager {
                           snapshotRequest.snapshot(), backupId),
                       e);
                   // No need to continue
-                  requestsQueue.clear();
+                  onSnapshotFailure();
                 }
                 return null;
               });
     } catch (final IOException e) {
       throw new TasklistRuntimeException(e);
     }
+  }
+
+  private void onSnapshotFailure() {
+    currentRequest.set(null);
+    requestsQueue.clear();
   }
 
   private void handleSnapshotResponse(final SnapshotInfo snapshotInfo) {
@@ -428,11 +441,11 @@ public class BackupManagerOpenSearch extends BackupManager {
       }
       case "FAILED" -> {
         LOGGER.error("Snapshot failed for {}, reason {}", snapshotId, snapshotInfo.reason());
-        requestsQueue.clear(); // no need to continue
+        onSnapshotFailure(); // no need to continue
       }
       default -> {
         LOGGER.error("Unexpected snapshot state '{}' for {}", snapshotState, snapshotId);
-        requestsQueue.clear();
+        onSnapshotFailure();
       }
     }
   }
@@ -496,7 +509,7 @@ public class BackupManagerOpenSearch extends BackupManager {
   }
 
   private GetBackupStateResponseDto getBackupResponse(
-      final Long backupId, final List<SnapshotInfo> snapshots) {
+      final Long backupId, final List<SnapshotInfo> snapshots, final boolean isBackupInProgress) {
     final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
 
     final Map<String, JsonData> jsonDataMap = snapshots.get(0).metadata();
@@ -511,7 +524,8 @@ public class BackupManagerOpenSearch extends BackupManager {
       response.setState(BackupStateDto.FAILED);
     } else if (snapshots.stream().map(SnapshotInfo::state).anyMatch("INCOMPATIBLE"::equals)) {
       response.setState(BackupStateDto.INCOMPATIBLE);
-    } else if (snapshots.stream().map(SnapshotInfo::state).anyMatch("IN_PROGRESS"::equals)) {
+    } else if (isBackupInProgress
+        || snapshots.stream().map(SnapshotInfo::state).anyMatch("IN_PROGRESS"::equals)) {
       response.setState(BackupStateDto.IN_PROGRESS);
     } else if (snapshots.size() < expectedSnapshotsCount) {
       response.setState(BackupStateDto.INCOMPLETE);
@@ -629,5 +643,15 @@ public class BackupManagerOpenSearch extends BackupManager {
       Thread.currentThread().interrupt();
     }
     return milliseconds;
+  }
+
+  /**
+   * Checks if a backup with the given ID is currently in progress, according to the in-memory
+   * state. Note this may not reflect the actual state in a multinode deployment.
+   */
+  private boolean isBackupInProgress(final Long backupId) {
+    return Stream.concat(Stream.ofNullable(currentRequest.get()), requestsQueue.stream())
+        .anyMatch(
+            request -> backupId.equals(Metadata.fromOSJsonData(request.metadata()).getBackupId()));
   }
 }
