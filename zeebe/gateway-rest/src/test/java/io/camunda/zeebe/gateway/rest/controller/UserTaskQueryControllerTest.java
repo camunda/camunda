@@ -72,6 +72,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       "candidateGroups": [],
                       "formKey": "0",
                       "elementId": "e",
+                      "elementName": "elementName",
                       "name": "name",
                       "creationDate": "2020-11-11T00:00:00.000Z",
                       "completionDate": "2020-11-11T00:00:00.000Z",
@@ -138,6 +139,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       "candidateGroups": [],
                       "formKey": "0",
                       "elementId": "e",
+                      "elementName": "elementName",
                       "name": "name",
                       "creationDate": "2020-11-11T00:00:00.000Z",
                       "completionDate": "2020-11-11T00:00:00.000Z",
@@ -171,6 +173,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                   new UserTaskEntity(
                       0L, // key
                       "e", // elementBpmnId
+                      "elementName",
                       "b", // bpmnProcessId
                       OffsetDateTime.parse("2020-11-11T00:00:00.000Z"), // creationTime
                       OffsetDateTime.parse("2020-11-11T00:00:00.000Z"), // completionTime
@@ -220,6 +223,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             new UserTaskEntity(
                 0L,
                 "e",
+                "elementName",
                 "b",
                 OffsetDateTime.parse("2020-11-11T00:00:00.000Z"),
                 OffsetDateTime.parse("2020-11-11T00:00:00.000Z"),
@@ -579,7 +583,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [creationDate, completionDate, followUpDate, dueDate, priority]",
+                  "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [creationDate, completionDate, followUpDate, dueDate, priority, elementName]",
                   "instance": "%s"
                 }""",
             USER_TASKS_SEARCH_URL);
