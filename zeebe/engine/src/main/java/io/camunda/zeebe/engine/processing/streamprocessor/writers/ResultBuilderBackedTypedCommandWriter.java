@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
+import io.camunda.zeebe.stream.api.RecordAppenderMetadata;
 import java.util.function.Supplier;
 
 final class ResultBuilderBackedTypedCommandWriter extends AbstractResultBuilderBackedWriter
@@ -42,7 +43,7 @@ final class ResultBuilderBackedTypedCommandWriter extends AbstractResultBuilderB
       final long key,
       final Intent intent,
       final RecordValue value,
-      final CommandMetadata metadata) {
+      final RecordAppenderMetadata metadata) {
     appendRecord(key, intent, value, metadata);
   }
 
@@ -56,7 +57,7 @@ final class ResultBuilderBackedTypedCommandWriter extends AbstractResultBuilderB
         key,
         intent,
         value,
-        CommandMetadata.of(
+        RecordAppenderMetadata.of(
             b ->
                 b.operationReference(operationReferenceNullValue())
                     .batchOperationReference(batchOperationReferenceNullValue())
@@ -67,7 +68,7 @@ final class ResultBuilderBackedTypedCommandWriter extends AbstractResultBuilderB
       final long key,
       final Intent intent,
       final RecordValue value,
-      final CommandMetadata commandMetadata) {
+      final RecordAppenderMetadata commandMetadata) {
     final var metadata =
         new RecordMetadata()
             .recordType(RecordType.COMMAND)

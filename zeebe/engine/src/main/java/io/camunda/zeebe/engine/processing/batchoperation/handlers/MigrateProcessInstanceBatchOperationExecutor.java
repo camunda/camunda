@@ -8,12 +8,12 @@
 package io.camunda.zeebe.engine.processing.batchoperation.handlers;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter.CommandMetadata;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.stream.api.RecordAppenderMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +53,7 @@ public class MigrateProcessInstanceBatchOperationExecutor implements BatchOperat
         processInstanceKey,
         ProcessInstanceMigrationIntent.MIGRATE,
         command,
-        CommandMetadata.of(
+        RecordAppenderMetadata.of(
             b ->
                 b.batchOperationReference(batchOperation.getKey())
                     .claims(batchOperation.getAuthentication().claims())));

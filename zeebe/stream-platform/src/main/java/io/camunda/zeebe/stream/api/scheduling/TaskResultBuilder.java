@@ -8,11 +8,8 @@
 package io.camunda.zeebe.stream.api.scheduling;
 
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Consumer;
+import io.camunda.zeebe.stream.api.RecordAppenderMetadata;
 
 /** Here the interface is just a suggestion. Can be whatever PDT team thinks is best to work with */
 public interface TaskResultBuilder {
@@ -35,7 +32,7 @@ public interface TaskResultBuilder {
    */
   default boolean appendCommandRecord(
       final long key, final Intent intent, final UnifiedRecordValue value) {
-    return appendCommandRecord(key, intent, value, Metadata.of(b -> {}));
+    return appendCommandRecord(key, intent, value, RecordAppenderMetadata.of(b -> {}));
   }
 
   /**
@@ -44,55 +41,10 @@ public interface TaskResultBuilder {
    * @return returns true if the record still fits into the result, false otherwise
    */
   boolean appendCommandRecord(
-      final long key, final Intent intent, final UnifiedRecordValue value, final Metadata metadata);
+      final long key,
+      final Intent intent,
+      final UnifiedRecordValue value,
+      final RecordAppenderMetadata metadata);
 
   TaskResult build();
-
-  record Metadata(long operationReference, long batchOperationKey, Map<String, Object> claims) {
-
-    public static MetadataBuilder builder() {
-      return new MetadataBuilder();
-    }
-
-    public static Metadata of(final Consumer<MetadataBuilder> consumer) {
-      final MetadataBuilder builder = new MetadataBuilder();
-      consumer.accept(builder);
-      return builder.build();
-    }
-
-    public static class MetadataBuilder {
-      private long operationReference = RecordMetadataDecoder.operationReferenceNullValue();
-      private long batchOperationReference =
-          RecordMetadataDecoder.batchOperationReferenceNullValue();
-      private Map<String, Object> claims = null;
-
-      public MetadataBuilder operationReference(final long operationReference) {
-        this.operationReference = operationReference;
-        return this;
-      }
-
-      public MetadataBuilder batchOperationReference(final long batchOperationReference) {
-        this.batchOperationReference = batchOperationReference;
-        return this;
-      }
-
-      public MetadataBuilder claims(final Map<String, Object> claims) {
-        this.claims = claims;
-        return this;
-      }
-
-      public MetadataBuilder claim(final String key, final Object value) {
-        if (claims == null) {
-          claims = new HashMap<>();
-        }
-
-        claims.put(key, value);
-        return this;
-      }
-
-      public Metadata build() {
-        return new Metadata(operationReference, batchOperationReference, claims);
-      }
-    }
-  }
 }

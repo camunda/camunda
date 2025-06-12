@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
+import io.camunda.zeebe.stream.api.RecordAppenderMetadata;
 import java.util.function.Supplier;
 
 /**
@@ -44,7 +45,10 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
 
   @Override
   public void appendFollowUpEvent(
-      final long key, final Intent intent, final RecordValue value, final EventMetadata metadata) {
+      final long key,
+      final Intent intent,
+      final RecordValue value,
+      final RecordAppenderMetadata metadata) {
     final int latestVersion = eventApplier.getLatestVersion(intent);
     appendFollowUpEvent(key, intent, value, latestVersion, metadata);
   }
@@ -73,7 +77,7 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
       final Intent intent,
       final RecordValue value,
       final int recordVersion,
-      final EventMetadata eventMetadata) {
+      final RecordAppenderMetadata eventMetadata) {
     final var metadata =
         new RecordMetadata()
             .recordType(RecordType.EVENT)

@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.stream.api.RecordAppenderMetadata;
 
 /**
  * A state writer that uses the event applier, to alter the state for each written event.
@@ -43,7 +44,7 @@ public final class EventApplyingStateWriter implements StateWriter {
       final long key,
       final Intent intent,
       final RecordValue value,
-      final EventMetadata eventMetadata) {
+      final RecordAppenderMetadata eventMetadata) {
     appendFollowUpEvent(key, intent, value, RecordMetadata.DEFAULT_RECORD_VERSION);
   }
 

@@ -12,8 +12,6 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter.CommandMetadata;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter.EventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.protocol.Protocol;
@@ -21,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.stream.api.RecordAppenderMetadata;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.slf4j.Logger;
@@ -71,13 +70,15 @@ public final class BatchOperationFailProcessor
           recordValue.getBatchOperationKey(),
           BatchOperationIntent.FAIL_PARTITION,
           batchInternalFail,
-          CommandMetadata.of(b -> b.batchOperationReference(recordValue.getBatchOperationKey())));
+          RecordAppenderMetadata.of(
+              b -> b.batchOperationReference(recordValue.getBatchOperationKey())));
     } else {
       stateWriter.appendFollowUpEvent(
           recordValue.getBatchOperationKey(),
           BatchOperationIntent.PARTITION_FAILED,
           batchInternalFail,
-          EventMetadata.of(b -> b.batchOperationReference(recordValue.getBatchOperationKey())));
+          RecordAppenderMetadata.of(
+              b -> b.batchOperationReference(recordValue.getBatchOperationKey())));
       commandDistributionBehavior
           .withKey(keyGenerator.nextKey())
           .inQueue(DistributionQueue.BATCH_OPERATION)

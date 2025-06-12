@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedEventWrit
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.stream.api.RecordAppenderMetadata;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -37,7 +38,7 @@ public final class RecordingTypedEventWriter implements TypedEventWriter {
       final long key,
       final Intent intent,
       final RecordValue value,
-      final EventMetadata eventMetadata) {
+      final RecordAppenderMetadata eventMetadata) {
     events.add(
         new RecordedEvent<>(
             key, intent, value, RecordMetadata.DEFAULT_RECORD_VERSION, eventMetadata));
@@ -46,7 +47,8 @@ public final class RecordingTypedEventWriter implements TypedEventWriter {
   @Override
   public void appendFollowUpEvent(
       final long key, final Intent intent, final RecordValue value, final int recordVersion) {
-    events.add(new RecordedEvent<>(key, intent, value, recordVersion, EventMetadata.of(b -> {})));
+    events.add(
+        new RecordedEvent<>(key, intent, value, recordVersion, RecordAppenderMetadata.of(b -> {})));
   }
 
   @Override
@@ -60,14 +62,14 @@ public final class RecordingTypedEventWriter implements TypedEventWriter {
     public final Intent intent;
     public final T value;
     private final int recordVersion;
-    private final EventMetadata metadata;
+    private final RecordAppenderMetadata metadata;
 
     public RecordedEvent(
         final long key,
         final Intent intent,
         final T value,
         final int recordVersion,
-        final EventMetadata metadata) {
+        final RecordAppenderMetadata metadata) {
       this.key = key;
       this.intent = intent;
       this.value = (T) Records.cloneValue(value);
