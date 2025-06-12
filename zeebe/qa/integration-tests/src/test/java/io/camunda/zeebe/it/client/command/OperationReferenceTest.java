@@ -59,14 +59,12 @@ public class OperationReferenceTest {
         .join();
 
     // Then
-    assertThat(
+    Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.CANCEL)
                 .withRecordKey(processInstanceKey)
-                .limit(1)
-                .getFirst()
-                .getOperationReference())
+                .getFirst())
         .describedAs("Should contain client operationReference")
-        .isEqualTo(OPERATION_REFERENCE);
+        .hasOperationReference(OPERATION_REFERENCE);
   }
 
   @Test
@@ -88,7 +86,6 @@ public class OperationReferenceTest {
     final var cancelCommand =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.CANCEL)
             .withRecordKey(processInstanceKey)
-            .limit(1)
             .getFirst();
 
     final var followUpRecords =
@@ -102,7 +99,7 @@ public class OperationReferenceTest {
     assertThat(followUpRecords)
         .hasSizeGreaterThan(0)
         .describedAs("Should contain client operationReference")
-        .allMatch(r -> r.getOperationReference() == OPERATION_REFERENCE);
+        .allSatisfy(r -> Assertions.assertThat(r).hasOperationReference(OPERATION_REFERENCE));
   }
 
   @Test
@@ -117,14 +114,12 @@ public class OperationReferenceTest {
     client.newCancelInstanceCommand(processInstanceKey).send().join();
 
     // Then
-    assertThat(
+    Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.CANCEL)
                 .withRecordKey(processInstanceKey)
-                .limit(1)
-                .getFirst()
-                .getOperationReference())
+                .getFirst())
         .describedAs("Should contain -1 operationReference")
-        .isEqualTo(-1);
+        .hasOperationReference(-1);
   }
 
   @Test
@@ -139,14 +134,12 @@ public class OperationReferenceTest {
     client.newCancelInstanceCommand(processInstanceKey).operationReference(-1).send().join();
 
     // Then
-    assertThat(
+    Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.CANCEL)
                 .withRecordKey(processInstanceKey)
-                .limit(1)
-                .getFirst()
-                .getOperationReference())
+                .getFirst())
         .describedAs("Should contain client operationReference")
-        .isEqualTo(-1);
+        .hasOperationReference(-1);
   }
 
   @Test
@@ -186,7 +179,7 @@ public class OperationReferenceTest {
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
                 .withRecordKey(processInstanceKey)
                 .getFirst())
-        .describedAs("PI:ELEMENT_TERMINATED should carry original 'operationReference'")
+        .describedAs("PI:ELEMENT_TERMINATED should carry client operationReference")
         .hasOperationReference(OPERATION_REFERENCE);
   }
 
@@ -227,7 +220,7 @@ public class OperationReferenceTest {
             RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATED)
                 .withScopeKey(userTaskInstanceKey)
                 .getFirst())
-        .describedAs("VARIABLE_DOCUMENT:UPDATED should carry original 'operationReference'")
+        .describedAs("VARIABLE_DOCUMENT:UPDATED should carry client operationReference")
         .hasOperationReference(OPERATION_REFERENCE);
   }
 
@@ -281,7 +274,7 @@ public class OperationReferenceTest {
             RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATE_DENIED)
                 .withScopeKey(userTaskInstanceKey)
                 .getFirst())
-        .describedAs("VARIABLE_DOCUMENT:UPDATE_DENIED should carry original 'operationReference'")
+        .describedAs("VARIABLE_DOCUMENT:UPDATE_DENIED should carry client operationReference")
         .hasOperationReference(OPERATION_REFERENCE);
   }
 }
