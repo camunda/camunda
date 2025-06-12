@@ -27,6 +27,7 @@ import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
+import io.camunda.zeebe.snapshots.impl.SnapshotMetrics;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransfer;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferServiceImpl;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
@@ -38,6 +39,7 @@ import io.netty.util.NetUtil;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,6 +64,8 @@ public class SnapshotApiRequestHandlerTest {
   private SnapshotApiRequestHandler snapshotHandler;
   private SnapshotTransferServiceClient client;
   private BrokerClientImpl brokerClient;
+  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  private final SnapshotMetrics snapshotMetrics = new SnapshotMetrics(meterRegistry);
 
   @BeforeEach
   void setup() {
@@ -135,7 +139,8 @@ public class SnapshotApiRequestHandlerTest {
     assertThat(takeFuture).succeedsWithin(Duration.ofSeconds(30));
 
     final var transfer =
-        new SnapshotTransfer(client, receiverSnapshotStore, (Actor) senderSnapshotStore);
+        new SnapshotTransfer(
+            client, receiverSnapshotStore, snapshotMetrics, (Actor) senderSnapshotStore);
     // when
     final var persistedSnapshot = transfer.getLatestSnapshot(partitionId);
     scheduler.workUntilDone();
@@ -148,6 +153,9 @@ public class SnapshotApiRequestHandlerTest {
               final var snapshotId = snapshot.getId();
               assertThat(snapshotId).isEqualTo(lastSnapshotId);
             });
+
+    assertThat(snapshotMetrics.getTransferDuration(true).mean(TimeUnit.MILLISECONDS))
+        .isGreaterThan(0.1D);
   }
 
   private ActorFuture<PersistedSnapshot> takePersistedSnapshot() {
