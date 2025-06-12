@@ -28,7 +28,8 @@ public class SnapshotTransferServiceClient implements SnapshotTransferService {
   }
 
   @Override
-  public ActorFuture<SnapshotChunk> getLatestSnapshot(final int partition, final UUID transferId) {
+  public ActorFuture<SnapshotChunk> getLatestSnapshot(
+      final int partition, final long lastProcessedPosition, final UUID transferId) {
     return sendRequest(partition, Optional.empty(), Optional.empty(), transferId);
   }
 

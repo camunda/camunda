@@ -96,8 +96,7 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
     return this;
   }
 
-  public ScaleRecord status(final int desiredPartitionCount) {
-    setDesiredPartitionCount(desiredPartitionCount);
+  public ScaleRecord status() {
     return this;
   }
 

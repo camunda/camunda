@@ -115,12 +115,6 @@ public class BrokerClientPartitionScalingExecutorTest {
     assertThat(request).isInstanceOf(GetScaleUpProgress.class);
     final var getScaleUpProgress = (GetScaleUpProgress) request;
     assertThat(request.getPartitionId()).isEqualTo(1);
-    assertThat(getScaleUpProgress.getRequestWriter())
-        .satisfies(
-            writer -> {
-              final var requestRecord = (ScaleRecord) writer;
-              assertThat(requestRecord.getDesiredPartitionCount()).isEqualTo(5);
-            });
 
     scaleRecord.ifRightOrLeft(
         record -> responseConsumerCaptor.getValue().accept(1L, record),

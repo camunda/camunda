@@ -20,12 +20,10 @@ import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.ScaleRecordStream;
-import java.util.List;
 import java.util.Set;
 import org.junit.Before;
 import org.junit.Rule;
@@ -202,33 +200,6 @@ public class ScaleUpTest {
   }
 
   @Test
-  public void shouldRejectScaleUpStatusCommandWhenDesiredPartitionCountIsWrong() {
-    // given
-    final var command =
-        RecordToWrite.command()
-            .scale(
-                ScaleIntent.STATUS,
-                new ScaleRecord()
-                    .setDesiredPartitionCount(4)
-                    .setRedistributedPartitions(List.of(4)))
-            .key(Protocol.encodePartitionId(1, index++));
-
-    // when
-    engine.writeRecords(command);
-
-    // then
-    final var record =
-        RecordingExporter.scaleRecords()
-            .limit(r -> r.getRecordType() == RecordType.COMMAND_REJECTION)
-            .getLast();
-    assertThat(record.getIntent()).isEqualTo(ScaleIntent.STATUS);
-    assertThat(record.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(record.getRejectionReason())
-        .contains(
-            "In progress scale up number of desired partitions is 2, but desired partitions in the request are 4.");
-  }
-
-  @Test
   public void shouldRespondWithTheCurrentNumberOfRedistributedPartitions() {
     // given
     final var scaleUpCommand =
@@ -237,7 +208,7 @@ public class ScaleUpTest {
             .key(Protocol.encodePartitionId(1, index++));
 
     final var getStatusCommand =
-        RecordToWrite.command().scale(ScaleIntent.STATUS, new ScaleRecord().status(4));
+        RecordToWrite.command().scale(ScaleIntent.STATUS, new ScaleRecord().status());
     // when
     final var key = engine.writeRecords(scaleUpCommand, getStatusCommand);
 

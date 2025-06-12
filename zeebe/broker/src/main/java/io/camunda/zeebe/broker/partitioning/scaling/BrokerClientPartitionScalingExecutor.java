@@ -68,7 +68,7 @@ public class BrokerClientPartitionScalingExecutor implements PartitionScalingCha
     final var result = concurrencyControl.<Void>createFuture();
 
     brokerClient.sendRequestWithRetry(
-        new GetScaleUpProgress(desiredPartitionCount),
+        new GetScaleUpProgress(),
         (key, response) -> {
           if (response.getDesiredPartitionCount() != desiredPartitionCount) {
             LOGGER.warn("Invalid GetScaleUpProgress response: got {}", response);

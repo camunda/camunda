@@ -36,7 +36,8 @@ public class SnapshotTransferImpl extends Actor implements SnapshotTransfer {
   public ActorFuture<PersistedSnapshot> getLatestSnapshot(final int partitionId) {
     final var transferId = UUID.randomUUID();
     return service
-        .getLatestSnapshot(partitionId, transferId)
+        // no requirements on last processing position
+        .getLatestSnapshot(partitionId, -1, transferId)
         .andThen(
             snapshot -> {
               if (snapshot == null) {
