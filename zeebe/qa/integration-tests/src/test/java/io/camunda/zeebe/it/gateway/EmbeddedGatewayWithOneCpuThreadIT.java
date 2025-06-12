@@ -21,7 +21,7 @@ import org.junit.Test;
 
 public final class EmbeddedGatewayWithOneCpuThreadIT {
 
-  UnifiedConfiguration config = new UnifiedConfiguration();
+  UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
 
   @Rule
   public EmbeddedBrokerRule brokerRule =

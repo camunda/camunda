@@ -101,7 +101,7 @@ public final class BrokerReprocessingTest {
   @Parameter(1)
   public String name;
 
-  public final UnifiedConfiguration config = new UnifiedConfiguration();
+  public final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
   public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(config);
 
   public final GrpcClientRule clientRule = new GrpcClientRule(brokerRule);

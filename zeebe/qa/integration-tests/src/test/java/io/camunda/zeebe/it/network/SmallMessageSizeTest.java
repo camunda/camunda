@@ -32,7 +32,7 @@ public class SmallMessageSizeTest {
   private static final String LARGE_TEXT =
       "x".repeat((int) (MAX_MESSAGE_SIZE.toBytes() / VARIABLE_COUNT));
 
-  private static final UnifiedConfiguration CONFIG = new UnifiedConfiguration();
+  private static final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
   private static final EmbeddedBrokerRule BROKER_RULE =
       new EmbeddedBrokerRule(
           CONFIG,

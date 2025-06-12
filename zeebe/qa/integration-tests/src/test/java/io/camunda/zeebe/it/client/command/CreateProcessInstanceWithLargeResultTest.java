@@ -27,7 +27,7 @@ import org.springframework.util.unit.DataSize;
 
 public final class CreateProcessInstanceWithLargeResultTest {
 
-  private static final UnifiedConfiguration CONFIG = new UnifiedConfiguration();
+  private static final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
   private static final EmbeddedBrokerRule BROKER_RULE =
       new EmbeddedBrokerRule(
           CONFIG,

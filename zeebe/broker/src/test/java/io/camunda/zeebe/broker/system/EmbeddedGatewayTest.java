@@ -18,15 +18,15 @@ import org.junit.Test;
 
 public final class EmbeddedGatewayTest {
 
-  UnifiedConfiguration config = new UnifiedConfiguration();
+  UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
 
   @Rule
   public final EmbeddedBrokerRule brokerWithEnabledGateway =
-      new EmbeddedBrokerRule(config, cfg -> cfg.getGateway().setEnable(true));
+      new EmbeddedBrokerRule(unifiedConfiguration, cfg -> cfg.getGateway().setEnable(true));
 
   @Rule
   public final EmbeddedBrokerRule brokerWithDisabledGateway =
-      new EmbeddedBrokerRule(config, cfg -> cfg.getGateway().setEnable(false));
+      new EmbeddedBrokerRule(unifiedConfiguration, cfg -> cfg.getGateway().setEnable(false));
 
   @Test
   public void shouldConfigureGateway() {

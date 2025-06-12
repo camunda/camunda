@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class BrokerRestartTest {
-  private final UnifiedConfiguration config = new UnifiedConfiguration();
+  private final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
   private final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(config);
   private final GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
 

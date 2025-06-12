@@ -31,7 +31,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class ExecutionListenerJobTest {
-  private static final UnifiedConfiguration CONFIG = new UnifiedConfiguration();
+  private static final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
   private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule(CONFIG);
   private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
 

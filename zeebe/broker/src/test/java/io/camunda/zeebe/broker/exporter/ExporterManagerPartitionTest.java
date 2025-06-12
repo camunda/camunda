@@ -32,10 +32,10 @@ public final class ExporterManagerPartitionTest {
   private static final int PARTITIONS = 3;
   private static final String TEST_EXPORTER_ID = "test-exporter";
 
-  public final UnifiedConfiguration config = new UnifiedConfiguration();
+  public final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
   public final EmbeddedBrokerRule brokerRule =
       new EmbeddedBrokerRule(
-          config,
+          unifiedConfiguration,
           brokerCfg -> {
             brokerCfg.getCluster().setPartitionsCount(PARTITIONS);
 

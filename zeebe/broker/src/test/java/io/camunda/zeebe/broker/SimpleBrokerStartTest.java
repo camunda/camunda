@@ -59,7 +59,7 @@ public final class SimpleBrokerStartTest {
     final var brokerCfg = new BrokerCfg();
     brokerCfg.getData().setSnapshotPeriod(Duration.ofMillis(1));
     brokerCfg.init(newTemporaryFolder.getAbsolutePath());
-    final UnifiedConfiguration config = new UnifiedConfiguration();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
 
     // when
 
@@ -88,7 +88,7 @@ public final class SimpleBrokerStartTest {
   public void shouldCallPartitionListenerAfterStart() throws Exception {
     // given
     final var brokerCfg = new BrokerCfg();
-    final UnifiedConfiguration config = new UnifiedConfiguration();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     assignSocketAddresses(brokerCfg);
     brokerCfg.init(newTemporaryFolder.getAbsolutePath());
 
@@ -100,7 +100,7 @@ public final class SimpleBrokerStartTest {
     final var systemContext =
         new SystemContext(
             brokerCfg,
-            config,
+            unifiedConfiguration,
             actorScheduler,
             atomixCluster,
             brokerClient,

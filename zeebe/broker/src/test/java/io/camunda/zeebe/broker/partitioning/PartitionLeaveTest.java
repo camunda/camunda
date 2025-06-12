@@ -221,11 +221,11 @@ final class PartitionLeaveTest {
     final var atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg, METER_REGISTRY);
     final var brokerClient =
         TestBrokerClientFactory.createBrokerClient(atomixCluster, actorScheduler);
-    final UnifiedConfiguration config = new UnifiedConfiguration();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     final var systemContext =
         new SystemContext(
             brokerCfg,
-            config,
+            unifiedConfiguration,
             actorScheduler,
             atomixCluster,
             brokerClient,

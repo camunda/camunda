@@ -29,7 +29,7 @@ public final class CancelProcessInstanceInBatchesTest {
 
   private static final int AMOUNT_OF_ELEMENT_INSTANCES = 100;
   private static final int MAX_MESSAGE_SIZE_KB = 32;
-  private static final UnifiedConfiguration CONFIG = new UnifiedConfiguration();
+  private static final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
   private static final EmbeddedBrokerRule BROKER_RULE =
       new EmbeddedBrokerRule(
           CONFIG,

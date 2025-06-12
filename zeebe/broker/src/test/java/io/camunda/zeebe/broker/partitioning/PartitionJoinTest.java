@@ -109,11 +109,11 @@ final class PartitionJoinTest {
     final var actorScheduler = TestActorSchedulerFactory.ofBrokerConfig(brokerCfg);
     final var brokerClient =
         TestBrokerClientFactory.createBrokerClient(atomixCluster, actorScheduler);
-    final UnifiedConfiguration config = new UnifiedConfiguration();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     final var systemContext =
         new SystemContext(
             brokerCfg,
-            config,
+            unifiedConfiguration,
             actorScheduler,
             atomixCluster,
             brokerClient,

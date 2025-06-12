@@ -43,7 +43,7 @@ import org.junit.rules.RuleChain;
 public final class QueryApiIT {
 
   public final ActorSchedulerRule actor = new ActorSchedulerRule();
-  public final UnifiedConfiguration config = new UnifiedConfiguration();
+  public final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
   public final EmbeddedBrokerRule broker =
       new EmbeddedBrokerRule(config, cfg -> cfg.getExperimental().getQueryApi().setEnabled(true));
   public final CommandApiRule command = new CommandApiRule(broker::getAtomixCluster);

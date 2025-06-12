@@ -341,7 +341,7 @@ public class ClusteringRule extends ExternalResource {
   private Broker createBroker(final int nodeId) {
     final var brokerBase = getBrokerBase(nodeId);
     final var brokerCfg = getBrokerCfg(nodeId);
-    final UnifiedConfiguration config = new UnifiedConfiguration();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     final var brokerSpringConfig = getBrokerConfiguration(brokerBase, brokerCfg);
     final var meterRegistry = new SimpleMeterRegistry();
     brokerCfg.init(brokerBase.getAbsolutePath());

@@ -20,7 +20,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 public final class MultipleClientTest {
-  public final UnifiedConfiguration config = new UnifiedConfiguration();
+  public final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
   public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(config);
 
   public final GrpcClientRule client1 = new GrpcClientRule(brokerRule);

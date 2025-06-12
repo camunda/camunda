@@ -18,7 +18,7 @@ import org.junit.Test;
 public class BrokerDifferentRuntimeDirectoryTest {
   private static final String STATE = "state";
 
-  UnifiedConfiguration config = new UnifiedConfiguration();
+  UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
 
   @Rule
   public final EmbeddedBrokerRule brokerRule =

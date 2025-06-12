@@ -48,7 +48,7 @@ public final class LargeMessageSizeTest {
   private static final String LARGE_TEXT = "x".repeat((int) (LARGE_SIZE - METADATA_SIZE));
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
-  private final UnifiedConfiguration config = new UnifiedConfiguration();
+  private final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
   private final EmbeddedBrokerRule brokerRule =
       new EmbeddedBrokerRule(
           config, b -> b.getNetwork().setMaxMessageSize(MAX_MESSAGE_SIZE));

@@ -34,7 +34,7 @@ import org.springframework.util.unit.DataSize;
 
 public class DiskSpaceRecoveryTest {
   private final Timeout testTimeout = Timeout.seconds(120);
-  private final UnifiedConfiguration config = new UnifiedConfiguration();
+  private final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
   private final EmbeddedBrokerRule embeddedBrokerRule =
       new EmbeddedBrokerRule(
           config,

@@ -63,7 +63,7 @@ public final class SystemContext {
   private final Duration shutdownTimeout;
 
   private final BrokerCfg brokerCfg; // this disappears eventually
-  private final UnifiedConfiguration config;
+  private final UnifiedConfiguration unifiedConfiguration;
 
   private final IdentityConfiguration identityConfiguration;
   private Map<String, String> diagnosticContext;
@@ -80,7 +80,7 @@ public final class SystemContext {
   public SystemContext(
       final Duration shutdownTimeout,
       final BrokerCfg brokerCfg,
-      final UnifiedConfiguration config,
+      final UnifiedConfiguration unifiedConfiguration,
       final IdentityConfiguration identityConfiguration,
       final ActorScheduler scheduler,
       final AtomixCluster cluster,
@@ -93,7 +93,7 @@ public final class SystemContext {
       final SearchClientsProxy searchClientsProxy) {
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
-    this.config = config;
+    this.unifiedConfiguration = unifiedConfiguration;
     this.identityConfiguration = identityConfiguration;
     this.scheduler = scheduler;
     this.cluster = cluster;
@@ -139,14 +139,14 @@ public final class SystemContext {
   private void initSystemContext() {
     validateConfiguration();
 
-    final String brokerId = String.format("Broker-%d", config.getCluster().getNodeId());
+    final String brokerId = String.format("Broker-%d", unifiedConfiguration.getCluster().getNodeId());
 
     diagnosticContext = Collections.singletonMap(BROKER_ID_LOG_PROPERTY, brokerId);
   }
 
   private void validateConfiguration() {
-    validateDataConfig(config);
-    validClusterConfigs(config);
+    validateDataConfig(unifiedConfiguration);
+    validClusterConfigs(unifiedConfiguration);
     validateExperimentalConfigs(brokerCfg.getCluster(), brokerCfg.getExperimental());
 
     validateExporters(brokerCfg.getExporters());
@@ -157,26 +157,26 @@ public final class SystemContext {
     }
   }
 
-  private void validClusterConfigs(final UnifiedConfiguration config) {
+  private void validClusterConfigs(final UnifiedConfiguration unifiedConfiguration) {
     final var errors = new ArrayList<String>(0);
 
-    if (!config.getCluster().getGossipSyncDelay().isPositive()) {
+    if (!unifiedConfiguration.getCluster().getGossipSyncDelay().isPositive()) {
       errors.add(
           String.format(
               "syncDelay must be positive: configured value = %d ms",
-              config.getCluster().getGossipSyncDelay().toMillis()));
+              unifiedConfiguration.getCluster().getGossipSyncDelay().toMillis()));
     }
-    if (!config.getCluster().getGossipSyncRequestTimeout().isPositive()) {
+    if (!unifiedConfiguration.getCluster().getGossipSyncRequestTimeout().isPositive()) {
       errors.add(
           String.format(
               "syncRequestTimeout must be positive: configured value = %d ms",
-              config.getCluster().getGossipSyncRequestTimeout().toMillis()));
+              unifiedConfiguration.getCluster().getGossipSyncRequestTimeout().toMillis()));
     }
-    if (config.getCluster().getGossipFanout() < 2) {
+    if (unifiedConfiguration.getCluster().getGossipFanout() < 2) {
       errors.add(
           String.format(
               "gossipFanout must be greater than 1: configured value = %d",
-              config.getCluster().getGossipFanout()));
+              unifiedConfiguration.getCluster().getGossipFanout()));
     }
 
     if (!errors.isEmpty()) {
@@ -390,5 +390,9 @@ public final class SystemContext {
 
   public SearchClientsProxy getSearchClientsProxy() {
     return searchClientsProxy;
+  }
+
+  public UnifiedConfiguration getUnifiedConfiguration() {
+    return unifiedConfiguration;
   }
 }

@@ -16,7 +16,7 @@ import org.junit.Test;
 
 public final class BrokerTest {
 
-  final UnifiedConfiguration config = new UnifiedConfiguration();
+  final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
   @Rule public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(config);
 
   @Test

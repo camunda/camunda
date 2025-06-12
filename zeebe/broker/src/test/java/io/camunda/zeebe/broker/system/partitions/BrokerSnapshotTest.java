@@ -34,7 +34,7 @@ import org.junit.Test;
 public class BrokerSnapshotTest {
 
   private static final int PARTITION_ID = 1;
-  UnifiedConfiguration config = new UnifiedConfiguration();
+  UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
   @Rule public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(config);
 
   private RaftLogReader journalReader;

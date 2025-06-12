@@ -48,11 +48,11 @@ final class SystemContextTest {
   void shouldThrowExceptionIfSnapshotPeriodIsNegative() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
-    final UnifiedConfiguration config = new UnifiedConfiguration();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     brokerCfg.getData().setSnapshotPeriod(Duration.ofMinutes(-1));
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg, config))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Snapshot period PT-1M needs to be larger then or equals to one minute.");
   }
@@ -61,11 +61,11 @@ final class SystemContextTest {
   void shouldThrowExceptionIfSnapshotPeriodIsTooSmall() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
-    final UnifiedConfiguration config = new UnifiedConfiguration();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     brokerCfg.getData().setSnapshotPeriod(Duration.ofSeconds(1));
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg, config))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Snapshot period PT1S needs to be larger then or equals to one minute.");
   }
@@ -74,11 +74,11 @@ final class SystemContextTest {
   void shouldThrowExceptionIfBatchSizeIsNegative() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
-    final UnifiedConfiguration config = new UnifiedConfiguration();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     brokerCfg.getExperimental().setMaxAppendBatchSize(DataSize.of(-1, DataUnit.BYTES));
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg, config))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
             "Expected to have an append batch size maximum which is non negative and smaller then '2147483647', but was '-1B'.");
@@ -88,7 +88,7 @@ final class SystemContextTest {
   void shouldThrowExceptionIfBatchSizeIsTooLarge() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
-    final UnifiedConfiguration config = new UnifiedConfiguration();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     brokerCfg.getExperimental().setMaxAppendBatchSize(DataSize.of(3, DataUnit.GIGABYTES));
 
     // when - then
@@ -102,7 +102,7 @@ final class SystemContextTest {
   void shouldNotThrowExceptionIfSnapshotPeriodIsEqualToOneMinute() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
-    final UnifiedConfiguration config = new UnifiedConfiguration();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     brokerCfg.getData().setSnapshotPeriod(Duration.ofMinutes(1));
 
     // when
@@ -248,7 +248,7 @@ final class SystemContextTest {
     // given
     final var certificate = new SelfSignedCertificate();
     final var brokerCfg = new BrokerCfg();
-    final UnifiedConfiguration config = new UnifiedConfiguration();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     brokerCfg
         .getNetwork()
         .getSecurity()
@@ -269,7 +269,7 @@ final class SystemContextTest {
     // given
     final var certificate = new SelfSignedCertificate();
     final var brokerCfg = new BrokerCfg();
-    final UnifiedConfiguration config = new UnifiedConfiguration();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     brokerCfg
         .getNetwork()
         .getSecurity()
@@ -290,7 +290,7 @@ final class SystemContextTest {
     // given
     final var certificate = new SelfSignedCertificate();
     final var brokerCfg = new BrokerCfg();
-    final UnifiedConfiguration config = new UnifiedConfiguration();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     brokerCfg
         .getNetwork()
         .getSecurity()
@@ -310,7 +310,7 @@ final class SystemContextTest {
     // given
     final var certificate = new SelfSignedCertificate();
     final var brokerCfg = new BrokerCfg();
-    final UnifiedConfiguration config = new UnifiedConfiguration();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     brokerCfg
         .getNetwork()
         .getSecurity()
@@ -330,7 +330,7 @@ final class SystemContextTest {
   void shouldThrowExceptionWhenS3BucketIsNotProvided() {
     // given
     final var brokerCfg = new BrokerCfg();
-    final UnifiedConfiguration config = new UnifiedConfiguration();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     brokerCfg.getData().getBackup().setStore(BackupStoreType.S3);
 
     // when - then
@@ -345,7 +345,7 @@ final class SystemContextTest {
   void shouldThrowExceptionWhenS3IsNotConfigured() {
     // given
     final var brokerCfg = new BrokerCfg();
-    final UnifiedConfiguration config = new UnifiedConfiguration();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     final var backupCfg = brokerCfg.getData().getBackup();
     backupCfg.setStore(BackupStoreType.S3);
     backupCfg.getS3().setBucketName("bucket");
@@ -359,7 +359,7 @@ final class SystemContextTest {
   @RegressionTest("https://github.com/camunda/camunda/issues/12678")
   void shouldThrowExceptionWithInvalidExporters() {
     // given
-    final UnifiedConfiguration config = new UnifiedConfiguration();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     final var brokerCfg = new BrokerCfg();
     final List<String> exportersNames = Arrays.asList("unknown", "oops", "nope");
     final Map<String, ExporterCfg> exporters = HashMap.newHashMap(exportersNames.size());
@@ -401,7 +401,7 @@ final class SystemContextTest {
   void shouldThrowInvalidConfigExceptionWhenConfigManagerGossiperHasNegativeValues() {
     // given
     final var brokerCfg = new BrokerCfg();
-    final UnifiedConfiguration config = new UnifiedConfiguration();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     final var clusterCfg = brokerCfg.getCluster();
 
     final var invalidconfigManagerCfg =
@@ -427,7 +427,7 @@ final class SystemContextTest {
   void shouldThrowInvalidConfigExceptionWhenConfigManagerGossiperHasZeroValues() {
     // given
     final var brokerCfg = new BrokerCfg();
-    final UnifiedConfiguration config = new UnifiedConfiguration();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     final var clusterCfg = brokerCfg.getCluster();
 
     final var invalidConfigManagerCfg =
@@ -453,7 +453,7 @@ final class SystemContextTest {
   void shouldThrowInvalidConfigExceptionWhenConfigManagerHasGossipFanoutTooSmall() {
     // given
     final var brokerCfg = new BrokerCfg();
-    final UnifiedConfiguration config = new UnifiedConfiguration();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     final var clusterCfg = brokerCfg.getCluster();
 
     final var invalidDynamicConfig =

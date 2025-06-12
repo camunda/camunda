@@ -31,7 +31,7 @@ import org.springframework.util.unit.DataSize;
 
 public final class CallActivityTest {
 
-  private static final UnifiedConfiguration config = new UnifiedConfiguration();
+  private static final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
   private static final EmbeddedBrokerRule BROKER_RULE =
       new EmbeddedBrokerRule(
           config,
