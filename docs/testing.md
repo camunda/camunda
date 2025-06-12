@@ -355,11 +355,44 @@ as it simply delegates to the underlying server stream member.
 
 ## Integration test
 
-### What is an integration tests
+### What is an integration test
 
 ### When should I write an integration test
 
 ### Where should I write an integration test
+
+### Do's and Don'ts
+
+Best practices and Camunda-specific guidelines.
+
+#### Do's: await export of necessary test data
+
+When writing tests that rely on data that needs to be exported after e.g. a process deployment or
+process instance creation, verify that the export has happened at the end of the test setup to avoid flakiness.
+
+Here is a shortened example from [UserTaskAuthorizationIT](../qa/acceptance-tests/src/test/java/io/camunda/it/auth/UserTaskAuthorizationIT.java)
+that verifies the process definition necessary for (some of) the test cases to run has been exported
+successfully before running the tests.
+
+```java
+/** This is called at the end of the @BeforeAll setup **/
+ private static void waitForProcessAndTasksBeingExported(final CamundaClient camundaClient) {
+  Awaitility.await("should receive data from ES")
+    .atMost(Duration.ofMinutes(1))
+    .ignoreExceptions() // Ignore exceptions and continue retrying
+    .untilAsserted(
+      () -> {
+        assertThat(
+        camundaClient
+          .newProcessDefinitionSearchRequest()
+          .filter(filter -> filter.processDefinitionId(PROCESS_ID_1))
+          .send()
+          .join()
+          .items())
+        .hasSize(1);
+      });
+   }
+```
 
 ## Acceptance test
 
