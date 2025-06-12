@@ -56,52 +56,24 @@ public class InheritedOIDCAuthorizationIT {
   private static KeycloakContainer keycloak;
 
   @MappingDefinition
-  private static final TestMapping MAPPING_THROUGH_AUTHORIZED_GROUP =
-      new TestMapping(
-          Strings.newRandomValidIdentityId(),
-          DEFAULT_MAPPING_CLAIM_NAME,
-          Strings.newRandomValidIdentityId(),
-          List.of());
+  private static final TestMapping MAPPING_THROUGH_AUTHORIZED_GROUP = createTestMapping();
 
   @MappingDefinition
-  private static final TestMapping MAPPING_THROUGH_UNAUTHORIZED_GROUP =
-      new TestMapping(
-          Strings.newRandomValidIdentityId(),
-          DEFAULT_MAPPING_CLAIM_NAME,
-          Strings.newRandomValidIdentityId(),
-          List.of());
+  private static final TestMapping MAPPING_THROUGH_UNAUTHORIZED_GROUP = createTestMapping();
 
   @MappingDefinition
-  private static final TestMapping MAPPING_THROUGH_AUTHORIZED_ROLE =
-      new TestMapping(
-          Strings.newRandomValidIdentityId(),
-          DEFAULT_MAPPING_CLAIM_NAME,
-          Strings.newRandomValidIdentityId(),
-          List.of());
+  private static final TestMapping MAPPING_THROUGH_AUTHORIZED_ROLE = createTestMapping();
 
   @MappingDefinition
-  private static final TestMapping MAPPING_THROUGH_UNAUTHORIZED_ROLE =
-      new TestMapping(
-          Strings.newRandomValidIdentityId(),
-          DEFAULT_MAPPING_CLAIM_NAME,
-          Strings.newRandomValidIdentityId(),
-          List.of());
+  private static final TestMapping MAPPING_THROUGH_UNAUTHORIZED_ROLE = createTestMapping();
 
   @MappingDefinition
   private static final TestMapping MAPPING_THROUGH_GROUP_THROUGH_AUTHORIZED_ROLE =
-      new TestMapping(
-          Strings.newRandomValidIdentityId(),
-          DEFAULT_MAPPING_CLAIM_NAME,
-          Strings.newRandomValidIdentityId(),
-          List.of());
+      createTestMapping();
 
   @MappingDefinition
   private static final TestMapping MAPPING_THROUGH_GROUP_THROUGH_UNAUTHORIZED_ROLE =
-      new TestMapping(
-          Strings.newRandomValidIdentityId(),
-          DEFAULT_MAPPING_CLAIM_NAME,
-          Strings.newRandomValidIdentityId(),
-          List.of());
+      createTestMapping();
 
   @GroupDefinition
   private static final TestGroup UNAUTHORIZED_GROUP =
@@ -267,5 +239,13 @@ public class InheritedOIDCAuthorizationIT {
         Named.of("#userThroughGroup", MAPPING_THROUGH_UNAUTHORIZED_GROUP),
         Named.of("#userThroughRole", MAPPING_THROUGH_UNAUTHORIZED_ROLE),
         Named.of("#userThroughGroupThroughRole", MAPPING_THROUGH_GROUP_THROUGH_UNAUTHORIZED_ROLE));
+  }
+
+  private static TestMapping createTestMapping() {
+    return new TestMapping(
+        Strings.newRandomValidIdentityId(),
+        DEFAULT_MAPPING_CLAIM_NAME,
+        Strings.newRandomValidIdentityId(),
+        List.of());
   }
 }
