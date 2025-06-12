@@ -27,7 +27,6 @@ import io.camunda.client.api.search.response.Incident;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.webapps.schema.entities.incident.ErrorType;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -525,14 +524,14 @@ class IncidentSearchTest {
   void shouldSearchAfterSecondItem() {
     // when
     final var resultAll = camundaClient.newIncidentSearchRequest().send().join();
-
-    final var secondIncidentKey = resultAll.items().get(1).getIncidentKey();
     final var thirdIncidentKey = resultAll.items().get(2).getIncidentKey();
+
+    final var result = camundaClient.newIncidentSearchRequest().page(p -> p.limit(2)).send().join();
 
     final var resultSearchAfter =
         camundaClient
             .newIncidentSearchRequest()
-            .page(p -> p.limit(2).searchAfter(Collections.singletonList(secondIncidentKey)))
+            .page(p -> p.limit(1).searchAfter(result.page().searchAfterCursor()))
             .send()
             .join();
 
@@ -545,14 +544,14 @@ class IncidentSearchTest {
   void shouldSearchBeforeSecondItem() {
     // when
     final var resultAll = camundaClient.newIncidentSearchRequest().send().join();
-
-    final var secondIncidentKey = resultAll.items().get(1).getIncidentKey();
     final var firstIncidentKey = resultAll.items().get(0).getIncidentKey();
 
+    final var result =
+        camundaClient.newIncidentSearchRequest().page(p -> p.limit(2).from(1)).send().join();
     final var resultSearchBefore =
         camundaClient
             .newIncidentSearchRequest()
-            .page(p -> p.limit(2).searchBefore(Collections.singletonList(secondIncidentKey)))
+            .page(p -> p.limit(1).searchBefore(result.page().searchBeforeCursor()))
             .send()
             .join();
 

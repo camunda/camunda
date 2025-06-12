@@ -230,30 +230,27 @@ public class ElementInstanceIT {
             FlowNodeInstanceQuery.of(
                 b ->
                     b.filter(f -> f.processDefinitionIds(processDefinition.processDefinitionId()))
-                        .sort(sort)
-                        .page(p -> p.from(0).size(20))));
+                        .sort(sort)));
 
-    final var instanceAfter = searchResult.items().get(9);
+    final var firstPage =
+        elementInstanceReader.search(
+            FlowNodeInstanceQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionIds(processDefinition.processDefinitionId()))
+                        .sort(sort)
+                        .page(p -> p.size(15))));
+
     final var nextPage =
         elementInstanceReader.search(
             FlowNodeInstanceQuery.of(
                 b ->
                     b.filter(f -> f.processDefinitionIds(processDefinition.processDefinitionId()))
                         .sort(sort)
-                        .page(
-                            p ->
-                                p.size(5)
-                                    .searchAfter(
-                                        new Object[] {
-                                          instanceAfter.type(),
-                                          instanceAfter.tenantId(),
-                                          instanceAfter.startDate(),
-                                          instanceAfter.flowNodeInstanceKey()
-                                        }))));
+                        .page(p -> p.size(5).searchAfter(firstPage.searchAfterCursor()))));
 
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
-    assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(10, 15));
+    assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
   }
 
   @TestTemplate
