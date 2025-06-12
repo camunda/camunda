@@ -495,6 +495,54 @@ describe('InstanceHeader', () => {
     ).toBeInTheDocument();
   });
 
+  it.only('should redirect and show notification when "Delete Instance" is clicked', async () => {
+    mockFetchProcessInstance().withSuccess(mockCanceledInstance);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+
+    authenticationStore.setUser({
+      displayName: 'demo',
+      canLogout: true,
+      userId: 'demo',
+      roles: null,
+      salesPlanType: null,
+      c8Links: {},
+      tenants: [],
+    });
+
+    const {user} = render(
+      <ProcessInstanceHeader
+        processInstance={{...mockProcessInstance, state: 'TERMINATED'}}
+      />,
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    processInstanceDetailsStore.init({
+      id: mockCanceledInstance.id,
+    });
+
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton'),
+    );
+
+    await user.click(screen.getByRole('button', {name: /Delete Instance/}));
+
+    mockApplyOperation().withSuccess(mockOperationCreated);
+
+    await user.click(screen.getByRole('button', {name: /danger delete/i}));
+
+    await waitFor(() =>
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'success',
+        title: 'Instance deleted',
+        isDismissable: true,
+      }),
+    );
+
+    expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/processes$/);
+  });
+
   it('should hide delete operation button when user has no resource based permission for delete process instance', async () => {
     window.clientConfig = {
       resourcePermissionsEnabled: true,
