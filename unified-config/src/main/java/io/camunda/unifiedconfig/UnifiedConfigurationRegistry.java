@@ -9,8 +9,6 @@ import org.springframework.core.env.Environment;
 @Configuration
 @EnableConfigurationProperties(UnifiedConfiguration.class)
 public class UnifiedConfigurationRegistry {
-  private static Environment environment;
-
   @Autowired UnifiedConfiguration config;
   @Autowired Environment env;
 
@@ -20,17 +18,9 @@ public class UnifiedConfigurationRegistry {
     // At the moment, I'm low on better ideas on how to do this.
     // It is wired only when this object is instantiated with Spring. Otherwise it's null,
     // therefore, we need to IoC it, if we want to use it in tests for deprecated properties.
-    environment = env;
+    FallbackConfig.environment = env;
 
     System.out.println("Breakpoint here and check the object config");
     config.printFullConfigurationAsYaml();
-  }
-
-  public static String getDeprecatedValue(String breadcrumb) {
-    if (environment == null) {
-      return null;
-    }
-
-    return environment.getProperty(breadcrumb);
   }
 }

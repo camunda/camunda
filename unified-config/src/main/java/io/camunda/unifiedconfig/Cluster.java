@@ -24,12 +24,8 @@ public class Cluster {
   private int gossipFanout = 2;
 
   public int getGossipFanout() {
-    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.cluster.configManager.gossip.gossipFanout");
-    if (deprecated != null) {
-      return Integer.parseInt(deprecated);
-    }
-
-    return gossipFanout;
+    return FallbackConfig.getInt(
+        "zeebe.broker.cluster.configManager.gossip.gossipFanout", gossipFanout);
   }
 
   public void setGossipFanout(int gossipFanout) {
@@ -37,21 +33,13 @@ public class Cluster {
   }
 
   public Duration getGossipSyncRequestTimeout() {
-    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.cluster.configManager.gossip.syncRequestTimeout");
-    if (deprecated != null) {
-      return Duration.parse(deprecated);
-    }
-
-    return gossipSyncRequestTimeout;
+    return FallbackConfig.getDuration(
+        "zeebe.broker.cluster.configManager.gossip.syncRequestTimeout", gossipSyncRequestTimeout);
   }
 
   public Duration getGossipSyncDelay() {
-    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.cluster.configManager.gossip.syncDelay");
-    if (deprecated != null) {
-      return Duration.parse(deprecated);
-    }
-
-    return gossipSyncDelay;
+    return FallbackConfig.getDuration(
+        "zeebe.broker.cluster.configManager.gossip.syncDelay", gossipSyncDelay);
   }
 
   public void setGossipSyncDelay(Duration gossipSyncDelay) {
@@ -59,12 +47,8 @@ public class Cluster {
   }
 
   public boolean getGossipSyncEnabled() {
-    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.cluster.configManager.gossip.enableSync");
-    if (deprecated != null) {
-      return Boolean.parseBoolean(deprecated);
-    }
-
-    return gossipSyncEnabled;
+    return FallbackConfig.getBoolean(
+        "zeebe.broker.cluster.configManager.gossip.enableSync", gossipSyncEnabled);
   }
 
   public void setGossipSyncEnabled(boolean gossipSyncEnabled) {
@@ -72,66 +56,34 @@ public class Cluster {
   }
 
   public int getNodeId() {
-    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.cluster.nodeId");
-    if (deprecated != null) {
-      return Integer.parseInt(deprecated);
-    }
-
-    return nodeId;
+    return FallbackConfig.getInt("zeebe.broker.cluster.nodeId", nodeId);
   }
 
   public String getRuntimeDirectory() {
-    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.runtimeDirectory");
-    if (deprecated != null) {
-      return deprecated;
-    }
-
-    return runtimeDirectory;
+    return FallbackConfig.getString("zeebe.broker.data.runtimeDirectory", runtimeDirectory);
   }
 
   public Duration getSnapshotPeriod() {
-    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.snapshotPeriod");
-    if (deprecated != null) {
-      return Duration.parse(snapshotPeriod.toString());
-    }
-
-    return snapshotPeriod;
+    return FallbackConfig.getDuration("zeebe.broker.data.snapshotPeriod", snapshotPeriod);
   }
 
   public boolean getDiskMonitoringEnabled() {
-    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.enableMonitoring");
-    if (deprecated != null) {
-      return Boolean.parseBoolean(deprecated);
-    }
-
-    return diskMonitoringEnabled;
+    return FallbackConfig.getBoolean("zeebe.broker.data.enableMonitoring", diskMonitoringEnabled);
   }
 
   public DataSize getDiskFreeSpaceProcessing() {
-    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.disk.freeSpace.processing");
-    if (deprecated != null) {
-      return DataSize.parse(deprecated);
-    }
-
-    return diskFreeSpaceProcessing;
+    return FallbackConfig.getDataSize(
+        "zeebe.broker.data.disk.freeSpace.processing", diskFreeSpaceProcessing);
   }
 
   public DataSize getDiskFreeSpaceReplication() {
-    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.disk.freeSpace.replication");
-    if (deprecated != null) {
-      return DataSize.parse(deprecated);
-    }
-
-    return diskFreeSpaceReplication;
+    return FallbackConfig.getDataSize(
+        "zeebe.broker.data.disk.freeSpace.replication", diskFreeSpaceReplication);
   }
 
   public Duration getDiskMonitoringInterval() {
-    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.disk.monitoringInterval");
-    if (deprecated != null) {
-      return Duration.parse(deprecated);
-    }
-
-    return diskMonitoringInterval;
+    return FallbackConfig.getDuration(
+        "zeebe.broker.data.disk.monitoringInterval", diskMonitoringInterval);
   }
 
   public void setDiskMonitoringInterval(Duration diskMonitoringInterval) {
