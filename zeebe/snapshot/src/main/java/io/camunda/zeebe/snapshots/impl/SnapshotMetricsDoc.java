@@ -12,6 +12,7 @@ import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
 import io.micrometer.core.instrument.Tags;
+import java.time.Duration;
 
 @SuppressWarnings("NullableProblems")
 public enum SnapshotMetricsDoc implements ExtendedMeterDocumentation {
@@ -144,6 +145,24 @@ public enum SnapshotMetricsDoc implements ExtendedMeterDocumentation {
     @Override
     public Type getType() {
       return Type.TIMER;
+    }
+
+    @Override
+    public String getBaseUnit() {
+      return "ms";
+    }
+
+    @Override
+    public Duration[] getTimerSLOs() {
+      return new Duration[] {
+        Duration.ofMillis(50),
+        Duration.ofMillis(250),
+        Duration.ofMillis(500),
+        Duration.ofSeconds(1),
+        Duration.ofSeconds(5),
+        Duration.ofSeconds(15),
+        Duration.ofMinutes(30)
+      };
     }
 
     @Override

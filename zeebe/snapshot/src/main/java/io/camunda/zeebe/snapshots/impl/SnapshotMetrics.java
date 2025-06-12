@@ -13,8 +13,10 @@ import static io.camunda.zeebe.snapshots.impl.SnapshotMetricsDoc.SNAPSHOT_DURATI
 import static io.camunda.zeebe.snapshots.impl.SnapshotMetricsDoc.SNAPSHOT_FILE_SIZE;
 import static io.camunda.zeebe.snapshots.impl.SnapshotMetricsDoc.SNAPSHOT_PERSIST_DURATION;
 import static io.camunda.zeebe.snapshots.impl.SnapshotMetricsDoc.SNAPSHOT_SIZE;
+import static io.camunda.zeebe.snapshots.impl.SnapshotMetricsDoc.SNAPSHOT_TRANSFER_DURATION;
 
 import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.collection.MArray;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.Clock;
@@ -32,60 +34,58 @@ public final class SnapshotMetrics {
   private final MArray<AtomicLong> snapshotSizeArray = MArray.of(AtomicLong[]::new, 2);
 
   private final Clock clock;
-  private final MArray<Timer> snapshotPersistDuration;
-  private final MArray<DistributionSummary> snapshotFileSize;
-  private final MArray<Timer> snapshotDuration;
-  private final MArray<Counter> snapshotCount;
+  private final MArray<Timer> snapshotPersistDuration = MArray.of(Timer[]::new, 2);
+  private final MArray<DistributionSummary> snapshotFileSize =
+      MArray.of(DistributionSummary[]::new, 2);
+  private final MArray<Timer> snapshotDuration = MArray.of(Timer[]::new, 2);
+  private final MArray<Counter> snapshotCount = MArray.of(Counter[]::new, 2);
+  private final MArray<Timer> snapshotTransferDuration = MArray.of(Timer[]::new, 2);
 
   public SnapshotMetrics(final MeterRegistry registry) {
     clock = registry.config().clock();
 
-    snapshotDuration = MArray.of(Timer[]::new, 2);
-    snapshotPersistDuration = MArray.of(Timer[]::new, 2);
-    snapshotFileSize = MArray.of(DistributionSummary[]::new, 2);
-    snapshotCount = MArray.of(Counter[]::new, 2);
-
     for (final var bool : List.of(true, false)) {
+      final var index = encodeBoolean(bool);
       // init the AtomicLongs
-      snapshotChunkCountArray.put(new AtomicLong(), encodeBoolean(bool));
-      snapshotSizeArray.put(new AtomicLong(), encodeBoolean(bool));
+      snapshotChunkCountArray.put(new AtomicLong(), index);
+      snapshotSizeArray.put(new AtomicLong(), index);
 
       // INIT non gauges
       snapshotDuration.put(
           MicrometerUtil.buildTimer(SNAPSHOT_DURATION)
               .tags(SnapshotMetricsDoc.BootstrapKeyNames.tags(bool))
               .register(registry),
-          encodeBoolean(bool));
+          index);
       snapshotPersistDuration.put(
           MicrometerUtil.buildTimer(SNAPSHOT_PERSIST_DURATION)
               .tags(SnapshotMetricsDoc.BootstrapKeyNames.tags(bool))
               .register(registry),
-          encodeBoolean(bool));
+          index);
+      snapshotTransferDuration.put(
+          MicrometerUtil.buildTimer(SNAPSHOT_TRANSFER_DURATION)
+              .tags(SnapshotMetricsDoc.BootstrapKeyNames.tags(bool))
+              .register(registry),
+          index);
       snapshotFileSize.put(
           MicrometerUtil.buildSummary(SNAPSHOT_FILE_SIZE)
               .tags(SnapshotMetricsDoc.BootstrapKeyNames.tags(bool))
               .register(registry),
-          encodeBoolean(bool));
+          index);
 
       snapshotCount.put(
           Counter.builder(SNAPSHOT_COUNT.getName())
               .description(SNAPSHOT_COUNT.getDescription())
               .tags(SnapshotMetricsDoc.BootstrapKeyNames.tags(bool))
               .register(registry),
-          encodeBoolean(bool));
+          index);
 
       // init gauges
       Gauge.builder(
-              SNAPSHOT_CHUNK_COUNT.getName(),
-              snapshotChunkCountArray.get(encodeBoolean(bool)),
-              Number::longValue)
+              SNAPSHOT_CHUNK_COUNT.getName(), snapshotChunkCountArray.get(index), Number::longValue)
           .description(SNAPSHOT_CHUNK_COUNT.getDescription())
           .tags(SnapshotMetricsDoc.BootstrapKeyNames.tags(bool))
           .register(registry);
-      Gauge.builder(
-              SNAPSHOT_SIZE.getName(),
-              snapshotSizeArray.get(encodeBoolean(bool)),
-              Number::longValue)
+      Gauge.builder(SNAPSHOT_SIZE.getName(), snapshotSizeArray.get(index), Number::longValue)
           .description(SNAPSHOT_SIZE.getDescription())
           .tags(SnapshotMetricsDoc.BootstrapKeyNames.tags(bool))
           .register(registry);
@@ -116,6 +116,16 @@ public final class SnapshotMetrics {
   CloseableSilently startPersistTimer(final boolean isBootstrap) {
     return MicrometerUtil.timer(
         snapshotPersistDuration.get(encodeBoolean(isBootstrap)), Timer.start(clock));
+  }
+
+  public CloseableSilently startTransferTimer(final boolean isBootstrap) {
+    return MicrometerUtil.timer(
+        snapshotTransferDuration.get(encodeBoolean(isBootstrap)), Timer.start(clock));
+  }
+
+  @VisibleForTesting
+  public Timer getTransferDuration(final boolean isBootstrap) {
+    return snapshotTransferDuration.get(encodeBoolean(isBootstrap));
   }
 
   private static boolean decodeBoolean(final int i) {
