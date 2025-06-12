@@ -111,8 +111,8 @@ public class DbBatchOperationState implements MutableBatchOperationState {
         batchOperationKey);
 
     // First, get the batch operation
-    final var batch = get(batchOperationKey);
-    if (batch.isEmpty()) {
+    final var batch = get(batchOperationKey).orElse(null);
+    if (batch == null) {
       LOGGER.error(
           "Batch operation with key {} not found, cannot append itemKeys to it.",
           batchOperationKey);
@@ -120,15 +120,18 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     }
 
     // Second, get the chunk to append the keys to
-    var chunk = getOrCreateChunk(batch.get());
+    var chunk = getOrCreateChunk(batch);
 
     // Third, append the keys to the chunk, if the chunk is full, a new one is returned
     for (final long key : itemKeys) {
-      chunk = appendKeyToChunk(batch.get(), chunk, key);
+      chunk = appendKeyToChunk(batch, chunk, key);
     }
 
+    // Fourth, update the number of total items in the batch
+    batch.setNumTotalItems(batch.getNumTotalItems() + itemKeys.size());
+
     // Finally, update the batch and the chunk in the column family
-    updateChunkAndBatch(chunk, batch.get());
+    updateChunkAndBatch(chunk, batch);
   }
 
   @Override
@@ -139,8 +142,8 @@ public class DbBatchOperationState implements MutableBatchOperationState {
         batchOperationKey);
 
     // First, get the batch operation
-    final var batch = get(batchOperationKey);
-    if (batch.isEmpty()) {
+    final var batch = get(batchOperationKey).orElse(null);
+    if (batch == null) {
       LOGGER.error(
           "Batch operation with key {} not found, cannot remove itemKeys from it.",
           batchOperationKey);
@@ -148,11 +151,14 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     }
 
     // Second, delete the keys from chunk
-    final var chunk = getMinChunk(batch.get());
+    final var chunk = getMinChunk(batch);
     chunk.removeItemKeys(itemKeys);
 
+    // Fourth, update the number of executed items in the batch
+    batch.setNumExecutedItems(batch.getNumExecutedItems() + itemKeys.size());
+
     // Finally, update the chunk and batch in the column family
-    updateBatchAndChunkAfterRemoval(batch.get(), chunk);
+    updateBatchAndChunkAfterRemoval(batch, chunk);
   }
 
   @Override
