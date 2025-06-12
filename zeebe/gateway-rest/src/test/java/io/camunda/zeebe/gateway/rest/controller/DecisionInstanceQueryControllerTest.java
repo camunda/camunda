@@ -66,10 +66,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                ],
                "page": {
                    "totalItems": 1,
-                   "firstSortValues": ["f"],
-                   "lastSortValues": [
-                       "v"
-                   ]
+                   "searchBeforeCursor": "f",
+                   "searchAfterCursor": "v"
                }
            }""";
 
@@ -96,8 +94,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                       "result",
                       null,
                       null)))
-          .firstSortValues(new Object[] {"f"})
-          .lastSortValues(new Object[] {"v"})
+          .searchBeforeCursor("f")
+          .searchAfterCursor("v")
           .build();
 
   @MockBean private DecisionInstanceServices decisionInstanceServices;

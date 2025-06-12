@@ -142,8 +142,8 @@ public final class SearchResponseMapper {
       final SearchQueryPageResponse pageResponse) {
     return new SearchResponsePageImpl(
         pageResponse.getTotalItems(),
-        pageResponse.getFirstSortValues(),
-        pageResponse.getLastSortValues());
+        pageResponse.getSearchBeforeCursor(),
+        pageResponse.getSearchAfterCursor());
   }
 
   public static SearchResponse<DecisionRequirements> toDecisionRequirementsSearchResponse(

@@ -27,7 +27,6 @@ import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
@@ -158,12 +157,7 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
     // when
     client
         .newProcessDefinitionSearchRequest()
-        .page(
-            p ->
-                p.from(23)
-                    .limit(5)
-                    .searchBefore(Collections.singletonList("b"))
-                    .searchAfter(Collections.singletonList("a")))
+        .page(p -> p.from(23).limit(5).searchBefore("b").searchAfter("a"))
         .send()
         .join();
 
@@ -174,8 +168,8 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
     assertThat(pageRequest).isNotNull();
     assertThat(pageRequest.getFrom()).isEqualTo(23);
     assertThat(pageRequest.getLimit()).isEqualTo(5);
-    assertThat(pageRequest.getSearchBefore()).isEqualTo(Collections.singletonList("b"));
-    assertThat(pageRequest.getSearchAfter()).isEqualTo(Collections.singletonList("a"));
+    assertThat(pageRequest.getSearchBefore()).isEqualTo("b");
+    assertThat(pageRequest.getSearchAfter()).isEqualTo("a");
   }
 
   private void assertSort(
