@@ -55,10 +55,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
              ],
              "page": {
                "totalItems": 1,
-               "firstSortValues": ["f"],
-               "lastSortValues": [
-                 "v"
-               ]
+               "searchBeforeCursor": "f",
+               "searchAfterCursor": "v"
              }
            }""";
   private static final String AUTHORIZATION_SEARCH_URL = "/v2/authorizations/search";
@@ -75,8 +73,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                       ResourceTypeEnum.PROCESS_DEFINITION.getValue(),
                       "2",
                       Set.of(PermissionType.CREATE))))
-          .firstSortValues(new Object[] {"f"})
-          .lastSortValues(new Object[] {"v"})
+          .searchBeforeCursor("f")
+          .searchAfterCursor("v")
           .build();
 
   @MockitoBean private AuthorizationServices authorizationServices;
@@ -338,8 +336,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
             """
                 {
                     "page": {
-                        "searchAfter": ["a"],
-                        "searchBefore": ["b"]
+                        "searchAfter": "a",
+                        "searchBefore": "b"
                     }
                 }""",
             String.format(

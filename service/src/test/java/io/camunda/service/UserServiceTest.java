@@ -27,7 +27,6 @@ import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -96,7 +95,7 @@ public class UserServiceTest {
   public void shouldReturnUserForGet() {
     // given
     final var entity = mock(UserEntity.class);
-    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array(), Arrays.array());
+    final var result = new SearchQueryResult<>(1, List.of(entity), null, null);
     when(client.searchUsers(any())).thenReturn(result);
 
     // when

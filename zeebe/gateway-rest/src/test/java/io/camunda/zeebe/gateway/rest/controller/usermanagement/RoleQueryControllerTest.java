@@ -123,8 +123,8 @@ public class RoleQueryControllerTest extends RestControllerTest {
         .thenReturn(
             new SearchQueryResult.Builder<RoleEntity>()
                 .total(3)
-                .firstSortValues(new Object[] {"f"})
-                .lastSortValues(new Object[] {"v"})
+                .searchBeforeCursor("f")
+                .searchAfterCursor("v")
                 .items(
                     List.of(
                         new RoleEntity(100L, "role1", "Role 1", "description 1"),
@@ -167,8 +167,8 @@ public class RoleQueryControllerTest extends RestControllerTest {
              ],
              "page": {
                "totalItems": 3,
-               "firstSortValues": ["f"],
-               "lastSortValues": ["v"]
+               "searchBeforeCursor": "f",
+               "searchAfterCursor": "v"
              }
            }""");
 
@@ -257,9 +257,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
                }
              ],
              "page": {
-               "totalItems": 3,
-               "firstSortValues": [],
-               "lastSortValues": []
+               "totalItems": 3
              }
            }""");
 
@@ -322,9 +320,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
                 }
              ],
              "page": {
-               "totalItems": 3,
-               "firstSortValues": [],
-               "lastSortValues": []
+               "totalItems": 3
              }
            }""");
 
@@ -376,9 +372,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
                }
              ],
              "page": {
-               "totalItems": 3,
-               "firstSortValues": [],
-               "lastSortValues": []
+               "totalItems": 3
              }
            }""");
 
@@ -431,9 +425,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
                 }
               ],
               "page": {
-                "totalItems": 2,
-                "firstSortValues": [],
-                "lastSortValues": []
+                "totalItems": 2
               }
             }""");
 

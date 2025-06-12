@@ -88,8 +88,8 @@ public class VariablesQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 2,
-                  "firstSortValues": ["0"],
-                  "lastSortValues": ["1"]
+                  "searchBeforeCursor": "0",
+                  "searchAfterCursor": "1"
               }
           }""";
 
@@ -101,8 +101,8 @@ public class VariablesQueryControllerTest extends RestControllerTest {
               List.of(
                   new VariableEntity(0L, "n", "v", null, false, 2L, 3L, "bpid", "<default>"),
                   new VariableEntity(1L, "ne", "v", "ve", true, 2L, 3L, "bpid", "<default>")))
-          .firstSortValues(new Object[] {"0"})
-          .lastSortValues(new Object[] {"1"})
+          .searchBeforeCursor("0")
+          .searchAfterCursor("1")
           .build();
   @MockBean VariableServices variableServices;
   @Captor ArgumentCaptor<VariableQuery> variableQueryCaptor;
@@ -293,8 +293,8 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         """
             {
                 "page": {
-                    "searchAfter": ["a"],
-                    "searchBefore": ["b"]
+                    "searchAfter": "a",
+                    "searchBefore": "b"
                 }
             }""";
     final var expectedResponse =
@@ -333,7 +333,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         """
             {
                 "page": {
-                    "searchAfter": ["a"],
+                    "searchAfter": "a",
                     "from": 4
                 }
             }""";

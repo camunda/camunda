@@ -1538,8 +1538,8 @@ public final class SearchQueryRequestMapper {
       return Either.right(null);
     }
 
-    final Object[] searchAfter = toArrayOrNull(requestedPage.getSearchAfter());
-    final Object[] searchBefore = toArrayOrNull(requestedPage.getSearchBefore());
+    final String searchAfter = requestedPage.getSearchAfter();
+    final String searchBefore = requestedPage.getSearchBefore();
 
     if (searchAfter != null && searchBefore != null) {
       return Either.left(List.of(ERROR_SEARCH_BEFORE_AND_AFTER));

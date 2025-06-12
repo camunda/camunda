@@ -61,10 +61,8 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": ["f"],
-                  "lastSortValues": [
-                      "v"
-                  ]
+                  "searchBeforeCursor": "f",
+                  "searchAfterCursor": "v"
               }
           }""";
 
@@ -88,8 +86,8 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                       null,
                       "bpmnProcessId",
                       "<default>")))
-          .firstSortValues(new Object[] {"f"})
-          .lastSortValues(new Object[] {"v"})
+          .searchBeforeCursor("f")
+          .searchAfterCursor("v")
           .build();
 
   static final String EXPECTED_GET_RESPONSE =

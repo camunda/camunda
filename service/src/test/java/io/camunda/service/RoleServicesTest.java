@@ -34,7 +34,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
-import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -97,7 +96,7 @@ public class RoleServicesTest {
   public void shouldReturnSingleVariable() {
     // given
     final var entity = mock(RoleEntity.class);
-    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array(), Arrays.array());
+    final var result = new SearchQueryResult<>(1, List.of(entity), null, null);
     when(client.searchRoles(any())).thenReturn(result);
   }
 
@@ -105,7 +104,7 @@ public class RoleServicesTest {
   public void shouldReturnSingleVariableForGet() {
     // given
     final var entity = mock(RoleEntity.class);
-    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array(), Arrays.array());
+    final var result = new SearchQueryResult<>(1, List.of(entity), null, null);
     when(client.searchRoles(any())).thenReturn(result);
 
     // when

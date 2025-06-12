@@ -293,12 +293,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     // when
     client
         .newProcessInstanceSearchRequest()
-        .page(
-            p ->
-                p.from(23)
-                    .limit(5)
-                    .searchBefore(Collections.singletonList("b"))
-                    .searchAfter(Collections.singletonList("a")))
+        .page(p -> p.from(23).limit(5).searchBefore("b").searchAfter("a"))
         .send()
         .join();
 
@@ -309,8 +304,8 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(pageRequest).isNotNull();
     assertThat(pageRequest.getFrom()).isEqualTo(23);
     assertThat(pageRequest.getLimit()).isEqualTo(5);
-    assertThat(pageRequest.getSearchBefore()).isEqualTo(Collections.singletonList("b"));
-    assertThat(pageRequest.getSearchAfter()).isEqualTo(Collections.singletonList("a"));
+    assertThat(pageRequest.getSearchBefore()).isEqualTo("b");
+    assertThat(pageRequest.getSearchAfter()).isEqualTo("a");
   }
 
   @Test

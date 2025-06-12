@@ -56,18 +56,16 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": ["f"],
-                  "lastSortValues": [
-                      "v"
-                  ]
+                  "searchBeforeCursor": "f",
+                  "searchAfterCursor": "v"
               }
           }""";
   static final SearchQueryResult<DecisionRequirementsEntity> SEARCH_QUERY_RESULT =
       new Builder<DecisionRequirementsEntity>()
           .total(1L)
           .items(List.of(new DecisionRequirementsEntity(0L, "id", "name", 1, "rN", null, "t")))
-          .firstSortValues(new Object[] {"f"})
-          .lastSortValues(new Object[] {"v"})
+          .searchBeforeCursor("f")
+          .searchAfterCursor("v")
           .build();
 
   static final String DECISION_REQUIREMENTS_SEARCH_URL = "/v2/decision-requirements/search";

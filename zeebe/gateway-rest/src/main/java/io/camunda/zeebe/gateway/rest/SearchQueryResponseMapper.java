@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.gateway.rest.ResponseMapper.formatDate;
-import static java.util.Collections.emptyList;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.entities.AdHocSubProcessActivityEntity;
@@ -113,7 +112,6 @@ import io.camunda.zeebe.gateway.protocol.rest.VariableSearchResult;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCacheItem;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -408,15 +406,10 @@ public final class SearchQueryResponseMapper {
   private static SearchQueryPageResponse toSearchQueryPageResponse(
       final SearchQueryResult<?> result) {
 
-    final List<Object> firstSortValues =
-        ofNullable(result.firstSortValues()).map(Arrays::asList).orElse(emptyList());
-    final List<Object> lastSortValues =
-        ofNullable(result.lastSortValues()).map(Arrays::asList).orElse(emptyList());
-
     return new SearchQueryPageResponse()
         .totalItems(result.total())
-        .firstSortValues(firstSortValues)
-        .lastSortValues(lastSortValues);
+        .searchBeforeCursor(result.searchBeforeCursor())
+        .searchAfterCursor(result.searchAfterCursor());
   }
 
   private static List<ProcessDefinitionResult> toProcessDefinitions(

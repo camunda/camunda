@@ -1583,8 +1583,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                         IncidentState.ACTIVE,
                         1L,
                         "<default>")))
-            .firstSortValues(new Object[] {2251799814751259L})
-            .lastSortValues(new Object[] {2251799814751259L})
+            .searchBeforeCursor("<cursor before>")
+            .searchAfterCursor("<cursor after>")
             .build();
     final var query = new IncidentQuery.Builder().build();
     when(processInstanceServices.searchIncidents(processInstanceKey, query))
@@ -1610,10 +1610,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         ],
         "page": {
             "totalItems": 1,
-            "firstSortValues": [2251799814751259],
-            "lastSortValues": [
-                2251799814751259
-            ]
+            "searchBeforeCursor": "<cursor before>",
+            "searchAfterCursor": "<cursor after>"
         }
     }""";
 

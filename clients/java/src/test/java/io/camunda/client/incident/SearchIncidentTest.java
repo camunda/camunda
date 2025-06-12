@@ -28,7 +28,6 @@ import io.camunda.client.protocol.rest.IncidentFilter.ErrorTypeEnum;
 import io.camunda.client.protocol.rest.IncidentFilter.StateEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
@@ -150,12 +149,7 @@ public class SearchIncidentTest extends ClientRestTest {
     // when
     client
         .newIncidentSearchRequest()
-        .page(
-            p ->
-                p.from(23)
-                    .limit(5)
-                    .searchBefore(Arrays.asList("b"))
-                    .searchAfter(Arrays.asList("a")))
+        .page(p -> p.from(23).limit(5).searchBefore("b").searchAfter("a"))
         .send()
         .join();
 
@@ -164,8 +158,8 @@ public class SearchIncidentTest extends ClientRestTest {
     final SearchQueryPageRequest pageRequest = request.getPage();
     assertThat(pageRequest.getFrom()).isEqualTo(23);
     assertThat(pageRequest.getLimit()).isEqualTo(5);
-    assertThat(pageRequest.getSearchBefore()).isEqualTo(Arrays.asList("b"));
-    assertThat(pageRequest.getSearchAfter()).isEqualTo(Arrays.asList("a"));
+    assertThat(pageRequest.getSearchBefore()).isEqualTo("b");
+    assertThat(pageRequest.getSearchAfter()).isEqualTo("a");
   }
 
   /*
