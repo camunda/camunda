@@ -138,7 +138,6 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
         zeebeExtension.startProcessInstanceWithVariables(
             deployedProcess.getBpmnProcessId(), variables);
 
-    // when
     waitUntilNumberOfDefinitionsExported(1);
     waitUntilMinimumProcessInstanceEventsExportedCount(4);
     waitUntilMinimumVariableDocumentsExportedCount(1);
@@ -147,6 +146,8 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
     // when
     final ProcessInstanceDto importedProcessInstance =
         getProcessInstanceForId(String.valueOf(processInstanceKey));
+
+    // then
     assertThat(importedProcessInstance.getVariables())
         .singleElement()
         .satisfies(
