@@ -10,6 +10,7 @@ package io.camunda.authentication.filters;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.RoleServices;
+import io.camunda.zeebe.protocol.record.value.DefaultRole;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -46,7 +47,7 @@ public class AdminUserCheckFilter extends OncePerRequestFilter {
         !securityConfig
             .getInitialization()
             .getDefaultRoles()
-            .getOrDefault("admin", Map.of())
+            .getOrDefault(ADMIN_ROLE_ID, Map.of())
             .getOrDefault(USER_MEMBERS, Set.of())
             .isEmpty();
 
@@ -64,7 +65,9 @@ public class AdminUserCheckFilter extends OncePerRequestFilter {
                           builder ->
                               builder.filter(
                                   filter ->
-                                      filter.joinParentId("admin").memberType(EntityType.USER))))
+                                      filter
+                                          .joinParentId(ADMIN_ROLE_ID)
+                                          .memberType(EntityType.USER))))
                   .total()
               > 0;
 
