@@ -14,6 +14,7 @@ public class ZeebeConfiguration {
   private int partitionCount;
   private int maxImportPageSize;
   private boolean includeObjectVariableValue;
+  private boolean variableImportEnabled;
   private ZeebeImportConfiguration importConfig;
 
   public ZeebeConfiguration(
@@ -22,12 +23,14 @@ public class ZeebeConfiguration {
       final int partitionCount,
       final int maxImportPageSize,
       final boolean includeObjectVariableValue,
+      final boolean variableImportEnabled,
       final ZeebeImportConfiguration importConfig) {
     this.enabled = enabled;
     this.name = name;
     this.partitionCount = partitionCount;
     this.maxImportPageSize = maxImportPageSize;
     this.includeObjectVariableValue = includeObjectVariableValue;
+    this.variableImportEnabled = variableImportEnabled;
     this.importConfig = importConfig;
   }
 
@@ -73,6 +76,14 @@ public class ZeebeConfiguration {
     this.includeObjectVariableValue = includeObjectVariableValue;
   }
 
+  public boolean isVariableImportEnabled() {
+    return variableImportEnabled;
+  }
+
+  public void setVariableImportEnabled(final boolean variableImportEnabled) {
+    this.variableImportEnabled = variableImportEnabled;
+  }
+
   public ZeebeImportConfiguration getImportConfig() {
     return importConfig;
   }
@@ -107,6 +118,8 @@ public class ZeebeConfiguration {
         + getMaxImportPageSize()
         + ", includeObjectVariableValue="
         + isIncludeObjectVariableValue()
+        + ", variableImportEnabled="
+        + isVariableImportEnabled()
         + ", importConfig="
         + getImportConfig()
         + ")";

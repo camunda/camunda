@@ -19,6 +19,7 @@ import io.camunda.optimize.service.importing.ingested.mediator.factory.AbstractI
 import io.camunda.optimize.service.importing.zeebe.ZeebeImportScheduler;
 import io.camunda.optimize.service.importing.zeebe.handler.ZeebeImportIndexHandlerProvider;
 import io.camunda.optimize.service.importing.zeebe.mediator.factory.AbstractZeebeImportMediatorFactory;
+import io.camunda.optimize.service.importing.zeebe.mediator.factory.ZeebeVariableImportMediatorFactory;
 import io.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ZeebeConfiguration;
@@ -64,7 +65,17 @@ public class ImportSchedulerManagerService implements ConfigurationReloadable {
     this.beanFactory = beanFactory;
     this.configurationService = configurationService;
     this.ingestedMediatorFactories = ingestedMediatorFactories;
-    this.zeebeMediatorFactories = zeebeMediatorFactories;
+    // https://github.com/camunda/product-hub/issues/2891
+    // If the factory is not a ZeebeVariableImportMediatorFactory, object passes through
+    // If the factory is a ZeebeVariableImportMediatorFactory, it only passes when enabled
+    // When disabled, ZeebeVariableImportMediatorFactory objects are filtered out
+    this.zeebeMediatorFactories =
+        zeebeMediatorFactories.stream()
+            .filter(
+                factory ->
+                    !(factory instanceof ZeebeVariableImportMediatorFactory)
+                        || configurationService.getConfiguredZeebe().isVariableImportEnabled())
+            .collect(Collectors.toList());
     initSchedulers();
   }
 
