@@ -75,6 +75,7 @@ public class CredentialsProviderOidcWithSSLTest {
                   .keystorePassword("password")
                   .trustStorePath(VALID_TRUSTSTORE_PATH)
                   .trustStorePassword("password")
+                  .dynamicPort()
                   .dynamicHttpsPort())
           .build();
 
