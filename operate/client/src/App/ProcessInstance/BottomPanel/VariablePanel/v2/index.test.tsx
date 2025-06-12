@@ -133,9 +133,6 @@ describe('VariablePanel', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
 
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: statistics,
@@ -147,7 +144,6 @@ describe('VariablePanel', () => {
       items: statistics,
     });
 
-    mockFetchVariables().withSuccess([createVariable()]);
     mockFetchVariables().withSuccess([createVariable()]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
@@ -165,7 +161,7 @@ describe('VariablePanel', () => {
     );
   });
 
-  afterEach(async () => {
+  afterEach(() => {
     jest.clearAllMocks();
     jest.clearAllTimers();
   });
@@ -252,6 +248,7 @@ describe('VariablePanel', () => {
         name: /save variable/i,
       }),
     );
+
     expect(
       screen.queryByRole('button', {
         name: /add variable/i,
@@ -301,7 +298,6 @@ describe('VariablePanel', () => {
     mockFetchFlowNodeMetadata().withSuccess({
       ...singleInstanceMetadata,
       flowNodeInstanceId: '2251799813686104',
-      instanceCount: 1,
     });
 
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
@@ -370,7 +366,7 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([]);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
-    act(() => {
+    await act(() => {
       flowNodeSelectionStore.setSelection({
         flowNodeId: 'TEST_FLOW_NODE',
         flowNodeInstanceId: '2',
@@ -575,23 +571,6 @@ describe('VariablePanel', () => {
 
   it('should select correct tab when navigating between flow nodes', async () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockFetchFlownodeInstancesStatistics().withSuccess({
-      items: statistics,
-    });
-    mockFetchFlownodeInstancesStatistics().withSuccess({
-      items: statistics,
-    });
     mockFetchVariables().withSuccess([createVariable()]);
 
     const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
@@ -604,7 +583,7 @@ describe('VariablePanel', () => {
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchProcessDefinitionXml().withSuccess('');
 
-    act(() => {
+    await act(() => {
       flowNodeSelectionStore.setSelection({
         flowNodeId: 'Activity_0qtp1k6',
         flowNodeInstanceId: '2',
@@ -620,7 +599,7 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
     mockFetchProcessDefinitionXml().withSuccess('');
 
-    act(() => {
+    await act(() => {
       flowNodeSelectionStore.setSelection({
         flowNodeId: 'Event_0bonl61',
       });
@@ -638,7 +617,7 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
-    act(() => {
+    await act(() => {
       flowNodeSelectionStore.clearSelection();
     });
 
@@ -658,7 +637,7 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([]);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
-    act(() => {
+    await act(() => {
       flowNodeSelectionStore.setSelection({
         flowNodeId: 'StartEvent_1',
       });
