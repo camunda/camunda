@@ -15,6 +15,7 @@ import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.B
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.BATCH_OPERATION_ID_AGGREGATION;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.ID;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.INCIDENT_KEY;
+import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.ITEM_KEY;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.PROCESS_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.SCOPE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.TYPE;
@@ -23,6 +24,7 @@ import static io.camunda.webapps.schema.entities.operation.OperationState.LOCKED
 import static io.camunda.webapps.schema.entities.operation.OperationState.SCHEDULED;
 import static org.elasticsearch.client.Requests.searchRequest;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
@@ -51,6 +53,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
@@ -91,6 +94,9 @@ public class OperationReader extends AbstractReader
    */
   @Override
   public List<OperationEntity> acquireOperations(final int batchSize) {
+    // filter for operations that are legacy (i.e. do not have the property ITEM_KEY)
+    final QueryBuilder legacyOperationsQuery =
+        QueryBuilders.boolQuery().mustNot(existsQuery(ITEM_KEY));
     final TermQueryBuilder scheduledOperationsQuery =
         termQuery(OperationTemplate.STATE, SCHEDULED_OPERATION);
     final TermQueryBuilder lockedOperationsQuery =
@@ -100,8 +106,11 @@ public class OperationReader extends AbstractReader
     lockExpirationTimeQuery.lte(dateTimeFormatter.format(OffsetDateTime.now()));
 
     final QueryBuilder operationsQuery =
-        joinWithOr(
-            scheduledOperationsQuery, joinWithAnd(lockedOperationsQuery, lockExpirationTimeQuery));
+        joinWithAnd(
+            legacyOperationsQuery,
+            joinWithOr(
+                scheduledOperationsQuery,
+                joinWithAnd(lockedOperationsQuery, lockExpirationTimeQuery)));
 
     final ConstantScoreQueryBuilder constantScoreQuery = constantScoreQuery(operationsQuery);
 
