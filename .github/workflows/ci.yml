@@ -760,7 +760,7 @@ jobs:
       DOCKER_IMAGE_TAG: current-test
     services:
       registry:
-        image: registry:2
+        image: registry:3
         ports:
           - 5000:5000
     steps:
@@ -851,7 +851,7 @@ jobs:
     services:
       # local registry is used as this job needs to push as it builds multi-platform images
       registry:
-        image: registry:2
+        image: registry:3
         ports:
           - 5000:5000
     env:
