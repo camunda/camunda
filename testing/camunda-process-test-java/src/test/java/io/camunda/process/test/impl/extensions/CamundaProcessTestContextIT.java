@@ -764,7 +764,7 @@ public class CamundaProcessTestContextIT {
   }
 
   private BpmnModelInstance processModelWithServiceTask() {
-    return Bpmn.createExecutableProcess("test-process")
+    return Bpmn.createExecutableProcess("test-process-with-service-task")
         .startEvent()
         .serviceTask("service-task-1")
         .zeebeJobType("test")
@@ -783,7 +783,7 @@ public class CamundaProcessTestContextIT {
 
   private BpmnModelInstance processModelWithUserTask(
       final String taskName, final String elementId) {
-    return Bpmn.createExecutableProcess("test-process")
+    return Bpmn.createExecutableProcess("test-process-with-user-task")
         .startEvent()
         .userTask(elementId)
         .name(taskName)
