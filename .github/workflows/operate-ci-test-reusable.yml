@@ -70,7 +70,7 @@ jobs:
     services:
       # local registry is used as this job needs to push its docker image to be used by IT
       registry:
-        image: registry:2
+        image: registry:3
         ports:
           - 5000:5000
     steps:
