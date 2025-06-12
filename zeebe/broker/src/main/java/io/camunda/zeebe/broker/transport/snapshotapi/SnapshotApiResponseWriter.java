@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.broker.transport.snapshotapi;
 
-import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotChunkResponse;
-import io.camunda.zeebe.broker.partitioning.scaling.snapshot.sbe.SnapshotChunkResponseSerializer;
+import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotResponse;
+import io.camunda.zeebe.broker.partitioning.scaling.snapshot.sbe.SnapshotResponseSerializer;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler.ResponseWriter;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.impl.ServerResponseImpl;
@@ -16,10 +16,10 @@ import org.agrona.MutableDirectBuffer;
 
 public class SnapshotApiResponseWriter implements ResponseWriter {
   private final ServerResponseImpl response = new ServerResponseImpl();
-  private SnapshotChunkResponse snapshotChunk;
-  private final SnapshotChunkResponseSerializer serializer = new SnapshotChunkResponseSerializer();
+  private SnapshotResponse snapshotChunk;
+  private final SnapshotResponseSerializer serializer = new SnapshotResponseSerializer();
 
-  void setResponse(final SnapshotChunkResponse response) {
+  void setResponse(final SnapshotResponse response) {
     snapshotChunk = response;
   }
 

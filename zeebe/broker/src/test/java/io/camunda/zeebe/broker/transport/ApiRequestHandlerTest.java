@@ -91,9 +91,9 @@ final class ApiRequestHandlerTest {
   }
 
   private static class TestApiRequestHandler
-      extends AsyncApiRequestHandler<RequestReader<?>, ResponseWriter> {
+      extends AsyncApiRequestHandler<RequestReader, ResponseWriter> {
     TestApiRequestHandler(
-        final Supplier<RequestReader<?>> requestReaderSupplier,
+        final Supplier<RequestReader> requestReaderSupplier,
         final Supplier<ResponseWriter> responseWriterSupplier) {
       super(requestReaderSupplier, responseWriterSupplier);
     }
@@ -102,7 +102,7 @@ final class ApiRequestHandlerTest {
     protected ActorFuture<Either<ErrorResponseWriter, ResponseWriter>> handleAsync(
         final int partitionId,
         final long requestId,
-        final RequestReader<?> requestReader,
+        final RequestReader requestReader,
         final ResponseWriter responseWriter,
         final ErrorResponseWriter errorWriter) {
       return CompletableActorFuture.completed(Either.right(responseWriter));

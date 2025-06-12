@@ -108,6 +108,24 @@ public class SnapshotTransferServiceImpl implements SnapshotTransferService {
     }
   }
 
+  @Override
+  public ActorFuture<Void> deleteSnapshots(final int partitionId) {
+    if (partitionId != this.partitionId) {
+      return CompletableActorFuture.completedExceptionally(
+          new IllegalArgumentException(
+              String.format(
+                  "Invalid partition: %d. Current partition is %d",
+                  partitionId, this.partitionId)));
+    }
+    return snapshotStore
+        .deleteBootstrapSnapshots()
+        .thenApply(
+            ignored -> {
+              pendingTransfers.clear();
+              return null;
+            });
+  }
+
   private ActorFuture<PersistedSnapshot> getLatestSnapshotForBootstrap(final UUID transferId) {
     final ActorFuture<PersistedSnapshot> lastSnapshotFuture = concurrency.createFuture();
 
@@ -185,6 +203,11 @@ public class SnapshotTransferServiceImpl implements SnapshotTransferService {
               }
             },
             concurrency);
+  }
+
+  @Override
+  public ActorFuture<Void> closeAsync() {
+    return deleteSnapshots(partitionId);
   }
 
   private static class PendingTransfer {

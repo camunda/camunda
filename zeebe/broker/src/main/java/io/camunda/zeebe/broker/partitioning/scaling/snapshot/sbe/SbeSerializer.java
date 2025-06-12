@@ -5,10 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.broker.partitioning.scaling.snapshot;
+package io.camunda.zeebe.broker.partitioning.scaling.snapshot.sbe;
 
-import io.camunda.zeebe.snapshots.SnapshotChunk;
-import java.util.Optional;
-import java.util.UUID;
+import org.agrona.MutableDirectBuffer;
 
-public record SnapshotChunkResponse(UUID transferId, Optional<SnapshotChunk> chunk) {}
+public interface SbeSerializer<T> {
+  int size(final T message);
+
+  int serialize(final T message, final MutableDirectBuffer buffer, final int offset);
+}

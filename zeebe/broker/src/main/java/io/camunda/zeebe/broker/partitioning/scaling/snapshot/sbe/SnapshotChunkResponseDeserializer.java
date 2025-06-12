@@ -8,16 +8,17 @@
 package io.camunda.zeebe.broker.partitioning.scaling.snapshot.sbe;
 
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotChunkRecord;
-import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotChunkResponse;
+import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotResponse.SnapshotChunkResponse;
 import java.util.Optional;
 import java.util.UUID;
 import org.agrona.DirectBuffer;
 
-public class SnapshotChunkResponseDeserializer {
+public class SnapshotChunkResponseDeserializer implements SbeDeserializer<SnapshotChunkResponse> {
 
   private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   private final SnapshotChunkResponseDecoder decoder = new SnapshotChunkResponseDecoder();
 
+  @Override
   public SnapshotChunkResponse deserialize(
       final DirectBuffer buffer, final int offset, final int capacity) {
     decoder.wrapAndApplyHeader(buffer, offset, headerDecoder);
