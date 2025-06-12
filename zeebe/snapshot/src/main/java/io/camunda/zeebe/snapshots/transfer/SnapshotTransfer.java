@@ -14,8 +14,12 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
+import io.camunda.zeebe.snapshots.impl.SnapshotMetrics;
+import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.collection.Tuple;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Receive a complete snapshot from a {@link SnapshotTransferService} by repeatedly asking for the
@@ -28,45 +32,56 @@ public class SnapshotTransfer {
 
   private final SnapshotTransferService service;
   private final ReceivableSnapshotStore snapshotStore;
+  private final SnapshotMetrics snapshotMetrics;
   private final ConcurrencyControl concurrency;
+  private final ConcurrentHashMap<UUID, CloseableSilently> timers = new ConcurrentHashMap<>();
 
   public SnapshotTransfer(
       final SnapshotTransferService service,
       final ReceivableSnapshotStore snapshotStore,
+      final SnapshotMetrics snapshotMetrics,
       final ConcurrencyControl concurrency) {
     this.service = service;
     this.snapshotStore = snapshotStore;
+    this.snapshotMetrics = snapshotMetrics;
     this.concurrency = concurrency;
   }
 
   public ActorFuture<PersistedSnapshot> getLatestSnapshot(final int partitionId) {
     final var transferId = UUID.randomUUID();
-    return service
-        .getLatestSnapshot(partitionId, transferId)
-        .andThen(
-            snapshot -> {
-              if (snapshot == null) {
-                return CompletableActorFuture.completedExceptionally(
-                    new IllegalArgumentException(
-                        "No initial chunk for latest snapshot in partition " + partitionId));
-              }
-              return snapshotStore
-                  .newReceivedSnapshot(snapshot.getSnapshotId())
-                  .thenApply(
-                      fbsnapshot -> {
-                        fbsnapshot.apply(snapshot);
-                        return new Tuple<>(snapshot, fbsnapshot);
-                      });
-            },
-            concurrency)
-        .andThen(
-            tuple -> {
-              final var future =
-                  receiveAllChunks(partitionId, tuple.getLeft(), tuple.getRight(), transferId);
-              future.onError(error -> tuple.getRight().abort());
-              return future;
-            },
-            concurrency);
+    timers.put(transferId, snapshotMetrics.startTransferTimer(true));
+    final var result =
+        service
+            .getLatestSnapshot(partitionId, transferId)
+            .andThen(
+                snapshot -> {
+                  if (snapshot == null) {
+                    return CompletableActorFuture.completedExceptionally(
+                        new IllegalArgumentException(
+                            "No initial chunk for latest snapshot in partition " + partitionId));
+                  }
+                  return snapshotStore
+                      .newReceivedSnapshot(snapshot.getSnapshotId())
+                      .thenApply(
+                          fbsnapshot -> {
+                            fbsnapshot.apply(snapshot);
+                            return new Tuple<>(snapshot, fbsnapshot);
+                          });
+                },
+                concurrency)
+            .andThen(
+                tuple -> {
+                  final var future =
+                      receiveAllChunks(partitionId, tuple.getLeft(), tuple.getRight(), transferId);
+                  future.onError(error -> tuple.getRight().abort());
+                  return future;
+                },
+                concurrency);
+
+    result.onComplete(
+        (ignored, error) ->
+            Optional.ofNullable(timers.remove(transferId)).ifPresent(CloseableSilently::close));
+    return result;
   }
 
   private ActorFuture<PersistedSnapshot> receiveAllChunks(

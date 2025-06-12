@@ -75,7 +75,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   private void takeInternal(final Consumer<Path> takeSnapshot) {
     final var snapshotMetrics = snapshotStore.getSnapshotMetrics();
 
-    try (final var ignored = snapshotMetrics.startTimer()) {
+    try (final var ignored = snapshotMetrics.startTimer(isBootstrap)) {
       try {
         takeSnapshot.accept(getPath());
         if (!directory.toFile().exists() || directory.toFile().listFiles().length == 0) {
