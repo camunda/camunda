@@ -721,6 +721,7 @@ public final class SearchQueryResponseMapper {
         .candidateGroups(t.candidateGroups())
         .formKey(KeyUtil.keyToString(t.formKey()))
         .elementId(t.elementId())
+        .elementName(t.elementName())
         .creationDate(formatDate(t.creationDate()))
         .completionDate(formatDate(t.completionDate()))
         .dueDate(formatDate(t.dueDate()))

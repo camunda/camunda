@@ -35,6 +35,9 @@ public interface UserTask {
   /** Element ID */
   String getElementId();
 
+  /** Element name */
+  String getElementName();
+
   /** Instance key of the element */
   Long getElementInstanceKey();
 

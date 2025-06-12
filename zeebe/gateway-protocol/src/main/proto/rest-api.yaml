@@ -5342,6 +5342,7 @@ components:
             - followUpDate
             - dueDate
             - priority
+            - elementName
         order:
           $ref: "#/components/schemas/SortOrderEnum"
       required:
@@ -5427,6 +5428,11 @@ components:
         elementId:
           type: string
           description: The element ID of the user task.
+        elementName:
+          type: string
+          description: >
+            The element name. This only works for data created with 8.8 and onwards.
+            Instances from prior versions don't contain this data and cannot be found.
         candidateGroup:
           description: The candidate group for this user task.
           allOf:
@@ -5520,6 +5526,9 @@ components:
         elementId:
           type: string
           description: The element ID of the user task.
+        elementName:
+          type: string
+          description: The element name of the user task.
         candidateGroups:
           type: array
           description: The candidate groups for this user task.

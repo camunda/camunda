@@ -58,6 +58,7 @@
       <idArg column="USER_TASK_KEY" javaType="java.lang.Long"/>
     </constructor>
     <result property="elementId" column="ELEMENT_ID" javaType="java.lang.String"/>
+    <result property="elementName" column="ELEMENT_NAME" javaType="java.lang.String"/>
     <result property="processDefinitionId" column="PROCESS_DEFINITION_ID"
       javaType="java.lang.String"/>
     <result property="creationDate" column="CREATION_DATE" javaType="java.time.OffsetDateTime"/>
@@ -103,6 +104,7 @@
     SELECT
     ut.USER_TASK_KEY,
     ut.ELEMENT_ID,
+    ut.ELEMENT_NAME,
     ut.PROCESS_DEFINITION_ID,
     ut.CREATION_DATE,
     ut.COMPLETION_DATE,
@@ -154,6 +156,12 @@
       AND ut.ELEMENT_ID IN
       <foreach close=")" collection="filter.elementIds" item="value" open="("
         separator=", ">#{value}
+      </foreach>
+    </if>
+    <if test="filter.elementNames != null and !filter.elementNames.isEmpty()">
+      AND ut.ELEMENT_NAME IN
+      <foreach close=")" collection="filter.elementNames" item="value" open="("
+               separator=", ">#{value}
       </foreach>
     </if>
     <if test="filter.elementInstanceKeys != null and !filter.elementInstanceKeys.isEmpty()">

@@ -1034,6 +1034,7 @@ public final class SearchQueryRequestMapper {
           .ifPresent(builder::states);
       Optional.ofNullable(filter.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
       Optional.ofNullable(filter.getElementId()).ifPresent(builder::elementIds);
+      Optional.ofNullable(filter.getElementName()).ifPresent(builder::elementNames);
       Optional.ofNullable(filter.getAssignee())
           .map(mapToOperations(String.class))
           .ifPresent(builder::assigneeOperations);
@@ -1420,6 +1421,7 @@ public final class SearchQueryRequestMapper {
         case FOLLOW_UP_DATE -> builder.followUpDate();
         case DUE_DATE -> builder.dueDate();
         case PRIORITY -> builder.priority();
+        case ELEMENT_NAME -> builder.elementName();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
