@@ -41,6 +41,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.ActionListener;
@@ -155,15 +156,22 @@ public class ElasticsearchBackupRepository implements BackupRepository {
 
   @Override
   public GetBackupStateResponseDto getBackupState(
-      final String repositoryName, final Long backupId) {
+      final String repositoryName,
+      final Long backupId,
+      final Predicate<Long> isBackupInProgressPredicate) {
+    final boolean isBackupInProgress = isBackupInProgressPredicate.test(backupId);
     final List<SnapshotInfo> snapshots = findSnapshots(repositoryName, backupId);
-    final GetBackupStateResponseDto response = getBackupResponse(backupId, snapshots);
+    final GetBackupStateResponseDto response =
+        getBackupResponse(backupId, snapshots, isBackupInProgress);
     return response;
   }
 
   @Override
   public List<GetBackupStateResponseDto> getBackups(
-      final String repositoryName, final boolean verbose, final String pattern) {
+      final String repositoryName,
+      final boolean verbose,
+      final String pattern,
+      final Predicate<Long> isBackupInProgressPredicate) {
     final var validatedPattern = BackupRepository.validPattern(pattern);
 
     validatedPattern.ifLeft(
@@ -213,7 +221,12 @@ public class ElasticsearchBackupRepository implements BackupRepository {
 
       final List<GetBackupStateResponseDto> responses =
           groupedSnapshotInfos.entrySet().stream()
-              .map(entry -> getBackupResponse(entry.getKey(), entry.getValue()))
+              .map(
+                  entry ->
+                      getBackupResponse(
+                          entry.getKey(),
+                          entry.getValue(),
+                          isBackupInProgressPredicate.test(entry.getKey())))
               .collect(toList());
 
       return responses;
@@ -387,7 +400,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
   }
 
   private GetBackupStateResponseDto getBackupResponse(
-      final Long backupId, final List<SnapshotInfo> snapshots) {
+      final Long backupId, final List<SnapshotInfo> snapshots, final boolean isBackupInProgress) {
     final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
     final Metadata metadata =
         Metadata.extractFromMetadataOrName(
@@ -396,15 +409,16 @@ public class ElasticsearchBackupRepository implements BackupRepository {
             snapshots.getFirst().snapshotId().getName());
     final Integer expectedSnapshotsCount = metadata.getPartCount();
     if (snapshots.size() == expectedSnapshotsCount
-        && snapshots.stream().map(SnapshotInfo::state).allMatch(s -> SUCCESS.equals(s))) {
+        && snapshots.stream().map(SnapshotInfo::state).allMatch(SUCCESS::equals)) {
       response.setState(BackupStateDto.COMPLETED);
     } else if (snapshots.stream()
         .map(SnapshotInfo::state)
         .anyMatch(s -> FAILED.equals(s) || PARTIAL.equals(s))) {
       response.setState(BackupStateDto.FAILED);
-    } else if (snapshots.stream().map(SnapshotInfo::state).anyMatch(s -> INCOMPATIBLE.equals(s))) {
+    } else if (snapshots.stream().map(SnapshotInfo::state).anyMatch(INCOMPATIBLE::equals)) {
       response.setState(BackupStateDto.INCOMPATIBLE);
-    } else if (snapshots.stream().map(SnapshotInfo::state).anyMatch(s -> IN_PROGRESS.equals(s))) {
+    } else if (isBackupInProgress
+        || snapshots.stream().map(SnapshotInfo::state).anyMatch(IN_PROGRESS::equals)) {
       response.setState(BackupStateDto.IN_PROGRESS);
     } else if (snapshots.size() < expectedSnapshotsCount) {
       response.setState(BackupStateDto.INCOMPLETE);

@@ -19,10 +19,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.schema.backup.Prio1Backup;
+import io.camunda.tasklist.schema.backup.Prio2Backup;
+import io.camunda.tasklist.schema.backup.Prio3Backup;
+import io.camunda.tasklist.schema.backup.Prio4Backup;
 import io.camunda.tasklist.webapp.es.backup.Metadata;
 import io.camunda.tasklist.webapp.es.backup.os.GetCustomSnapshotResponse.Builder;
 import io.camunda.tasklist.webapp.es.backup.os.response.SnapshotState;
 import io.camunda.tasklist.webapp.management.dto.BackupStateDto;
+import io.camunda.tasklist.webapp.management.dto.TakeBackupRequestDto;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
@@ -56,7 +61,9 @@ import org.opensearch.client.transport.endpoints.SimpleEndpoint;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class BackupManagerOpenSearchTest {
 
-  @Mock OpenSearchTransport openSearchTransport;
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+  OpenSearchTransport openSearchTransport;
+
   private final long backupId = 2L;
   final Metadata metadata =
       new Metadata().setBackupId(backupId).setPartCount(3).setPartNo(1).setVersion("8.6.1");
@@ -71,6 +78,11 @@ class BackupManagerOpenSearchTest {
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private TasklistProperties tasklistProperties;
 
+  @Mock private List<Prio1Backup> prio1BackupIndices;
+  @Mock private List<Prio2Backup> prio2BackupTemplates;
+  @Mock private List<Prio3Backup> prio3BackupTemplates;
+  @Mock private List<Prio4Backup> prio4BackupIndices;
+
   @InjectMocks private BackupManagerOpenSearch backupManagerOpenSearch;
 
   @BeforeEach
@@ -78,6 +90,7 @@ class BackupManagerOpenSearchTest {
     when(tasklistProperties.getBackup().getRepositoryName()).thenReturn(repositoryName);
     when(openSearchClient._transport()).thenReturn(openSearchTransport);
     when(openSearchAsyncClient._transport()).thenReturn(openSearchTransport);
+    when(tasklistProperties.getVersion()).thenReturn("8.6.0");
   }
 
   @Test
@@ -252,5 +265,49 @@ class BackupManagerOpenSearchTest {
         .performRequest(any(), any(), any());
     final var response = backupManagerOpenSearch.getBackupState(backupId);
     assertThat(response.getState()).isEqualTo(BackupStateDto.COMPLETED);
+  }
+
+  @Test
+  void shouldReturnInProgressStateWhenBackupIsStillRunning() throws IOException {
+    // given
+    // run takeBackup in parallel to simulate an ongoing backup
+    when(openSearchClient.snapshot().create(any(CreateSnapshotRequest.class)))
+        .thenAnswer(
+            invocation -> {
+              Thread.sleep(1000);
+              return mock(CompletableFuture.class);
+            });
+    /*when(openSearchClient.snapshot().get(any(GetSnapshotRequest.class)))
+    .thenReturn(mock(GetSnapshotResponse.class));*/
+    when(openSearchTransport.performRequest(any(), any(), any()))
+        .thenReturn(mock(GetCustomSnapshotResponse.class));
+    backupManagerOpenSearch.takeBackup(new TakeBackupRequestDto().setBackupId(backupId));
+
+    final var metadata =
+        new Metadata().setBackupId(2L).setPartCount(3).setPartNo(1).setVersion("8.6.1");
+    final var snapshots = new ArrayList<SnapshotInfo>(metadata.getPartCount());
+    // return (partCount - 1) SUCCESS snapshots, one is remaining
+    for (int i = 1; i <= metadata.getPartCount() - 1; i++) {
+      final var copy = new Metadata(metadata);
+      copy.setPartNo(i);
+      snapshots.add(
+          SnapshotInfo.of(
+              sib ->
+                  sib.snapshot(copy.buildSnapshotName())
+                      .state("SUCCESS")
+                      .uuid(UUID.randomUUID().toString())
+                      .dataStreams(List.of())
+                      .indices(List.of())));
+    }
+
+    final var snapshotResponse = GetCustomSnapshotResponse.of(b -> b.snapshots(snapshots));
+    when(openSearchTransport.performRequest(any(), any(), any())).thenReturn(snapshotResponse);
+    when(tasklistProperties.getBackup().getRepositoryName()).thenReturn(repositoryName);
+
+    // when
+    final var backupResponse = backupManagerOpenSearch.getBackupState(backupId);
+
+    // then
+    assertThat(backupResponse.getState()).isEqualTo(BackupStateDto.IN_PROGRESS);
   }
 }

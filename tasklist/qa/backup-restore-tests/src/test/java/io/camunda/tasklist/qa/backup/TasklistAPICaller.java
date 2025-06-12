@@ -209,17 +209,25 @@ public class TasklistAPICaller {
   }
 
   @Retryable(
-      value = {AssertionError.class, HttpClientErrorException.NotFound.class},
-      maxAttempts = 10,
-      backoff = @Backoff(delay = 2000))
+      retryFor = {AssertionError.class, HttpClientErrorException.NotFound.class},
+      maxAttempts = 100,
+      backoff = @Backoff(delay = 10)) // short delay to verify that INCOMPLETE state is not returned
   public void assertBackupState() {
     try {
-      final GetBackupStateResponseDto backupState = getBackupState(BACKUP_ID);
-      assertThat(backupState.getState()).isIn(IN_PROGRESS, COMPLETED);
-      // to retry
-      assertThat(backupState.getState()).isEqualTo(COMPLETED);
-    } catch (final AssertionError | HttpClientErrorException.NotFound er) {
-      LOGGER.warn("Error when checking backup state: " + er.getMessage());
+      final var backupState = getBackupState(BACKUP_ID).getState();
+      switch (backupState) {
+        case COMPLETED:
+          LOGGER.info("Backup completed successfully.");
+          break;
+        case IN_PROGRESS:
+          LOGGER.info("Backup is still in progress, retrying...");
+          throw new AssertionError("Backup is still in progress"); // Triggers retry
+        default:
+          LOGGER.error("Unhealthy backup state: {}", backupState);
+          throw new IllegalStateException("Unhealthy backup state: " + backupState);
+      }
+    } catch (final HttpClientErrorException.NotFound er) {
+      LOGGER.warn("Error when checking backup state: {}", er.getMessage());
       throw er;
     }
   }

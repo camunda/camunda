@@ -10,6 +10,7 @@ package io.camunda.operate.webapp.backup;
 import io.camunda.operate.util.Either;
 import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 public interface BackupRepository {
@@ -25,14 +26,14 @@ public interface BackupRepository {
 
   void validateNoDuplicateBackupId(String repositoryName, Long backupId);
 
-  GetBackupStateResponseDto getBackupState(String repositoryName, Long backupId);
+  GetBackupStateResponseDto getBackupState(
+      String repositoryName, Long backupId, final Predicate<Long> isBackupInProgressPredicate);
 
   List<GetBackupStateResponseDto> getBackups(
-      String repositoryName, boolean verbose, final String pattern);
-
-  default List<GetBackupStateResponseDto> getBackups(final String repositoryName) {
-    return getBackups(repositoryName, true, null);
-  }
+      String repositoryName,
+      boolean verbose,
+      final String pattern,
+      Predicate<Long> isBackupInProgressPredicate);
 
   void executeSnapshotting(
       BackupService.SnapshotRequest snapshotRequest, Runnable onSuccess, Runnable onFailure);
