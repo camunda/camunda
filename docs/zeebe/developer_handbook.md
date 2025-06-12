@@ -72,9 +72,10 @@ When introducing a new `RecordValue`, you must ensure it is properly supported i
 - Elasticsearch and Opensearch exporters
 - Operate and Tasklist integration test setups
 
-#### Elasticsearch exporter
+You'll always need to add support for new records in the exporters. Even if you don't yet want to export a new record,
+tests will fail if this support is missing. Note that in the exporter configuration (step 3), you can choose whether the record is exported by default.
 
-You'll always need to add support for new records in the ES exporter. Even if you don't yet want to export a new record, our tests will fail if you don't provide this support. Note that in step 3 below, you can choose whether or not the record is exported to ES by default.
+#### Elasticsearch exporter
 
 1. Add a record template to the elastic search exporter's [resources](../exporters/elasticsearch-exporter/src/main/resources/).
 
@@ -86,9 +87,6 @@ You'll always need to add support for new records in the ES exporter. Even if yo
 5. Add a mapping for the ValueType to the [TestSupport](../../zeebe/exporters/elasticsearch-exporter/src/test/java/io/camunda/zeebe/exporter/TestSupport.java).
 
 #### Opensearch exporter
-
-You'll always need to add support for new records in the OS exporter. Even if you don't yet want to export a new record,
-our tests will fail if you don't provide this support. Note that in step 3 below, you can choose whether or not the record is exported to OS by default.
 
 1. Add a record template to the exporter's [resources](../exporters/opensearch-exporter/src/main/resources/).
 
