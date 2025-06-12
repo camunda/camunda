@@ -65,7 +65,7 @@ public class AzureStore {
 
   public boolean isCreateContainer() {
     return FallbackConfig.getBoolean(
-        "zeebe.broker.data.backup.azure.createContainer", createContainer)
+        "zeebe.broker.data.backup.azure.createContainer", createContainer);
   }
 
   public void setCreateContainer(final boolean createContainer) {

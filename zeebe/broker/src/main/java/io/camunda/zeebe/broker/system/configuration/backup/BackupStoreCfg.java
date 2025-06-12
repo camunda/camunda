@@ -65,7 +65,6 @@ public class BackupStoreCfg implements ConfigurationEntry {
       case S3 -> "BackupStoreCfg{" + "store=" + store + ", s3=" + s3 + '}';
       case GCS -> "BackupStoreCfg{" + "store=" + store + ", gcs=" + gcs + '}';
       case FILESYSTEM -> "BackupStoreCfg{" + "store=" + store + '}';
-      case AZURE -> ""; // No longer handler by BackupStoreCfg: Integrate in Unified Config now.
     };
   }
 
@@ -81,11 +80,6 @@ public class BackupStoreCfg implements ConfigurationEntry {
      * backup store
      */
     GCS,
-    /**
-     * When type = AZURE, {@link io.camunda.zeebe.backup.azure.AzureBackupStore} will be used as the
-     * backup store
-     */
-    AZURE,
     /**
      * When type = FILESYSTEM, {@link io.camunda.zeebe.backup.filesystem.FilesystemBackupStore} will
      * be used as the backup store
