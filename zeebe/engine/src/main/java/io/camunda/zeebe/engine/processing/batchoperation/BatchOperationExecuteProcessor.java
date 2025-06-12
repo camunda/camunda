@@ -71,7 +71,7 @@ public final class BatchOperationExecuteProcessor
   @SuppressWarnings("checkstyle:MissingSwitchDefault")
   public void processRecord(final TypedRecord<BatchOperationExecutionRecord> command) {
     final var executionRecord = command.getValue();
-    LOGGER.debug(
+    LOGGER.trace(
         "Processing new command with key '{}' on partition{} : {}",
         command.getKey(),
         partitionId,
@@ -106,7 +106,16 @@ public final class BatchOperationExecuteProcessor
 
     appendBatchOperationExecutionExecutedEvent(command.getValue(), Set.copyOf(entityKeys));
 
-    LOGGER.debug(
+    // Occasionally log a heartbeat. This modulo only works good if batch size is a divider of 1000
+    if (batchOperation.getNumExecutedItems() % 1000 == 0) {
+      LOGGER.info(
+          "Batch operation {} on partition {} has executed {} of {} items.",
+          batchKey,
+          partitionId,
+          batchOperation.getNumExecutedItems(),
+          batchOperation.getNumTotalItems());
+    }
+    LOGGER.trace(
         "Scheduling next batch for BatchOperation {} on partition {}", batchKey, partitionId);
     final var followupCommand = new BatchOperationExecutionRecord();
     followupCommand.setBatchOperationKey(batchKey);
