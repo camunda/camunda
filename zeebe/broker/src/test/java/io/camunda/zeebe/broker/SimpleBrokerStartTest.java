@@ -69,7 +69,7 @@ public final class SimpleBrokerStartTest {
               final var systemContext =
                   new SystemContext(
                       brokerCfg,
-                      config,
+                      unifiedConfiguration,
                       mock(ActorScheduler.class),
                       mock(AtomixCluster.class),
                       mock(BrokerClient.class),

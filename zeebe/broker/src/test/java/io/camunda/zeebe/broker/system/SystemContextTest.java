@@ -92,7 +92,7 @@ final class SystemContextTest {
     brokerCfg.getExperimental().setMaxAppendBatchSize(DataSize.of(3, DataUnit.GIGABYTES));
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg, config))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
             "Expected to have an append batch size maximum which is non negative and smaller then '2147483647', but was '3221225472B'.");
@@ -106,7 +106,7 @@ final class SystemContextTest {
     brokerCfg.getData().setSnapshotPeriod(Duration.ofMinutes(1));
 
     // when
-    final var systemContext = initSystemContext(brokerCfg, config);
+    final var systemContext = initSystemContext(brokerCfg, unifiedConfiguration);
 
     // then
     assertThat(systemContext.getBrokerConfiguration().getData().getSnapshotPeriod())
@@ -257,7 +257,7 @@ final class SystemContextTest {
         .setCertificateChainPath(new File("/tmp/i-dont-exist.crt"));
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg, config))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
             "Expected the configured network security certificate chain path "
@@ -278,7 +278,7 @@ final class SystemContextTest {
         .setCertificateChainPath(certificate.certificate());
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg, config))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
             "Expected the configured network security private key path "
@@ -299,7 +299,7 @@ final class SystemContextTest {
         .setCertificateChainPath(certificate.certificate());
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg, config))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
             "Expected to have a valid private key path for network security, but none configured");
@@ -319,7 +319,7 @@ final class SystemContextTest {
         .setCertificateChainPath(null);
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg, config))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
             "Expected to have a valid certificate chain path for network security, but none "
@@ -334,7 +334,7 @@ final class SystemContextTest {
     brokerCfg.getData().getBackup().setStore(BackupStoreType.S3);
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg, config))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         .isInstanceOf(InvalidConfigurationException.class)
         .hasCauseInstanceOf(IllegalArgumentException.class)
         .cause()
@@ -351,7 +351,7 @@ final class SystemContextTest {
     backupCfg.getS3().setBucketName("bucket");
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg, config))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageContaining("Failed configuring backup store S3");
   }
@@ -376,7 +376,7 @@ final class SystemContextTest {
     brokerCfg.setExporters(exporters);
 
     // then
-    assertThatCode(() -> initSystemContext(brokerCfg, config))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageStartingWith(
             "Expected to find a 'className' configured for the exporter. Couldn't find a valid one for the following exporters ");
@@ -411,7 +411,7 @@ final class SystemContextTest {
     clusterCfg.setConfigManager(invalidconfigManagerCfg);
 
     // when
-    assertThatCode(() -> initSystemContext(brokerCfg, config))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         // then
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageStartingWith("Invalid ConfigManager configuration:")
@@ -437,7 +437,7 @@ final class SystemContextTest {
     clusterCfg.setConfigManager(invalidConfigManagerCfg);
 
     // when
-    assertThatCode(() -> initSystemContext(brokerCfg, config))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         // then
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageStartingWith("Invalid ConfigManager configuration:")
@@ -463,7 +463,7 @@ final class SystemContextTest {
     clusterCfg.setConfigManager(invalidDynamicConfig);
 
     // when
-    assertThatCode(() -> initSystemContext(brokerCfg, config))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         // then
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageStartingWith("Invalid ConfigManager configuration:")

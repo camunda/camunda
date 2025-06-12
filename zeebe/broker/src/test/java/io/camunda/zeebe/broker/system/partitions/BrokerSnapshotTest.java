@@ -35,7 +35,7 @@ public class BrokerSnapshotTest {
 
   private static final int PARTITION_ID = 1;
   UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
-  @Rule public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(config);
+  @Rule public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(unifiedConfiguration);
 
   private RaftLogReader journalReader;
   private BrokerAdminService brokerAdminService;

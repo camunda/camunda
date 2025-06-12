@@ -11,6 +11,7 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
@@ -88,6 +89,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private String brokerVersion = PartitionTransitionContext.super.getBrokerVersion();
   private boolean migrationsPerformed;
   private final ComponentTreeListener healthMetrics;
+  private UnifiedConfiguration unifiedConfiguration;
 
   public TestPartitionTransitionContext() {
     transitionMeterRegistry = MicrometerUtil.wrap(startupMeterRegistry, PartitionKeyNames.tags(1));
@@ -503,5 +505,15 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   public void setStateController(final StateController stateController) {
     this.stateController = stateController;
+  }
+
+  @Override
+  public UnifiedConfiguration getUnifiedConfiguration() {
+    return unifiedConfiguration;
+  }
+
+  @Override
+  public void setUnifiedConfiguration(final UnifiedConfiguration unifiedConfiguration) {
+    this.unifiedConfiguration = unifiedConfiguration;
   }
 }

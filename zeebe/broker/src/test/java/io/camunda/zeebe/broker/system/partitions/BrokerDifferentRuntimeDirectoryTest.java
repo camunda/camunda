@@ -23,7 +23,7 @@ public class BrokerDifferentRuntimeDirectoryTest {
   @Rule
   public final EmbeddedBrokerRule brokerRule =
       new EmbeddedBrokerRule(
-          config,
+          unifiedConfiguration,
           cfg -> {
             cfg.getCluster().setPartitionsCount(2);
             cfg.getData().setRuntimeDirectory(STATE);

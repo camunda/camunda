@@ -22,7 +22,8 @@ import org.junit.rules.RuleChain;
 public final class RejectIncompleteCommandsTest {
 
   private static final UnifiedConfiguration UNIFIED_CONFIGURATION = new UnifiedConfiguration();
-  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule(CONFIG);
+  private static final EmbeddedBrokerRule BROKER_RULE =
+      new EmbeddedBrokerRule(UNIFIED_CONFIGURATION);
 
   private static final CommandApiRule API_RULE = new CommandApiRule(BROKER_RULE::getAtomixCluster);
 
