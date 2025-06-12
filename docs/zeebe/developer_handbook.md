@@ -18,7 +18,7 @@ This document contains instructions for developers who want to contribute to thi
 Generally, you'll need to do the following things:
 1. [Expand our `protocol` with a new `RecordValue`](#expanding-our-protocol-with-a-new-recordvalue).
 2. [Implement this `RecordValue` in the `protocol-impl` module](#implement-a-new-recordvalue-in-protocol-impl).
-3. Support this `RecordValue` in the [Elasticsearch exporter](#support-a-recordvalue-in-the-elasticsearch-exporter) and [Opensearch exporter](#support-a-recordvalue-in-the-opensearch-exporter).
+3. Support this `RecordValue` in [Exporters and test setups](#support-a-recordvalue-in-exporters-and-test-setups).
 4. [Extend the official exporter documentation](#extend-official-documentation).
 5. [Support the new `ValueType` in Zeebe Process Test (ZPT)](#extend-zeebe-process-test).
 6. [Ensure that the new `ValueType` is processed](#add-valuetype-to-supported-types).
@@ -65,7 +65,14 @@ Please have a look at [Message Versioning](https://github.com/real-logic/simple-
 
 3. Add the new `Record` to the broker's [CommandApiRequestReader](../../zeebe/broker/src/main/java/io/camunda/zeebe/broker/transport/commandapi/CommandApiRequestReader.java)'s `RECORDS_BY_TYPE` mapping.
 
-### Support a RecordValue in the Elasticsearch exporter
+### Support a RecordValue in Exporters and test setups
+
+When introducing a new `RecordValue`, you must ensure it is properly supported in:
+
+- Elasticsearch and Opensearch exporters
+- Operate and Tasklist integration test setups
+
+#### Elasticsearch exporter
 
 You'll always need to add support for new records in the ES exporter. Even if you don't yet want to export a new record, our tests will fail if you don't provide this support. Note that in step 3 below, you can choose whether or not the record is exported to ES by default.
 
@@ -78,7 +85,7 @@ You'll always need to add support for new records in the ES exporter. Even if yo
 4. Document this new filter option in the dist folder's [broker config templates](../dist/src/main/config/).
 5. Add a mapping for the ValueType to the [TestSupport](../../zeebe/exporters/elasticsearch-exporter/src/test/java/io/camunda/zeebe/exporter/TestSupport.java).
 
-### Support a RecordValue in the Opensearch exporter
+#### Opensearch exporter
 
 You'll always need to add support for new records in the OS exporter. Even if you don't yet want to export a new record,
 our tests will fail if you don't provide this support. Note that in step 3 below, you can choose whether or not the record is exported to OS by default.
@@ -91,6 +98,15 @@ our tests will fail if you don't provide this support. Note that in step 3 below
 3. Allow the record to be filtered through the [configuration](../../zeebe/exporters/opensearch-exporter/src/main/java/io/camunda/zeebe/exporter/opensearch/OpensearchExporterConfiguration.java).
 4. Document this new filter option in the dist folder's [broker config templates](../dist/src/main/config/).
 5. Add a mapping for the ValueType to the [TestSupport](../../zeebe/exporters/opensearch-exporter/src/test/java/io/camunda/zeebe/exporter/opensearch/TestSupport.java).
+
+#### Operate and Tasklist test setup
+
+To avoid test failures, register the new `ValueType` in the `TestSupport` classes used by Operate and Tasklist:
+
+- [`operate/.../TestSupport`](../../operate/qa/integration-tests/src/test/java/io/camunda/operate/util/TestSupport.java)
+- [`tasklist/.../TestSupport`](../../tasklist/qa/integration-tests/src/test/java/io/camunda/tasklist/util/TestSupport.java)
+
+Update both `setIndexingForValueType(...)` methods—one for Elasticsearch, one for Opensearch.
 
 ### Extend official documentation
 
