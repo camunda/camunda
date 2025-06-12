@@ -9,11 +9,17 @@ package io.camunda.exporter.rdbms.handlers;
 
 import io.camunda.db.rdbms.write.domain.JobDbModel;
 import io.camunda.db.rdbms.write.domain.JobDbModel.Builder;
+import io.camunda.db.rdbms.write.domain.JobDbModel.JobKind;
+import io.camunda.db.rdbms.write.domain.JobDbModel.JobState;
+import io.camunda.db.rdbms.write.domain.JobDbModel.ListenerEventType;
 import io.camunda.db.rdbms.write.service.JobWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
+import io.camunda.exporter.rdbms.utils.DateUtil;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import java.time.Instant;
 import java.util.Set;
 
 public class JobExportHandler implements RdbmsExportHandler<JobRecordValue> {
@@ -52,12 +58,51 @@ public class JobExportHandler implements RdbmsExportHandler<JobRecordValue> {
   }
 
   private JobDbModel map(final Record<JobRecordValue> record) {
-    return new Builder()
-        .jobKey(record.getKey())
-        .processInstanceKey(record.getValue().getProcessInstanceKey())
-        .retries(record.getValue().getRetries())
-        .state(record.getIntent().name())
-        .partitionId(record.getPartitionId())
-        .build();
+    final JobRecordValue value = record.getValue();
+
+    final Builder builder =
+        new Builder()
+            .jobKey(record.getKey())
+            .partitionId(record.getPartitionId())
+            .processInstanceKey(value.getProcessInstanceKey())
+            .elementInstanceKey(value.getElementInstanceKey())
+            .processDefinitionId(value.getBpmnProcessId())
+            .processDefinitionKey(value.getProcessDefinitionKey())
+            .tenantId(value.getTenantId())
+            .type(value.getType())
+            .worker(value.getWorker())
+            .state(JobState.valueOf(record.getIntent().name()))
+            .retries(value.getRetries())
+            .errorMessage(value.getErrorMessage())
+            .errorCode(value.getErrorCode())
+            .customHeaders(value.getCustomHeaders())
+            .kind(JobKind.valueOf(value.getJobKind().name()))
+            .elementId(value.getElementId());
+
+    if (record.getIntent().equals(JobIntent.COMPLETED)
+        || record.getIntent().equals(JobIntent.CANCELED)) {
+      builder.endTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+    }
+
+    final Intent intent = record.getIntent();
+    if (intent.equals(JobIntent.COMPLETED)) {
+      builder
+          .isDenied(value.getResult().isDenied())
+          .deniedReason(value.getResult().getDeniedReason());
+    }
+    if (value.getJobListenerEventType() != null) {
+      builder.listenerEventType(ListenerEventType.valueOf(value.getJobListenerEventType().name()));
+    }
+
+    if (value.getDeadline() >= 0) {
+      builder.deadline(DateUtil.toOffsetDateTime(value.getDeadline()));
+    }
+
+    if (intent.equals(JobIntent.FAILED) || intent.equals(JobIntent.ERROR_THROWN)) {
+      // set flowNodeId to null to not overwrite it (because zeebe puts an error message there)
+      builder.elementId(null);
+      builder.hasFailedWithRetriesLeft(value.getRetries() > 0);
+    }
+    return builder.build();
   }
 }

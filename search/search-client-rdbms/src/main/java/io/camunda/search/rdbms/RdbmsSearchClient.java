@@ -332,6 +332,7 @@ public class RdbmsSearchClient implements SearchClientsProxy {
 
   @Override
   public SearchQueryResult<JobEntity> searchJobs(final JobQuery query) {
-    throw new UnsupportedOperationException("JobSearchClient searchJobs not implemented yet.");
+    LOG.debug("[RDBMS Search Client] Search for jobs: {}", query);
+    return rdbmsService.getJobReader().search(query);
   }
 }

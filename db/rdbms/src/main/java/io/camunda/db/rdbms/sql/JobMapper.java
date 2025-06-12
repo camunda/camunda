@@ -7,11 +7,17 @@
  */
 package io.camunda.db.rdbms.sql;
 
+import io.camunda.db.rdbms.read.domain.JobDbQuery;
 import io.camunda.db.rdbms.write.domain.JobDbModel;
+import java.util.List;
 
 public interface JobMapper extends HistoryCleanupMapper {
 
   void insert(JobDbModel job);
 
   void update(JobDbModel job);
+
+  Long count(JobDbQuery filter);
+
+  List<JobDbModel> search(JobDbQuery filter);
 }
