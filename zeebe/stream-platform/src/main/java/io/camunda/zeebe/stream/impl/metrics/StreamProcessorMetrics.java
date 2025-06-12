@@ -76,7 +76,7 @@ public final class StreamProcessorMetrics {
   }
 
   private void registerStartupRecoveryTime() {
-    final var meterDoc = StreamMetricsDoc.PROCESSOR_STATE;
+    final var meterDoc = StreamMetricsDoc.STARTUP_RECOVERY_TIME;
     TimeGauge.builder(
             meterDoc.getName(), startupRecoveryTime, TimeUnit.MILLISECONDS, AtomicLong::longValue)
         .description(meterDoc.getDescription())
