@@ -10,6 +10,7 @@ package io.camunda.unifiedconfig;
 import java.util.List;
 
 public class Backup {
+  // TODO if POC has consensus: Better use enum with toString conversion.
   public static final String STORE_TYPE_NONE = "none";
   public static final String STORE_TYPE_GCS = "gcs";
   public static final String STORE_TYPE_AZURE = "azure";
@@ -37,12 +38,7 @@ public class Backup {
   private AzureStore azure;
 
   public String getStoreType() {
-    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.backup.store");
-    if (deprecated != null) {
-      return deprecated;
-    }
-
-    return storeType;
+    return FallbackConfig.getString("zeebe.broker.data.backup.store", storeType);
   }
 
   public void setStoreType(String storeType) {

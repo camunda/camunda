@@ -31,12 +31,7 @@ public class AzureStore {
   }
 
   public String getAccountKey() {
-    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.backup.azure.accountKey");
-    if (deprecated != null) {
-      return deprecated;
-    }
-
-    return accountKey;
+    return FallbackConfig.getString("zeebe.broker.data.backup.azure.accountKey", accountKey);
   }
 
   public void setAccountKey(final String accountKey) {
@@ -44,12 +39,7 @@ public class AzureStore {
   }
 
   public String getAccountName() {
-    String deprecated =  UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.backup.azure.accountName");
-    if (deprecated != null) {
-      return deprecated;
-    }
-
-    return accountName;
+    return FallbackConfig.getString("zeebe.broker.data.backup.azure.accountName", accountName);
   }
 
   public void setAccountName(final String accountName) {
@@ -57,12 +47,7 @@ public class AzureStore {
   }
 
   public String getBasePath() {
-    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.backup.azure.basePath");
-    if (deprecated != null) {
-      return deprecated;
-    }
-
-    return basePath;
+    return FallbackConfig.getString("zeebe.broker.data.backup.azure.basePath", basePath);
   }
 
   public void setBasePath(final String basePath) {
@@ -70,12 +55,8 @@ public class AzureStore {
   }
 
   public String getConnectionString() {
-    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.backup.azure.connectionString");
-    if (deprecated != null) {
-      return deprecated;
-    }
-
-    return connectionString;
+    return FallbackConfig.getString(
+        "zeebe.broker.data.backup.azure.connectionString", connectionString);
   }
 
   public void setConnectionString(final String connectionString) {
@@ -83,12 +64,8 @@ public class AzureStore {
   }
 
   public boolean isCreateContainer() {
-    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.backup.azure.createContainer");
-    if (deprecated != null) {
-      return Boolean.parseBoolean(deprecated);
-    }
-
-    return createContainer;
+    return FallbackConfig.getBoolean(
+        "zeebe.broker.data.backup.azure.createContainer", createContainer)
   }
 
   public void setCreateContainer(final boolean createContainer) {
@@ -96,12 +73,7 @@ public class AzureStore {
   }
 
   public String getEndpoint() {
-    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.backup.azure.endpoint");
-    if (deprecated != null) {
-      return deprecated;
-    }
-
-    return endpoint;
+    return FallbackConfig.getString("zeebe.broker.data.backup.azure.endpoint", endpoint);
   }
 
   public void setEndpoint(final String endpoint) {
@@ -109,12 +81,7 @@ public class AzureStore {
   }
 
   public String getSasTokenType() {
-    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.backup.azure.sasToken.type");
-    if (deprecated != null) {
-      return deprecated;
-    }
-
-    return sasTokenType;
+    return FallbackConfig.getString("zeebe.broker.data.backup.azure.sasToken.type", sasTokenType);
   }
 
   public void setSasTokenType(final String sasTokenType) {
@@ -122,12 +89,7 @@ public class AzureStore {
   }
 
   public String getSasToken() {
-    String deprecated = UnifiedConfigurationRegistry.getDeprecatedValue("zeebe.broker.data.backup.azure.sasToken.value");
-    if (deprecated != null) {
-      return deprecated;
-    }
-
-    return sasToken;
+    return FallbackConfig.getString("zeebe.broker.data.backup.azure.sasToken.value", sasToken);
   }
 
   public void setSasToken(final String sasToken) {
