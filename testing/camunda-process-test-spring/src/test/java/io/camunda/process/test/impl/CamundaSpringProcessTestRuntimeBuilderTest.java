@@ -27,6 +27,7 @@ import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration.RemoteConfiguration;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
+import io.camunda.process.test.impl.runtime.CamundaProcessTestGlobalContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRemoteRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
@@ -45,7 +46,7 @@ import org.junit.jupiter.api.Test;
 public class CamundaSpringProcessTestRuntimeBuilderTest {
 
   @Test
-  void shouldBuildManagedRuntimeByDefault() {
+  void shouldBuildManagedWithGlobalRuntimeByDefault() {
     // given
     final CamundaProcessTestRuntimeBuilder runtimeBuilder = new CamundaProcessTestRuntimeBuilder();
     final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
@@ -56,7 +57,9 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
         CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
 
     // then
-    assertThat(camundaRuntime).isNotNull().isInstanceOf(CamundaProcessTestContainerRuntime.class);
+    assertThat(camundaRuntime)
+        .isNotNull()
+        .isInstanceOf(CamundaProcessTestGlobalContainerRuntime.class);
 
     assertThat(runtimeBuilder.getCamundaDockerImageName())
         .isEqualTo(CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME);
@@ -66,6 +69,42 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     assertThat(runtimeBuilder.getCamundaExposedPorts()).isEmpty();
 
     assertThat(runtimeBuilder.isConnectorsEnabled()).isFalse();
+  }
+
+  @Test
+  void shouldBuildLocalRuntimeIfAnyConfigurationIsChanged() {
+    // given
+    final CamundaProcessTestRuntimeBuilder runtimeBuilder = new CamundaProcessTestRuntimeBuilder();
+    final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
+        new CamundaProcessTestRuntimeConfiguration();
+
+    runtimeConfiguration.setConnectorsEnabled(true);
+
+    // when
+    final CamundaProcessTestRuntime camundaRuntime =
+        CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
+
+    // then
+    assertThat(camundaRuntime).isNotNull().isInstanceOf(CamundaProcessTestContainerRuntime.class);
+    assertThat(runtimeBuilder.isConnectorsEnabled()).isTrue();
+  }
+
+  @Test
+  void shouldForceBuildLocalRuntimeIfConfigured() {
+    // given
+    final CamundaProcessTestRuntimeBuilder runtimeBuilder = new CamundaProcessTestRuntimeBuilder();
+    final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
+        new CamundaProcessTestRuntimeConfiguration();
+
+    runtimeConfiguration.setForceLocalRuntime(true);
+
+    // when
+    final CamundaProcessTestRuntime camundaRuntime =
+        CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
+
+    // then
+    assertThat(camundaRuntime).isNotNull().isInstanceOf(CamundaProcessTestContainerRuntime.class);
+    assertThat(runtimeBuilder.isForceLocalRuntime()).isTrue();
   }
 
   @Test
@@ -81,6 +120,7 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     runtimeConfiguration.setCamundaVersion("8.6.0-custom");
     runtimeConfiguration.setCamundaDockerImageName("custom-camunda");
     runtimeConfiguration.setCamundaEnvVars(camundaEnvVars);
+    runtimeConfiguration.setForceLocalRuntime(true);
     final List<Integer> camundaExposedPorts = List.of(100, 200);
     runtimeConfiguration.setCamundaExposedPorts(camundaExposedPorts);
 
@@ -107,6 +147,7 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     final Map<String, String> connectorsSecrets =
         Map.ofEntries(entry("secret-1", "1"), entry("secret-2", "2"));
 
+    runtimeConfiguration.setForceLocalRuntime(true);
     runtimeConfiguration.setConnectorsEnabled(true);
     runtimeConfiguration.setConnectorsDockerImageName("custom-connectors");
     runtimeConfiguration.setConnectorsDockerImageVersion("8.6.0-custom");

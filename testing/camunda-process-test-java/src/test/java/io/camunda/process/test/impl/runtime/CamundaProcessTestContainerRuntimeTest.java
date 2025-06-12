@@ -24,17 +24,27 @@ import static org.mockito.Mockito.when;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.ContainerFactory;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(
+    strictness = Strictness.LENIENT) // prevent error when global instance doesn't require mocking
 public class CamundaProcessTestContainerRuntimeTest {
 
   private static final Map<String, String> ENV_VARS;
@@ -65,6 +75,100 @@ public class CamundaProcessTestContainerRuntimeTest {
     when(containerFactory.createConnectorsContainer(any(), any())).thenReturn(connectorsContainer);
   }
 
+  private static Stream<Arguments> provideCptConfigurations() {
+    return Stream.of(
+        Arguments.of(
+            Named.of(
+                "withCamundaEnv",
+                CamundaProcessTestContainerRuntime.newBuilder().withCamundaEnv(ENV_VARS))),
+        Arguments.of(
+            Named.of(
+                "withCamundaEnv",
+                CamundaProcessTestContainerRuntime.newBuilder().withCamundaEnv("key", "value"))),
+        Arguments.of(
+            Named.of(
+                "withCamundaDockerImageName",
+                CamundaProcessTestContainerRuntime.newBuilder()
+                    .withCamundaDockerImageName("image"))),
+        Arguments.of(
+            Named.of(
+                "withCamundaDockerImageVersion",
+                CamundaProcessTestContainerRuntime.newBuilder()
+                    .withCamundaDockerImageVersion("version"))),
+        Arguments.of(
+            Named.of(
+                "withElasticsearchDockerImageName",
+                CamundaProcessTestContainerRuntime.newBuilder()
+                    .withElasticsearchDockerImageName("image"))),
+        Arguments.of(
+            Named.of(
+                "withElasticsearchDockerImageVersion",
+                CamundaProcessTestContainerRuntime.newBuilder()
+                    .withElasticsearchDockerImageVersion("version"))),
+        Arguments.of(
+            Named.of(
+                "withConnectorsDockerImageName",
+                CamundaProcessTestContainerRuntime.newBuilder()
+                    .withConnectorsDockerImageName("image"))),
+        Arguments.of(
+            Named.of(
+                "withConnectorsDockerImageVersion",
+                CamundaProcessTestContainerRuntime.newBuilder()
+                    .withConnectorsDockerImageVersion("version"))),
+        Arguments.of(
+            Named.of(
+                "withElasticsearchEnv",
+                CamundaProcessTestContainerRuntime.newBuilder().withElasticsearchEnv(ENV_VARS))),
+        Arguments.of(
+            Named.of(
+                "withElasticsearchEnv",
+                CamundaProcessTestContainerRuntime.newBuilder()
+                    .withElasticsearchEnv("key", "value"))),
+        Arguments.of(
+            Named.of(
+                "withConnectorsEnv",
+                CamundaProcessTestContainerRuntime.newBuilder().withConnectorsEnv(ENV_VARS))),
+        Arguments.of(
+            Named.of(
+                "withCamundaExposedPort",
+                CamundaProcessTestContainerRuntime.newBuilder().withCamundaExposedPort(8080))),
+        Arguments.of(
+            Named.of(
+                "withElasticsearchExposedPort",
+                CamundaProcessTestContainerRuntime.newBuilder()
+                    .withElasticsearchExposedPort(8080))),
+        Arguments.of(
+            Named.of(
+                "withConnectorsExposedPort",
+                CamundaProcessTestContainerRuntime.newBuilder().withConnectorsExposedPort(8080))),
+        Arguments.of(
+            Named.of(
+                "withCamundaLogger",
+                CamundaProcessTestContainerRuntime.newBuilder().withCamundaLogger("logger"))),
+        Arguments.of(
+            Named.of(
+                "withElasticsearchLogger",
+                CamundaProcessTestContainerRuntime.newBuilder().withElasticsearchLogger("logger"))),
+        Arguments.of(
+            Named.of(
+                "withConnectorsLogger",
+                CamundaProcessTestContainerRuntime.newBuilder().withConnectorsLogger("logger"))),
+        Arguments.of(
+            Named.of(
+                "withConnectorsEnabled",
+                CamundaProcessTestContainerRuntime.newBuilder().withConnectorsEnabled(true))),
+        Arguments.of(
+            Named.of(
+                "withRemoteCamundaMonitoringApiAddress",
+                CamundaProcessTestContainerRuntime.newBuilder()
+                    .withRemoteCamundaMonitoringApiAddress(URI.create("https://www.example.com")))),
+        Arguments.of(
+            Named.of(
+                "withRemoteConnectorsRestApiAddress",
+                CamundaProcessTestContainerRuntime.newBuilder()
+                    .withRemoteConnectorsRestApiAddress(URI.create("https://www.example.com")))));
+  }
+
   @Test
   void shouldCreateContainers() {
     // given/when
@@ -72,6 +176,7 @@ public class CamundaProcessTestContainerRuntimeTest {
         (CamundaProcessTestContainerRuntime)
             CamundaProcessTestContainerRuntime.newBuilder()
                 .withContainerFactory(containerFactory)
+                .withLocalRuntime()
                 .build();
 
     // then
@@ -90,6 +195,7 @@ public class CamundaProcessTestContainerRuntimeTest {
         (CamundaProcessTestContainerRuntime)
             CamundaProcessTestContainerRuntime.newBuilder()
                 .withContainerFactory(containerFactory)
+                .withLocalRuntime()
                 .build();
 
     // when
@@ -110,7 +216,10 @@ public class CamundaProcessTestContainerRuntimeTest {
   @Test
   void shouldCreateWithDefaults() {
     // given/when
-    CamundaProcessTestContainerRuntime.newBuilder().withContainerFactory(containerFactory).build();
+    CamundaProcessTestContainerRuntime.newBuilder()
+        .withContainerFactory(containerFactory)
+        .withLocalRuntime()
+        .build();
 
     // then
     verify(containerFactory)
@@ -121,6 +230,30 @@ public class CamundaProcessTestContainerRuntimeTest {
         .createConnectorsContainer(
             CamundaProcessTestRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_NAME,
             CamundaProcessTestRuntimeDefaults.CONNECTORS_DOCKER_IMAGE_VERSION);
+  }
+
+  @Test
+  void shouldUseGlobalRuntimeWithDefaults() {
+    // given/when
+    final CamundaProcessTestRuntime runtime =
+        CamundaProcessTestContainerRuntime.newBuilder()
+            .withContainerFactory(containerFactory)
+            .build();
+
+    // then
+    assertThat(runtime).isNotNull().isInstanceOf(CamundaProcessTestGlobalContainerRuntime.class);
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideCptConfigurations")
+  void shouldUseLocalRuntimeIfConfigurationChanged(CamundaProcessTestRuntimeBuilder builder) {
+
+    // given/when
+    final CamundaProcessTestRuntime runtime =
+        builder.withContainerFactory(containerFactory).build();
+
+    // then
+    assertThat(runtime).isNotNull().isNotInstanceOf(CamundaProcessTestGlobalContainerRuntime.class);
   }
 
   @Test

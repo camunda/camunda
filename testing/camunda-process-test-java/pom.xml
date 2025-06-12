@@ -18,6 +18,7 @@
     <!-- Camunda Docker image properties. CI overrides the properties to use the current image. -->
     <io.camunda.process.test.camundaDockerImageName>camunda/camunda</io.camunda.process.test.camundaDockerImageName>
     <io.camunda.process.test.camundaDockerImageVersion>${project.version}</io.camunda.process.test.camundaDockerImageVersion>
+    <io.camunda.process.test.globalRuntimeDisabled>false</io.camunda.process.test.globalRuntimeDisabled>
   </properties>
 
   <dependencies>
