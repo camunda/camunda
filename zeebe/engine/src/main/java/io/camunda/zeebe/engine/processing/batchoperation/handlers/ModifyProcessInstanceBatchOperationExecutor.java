@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.processing.batchoperation.handlers;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter.CommandMetadata;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
@@ -16,6 +15,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.ProcessInstanceModificationMoveInstructionValue;
+import io.camunda.zeebe.stream.api.RecordAppenderMetadata;
 import java.util.ArrayDeque;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -74,7 +74,7 @@ public class ModifyProcessInstanceBatchOperationExecutor implements BatchOperati
         processInstanceKey,
         ProcessInstanceModificationIntent.MODIFY,
         command,
-        CommandMetadata.of(
+        RecordAppenderMetadata.of(
             b ->
                 b.batchOperationReference(batchOperation.getKey())
                     .claims(batchOperation.getAuthentication().claims())));

@@ -13,8 +13,6 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter.CommandMetadata;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter.EventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
@@ -27,6 +25,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import io.camunda.zeebe.stream.api.RecordAppenderMetadata;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Collections;
@@ -116,7 +115,7 @@ public final class BatchOperationExecuteProcessor
         command.getKey(),
         BatchOperationExecutionIntent.EXECUTE,
         followupCommand,
-        CommandMetadata.of(b -> b.batchOperationReference(batchOperation.getKey())));
+        RecordAppenderMetadata.of(b -> b.batchOperationReference(batchOperation.getKey())));
   }
 
   private PersistedBatchOperation getBatchOperation(final long batchOperationKey) {
@@ -132,7 +131,8 @@ public final class BatchOperationExecuteProcessor
         executionRecord.getBatchOperationKey(),
         BatchOperationExecutionIntent.EXECUTING,
         batchExecute,
-        EventMetadata.of(b -> b.batchOperationReference(executionRecord.getBatchOperationKey())));
+        RecordAppenderMetadata.of(
+            b -> b.batchOperationReference(executionRecord.getBatchOperationKey())));
   }
 
   private void appendBatchOperationExecutionExecutedEvent(
@@ -144,7 +144,8 @@ public final class BatchOperationExecuteProcessor
         executionRecord.getBatchOperationKey(),
         BatchOperationExecutionIntent.EXECUTED,
         batchExecute,
-        EventMetadata.of(b -> b.batchOperationReference(executionRecord.getBatchOperationKey())));
+        RecordAppenderMetadata.of(
+            b -> b.batchOperationReference(executionRecord.getBatchOperationKey())));
   }
 
   private void appendBatchOperationExecutionCompletedEvent(
@@ -167,14 +168,15 @@ public final class BatchOperationExecuteProcessor
           executionRecord.getBatchOperationKey(),
           BatchOperationIntent.COMPLETE_PARTITION,
           batchInternalComplete,
-          CommandMetadata.of(
+          RecordAppenderMetadata.of(
               b -> b.batchOperationReference(executionRecord.getBatchOperationKey())));
     } else {
       stateWriter.appendFollowUpEvent(
           executionRecord.getBatchOperationKey(),
           BatchOperationIntent.PARTITION_COMPLETED,
           batchInternalComplete,
-          EventMetadata.of(b -> b.batchOperationReference(executionRecord.getBatchOperationKey())));
+          RecordAppenderMetadata.of(
+              b -> b.batchOperationReference(executionRecord.getBatchOperationKey())));
       commandDistributionBehavior
           .withKey(keyGenerator.nextKey())
           .inQueue(DistributionQueue.BATCH_OPERATION)

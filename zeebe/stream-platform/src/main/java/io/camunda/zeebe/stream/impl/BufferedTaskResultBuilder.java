@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.stream.api.RecordAppenderMetadata;
 import io.camunda.zeebe.stream.api.records.MutableRecordBatch;
 import io.camunda.zeebe.stream.api.records.RecordBatchSizePredicate;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StagedScheduledCommandCache;
@@ -41,7 +42,7 @@ public final class BufferedTaskResultBuilder implements TaskResultBuilder {
       final long key,
       final Intent intent,
       final UnifiedRecordValue value,
-      final Metadata metadata) {
+      final RecordAppenderMetadata metadata) {
     final ValueType valueType = TypedEventRegistry.TYPE_REGISTRY.get(value.getClass());
     if (valueType == null) {
       // usually happens when the record is not registered at the TypedStreamEnvironment
@@ -60,7 +61,7 @@ public final class BufferedTaskResultBuilder implements TaskResultBuilder {
             .rejectionReason("")
             .valueType(valueType)
             .operationReference(metadata.operationReference())
-            .batchOperationReference(metadata.batchOperationKey());
+            .batchOperationReference(metadata.batchOperationReference());
     final var either = mutableRecordBatch.appendRecord(key, recordMetadata, -1, value);
 
     either.ifRight(ok -> cache.add(intent, key));

@@ -23,11 +23,11 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.RecordAppenderMetadata;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.AsyncTaskGroup;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
-import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder.Metadata;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -136,7 +136,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         batchOperationKey,
         BatchOperationIntent.START,
         command,
-        Metadata.of(b -> b.batchOperationReference(batchOperationKey)));
+        RecordAppenderMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
   }
 
   private void appendFailedCommand(
@@ -150,7 +150,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         batchOperationKey,
         BatchOperationIntent.FAIL,
         command,
-        Metadata.of(b -> b.batchOperationReference(batchOperationKey)));
+        RecordAppenderMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
   }
 
   private void appendChunk(
@@ -174,7 +174,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         batchOperationKey,
         BatchOperationChunkIntent.CREATE,
         command,
-        Metadata.of(b -> b.batchOperationReference(batchOperationKey)));
+        RecordAppenderMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
   }
 
   private void appendExecution(
@@ -187,7 +187,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
         batchOperationKey,
         BatchOperationExecutionIntent.EXECUTE,
         command,
-        Metadata.of(b -> b.batchOperationReference(batchOperationKey)));
+        RecordAppenderMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
   }
 
   private Set<Item> queryAllKeys(final PersistedBatchOperation batchOperation) {
