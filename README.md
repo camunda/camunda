@@ -4,18 +4,20 @@
 
 Camunda 8 delivers scalable, on-demand process automation as a service. Camunda 8 is combined with powerful execution engines for BPMN processes and DMN decisions, and paired with tools for collaborative modeling, operations, and analytics.
 
-This repository contains the core execution cluster components of Camunda 8:
+This repository contains the [Orchestration cluster](https://docs.camunda.io/docs/next/components/orchestration-cluster/) components of Camunda 8 and Optimize:
 
 * [Zeebe](https://docs.camunda.io/docs/components/zeebe/zeebe-overview/) - The cloud-native process engine of Camunda 8.
 * [Tasklist](https://docs.camunda.io/docs/components/tasklist/introduction-to-tasklist/) - Complete tasks that require human input.
 * [Operate](https://docs.camunda.io/docs/components/operate/operate-introduction/) - Manage, monitor, and troubleshoot your processes.
+* [Identity](https://docs.camunda.io/docs/next/components/identity/identity-introduction/) - Manage integrated authentication and authorization.
 * [Optimize](https://docs.camunda.io/optimize/components/what-is-optimize/) - Improve your processes by identifying constraints in your system.
 
-In addition to the core execution cluster components, the Camunda 8 stack also includes:
+In addition, the Camunda 8 stack also includes:
 * [Console](https://docs.camunda.io/docs/components/console/introduction-to-console/) - Configure and deploy clusters with Console.
 * [Web Modeler](https://docs.camunda.io/docs/components/modeler/about-modeler/) - Web Application to model BPMN, DMN, & Forms and deploy or start new instances.
-* [Desktop Modeler](https://docs.camunda.io/docs/next/components/modeler/desktop-modeler/) - Use Desktop Modeler as a desktop application for modeling BPMN, DMN, and Forms with your local process application project.
-* [Connectors](https://docs.camunda.io/docs/next/components/connectors/introduction-to-connectors/) - Integrate with an external system by using a Connector.
+* [Desktop Modeler](https://docs.camunda.io/docs/components/modeler/desktop-modeler/) - Use Desktop Modeler as a desktop application for modeling BPMN, DMN, and Forms with your local process application project.
+* [Connectors](https://docs.camunda.io/docs/components/connectors/introduction-to-connectors/) - Integrate with an external system by using a Connector.
+* [Management Identity](https://docs.camunda.io/docs/self-managed/identity/what-is-identity/) - Manage authentication, access, and authorization for components outside the Orchestration cluster (Console, Web Modeler, and Optimize)
 
 Using Camunda 8, you can:
 
