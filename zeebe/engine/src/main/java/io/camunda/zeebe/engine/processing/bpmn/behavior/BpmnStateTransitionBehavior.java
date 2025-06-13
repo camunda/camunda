@@ -23,8 +23,10 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.engine.state.immutable.AsyncRequestState.AsyncRequest;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -254,19 +256,42 @@ public final class BpmnStateTransitionBehavior {
    */
   public BpmnElementContext transitionToTerminated(
       final BpmnElementContext context, final BpmnEventType eventType) {
+    return transitionToTerminated(context, eventType, null);
+  }
+
+  public BpmnElementContext transitionToTerminated(
+      final BpmnElementContext context,
+      final BpmnEventType eventType,
+      final AsyncRequest asyncRequest) {
     resetTreePathProperties(context);
 
-    final var transitionedContext = transitionTo(context, ProcessInstanceIntent.ELEMENT_TERMINATED);
+    final var transitionedContext =
+        transitionTo(context, ProcessInstanceIntent.ELEMENT_TERMINATED, asyncRequest);
     metrics.elementInstanceTerminated(context, eventType);
     return transitionedContext;
   }
 
   private BpmnElementContext transitionTo(
       final BpmnElementContext context, final ProcessInstanceIntent transition) {
+    return transitionTo(context, transition, null);
+  }
+
+  private BpmnElementContext transitionTo(
+      final BpmnElementContext context,
+      final ProcessInstanceIntent transition,
+      final AsyncRequest asyncRequest) {
     final var key = context.getElementInstanceKey();
     final var value = context.getRecordValue();
 
-    stateWriter.appendFollowUpEvent(key, transition, value);
+    if (asyncRequest != null) {
+      stateWriter.appendFollowUpEvent(
+          key, transition, value, m -> m.operationReference(asyncRequest.operationReference()));
+      stateWriter.appendFollowUpEvent(
+          asyncRequest.key(), AsyncRequestIntent.PROCESSED, asyncRequest.record());
+    } else {
+      stateWriter.appendFollowUpEvent(key, transition, value);
+    }
+
     return context.copy(key, value, transition);
   }
 

@@ -152,4 +152,9 @@ public final class RecordStream extends ExporterRecordStream<RecordValue, Record
     return new AuthorizationRecordStream(
         filter(r -> r.getValueType() == ValueType.AUTHORIZATION).map(Record.class::cast));
   }
+
+  public AsyncRequestRecordStream asyncRequestRecords() {
+    return new AsyncRequestRecordStream(
+        filter(r -> r.getValueType() == ValueType.ASYNC_REQUEST).map(Record.class::cast));
+  }
 }

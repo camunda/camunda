@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -135,6 +136,15 @@ public final class CancelProcessInstanceTest {
             tuple("task", ProcessInstanceIntent.ELEMENT_TERMINATING),
             tuple("task", ELEMENT_TERMINATED),
             tuple("PROCESS", ELEMENT_TERMINATED));
+
+    assertThat(
+            RecordingExporter.asyncRequestRecords()
+                .withRequestScopeKey(processInstanceKey)
+                .withRequestValueType(ValueType.PROCESS_INSTANCE)
+                .withRequestIntent(CANCEL)
+                .limit(2))
+        .extracting(Record::getIntent)
+        .containsExactly(AsyncRequestIntent.RECEIVED, AsyncRequestIntent.PROCESSED);
   }
 
   @Test

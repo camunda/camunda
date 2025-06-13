@@ -81,7 +81,7 @@ public final class BpmnProcessors {
     final var keyGenerator = processingState.getKeyGenerator();
 
     addProcessInstanceCommandProcessor(
-        writers, typedRecordProcessors, processingState, authCheckBehavior);
+        writers, typedRecordProcessors, processingState, asyncRequestBehavior, authCheckBehavior);
 
     final var bpmnStreamProcessor =
         new BpmnStreamProcessor(
@@ -140,11 +140,13 @@ public final class BpmnProcessors {
       final Writers writers,
       final TypedRecordProcessors typedRecordProcessors,
       final ProcessingState processingState,
+      final AsyncRequestBehavior asyncRequestBehavior,
       final AuthorizationCheckBehavior authCheckBehavior) {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.CANCEL,
-        new ProcessInstanceCancelProcessor(processingState, writers, authCheckBehavior));
+        new ProcessInstanceCancelProcessor(
+            processingState, writers, asyncRequestBehavior, authCheckBehavior));
   }
 
   private static void addBpmnStepProcessor(
