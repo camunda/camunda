@@ -4309,7 +4309,7 @@ paths:
             type: string
         - name: contentHash
           in: query
-          required: false
+          required: true
           schema:
             type: string
           description: >
@@ -4394,7 +4394,7 @@ paths:
             type: string
         - name: contentHash
           in: query
-          required: false
+          required: true
           schema:
             type: string
           description: >
