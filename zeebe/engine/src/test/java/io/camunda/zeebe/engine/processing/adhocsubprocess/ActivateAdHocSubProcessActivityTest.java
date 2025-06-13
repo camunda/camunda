@@ -101,9 +101,20 @@ public class ActivateAdHocSubProcessActivityTest {
             .toList()
             .getFirst();
 
+    final long adHocSubProcessInnerInstanceKey =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
+            .getFirst()
+            .getKey();
+
     final var expectedElementPath =
         List.of(
-            List.of(processInstanceKey, adHocSubProcessInstanceKey, generatedActivityInstanceKey));
+            List.of(
+                processInstanceKey,
+                adHocSubProcessInstanceKey,
+                adHocSubProcessInnerInstanceKey,
+                generatedActivityInstanceKey));
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)

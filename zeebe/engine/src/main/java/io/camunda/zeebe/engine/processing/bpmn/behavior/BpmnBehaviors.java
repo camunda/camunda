@@ -58,4 +58,6 @@ public interface BpmnBehaviors {
   BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour();
 
   JobUpdateBehaviour jobUpdateBehaviour();
+
+  BpmnAdHocSubProcessBehavior adHocSubProcessBehavior();
 }

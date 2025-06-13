@@ -52,6 +52,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnUserTaskBehavior userTaskBehavior;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
   private final JobUpdateBehaviour jobUpdateBehaviour;
+  private final BpmnAdHocSubProcessBehavior adHocSubProcessBehavior;
 
   public BpmnBehaviorsImpl(
       final MutableProcessingState processingState,
@@ -197,6 +198,9 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     jobUpdateBehaviour =
         new JobUpdateBehaviour(processingState.getJobState(), clock, authCheckBehavior);
+
+    adHocSubProcessBehavior =
+        new BpmnAdHocSubProcessBehavior(processingState.getKeyGenerator(), writers);
   }
 
   @Override
@@ -302,5 +306,10 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public JobUpdateBehaviour jobUpdateBehaviour() {
     return jobUpdateBehaviour;
+  }
+
+  @Override
+  public BpmnAdHocSubProcessBehavior adHocSubProcessBehavior() {
+    return adHocSubProcessBehavior;
   }
 }
