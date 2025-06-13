@@ -16,8 +16,14 @@
 package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
+import io.camunda.client.api.search.filter.UserTaskFilter;
+import io.camunda.client.api.search.filter.builder.IntegerProperty;
+import io.camunda.client.api.search.filter.builder.StringProperty;
+import io.camunda.client.impl.search.filter.builder.IntegerPropertyImpl;
+import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.ParseUtil;
+import java.util.function.Consumer;
 
 public class ProcessDefinitionFilterImpl
     extends TypedSearchRequestPropertyProvider<
@@ -44,7 +50,7 @@ public class ProcessDefinitionFilterImpl
 
   @Override
   public ProcessDefinitionFilter name(final String name) {
-    filter.setName(name);
+    name(b -> b.eq(name));
     return this;
   }
 
@@ -68,13 +74,27 @@ public class ProcessDefinitionFilterImpl
 
   @Override
   public ProcessDefinitionFilter processDefinitionId(final String processDefinitionId) {
-    filter.setProcessDefinitionId(processDefinitionId);
+    processDefinitionId(b -> b.eq(processDefinitionId));
     return this;
   }
 
   @Override
   public ProcessDefinitionFilter tenantId(final String tenantId) {
     filter.setTenantId(tenantId);
+    return this;
+  }
+
+  public ProcessDefinitionFilter name(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setName(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  public ProcessDefinitionFilter processDefinitionId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setProcessDefinitionId(provideSearchRequestProperty(property));
     return this;
   }
 
