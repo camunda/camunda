@@ -19,8 +19,8 @@ public interface CamundaClientTestFactory extends AutoCloseable {
    */
   CamundaClient getAdminCamundaClient();
 
-  /** Returns a client for the given username */
-  CamundaClient getCamundaClient(final String username);
+  /** Returns a client for the given id */
+  CamundaClient getCamundaClient(final String id);
 
   /** Returns a Camunda client for the given gateway and authenticated user */
   CamundaClient getCamundaClient(final TestGateway<?> gateway, final Authenticated authenticated);
