@@ -150,7 +150,10 @@ describe('New Variable Modifications', () => {
     jest.useFakeTimers();
     modificationsStore.enableModificationMode();
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() => {
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
     });
@@ -175,7 +178,10 @@ describe('New Variable Modifications', () => {
 
       modificationsStore.enableModificationMode();
 
-      const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+      const {user} = render(
+        <VariablePanel setListenerTabVisibility={jest.fn()} />,
+        {wrapper: getWrapper()},
+      );
       await waitFor(() => {
         expect(
           screen.getByRole('button', {name: /add variable/i}),
@@ -214,7 +220,10 @@ describe('New Variable Modifications', () => {
       mockFetchVariables().withSuccess([createVariable()]);
       mockFetchVariables().withSuccess([createVariable()]);
 
-      const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+      const {user} = render(
+        <VariablePanel setListenerTabVisibility={jest.fn()} />,
+        {wrapper: getWrapper()},
+      );
       await waitFor(() => {
         expect(
           screen.getByRole('button', {name: /add variable/i}),
@@ -304,7 +313,10 @@ describe('New Variable Modifications', () => {
     jest.useFakeTimers();
     modificationsStore.enableModificationMode();
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() => {
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
     });
@@ -339,7 +351,7 @@ describe('New Variable Modifications', () => {
 
       const {user} = render(
         <>
-          <VariablePanel />
+          <VariablePanel setListenerTabVisibility={jest.fn()} />
           <LastModification />
         </>,
         {wrapper: getWrapper()},
@@ -524,7 +536,10 @@ describe('New Variable Modifications', () => {
       jest.useFakeTimers();
       modificationsStore.enableModificationMode();
 
-      const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+      const {user} = render(
+        <VariablePanel setListenerTabVisibility={jest.fn()} />,
+        {wrapper: getWrapper()},
+      );
 
       await waitFor(() => {
         expect(
@@ -591,7 +606,10 @@ describe('New Variable Modifications', () => {
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchVariables().withSuccess([createVariable()]);
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() => {
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
     });
@@ -687,7 +705,10 @@ describe('New Variable Modifications', () => {
       },
     );
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     expect(
       await screen.findByText('The Flow Node has no Variables'),
     ).toBeInTheDocument();
