@@ -7,19 +7,21 @@
  */
 package io.camunda.migration.identity;
 
+import static io.camunda.migration.identity.config.saas.StaticEntities.CLIENT_PERMISSIONS;
 import static io.camunda.migration.identity.config.saas.StaticEntities.ROLE_PERMISSIONS;
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.dto.NoopDTO;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
+import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import java.util.List;
 
-public class StaticConsoleRoleAuthorizationMigrationHandler extends MigrationHandler<NoopDTO> {
+public class StaticConsoleAuthorizationMigrationHandler extends MigrationHandler<NoopDTO> {
 
   final AuthorizationServices authorizationServices;
 
-  public StaticConsoleRoleAuthorizationMigrationHandler(
+  public StaticConsoleAuthorizationMigrationHandler(
       final AuthorizationServices authorizationServices,
       final Authentication servicesAuthentication) {
     this.authorizationServices = authorizationServices.withAuthentication(servicesAuthentication);
@@ -34,10 +36,20 @@ public class StaticConsoleRoleAuthorizationMigrationHandler extends MigrationHan
   @Override
   protected void process(final List<NoopDTO> batch) {
     createRoleAuthorizations();
+    createClientAuthorizations();
   }
 
   private void createRoleAuthorizations() {
-    ROLE_PERMISSIONS.forEach(
+    createAuthorizations(ROLE_PERMISSIONS, "role");
+  }
+
+  private void createClientAuthorizations() {
+    createAuthorizations(CLIENT_PERMISSIONS, "client");
+  }
+
+  private void createAuthorizations(
+      final List<CreateAuthorizationRequest> requests, final String entity) {
+    requests.forEach(
         request -> {
           try {
             authorizationServices.createAuthorization(request).join();
@@ -45,8 +57,8 @@ public class StaticConsoleRoleAuthorizationMigrationHandler extends MigrationHan
             if (!isConflictError(e)) {
               throw new MigrationException(
                   String.format(
-                      "Failed to migrate role permission with owner ID: %s and resource type: %s  ",
-                      request.ownerId(), request.resourceType()),
+                      "Failed to migrate %s permission with owner ID: %s and resource type: %s  ",
+                      entity, request.ownerId(), request.resourceType()),
                   e);
             }
           }
