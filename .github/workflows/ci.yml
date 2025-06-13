@@ -74,7 +74,7 @@ jobs:
       # renovate: datasource=github-releases depName=rhysd/actionlint
       ACTIONLINT_VERSION: '1.7.7'
       # renovate: datasource=github-tags depName=open-policy-agent/conftest
-      CONFTEST_VERSION: '0.58.0'
+      CONFTEST_VERSION: '0.61.2'
     steps:
       - uses: actions/checkout@v4
       - uses: camunda/infra-global-github-actions/actionlint@main
@@ -86,7 +86,7 @@ jobs:
           use_shellcheck: true
       - run: |
           curl -s -L "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" | tar xvz conftest
-          ./conftest test -o github --policy .github .github/workflows/*.y*ml
+          ./conftest test --rego-version v0 -o github --policy .github .github/workflows/*.y*ml
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -477,7 +477,7 @@ jobs:
       # Set up an OpenSearch service container
       # https://docs.github.com/en/actions/use-cases-and-examples/using-containerized-services/about-service-containers
       opensearch:
-        image: opensearchproject/opensearch:3.0.0
+        image: opensearchproject/opensearch:2.19.2
         # Exposing the ports allow to be accessible via http://localhost:9200 in the runner
         ports:
           - 9200:9200
