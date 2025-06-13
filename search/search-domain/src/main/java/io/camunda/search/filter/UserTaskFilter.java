@@ -21,6 +21,7 @@ import java.util.Objects;
 public record UserTaskFilter(
     List<Long> userTaskKeys,
     List<String> elementIds,
+    List<String> elementNames,
     List<String> bpmnProcessIds,
     List<Operation<String>> assigneeOperations,
     List<Operation<Integer>> priorityOperations,
@@ -44,6 +45,7 @@ public record UserTaskFilter(
 
     private List<Long> userTaskKeys;
     private List<String> elementIds;
+    private List<String> elementNames;
     private List<String> bpmnProcessIds;
     private List<Operation<String>> assigneeOperations;
     private List<Operation<Integer>> priorityOperations;
@@ -77,6 +79,15 @@ public record UserTaskFilter(
 
     public Builder elementIds(final List<String> values) {
       elementIds = addValuesToList(elementIds, values);
+      return this;
+    }
+
+    public Builder elementNames(final String... values) {
+      return elementNames(collectValuesAsList(values));
+    }
+
+    public Builder elementNames(final List<String> values) {
+      elementNames = addValuesToList(elementNames, values);
       return this;
     }
 
@@ -258,6 +269,7 @@ public record UserTaskFilter(
       return new UserTaskFilter(
           Objects.requireNonNullElse(userTaskKeys, Collections.emptyList()),
           Objects.requireNonNullElse(elementIds, Collections.emptyList()),
+          Objects.requireNonNullElse(elementNames, Collections.emptyList()),
           Objects.requireNonNullElse(bpmnProcessIds, Collections.emptyList()),
           Objects.requireNonNullElse(assigneeOperations, Collections.emptyList()),
           Objects.requireNonNullElse(priorityOperations, Collections.emptyList()),
