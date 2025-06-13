@@ -13,6 +13,7 @@ public class SecurityConfiguration {
   private AuthorizationsConfiguration authorizations = new AuthorizationsConfiguration();
   private InitializationConfiguration initialization = new InitializationConfiguration();
   private MultiTenancyConfiguration multiTenancy = new MultiTenancyConfiguration();
+  private CsrfConfiguration csrf = new CsrfConfiguration();
   private SaasConfiguration saas = new SaasConfiguration();
 
   public AuthenticationConfiguration getAuthentication() {
@@ -57,5 +58,13 @@ public class SecurityConfiguration {
 
   public void setSaas(final SaasConfiguration saas) {
     this.saas = saas;
+  }
+
+  public CsrfConfiguration getCsrf() {
+    return csrf;
+  }
+
+  public void setCsrf(final CsrfConfiguration csrf) {
+    this.csrf = csrf;
   }
 }

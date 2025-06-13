@@ -71,4 +71,8 @@ public class ContainerRuntimeEnvs {
       "CAMUNDA_CLIENT_GRPC-ADDRESS";
   public static final String CONNECTORS_ENV_CAMUNDA_CLIENT_REST_ADDRESS =
       "CAMUNDA_CLIENT_REST-ADDRESS";
+
+  // Camunda
+  public static final String CAMUNDA_ENV_CAMUNDA_SECURITY_CSRF_ENABLED =
+      "CAMUNDA_SECURITY_CSRF_ENABLED";
 }
