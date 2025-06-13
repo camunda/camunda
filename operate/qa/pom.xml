@@ -23,8 +23,12 @@
   <properties>
     <!-- properties for ImportSeveralVersionsTest and import-old-zeebe-tests module -->
     <version.zeebe.old>8.1.0</version.zeebe.old>
+<<<<<<< HEAD
     <version.zeebe.docker.current>SNAPSHOT</version.zeebe.docker.current>
     <version.zeebe.docker.repo>camunda/zeebe</version.zeebe.docker.repo>
+=======
+    <version.zeebe.docker.current>8.6.17</version.zeebe.docker.current>
+>>>>>>> 3c027c59 (ci: resurrect Operate backup restore CI)
     <version.identity.docker.current>8.5.0</version.identity.docker.current>
 
   </properties>
