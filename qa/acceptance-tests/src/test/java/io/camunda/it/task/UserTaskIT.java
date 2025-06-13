@@ -391,7 +391,8 @@ public class UserTaskIT {
             () ->
                 !client
                     .newUserTaskSearchRequest()
-                    .filter(f -> f.processInstanceKey(processInstanceKey))
+                    .filter(
+                        f -> f.processInstanceKey(processInstanceKey).state(UserTaskState.CREATED))
                     .send()
                     .join()
                     .items()
