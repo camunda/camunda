@@ -48,6 +48,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue;
+import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
@@ -600,6 +601,11 @@ public final class RecordingExporter implements Exporter {
         records(
             ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
             BatchOperationPartitionLifecycleRecordValue.class));
+  }
+
+  public static AsyncRequestRecordStream asyncRequestRecords() {
+    return new AsyncRequestRecordStream(
+        records(ValueType.ASYNC_REQUEST, AsyncRequestRecordValue.class));
   }
 
   public static BatchOperationPartitionLifecycleRecordStream
