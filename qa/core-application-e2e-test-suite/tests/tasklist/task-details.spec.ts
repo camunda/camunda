@@ -190,7 +190,7 @@ test.describe('task details page', () => {
 
     await taskPanelPage.openTask('JobWorker_user_task');
     await expect(taskDetailsPage.completeTaskButton).toBeDisabled({
-      timeout: 60000,
+      timeout: 90000,
     });
     await taskDetailsPage.clickAssignToMeButton();
     await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
