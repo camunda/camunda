@@ -16,6 +16,7 @@ import io.camunda.zeebe.model.bpmn.builder.AdHocSubProcessBuilder;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordAssert;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -76,10 +77,9 @@ public class ActivateAdHocSubProcessActivityTest {
         .contains(
             tuple("A", ProcessInstanceIntent.ACTIVATE_ELEMENT),
             tuple("A", ProcessInstanceIntent.ELEMENT_ACTIVATED))
-        .doesNotContainAnyElementsOf(
-            List.of(
-                tuple("B", ProcessInstanceIntent.ACTIVATE_ELEMENT),
-                tuple("C", ProcessInstanceIntent.ACTIVATE_ELEMENT)));
+        .doesNotContain(
+            tuple("B", ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple("C", ProcessInstanceIntent.ACTIVATE_ELEMENT));
   }
 
   @Test
@@ -91,25 +91,21 @@ public class ActivateAdHocSubProcessActivityTest {
         .withElementIds("A")
         .activate();
 
-    final var generatedActivityInstanceKey =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+    final var activatedElementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
             .withProcessInstanceKey(processInstanceKey)
-            .withElementType(BpmnElementType.TASK)
             .withElementId("A")
-            .map(Record::getKey)
-            .limit(1)
-            .toList()
             .getFirst();
 
     final var expectedElementPath =
         List.of(
-            List.of(processInstanceKey, adHocSubProcessInstanceKey, generatedActivityInstanceKey));
-    assertThat(
-            RecordingExporter.processInstanceRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .limitToProcessInstanceCompleted())
-        .extracting(r -> r.getValue().getElementId(), r -> r.getValue().getElementInstancePath())
-        .contains(tuple("A", expectedElementPath));
+            List.of(
+                processInstanceKey,
+                adHocSubProcessInstanceKey,
+                activatedElementInstance.getKey()));
+
+    assertThat(activatedElementInstance.getValue().getElementInstancePath())
+        .isEqualTo(expectedElementPath);
   }
 
   @Test
@@ -135,8 +131,7 @@ public class ActivateAdHocSubProcessActivityTest {
     assertThat(recordsUntilSignal(signalName))
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
         .contains(tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED))
-        .doesNotContainAnyElementsOf(
-            List.of(tuple("ad-hoc", ProcessInstanceIntent.ELEMENT_COMPLETED)));
+        .doesNotContain(tuple("ad-hoc", ProcessInstanceIntent.ELEMENT_COMPLETED));
 
     // set the completion condition variable to `true` to ensure that the ad-hoc sub-process
     // completes.
@@ -173,7 +168,9 @@ public class ActivateAdHocSubProcessActivityTest {
     assertThat(
             RecordingExporter.adHocSubProcessActivityActivationRecords()
                 .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
-                .limitToAdHocSubProcessInstanceCompleted())
+                .limit(
+                    record ->
+                        record.getIntent() == AdHocSubProcessActivityActivationIntent.ACTIVATED))
         .extracting(r -> r.getValue().getElements().getFirst().getElementId(), Record::getIntent)
         .contains(tuple("A", AdHocSubProcessActivityActivationIntent.ACTIVATED));
   }
@@ -198,7 +195,7 @@ public class ActivateAdHocSubProcessActivityTest {
             tuple("A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("B", ProcessInstanceIntent.ACTIVATE_ELEMENT),
             tuple("B", ProcessInstanceIntent.ELEMENT_ACTIVATED))
-        .doesNotContainAnyElementsOf(List.of(tuple("C", ProcessInstanceIntent.ACTIVATE_ELEMENT)));
+        .doesNotContain(tuple("C", ProcessInstanceIntent.ACTIVATE_ELEMENT));
   }
 
   @Test
@@ -223,9 +220,12 @@ public class ActivateAdHocSubProcessActivityTest {
     assertThat(
             RecordingExporter.adHocSubProcessActivityActivationRecords()
                 .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
-                .withIntent(AdHocSubProcessActivityActivationIntent.ACTIVATED)
-                .exists())
-        .isFalse();
+                .limit(2))
+        .extracting(Record::getRecordType, Record::getIntent)
+        .contains(
+            tuple(RecordType.COMMAND, AdHocSubProcessActivityActivationIntent.ACTIVATE),
+            tuple(RecordType.COMMAND_REJECTION, AdHocSubProcessActivityActivationIntent.ACTIVATE))
+        .doesNotContain(tuple(RecordType.EVENT, AdHocSubProcessActivityActivationIntent.ACTIVATED));
   }
 
   @Test
@@ -251,11 +251,11 @@ public class ActivateAdHocSubProcessActivityTest {
     assertThat(
             RecordingExporter.adHocSubProcessActivityActivationRecords()
                 .withAdHocSubProcessInstanceKey(nonExistingAdHocSubProcessInstanceKey)
-                .onlyCommandRejections()
-                .limit(1))
-        .describedAs(
-            "Expected activation to be rejected because the ad-hoc sub-process instance does not exist.")
-        .isNotEmpty();
+                .limit(2))
+        .extracting(Record::getRecordType, Record::getIntent)
+        .contains(
+            tuple(RecordType.COMMAND, AdHocSubProcessActivityActivationIntent.ACTIVATE),
+            tuple(RecordType.COMMAND_REJECTION, AdHocSubProcessActivityActivationIntent.ACTIVATE));
   }
 
   @Test
@@ -321,9 +321,12 @@ public class ActivateAdHocSubProcessActivityTest {
     assertThat(
             RecordingExporter.adHocSubProcessActivityActivationRecords()
                 .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
-                .withIntent(AdHocSubProcessActivityActivationIntent.ACTIVATED)
-                .exists())
-        .isFalse();
+                .limit(2))
+        .extracting(Record::getRecordType, Record::getIntent)
+        .contains(
+            tuple(RecordType.COMMAND, AdHocSubProcessActivityActivationIntent.ACTIVATE),
+            tuple(RecordType.COMMAND_REJECTION, AdHocSubProcessActivityActivationIntent.ACTIVATE))
+        .doesNotContain(tuple(RecordType.EVENT, AdHocSubProcessActivityActivationIntent.ACTIVATED));
   }
 
   private ProcessInstanceRecordStream recordsUntilSignal(final String signalName) {
