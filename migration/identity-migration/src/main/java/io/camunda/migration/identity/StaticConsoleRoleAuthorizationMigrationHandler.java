@@ -15,11 +15,11 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
 import java.util.List;
 
-public class RoleAuthorizationMigrationHandler extends MigrationHandler<NoopDTO> {
+public class StaticConsoleRoleAuthorizationMigrationHandler extends MigrationHandler<NoopDTO> {
 
   final AuthorizationServices authorizationServices;
 
-  public RoleAuthorizationMigrationHandler(
+  public StaticConsoleRoleAuthorizationMigrationHandler(
       final AuthorizationServices authorizationServices,
       final Authentication servicesAuthentication) {
     this.authorizationServices = authorizationServices.withAuthentication(servicesAuthentication);

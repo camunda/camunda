@@ -8,8 +8,8 @@
 package io.camunda.migration.identity.config;
 
 import io.camunda.migration.identity.GroupMigrationHandler;
-import io.camunda.migration.identity.RoleAuthorizationMigrationHandler;
-import io.camunda.migration.identity.RoleMigrationHandler;
+import io.camunda.migration.identity.StaticConsoleRoleAuthorizationMigrationHandler;
+import io.camunda.migration.identity.StaticConsoleRoleMigrationHandler;
 import io.camunda.migration.identity.console.ConsoleClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.security.auth.Authentication;
@@ -31,16 +31,16 @@ public class MigrationHandlerConfig {
   }
 
   @Bean
-  public RoleMigrationHandler roleMigrationHandler(
+  public StaticConsoleRoleMigrationHandler roleMigrationHandler(
       final Authentication authentication,
       final RoleServices roleServices,
       final ConsoleClient consoleClient) {
-    return new RoleMigrationHandler(roleServices, authentication, consoleClient);
+    return new StaticConsoleRoleMigrationHandler(roleServices, authentication, consoleClient);
   }
 
   @Bean
-  public RoleAuthorizationMigrationHandler authorizationMigrationHandler(
+  public StaticConsoleRoleAuthorizationMigrationHandler authorizationMigrationHandler(
       final AuthorizationServices authorizationService, final Authentication authentication) {
-    return new RoleAuthorizationMigrationHandler(authorizationService, authentication);
+    return new StaticConsoleRoleAuthorizationMigrationHandler(authorizationService, authentication);
   }
 }

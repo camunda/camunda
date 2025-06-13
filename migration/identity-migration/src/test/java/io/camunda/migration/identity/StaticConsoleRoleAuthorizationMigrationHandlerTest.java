@@ -25,16 +25,16 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class RoleAuthorizationMigrationHandlerTest {
+public class StaticConsoleRoleAuthorizationMigrationHandlerTest {
 
   private final AuthorizationServices authorizationServices;
-  private final RoleAuthorizationMigrationHandler migrationHandler;
+  private final StaticConsoleRoleAuthorizationMigrationHandler migrationHandler;
 
-  public RoleAuthorizationMigrationHandlerTest(
+  public StaticConsoleRoleAuthorizationMigrationHandlerTest(
       @Mock(answer = Answers.RETURNS_SELF) final AuthorizationServices authorizationServices) {
     this.authorizationServices = authorizationServices;
     migrationHandler =
-        new RoleAuthorizationMigrationHandler(authorizationServices, Authentication.none());
+        new StaticConsoleRoleAuthorizationMigrationHandler(authorizationServices, Authentication.none());
   }
 
   @Test

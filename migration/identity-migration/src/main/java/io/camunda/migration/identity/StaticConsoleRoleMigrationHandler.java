@@ -18,11 +18,11 @@ import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 
-public class RoleMigrationHandler extends MigrationHandler<NoopDTO> {
+public class StaticConsoleRoleMigrationHandler extends MigrationHandler<NoopDTO> {
   private final RoleServices roleServices;
   private final ConsoleClient consoleClient;
 
-  public RoleMigrationHandler(
+  public StaticConsoleRoleMigrationHandler(
       final RoleServices roleServices,
       final Authentication servicesAuthentication,
       final ConsoleClient consoleClient) {
