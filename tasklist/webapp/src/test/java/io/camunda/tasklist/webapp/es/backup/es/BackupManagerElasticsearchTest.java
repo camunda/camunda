@@ -22,9 +22,14 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.schema.backup.Prio1Backup;
+import io.camunda.tasklist.schema.backup.Prio2Backup;
+import io.camunda.tasklist.schema.backup.Prio3Backup;
+import io.camunda.tasklist.schema.backup.Prio4Backup;
 import io.camunda.tasklist.webapp.es.backup.Metadata;
 import io.camunda.tasklist.webapp.es.backup.es.BackupManagerElasticSearch.CreateSnapshotListener;
 import io.camunda.tasklist.webapp.management.dto.BackupStateDto;
+import io.camunda.tasklist.webapp.management.dto.TakeBackupRequestDto;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
@@ -34,6 +39,7 @@ import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
 import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotRequest;
 import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsResponse;
+import org.elasticsearch.client.Cancellable;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.snapshots.SnapshotInfo;
 import org.elasticsearch.snapshots.SnapshotState;
@@ -48,16 +54,19 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mock.Strictness;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Qualifier;
 
 @ExtendWith(MockitoExtension.class)
 class BackupManagerElasticsearchTest {
 
+  private static final String TASKLIST_VERSION = "8.6.1";
   private static final ObjectMapper MAPPER = new ObjectMapper();
-
   private final long backupId = 2L;
   final Metadata metadata =
-      new Metadata().setBackupId(backupId).setPartCount(3).setPartNo(1).setVersion("8.6.1");
+      new Metadata()
+          .setBackupId(backupId)
+          .setPartCount(3)
+          .setPartNo(1)
+          .setVersion(TASKLIST_VERSION);
 
   private final String repositoryName = "test-repo";
 
@@ -70,13 +79,20 @@ class BackupManagerElasticsearchTest {
   @InjectMocks private BackupManagerElasticSearch backupManager;
 
   @Mock(strictness = Strictness.LENIENT)
-  @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
+
+  @Mock private List<Prio1Backup> prio1BackupIndices;
+  @Mock private List<Prio2Backup> prio2BackupTemplates;
+  @Mock private List<Prio3Backup> prio3BackupTemplates;
+  @Mock private List<Prio4Backup> prio4BackupIndices;
 
   @BeforeEach
   public void setUp() {
     when(objectMapper.convertValue(any(), eq(Metadata.class)))
         .thenAnswer(invocation -> MAPPER.convertValue(invocation.getArgument(0), Metadata.class));
+    when(objectMapper.convertValue(any(Metadata.class), any(TypeReference.class)))
+        .thenAnswer(
+            invocation -> MAPPER.convertValue(invocation.getArgument(0), new TypeReference<>() {}));
     when(tasklistProperties.getBackup().getRepositoryName()).thenReturn(repositoryName);
   }
 
@@ -214,5 +230,41 @@ class BackupManagerElasticsearchTest {
               final var response = backupManager.getBackupState(backupId);
               assertThat(response.getState()).isEqualTo(BackupStateDto.COMPLETED);
             });
+  }
+
+  @Test
+  void shouldReturnInProgressStateWhenBackupIsStillRunning() throws IOException {
+    // given
+    when(tasklistProperties.getVersion()).thenReturn(TASKLIST_VERSION);
+    // run takeBackup in parallel to simulate an ongoing backup
+    when(searchClient.snapshot().createAsync(any(), any(), any()))
+        .thenAnswer(
+            invocation -> {
+              Thread.sleep(1000);
+              return mock(Cancellable.class);
+            });
+    when(searchClient.snapshot().get(any(), any())).thenReturn(mock(GetSnapshotsResponse.class));
+    backupManager.takeBackup(new TakeBackupRequestDto().setBackupId(backupId));
+
+    // return (partCount - 1) SUCCESS snapshots, one is remaining
+    final var snapshots = new ArrayList<SnapshotInfo>(metadata.getPartCount());
+    for (int i = 1; i <= metadata.getPartCount() - 1; i++) {
+      final var copy = new Metadata(metadata);
+      copy.setPartNo(i);
+      final var snapshotInfo = mock(SnapshotInfo.class, Answers.RETURNS_DEEP_STUBS);
+      snapshots.add(snapshotInfo);
+      when(snapshotInfo.snapshotId().getName()).thenReturn(copy.buildSnapshotName());
+      when(snapshotInfo.state()).thenReturn(SnapshotState.SUCCESS);
+    }
+
+    final var snapshotResponse = mock(GetSnapshotsResponse.class, Answers.RETURNS_DEEP_STUBS);
+    when(snapshotResponse.getSnapshots()).thenReturn(snapshots);
+    when(searchClient.snapshot().get(any(), any())).thenReturn(snapshotResponse);
+
+    // when
+    final var backupResponse = backupManager.getBackupState(backupId);
+
+    // then
+    assertThat(backupResponse.getState()).isEqualTo(BackupStateDto.IN_PROGRESS);
   }
 }
