@@ -443,9 +443,9 @@ describe('Processes', () => {
         '/v2/process-definitions/search',
         async ({request}) => {
           const body = await request.json();
-          const searchAfter = body.page?.searchAfter;
+          const after = body.page?.after;
 
-          if (Array.isArray(searchAfter)) {
+          if (typeof after === 'string') {
             return HttpResponse.json(
               getQueryProcessDefinitionsResponseMock(
                 processesPage2,

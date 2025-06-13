@@ -38,8 +38,8 @@ const mockEndpoints = [
       ],
       page: {
         totalItems: 1,
-        firstSortValues: [0, 1],
-        lastSortValues: [0, 1],
+        searchBeforeCursor: "searchBeforeCursor",
+        searchAfterCursor: "searchAfterCursor",
       },
     };
 
