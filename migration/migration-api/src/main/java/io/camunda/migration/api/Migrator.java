@@ -10,4 +10,8 @@ package io.camunda.migration.api;
 import java.util.concurrent.Callable;
 
 /** Scanned interface for migration tasks. */
-public interface Migrator extends Callable<Void> {}
+public interface Migrator extends Callable<Void> {
+  default String getName() {
+    return getClass().getSimpleName();
+  }
+}

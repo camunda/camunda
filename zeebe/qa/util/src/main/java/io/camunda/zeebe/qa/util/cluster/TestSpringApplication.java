@@ -38,14 +38,14 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TestSpringApplication.class);
 
+  protected ConfigurableApplicationContext springContext;
+
   private final Class<?>[] springApplications;
   private final Map<String, Bean<?>> beans;
   private final Map<String, Object> propertyOverrides;
   private final Collection<String> additionalProfiles;
   private final Collection<ApplicationContextInitializer> additionalInitializers;
   private final ReactorResourceFactory reactorResourceFactory = new ReactorResourceFactory();
-
-  private ConfigurableApplicationContext springContext;
 
   public TestSpringApplication(final Class<?>... springApplications) {
     this(new HashMap<>(), new HashMap<>(), new ArrayList<>(), springApplications);

@@ -21,14 +21,14 @@ import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("identity-migration | process-migration")
+@Profile("process-migration")
 @ComponentScan(basePackages = "io.camunda.application.commons.migration")
-public class MigrationsRunner implements ApplicationRunner {
+public class AsyncMigrationsRunner implements ApplicationRunner {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MigrationsRunner.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AsyncMigrationsRunner.class);
   private final List<Migrator> migrators;
 
-  public MigrationsRunner(final List<Migrator> migrators) {
+  public AsyncMigrationsRunner(final List<Migrator> migrators) {
     this.migrators = migrators;
   }
 

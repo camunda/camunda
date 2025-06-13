@@ -29,7 +29,6 @@ public abstract class MigrationHandler<T> {
   }
 
   public void migrate() {
-    logger.info("Migrating started.");
     List<T> batch;
     int page = 0;
     do {
@@ -37,7 +36,10 @@ public abstract class MigrationHandler<T> {
       process(batch);
       page++;
     } while (!batch.isEmpty());
-    logger.info("Migrating finished.");
+  }
+
+  public String getName() {
+    return getClass().getSimpleName();
   }
 
   protected abstract List<T> fetchBatch(int page);

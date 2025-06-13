@@ -9,8 +9,10 @@ package io.camunda.migration.identity.config;
 
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.identity.sdk.IdentityConfiguration.Type;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import java.io.IOException;
+import java.util.Optional;
 import org.apache.commons.lang3.NotImplementedException;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -38,8 +40,19 @@ public class ManagementIdentityConnectorConfig {
             properties.getClientId(),
             properties.getClientSecret(),
             properties.getAudience(),
-            properties.getIssuerType().toUpperCase());
+            Optional.ofNullable(properties.getIssuerType())
+                .map(String::toUpperCase)
+                .orElseGet(() -> determineIssuerType(identityMigrationProperties)));
     return new Identity(configuration);
+  }
+
+  private String determineIssuerType(
+      final IdentityMigrationProperties identityMigrationProperties) {
+    return switch (identityMigrationProperties.getMode()) {
+      case OIDC -> Type.GENERIC.name();
+      case KEYCLOAK -> Type.KEYCLOAK.name();
+      default -> Type.AUTH0.name();
+    };
   }
 
   @Bean

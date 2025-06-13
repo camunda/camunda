@@ -7,7 +7,7 @@
  */
 package io.camunda.application;
 
-import io.camunda.application.commons.migration.MigrationsRunner;
+import io.camunda.application.commons.migration.AsyncMigrationsRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
@@ -32,7 +32,7 @@ public class StandaloneProcessMigration {
         new SpringApplicationBuilder()
             .logStartupInfo(true)
             .web(WebApplicationType.SERVLET)
-            .sources(MigrationsRunner.class)
+            .sources(AsyncMigrationsRunner.class)
             .profiles(Profile.PROCESS_MIGRATION.getId())
             .addCommandLineProperties(true)
             .build(args);

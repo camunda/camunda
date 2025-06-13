@@ -29,8 +29,10 @@ public class ClusterProperties {
   public static final String DEFAULT_CLUSTER_HOST = "0.0.0.0";
   public static final int DEFAULT_CLUSTER_PORT = 26502;
 
-  private static final String DEFAULT_ADVERTISED_HOST =
+  public static final String DEFAULT_ADVERTISED_HOST =
       Address.defaultAdvertisedHost().getHostAddress();
+  public static final Duration DEFAULT_AWAIT_CLUSTER_JOIN_RETRY_INTERVAL = Duration.ofSeconds(1);
+  public static final int DEFAULT_AWAIT_CLUSTER_JOIN_MAX_ATTEMPTS = 30;
   private List<String> initialContactPoints =
       Collections.singletonList(DEFAULT_CONTACT_POINT_HOST + ":" + DEFAULT_CONTACT_POINT_PORT);
   private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
@@ -45,6 +47,8 @@ public class ClusterProperties {
   private SecurityConfig security = new SecurityConfig();
   private CompressionAlgorithm messageCompression = CompressionAlgorithm.NONE;
   private ConfigManagerConfig configManager = ConfigManagerConfig.defaultConfig();
+  private Duration awaitClusterJoinRetryInterval = DEFAULT_AWAIT_CLUSTER_JOIN_RETRY_INTERVAL;
+  private int awaitClusterJoinMaxAttempts = DEFAULT_AWAIT_CLUSTER_JOIN_MAX_ATTEMPTS;
 
   public String getMemberId() {
     return memberId;
@@ -223,5 +227,21 @@ public class ClusterProperties {
         + ", configManagerCfg="
         + configManager
         + '}';
+  }
+
+  public Duration getAwaitClusterJoinRetryInterval() {
+    return awaitClusterJoinRetryInterval;
+  }
+
+  public void setAwaitClusterJoinRetryInterval(final Duration awaitClusterJoinRetryInterval) {
+    this.awaitClusterJoinRetryInterval = awaitClusterJoinRetryInterval;
+  }
+
+  public int getAwaitClusterJoinMaxAttempts() {
+    return awaitClusterJoinMaxAttempts;
+  }
+
+  public void setAwaitClusterJoinMaxAttempts(final int awaitClusterJoinMaxAttempts) {
+    this.awaitClusterJoinMaxAttempts = awaitClusterJoinMaxAttempts;
   }
 }

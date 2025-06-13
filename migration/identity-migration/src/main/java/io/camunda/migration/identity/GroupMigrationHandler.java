@@ -7,6 +7,7 @@
  */
 package io.camunda.migration.identity;
 
+import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.security.auth.Authentication;
@@ -45,7 +46,7 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
             assignUsersToGroup(group.id(), normalizedGroupId);
           } catch (final Exception e) {
             if (!isConflictError(e)) {
-              throw new RuntimeException("Failed to migrate group with ID: " + group.id(), e);
+              throw new MigrationException("Failed to migrate group with ID: " + group.id(), e);
             }
           }
         });
@@ -79,7 +80,7 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
             groupServices.assignMember(groupMember).join();
           } catch (final Exception e) {
             if (!isConflictError(e)) {
-              throw new RuntimeException(
+              throw new MigrationException(
                   String.format(
                       "Failed to assign user with ID '%s' to group with ID '%s'",
                       user.getEmail(), targetGroupId),
