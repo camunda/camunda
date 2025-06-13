@@ -34,7 +34,8 @@ public class StaticConsoleRoleAuthorizationMigrationHandlerTest {
       @Mock(answer = Answers.RETURNS_SELF) final AuthorizationServices authorizationServices) {
     this.authorizationServices = authorizationServices;
     migrationHandler =
-        new StaticConsoleRoleAuthorizationMigrationHandler(authorizationServices, Authentication.none());
+        new StaticConsoleRoleAuthorizationMigrationHandler(
+            authorizationServices, Authentication.none());
   }
 
   @Test

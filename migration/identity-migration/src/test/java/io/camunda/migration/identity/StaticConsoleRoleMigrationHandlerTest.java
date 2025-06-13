@@ -49,7 +49,8 @@ public class StaticConsoleRoleMigrationHandlerTest {
       @Mock(answer = Answers.RETURNS_SELF) final ConsoleClient consoleClient) {
     this.roleServices = roleServices;
     this.consoleClient = consoleClient;
-    migrationHandler = new StaticConsoleRoleMigrationHandler(roleServices, Authentication.none(), consoleClient);
+    migrationHandler =
+        new StaticConsoleRoleMigrationHandler(roleServices, Authentication.none(), consoleClient);
   }
 
   @Test
