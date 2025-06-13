@@ -77,8 +77,8 @@ public final class ProcessInstanceStateTransitionGuard {
                   context,
                   ProcessInstanceIntent.ELEMENT_ACTIVATING,
                   ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                  ProcessInstanceIntent.ELEMENT_COMPLETING)
-              .flatMap(ok -> processInstanceNotSuspended(context, element));
+                  ProcessInstanceIntent.ELEMENT_COMPLETING,
+                  ProcessInstanceIntent.ELEMENT_SUSPENDED);
       case CONTINUE_TERMINATING_ELEMENT ->
           hasElementInstanceWithState(context, ProcessInstanceIntent.ELEMENT_TERMINATING);
       case COMPLETE_EXECUTION_LISTENER ->
@@ -215,6 +215,7 @@ public final class ProcessInstanceStateTransitionGuard {
     if (context.getBpmnElementType() == BpmnElementType.PROCESS
         && context.getIntent() == ProcessInstanceIntent.ACTIVATE_ELEMENT) {
       // when activating a process instance, it cannot yet be suspended
+      // also, a suspended process instance can be cancelled
       return Either.right(null);
     }
     final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
