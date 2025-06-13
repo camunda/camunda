@@ -105,48 +105,6 @@
         <artifactId>docker-compose-maven-plugin</artifactId>
         <version>4.0.0</version>
       </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>unpack-previous-and-current-optimize</id>
-            <phase>pre-integration-test</phase>
-            <goals>
-              <goal>unpack</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <!-- This will be updated in https://github.com/camunda/camunda-optimize/issues/14145-->
-                  <groupId>org.camunda.optimize</groupId>
-                  <artifactId>camunda-optimize</artifactId>
-                  <version>${project.previousVersion}</version>
-                  <type>tar.gz</type>
-                  <classifier>production</classifier>
-                  <!-- we want to use environment variables as present in the internal service-config -->
-                  <!-- thus excluding the default environment-config -->
-                  <excludes>**/environment-config.yaml</excludes>
-                  <overWrite>true</overWrite>
-                  <outputDirectory>${project.build.directory}/${project.previousVersion}</outputDirectory>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>io.camunda.optimize</groupId>
-                  <artifactId>camunda-optimize</artifactId>
-                  <version>${project.version}</version>
-                  <type>tar.gz</type>
-                  <classifier>production</classifier>
-                  <!-- we want to use environment variables as present in the internal service-config -->
-                  <!-- thus excluding the default environment-config -->
-                  <excludes>**/environment-config.yaml</excludes>
-                  <overWrite>true</overWrite>
-                  <outputDirectory>${project.build.directory}/${project.version}</outputDirectory>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
   </build>
 
