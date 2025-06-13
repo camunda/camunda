@@ -16,6 +16,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -99,6 +100,57 @@ public class MigrateProcessInstanceRegressionTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .exists())
         .describedAs("Expect that the problem was resolved, so we could create the job")
+        .isTrue();
+  }
+
+  // Regression test for "https://github.com/camunda/camunda/issues/33237"
+  @Test
+  public void shouldMigrateProcessInstanceAfterAStartExecutionListenerHasBeenCompleted() {
+    // given
+    final String sourceProcessId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+    final String startELType = "type";
+    // deploy source process with a start execution listener
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(sourceProcessId)
+                    .zeebeStartExecutionListener(startELType, "1")
+                    .startEvent()
+                    .serviceTask("A", t -> t.zeebeJobType("taskA"))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .serviceTask("B", t -> t.zeebeJobType("taskB"))
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    final long processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(sourceProcessId).create();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType(startELType).complete();
+
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .migrate();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .describedAs("Expect that the process instance was migrated")
         .isTrue();
   }
 }
