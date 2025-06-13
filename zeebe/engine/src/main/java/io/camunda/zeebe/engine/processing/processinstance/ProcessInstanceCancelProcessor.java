@@ -15,11 +15,13 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -39,7 +41,11 @@ public final class ProcessInstanceCancelProcessor
       MESSAGE_PREFIX
           + "it is created by a parent process instance. Cancel the root process instance '%d' instead.";
 
+  private static final String PROCESS_CANCEL_IN_PROGRESS_MESSAGE =
+      MESSAGE_PREFIX + "a cancel request is already in progress";
+
   private final ElementInstanceState elementInstanceState;
+  private final AsyncRequestState asyncRequestState;
   private final TypedResponseWriter responseWriter;
   private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
@@ -52,6 +58,7 @@ public final class ProcessInstanceCancelProcessor
       final AsyncRequestBehavior asyncRequestBehavior,
       final AuthorizationCheckBehavior authCheckBehavior) {
     elementInstanceState = processingState.getElementInstanceState();
+    asyncRequestState = processingState.getAsyncRequestState();
     responseWriter = writers.response();
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
@@ -128,6 +135,16 @@ public final class ProcessInstanceCancelProcessor
           command,
           RejectionType.INVALID_STATE,
           String.format(PROCESS_NOT_ROOT_MESSAGE, command.getKey(), rootProcessInstanceKey));
+      return false;
+    }
+
+    final var existingAsyncRequest =
+        asyncRequestState.findRequest(
+            command.getKey(), ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.CANCEL);
+    if (existingAsyncRequest.isPresent()) {
+      final String reason = String.format(PROCESS_CANCEL_IN_PROGRESS_MESSAGE, command.getKey());
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, reason);
       return false;
     }
 
