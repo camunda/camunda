@@ -52,7 +52,6 @@ public class AdminUserCheckFilter extends OncePerRequestFilter {
             .isEmpty();
 
     if (hasConfiguredAdminUser) {
-      LOG.debug("Admin user has been configured.");
       filterChain.doFilter(request, response);
       return;
     }
