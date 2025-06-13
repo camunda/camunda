@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
@@ -296,6 +297,11 @@ public final class RecordingExporter implements Exporter {
   public static ProcessInstanceBatchRecordStream processInstanceBatchRecords() {
     return new ProcessInstanceBatchRecordStream(
         records(ValueType.PROCESS_INSTANCE_BATCH, ProcessInstanceBatchRecordValue.class));
+  }
+
+  public static ProcessInstanceBatchRecordStream processInstanceBatchRecords(
+      final ProcessInstanceBatchIntent intent) {
+    return processInstanceBatchRecords().withIntent(intent);
   }
 
   public static TimerRecordStream timerRecords() {
