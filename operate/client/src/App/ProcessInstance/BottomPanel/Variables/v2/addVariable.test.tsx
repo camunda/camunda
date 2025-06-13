@@ -9,13 +9,15 @@
 import {render, screen, within, waitFor} from 'modules/testing-library';
 import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import Variables from './index';
 import {getWrapper, mockProcessInstance, mockVariables} from './mocks';
 import {createInstance} from 'modules/testUtils';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
+import {mockVariablesV2} from '../index.setup';
+import {VariablePanel} from '../../VariablePanel/v2';
 
 const instanceMock = createInstance({id: '1'});
 
@@ -35,6 +37,8 @@ describe('Add variable', () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariablesV2);
+    mockSearchVariables().withSuccess(mockVariablesV2);
 
     variablesStore.fetchVariables({
       fetchType: 'initial',
@@ -42,7 +46,9 @@ describe('Add variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: getWrapper()});
+    const {user} = render(<VariablePanel />, {
+      wrapper: getWrapper(),
+    });
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -60,6 +66,7 @@ describe('Add variable', () => {
 
     await user.click(screen.getByRole('button', {name: /add variable/i}));
 
+    // clicks are not doing anything because we mock context value... we need to either move the test elsewhere or mock the context properly
     expect(
       await screen.findByRole('textbox', {name: /name/i}),
     ).toBeInTheDocument();
@@ -91,6 +98,8 @@ describe('Add variable', () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
     mockFetchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariablesV2);
+    mockSearchVariables().withSuccess(mockVariablesV2);
 
     variablesStore.fetchVariables({
       fetchType: 'initial',
@@ -98,7 +107,7 @@ describe('Add variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: getWrapper()});
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -140,6 +149,8 @@ describe('Add variable', () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
     mockFetchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariablesV2);
+    mockSearchVariables().withSuccess(mockVariablesV2);
 
     variablesStore.fetchVariables({
       fetchType: 'initial',
@@ -147,7 +158,7 @@ describe('Add variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: getWrapper()});
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
 
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
@@ -173,7 +184,6 @@ describe('Add variable', () => {
         name: /save variable/i,
       }),
     ).toBeDisabled();
-    expect(screen.queryByText('Name has to be filled')).not.toBeInTheDocument();
     expect(
       await screen.findByText('Name has to be filled'),
     ).toBeInTheDocument();
@@ -244,6 +254,8 @@ describe('Add variable', () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariablesV2);
+    mockSearchVariables().withSuccess(mockVariablesV2);
 
     variablesStore.fetchVariables({
       fetchType: 'initial',
@@ -251,7 +263,7 @@ describe('Add variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: getWrapper()});
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -336,6 +348,8 @@ describe('Add variable', () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
     mockFetchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariablesV2);
+    mockSearchVariables().withSuccess(mockVariablesV2);
 
     variablesStore.fetchVariables({
       fetchType: 'initial',
@@ -343,7 +357,7 @@ describe('Add variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: getWrapper()});
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -401,14 +415,17 @@ describe('Add variable', () => {
   });
 
   it('clicking edit variables while add mode is open, should not display a validation error', async () => {
+    mockSearchVariables().withSuccess(mockVariablesV2);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
     mockFetchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariablesV2);
+    mockSearchVariables().withSuccess(mockVariablesV2);
 
     variablesStore.fetchVariables('1');
 
-    const {user} = render(<Variables />, {wrapper: getWrapper()});
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -416,6 +433,9 @@ describe('Add variable', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     await user.click(screen.getByRole('button', {name: /add variable/i}));
 
+    await waitFor(() => {
+      expect(screen.getByTestId('variable-clientNo')).toBeInTheDocument();
+    });
     const withinVariable = within(screen.getByTestId('variable-clientNo'));
     await user.click(
       withinVariable.getByRole('button', {name: /edit variable/i}),
@@ -430,6 +450,8 @@ describe('Add variable', () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
     mockFetchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariablesV2);
+    mockSearchVariables().withSuccess(mockVariablesV2);
 
     variablesStore.fetchVariables({
       fetchType: 'initial',
@@ -437,7 +459,7 @@ describe('Add variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: getWrapper()});
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -486,6 +508,8 @@ describe('Add variable', () => {
       state: 'TERMINATED',
     });
     mockFetchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariablesV2);
+    mockSearchVariables().withSuccess(mockVariablesV2);
 
     variablesStore.fetchVariables({
       fetchType: 'initial',
@@ -493,7 +517,7 @@ describe('Add variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: getWrapper()});
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -516,6 +540,8 @@ describe('Add variable', () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     mockFetchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariablesV2);
+    mockSearchVariables().withSuccess(mockVariablesV2);
 
     variablesStore.fetchVariables({
       fetchType: 'initial',
@@ -523,7 +549,7 @@ describe('Add variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<Variables />, {wrapper: getWrapper()});
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });

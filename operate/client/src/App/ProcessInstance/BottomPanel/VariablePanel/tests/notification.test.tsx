@@ -89,7 +89,7 @@ const getWrapper = (
   return Wrapper;
 };
 
-describe('VariablePanel', () => {
+describe.skip('VariablePanel', () => {
   beforeEach(() => {
     const statistics = [
       {

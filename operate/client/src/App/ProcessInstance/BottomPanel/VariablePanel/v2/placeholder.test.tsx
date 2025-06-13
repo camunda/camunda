@@ -7,15 +7,15 @@
  */
 
 import {VariablePanel} from './index';
-import {render, screen, waitFor} from 'modules/testing-library';
+import {render, screen} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {variablesStore} from 'modules/stores/variables';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   createInstance,
   createVariable,
+  createVariableV2,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -35,6 +35,8 @@ import {init} from 'modules/utils/flowNodeMetadata';
 import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
+import {variablesStore} from 'modules/stores/variables';
 
 jest.mock('modules/feature-flags', () => ({
   ...jest.requireActual('modules/feature-flags'),
@@ -55,7 +57,6 @@ const getWrapper = (
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
-        variablesStore.reset();
         flowNodeSelectionStore.reset();
         flowNodeMetaDataStore.reset();
         modificationsStore.reset();
@@ -127,6 +128,9 @@ describe('VariablePanel', () => {
     });
 
     mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+    });
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
@@ -165,10 +169,8 @@ describe('VariablePanel', () => {
 
       render(<VariablePanel />, {wrapper: getWrapper()});
 
-      await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
-
       expect(
-        screen.getByRole('button', {name: /add variable/i}),
+        await screen.findByRole('button', {name: /add variable/i}),
       ).toBeInTheDocument();
       mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
@@ -198,13 +200,13 @@ describe('VariablePanel', () => {
 
       render(<VariablePanel />, {wrapper: getWrapper()});
 
-      await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
       expect(
-        screen.getByRole('button', {name: /add variable/i}),
+        await screen.findByRole('button', {name: /add variable/i}),
       ).toBeInTheDocument();
 
       mockFetchVariables().withServerError();
 
+      // TODO : trigger fetchVariables V2 and remove the below
       act(() => {
         variablesStore.fetchVariables({
           fetchType: 'initial',
@@ -235,13 +237,13 @@ describe('VariablePanel', () => {
 
       render(<VariablePanel />, {wrapper: getWrapper()});
 
-      await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
       expect(
         screen.getByRole('button', {name: /add variable/i}),
       ).toBeInTheDocument();
 
       mockFetchVariables().withNetworkError();
 
+      // TODO : trigger fetchVariables V2 and remove the below
       act(() => {
         variablesStore.fetchVariables({
           fetchType: 'initial',

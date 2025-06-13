@@ -12,16 +12,21 @@ import {
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {variablesStore} from 'modules/stores/variables';
-import Variables from './index';
 import {getWrapper, mockVariables, mockMetaData} from './mocks';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
+import {VariablePanel} from '../../VariablePanel/v2';
+import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
+import {mockVariablesV2} from '../index.setup';
 
 const EMPTY_PLACEHOLDER = 'The Flow Node has no Variables';
 
 describe('Skeleton', () => {
   it('should display empty content if there are no variables', async () => {
     mockFetchVariables().withSuccess([]);
+    mockSearchVariables().withSuccess({
+      items: [],
+    });
     flowNodeMetaDataStore.setMetaData(mockMetaData);
     variablesStore.fetchVariables({
       fetchType: 'initial',
@@ -29,7 +34,7 @@ describe('Skeleton', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<Variables />, {wrapper: getWrapper()});
+    render(<VariablePanel />, {wrapper: getWrapper()});
 
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
     expect(await screen.findByText(EMPTY_PLACEHOLDER)).toBeInTheDocument();
@@ -37,6 +42,7 @@ describe('Skeleton', () => {
 
   it('should display skeleton on initial load', async () => {
     mockFetchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariablesV2);
 
     variablesStore.fetchVariables({
       fetchType: 'initial',
@@ -44,7 +50,7 @@ describe('Skeleton', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<Variables />, {wrapper: getWrapper()});
+    render(<VariablePanel />, {wrapper: getWrapper()});
 
     expect(screen.getByTestId('variables-skeleton')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
