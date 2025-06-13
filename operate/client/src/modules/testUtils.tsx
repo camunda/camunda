@@ -386,6 +386,18 @@ export const mockProcessStatisticsV2 = {
   ],
 };
 
+export const mockMultipleStatesStatistics = {
+  items: [
+    {
+      elementId: 'EndEvent_042s0oc',
+      active: 1,
+      canceled: 2,
+      incidents: 3,
+      completed: 4,
+    },
+  ],
+};
+
 export const mockProcessXML = `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_1771k9d" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.5.0">
   <bpmn:process id="bigVarProcess" isExecutable="true" name="Big variable process">

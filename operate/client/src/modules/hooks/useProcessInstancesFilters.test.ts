@@ -69,7 +69,11 @@ describe('useProcessInstanceFilters', () => {
         $or: [
           {
             state: {
-              $eq: ProcessInstanceState.ACTIVE,
+              $in: [
+                ProcessInstanceState.ACTIVE,
+                ProcessInstanceState.COMPLETED,
+                ProcessInstanceState.TERMINATED,
+              ],
             },
           },
           {hasIncident: true},
