@@ -18,8 +18,12 @@ import static io.camunda.it.migration.IdentityMigrationTestUtil.IDENTITY_CLIENT;
 import static io.camunda.it.migration.IdentityMigrationTestUtil.IDENTITY_CLIENT_SECRET;
 import static io.camunda.it.migration.IdentityMigrationTestUtil.externalIdentityUrl;
 import static io.camunda.it.migration.IdentityMigrationTestUtil.externalKeycloakUrl;
+import static io.camunda.migration.identity.config.saas.StaticEntities.DEVELOPER_ROLE_ID;
+import static io.camunda.migration.identity.config.saas.StaticEntities.OPERATIONS_ENGINEER_ROLE_ID;
 import static io.camunda.migration.identity.config.saas.StaticEntities.ROLE_IDS;
 import static io.camunda.migration.identity.config.saas.StaticEntities.ROLE_PERMISSIONS;
+import static io.camunda.migration.identity.config.saas.StaticEntities.TASK_USER_ROLE_ID;
+import static io.camunda.migration.identity.config.saas.StaticEntities.VISITOR_ROLE_ID;
 import static io.camunda.zeebe.qa.util.cluster.TestZeebePort.CLUSTER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -259,19 +263,19 @@ public class IdentityDefaultEntitiesIT {
             AuthorizationResponse::permissionTypes)
         .contains(
             tuple(
-                "developer",
+                DEVELOPER_ROLE_ID,
                 OwnerType.ROLE,
                 "operate",
                 ResourceType.APPLICATION,
                 Set.of(PermissionType.ACCESS)),
             tuple(
-                "developer",
+                DEVELOPER_ROLE_ID,
                 OwnerType.ROLE,
                 "tasklist",
                 ResourceType.APPLICATION,
                 Set.of(PermissionType.ACCESS)),
             tuple(
-                "developer",
+                DEVELOPER_ROLE_ID,
                 OwnerType.ROLE,
                 "*",
                 ResourceType.PROCESS_DEFINITION,
@@ -284,7 +288,7 @@ public class IdentityDefaultEntitiesIT {
                     PermissionType.CREATE_PROCESS_INSTANCE,
                     PermissionType.DELETE_PROCESS_INSTANCE)),
             tuple(
-                "developer",
+                DEVELOPER_ROLE_ID,
                 OwnerType.ROLE,
                 "*",
                 ResourceType.DECISION_DEFINITION,
@@ -294,19 +298,19 @@ public class IdentityDefaultEntitiesIT {
                     PermissionType.CREATE_DECISION_INSTANCE,
                     PermissionType.DELETE_DECISION_INSTANCE)),
             tuple(
-                "developer",
+                DEVELOPER_ROLE_ID,
                 OwnerType.ROLE,
                 "*",
                 ResourceType.DECISION_REQUIREMENTS_DEFINITION,
                 Set.of(PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE)),
             tuple(
-                "operationsengineer",
+                OPERATIONS_ENGINEER_ROLE_ID,
                 OwnerType.ROLE,
                 "operate",
                 ResourceType.APPLICATION,
                 Set.of(PermissionType.ACCESS)),
             tuple(
-                "operationsengineer",
+                OPERATIONS_ENGINEER_ROLE_ID,
                 OwnerType.ROLE,
                 "*",
                 ResourceType.PROCESS_DEFINITION,
@@ -317,7 +321,7 @@ public class IdentityDefaultEntitiesIT {
                     PermissionType.CREATE_PROCESS_INSTANCE,
                     PermissionType.DELETE_PROCESS_INSTANCE)),
             tuple(
-                "operationsengineer",
+                OPERATIONS_ENGINEER_ROLE_ID,
                 OwnerType.ROLE,
                 "*",
                 ResourceType.DECISION_DEFINITION,
@@ -327,19 +331,19 @@ public class IdentityDefaultEntitiesIT {
                     PermissionType.CREATE_DECISION_INSTANCE,
                     PermissionType.DELETE_DECISION_INSTANCE)),
             tuple(
-                "operationsengineer",
+                OPERATIONS_ENGINEER_ROLE_ID,
                 OwnerType.ROLE,
                 "*",
                 ResourceType.DECISION_REQUIREMENTS_DEFINITION,
                 Set.of(PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE)),
             tuple(
-                "taskuser",
+                TASK_USER_ROLE_ID,
                 OwnerType.ROLE,
                 "tasklist",
                 ResourceType.APPLICATION,
                 Set.of(PermissionType.ACCESS)),
             tuple(
-                "taskuser",
+                TASK_USER_ROLE_ID,
                 OwnerType.ROLE,
                 "*",
                 ResourceType.PROCESS_DEFINITION,
@@ -349,19 +353,19 @@ public class IdentityDefaultEntitiesIT {
                     PermissionType.UPDATE_USER_TASK,
                     PermissionType.CREATE_PROCESS_INSTANCE)),
             tuple(
-                "visitor",
+                VISITOR_ROLE_ID,
                 OwnerType.ROLE,
                 "operate",
                 ResourceType.APPLICATION,
                 Set.of(PermissionType.ACCESS)),
             tuple(
-                "visitor",
+                VISITOR_ROLE_ID,
                 OwnerType.ROLE,
                 "tasklist",
                 ResourceType.APPLICATION,
                 Set.of(PermissionType.ACCESS)),
             tuple(
-                "visitor",
+                VISITOR_ROLE_ID,
                 OwnerType.ROLE,
                 "*",
                 ResourceType.PROCESS_DEFINITION,
@@ -370,7 +374,7 @@ public class IdentityDefaultEntitiesIT {
                     PermissionType.READ_PROCESS_INSTANCE,
                     PermissionType.READ_USER_TASK)),
             tuple(
-                "visitor",
+                VISITOR_ROLE_ID,
                 OwnerType.ROLE,
                 "*",
                 ResourceType.DECISION_DEFINITION,
@@ -378,7 +382,7 @@ public class IdentityDefaultEntitiesIT {
                     PermissionType.READ_DECISION_DEFINITION,
                     PermissionType.READ_DECISION_INSTANCE)),
             tuple(
-                "visitor",
+                VISITOR_ROLE_ID,
                 OwnerType.ROLE,
                 "*",
                 ResourceType.DECISION_REQUIREMENTS_DEFINITION,

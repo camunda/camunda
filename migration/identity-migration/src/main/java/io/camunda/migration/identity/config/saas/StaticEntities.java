@@ -17,45 +17,50 @@ import java.util.Set;
 
 public class StaticEntities {
 
+  public static final String DEVELOPER_ROLE_ID = "developer";
+  public static final String OPERATIONS_ENGINEER_ROLE_ID = "operationsengineer";
+  public static final String TASK_USER_ROLE_ID = "taskuser";
+  public static final String VISITOR_ROLE_ID = "visitor";
+
   public static final Set<String> ROLE_IDS =
-      Set.of("developer", "operationsengineer", "taskuser", "visitor");
+      Set.of(DEVELOPER_ROLE_ID, OPERATIONS_ENGINEER_ROLE_ID, TASK_USER_ROLE_ID, VISITOR_ROLE_ID);
 
   public static final List<CreateRoleRequest> ROLES =
       List.of(
-          new CreateRoleRequest("developer", "Developer", ""),
-          new CreateRoleRequest("operationsengineer", "Operations Engineer", ""),
-          new CreateRoleRequest("taskuser", "Task User", ""),
-          new CreateRoleRequest("visitor", "Visitor", ""));
+          new CreateRoleRequest(DEVELOPER_ROLE_ID, "Developer", ""),
+          new CreateRoleRequest(OPERATIONS_ENGINEER_ROLE_ID, "Operations Engineer", ""),
+          new CreateRoleRequest(TASK_USER_ROLE_ID, "Task User", ""),
+          new CreateRoleRequest(VISITOR_ROLE_ID, "Visitor", ""));
 
   public static final List<CreateAuthorizationRequest> ROLE_PERMISSIONS =
       List.of(
           // DEVELOPER
           new CreateAuthorizationRequest(
-              "developer",
+              DEVELOPER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "operate",
               AuthorizationResourceType.APPLICATION,
               AuthorizationResourceType.APPLICATION.getSupportedPermissionTypes()),
           new CreateAuthorizationRequest(
-              "developer",
+              DEVELOPER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "tasklist",
               AuthorizationResourceType.APPLICATION,
               AuthorizationResourceType.APPLICATION.getSupportedPermissionTypes()),
           new CreateAuthorizationRequest(
-              "developer",
+              DEVELOPER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "*",
               AuthorizationResourceType.PROCESS_DEFINITION,
               AuthorizationResourceType.PROCESS_DEFINITION.getSupportedPermissionTypes()),
           new CreateAuthorizationRequest(
-              "developer",
+              DEVELOPER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "*",
               AuthorizationResourceType.DECISION_DEFINITION,
               AuthorizationResourceType.DECISION_DEFINITION.getSupportedPermissionTypes()),
           new CreateAuthorizationRequest(
-              "developer",
+              DEVELOPER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "*",
               AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
@@ -63,13 +68,13 @@ public class StaticEntities {
                   .getSupportedPermissionTypes()),
           // OPERATIONS ENGINEER
           new CreateAuthorizationRequest(
-              "operationsengineer",
+              OPERATIONS_ENGINEER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "operate",
               AuthorizationResourceType.APPLICATION,
               AuthorizationResourceType.APPLICATION.getSupportedPermissionTypes()),
           new CreateAuthorizationRequest(
-              "operationsengineer",
+              OPERATIONS_ENGINEER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "*",
               AuthorizationResourceType.PROCESS_DEFINITION,
@@ -80,13 +85,13 @@ public class StaticEntities {
                   PermissionType.CREATE_PROCESS_INSTANCE,
                   PermissionType.DELETE_PROCESS_INSTANCE)),
           new CreateAuthorizationRequest(
-              "operationsengineer",
+              OPERATIONS_ENGINEER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "*",
               AuthorizationResourceType.DECISION_DEFINITION,
               AuthorizationResourceType.DECISION_DEFINITION.getSupportedPermissionTypes()),
           new CreateAuthorizationRequest(
-              "operationsengineer",
+              OPERATIONS_ENGINEER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "*",
               AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
@@ -94,13 +99,13 @@ public class StaticEntities {
                   .getSupportedPermissionTypes()),
           // TASK USER
           new CreateAuthorizationRequest(
-              "taskuser",
+              TASK_USER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "tasklist",
               AuthorizationResourceType.APPLICATION,
               AuthorizationResourceType.APPLICATION.getSupportedPermissionTypes()),
           new CreateAuthorizationRequest(
-              "taskuser",
+              TASK_USER_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "*",
               AuthorizationResourceType.PROCESS_DEFINITION,
@@ -112,19 +117,19 @@ public class StaticEntities {
           // TODO: add document permissions once implemented
           // VISITOR
           new CreateAuthorizationRequest(
-              "visitor",
+              VISITOR_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "operate",
               AuthorizationResourceType.APPLICATION,
               AuthorizationResourceType.APPLICATION.getSupportedPermissionTypes()),
           new CreateAuthorizationRequest(
-              "visitor",
+              VISITOR_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "tasklist",
               AuthorizationResourceType.APPLICATION,
               AuthorizationResourceType.APPLICATION.getSupportedPermissionTypes()),
           new CreateAuthorizationRequest(
-              "visitor",
+              VISITOR_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "*",
               AuthorizationResourceType.PROCESS_DEFINITION,
@@ -133,14 +138,14 @@ public class StaticEntities {
                   PermissionType.READ_PROCESS_INSTANCE,
                   PermissionType.READ_USER_TASK)),
           new CreateAuthorizationRequest(
-              "visitor",
+              VISITOR_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "*",
               AuthorizationResourceType.DECISION_DEFINITION,
               Set.of(
                   PermissionType.READ_DECISION_DEFINITION, PermissionType.READ_DECISION_INSTANCE)),
           new CreateAuthorizationRequest(
-              "visitor",
+              VISITOR_ROLE_ID,
               AuthorizationOwnerType.ROLE,
               "*",
               AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
