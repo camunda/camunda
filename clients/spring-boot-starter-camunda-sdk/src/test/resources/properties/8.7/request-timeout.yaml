@@ -1,0 +1,4 @@
+camunda:
+  client:
+    zeebe:
+      request-timeout: PT20S
