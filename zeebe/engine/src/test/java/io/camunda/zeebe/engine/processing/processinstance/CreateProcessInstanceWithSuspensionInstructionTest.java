@@ -12,9 +12,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -91,10 +95,8 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
             .getFirst();
 
     assertThat(rejectedCommandRecord).isNotNull();
-    assert false;
   }
 
-  /** TODO shouldCancelJobWhenProcessInstanceIsSuspended unsubscribeFromEvents resolve incidents */
   @Test
   public void shouldCancelJobWhenProcessInstanceIsSuspended() {
     // given
@@ -131,10 +133,120 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
     assertThat(result.getValue().getElementId()).isEqualTo("task");
   }
 
-  // TODO: parallel gateway and see if the other branch continues executing
+  @Test
+  public void shouldUnsubscribeFromEventsWhenProcessIsSuspended() {
+    // given
+    final String processId = "process";
+    final String elementToSuspend = "element";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .parallelGateway()
+                .intermediateCatchEvent("message", e -> e.message(
+                    m -> m.name("my_message").zeebeCorrelationKey("=\"my_key\"")))
+                .endEvent()
+                .moveToLastGateway()
+                .manualTask(elementToSuspend)
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withRuntimeSuspendInstruction(elementToSuspend)
+            .create();
+
+    // then
+    final var result =
+        RecordingExporter.processMessageSubscriptionRecords(
+                ProcessMessageSubscriptionIntent.DELETED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withMessageName("my_message")
+            .getFirst();
+
+    assertThat(result.getValue().getElementId()).isEqualTo("message");
+  }
 
   @Test
-  public void parallel() {
+  public void shouldCancelUserTasksWhenProcessInstanceIsSuspended() {
+    // given
+    final String processId = "process";
+    final String elementToSuspend = "element";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .parallelGateway()
+                .userTask("userTask", AbstractUserTaskBuilder::zeebeUserTask)
+                .endEvent()
+                .moveToLastGateway()
+                .manualTask(elementToSuspend)
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withRuntimeSuspendInstruction(elementToSuspend)
+            .create();
+
+    // then
+    final var result =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CANCELED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(result.getValue().getElementId()).isEqualTo("userTask");
+  }
+
+  @Test
+  public void shouldResolveIncidentsWhenProcessInstanceIsSuspended() {
+    // given
+    final String processId = "process";
+    final String elementToSuspend = "element";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .parallelGateway()
+                // invalid timer expression will trigger an incident
+                .intermediateCatchEvent("timer", e -> e.timerWithDurationExpression("not.a.valid.expr"))
+                .endEvent()
+                .moveToLastGateway()
+                .manualTask(elementToSuspend)
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withRuntimeSuspendInstruction(elementToSuspend)
+            .create();
+
+    // then
+    final var result =
+        RecordingExporter.incidentRecords(IncidentIntent.RESOLVED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    assertThat(result.getValue().getElementId()).isEqualTo("timer");
+  }
+
+  @Test
+  public void shouldBePossibleToCancelSuspendedProcessInstance() {
     final String processId = "process";
     final String elementToSuspend = "element";
     ENGINE
@@ -162,6 +274,37 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
             .withRuntimeSuspendInstruction(elementToSuspend)
             .create();
 
-    assert false;
+    // then
+    final var result =
+        RecordingExporter.processInstanceRecords()
+            .onlyEvents()
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(processId, ProcessInstanceIntent.ELEMENT_SUSPENDED)
+            .filter(
+                record -> record.getValue().getElementId().equals(processId));
+
+    assertThat(result)
+        .extracting(Record::getIntent, record -> record.getValue().getElementId())
+        .contains(Tuple.tuple(ProcessInstanceIntent.ELEMENT_SUSPENDED, processId));
+
+    final var processInstanceRecord =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_SUSPENDED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    ENGINE.writeRecords(
+        RecordToWrite.command()
+            .key(processInstanceKey)
+            .processInstance(
+                ProcessInstanceIntent.CANCEL, processInstanceRecord.getValue()));
+
+    final var terminatedEvent =
+        RecordingExporter.processInstanceRecords()
+            .onlyEvents()
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(processId, ProcessInstanceIntent.ELEMENT_TERMINATED)
+            .getFirst();
+
+    assertThat(terminatedEvent).isNotNull();
   }
 }

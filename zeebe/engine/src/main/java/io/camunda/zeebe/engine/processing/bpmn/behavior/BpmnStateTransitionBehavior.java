@@ -306,40 +306,6 @@ public final class BpmnStateTransitionBehavior {
       final BpmnElementContext context, final ExecutableSequenceFlow sequenceFlow) {
     verifyTransition(context, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN);
     final var target = sequenceFlow.getTarget();
-    final var source = sequenceFlow.getSource();
-
-    if (stateBehavior.shouldSuspendProcessInstance(
-        context.getProcessInstanceKey(), BufferUtil.bufferAsString(source.getId()))) {
-
-      // TODO: suspendProcessInstance()
-      // call it in every bpmn element processor
-
-      final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
-      stateWriter.appendFollowUpEvent(
-          context.getProcessInstanceKey(),
-          ProcessInstanceIntent.ELEMENT_SUSPENDED,
-          processInstance.getValue());
-
-      final var dequeue = new ArrayDeque<BpmnElementContext>();
-      final var processInstanceContext = new BpmnElementContextImpl();
-      processInstanceContext.init(
-          processInstance.getKey(), processInstance.getValue(), processInstance.getState());
-      dequeue.add(processInstanceContext);
-
-      // recurse through the process instance tree without causing stack overflow
-      while (!dequeue.isEmpty()) {
-        final var elementInstanceContext = dequeue.pop();
-        jobBehavior.cancelJob(elementInstanceContext);
-        eventSubscriptionBehavior.unsubscribeFromEvents(elementInstanceContext);
-        incidentBehavior.resolveIncidents(elementInstanceContext);
-        userTaskBehavior.cancelUserTask(elementInstanceContext);
-
-        final var children = stateBehavior.getChildInstanceContexts(elementInstanceContext);
-        dequeue.addAll(children);
-      }
-
-      return;
-    }
 
     followUpInstanceRecord.wrap(context.getRecordValue());
     followUpInstanceRecord
@@ -461,7 +427,45 @@ public final class BpmnStateTransitionBehavior {
   public <T extends ExecutableFlowNode> void takeOutgoingSequenceFlows(
       final T element, final BpmnElementContext context) {
 
+    suspendProcessInstanceIfNeeded(element, context);
     element.getOutgoing().forEach(sequenceFlow -> takeSequenceFlow(context, sequenceFlow));
+  }
+
+  public <T extends ExecutableFlowNode> Either<Failure, BpmnElementContext> suspendProcessInstanceIfNeeded(
+      final T element, BpmnElementContext context) {
+
+    if (!stateBehavior.shouldSuspendProcessInstance(
+        context.getProcessInstanceKey(),
+        BufferUtil.bufferAsString(element.getId()))) {
+
+      return Either.right(context);
+    }
+
+    final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
+    stateWriter.appendFollowUpEvent(
+        context.getProcessInstanceKey(),
+        ProcessInstanceIntent.ELEMENT_SUSPENDED,
+        processInstance.getValue());
+
+    final var dequeue = new ArrayDeque<BpmnElementContext>();
+    final var processInstanceContext = new BpmnElementContextImpl();
+    processInstanceContext.init(
+        processInstance.getKey(), processInstance.getValue(), processInstance.getState());
+    dequeue.add(processInstanceContext);
+
+    // recurse through the process instance tree without causing stack overflow
+    while (!dequeue.isEmpty()) {
+      final var elementInstanceContext = dequeue.pop();
+      jobBehavior.cancelJob(elementInstanceContext);
+      eventSubscriptionBehavior.unsubscribeFromEvents(elementInstanceContext);
+      incidentBehavior.resolveIncidents(elementInstanceContext);
+      userTaskBehavior.cancelUserTask(elementInstanceContext);
+
+      final var children = stateBehavior.getChildInstanceContexts(elementInstanceContext);
+      dequeue.addAll(children);
+
+    }
+    return Either.left(new Failure(""));
   }
 
   public Either<Failure, ?> beforeExecutionPathCompleted(
