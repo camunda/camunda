@@ -49,5 +49,21 @@
   "clientsCouldNotLoad": "Clients could not load",
   "unableToLoadClients": "Unable to load clients",
   "searchByClientId": "Search by client ID",
-  "typeUsername": "Type a username"
+  "typeUsername": "Type a username",
+  "setupCreateAdminUser": "Create admin user",
+  "setupUsernameLabel": "Username *",
+  "setupUsernamePlaceholder": "Enter username",
+  "setupUsernameRequired": "Username is required",
+  "setupPasswordLabel": "Password *",
+  "setupPasswordPlaceholder": "Enter password",
+  "setupPasswordHelperText": "Password must be at least 6 characters long and include at least one number.",
+  "setupPasswordRequired": "Password is required",
+  "setupConfirmPasswordLabel": "Confirm password *",
+  "setupConfirmPasswordPlaceholder": "Confirm password",
+  "setupConfirmPasswordRequired": "Confirm password is required",
+  "setupNameLabel": "Full name",
+  "setupNamePlaceholder": "Enter full name",
+  "setupEmailLabel": "Email",
+  "setupEmailPlaceholder": "Enter email",
+  "setupCreateUser": "Create user"
 }

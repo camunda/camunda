@@ -7,6 +7,9 @@
  */
 
 export const Paths = {
+  setup() {
+    return "/setup";
+  },
   login() {
     return "/login";
   },
