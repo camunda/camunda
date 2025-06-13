@@ -58,18 +58,22 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class BackupManagerElasticsearchTest {
 
+  private static final String TASKLIST_VERSION = "8.6.1";
   private static final ObjectMapper MAPPER = new ObjectMapper();
-
   private final long backupId = 2L;
   final Metadata metadata =
-      new Metadata().setBackupId(backupId).setPartCount(3).setPartNo(1).setVersion("8.6.1");
+      new Metadata()
+          .setBackupId(backupId)
+          .setPartCount(3)
+          .setPartNo(1)
+          .setVersion(TASKLIST_VERSION);
 
   private final String repositoryName = "test-repo";
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private RestHighLevelClient searchClient;
 
-  @Mock(answer = Answers.RETURNS_DEEP_STUBS, strictness = Strictness.LENIENT)
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private TasklistProperties tasklistProperties;
 
   @InjectMocks private BackupManagerElasticSearch backupManager;
@@ -90,7 +94,6 @@ class BackupManagerElasticsearchTest {
         .thenAnswer(
             invocation -> MAPPER.convertValue(invocation.getArgument(0), new TypeReference<>() {}));
     when(tasklistProperties.getBackup().getRepositoryName()).thenReturn(repositoryName);
-    when(tasklistProperties.getVersion()).thenReturn("8.6.0");
   }
 
   @ParameterizedTest
@@ -232,6 +235,7 @@ class BackupManagerElasticsearchTest {
   @Test
   void shouldReturnInProgressStateWhenBackupIsStillRunning() throws IOException {
     // given
+    when(tasklistProperties.getVersion()).thenReturn(TASKLIST_VERSION);
     // run takeBackup in parallel to simulate an ongoing backup
     when(searchClient.snapshot().createAsync(any(), any(), any()))
         .thenAnswer(
