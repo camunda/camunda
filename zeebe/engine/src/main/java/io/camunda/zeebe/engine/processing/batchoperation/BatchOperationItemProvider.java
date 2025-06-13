@@ -20,6 +20,7 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -38,6 +39,7 @@ public class BatchOperationItemProvider {
   private static final Logger LOG = LoggerFactory.getLogger(BatchOperationItemProvider.class);
 
   private final SearchClientsProxy searchClientsProxy;
+  private final BatchOperationMetrics metrics;
 
   /**
    * The size of a page when fetching entities. This is the maximum number of items that can be
@@ -52,8 +54,11 @@ public class BatchOperationItemProvider {
   private final int inClauseSize;
 
   public BatchOperationItemProvider(
-      final SearchClientsProxy searchClientsProxy, final EngineConfiguration engineConfiguration) {
+      final SearchClientsProxy searchClientsProxy,
+      final EngineConfiguration engineConfiguration,
+      final BatchOperationMetrics metrics) {
     this.searchClientsProxy = searchClientsProxy;
+    this.metrics = metrics;
     queryPageSize = engineConfiguration.getBatchOperationQueryPageSize();
     inClauseSize = engineConfiguration.getBatchOperationQueryInClauseSize();
   }
@@ -148,6 +153,8 @@ public class BatchOperationItemProvider {
       final var result = itemPageFetcher.fetchItems(filter, searchValues, authentication);
       items.addAll(result.items);
       searchValues = result.lastSortValues();
+
+      metrics.recordQueryAgainstSecondaryDatabase();
 
       // the result.total count can be incorrect when using elasticsearch and could be capped at
       // 10_000. If the result.total is smaller than the queryPageSize, we can assume that we have
