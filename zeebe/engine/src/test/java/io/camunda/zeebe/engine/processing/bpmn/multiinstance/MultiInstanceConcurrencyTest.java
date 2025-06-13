@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.multiinstance;
 
+import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchActivateProcessor.PARENT_NOT_FOUND_ERROR_MESSAGE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -117,8 +118,6 @@ public class MultiInstanceConcurrencyTest {
                 .withRecordKey(batchActivateKey)
                 .getFirst()
                 .getRejectionReason())
-        .isEqualTo(
-            "Expected to activate child for batch element instance, but no parent element instance found for key '%s'. The parent was likely terminated before processing this batch activation."
-                .formatted(multiInstanceKey));
+        .isEqualTo(PARENT_NOT_FOUND_ERROR_MESSAGE.formatted(multiInstanceKey));
   }
 }
