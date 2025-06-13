@@ -163,7 +163,7 @@ public class IdentityDefaultEntitiesIT {
     standaloneIdentityMigration.start();
 
     Awaitility.await()
-        .atMost(Duration.ofSeconds(1000))
+        .atMost(Duration.ofSeconds(5))
         .ignoreExceptions()
         .untilAsserted(
             () -> {
@@ -195,7 +195,7 @@ public class IdentityDefaultEntitiesIT {
     standaloneIdentityMigration.start();
 
     Awaitility.await()
-        .atMost(Duration.ofSeconds(1000))
+        .atMost(Duration.ofSeconds(5))
         .ignoreExceptions()
         .untilAsserted(
             () -> {
@@ -235,7 +235,7 @@ public class IdentityDefaultEntitiesIT {
     final var restAddress = client.getConfiguration().getRestAddress().toString();
 
     Awaitility.await()
-        .atMost(Duration.ofSeconds(1000))
+        .atMost(Duration.ofSeconds(5))
         .ignoreExceptions()
         .untilAsserted(
             () -> {
