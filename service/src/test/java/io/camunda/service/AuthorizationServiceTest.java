@@ -22,7 +22,6 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.List;
 import java.util.Set;
-import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -90,7 +89,7 @@ public class AuthorizationServiceTest {
   public void shouldReturnSingleAuthorizationForGet() {
     // given
     final var entity = mock(AuthorizationEntity.class);
-    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array(), Arrays.array());
+    final var result = new SearchQueryResult<>(1, List.of(entity), null, null);
     when(client.searchAuthorizations(any())).thenReturn(result);
 
     // when

@@ -33,7 +33,7 @@ public class DecisionInstanceReader extends AbstractEntityReader<DecisionInstanc
   private final DecisionInstanceMapper decisionInstanceMapper;
 
   public DecisionInstanceReader(final DecisionInstanceMapper decisionInstanceMapper) {
-    super(DecisionInstanceSearchColumn::findByProperty);
+    super(DecisionInstanceSearchColumn.values());
     this.decisionInstanceMapper = decisionInstanceMapper;
   }
 

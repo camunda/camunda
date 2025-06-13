@@ -159,7 +159,7 @@ class BatchOperationControllerTest extends RestControllerTest {
             "operationsFailedCount":0,
             "operationsCompletedCount":10
             }],
-            "page":{"totalItems":1,"firstSortValues":[],"lastSortValues":[]}
+            "page":{"totalItems":1}
            }""");
 
     verify(batchOperationServices).search(new BatchOperationQuery.Builder().filter(filter).build());

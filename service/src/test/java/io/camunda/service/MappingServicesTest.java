@@ -37,7 +37,6 @@ import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -103,7 +102,7 @@ public class MappingServicesTest {
   public void shouldReturnSingleVariable() {
     // given
     final var entity = mock(MappingEntity.class);
-    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array(), Arrays.array());
+    final var result = new SearchQueryResult<>(1, List.of(entity), null, null);
     when(client.searchMappings(any())).thenReturn(result);
   }
 
@@ -111,7 +110,7 @@ public class MappingServicesTest {
   public void shouldReturnSingleVariableForFind() {
     // given
     final var entity = mock(MappingEntity.class);
-    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array(), Arrays.array());
+    final var result = new SearchQueryResult<>(1, List.of(entity), null, null);
     when(client.searchMappings(any())).thenReturn(result);
 
     // when

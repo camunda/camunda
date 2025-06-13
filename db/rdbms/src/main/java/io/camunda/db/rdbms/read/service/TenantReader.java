@@ -25,7 +25,7 @@ public class TenantReader extends AbstractEntityReader<TenantEntity> {
   private final TenantMapper tenantMapper;
 
   public TenantReader(final TenantMapper tenantMapper) {
-    super(TenantSearchColumn::findByProperty);
+    super(TenantSearchColumn.values());
     this.tenantMapper = tenantMapper;
   }
 

@@ -168,26 +168,21 @@ public class RoleIT {
             RoleQuery.of(
                 b -> b.filter(f -> f.name("Alice Doe")).sort(sort).page(p -> p.from(0).size(20))));
 
-    final var instanceAfter = searchResult.items().get(9);
+    final var firstPage =
+        roleReader.search(
+            RoleQuery.of(b -> b.filter(f -> f.name("Alice Doe")).sort(sort).page(p -> p.size(15))));
+
     final var nextPage =
         roleReader.search(
             RoleQuery.of(
                 b ->
                     b.filter(f -> f.name("Alice Doe"))
                         .sort(sort)
-                        .page(
-                            p ->
-                                p.size(5)
-                                    .searchAfter(
-                                        new Object[] {
-                                          instanceAfter.name(),
-                                          instanceAfter.roleId(),
-                                          instanceAfter.roleKey()
-                                        }))));
+                        .page(p -> p.size(5).searchAfter(firstPage.searchAfterCursor()))));
 
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
-    assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(10, 15));
+    assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
   }
 
   private static void compareRoles(final RoleEntity instance, final RoleDbModel role) {

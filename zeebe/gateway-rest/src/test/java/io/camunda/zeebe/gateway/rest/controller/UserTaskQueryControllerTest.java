@@ -85,10 +85,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": ["f"],
-                  "lastSortValues": [
-                      "v"
-                  ]
+                  "searchBeforeCursor": "f",
+                  "searchAfterCursor": "v"
               }
           }""";
 
@@ -117,8 +115,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         ],
         "page": {
           "totalItems": 2,
-          "firstSortValues": ["0"],
-          "lastSortValues": ["1"]
+          "searchBeforeCursor": "0",
+          "searchAfterCursor": "1"
         }
       }
       """;
@@ -190,8 +188,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       Collections.emptyMap(), // customHeaders
                       50 // priority
                       )))
-          .firstSortValues(new Object[] {"f"})
-          .lastSortValues(new Object[] {"v"})
+          .searchBeforeCursor("f")
+          .searchAfterCursor("v")
           .build();
 
   private static final SearchQueryResult<VariableEntity> SEARCH_VAR_QUERY_RESULT =
@@ -202,8 +200,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                   new VariableEntity(0L, "name", "value", null, false, 1L, 2L, "bpid", "<default>"),
                   new VariableEntity(
                       1L, "name2", "value", "valueLong", true, 1L, 2L, "bpid", "<default>")))
-          .firstSortValues(new Object[] {"0"})
-          .lastSortValues(new Object[] {"1"})
+          .searchBeforeCursor("0")
+          .searchAfterCursor("1")
           .build();
 
   @MockBean UserTaskServices userTaskServices;
@@ -651,8 +649,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         """
             {
                 "page": {
-                    "searchAfter": ["a"],
-                    "searchBefore": ["b"]
+                    "searchAfter": "a",
+                    "searchBefore": "b"
                 }
             }""";
     final var expectedResponse =

@@ -34,7 +34,6 @@ import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.UUID;
-import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -98,7 +97,8 @@ public class GroupServiceTest {
   public void shouldReturnSingleGroup() {
     // given
     final var entity = mock(GroupEntity.class);
-    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array(), Arrays.array());
+    final var result =
+        new SearchQueryResult.Builder<GroupEntity>().total(1).items(List.of(entity)).build();
     when(client.searchGroups(any())).thenReturn(result);
   }
 
@@ -106,7 +106,8 @@ public class GroupServiceTest {
   public void shouldReturnSingleGroupForGet() {
     // given
     final var entity = mock(GroupEntity.class);
-    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array(), Arrays.array());
+    final var result =
+        new SearchQueryResult.Builder<GroupEntity>().total(1).items(List.of(entity)).build();
     when(client.searchGroups(any())).thenReturn(result);
 
     // when
@@ -215,7 +216,7 @@ public class GroupServiceTest {
     final var groupName = "testGroup";
     final var entity = mock(GroupEntity.class);
     when(entity.name()).thenReturn(groupName);
-    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array(), Arrays.array());
+    final var result = new SearchQueryResult<>(1, List.of(entity), null, null);
     when(client.searchGroups(any())).thenReturn(result);
 
     // when

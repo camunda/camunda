@@ -127,7 +127,7 @@ class BatchOperationItemControllerTest extends RestControllerTest {
                             "errorMessage": "error"
                         }
                     ],
-                    "page":{"totalItems":1,"firstSortValues":[],"lastSortValues":[]}
+                    "page":{"totalItems":1}
                 }""");
 
     verify(batchOperationServices)

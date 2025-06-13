@@ -137,7 +137,7 @@ public class BatchOperationItemProvider {
       final Supplier<Boolean> shouldAbort) {
     final var items = new LinkedHashSet<Item>();
 
-    Object[] searchValues = null;
+    String searchAfter = null;
     while (true) {
       // Check if the batch operation is still present, could be canceled in the meantime
       if (shouldAbort.get()) {
@@ -145,9 +145,9 @@ public class BatchOperationItemProvider {
         return Set.of();
       }
 
-      final var result = itemPageFetcher.fetchItems(filter, searchValues, authentication);
+      final var result = itemPageFetcher.fetchItems(filter, searchAfter, authentication);
       items.addAll(result.items);
-      searchValues = result.lastSortValues();
+      searchAfter = result.searchAfter();
 
       // the result.total count can be incorrect when using elasticsearch and could be capped at
       // 10_000. If the result.total is smaller than the queryPageSize, we can assume that we have
@@ -187,10 +187,10 @@ public class BatchOperationItemProvider {
    * Internal abstraction to hold the result of a page of entity items.
    *
    * @param items the fetched items
-   * @param lastSortValues the last sortValues for pagination
+   * @param searchAfter cursor to fetch the next page of items
    * @param total the total amount of found items
    */
-  private record ItemPage(List<Item> items, Object[] lastSortValues, long total) {}
+  private record ItemPage(List<Item> items, String searchAfter, long total) {}
 
   /**
    * Internal abstraction interface to get a single page of entity items of a specific type. This is
@@ -205,10 +205,10 @@ public class BatchOperationItemProvider {
      * Fetches a page of entity items based on the provided filter and search values.
      *
      * @param filter the filter to apply
-     * @param sortValues the current sortValues
+     * @param searchAfter the current searchAfter
      * @return the fetched items and pagination information
      */
-    ItemPage fetchItems(F filter, Object[] sortValues, Authentication authentication);
+    ItemPage fetchItems(F filter, String searchAfter, Authentication authentication);
 
     /**
      * Creates a security context for the given authentication and authorization.
@@ -229,13 +229,13 @@ public class BatchOperationItemProvider {
     @Override
     public ItemPage fetchItems(
         final ProcessInstanceFilter filter,
-        final Object[] sortValues,
+        final String searchAfter,
         final Authentication authentication) {
       final var securityContext =
           createSecurityContext(
               authentication, Authorization.of(a -> a.processDefinition().readProcessInstance()));
       final var page =
-          SearchQueryPageBuilders.page().size(queryPageSize).searchAfter(sortValues).build();
+          SearchQueryPageBuilders.page().size(queryPageSize).searchAfter(searchAfter).build();
       final var query =
           SearchQueryBuilders.processInstanceSearchQuery()
               .filter(filter)
@@ -250,7 +250,7 @@ public class BatchOperationItemProvider {
           result.items().stream()
               .map(pi -> new Item(pi.processInstanceKey(), pi.processInstanceKey()))
               .collect(Collectors.toList()),
-          result.lastSortValues(),
+          result.searchAfterCursor(),
           result.total());
     }
   }
@@ -259,13 +259,13 @@ public class BatchOperationItemProvider {
     @Override
     public ItemPage fetchItems(
         final IncidentFilter filter,
-        final Object[] sortValues,
+        final String searchAfter,
         final Authentication authentication) {
       final var securityContext =
           createSecurityContext(
               authentication, Authorization.of(a -> a.processDefinition().readProcessInstance()));
       final var page =
-          SearchQueryPageBuilders.page().size(queryPageSize).searchAfter(sortValues).build();
+          SearchQueryPageBuilders.page().size(queryPageSize).searchAfter(searchAfter).build();
       final var query = SearchQueryBuilders.incidentSearchQuery().filter(filter).page(page).build();
 
       final var result =
@@ -275,7 +275,7 @@ public class BatchOperationItemProvider {
           result.items().stream()
               .map(pi -> new Item(pi.incidentKey(), pi.processInstanceKey()))
               .collect(Collectors.toList()),
-          result.lastSortValues(),
+          result.searchAfterCursor(),
           result.total());
     }
   }

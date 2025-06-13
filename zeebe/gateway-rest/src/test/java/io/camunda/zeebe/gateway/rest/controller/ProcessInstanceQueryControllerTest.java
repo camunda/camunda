@@ -109,10 +109,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": ["f"],
-                  "lastSortValues": [
-                      "v"
-                  ]
+                  "searchBeforeCursor": "f",
+                  "searchAfterCursor": "v"
               }
           }
           """;
@@ -132,8 +130,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
       new Builder<ProcessInstanceEntity>()
           .total(1L)
           .items(List.of(PROCESS_INSTANCE_ENTITY))
-          .firstSortValues(new Object[] {"f"})
-          .lastSortValues(new Object[] {"v"})
+          .searchBeforeCursor("f")
+          .searchAfterCursor("v")
           .build();
 
   @MockBean ProcessInstanceServices processInstanceServices;
@@ -456,8 +454,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         """
             {
                 "page": {
-                    "searchAfter": ["a"],
-                    "searchBefore": ["b"]
+                    "searchAfter": "a",
+                    "searchBefore": "b"
                 }
             }""";
     final var expectedResponse =

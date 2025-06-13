@@ -24,7 +24,7 @@ public class UserReader extends AbstractEntityReader<UserEntity> {
   private final UserMapper userMapper;
 
   public UserReader(final UserMapper userMapper) {
-    super(UserSearchColumn::findByProperty);
+    super(UserSearchColumn.values());
     this.userMapper = userMapper;
   }
 
