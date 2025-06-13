@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.system.configuration;
 
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.camunda.zeebe.broker.exporter.metrics.MetricsExporter;
 import io.camunda.zeebe.broker.system.configuration.backpressure.LimitCfg;
@@ -28,6 +29,7 @@ public class BrokerCfg {
   private FlowControlCfg flowControl = new FlowControlCfg();
   private LimitCfg backpressure = new LimitCfg();
   private ProcessingCfg processingCfg = new ProcessingCfg();
+  private UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
 
   private ExperimentalCfg experimental = new ExperimentalCfg();
 
@@ -158,6 +160,14 @@ public class BrokerCfg {
 
   public void setExperimental(final ExperimentalCfg experimental) {
     this.experimental = experimental;
+  }
+
+  public UnifiedConfiguration getUnifiedConfiguration() {
+    return unifiedConfiguration;
+  }
+
+  public void setUnifiedConfiguration(final UnifiedConfiguration unifiedConfiguration) {
+    this.unifiedConfiguration = unifiedConfiguration;
   }
 
   @Override

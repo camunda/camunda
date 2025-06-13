@@ -375,7 +375,7 @@ public class ClusteringRule extends ExternalResource {
         new SystemContext(
             brokerSpringConfig.shutdownTimeout(),
             brokerCfg,
-            config,
+            unifiedConfiguration,
             null,
             scheduler,
             atomixCluster,

@@ -102,7 +102,7 @@ public final class BrokerReprocessingTest {
   public String name;
 
   public final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
-  public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(config);
+  public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(unifiedConfiguration);
 
   public final GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);

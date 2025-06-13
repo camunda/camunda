@@ -26,7 +26,7 @@ import org.junit.rules.RuleChain;
 public final class ClientExceptionHandlingTest {
 
   public final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
-  public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(config);
+  public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(unifiedConfiguration);
   private final InetSocketAddress invalidGatewayAddress = SocketUtil.getNextAddress();
 
   public final GrpcClientRule clientRule =

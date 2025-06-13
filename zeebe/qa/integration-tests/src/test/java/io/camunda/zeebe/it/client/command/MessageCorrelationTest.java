@@ -40,8 +40,9 @@ public final class MessageCorrelationTest {
   private static final String CATCH_EVENT_ELEMENT_ID = "catch-event";
   private static final String MESSAGE_NAME = "order canceled";
 
-  private static final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
-  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule(CONFIG);
+  private static final UnifiedConfiguration UNIFIED_CONFIGURATION = new UnifiedConfiguration();
+  private static final EmbeddedBrokerRule BROKER_RULE =
+      new EmbeddedBrokerRule(UNIFIED_CONFIGURATION);
   private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
 
   @ClassRule

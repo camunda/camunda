@@ -29,10 +29,10 @@ public final class CancelProcessInstanceInBatchesTest {
 
   private static final int AMOUNT_OF_ELEMENT_INSTANCES = 100;
   private static final int MAX_MESSAGE_SIZE_KB = 32;
-  private static final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
+  private static final UnifiedConfiguration UNIFIED_CONFIGURATION = new UnifiedConfiguration();
   private static final EmbeddedBrokerRule BROKER_RULE =
       new EmbeddedBrokerRule(
-          CONFIG,
+          UNIFIED_CONFIGURATION,
           cfg -> {
             cfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(MAX_MESSAGE_SIZE_KB));
             cfg.getGateway()

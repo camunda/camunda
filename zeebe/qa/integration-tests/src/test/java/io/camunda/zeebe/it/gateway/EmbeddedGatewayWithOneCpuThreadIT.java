@@ -26,7 +26,7 @@ public final class EmbeddedGatewayWithOneCpuThreadIT {
   @Rule
   public EmbeddedBrokerRule brokerRule =
       new EmbeddedBrokerRule(
-          config, brokerCfg -> brokerCfg.getThreads().setCpuThreadCount(1));
+          unifiedConfiguration, brokerCfg -> brokerCfg.getThreads().setCpuThreadCount(1));
 
   private Broker broker;
   private CamundaClient client;

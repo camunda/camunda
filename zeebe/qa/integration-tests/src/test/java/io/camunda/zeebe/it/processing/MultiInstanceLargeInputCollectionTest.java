@@ -37,10 +37,10 @@ public final class MultiInstanceLargeInputCollectionTest {
   private static final int MAX_MESSAGE_SIZE_KB = 16;
   private static final CamundaObjectMapper OBJECT_MAPPER = new CamundaObjectMapper();
 
-  private static final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
+  private static final UnifiedConfiguration UNIFIED_CONFIGURATION = new UnifiedConfiguration();
   private static final EmbeddedBrokerRule BROKER_RULE =
       new EmbeddedBrokerRule(
-          CONFIG,
+          UNIFIED_CONFIGURATION,
           cfg -> {
             cfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(MAX_MESSAGE_SIZE_KB));
             cfg.getProcessing().setMaxCommandsInBatch(1);

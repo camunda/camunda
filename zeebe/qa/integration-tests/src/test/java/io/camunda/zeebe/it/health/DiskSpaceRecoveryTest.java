@@ -37,7 +37,7 @@ public class DiskSpaceRecoveryTest {
   private final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
   private final EmbeddedBrokerRule embeddedBrokerRule =
       new EmbeddedBrokerRule(
-          config,
+          unifiedConfiguration,
           cfg -> {
             cfg.getData().setDiskUsageMonitoringInterval(Duration.ofSeconds(1));
           });

@@ -23,7 +23,8 @@ import org.junit.rules.Timeout;
 public class HealthMonitoringTest {
 
   private final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
-  private final EmbeddedBrokerRule embeddedBrokerRule = new EmbeddedBrokerRule(config);
+  private final EmbeddedBrokerRule embeddedBrokerRule =
+      new EmbeddedBrokerRule(unifiedConfiguration);
   private final Timeout timeout = Timeout.seconds(5 * 60);
 
   @Rule public final RuleChain chain = RuleChain.outerRule(timeout).around(embeddedBrokerRule);

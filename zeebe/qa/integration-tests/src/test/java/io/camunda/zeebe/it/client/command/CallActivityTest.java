@@ -31,10 +31,10 @@ import org.springframework.util.unit.DataSize;
 
 public final class CallActivityTest {
 
-  private static final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
+  private static final UnifiedConfiguration UNIFIED_CONFIGURATION = new UnifiedConfiguration();
   private static final EmbeddedBrokerRule BROKER_RULE =
       new EmbeddedBrokerRule(
-          config,
+          UNIFIED_CONFIGURATION,
           cfg -> {
             cfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(100));
             cfg.getProcessing().setMaxCommandsInBatch(1);

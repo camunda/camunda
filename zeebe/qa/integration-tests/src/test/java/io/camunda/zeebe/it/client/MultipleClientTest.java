@@ -21,7 +21,7 @@ import org.junit.rules.RuleChain;
 
 public final class MultipleClientTest {
   public final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
-  public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(config);
+  public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(unifiedConfiguration);
 
   public final GrpcClientRule client1 = new GrpcClientRule(brokerRule);
   public final GrpcClientRule client2 = new GrpcClientRule(brokerRule);

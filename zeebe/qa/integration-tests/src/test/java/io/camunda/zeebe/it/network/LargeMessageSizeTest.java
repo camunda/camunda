@@ -51,7 +51,7 @@ public final class LargeMessageSizeTest {
   private final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
   private final EmbeddedBrokerRule brokerRule =
       new EmbeddedBrokerRule(
-          config, b -> b.getNetwork().setMaxMessageSize(MAX_MESSAGE_SIZE));
+          unifiedConfiguration, b -> b.getNetwork().setMaxMessageSize(MAX_MESSAGE_SIZE));
 
   private final GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);

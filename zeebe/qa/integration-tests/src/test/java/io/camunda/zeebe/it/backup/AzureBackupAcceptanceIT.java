@@ -7,7 +7,9 @@
  */
 package io.camunda.zeebe.it.backup;
 
-import io.camunda.zeebe.backup.azure.AzureBackupConfig;
+import io.camunda.unifiedconfig.AzureStore;
+import io.camunda.unifiedconfig.Backup;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -62,12 +64,10 @@ final class AzureBackupAcceptanceIT implements BackupAcceptance {
 
   @BeforeEach
   void beforeEach() {
-    final AzureBackupConfig config =
-        new AzureBackupConfig.Builder()
-            .withConnectionString(AZURITE_CONTAINER.getConnectString())
-            .withContainerName(CONTAINER_NAME)
-            .build();
-    store = new AzureBackupStore(config);
+    final AzureStore azureStoreConfig = new AzureStore();
+    azureStoreConfig.setConnectionString(AZURITE_CONTAINER.getConnectString());
+    azureStoreConfig.setContainerName(CONTAINER_NAME);
+    store = new AzureBackupStore(azureStoreConfig);
 
     // we have to configure the cluster here, after azurite is started, as otherwise we won't have
     // access to the exposed port
@@ -88,10 +88,11 @@ final class AzureBackupAcceptanceIT implements BackupAcceptance {
   private void configureBroker(final TestStandaloneBroker broker) {
     broker.withBrokerConfig(
         cfg -> {
-          final var backup = cfg.getData().getBackup();
+          final UnifiedConfiguration unifiedConfiguration = cfg.getUnifiedConfiguration();
+          final var backup = unifiedConfiguration.getCamunda().getData().getBackup();
           final var azure = backup.getAzure();
 
-          backup.setStore(BackupStoreType.AZURE);
+          backup.setStoreType(Backup.STORE_TYPE_AZURE);
           azure.setBasePath(CONTAINER_NAME);
           azure.setConnectionString(AZURITE_CONTAINER.getConnectString());
         });
