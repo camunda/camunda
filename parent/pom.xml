@@ -84,7 +84,7 @@
     <version.protobuf-common>2.58.0</version.protobuf-common>
     <version.micrometer>1.15.1</version.micrometer>
     <version.rocksdbjni>9.11.2</version.rocksdbjni>
-    <version.sbe>1.35.3</version.sbe>
+    <version.sbe>1.35.4</version.sbe>
     <version.scala>2.13.16</version.scala>
     <version.slf4j>2.0.17</version.slf4j>
     <version.snakeyaml>2.4</version.snakeyaml>
