@@ -16,6 +16,8 @@ import {
   groupedProcessesMock,
   mockProcessStatisticsV2 as mockProcessStatistics,
   mockProcessInstances,
+  mockMultipleStatesStatistics,
+  mockProcessXML,
 } from 'modules/testUtils';
 import {DiagramPanel} from './index';
 import {mockFetchProcessInstances} from 'modules/mocks/api/processInstances/fetchProcessInstances';
@@ -33,6 +35,9 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {ProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';
 
 jest.mock('modules/utils/bpmn');
+jest.mock('modules/bpmn-js/utils/isProcessEndEvent', () => ({
+  isProcessOrSubProcessEndEvent: jest.fn(() => true),
+}));
 
 function getWrapper(initialPath: string = Paths.dashboard()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -341,5 +346,98 @@ describe('DiagramPanel', () => {
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
     expect(screen.queryByTestId(/^state-overlay/)).not.toBeInTheDocument();
+  });
+
+  describe('State filters', () => {
+    it('should display statistics when active and incidents are selected in the filter', async () => {
+      const queryString =
+        '?process=bigVarProcess&version=1&active=true&incidents=true';
+
+      locationSpy.mockImplementation(() => ({
+        ...originalWindow.location,
+        search: queryString,
+      }));
+
+      mockFetchProcessInstancesStatistics().withSuccess(
+        mockMultipleStatesStatistics,
+      );
+      mockFetchProcessDefinitionXml().withSuccess('');
+
+      render(<DiagramPanel />, {
+        wrapper: getWrapper(`${Paths.processes()}${queryString}`),
+      });
+
+      expect(await screen.findByTestId('diagram')).toBeInTheDocument();
+      expect(
+        await screen.findByTestId('state-overlay-EndEvent_042s0oc-active'),
+      ).toHaveTextContent('1');
+      expect(
+        await screen.findByTestId('state-overlay-EndEvent_042s0oc-incidents'),
+      ).toHaveTextContent('3');
+    });
+
+    it('should display statistics when completed and canceled are selected in the filter', async () => {
+      const queryString =
+        '?process=bigVarProcess&version=1&completed=true&canceled=true';
+
+      locationSpy.mockImplementation(() => ({
+        ...originalWindow.location,
+        search: queryString,
+      }));
+
+      mockFetchProcessInstancesStatistics().withSuccess(
+        mockMultipleStatesStatistics,
+      );
+      mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+
+      render(<DiagramPanel />, {
+        wrapper: getWrapper(`${Paths.processes()}${queryString}`),
+      });
+
+      expect(await screen.findByTestId('diagram')).toBeInTheDocument();
+      expect(
+        await screen.findByTestId('state-overlay-EndEvent_042s0oc-canceled'),
+      ).toHaveTextContent('2');
+      expect(
+        await screen.findByTestId(
+          'state-overlay-EndEvent_042s0oc-completedEndEvents',
+        ),
+      ).toHaveTextContent('4');
+    });
+
+    it('should display statistics when all states are selected', async () => {
+      const queryString =
+        '?process=bigVarProcess&version=1&active=true&incidents=true&completed=true&canceled=true';
+
+      locationSpy.mockImplementation(() => ({
+        ...originalWindow.location,
+        search: queryString,
+      }));
+
+      mockFetchProcessInstancesStatistics().withSuccess(
+        mockMultipleStatesStatistics,
+      );
+      mockFetchProcessDefinitionXml().withSuccess('');
+
+      render(<DiagramPanel />, {
+        wrapper: getWrapper(`${Paths.processes()}${queryString}`),
+      });
+
+      expect(await screen.findByTestId('diagram')).toBeInTheDocument();
+      expect(
+        await screen.findByTestId('state-overlay-EndEvent_042s0oc-active'),
+      ).toHaveTextContent('1');
+      expect(
+        await screen.findByTestId('state-overlay-EndEvent_042s0oc-canceled'),
+      ).toHaveTextContent('2');
+      expect(
+        await screen.findByTestId('state-overlay-EndEvent_042s0oc-incidents'),
+      ).toHaveTextContent('3');
+      expect(
+        await screen.findByTestId(
+          'state-overlay-EndEvent_042s0oc-completedEndEvents',
+        ),
+      ).toHaveTextContent('4');
+    });
   });
 });
