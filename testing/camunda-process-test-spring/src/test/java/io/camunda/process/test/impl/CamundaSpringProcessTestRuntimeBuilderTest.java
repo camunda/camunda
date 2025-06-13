@@ -78,7 +78,7 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     final Map<String, String> camundaEnvVars =
         Map.ofEntries(entry("env-1", "test-1"), entry("env-2", "test-2"));
 
-    runtimeConfiguration.setCamundaVersion("8.6.0-custom");
+    runtimeConfiguration.setCamundaDockerImageVersion("8.6.0-custom");
     runtimeConfiguration.setCamundaDockerImageName("custom-camunda");
     runtimeConfiguration.setCamundaEnvVars(camundaEnvVars);
     final List<Integer> camundaExposedPorts = List.of(100, 200);

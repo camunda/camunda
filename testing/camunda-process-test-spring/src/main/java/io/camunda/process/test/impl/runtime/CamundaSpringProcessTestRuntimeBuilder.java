@@ -51,7 +51,7 @@ public class CamundaSpringProcessTestRuntimeBuilder {
       final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
 
     runtimeBuilder
-        .withCamundaDockerImageVersion(runtimeConfiguration.getCamundaVersion())
+        .withCamundaDockerImageVersion(runtimeConfiguration.getCamundaDockerImageVersion())
         .withCamundaDockerImageName(runtimeConfiguration.getCamundaDockerImageName())
         .withCamundaEnv(runtimeConfiguration.getCamundaEnvVars());
 
