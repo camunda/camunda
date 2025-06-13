@@ -42,7 +42,7 @@ class TaskPanelPage {
   async openTask(name: string) {
     await this.availableTasks
       .getByText(name, {exact: true})
-      .nth(0)
+      .first()
       .click({timeout: 60000});
   }
 
