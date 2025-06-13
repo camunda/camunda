@@ -37,6 +37,7 @@ import java.net.SocketTimeoutException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+<<<<<<< HEAD:webapps-backup/src/main/java/io/camunda/webapps/backup/repository/opensearch/OpensearchBackupRepository.java
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -47,6 +48,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
+=======
+import java.util.*;
+import java.util.function.Predicate;
+>>>>>>> 14e2131d (fix: Backup status endpoint returns INCOMPLETE while backup is still in progress):operate/webapp/src/main/java/io/camunda/operate/webapp/opensearch/backup/OpensearchBackupRepository.java
 import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
@@ -163,9 +168,12 @@ public class OpensearchBackupRepository implements BackupRepository {
 
   @Override
   public GetBackupStateResponseDto getBackupState(
-      final String repositoryName, final Long backupId) {
+      final String repositoryName,
+      final Long backupId,
+      final Predicate<Long> isBackupInProgressPredicate) {
+    final boolean isBackupInProgress = isBackupInProgressPredicate.test(backupId);
     final List<OpenSearchSnapshotInfo> snapshots = findSnapshots(repositoryName, backupId);
-    return toGetBackupStateResponseDto(backupId, snapshots);
+    return toGetBackupStateResponseDto(backupId, snapshots, isBackupInProgress);
   }
 
   @Override
@@ -199,6 +207,7 @@ public class OpensearchBackupRepository implements BackupRepository {
 
   @Override
   public List<GetBackupStateResponseDto> getBackups(
+<<<<<<< HEAD:webapps-backup/src/main/java/io/camunda/webapps/backup/repository/opensearch/OpensearchBackupRepository.java
       final String repositoryName, final boolean verbose, final String pattern) {
     final String validPattern;
     try {
@@ -206,6 +215,18 @@ public class OpensearchBackupRepository implements BackupRepository {
     } catch (final IllegalArgumentException ex) {
       throw new InvalidRequestException(ex.getMessage());
     }
+=======
+      final String repositoryName,
+      final boolean verbose,
+      final String pattern,
+      final Predicate<Long> isBackupInProgressPredicate) {
+    final var validatedPattern = BackupRepository.validPattern(pattern);
+
+    validatedPattern.ifLeft(
+        ex -> {
+          throw new InvalidRequestException(ex.getMessage(), ex);
+        });
+>>>>>>> 14e2131d (fix: Backup status endpoint returns INCOMPLETE while backup is still in progress):operate/webapp/src/main/java/io/camunda/operate/webapp/opensearch/backup/OpensearchBackupRepository.java
     final var request =
         getSnapshotRequestBuilder(
                 repositoryName, snapshotNameProvider.snapshotNamePrefix() + validPattern)
@@ -241,7 +262,12 @@ public class OpensearchBackupRepository implements BackupRepository {
                       toList()));
 
       return groupedSnapshotInfos.entrySet().stream()
-          .map(entry -> toGetBackupStateResponseDto(entry.getKey(), entry.getValue()))
+          .map(
+              entry ->
+                  toGetBackupStateResponseDto(
+                      entry.getKey(),
+                      entry.getValue(),
+                      isBackupInProgressPredicate.test(entry.getKey())))
           .toList();
 
     } catch (final Exception e) {
@@ -441,7 +467,9 @@ public class OpensearchBackupRepository implements BackupRepository {
   }
 
   private BackupStateDto getState(
-      final List<OpenSearchSnapshotInfo> snapshots, final Integer expectedSnapshotsCount) {
+      final List<OpenSearchSnapshotInfo> snapshots,
+      final Integer expectedSnapshotsCount,
+      final boolean isBackupInProgress) {
     if (snapshots.size() == expectedSnapshotsCount
         && snapshots.stream().map(OpenSearchSnapshotInfo::getState).allMatch(SUCCESS::equals)) {
       return BackupStateDto.COMPLETED;
@@ -449,7 +477,12 @@ public class OpensearchBackupRepository implements BackupRepository {
         .map(OpenSearchSnapshotInfo::getState)
         .anyMatch(s -> FAILED.equals(s) || PARTIAL.equals(s))) {
       return BackupStateDto.FAILED;
+<<<<<<< HEAD:webapps-backup/src/main/java/io/camunda/webapps/backup/repository/opensearch/OpensearchBackupRepository.java
     } else if (snapshots.stream().map(OpenSearchSnapshotInfo::getState).anyMatch(STARTED::equals)) {
+=======
+    } else if (isBackupInProgress
+        || snapshots.stream().map(OpenSearchSnapshotInfo::getState).anyMatch(IN_PROGRESS::equals)) {
+>>>>>>> 14e2131d (fix: Backup status endpoint returns INCOMPLETE while backup is still in progress):operate/webapp/src/main/java/io/camunda/operate/webapp/opensearch/backup/OpensearchBackupRepository.java
       return BackupStateDto.IN_PROGRESS;
     } else if (snapshots.size() < expectedSnapshotsCount) {
       if (isIncompleteCheckTimedOut(
@@ -465,12 +498,14 @@ public class OpensearchBackupRepository implements BackupRepository {
   }
 
   private GetBackupStateResponseDto toGetBackupStateResponseDto(
-      final Long backupId, final List<OpenSearchSnapshotInfo> snapshots) {
+      final Long backupId,
+      final List<OpenSearchSnapshotInfo> snapshots,
+      final boolean isBackupInProgress) {
     final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
     final Metadata metadata = extractMetadata(snapshots.getFirst());
     final Integer expectedSnapshotsCount = metadata.partCount();
 
-    response.setState(getState(snapshots, expectedSnapshotsCount));
+    response.setState(getState(snapshots, expectedSnapshotsCount, isBackupInProgress));
     response.setDetails(getBackupStateDetails(snapshots));
 
     final var failureReason =
