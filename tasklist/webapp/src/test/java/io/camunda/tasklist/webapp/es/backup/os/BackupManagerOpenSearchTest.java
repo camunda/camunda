@@ -61,12 +61,18 @@ import org.opensearch.client.transport.endpoints.SimpleEndpoint;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class BackupManagerOpenSearchTest {
 
+  private static final String TASKLIST_VERSION = "8.6.1";
+
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   OpenSearchTransport openSearchTransport;
 
   private final long backupId = 2L;
   final Metadata metadata =
-      new Metadata().setBackupId(backupId).setPartCount(3).setPartNo(1).setVersion("8.6.1");
+      new Metadata()
+          .setBackupId(backupId)
+          .setPartCount(3)
+          .setPartNo(1)
+          .setVersion(TASKLIST_VERSION);
   private final String repositoryName = "test-repo";
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
@@ -90,7 +96,6 @@ class BackupManagerOpenSearchTest {
     when(tasklistProperties.getBackup().getRepositoryName()).thenReturn(repositoryName);
     when(openSearchClient._transport()).thenReturn(openSearchTransport);
     when(openSearchAsyncClient._transport()).thenReturn(openSearchTransport);
-    when(tasklistProperties.getVersion()).thenReturn("8.6.0");
   }
 
   @Test
@@ -112,7 +117,7 @@ class BackupManagerOpenSearchTest {
     // given
 
     final var metadata =
-        new Metadata().setBackupId(2L).setPartCount(3).setPartNo(1).setVersion("8.6.1");
+        new Metadata().setBackupId(2L).setPartCount(3).setPartNo(1).setVersion(TASKLIST_VERSION);
     final var snapshots = new ArrayList<SnapshotInfo>(metadata.getPartCount());
     for (int i = 1; i <= metadata.getPartCount(); i++) {
       final var copy = new Metadata(metadata);
@@ -270,6 +275,7 @@ class BackupManagerOpenSearchTest {
   @Test
   void shouldReturnInProgressStateWhenBackupIsStillRunning() throws IOException {
     // given
+    when(tasklistProperties.getVersion()).thenReturn(TASKLIST_VERSION);
     // run takeBackup in parallel to simulate an ongoing backup
     when(openSearchClient.snapshot().create(any(CreateSnapshotRequest.class)))
         .thenAnswer(
@@ -277,14 +283,12 @@ class BackupManagerOpenSearchTest {
               Thread.sleep(1000);
               return mock(CompletableFuture.class);
             });
-    /*when(openSearchClient.snapshot().get(any(GetSnapshotRequest.class)))
-    .thenReturn(mock(GetSnapshotResponse.class));*/
     when(openSearchTransport.performRequest(any(), any(), any()))
         .thenReturn(mock(GetCustomSnapshotResponse.class));
     backupManagerOpenSearch.takeBackup(new TakeBackupRequestDto().setBackupId(backupId));
 
     final var metadata =
-        new Metadata().setBackupId(2L).setPartCount(3).setPartNo(1).setVersion("8.6.1");
+        new Metadata().setBackupId(2L).setPartCount(3).setPartNo(1).setVersion(TASKLIST_VERSION);
     final var snapshots = new ArrayList<SnapshotInfo>(metadata.getPartCount());
     // return (partCount - 1) SUCCESS snapshots, one is remaining
     for (int i = 1; i <= metadata.getPartCount() - 1; i++) {
