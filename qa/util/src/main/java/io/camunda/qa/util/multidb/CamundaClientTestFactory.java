@@ -9,8 +9,6 @@ package io.camunda.qa.util.multidb;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.auth.Authenticated;
-import io.camunda.qa.util.auth.TestMapping;
-import io.camunda.qa.util.auth.TestUser;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
 
 public interface CamundaClientTestFactory extends AutoCloseable {
@@ -26,11 +24,4 @@ public interface CamundaClientTestFactory extends AutoCloseable {
 
   /** Returns a Camunda client for the given gateway and authenticated user */
   CamundaClient getCamundaClient(final TestGateway<?> gateway, final Authenticated authenticated);
-
-  /** Creates a Camunda client for the given user. Only implemented for basic auth! */
-  default void createClientForUser(final TestGateway<?> gateway, final TestUser user) {}
-
-  /** Creates a Camunda client for the given mapping. Only implemented for OIDC! */
-  default void createClientForMapping(
-      final TestGateway<?> gateway, final TestMapping mappingName) {}
 }

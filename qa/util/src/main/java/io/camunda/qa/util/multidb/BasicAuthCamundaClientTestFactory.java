@@ -59,7 +59,6 @@ public final class BasicAuthCamundaClientTestFactory implements CamundaClientTes
     return cachedClients.get(username);
   }
 
-  @Override
   public void createClientForUser(final TestGateway<?> gateway, final TestUser user) {
     final var client = createAuthenticatedClient(gateway, user.username(), user.password());
     cachedClients.put(user.username(), client);

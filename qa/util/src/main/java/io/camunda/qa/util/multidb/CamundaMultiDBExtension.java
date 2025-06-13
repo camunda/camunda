@@ -384,13 +384,28 @@ public class CamundaMultiDBExtension
         .withRoles(roles)
         .await();
     users.forEach(
-        user ->
-            authenticatedClientFactory.createClientForUser(applicationUnderTest.application, user));
+        user -> {
+          try {
+            final var clientFactory =
+                (BasicAuthCamundaClientTestFactory) authenticatedClientFactory;
+            clientFactory.createClientForUser(applicationUnderTest.application, user);
+          } catch (final ClassCastException e) {
+            LOGGER.warn(
+                "Could not create client for user, as the application is not configured for basic authentication: %s",
+                e);
+          }
+        });
 
     mappings.forEach(
         mapping -> {
-          authenticatedClientFactory.createClientForMapping(
-              applicationUnderTest.application, mapping);
+          try {
+            final var clientFactory = (OidcCamundaClientTestFactory) authenticatedClientFactory;
+            clientFactory.createClientForMapping(applicationUnderTest.application, mapping);
+          } catch (final ClassCastException e) {
+            LOGGER.warn(
+                "Could not create client for mapping, as the application is not configured for OIDC authentication",
+                e);
+          }
 
           if (shouldSetupKeycloak) {
             setupUserInKeycloak(mapping.id(), mapping.claimValue());

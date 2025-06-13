@@ -79,7 +79,6 @@ public final class OidcCamundaClientTestFactory implements CamundaClientTestFact
     return cachedClients.get(mappingId);
   }
 
-  @Override
   public void createClientForMapping(final TestGateway<?> gateway, final TestMapping mapping) {
     final var client = createAuthenticatedClient(gateway, mapping.id(), mapping.claimValue());
     cachedClients.put(mapping.id(), client);
@@ -109,7 +108,7 @@ public final class OidcCamundaClientTestFactory implements CamundaClientTestFact
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() {
     deleteTempDirectory();
     CloseHelper.quietCloseAll(cachedClients.values());
   }
