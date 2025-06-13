@@ -1,0 +1,11 @@
+{
+  "aliases": {},
+  "mappings": {
+    "dynamic": "true",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      }
+    }
+  }
+}

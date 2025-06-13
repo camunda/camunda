@@ -58,6 +58,7 @@ public class WebSessionRepositoryConfiguration {
       final DocumentBasedSearchClient searchClient,
       final DocumentBasedWriteClient writeClient,
       final PersistentWebSessionIndexDescriptor descriptor) {
+    System.out.println("Sessions loaded!");
     return new PersistentWebSessionSearchImpl(searchClient, writeClient, descriptor);
   }
 
