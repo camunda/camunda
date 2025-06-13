@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.bpmn.container;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnAdHocSubProcessBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
@@ -21,10 +22,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehav
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
 import java.util.Collections;
@@ -42,6 +40,7 @@ public class AdHocSubProcessProcessor
   private final BpmnIncidentBehavior incidentBehavior;
   private final ExpressionProcessor expressionProcessor;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
+  private final BpmnAdHocSubProcessBehavior adHocSubProcessBehavior;
 
   public AdHocSubProcessProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -53,6 +52,7 @@ public class AdHocSubProcessProcessor
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     expressionProcessor = bpmnBehaviors.expressionBehavior();
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
+    adHocSubProcessBehavior = bpmnBehaviors.adHocSubProcessBehavior();
     this.stateTransitionBehavior = stateTransitionBehavior;
   }
 
@@ -201,34 +201,9 @@ public class AdHocSubProcessProcessor
       final BpmnElementContext context,
       final List<String> elementsToActivate) {
 
-    elementsToActivate.stream()
-        .map(element.getAdHocActivitiesById()::get)
-        .forEach(elementToActivate -> activateElement(element, context, elementToActivate));
-  }
-
-  private void activateElement(
-      final ExecutableAdHocSubProcess element,
-      final BpmnElementContext context,
-      final ExecutableFlowNode elementToActivate) {
-
-    // create an inner instance
-    final ProcessInstanceRecord adHocSubprocessInnerInstance = new ProcessInstanceRecord();
-    adHocSubprocessInnerInstance.wrap(context.getRecordValue());
-    adHocSubprocessInnerInstance.setBpmnElementType(
-        BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE);
-    adHocSubprocessInnerInstance.setElementId(element.getInnerInstanceId());
-    adHocSubprocessInnerInstance.setFlowScopeKey(context.getElementInstanceKey());
-
-    final BpmnElementContext innerInstanceContext =
-        context.copy(-1, adHocSubprocessInnerInstance, ProcessInstanceIntent.ACTIVATE_ELEMENT);
-    final BpmnElementContext innerInstanceActivating =
-        stateTransitionBehavior.transitionToActivating(innerInstanceContext);
-    final BpmnElementContext innerInstanceActivated =
-        stateTransitionBehavior.transitionToActivated(
-            innerInstanceActivating, adHocSubprocessInnerInstance.getBpmnEventType());
-
-    // activate the element inside the inner instance
-    stateTransitionBehavior.activateChildInstance(innerInstanceActivated, elementToActivate);
+    elementsToActivate.forEach(
+        elementToActivate ->
+            adHocSubProcessBehavior.activateElement(element, context, elementToActivate));
   }
 
   @Override
