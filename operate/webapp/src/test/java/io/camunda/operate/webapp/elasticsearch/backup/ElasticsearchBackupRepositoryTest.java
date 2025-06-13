@@ -7,6 +7,8 @@
  */
 package io.camunda.operate.webapp.elasticsearch.backup;
 
+import static io.camunda.operate.webapp.management.dto.BackupStateDto.INCOMPLETE;
+import static io.camunda.operate.webapp.management.dto.BackupStateDto.IN_PROGRESS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -26,6 +28,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.backup.BackupService.SnapshotRequest;
 import io.camunda.operate.webapp.backup.Metadata;
 import io.camunda.operate.webapp.management.dto.BackupStateDto;
+import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
@@ -135,7 +138,8 @@ public class ElasticsearchBackupRepositoryTest {
     Awaitility.await("backup is completed")
         .untilAsserted(
             () -> {
-              final var response = backupRepository.getBackupState(repositoryName, backupId);
+              final var response =
+                  backupRepository.getBackupState(repositoryName, backupId, id -> false);
               assertThat(response.getState()).isEqualTo(BackupStateDto.COMPLETED);
             });
   }
@@ -188,7 +192,7 @@ public class ElasticsearchBackupRepositoryTest {
     when(snapshotClient.get(any(), any())).thenReturn(response);
 
     // when
-    final var responses = backupRepository.getBackups(repositoryName, false, null);
+    final var responses = backupRepository.getBackups(repositoryName, false, null, id -> false);
 
     // then
     verify(snapshotClient).get(argThat(req -> !req.verbose()), any());
@@ -197,7 +201,7 @@ public class ElasticsearchBackupRepositoryTest {
         .satisfies(
             details -> {
               assertThat(details.getBackupId()).isEqualTo(backupId);
-              assertThat(details.getState()).isEqualTo(BackupStateDto.IN_PROGRESS);
+              assertThat(details.getState()).isEqualTo(IN_PROGRESS);
             });
   }
 
@@ -212,12 +216,52 @@ public class ElasticsearchBackupRepositoryTest {
     when(snapshotClient.get(any(), any())).thenReturn(response);
 
     // when
-    backupRepository.getBackups(repositoryName, true, "2023*");
+    backupRepository.getBackups(repositoryName, true, "2023*", id -> false);
 
     // then
     verify(snapshotClient)
         .get(
             argThat(req -> Arrays.asList(req.snapshots()).contains("camunda_operate_2023*")),
             any());
+  }
+
+  @Test
+  void shouldReturnInProgressWhenFewerSnapshotsSuccessAndBackupPendingInMemory()
+      throws IOException {
+    // given
+    final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class, RETURNS_DEEP_STUBS);
+    when(snapshotInfo.state()).thenReturn(SnapshotState.SUCCESS);
+    when(snapshotInfo.snapshotId().getName()).thenReturn(snapshotName);
+    final var response = mock(GetSnapshotsResponse.class, RETURNS_DEEP_STUBS);
+    when(response.getSnapshots()).thenReturn(List.of(snapshotInfo));
+    when(esClient.snapshot()).thenReturn(snapshotClient);
+    when(snapshotClient.get(any(), any())).thenReturn(response);
+
+    // when
+    final GetBackupStateResponseDto backupStateResponse =
+        backupRepository.getBackupState(repositoryName, backupId, id -> id.equals(backupId));
+
+    // then
+    assertThat(backupStateResponse.getState()).isEqualTo(IN_PROGRESS);
+  }
+
+  @Test
+  void shouldReturnIncompleteWhenFewerSnapshotsSuccessAndBackupNotPendingInMemory()
+      throws IOException {
+    // given
+    final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class, RETURNS_DEEP_STUBS);
+    when(snapshotInfo.state()).thenReturn(SnapshotState.SUCCESS);
+    when(snapshotInfo.snapshotId().getName()).thenReturn(snapshotName);
+    final var response = mock(GetSnapshotsResponse.class, RETURNS_DEEP_STUBS);
+    when(response.getSnapshots()).thenReturn(List.of(snapshotInfo));
+    when(esClient.snapshot()).thenReturn(snapshotClient);
+    when(snapshotClient.get(any(), any())).thenReturn(response);
+
+    // when
+    final GetBackupStateResponseDto backupStateResponse =
+        backupRepository.getBackupState(repositoryName, backupId, id -> false);
+
+    // given
+    assertThat(backupStateResponse.getState()).isEqualTo(INCOMPLETE);
   }
 }

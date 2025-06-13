@@ -45,7 +45,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.admin.cluster.repositories.get.GetRepositoriesRequest;
@@ -95,6 +97,7 @@ public class BackupManagerElasticSearch extends BackupManager {
   private ObjectMapper objectMapper;
 
   private final Queue<CreateSnapshotRequest> requestsQueue = new ConcurrentLinkedQueue<>();
+  private final AtomicReference<CreateSnapshotRequest> currentRequest = new AtomicReference<>(null);
 
   @Override
   public void deleteBackup(final Long backupId) {
@@ -133,8 +136,9 @@ public class BackupManagerElasticSearch extends BackupManager {
 
   @Override
   public GetBackupStateResponseDto getBackupState(final Long backupId) {
+    final boolean isBackupInProgress = isBackupInProgress(backupId);
     final List<SnapshotInfo> snapshots = findSnapshots(backupId);
-    return getBackupResponse(backupId, snapshots);
+    return getBackupResponse(backupId, snapshots, isBackupInProgress);
   }
 
   @Override
@@ -190,7 +194,10 @@ public class BackupManagerElasticSearch extends BackupManager {
                       toList()));
 
       return groupedSnapshotInfos.entrySet().stream()
-          .map(entry -> getBackupResponse(entry.getKey(), entry.getValue()))
+          .map(
+              entry ->
+                  getBackupResponse(
+                      entry.getKey(), entry.getValue(), isBackupInProgress(entry.getKey())))
           .collect(toList());
     } catch (final IOException | TransportException ex) {
       final String reason =
@@ -287,6 +294,7 @@ public class BackupManagerElasticSearch extends BackupManager {
 
   private void scheduleNextSnapshot() {
     final CreateSnapshotRequest nextRequest = requestsQueue.poll();
+    currentRequest.set(nextRequest); // if the queue is empty, currentRequest will be set to null
     if (nextRequest != null) {
       getTaskExecutor()
           .submit(
@@ -373,7 +381,7 @@ public class BackupManagerElasticSearch extends BackupManager {
   }
 
   private GetBackupStateResponseDto getBackupResponse(
-      final Long backupId, final List<SnapshotInfo> snapshots) {
+      final Long backupId, final List<SnapshotInfo> snapshots, final boolean isBackupInProgress) {
     final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
 
     final Metadata metadata =
@@ -390,7 +398,8 @@ public class BackupManagerElasticSearch extends BackupManager {
       response.setState(BackupStateDto.FAILED);
     } else if (snapshots.stream().map(SnapshotInfo::state).anyMatch(INCOMPATIBLE::equals)) {
       response.setState(BackupStateDto.INCOMPATIBLE);
-    } else if (snapshots.stream().map(SnapshotInfo::state).anyMatch(IN_PROGRESS::equals)) {
+    } else if (isBackupInProgress
+        || snapshots.stream().map(SnapshotInfo::state).anyMatch(IN_PROGRESS::equals)) {
       response.setState(BackupStateDto.IN_PROGRESS);
     } else if (snapshots.size() < expectedSnapshotsCount) {
       response.setState(BackupStateDto.INCOMPLETE);
@@ -546,20 +555,40 @@ public class BackupManagerElasticSearch extends BackupManager {
     }
   }
 
+  /**
+   * Checks if a backup with the given ID is currently in progress, according to the in-memory
+   * state. Note this may not reflect the actual state in a multinode deployment.
+   */
+  private boolean isBackupInProgress(final Long backupId) {
+    return Stream.concat(Stream.ofNullable(currentRequest.get()), requestsQueue.stream())
+        .anyMatch(
+            request ->
+                backupId.equals(
+                    Metadata.fromObjectMapper(objectMapper, request.userMetadata()).getBackupId()));
+  }
+
   public class CreateSnapshotListener implements ActionListener<CreateSnapshotResponse> {
 
     private final CreateSnapshotRequest snapshotRequest;
+    private final Runnable onSuccess;
+    private final Runnable onFailure;
 
     public CreateSnapshotListener(final CreateSnapshotRequest snapshotRequest) {
       this.snapshotRequest = snapshotRequest;
+      onSuccess = () -> scheduleNextSnapshot();
+      onFailure =
+          () -> {
+            currentRequest.set(null);
+            requestsQueue.clear();
+          };
     }
 
     @Override
     public void onResponse(final CreateSnapshotResponse response) {
       if (isSnapshotFinished(response.getSnapshotInfo())) {
-        scheduleNextSnapshot();
+        onSuccess.run();
       } else {
-        requestsQueue.clear();
+        onFailure.run();
       }
     }
 
@@ -577,14 +606,14 @@ public class BackupManagerElasticSearch extends BackupManager {
                     ? "until completion."
                     : "at most " + snapshotTimeout + " seconds."));
         if (isSnapshotFinishedWithinTimeout(snapshotRequest.snapshot())) {
-          scheduleNextSnapshot();
+          onSuccess.run();
         } else {
-          requestsQueue.clear();
+          onFailure.run();
         }
       } else {
         LOGGER.error("Exception occurred while creating snapshot: " + e.getMessage(), e);
         // no need to continue
-        requestsQueue.clear();
+        onFailure.run();
       }
     }
   }

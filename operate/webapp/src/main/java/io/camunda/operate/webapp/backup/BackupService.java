@@ -23,6 +23,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -37,6 +39,7 @@ public class BackupService {
   private static final Logger LOGGER = LoggerFactory.getLogger(BackupService.class);
   private final ThreadPoolTaskExecutor threadPoolTaskExecutor;
   private final Queue<SnapshotRequest> requestsQueue = new ConcurrentLinkedQueue<>();
+  private final AtomicReference<SnapshotRequest> currentRequest = new AtomicReference<>(null);
 
   private final List<Prio1Backup> prio1BackupIndices;
 
@@ -128,11 +131,17 @@ public class BackupService {
 
   private void scheduleNextSnapshot() {
     final SnapshotRequest nextRequest = requestsQueue.poll();
+    currentRequest.set(nextRequest); // if the queue is empty, currentRequest will be set to null
     if (nextRequest != null) {
       threadPoolTaskExecutor.submit(
           () ->
               repository.executeSnapshotting(
-                  nextRequest, this::scheduleNextSnapshot, requestsQueue::clear));
+                  nextRequest,
+                  this::scheduleNextSnapshot,
+                  () -> {
+                    currentRequest.set(null);
+                    requestsQueue.clear();
+                  }));
       LOGGER.debug("Snapshot picked for execution: {}", nextRequest);
     }
   }
@@ -187,11 +196,20 @@ public class BackupService {
   }
 
   public GetBackupStateResponseDto getBackupState(final Long backupId) {
-    return repository.getBackupState(getRepositoryName(), backupId);
+    return repository.getBackupState(getRepositoryName(), backupId, this::isBackupInProgress);
   }
 
   public List<GetBackupStateResponseDto> getBackups(final boolean verbose, final String pattern) {
-    return repository.getBackups(getRepositoryName(), verbose, pattern);
+    return repository.getBackups(getRepositoryName(), verbose, pattern, this::isBackupInProgress);
+  }
+
+  /**
+   * Checks if a backup with the given ID is currently in progress, according to the in-memory
+   * state. Note this may not reflect the actual state in a multinode deployment.
+   */
+  private boolean isBackupInProgress(final Long backupId) {
+    return Stream.concat(Stream.ofNullable(currentRequest.get()), requestsQueue.stream())
+        .anyMatch(request -> backupId.equals(request.metadata().getBackupId()));
   }
 
   public record SnapshotRequest(
