@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.interceptors.impl;
 
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.auth.OidcPrincipalLoader;
 import io.camunda.security.auth.OidcPrincipalLoader.OidcPrincipals;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
@@ -17,6 +18,7 @@ import io.camunda.zeebe.util.Either;
 import io.grpc.Context;
 import io.grpc.Status;
 import java.util.Base64;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -29,6 +31,7 @@ import org.springframework.security.oauth2.jwt.JwtException;
 public sealed interface AuthenticationHandler {
   Context.Key<String> USERNAME = Context.key("io.camunda.zeebe:username");
   Context.Key<String> CLIENT_ID = Context.key("io.camunda.zeebe:client_id");
+  Context.Key<List<String>> GROUPS_CLAIMS = Context.key("io.camunda.zeebe:groups_claims");
 
   /**
    * Applies authentication logic for the given authorization header. Must not throw exceptions, but
@@ -47,6 +50,7 @@ public sealed interface AuthenticationHandler {
     private final JwtDecoder jwtDecoder;
     private final OidcAuthenticationConfiguration oidcAuthenticationConfiguration;
     private final OidcPrincipalLoader oidcPrincipalLoader;
+    private final OidcGroupsLoader oidcGroupsLoader;
 
     public Oidc(
         final JwtDecoder jwtDecoder,
@@ -58,6 +62,7 @@ public sealed interface AuthenticationHandler {
           new OidcPrincipalLoader(
               oidcAuthenticationConfiguration.getUsernameClaim(),
               oidcAuthenticationConfiguration.getClientIdClaim());
+      oidcGroupsLoader = new OidcGroupsLoader(oidcAuthenticationConfiguration.getGroupsClaim());
     }
 
     @Override
@@ -78,6 +83,18 @@ public sealed interface AuthenticationHandler {
                 .withCause(e));
       }
 
+      var context = Context.current();
+      if (oidcAuthenticationConfiguration.getGroupsClaim() != null) {
+        try {
+          context = context.withValue(GROUPS_CLAIMS, oidcGroupsLoader.load(token.getClaims()));
+        } catch (final Exception e) {
+          return Either.left(
+              Status.UNAUTHENTICATED
+                  .augmentDescription("Failed to load OIDC groups, see cause for details")
+                  .withCause(e));
+        }
+      }
+
       final OidcPrincipals principals;
       try {
         principals = oidcPrincipalLoader.load(token.getClaims());
@@ -87,15 +104,16 @@ public sealed interface AuthenticationHandler {
                 .augmentDescription("Failed to load OIDC principals, see cause for details")
                 .withCause(e));
       }
+
       if (principals.username() != null) {
         return Either.right(
-            Context.current()
+            context
                 .withValue(USERNAME, principals.username())
                 .withValue(USER_CLAIMS, token.getClaims()));
       }
       if (principals.clientId() != null) {
         return Either.right(
-            Context.current()
+            context
                 .withValue(CLIENT_ID, principals.clientId())
                 .withValue(USER_CLAIMS, token.getClaims()));
       }
@@ -106,14 +124,6 @@ public sealed interface AuthenticationHandler {
                   .formatted(
                       oidcAuthenticationConfiguration.getUsernameClaim(),
                       oidcAuthenticationConfiguration.getClientIdClaim())));
-    }
-
-    private String sanitizeClaimPath(final String claim) {
-      // If the claim starts with a dollar sign, it is already a JSONPath expression.
-      // Otherwise, we wrap it with the dollar sign to denote a JSONPath.
-      // We also ensure that the claim is wrapped in single quotes to handle cases where the claim
-      // name contains special characters.
-      return claim.startsWith("$") ? claim : "$['" + claim + "']";
     }
   }
 

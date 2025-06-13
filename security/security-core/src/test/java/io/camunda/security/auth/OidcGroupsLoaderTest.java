@@ -112,4 +112,19 @@ final class OidcGroupsLoaderTest {
     // then
     assertThat(groups).containsExactlyInAnyOrder("g1");
   }
+
+  @Test
+  void shouldLoadEmptyGroupsWithNonExistentClaim() {
+    // given
+    final var claims =
+        Map.<String, Object>of("groups", List.of("g1", "g2"), "other_claim", "other_value");
+
+    final var loader = new OidcGroupsLoader("group_names");
+
+    // when
+    final var groups = loader.load(claims);
+
+    // then
+    assertThat(groups).isEmpty();
+  }
 }

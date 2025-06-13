@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.interceptors.impl;
 
 import static io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.CLIENT_ID;
+import static io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.GROUPS_CLAIMS;
 import static io.camunda.zeebe.gateway.interceptors.impl.AuthenticationHandler.USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -33,6 +34,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import org.assertj.core.api.ListAssert;
 import org.assertj.core.api.MapAssert;
 import org.assertj.core.api.StringAssert;
 import org.junit.jupiter.api.Test;
@@ -450,6 +452,83 @@ public class AuthenticationInterceptorTest {
             });
   }
 
+  @Test
+  public void addsGroupsInOidcToContext() {
+    // given
+    final Metadata metadata = createAuthHeader();
+    final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
+        new CloseStatusCapturingServerCall();
+
+    // Create a mock JWT with claims
+    final var jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class);
+    final Map<String, Object> claims =
+        Map.of("username", "test-user", "groups", List.of("foo", "bar"));
+    when(jwt.getClaims()).thenReturn(claims);
+
+    // Configure the JwtDecoder to return our mock JWT
+    final var jwtDecoder = mock(JwtDecoder.class);
+    when(jwtDecoder.decode(anyString())).thenReturn(jwt);
+
+    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
+    oidcAuthenticationConfiguration.setUsernameClaim("username");
+    oidcAuthenticationConfiguration.setClientIdClaim("application_id");
+    oidcAuthenticationConfiguration.setGroupsClaim("$.groups[*]");
+
+    // when
+    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
+        .interceptCall(
+            closeStatusCapturingServerCall,
+            metadata,
+            (call, headers) -> {
+              // then
+              assertGroups().containsExactlyInAnyOrder("foo", "bar");
+              call.close(Status.OK, headers);
+              return null;
+            });
+  }
+
+  @Test
+  public void nonStringArrayGroupsIsRejected() {
+    // when
+    final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
+        new CloseStatusCapturingServerCall();
+
+    final var jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class);
+    final Map<String, Object> claims =
+        Map.of("username", "test-user", "groups", List.of(Map.of("foo", "bar")));
+
+    when(jwt.getClaims()).thenReturn(claims);
+
+    final var jwtDecoder = mock(JwtDecoder.class);
+    when(jwtDecoder.decode(anyString())).thenReturn(jwt);
+
+    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
+    oidcAuthenticationConfiguration.setUsernameClaim("username");
+    oidcAuthenticationConfiguration.setClientIdClaim("client_id");
+    oidcAuthenticationConfiguration.setGroupsClaim("$.groups[*]");
+
+    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
+        .interceptCall(
+            closeStatusCapturingServerCall,
+            createAuthHeader(),
+            (call, headers) -> {
+              call.close(Status.OK, headers);
+              return null;
+            });
+
+    assertThat(closeStatusCapturingServerCall.closeStatus)
+        .hasValueSatisfying(
+            status -> {
+              assertThat(status.getCode()).isEqualTo(Status.UNAUTHENTICATED.getCode());
+              assertThat(status.getDescription())
+                  .isEqualTo("Failed to load OIDC groups, see cause for details");
+              assertThat(status.getCause())
+                  .isInstanceOf(IllegalArgumentException.class)
+                  .hasMessageContaining(
+                      "Group's list derived from ($.groups[*]) is not a string array. Please check your OIDC configuration.");
+            });
+  }
+
   private Metadata createAuthHeader() {
     final Metadata metadata = new Metadata();
     metadata.put(
@@ -476,6 +555,14 @@ public class AuthenticationInterceptorTest {
       return assertThat(Context.current().call(() -> Oidc.USER_CLAIMS.get()));
     } catch (final Exception e) {
       throw new RuntimeException("Unable to retrieve user claims from context", e);
+    }
+  }
+
+  private static ListAssert<String> assertGroups() {
+    try {
+      return assertThat(Context.current().call(() -> GROUPS_CLAIMS.get()));
+    } catch (final Exception e) {
+      throw new RuntimeException("Unable to retrieve user key from context", e);
     }
   }
 

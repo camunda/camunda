@@ -28,6 +28,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -133,7 +134,7 @@ public final class AuthorizationCheckBehavior {
           entityIds.stream()
               .noneMatch(
                   entityId ->
-                      getAuthorizedTenantIds(entityType, entityId)
+                      getAuthorizedTenantIds(request.command, entityType, entityId)
                           .anyMatch(request.tenantId::equals));
       if (isAssignedToTenant) {
         final var rejectionType =
@@ -151,6 +152,7 @@ public final class AuthorizationCheckBehavior {
             .flatMap(
                 entityId ->
                     getAuthorizedResourceIdentifiers(
+                        request.command,
                         entityType,
                         entityId,
                         request.getResourceType(),
@@ -198,11 +200,11 @@ public final class AuthorizationCheckBehavior {
   }
 
   private Stream<String> getAuthorizedTenantIds(
-      final EntityType entityType, final String entityId) {
+      final TypedRecord<?> command, final EntityType entityType, final String entityId) {
     return Stream.concat(
         membershipState.getMemberships(entityType, entityId, RelationType.TENANT).stream(),
         Stream.concat(
-            membershipState.getMemberships(entityType, entityId, RelationType.GROUP).stream()
+            fetchGroups(command, entityType, entityId).stream()
                 .flatMap(
                     groupId ->
                         Stream.concat(
@@ -236,6 +238,7 @@ public final class AuthorizationCheckBehavior {
     final var optionalUsername = getUsername(request);
     if (optionalUsername.isPresent()) {
       getAuthorizedResourceIdentifiers(
+              request.command,
               EntityType.USER,
               optionalUsername.get(),
               request.getResourceType(),
@@ -248,6 +251,7 @@ public final class AuthorizationCheckBehavior {
           .map(
               clientId ->
                   getAuthorizedResourceIdentifiers(
+                      request.command,
                       EntityType.CLIENT,
                       clientId,
                       request.getResourceType(),
@@ -260,6 +264,7 @@ public final class AuthorizationCheckBehavior {
         .flatMap(
             mapping ->
                 getAuthorizedResourceIdentifiers(
+                    request.command,
                     EntityType.MAPPING,
                     mapping.getMappingId(),
                     request.getResourceType(),
@@ -284,6 +289,7 @@ public final class AuthorizationCheckBehavior {
   }
 
   private Stream<String> getAuthorizedResourceIdentifiers(
+      final TypedRecord<?> command,
       final EntityType ownerType,
       final String ownerId,
       final AuthorizationResourceType resourceType,
@@ -310,7 +316,7 @@ public final class AuthorizationCheckBehavior {
                         AuthorizationOwnerType.ROLE, roleId, resourceType, permissionType)
                         .stream());
     final var viaGroups =
-        membershipState.getMemberships(ownerType, ownerId, RelationType.GROUP).stream()
+        fetchGroups(command, ownerType, ownerId).stream()
             .<String>mapMulti(
                 (groupId, stream) -> {
                   getDirectAuthorizedResourceIdentifiers(
@@ -327,6 +333,16 @@ public final class AuthorizationCheckBehavior {
                       .forEach(stream);
                 });
     return Stream.concat(direct, Stream.concat(viaRole, viaGroups));
+  }
+
+  private List<String> fetchGroups(
+      final TypedRecord<?> command, final EntityType ownerType, final String ownerId) {
+    final List<String> groupsClaims =
+        (List<String>) command.getAuthorizations().get(Authorization.USER_GROUPS_CLAIMS);
+    if (groupsClaims != null) {
+      return groupsClaims;
+    }
+    return membershipState.getMemberships(ownerType, ownerId, RelationType.GROUP);
   }
 
   /**
@@ -359,7 +375,8 @@ public final class AuthorizationCheckBehavior {
 
     final var username = getUsername(command);
     if (username.isPresent()) {
-      final var tenantIds = getAuthorizedTenantIds(EntityType.USER, username.get()).toList();
+      final var tenantIds =
+          getAuthorizedTenantIds(command, EntityType.USER, username.get()).toList();
       if (tenantIds.isEmpty()) {
         return AuthorizedTenants.DEFAULT_TENANTS;
       } else {
@@ -369,7 +386,8 @@ public final class AuthorizationCheckBehavior {
 
     final var clientId = getClientId(command);
     if (clientId.isPresent()) {
-      final var tenantIds = getAuthorizedTenantIds(EntityType.CLIENT, clientId.get()).toList();
+      final var tenantIds =
+          getAuthorizedTenantIds(command, EntityType.CLIENT, clientId.get()).toList();
       if (tenantIds.isEmpty()) {
         return AuthorizedTenants.DEFAULT_TENANTS;
       } else {
@@ -379,7 +397,9 @@ public final class AuthorizationCheckBehavior {
 
     final var tenantsOfMapping =
         getPersistedMappings(command)
-            .flatMap(mapping -> getAuthorizedTenantIds(EntityType.MAPPING, mapping.getMappingId()))
+            .flatMap(
+                mapping ->
+                    getAuthorizedTenantIds(command, EntityType.MAPPING, mapping.getMappingId()))
             .collect(Collectors.toSet());
 
     return tenantsOfMapping.isEmpty()
