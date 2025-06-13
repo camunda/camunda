@@ -18,14 +18,21 @@ import static io.camunda.it.migration.IdentityMigrationTestUtil.IDENTITY_CLIENT;
 import static io.camunda.it.migration.IdentityMigrationTestUtil.IDENTITY_CLIENT_SECRET;
 import static io.camunda.it.migration.IdentityMigrationTestUtil.externalIdentityUrl;
 import static io.camunda.it.migration.IdentityMigrationTestUtil.externalKeycloakUrl;
+import static io.camunda.migration.identity.config.saas.StaticEntities.ROLE_IDS;
+import static io.camunda.migration.identity.config.saas.StaticEntities.ROLE_PERMISSIONS;
 import static io.camunda.zeebe.qa.util.cluster.TestZeebePort.CLUSTER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.enums.OwnerType;
+import io.camunda.client.api.search.enums.PermissionType;
+import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.Group;
 import io.camunda.client.api.search.response.RoleUser;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
@@ -34,10 +41,19 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneIdentityMigration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.text.MessageFormat;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.List;
+import java.util.Set;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -92,6 +108,9 @@ public class IdentityDefaultEntitiesIT {
                   .withReadTimeout(Duration.ofSeconds(10))
                   .withStartupTimeout(Duration.ofMinutes(5)));
 
+  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
+  private static final ObjectMapper OBJECT_MAPPER =
+      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
   private TestStandaloneIdentityMigration standaloneIdentityMigration;
   private CamundaClient client;
 
@@ -208,6 +227,164 @@ public class IdentityDefaultEntitiesIT {
     assertThat(members2.items().getFirst().getUsername()).isEqualTo("user@example.com");
   }
 
+  @Test
+  public void canMigrateRolePermissions()
+      throws URISyntaxException, IOException, InterruptedException {
+    // when
+    standaloneIdentityMigration.start();
+    final var restAddress = client.getConfiguration().getRestAddress().toString();
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(1000))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var authorizations = searchAuthorizations(restAddress);
+              final var migratedAuthorizations =
+                  authorizations.items().stream()
+                      .map(AuthorizationResponse::ownerId)
+                      .filter(ROLE_IDS::contains)
+                      .toList();
+              assertThat(migratedAuthorizations.size()).isEqualTo(ROLE_PERMISSIONS.size());
+            });
+
+    // then
+    final var authorizations = searchAuthorizations(restAddress);
+    assertThat(authorizations.items())
+        .extracting(
+            AuthorizationResponse::ownerId,
+            AuthorizationResponse::ownerType,
+            AuthorizationResponse::resourceId,
+            AuthorizationResponse::resourceType,
+            AuthorizationResponse::permissionTypes)
+        .contains(
+            tuple(
+                "developer",
+                OwnerType.ROLE,
+                "operate",
+                ResourceType.APPLICATION,
+                Set.of(PermissionType.ACCESS)),
+            tuple(
+                "developer",
+                OwnerType.ROLE,
+                "tasklist",
+                ResourceType.APPLICATION,
+                Set.of(PermissionType.ACCESS)),
+            tuple(
+                "developer",
+                OwnerType.ROLE,
+                "*",
+                ResourceType.PROCESS_DEFINITION,
+                Set.of(
+                    PermissionType.READ_PROCESS_DEFINITION,
+                    PermissionType.READ_PROCESS_INSTANCE,
+                    PermissionType.READ_USER_TASK,
+                    PermissionType.UPDATE_PROCESS_INSTANCE,
+                    PermissionType.UPDATE_USER_TASK,
+                    PermissionType.CREATE_PROCESS_INSTANCE,
+                    PermissionType.DELETE_PROCESS_INSTANCE)),
+            tuple(
+                "developer",
+                OwnerType.ROLE,
+                "*",
+                ResourceType.DECISION_DEFINITION,
+                Set.of(
+                    PermissionType.READ_DECISION_DEFINITION,
+                    PermissionType.READ_DECISION_INSTANCE,
+                    PermissionType.CREATE_DECISION_INSTANCE,
+                    PermissionType.DELETE_DECISION_INSTANCE)),
+            tuple(
+                "developer",
+                OwnerType.ROLE,
+                "*",
+                ResourceType.DECISION_REQUIREMENTS_DEFINITION,
+                Set.of(PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE)),
+            tuple(
+                "operationsengineer",
+                OwnerType.ROLE,
+                "operate",
+                ResourceType.APPLICATION,
+                Set.of(PermissionType.ACCESS)),
+            tuple(
+                "operationsengineer",
+                OwnerType.ROLE,
+                "*",
+                ResourceType.PROCESS_DEFINITION,
+                Set.of(
+                    PermissionType.READ_PROCESS_DEFINITION,
+                    PermissionType.READ_PROCESS_INSTANCE,
+                    PermissionType.UPDATE_PROCESS_INSTANCE,
+                    PermissionType.CREATE_PROCESS_INSTANCE,
+                    PermissionType.DELETE_PROCESS_INSTANCE)),
+            tuple(
+                "operationsengineer",
+                OwnerType.ROLE,
+                "*",
+                ResourceType.DECISION_DEFINITION,
+                Set.of(
+                    PermissionType.READ_DECISION_DEFINITION,
+                    PermissionType.READ_DECISION_INSTANCE,
+                    PermissionType.CREATE_DECISION_INSTANCE,
+                    PermissionType.DELETE_DECISION_INSTANCE)),
+            tuple(
+                "operationsengineer",
+                OwnerType.ROLE,
+                "*",
+                ResourceType.DECISION_REQUIREMENTS_DEFINITION,
+                Set.of(PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE)),
+            tuple(
+                "taskuser",
+                OwnerType.ROLE,
+                "tasklist",
+                ResourceType.APPLICATION,
+                Set.of(PermissionType.ACCESS)),
+            tuple(
+                "taskuser",
+                OwnerType.ROLE,
+                "*",
+                ResourceType.PROCESS_DEFINITION,
+                Set.of(
+                    PermissionType.READ_PROCESS_DEFINITION,
+                    PermissionType.READ_USER_TASK,
+                    PermissionType.UPDATE_USER_TASK,
+                    PermissionType.CREATE_PROCESS_INSTANCE)),
+            tuple(
+                "visitor",
+                OwnerType.ROLE,
+                "operate",
+                ResourceType.APPLICATION,
+                Set.of(PermissionType.ACCESS)),
+            tuple(
+                "visitor",
+                OwnerType.ROLE,
+                "tasklist",
+                ResourceType.APPLICATION,
+                Set.of(PermissionType.ACCESS)),
+            tuple(
+                "visitor",
+                OwnerType.ROLE,
+                "*",
+                ResourceType.PROCESS_DEFINITION,
+                Set.of(
+                    PermissionType.READ_PROCESS_DEFINITION,
+                    PermissionType.READ_PROCESS_INSTANCE,
+                    PermissionType.READ_USER_TASK)),
+            tuple(
+                "visitor",
+                OwnerType.ROLE,
+                "*",
+                ResourceType.DECISION_DEFINITION,
+                Set.of(
+                    PermissionType.READ_DECISION_DEFINITION,
+                    PermissionType.READ_DECISION_INSTANCE)),
+            tuple(
+                "visitor",
+                OwnerType.ROLE,
+                "*",
+                ResourceType.DECISION_REQUIREMENTS_DEFINITION,
+                Set.of(PermissionType.READ)));
+  }
+
   private void stubConsoleClient() {
     final String token = "mocked-access-token";
 
@@ -254,4 +431,31 @@ public class IdentityDefaultEntitiesIT {
                     .withHeader("Content-Type", "application/json")
                     .withBody(responseJson)));
   }
+
+  // TODO: refactor this once https://github.com/camunda/camunda/issues/32721 is implemented
+  private static AuthorizationSearchResponse searchAuthorizations(final String restAddress)
+      throws URISyntaxException, IOException, InterruptedException {
+    final var encodedCredentials =
+        Base64.getEncoder().encodeToString("%s:%s".formatted("demo", "demo").getBytes());
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(new URI("%s%s".formatted(restAddress, "v2/authorizations/search")))
+            .POST(HttpRequest.BodyPublishers.ofString(""))
+            .header("Authorization", "Basic %s".formatted(encodedCredentials))
+            .build();
+
+    final HttpResponse<String> response =
+        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    return OBJECT_MAPPER.readValue(response.body(), AuthorizationSearchResponse.class);
+  }
+
+  private record AuthorizationSearchResponse(List<AuthorizationResponse> items) {}
+
+  private record AuthorizationResponse(
+      String ownerId,
+      OwnerType ownerType,
+      ResourceType resourceType,
+      String resourceId,
+      Set<PermissionType> permissionTypes,
+      String authorizationKey) {}
 }
