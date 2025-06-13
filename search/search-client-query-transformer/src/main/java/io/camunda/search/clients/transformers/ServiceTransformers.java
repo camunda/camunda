@@ -386,7 +386,7 @@ public final class ServiceTransformers {
         GroupFilter.class, new GroupFilterTransformer(indexDescriptors.get(GroupIndex.class)));
     mappers.put(
         IncidentFilter.class,
-        new IncidentFilterTransformer(mappers, indexDescriptors.get(IncidentTemplate.class)));
+        new IncidentFilterTransformer(indexDescriptors.get(IncidentTemplate.class)));
     mappers.put(FormFilter.class, new FormFilterTransformer(indexDescriptors.get(FormIndex.class)));
     mappers.put(
         ProcessDefinitionFilter.class,

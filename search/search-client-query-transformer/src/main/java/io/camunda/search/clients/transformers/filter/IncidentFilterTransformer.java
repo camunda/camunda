@@ -8,10 +8,10 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.prefix;
-import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.intOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.CREATION_TIME;
@@ -24,123 +24,48 @@ import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.JO
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.STATE;
+import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.TREE_PATH;
+import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.clients.transformers.ServiceTransformers;
-import io.camunda.search.clients.transformers.filter.DateValueFilterTransformer.DateFieldFilter;
-import io.camunda.search.entities.IncidentEntity.ErrorType;
-import io.camunda.search.entities.IncidentEntity.IncidentState;
-import io.camunda.search.filter.DateValueFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import java.util.List;
+import java.util.ArrayList;
 
 public class IncidentFilterTransformer extends IndexFilterTransformer<IncidentFilter> {
 
-  private final ServiceTransformers transformers;
-
-  public IncidentFilterTransformer(
-      final ServiceTransformers transformers, final IndexDescriptor indexDescriptor) {
+  public IncidentFilterTransformer(final IndexDescriptor indexDescriptor) {
     super(indexDescriptor);
-    this.transformers = transformers;
   }
 
   @Override
   public SearchQuery toSearchQuery(final IncidentFilter filter) {
-    final var keyQuery = getKeyQuery(filter.incidentKeys());
-    final var processDefinitionKeyQuery =
-        getProcessDefinitionKeyQuery(filter.processDefinitionKeys());
-    final var processDefinitionIdQuery = getProcessDefinitionIds(filter.processDefinitionIds());
-    final var processInstanceKeyQuery = getProcessInstanceKeyQuery(filter.processInstanceKeys());
-    final var errorTypeQuery = getErrorTypeQuery(filter.errorTypes());
-    final var errorMessageQuery = getErrorMessageQuery(filter.errorMessages());
-    final var flowNodeIdQuery = getFlowNodeIdQuery(filter.flowNodeIds());
-    final var flowNodeInstanceKeyQuery = getFlowNodeInstanceKeyQuery(filter.flowNodeInstanceKeys());
-    final var creationTimeQuery = getCreationTimeQuery(filter.creationTime());
-    final var stateQuery = getStateQuery(filter.states());
-    final var treePathQuery = getTreePathQuery(filter.treePath());
-    final var jobKeyQuery = getJobKeyQuery(filter.jobKeys());
-    final var tenantIdQuery = getTenantIdQuery(filter.tenantIds());
-    final var errorMessageHashesQuery = getErrorMessageHashesQuery(filter.errorMessageHashes());
+    final var queries = new ArrayList<SearchQuery>();
+    ofNullable(longOperations(KEY, filter.incidentKeyOperations())).ifPresent(queries::addAll);
+    ofNullable(longOperations(PROCESS_DEFINITION_KEY, filter.processDefinitionKeyOperations()))
+        .ifPresent(queries::addAll);
+    ofNullable(stringOperations(BPMN_PROCESS_ID, filter.processDefinitionIdOperations()))
+        .ifPresent(queries::addAll);
+    ofNullable(longOperations(PROCESS_INSTANCE_KEY, filter.processInstanceKeyOperations()))
+        .ifPresent(queries::addAll);
+    ofNullable(stringOperations(ERROR_TYPE, filter.errorTypeOperations()))
+        .ifPresent(queries::addAll);
+    ofNullable(stringOperations(ERROR_MSG, filter.errorMessageOperations()))
+        .ifPresent(queries::addAll);
+    ofNullable(stringOperations(FLOW_NODE_ID, filter.flowNodeIdOperations()))
+        .ifPresent(queries::addAll);
+    ofNullable(longOperations(FLOW_NODE_INSTANCE_KEY, filter.flowNodeInstanceKeyOperations()))
+        .ifPresent(queries::addAll);
+    ofNullable(dateTimeOperations(CREATION_TIME, filter.creationTimeOperations()))
+        .ifPresent(queries::addAll);
+    ofNullable(stringOperations(STATE, filter.stateOperations())).ifPresent(queries::addAll);
+    ofNullable(stringOperations(TREE_PATH, filter.treePathOperations())).ifPresent(queries::addAll);
+    ofNullable(longOperations(JOB_KEY, filter.jobKeyOperations())).ifPresent(queries::addAll);
+    ofNullable(stringOperations(TENANT_ID, filter.tenantIdOperations())).ifPresent(queries::addAll);
+    ofNullable(intOperations(ERROR_MSG_HASH, filter.errorMessageHashOperations()))
+        .ifPresent(queries::addAll);
 
-    return and(
-        keyQuery,
-        processDefinitionKeyQuery,
-        processDefinitionIdQuery,
-        processInstanceKeyQuery,
-        errorTypeQuery,
-        errorMessageQuery,
-        flowNodeIdQuery,
-        flowNodeInstanceKeyQuery,
-        creationTimeQuery,
-        stateQuery,
-        treePathQuery,
-        jobKeyQuery,
-        tenantIdQuery,
-        errorMessageHashesQuery);
-  }
-
-  private SearchQuery getTenantIdQuery(final List<String> tenantIds) {
-    return stringTerms(TENANT_ID, tenantIds);
-  }
-
-  private SearchQuery getJobKeyQuery(final List<Long> jobKeys) {
-    return longTerms(JOB_KEY, jobKeys);
-  }
-
-  private SearchQuery getStateQuery(final List<IncidentState> states) {
-    return stringTerms("state", states != null ? states.stream().map(Enum::name).toList() : null);
-  }
-
-  private SearchQuery getTreePathQuery(final String treePath) {
-    if (treePath == null) {
-      return null;
-    }
-    return prefix("treePath", treePath);
-  }
-
-  private SearchQuery getCreationTimeQuery(final DateValueFilter filter) {
-    if (filter != null) {
-      final var transformer = transformers.getFilterTransformer(DateValueFilter.class);
-      return transformer.apply(new DateFieldFilter(CREATION_TIME, filter));
-    }
-    return null;
-  }
-
-  private SearchQuery getProcessDefinitionIds(final List<String> bpmnProcessIds) {
-    return stringTerms(BPMN_PROCESS_ID, bpmnProcessIds);
-  }
-
-  private SearchQuery getFlowNodeInstanceKeyQuery(final List<Long> flowNodeInstanceKeys) {
-    return longTerms(FLOW_NODE_INSTANCE_KEY, flowNodeInstanceKeys);
-  }
-
-  private SearchQuery getFlowNodeIdQuery(final List<String> flowNodeIds) {
-    return stringTerms(FLOW_NODE_ID, flowNodeIds);
-  }
-
-  private SearchQuery getErrorTypeQuery(final List<ErrorType> errorTypes) {
-    return stringTerms(
-        ERROR_TYPE, errorTypes != null ? errorTypes.stream().map(Enum::name).toList() : null);
-  }
-
-  private SearchQuery getProcessInstanceKeyQuery(final List<Long> processInstanceKeys) {
-    return longTerms(PROCESS_INSTANCE_KEY, processInstanceKeys);
-  }
-
-  private SearchQuery getProcessDefinitionKeyQuery(final List<Long> processDefinitionKeys) {
-    return longTerms(PROCESS_DEFINITION_KEY, processDefinitionKeys);
-  }
-
-  private SearchQuery getErrorMessageQuery(final List<String> errorMessages) {
-    return stringTerms(ERROR_MSG, errorMessages);
-  }
-
-  private SearchQuery getKeyQuery(final List<Long> keys) {
-    return longTerms(KEY, keys);
-  }
-
-  private SearchQuery getErrorMessageHashesQuery(final List<Integer> errorMessageHashes) {
-    return intTerms(ERROR_MSG_HASH, errorMessageHashes);
+    return and(queries);
   }
 }
