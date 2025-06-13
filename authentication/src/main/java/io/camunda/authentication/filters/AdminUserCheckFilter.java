@@ -27,6 +27,7 @@ public class AdminUserCheckFilter extends OncePerRequestFilter {
 
   public static final String ADMIN_ROLE_ID = DefaultRole.ADMIN.getId();
   public static final String USER_MEMBERS = "users";
+  public static final String REDIRECT_PATH = "/identity/setup";
   private static final Logger LOG = LoggerFactory.getLogger(AdminUserCheckFilter.class);
   private final SecurityConfiguration securityConfig;
   private final RoleServices roleServices;
@@ -57,22 +58,19 @@ public class AdminUserCheckFilter extends OncePerRequestFilter {
     }
 
     try {
-      final var adminRoleHasMembers =
-          roleServices
-                  .searchMembers(
-                      RoleQuery.of(
-                          builder ->
-                              builder.filter(
-                                  filter ->
-                                      filter
-                                          .joinParentId(ADMIN_ROLE_ID)
-                                          .memberType(EntityType.USER))))
-                  .total()
-              > 0;
+      final var adminRoleMembers =
+          roleServices.searchMembers(
+              RoleQuery.of(
+                  builder ->
+                      builder.filter(
+                          filter ->
+                              filter.joinParentId(ADMIN_ROLE_ID).memberType(EntityType.USER))));
+      final var adminRoleHasMembers = adminRoleMembers.total() > 0;
 
       if (!adminRoleHasMembers) {
         LOG.debug("No user with admin role exists. Redirecting to identity setup page.");
-        response.sendRedirect(String.format("%s/identity/setup", request.getContextPath()));
+        final var redirectUrl = String.format("%s%s", request.getContextPath(), REDIRECT_PATH);
+        response.sendRedirect(redirectUrl);
         return;
       }
     } catch (final RuntimeException ex) {
