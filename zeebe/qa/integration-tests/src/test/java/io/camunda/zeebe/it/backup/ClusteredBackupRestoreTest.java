@@ -100,7 +100,8 @@ public class ClusteredBackupRestoreTest {
     try (final var restoreApp =
         new TestRestoreApp()
             .withBrokerConfig(
-                brokerCfg -> {
+                (brokerCfg, _unifiedConfiguration) -> {
+                  // TODO: migrate cluster to the unified configuration
                   configureBackupStore(brokerCfg);
                   brokerCfg.getCluster().setClusterSize(1);
                   brokerCfg.getCluster().setPartitionsCount(3);

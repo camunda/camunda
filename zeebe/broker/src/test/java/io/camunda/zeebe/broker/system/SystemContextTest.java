@@ -14,6 +14,7 @@ import static org.mockito.Mockito.mock;
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
@@ -47,10 +48,11 @@ final class SystemContextTest {
   void shouldThrowExceptionIfSnapshotPeriodIsNegative() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     brokerCfg.getData().setSnapshotPeriod(Duration.ofMinutes(-1));
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Snapshot period PT-1M needs to be larger then or equals to one minute.");
   }
@@ -59,10 +61,11 @@ final class SystemContextTest {
   void shouldThrowExceptionIfSnapshotPeriodIsTooSmall() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     brokerCfg.getData().setSnapshotPeriod(Duration.ofSeconds(1));
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Snapshot period PT1S needs to be larger then or equals to one minute.");
   }
@@ -71,10 +74,11 @@ final class SystemContextTest {
   void shouldThrowExceptionIfBatchSizeIsNegative() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     brokerCfg.getExperimental().setMaxAppendBatchSize(DataSize.of(-1, DataUnit.BYTES));
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
             "Expected to have an append batch size maximum which is non negative and smaller then '2147483647', but was '-1B'.");
@@ -84,10 +88,11 @@ final class SystemContextTest {
   void shouldThrowExceptionIfBatchSizeIsTooLarge() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     brokerCfg.getExperimental().setMaxAppendBatchSize(DataSize.of(3, DataUnit.GIGABYTES));
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
             "Expected to have an append batch size maximum which is non negative and smaller then '2147483647', but was '3221225472B'.");
@@ -97,10 +102,11 @@ final class SystemContextTest {
   void shouldNotThrowExceptionIfSnapshotPeriodIsEqualToOneMinute() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     brokerCfg.getData().setSnapshotPeriod(Duration.ofMinutes(1));
 
     // when
-    final var systemContext = initSystemContext(brokerCfg);
+    final var systemContext = initSystemContext(brokerCfg, unifiedConfiguration);
 
     // then
     assertThat(systemContext.getBrokerConfiguration().getData().getSnapshotPeriod())
@@ -111,12 +117,13 @@ final class SystemContextTest {
   void shouldThrowExceptionIfFixedPartitioningSchemeDoesNotSpecifyAnyPartitions() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
+    final UnifiedConfiguration unifiedConfig = new UnifiedConfiguration();
     final var config = brokerCfg.getExperimental().getPartitioning();
     config.setScheme(Scheme.FIXED);
     config.setFixed(List.of());
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfig))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining(
             "Expected fixed partition scheme to define configurations for all partitions such that "
@@ -127,6 +134,7 @@ final class SystemContextTest {
   void shouldThrowExceptionIfFixedPartitioningSchemeIsNotExhaustive() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
+    final UnifiedConfiguration unifiedConfig = new UnifiedConfiguration();
     final var config = brokerCfg.getExperimental().getPartitioning();
     final var fixedPartition = new FixedPartitionCfg();
     config.setScheme(Scheme.FIXED);
@@ -135,7 +143,7 @@ final class SystemContextTest {
     brokerCfg.getCluster().setPartitionsCount(2);
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfig))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining(
             "Expected fixed partition scheme to define configurations for all partitions such that "
@@ -147,6 +155,7 @@ final class SystemContextTest {
   void shouldThrowExceptionIfFixedPartitioningSchemeUsesInvalidPartitionId(final int invalidId) {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
+    final UnifiedConfiguration unifiedConfig = new UnifiedConfiguration();
     final var config = brokerCfg.getExperimental().getPartitioning();
     final var fixedPartition = new FixedPartitionCfg();
     config.setScheme(Scheme.FIXED);
@@ -154,7 +163,7 @@ final class SystemContextTest {
     fixedPartition.setPartitionId(invalidId);
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfig))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining(
             "Expected fixed partition scheme to define entries with a valid partitionId "
@@ -167,6 +176,7 @@ final class SystemContextTest {
   void shouldThrowExceptionIfFixedPartitioningSchemeUsesInvalidNodeId(final int invalidId) {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
+    final UnifiedConfiguration unifiedConfig = new UnifiedConfiguration();
     final var config = brokerCfg.getExperimental().getPartitioning();
     final var fixedPartition = new FixedPartitionCfg();
     final var node = new NodeCfg();
@@ -176,7 +186,7 @@ final class SystemContextTest {
     node.setNodeId(invalidId);
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfig))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining(
             "Expected fixed partition scheme for partition 1 to define nodes with a "
@@ -188,6 +198,7 @@ final class SystemContextTest {
   void shouldThrowExceptionIfFixedPartitioningSchemeHasSamePriorities() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
+    final UnifiedConfiguration unifiedConfig = new UnifiedConfiguration();
     final var config = brokerCfg.getExperimental().getPartitioning();
     final var fixedPartition = new FixedPartitionCfg();
     final var nodes = List.of(new NodeCfg(), new NodeCfg());
@@ -202,7 +213,7 @@ final class SystemContextTest {
     nodes.get(1).setPriority(1);
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfig))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining(
             "Expected each node for a partition 1 to have a different priority, but at least two of"
@@ -214,6 +225,7 @@ final class SystemContextTest {
   void shouldNotThrowExceptionIfFixedPartitioningSchemeHasWrongPrioritiesWhenPriorityDisabled() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
+    final UnifiedConfiguration unifiedConfig = new UnifiedConfiguration();
     final var config = brokerCfg.getExperimental().getPartitioning();
     final var fixedPartition = new FixedPartitionCfg();
     final var nodes = List.of(new NodeCfg(), new NodeCfg());
@@ -228,7 +240,7 @@ final class SystemContextTest {
     nodes.get(1).setPriority(1);
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg)).doesNotThrowAnyException();
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfig)).doesNotThrowAnyException();
   }
 
   @Test
@@ -236,6 +248,7 @@ final class SystemContextTest {
     // given
     final var certificate = new SelfSignedCertificate();
     final var brokerCfg = new BrokerCfg();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     brokerCfg
         .getNetwork()
         .getSecurity()
@@ -244,7 +257,7 @@ final class SystemContextTest {
         .setCertificateChainPath(new File("/tmp/i-dont-exist.crt"));
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
             "Expected the configured network security certificate chain path "
@@ -256,6 +269,7 @@ final class SystemContextTest {
     // given
     final var certificate = new SelfSignedCertificate();
     final var brokerCfg = new BrokerCfg();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     brokerCfg
         .getNetwork()
         .getSecurity()
@@ -264,7 +278,7 @@ final class SystemContextTest {
         .setCertificateChainPath(certificate.certificate());
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
             "Expected the configured network security private key path "
@@ -276,6 +290,7 @@ final class SystemContextTest {
     // given
     final var certificate = new SelfSignedCertificate();
     final var brokerCfg = new BrokerCfg();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     brokerCfg
         .getNetwork()
         .getSecurity()
@@ -284,7 +299,7 @@ final class SystemContextTest {
         .setCertificateChainPath(certificate.certificate());
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
             "Expected to have a valid private key path for network security, but none configured");
@@ -295,6 +310,7 @@ final class SystemContextTest {
     // given
     final var certificate = new SelfSignedCertificate();
     final var brokerCfg = new BrokerCfg();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     brokerCfg
         .getNetwork()
         .getSecurity()
@@ -303,7 +319,7 @@ final class SystemContextTest {
         .setCertificateChainPath(null);
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
             "Expected to have a valid certificate chain path for network security, but none "
@@ -314,10 +330,11 @@ final class SystemContextTest {
   void shouldThrowExceptionWhenS3BucketIsNotProvided() {
     // given
     final var brokerCfg = new BrokerCfg();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     brokerCfg.getData().getBackup().setStore(BackupStoreType.S3);
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         .isInstanceOf(InvalidConfigurationException.class)
         .hasCauseInstanceOf(IllegalArgumentException.class)
         .cause()
@@ -328,12 +345,13 @@ final class SystemContextTest {
   void shouldThrowExceptionWhenS3IsNotConfigured() {
     // given
     final var brokerCfg = new BrokerCfg();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     final var backupCfg = brokerCfg.getData().getBackup();
     backupCfg.setStore(BackupStoreType.S3);
     backupCfg.getS3().setBucketName("bucket");
 
     // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageContaining("Failed configuring backup store S3");
   }
@@ -341,6 +359,7 @@ final class SystemContextTest {
   @RegressionTest("https://github.com/camunda/camunda/issues/12678")
   void shouldThrowExceptionWithInvalidExporters() {
     // given
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     final var brokerCfg = new BrokerCfg();
     final List<String> exportersNames = Arrays.asList("unknown", "oops", "nope");
     final Map<String, ExporterCfg> exporters = HashMap.newHashMap(exportersNames.size());
@@ -357,15 +376,18 @@ final class SystemContextTest {
     brokerCfg.setExporters(exporters);
 
     // then
-    assertThatCode(() -> initSystemContext(brokerCfg))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageStartingWith(
             "Expected to find a 'className' configured for the exporter. Couldn't find a valid one for the following exporters ");
   }
 
-  private SystemContext initSystemContext(final BrokerCfg brokerCfg) {
+  private SystemContext initSystemContext(
+      final BrokerCfg brokerCfg,
+      final UnifiedConfiguration config) {
     return new SystemContext(
         brokerCfg,
+        config,
         mock(ActorScheduler.class),
         mock(AtomixCluster.class),
         mock(BrokerClient.class),
@@ -379,6 +401,7 @@ final class SystemContextTest {
   void shouldThrowInvalidConfigExceptionWhenConfigManagerGossiperHasNegativeValues() {
     // given
     final var brokerCfg = new BrokerCfg();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     final var clusterCfg = brokerCfg.getCluster();
 
     final var invalidconfigManagerCfg =
@@ -388,7 +411,7 @@ final class SystemContextTest {
     clusterCfg.setConfigManager(invalidconfigManagerCfg);
 
     // when
-    assertThatCode(() -> initSystemContext(brokerCfg))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         // then
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageStartingWith("Invalid ConfigManager configuration:")
@@ -404,6 +427,7 @@ final class SystemContextTest {
   void shouldThrowInvalidConfigExceptionWhenConfigManagerGossiperHasZeroValues() {
     // given
     final var brokerCfg = new BrokerCfg();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     final var clusterCfg = brokerCfg.getCluster();
 
     final var invalidConfigManagerCfg =
@@ -413,7 +437,7 @@ final class SystemContextTest {
     clusterCfg.setConfigManager(invalidConfigManagerCfg);
 
     // when
-    assertThatCode(() -> initSystemContext(brokerCfg))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         // then
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageStartingWith("Invalid ConfigManager configuration:")
@@ -429,6 +453,7 @@ final class SystemContextTest {
   void shouldThrowInvalidConfigExceptionWhenConfigManagerHasGossipFanoutTooSmall() {
     // given
     final var brokerCfg = new BrokerCfg();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     final var clusterCfg = brokerCfg.getCluster();
 
     final var invalidDynamicConfig =
@@ -438,7 +463,7 @@ final class SystemContextTest {
     clusterCfg.setConfigManager(invalidDynamicConfig);
 
     // when
-    assertThatCode(() -> initSystemContext(brokerCfg))
+    assertThatCode(() -> initSystemContext(brokerCfg, unifiedConfiguration))
         // then
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageStartingWith("Invalid ConfigManager configuration:")

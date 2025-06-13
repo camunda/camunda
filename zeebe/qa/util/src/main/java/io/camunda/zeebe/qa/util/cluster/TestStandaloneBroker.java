@@ -17,6 +17,7 @@ import io.camunda.authentication.config.AuthenticationProperties;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.util.unit.DataSize;
@@ -42,10 +44,13 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   private static final String RECORDING_EXPORTER_ID = "recordingExporter";
   private final BrokerBasedProperties config;
+  private final UnifiedConfiguration unifiedConfiguration;
   private final CamundaSecurityProperties securityConfig;
 
   public TestStandaloneBroker() {
     super(BrokerModuleConfiguration.class, CommonsModuleConfiguration.class);
+
+    unifiedConfiguration = new UnifiedConfiguration();
 
     config = new BrokerBasedProperties();
 
@@ -232,8 +237,9 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
    * started, but likely has no effect until it's restarted.
    */
   @Override
-  public TestStandaloneBroker withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
-    modifier.accept(config);
+  public TestStandaloneBroker withBrokerConfig(
+      final BiConsumer<BrokerBasedProperties, UnifiedConfiguration> modifier) {
+    modifier.accept(config, unifiedConfiguration);
     return this;
   }
 
@@ -241,6 +247,11 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   @Override
   public BrokerBasedProperties brokerConfig() {
     return config;
+  }
+
+  @Override
+  public UnifiedConfiguration getUnifiedConfiguration() {
+    return unifiedConfiguration;
   }
 
   @Override

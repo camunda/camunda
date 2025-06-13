@@ -149,7 +149,8 @@ class ScaleResiliencyTest {
       final var newBroker =
           new TestStandaloneBroker()
               .withBrokerConfig(
-                  b -> {
+                  (b, _unifiedConfiguration) -> {
+                    // TODO: Migrate missing configs to unified configuration
                     b.getCluster().setClusterSize(newClusterSize);
                     b.getCluster().setNodeId(newBrokerId);
                     b.getCluster().setReplicationFactor(replicationFactor);

@@ -14,8 +14,10 @@ import io.camunda.application.commons.configuration.BrokerBasedConfiguration.Bro
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -40,9 +42,11 @@ public interface TestStandaloneApplication<T extends TestStandaloneApplication<T
    * Modifies the broker configuration. Will still mutate the configuration if the broker is
    * started, but likely has no effect until it's restarted.
    */
-  T withBrokerConfig(final Consumer<BrokerBasedProperties> modifier);
+  T withBrokerConfig(final BiConsumer<BrokerBasedProperties, UnifiedConfiguration> modifier);
 
   BrokerBasedProperties brokerConfig();
+
+  UnifiedConfiguration getUnifiedConfiguration();
 
   default Optional<AuthenticationMethod> clientAuthenticationMethod() {
     return Optional.empty();

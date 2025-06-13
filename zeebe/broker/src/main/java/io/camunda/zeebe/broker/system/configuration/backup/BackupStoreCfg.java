@@ -17,7 +17,6 @@ public class BackupStoreCfg implements ConfigurationEntry {
   private S3BackupStoreConfig s3 = new S3BackupStoreConfig();
   private GcsBackupStoreConfig gcs = new GcsBackupStoreConfig();
 
-  private AzureBackupStoreConfig azure = new AzureBackupStoreConfig();
   private FilesystemBackupStoreConfig filesystem = new FilesystemBackupStoreConfig();
 
   public S3BackupStoreConfig getS3() {
@@ -34,14 +33,6 @@ public class BackupStoreCfg implements ConfigurationEntry {
 
   public void setGcs(final GcsBackupStoreConfig gcs) {
     this.gcs = gcs;
-  }
-
-  public AzureBackupStoreConfig getAzure() {
-    return azure;
-  }
-
-  public void setAzure(final AzureBackupStoreConfig azure) {
-    this.azure = azure;
   }
 
   public FilesystemBackupStoreConfig getFilesystem() {
@@ -64,7 +55,6 @@ public class BackupStoreCfg implements ConfigurationEntry {
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
     s3.init(globalConfig, brokerBase);
     gcs.init(globalConfig, brokerBase);
-    azure.init(globalConfig, brokerBase);
     filesystem.init(globalConfig, brokerBase);
   }
 
@@ -74,8 +64,7 @@ public class BackupStoreCfg implements ConfigurationEntry {
       case NONE -> "BackupStoreCfg{" + "store=" + store + '}';
       case S3 -> "BackupStoreCfg{" + "store=" + store + ", s3=" + s3 + '}';
       case GCS -> "BackupStoreCfg{" + "store=" + store + ", gcs=" + gcs + '}';
-      case AZURE -> "BackupStoreCfg{" + "store=" + store + ", azure=" + azure + '}';
-      case FILESYSTEM -> "BackupStoreCfg{" + "store=" + store + ", azure=" + azure + '}';
+      case FILESYSTEM -> "BackupStoreCfg{" + "store=" + store + '}';
     };
   }
 
@@ -91,11 +80,6 @@ public class BackupStoreCfg implements ConfigurationEntry {
      * backup store
      */
     GCS,
-    /**
-     * When type = AZURE, {@link io.camunda.zeebe.backup.azure.AzureBackupStore} will be used as the
-     * backup store
-     */
-    AZURE,
     /**
      * When type = FILESYSTEM, {@link io.camunda.zeebe.backup.filesystem.FilesystemBackupStore} will
      * be used as the backup store

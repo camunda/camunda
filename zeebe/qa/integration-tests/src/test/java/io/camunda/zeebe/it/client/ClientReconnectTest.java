@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.api.command.ClientException;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -24,7 +25,8 @@ import org.junit.rules.RuleChain;
 
 public final class ClientReconnectTest {
 
-  public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
+  public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(unifiedConfiguration);
   public final GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);

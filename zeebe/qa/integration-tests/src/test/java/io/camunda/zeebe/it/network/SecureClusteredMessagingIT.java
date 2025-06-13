@@ -10,6 +10,7 @@ package io.camunda.zeebe.it.network;
 import io.atomix.utils.net.Address;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.client.api.response.Topology;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -29,6 +30,7 @@ import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Named;
@@ -53,7 +55,8 @@ final class SecureClusteredMessagingIT {
   @MethodSource("provideTestCases")
   void shouldFormAClusterWithTlsWithCertChain(final TestCase testCase) {
     // given - a cluster with 2 standalone brokers, and 1 standalone gateway
-    cluster.brokers().values().forEach(node -> node.withBrokerConfig(testCase.brokerConfig));
+    cluster.brokers().values().forEach(node ->
+        node.withBrokerConfig(testCase.brokerConfigAndUnifiedConfiguration));
     cluster.gateways().values().forEach(node -> node.withGatewayConfig(testCase.gatewayConfig));
     cluster.start().awaitCompleteTopology();
 
@@ -82,7 +85,7 @@ final class SecureClusteredMessagingIT {
         Named.of(
             "key store",
             new TestCase(
-                config -> configureKeyStoreBroker(config, pkcs12File),
+                (brokerCfg, _unifiedConfiguration) -> configureKeyStoreBroker(brokerCfg, pkcs12File),
                 config -> configureKeyStoreGateway(config, pkcs12File))));
   }
 
@@ -143,7 +146,9 @@ final class SecureClusteredMessagingIT {
     gatewayConfig.getCluster().getSecurity().setPrivateKeyPath(CERTIFICATE.privateKey());
   }
 
-  private static void configureCertChainBroker(final BrokerCfg config) {
+  private static void configureCertChainBroker(
+      final BrokerCfg config,
+      UnifiedConfiguration _unifiedConfiguration) {
     config.getNetwork().getSecurity().setEnabled(true);
     config.getNetwork().getSecurity().setCertificateChainPath(CERTIFICATE.certificate());
     config.getNetwork().getSecurity().setPrivateKeyPath(CERTIFICATE.privateKey());
@@ -162,5 +167,6 @@ final class SecureClusteredMessagingIT {
   }
 
   private record TestCase(
-      Consumer<BrokerBasedProperties> brokerConfig, Consumer<GatewayCfg> gatewayConfig) {}
+      BiConsumer<BrokerBasedProperties, UnifiedConfiguration> brokerConfigAndUnifiedConfiguration,
+      Consumer<GatewayCfg> gatewayConfig) {}
 }

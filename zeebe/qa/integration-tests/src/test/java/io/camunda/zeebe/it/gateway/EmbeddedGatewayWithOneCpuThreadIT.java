@@ -10,6 +10,7 @@ package io.camunda.zeebe.it.gateway;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -20,9 +21,12 @@ import org.junit.Test;
 
 public final class EmbeddedGatewayWithOneCpuThreadIT {
 
+  UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
+
   @Rule
   public EmbeddedBrokerRule brokerRule =
-      new EmbeddedBrokerRule(brokerCfg -> brokerCfg.getThreads().setCpuThreadCount(1));
+      new EmbeddedBrokerRule(
+          unifiedConfiguration, brokerCfg -> brokerCfg.getThreads().setCpuThreadCount(1));
 
   private Broker broker;
   private CamundaClient client;

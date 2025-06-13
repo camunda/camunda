@@ -11,6 +11,7 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
@@ -113,6 +114,7 @@ public class PartitionStartupAndTransitionContextImpl
   private final MeterRegistry startupMeterRegistry;
   private MeterRegistry transitionMeterRegistry;
   private volatile boolean migrationsPerformed = false;
+  private UnifiedConfiguration unifiedConfiguration;
 
   public PartitionStartupAndTransitionContextImpl(
       final int nodeId,
@@ -135,7 +137,8 @@ public class PartitionStartupAndTransitionContextImpl
       final TopologyManager topologyManager,
       final BrokerHealthCheckService brokerHealthCheckService,
       final SecurityConfiguration securityConfig,
-      final MeterRegistry startupMeterRegistry) {
+      final MeterRegistry startupMeterRegistry,
+      final UnifiedConfiguration unifiedConfiguration) {
     this.nodeId = nodeId;
     this.partitionCount = partitionCount;
     this.clusterCommunicationService = clusterCommunicationService;
@@ -159,6 +162,7 @@ public class PartitionStartupAndTransitionContextImpl
     this.brokerHealthCheckService = brokerHealthCheckService;
     this.securityConfig = securityConfig;
     this.startupMeterRegistry = startupMeterRegistry;
+    this.unifiedConfiguration = unifiedConfiguration;
     healthGraphMetrics = new HealthTreeMetrics(startupMeterRegistry);
   }
 
@@ -373,6 +377,16 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setBackupStore(final BackupStore backupStore) {
     this.backupStore = backupStore;
+  }
+
+  @Override
+  public UnifiedConfiguration getUnifiedConfiguration() {
+    return unifiedConfiguration;
+  }
+
+  @Override
+  public void setUnifiedConfiguration(final UnifiedConfiguration unifiedConfiguration) {
+    this.unifiedConfiguration = unifiedConfiguration;
   }
 
   @Override

@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.partitioning.startup;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
@@ -111,6 +112,7 @@ public final class ZeebePartitionFactory {
   private final List<PartitionRaftListener> partitionRaftListeners;
   private final SecurityConfiguration securityConfig;
   private final SearchClientsProxy searchClientsProxy;
+  private final UnifiedConfiguration unifiedConfiguration;
 
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -127,7 +129,8 @@ public final class ZeebePartitionFactory {
       final TopologyManagerImpl topologyManager,
       final FeatureFlags featureFlags,
       final SecurityConfiguration securityConfig,
-      final SearchClientsProxy searchClientsProxy) {
+      final SearchClientsProxy searchClientsProxy,
+      final UnifiedConfiguration unifiedConfiguration) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -143,6 +146,7 @@ public final class ZeebePartitionFactory {
     this.featureFlags = featureFlags;
     this.securityConfig = securityConfig;
     this.searchClientsProxy = searchClientsProxy;
+    this.unifiedConfiguration = unifiedConfiguration;
   }
 
   public ZeebePartition constructPartition(
@@ -181,7 +185,8 @@ public final class ZeebePartitionFactory {
             topologyManager,
             brokerHealthCheckService,
             securityConfig,
-            partitionMeterRegistry);
+            partitionMeterRegistry,
+            unifiedConfiguration);
     context.setDynamicPartitionConfig(initialPartitionConfig);
 
     final PartitionTransition newTransitionBehavior = new PartitionTransitionImpl(TRANSITION_STEPS);

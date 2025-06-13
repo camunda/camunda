@@ -44,8 +44,9 @@ public class ScaleUpPartitionsTest {
           .withReplicationFactor(3)
           .withBrokerConfig(
               b ->
-                  b.withBrokerConfig(
-                      bb -> bb.getExperimental().getFeatures().setEnablePartitionScaling(true)))
+                  b.withBrokerConfig((bb, _unifiedConfiguration) ->
+                      // TODO: Migrate experimental to unified configuration
+                      bb.getExperimental().getFeatures().setEnablePartitionScaling(true)))
           .build();
 
   @BeforeEach

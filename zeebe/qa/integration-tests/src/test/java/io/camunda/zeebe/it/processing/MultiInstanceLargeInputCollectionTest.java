@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.impl.CamundaObjectMapper;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -35,12 +36,16 @@ public final class MultiInstanceLargeInputCollectionTest {
   private static final String INPUT_ELEMENT = "inputElement";
   private static final int MAX_MESSAGE_SIZE_KB = 16;
   private static final CamundaObjectMapper OBJECT_MAPPER = new CamundaObjectMapper();
+
+  private static final UnifiedConfiguration UNIFIED_CONFIGURATION = new UnifiedConfiguration();
   private static final EmbeddedBrokerRule BROKER_RULE =
       new EmbeddedBrokerRule(
+          UNIFIED_CONFIGURATION,
           cfg -> {
             cfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(MAX_MESSAGE_SIZE_KB));
             cfg.getProcessing().setMaxCommandsInBatch(1);
           });
+
   private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
 
   @ClassRule

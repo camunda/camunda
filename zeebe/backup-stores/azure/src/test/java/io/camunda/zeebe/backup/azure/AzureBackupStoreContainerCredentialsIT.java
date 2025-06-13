@@ -20,6 +20,8 @@ import com.azure.storage.common.sas.AccountSasPermission;
 import com.azure.storage.common.sas.AccountSasResourceType;
 import com.azure.storage.common.sas.AccountSasService;
 import com.azure.storage.common.sas.AccountSasSignatureValues;
+import io.camunda.unifiedconfig.AzureStore;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.azure.util.AzuriteContainer;
@@ -36,24 +38,23 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class AzureBackupStoreContainerCredentialsIT {
 
   @Container private static final AzuriteContainer AZURITE_CONTAINER = new AzuriteContainer();
-  public AzureBackupConfig azureBackupConfig;
+  public UnifiedConfiguration config;
   public final String containerName = UUID.randomUUID().toString();
 
   @Test
   void shouldFailToInitializeStore() {
     // given
-    azureBackupConfig =
-        new AzureBackupConfig.Builder()
-            .withConnectionString(AZURITE_CONTAINER.getConnectString())
-            .withContainerName(containerName)
-            .withCreateContainer(false)
-            .build();
+    AzureStore azureStoreConfig = new AzureStore();
+    azureStoreConfig.setContainerName(containerName);
+    azureStoreConfig.setCreateContainer(true);
+    azureStoreConfig.setConnectionString(AZURITE_CONTAINER.getConnectString());
+    config.getCamunda().getData().getBackup().setAzure(azureStoreConfig);
 
     // then we should fail to create the store since the container does not
     // exist yet.
     assertThrowsExactly(
         AzureBackupStoreException.ContainerDoesNotExist.class,
-        () -> new AzureBackupStore(azureBackupConfig));
+        () -> new AzureBackupStore(azureStoreConfig));
 
     // when we create the container
     new BlobServiceClientBuilder()
@@ -63,7 +64,7 @@ public class AzureBackupStoreContainerCredentialsIT {
         .create();
 
     // then we can create the store without any exceptions
-    assertDoesNotThrow(() -> new AzureBackupStore(azureBackupConfig));
+    assertDoesNotThrow(() -> new AzureBackupStore(azureStoreConfig));
   }
 
   // The test for the user delegation token is not present due to the fact that the azurite
@@ -85,14 +86,14 @@ public class AzureBackupStoreContainerCredentialsIT {
         blobServiceClient.getBlobContainerClient(AZURITE_CONTAINER.getContainerName());
     final String accountSasToken = createAccountSAS(blobServiceClient);
 
-    final AzureBackupConfig azureConfigWithAccountSasToken =
-        new AzureBackupConfig.Builder()
-            .withEndpoint(containerClient.getAccountUrl())
-            .withContainerName(containerName)
-            .withSasToken(new SasTokenConfig(accountSasToken, SasTokenType.ACCOUNT))
-            .build();
+    AzureStore azureStoreConfig = new AzureStore();
+    azureStoreConfig.setContainerName(containerName);
+    azureStoreConfig.setEndpoint(containerClient.getAccountUrl());
+    azureStoreConfig.setSasTokenType(AzureStore.SAS_TOKEN_TYPE_ACCOUNT);
+    azureStoreConfig.setSasToken(accountSasToken);
+    config.getCamunda().getData().getBackup().setAzure(azureStoreConfig);
 
-    final AzureBackupStore store = new AzureBackupStore(azureConfigWithAccountSasToken);
+    final AzureBackupStore store = new AzureBackupStore(azureStoreConfig);
 
     // then should be able to upload using the account sas token.
     assertStoreCanUploadAndFetchStatus(backup, store);
@@ -115,15 +116,14 @@ public class AzureBackupStoreContainerCredentialsIT {
 
     blobServiceClient.createBlobContainer(containerName);
 
-    final AzureBackupConfig azureConfigWithAccountSasToken =
-        new AzureBackupConfig.Builder()
-            .withEndpoint(containerClient.getAccountUrl())
-            .withContainerName(containerName)
-            .withSasToken(new SasTokenConfig(serviceSasToken, SasTokenType.SERVICE))
-            .withCreateContainer(false)
-            .build();
+    AzureStore azureStoreConfig = new AzureStore();
+    azureStoreConfig.setContainerName(containerName);
+    azureStoreConfig.setEndpoint(containerClient.getAccountUrl());
+    azureStoreConfig.setSasToken(serviceSasToken);
+    azureStoreConfig.setSasTokenType(AzureStore.SAS_TOKEN_TYPE_SERVICE);
+    config.getCamunda().getData().getBackup().setAzure(azureStoreConfig);
 
-    final AzureBackupStore store = new AzureBackupStore(azureConfigWithAccountSasToken);
+    final AzureBackupStore store = new AzureBackupStore(azureStoreConfig);
 
     // then should be able to upload using the service sas token.
     assertStoreCanUploadAndFetchStatus(backup, store);

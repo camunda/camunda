@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.camunda.client.api.command.ClientException;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
@@ -24,7 +25,8 @@ import org.junit.rules.RuleChain;
 
 public final class ClientExceptionHandlingTest {
 
-  public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
+  public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(unifiedConfiguration);
   private final InetSocketAddress invalidGatewayAddress = SocketUtil.getNextAddress();
 
   public final GrpcClientRule clientRule =

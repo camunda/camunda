@@ -13,6 +13,7 @@ import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.management.PartitionStatus;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
@@ -33,7 +34,8 @@ import org.junit.Test;
 public class BrokerSnapshotTest {
 
   private static final int PARTITION_ID = 1;
-  @Rule public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
+  @Rule public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(unifiedConfiguration);
 
   private RaftLogReader journalReader;
   private BrokerAdminService brokerAdminService;

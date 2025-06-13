@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.response.PublishMessageResponse;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.engine.state.QueryService;
@@ -24,7 +25,8 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class BrokerRestartTest {
-  private final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  private final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
+  private final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(unifiedConfiguration);
   private final GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
 
   @Rule public final RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);

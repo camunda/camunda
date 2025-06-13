@@ -12,6 +12,7 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -135,4 +136,8 @@ public interface BrokerStartupContext {
   PasswordEncoder getPasswordEncoder();
 
   JwtDecoder getJwtDecoder();
+
+  UnifiedConfiguration getUnifiedConfiguration();
+
+  void setUnifiedConfiguration(UnifiedConfiguration unifiedConfiguration);
 }

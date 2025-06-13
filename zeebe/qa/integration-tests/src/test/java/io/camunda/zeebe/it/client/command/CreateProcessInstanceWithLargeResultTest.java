@@ -11,6 +11,7 @@ import static io.camunda.client.impl.util.DataSizeUtil.ONE_MB;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.response.ProcessInstanceResult;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -26,8 +27,10 @@ import org.springframework.util.unit.DataSize;
 
 public final class CreateProcessInstanceWithLargeResultTest {
 
+  private static final UnifiedConfiguration UNIFIED_CONFIGURATION = new UnifiedConfiguration();
   private static final EmbeddedBrokerRule BROKER_RULE =
       new EmbeddedBrokerRule(
+          UNIFIED_CONFIGURATION,
           cfg -> {
             cfg.getNetwork().setMaxMessageSize(DataSize.ofMegabytes(21));
             cfg.getGateway().getNetwork().setMaxMessageSize(DataSize.ofMegabytes(21));

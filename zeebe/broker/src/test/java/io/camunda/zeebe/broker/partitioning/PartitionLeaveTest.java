@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.security.configuration.SecurityConfigurations;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.SystemContext;
@@ -220,9 +221,11 @@ final class PartitionLeaveTest {
     final var atomixCluster = TestClusterFactory.createAtomixCluster(brokerCfg, METER_REGISTRY);
     final var brokerClient =
         TestBrokerClientFactory.createBrokerClient(atomixCluster, actorScheduler);
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     final var systemContext =
         new SystemContext(
             brokerCfg,
+            unifiedConfiguration,
             actorScheduler,
             atomixCluster,
             brokerClient,
