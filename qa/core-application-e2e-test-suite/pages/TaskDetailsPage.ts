@@ -205,12 +205,20 @@ class TaskDetailsPage {
     const input = this.page.getByLabel(label, {exact: true});
     const maxRetries = 3;
     let attempt = 0;
+
     while (attempt < maxRetries) {
       try {
         await input.click({timeout: 120000});
-        await input.fill(value);
-        await input.blur();
-        await expect(input).toHaveValue(value);
+
+        await input.evaluate((el, val) => {
+          if ('value' in el) {
+            (el as HTMLInputElement | HTMLTextAreaElement).value = val;
+            el.dispatchEvent(new Event('input', {bubbles: true}));
+            el.dispatchEvent(new Event('change', {bubbles: true}));
+          }
+        }, value);
+
+        await expect(input).toHaveValue(value, {timeout: 10000});
         return;
       } catch (error) {
         attempt++;
@@ -298,7 +306,6 @@ class TaskDetailsPage {
     if (elements.length === 0) {
       throw new Error(`No elements found for label "${label}"`);
     }
-
     return Promise.all(elements.map((element) => element.inputValue()));
   }
 
