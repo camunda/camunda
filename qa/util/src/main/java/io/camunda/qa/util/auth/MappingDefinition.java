@@ -15,7 +15,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Marker annotation for a role definition, that is picked up by the {@link
+ * Marker annotation for a mapping definition, that is picked up by the {@link
  * CamundaMultiDBExtension}. This is to clearly communicate that this mapping definition,
  * will be consumed and created (related permissions and memberships) by the {@link CamundaMultiDBExtension}.
  *
