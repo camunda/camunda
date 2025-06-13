@@ -7,6 +7,7 @@
  */
 package io.camunda.migration.identity;
 
+import static io.camunda.migration.identity.config.saas.StaticEntities.CLIENT_PERMISSIONS;
 import static io.camunda.migration.identity.config.saas.StaticEntities.ROLE_PERMISSIONS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -16,6 +17,7 @@ import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -25,16 +27,16 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class StaticConsoleRoleAuthorizationMigrationHandlerTest {
+public class StaticConsoleAuthorizationMigrationHandlerTest {
 
   private final AuthorizationServices authorizationServices;
-  private final StaticConsoleRoleAuthorizationMigrationHandler migrationHandler;
+  private final StaticConsoleAuthorizationMigrationHandler migrationHandler;
 
-  public StaticConsoleRoleAuthorizationMigrationHandlerTest(
+  public StaticConsoleAuthorizationMigrationHandlerTest(
       @Mock(answer = Answers.RETURNS_SELF) final AuthorizationServices authorizationServices) {
     this.authorizationServices = authorizationServices;
     migrationHandler =
-        new StaticConsoleRoleAuthorizationMigrationHandler(
+        new StaticConsoleAuthorizationMigrationHandler(
             authorizationServices, Authentication.none());
   }
 
@@ -45,8 +47,10 @@ public class StaticConsoleRoleAuthorizationMigrationHandlerTest {
     migrationHandler.migrate();
 
     final var results = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
-    Mockito.verify(authorizationServices, Mockito.times(16)).createAuthorization(results.capture());
+    Mockito.verify(authorizationServices, Mockito.times(30)).createAuthorization(results.capture());
     final var requests = results.getAllValues();
-    assertThat(requests).containsExactlyElementsOf(ROLE_PERMISSIONS);
+    final var authorizations =
+        Stream.concat(ROLE_PERMISSIONS.stream(), CLIENT_PERMISSIONS.stream()).toList();
+    assertThat(requests).containsExactlyElementsOf(authorizations);
   }
 }
