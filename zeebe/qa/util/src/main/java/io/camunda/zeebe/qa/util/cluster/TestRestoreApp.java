@@ -14,25 +14,33 @@ import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.restore.RestoreApp;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
 /** Represents an instance of the {@link RestoreApp} Spring application. */
 public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> {
-  private final BrokerBasedProperties config;
+  private final BrokerBasedProperties brokerBasedProperties;
+  private final UnifiedConfiguration unifiedConfiguration;
   private Long backupId;
 
   public TestRestoreApp() {
-    this(new BrokerBasedProperties());
+    this(new BrokerBasedProperties(), new UnifiedConfiguration());
   }
 
-  public TestRestoreApp(final BrokerBasedProperties config) {
+  public TestRestoreApp(
+      final BrokerBasedProperties brokerBasedProperties,
+      final UnifiedConfiguration unifiedConfiguration) {
     super(RestoreApp.class);
-    this.config = config;
+    this.brokerBasedProperties = brokerBasedProperties;
+    this.unifiedConfiguration = unifiedConfiguration;
 
     //noinspection resource
-    withBean("config", config, BrokerBasedProperties.class).withAdditionalProfile(Profile.RESTORE);
+    withBean("config", brokerBasedProperties, BrokerBasedProperties.class)
+        .withAdditionalProfile(Profile.RESTORE);
+
+    withBean("UnifiedConfiguration", unifiedConfiguration, UnifiedConfiguration.class)
+        .withAdditionalProfile(Profile.RESTORE);
   }
 
   @Override
@@ -42,7 +50,14 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
 
   @Override
   public MemberId nodeId() {
-    return MemberId.from(String.valueOf(config.getCluster().getNodeId()));
+    if (unifiedConfiguration.getCluster().getNodeId() != 0) {
+      // using the new unified configuration only if explicitly used/
+      // NOTE: 0 is the default value.
+      return MemberId.from(String.valueOf(unifiedConfiguration.getCluster().getNodeId()));
+    }
+
+    // fallback to the legacy mechanism otherwise.
+    return MemberId.from(String.valueOf(brokerBasedProperties.getCluster().getNodeId()));
   }
 
   @Override
@@ -66,13 +81,10 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
   }
 
   public TestRestoreApp withBrokerConfig(
-      final Consumer<BrokerCfg> modifier,
-      final Consumer<UnifiedConfiguration> unifiedConfigurationModifier) {
-    modifier.accept(config);
-
-    // TODO
-    // unifiedConfigurationModifier
-
+      final BiConsumer<BrokerCfg, UnifiedConfiguration> modifier) {
+    // TODO: Revert the signature to Consumer once BrokerCfg is no longer used,
+    //  in favor of UnifiedConfiguration
+    modifier.accept(brokerBasedProperties, unifiedConfiguration);
     return this;
   }
 

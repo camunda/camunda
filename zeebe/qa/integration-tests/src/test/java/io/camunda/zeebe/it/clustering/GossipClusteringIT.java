@@ -28,7 +28,8 @@ final class GossipClusteringIT {
           .withBrokerConfig(
               broker ->
                   broker.withBrokerConfig(
-                      config ->
+                      (config, _unifiedConfiguration) ->
+                          // TODO: Migrate membership to unified configuration
                           config
                               .getCluster()
                               .getMembership()

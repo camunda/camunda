@@ -58,9 +58,10 @@ final class QueryApiIT {
   static void initTestStandaloneBroker() {
     broker =
         new TestStandaloneBroker()
-            .withBrokerConfig(cfg -> cfg.getExperimental().getQueryApi().setEnabled(true))
+            .withBrokerConfig((cfg, _unifiedConfiguration) ->
+                cfg.getExperimental().getQueryApi().setEnabled(true))
             .withBrokerConfig(
-                cfg -> {
+                (cfg, _unifiedConfiguration) -> {
                   final var config = new InterceptorCfg();
                   config.setId("auth");
                   config.setClassName(TestAuthorizationServerInterceptor.class.getName());

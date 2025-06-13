@@ -87,8 +87,7 @@ final class AzureBackupAcceptanceIT implements BackupAcceptance {
 
   private void configureBroker(final TestStandaloneBroker broker) {
     broker.withBrokerConfig(
-        cfg -> {
-          final UnifiedConfiguration unifiedConfiguration = cfg.getUnifiedConfiguration();
+        (cfg, unifiedConfiguration) -> {
           final var backup = unifiedConfiguration.getCamunda().getData().getBackup();
           final var azure = backup.getAzure();
 

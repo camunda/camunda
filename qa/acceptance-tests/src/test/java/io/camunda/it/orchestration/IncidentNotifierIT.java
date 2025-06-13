@@ -62,7 +62,7 @@ public class IncidentNotifierIT {
     stubHttpClientResponses();
     final var camundaExporter = CamundaExporter.class.getSimpleName().toLowerCase();
     STANDALONE_CAMUNDA.withBrokerConfig(
-        c -> {
+        (c, _unifiedConfiguration) -> {
           final var newArgs = new HashMap<>(c.getExporters().get(camundaExporter).getArgs());
           newArgs.put(
               "notifier",
