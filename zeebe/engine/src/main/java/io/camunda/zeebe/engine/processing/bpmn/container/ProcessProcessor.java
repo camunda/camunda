@@ -21,6 +21,9 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
+import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
+import io.camunda.zeebe.engine.state.immutable.AsyncRequestState.AsyncRequest;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.util.Either;
 import java.util.function.Consumer;
@@ -39,10 +42,12 @@ public final class ProcessProcessor
   private final BpmnBufferedMessageStartEventBehavior bufferedMessageStartEventBehavior;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
   private final BpmnJobBehavior jobBehavior;
+  private final AsyncRequestState asyncRequestState;
 
   public ProcessProcessor(
       final BpmnBehaviors bpmnBehaviors,
-      final BpmnStateTransitionBehavior stateTransitionBehavior) {
+      final BpmnStateTransitionBehavior stateTransitionBehavior,
+      final AsyncRequestState asyncRequestState) {
     stateBehavior = bpmnBehaviors.stateBehavior();
     this.stateTransitionBehavior = stateTransitionBehavior;
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
@@ -51,6 +56,7 @@ public final class ProcessProcessor
     bufferedMessageStartEventBehavior = bpmnBehaviors.bufferedMessageStartEventBehavior();
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
     jobBehavior = bpmnBehaviors.jobBehavior();
+    this.asyncRequestState = asyncRequestState;
   }
 
   @Override
@@ -110,9 +116,18 @@ public final class ProcessProcessor
           terminating ->
               Either.right(
                   stateTransitionBehavior.transitionToTerminated(
-                      terminating, element.getEventType())));
+                      terminating, element.getEventType(), getAsyncRequest(context))));
     }
     return TransitionOutcome.CONTINUE;
+  }
+
+  private AsyncRequest getAsyncRequest(final BpmnElementContext context) {
+    return asyncRequestState
+        .findRequest(
+            context.getElementInstanceKey(),
+            ValueType.PROCESS_INSTANCE,
+            ProcessInstanceIntent.CANCEL)
+        .orElse(null);
   }
 
   private void activateStartEvent(
@@ -193,7 +208,7 @@ public final class ProcessProcessor
             context ->
                 Either.right(
                     stateTransitionBehavior.transitionToTerminated(
-                        context, element.getEventType())));
+                        context, element.getEventType(), getAsyncRequest(context))));
       }
     }
   }
