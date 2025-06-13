@@ -125,15 +125,32 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
       final int replicationFactor,
       final Duration timeout) {
     try (final var client = newClientBuilder().build()) {
-      Awaitility.await("until cluster topology is complete")
-          .atMost(timeout)
-          .ignoreExceptions()
-          .untilAsserted(
-              () ->
-                  TopologyAssert.assertThat(client.newTopologyRequest().send().join())
-                      .isComplete(clusterSize, partitionCount, replicationFactor));
+      awaitCompleteTopology(clusterSize, partitionCount, replicationFactor, timeout, client);
     }
 
+    return self();
+  }
+
+  /**
+   * Blocks until the topology is complete. See {@link TopologyAssert#isComplete(int, int, int)} for
+   * semantics.
+   *
+   * @return itself for chaining
+   * @see TopologyAssert#isComplete(int, int, int)
+   */
+  default T awaitCompleteTopology(
+      final int clusterSize,
+      final int partitionCount,
+      final int replicationFactor,
+      final Duration timeout,
+      final CamundaClient client) {
+    Awaitility.await("until cluster topology is complete")
+        .atMost(timeout)
+        .ignoreExceptions()
+        .untilAsserted(
+            () ->
+                TopologyAssert.assertThat(client.newTopologyRequest().send().join())
+                    .isComplete(clusterSize, partitionCount, replicationFactor));
     return self();
   }
 
@@ -151,12 +168,28 @@ public interface TestGateway<T extends TestGateway<T>> extends TestApplication<T
    *
    * @return itself for chaining
    */
-  default T awaitCompleteTopology(BrokerBasedProperties brokerBasedProperties) {
+  default T awaitCompleteTopology(final BrokerBasedProperties brokerBasedProperties) {
     final var clusterCfg = brokerBasedProperties.getCluster();
     return awaitCompleteTopology(
         clusterCfg.getClusterSize(),
         clusterCfg.getPartitionsCount(),
         clusterCfg.getReplicationFactor(),
         Duration.ofSeconds(30));
+  }
+
+  /**
+   * Method to await the complete topology of a cluster with the given configuration.
+   *
+   * @return itself for chaining
+   */
+  default T awaitCompleteTopology(
+      final BrokerBasedProperties brokerBasedProperties, final CamundaClient camundaClient) {
+    final var clusterCfg = brokerBasedProperties.getCluster();
+    return awaitCompleteTopology(
+        clusterCfg.getClusterSize(),
+        clusterCfg.getPartitionsCount(),
+        clusterCfg.getReplicationFactor(),
+        Duration.ofSeconds(30),
+        camundaClient);
   }
 }

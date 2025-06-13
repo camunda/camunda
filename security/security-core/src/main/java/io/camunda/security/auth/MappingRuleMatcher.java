@@ -37,6 +37,9 @@ public final class MappingRuleMatcher {
 
   public static <T extends MappingRule> Stream<T> matchingRules(
       final Stream<T> mappingRules, final Map<String, Object> claims) {
+    if (claims == null) {
+      return Stream.empty();
+    }
     final EvaluationCache evaluationCache = new EvaluationCache(claims);
     return mappingRules.filter(mappingRule -> matchRule(evaluationCache, mappingRule));
   }
