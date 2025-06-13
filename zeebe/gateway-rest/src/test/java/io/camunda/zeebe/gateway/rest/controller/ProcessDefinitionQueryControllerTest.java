@@ -16,6 +16,7 @@ import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.exception.CamundaSearchException;
+import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -35,6 +36,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentMatchers;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -461,5 +463,52 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
               "instance": "/v2/process-definitions/1/form"
             }
             """);
+  }
+
+  private static Stream<Arguments> provideAdvancedSearchParameters() {
+    final var streamBuilder = Stream.<Arguments>builder();
+
+    stringOperationTestCases(
+        streamBuilder,
+        "name",
+        ops -> new ProcessDefinitionFilter.Builder().namesOperations(ops).build());
+
+    stringOperationTestCases(
+        streamBuilder,
+        "processDefinitionId",
+        ops -> new ProcessDefinitionFilter.Builder().processDefinitionIdsOperations(ops).build());
+
+    return streamBuilder.build();
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideAdvancedSearchParameters")
+  void shouldSearchTasksWithAdvancedFilter(final String filterString, final ProcessDefinitionFilter filter) {
+    // given
+    final var request =
+        """
+            {
+                "filter": %s
+            }"""
+            .formatted(filterString);
+    System.out.println("request = " + request);
+    when(processDefinitionServices.search(any(ProcessDefinitionQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE);
+
+    verify(processDefinitionServices).search(new ProcessDefinitionQuery.Builder().filter(filter).build());
   }
 }

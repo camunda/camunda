@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers.filter;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.BPMN_PROCESS_ID;
@@ -18,11 +19,15 @@ import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.NAME;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.RESOURCE_NAME;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.VERSION;
 import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.VERSION_TAG;
+import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.security.auth.Authorization;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ProcessDefinitionFilterTransformer
     extends IndexFilterTransformer<ProcessDefinitionFilter> {
@@ -33,14 +38,24 @@ public class ProcessDefinitionFilterTransformer
 
   @Override
   public SearchQuery toSearchQuery(final ProcessDefinitionFilter filter) {
-    return and(
-        longTerms(KEY, filter.processDefinitionKeys()),
-        stringTerms(NAME, filter.names()),
-        stringTerms(BPMN_PROCESS_ID, filter.processDefinitionIds()),
-        stringTerms(RESOURCE_NAME, filter.resourceNames()),
-        intTerms(VERSION, filter.versions()),
-        stringTerms(VERSION_TAG, filter.versionTags()),
-        stringTerms(TENANT_ID, filter.tenantIds()));
+    final var queries = new ArrayList<SearchQuery>();
+    ofNullable(longTerms(KEY, filter.processDefinitionKeys())).ifPresent(queries::add);
+    ofNullable(getNamesQuery(filter.namesOperations())).ifPresent(queries::addAll);
+    ofNullable(getProcessDefinitionIdsQuery(filter.processDefinitionIdsOperations())).ifPresent(queries::addAll);
+    ofNullable(stringTerms(RESOURCE_NAME, filter.resourceNames())).ifPresent(queries::add);
+    ofNullable(intTerms(VERSION, filter.versions())).ifPresent(queries::add);
+    ofNullable(stringTerms(VERSION_TAG, filter.versionTags())).ifPresent(queries::add);
+    ofNullable(stringTerms(TENANT_ID, filter.tenantIds())).ifPresent(queries::add);
+
+    return and(queries);
+  }
+
+  private List<SearchQuery> getNamesQuery(final List<Operation<String>> names) {
+    return stringOperations(NAME, names);
+  }
+
+  private List<SearchQuery> getProcessDefinitionIdsQuery(final List<Operation<String>> processDefinitionIds) {
+    return stringOperations(BPMN_PROCESS_ID, processDefinitionIds);
   }
 
   @Override
