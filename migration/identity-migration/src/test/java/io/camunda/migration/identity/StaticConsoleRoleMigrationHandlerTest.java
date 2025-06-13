@@ -38,18 +38,19 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class RoleMigrationHandlerTest {
+public class StaticConsoleRoleMigrationHandlerTest {
   private final RoleServices roleServices;
   private final ConsoleClient consoleClient;
 
-  private final RoleMigrationHandler migrationHandler;
+  private final StaticConsoleRoleMigrationHandler migrationHandler;
 
-  public RoleMigrationHandlerTest(
+  public StaticConsoleRoleMigrationHandlerTest(
       @Mock(answer = Answers.RETURNS_SELF) final RoleServices roleServices,
       @Mock(answer = Answers.RETURNS_SELF) final ConsoleClient consoleClient) {
     this.roleServices = roleServices;
     this.consoleClient = consoleClient;
-    migrationHandler = new RoleMigrationHandler(roleServices, Authentication.none(), consoleClient);
+    migrationHandler =
+        new StaticConsoleRoleMigrationHandler(roleServices, Authentication.none(), consoleClient);
   }
 
   @Test

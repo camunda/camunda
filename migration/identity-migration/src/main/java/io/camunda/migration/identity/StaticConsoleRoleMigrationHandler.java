@@ -7,27 +7,22 @@
  */
 package io.camunda.migration.identity;
 
+import static io.camunda.migration.identity.config.saas.StaticEntities.ROLES;
+
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.console.ConsoleClient;
-import io.camunda.migration.identity.dto.Role;
+import io.camunda.migration.identity.dto.NoopDTO;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.RoleServices;
-import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 
-public class RoleMigrationHandler extends MigrationHandler<Role> {
+public class StaticConsoleRoleMigrationHandler extends MigrationHandler<NoopDTO> {
   private final RoleServices roleServices;
   private final ConsoleClient consoleClient;
-  private final List<CreateRoleRequest> roles =
-      List.of(
-          new CreateRoleRequest("developer", "Developer", ""),
-          new CreateRoleRequest("operationsengineer", "Operations Engineer", ""),
-          new CreateRoleRequest("taskuser", "Task User", ""),
-          new CreateRoleRequest("visitor", "Visitor", ""));
 
-  public RoleMigrationHandler(
+  public StaticConsoleRoleMigrationHandler(
       final RoleServices roleServices,
       final Authentication servicesAuthentication,
       final ConsoleClient consoleClient) {
@@ -36,19 +31,19 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
   }
 
   @Override
-  protected List<Role> fetchBatch(final int page) {
+  protected List<NoopDTO> fetchBatch(final int page) {
     // Roles are created statically
     return List.of();
   }
 
   @Override
-  protected void process(final List<Role> batch) {
+  protected void process(final List<NoopDTO> batch) {
     createRoles();
     assignRolesToUsers();
   }
 
   private void createRoles() {
-    roles.forEach(
+    ROLES.forEach(
         role -> {
           try {
             roleServices.createRole(role).join();
