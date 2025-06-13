@@ -202,7 +202,7 @@ class TaskDetailsPage {
   }
 
   async fillTextInput(label: string, value: string): Promise<void> {
-    const input = this.page.getByLabel(label, {exact: true});
+    const input = this.page.getByRole('textbox', {name: label, exact: true});
     const maxRetries = 3;
     let attempt = 0;
     while (attempt < maxRetries) {

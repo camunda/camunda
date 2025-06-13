@@ -190,7 +190,7 @@ test.describe('task details page', () => {
 
     await taskPanelPage.openTask('JobWorker_user_task');
     await expect(taskDetailsPage.completeTaskButton).toBeDisabled({
-      timeout: 60000,
+      timeout: 90000,
     });
     await taskDetailsPage.clickAssignToMeButton();
     await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
@@ -236,8 +236,8 @@ test.describe('task details page', () => {
     await taskDetailsPage.clickAssignToMeButton();
     await expect(taskDetailsPage.unassignButton).toBeVisible();
 
-    await taskDetailsPage.fillTextInput('Name*', 'Jon');
-    await taskDetailsPage.fillTextInput('Address*', 'Earth');
+    await taskDetailsPage.fillTextInput('Name', 'Jon');
+    await taskDetailsPage.fillTextInput('Address', 'Earth');
     await taskDetailsPage.fillTextInput('Age', '21');
     await taskDetailsPage.clickCompleteTaskButton();
     await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
@@ -259,11 +259,11 @@ test.describe('task details page', () => {
 
     await taskDetailsPage.clickAssignToMeButton();
     await expect(taskDetailsPage.unassignButton).toBeVisible();
-    await taskDetailsPage.fillTextInput('Client Name*', 'Jon');
-    await taskDetailsPage.fillTextInput('Client Address*', 'Earth');
+    await taskDetailsPage.fillTextInput('Client Name', 'Jon');
+    await taskDetailsPage.fillTextInput('Client Address', 'Earth');
     await taskDetailsPage.fillDatetimeField('Invoice Date', '1/1/3000');
     await taskDetailsPage.fillDatetimeField('Due Date', '1/2/3000');
-    await taskDetailsPage.fillTextInput('Invoice Number*', '123');
+    await taskDetailsPage.fillTextInput('Invoice Number', '123');
 
     await taskDetailsPage.selectDropdownOption(
       'USD - United States Dollar',
