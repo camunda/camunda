@@ -15,12 +15,14 @@ import { LoginPage } from "src/pages/login/LoginPage.tsx";
 import Forbidden from "src/pages/forbidden/index.tsx";
 import { NotificationProvider } from "src/components/notifications";
 import { Paths } from "src/components/global/routePaths";
+import { SetupPage } from "src/pages/setup/SetupPage";
 
 const App: FC = () => (
   <BrowserRouter basename={getBaseUrl()}>
     <StrictMode>
       <NotificationProvider>
         <Routes>
+          <Route key="setup" path={Paths.setup()} Component={SetupPage} />
           <Route key="login" path={Paths.login()} Component={LoginPage} />
           <Route path={Paths.forbidden()} element={<Forbidden />} />
           <Route
