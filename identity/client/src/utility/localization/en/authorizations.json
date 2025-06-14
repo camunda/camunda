@@ -1,7 +1,7 @@
 {
   "APPLICATION": "Application",
   "AUTHORIZATION": "Authorization",
-  "BATCH": "Batch",
+  "BATCH_OPERATION": "Batch operation",
   "DECISION_DEFINITION": "Decision definition",
   "DECISION_REQUIREMENTS_DEFINITION": "Decision requirements definition",
   "RESOURCE": "Resource",
