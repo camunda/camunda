@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>zeebe-parent</artifactId>
+    <version>8.8.0-SNAPSHOT</version>
+    <relativePath>../parent/pom.xml</relativePath>
+  </parent>
+
+  <groupId>io.github.clementnero.maven-poc-833.camunda.camunda</groupId>
+  <artifactId>infra-833-test</artifactId>
+  <version>1.0.1-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>Infra 833 Test</name>
+  <description>Submodule used to to test migration of Maven Central publishing to Central Portal (INFRA-833)</description>
+  <url>https://github.com/camunda/team-infrastructure/issues/833</url>
+
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <name>Clément Nero</name>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:https://github.com/clementnero/maven-poc-833.git</connection>
+    <developerConnection>scm:git:https://github.com/clementnero/maven-poc-833.git</developerConnection>
+    <tag>infra-833-test-1.0.0</tag>
+    <url>https://github.com/clementnero/maven-poc-833</url>
+  </scm>
+
+  <properties>
+    <!-- Camund Nexus / Artifactory  -->
+    <skip.camunda.release>false</skip.camunda.release>
+    <nexus.release.repository>https://artifacts.camunda.com/artifactory/camunda-internal</nexus.release.repository>
+    <nexus.snapshot.repository>https://artifacts.camunda.com/artifactory/camunda-internal-snapshots</nexus.snapshot.repository>
+    <!-- Maven Central -->
+    <skip.central.release>false</skip.central.release>
+    <deploymentName>https://github.com/camunda/camunda - Infra 833 Test</deploymentName>
+  </properties>
+
+</project>
