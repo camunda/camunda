@@ -1358,12 +1358,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react-dom@npm:18.3.6":
-  version: 18.3.6
-  resolution: "@types/react-dom@npm:18.3.6"
+"@types/react-dom@npm:18.3.7":
+  version: 18.3.7
+  resolution: "@types/react-dom@npm:18.3.7"
   peerDependencies:
     "@types/react": ^18.0.0
-  checksum: 10c0/e77ac076096bd4b2e0a99130c47959762a927e536b83412e470ac5198d4b8d111cfd787ff2ab7c22bc39c114c0c5fef80046ea0cccb02a655e021a435859314a
+  checksum: 10c0/8bd309e2c3d1604a28a736a24f96cbadf6c05d5288cfef8883b74f4054c961b6b3a5e997fd5686e492be903c8f3380dba5ec017eff3906b1256529cd2d39603e
   languageName: node
   linkType: hard
 
@@ -1376,13 +1376,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:18.3.20":
-  version: 18.3.20
-  resolution: "@types/react@npm:18.3.20"
+"@types/react@npm:18.3.23":
+  version: 18.3.23
+  resolution: "@types/react@npm:18.3.23"
   dependencies:
     "@types/prop-types": "npm:*"
     csstype: "npm:^3.0.2"
-  checksum: 10c0/65fa867c91357e4c4c646945c8b99044360f8973cb7f928ec4de115fe3207827985d45be236e6fd6c092b09f631c2126ce835c137be30718419e143d73300d8f
+  checksum: 10c0/49331800b76572eb2992a5c44801dbf8c612a5f99c8f4e4200f06c7de6f3a6e9455c661784a6c5469df96fa45622cb4a9d0982c44e6a0d5719be5f2ef1f545ed
   languageName: node
   linkType: hard
 
@@ -2373,12 +2373,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-react-refresh@npm:0.4.19":
-  version: 0.4.19
-  resolution: "eslint-plugin-react-refresh@npm:0.4.19"
+"eslint-plugin-react-refresh@npm:0.4.20":
+  version: 0.4.20
+  resolution: "eslint-plugin-react-refresh@npm:0.4.20"
   peerDependencies:
     eslint: ">=8.40"
-  checksum: 10c0/7c19c864c5fb1292dd1c9df2ce73cb1f86457937975d108e8619d6f354855d838d3f56f0262ce5cd541a7087de103ad802a32906e13724ea1b93c6e3b6477708
+  checksum: 10c0/2ccf4ba28f1dcbcb9e773e46eae1e61e568bba69281a700eb26fd762152e4e90a78c991f9c8173342a7cd2a82f3f52fedb40a1e81360cef9c40ea5b814fa3613
   languageName: node
   linkType: hard
 
@@ -2930,8 +2930,8 @@ __metadata:
     "@carbon/react": "npm:1.66.0"
     "@types/event-source-polyfill": "npm:1.0.5"
     "@types/node": "npm:20.16.15"
-    "@types/react": "npm:18.3.20"
-    "@types/react-dom": "npm:18.3.6"
+    "@types/react": "npm:18.3.23"
+    "@types/react-dom": "npm:18.3.7"
     "@types/react-transition-group": "npm:4.4.12"
     "@typescript-eslint/eslint-plugin": "npm:8.6.0"
     "@typescript-eslint/parser": "npm:8.6.0"
@@ -2939,7 +2939,7 @@ __metadata:
     "@vzeta/rollup-plugin-sbom": "npm:2.0.0"
     eslint: "npm:8.57.1"
     eslint-plugin-react-hooks: "npm:4.6.2"
-    eslint-plugin-react-refresh: "npm:0.4.19"
+    eslint-plugin-react-refresh: "npm:0.4.20"
     event-source-polyfill: "npm:1.0.31"
     i18next: "npm:23.15.2"
     license-checker: "npm:25.0.1"
@@ -2948,12 +2948,12 @@ __metadata:
     react-debounced: "npm:1.1.3"
     react-dom: "npm:18.3.1"
     react-i18next: "npm:15.0.3"
-    react-router: "npm:7.5.2"
+    react-router: "npm:7.5.3"
     react-router-dom: "npm:6.26.2"
     react-transition-group: "npm:4.4.5"
     rollup-plugin-license: "npm:3.5.3"
     sass: "npm:1.79.6"
-    styled-components: "npm:6.1.17"
+    styled-components: "npm:6.1.19"
     typescript: "npm:5.6.3"
     vite: "npm:6.2.7"
   languageName: unknown
@@ -4505,9 +4505,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-router@npm:7.5.2":
-  version: 7.5.2
-  resolution: "react-router@npm:7.5.2"
+"react-router@npm:7.5.3":
+  version: 7.5.3
+  resolution: "react-router@npm:7.5.3"
   dependencies:
     cookie: "npm:^1.0.1"
     set-cookie-parser: "npm:^2.6.0"
@@ -4518,7 +4518,7 @@ __metadata:
   peerDependenciesMeta:
     react-dom:
       optional: true
-  checksum: 10c0/5972ecb783e0ac0512c500b84bd4ff475665ba49c67b69e13b79dc24c7ee0496d523858058bb43c70147367688e0cc0d6d6d0f51cabfdebfbc5556d559bff457
+  checksum: 10c0/1f98ab5974cbf6696944a3cbe3d5708add6cdb9c765e0952459eb912d388fe361914a94557546dcd45164413fd9bc2fde97302c8daf3951156644232a9e3ce16
   languageName: node
   linkType: hard
 
@@ -5205,9 +5205,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"styled-components@npm:6.1.17":
-  version: 6.1.17
-  resolution: "styled-components@npm:6.1.17"
+"styled-components@npm:6.1.19":
+  version: 6.1.19
+  resolution: "styled-components@npm:6.1.19"
   dependencies:
     "@emotion/is-prop-valid": "npm:1.2.2"
     "@emotion/unitless": "npm:0.8.1"
@@ -5221,7 +5221,7 @@ __metadata:
   peerDependencies:
     react: ">= 16.8.0"
     react-dom: ">= 16.8.0"
-  checksum: 10c0/87f35173c5fc2291ddba7ed8224d19fe6872d056a577f55fe130248f5ea23e5c48c012e881fa1ad93df60b56a12c1c2d553f628e204f090189221734927e50b0
+  checksum: 10c0/8d20427a5debe54bfa3b55f79af2a3577551ed7f1d1cd34df986b73fd01ac519f9081b7737cc1f76e12fbc483fa50551e55be0bc984296e623cc6a2364697cd8
   languageName: node
   linkType: hard
 
