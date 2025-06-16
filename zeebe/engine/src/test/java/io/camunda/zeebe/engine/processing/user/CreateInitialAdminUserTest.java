@@ -25,7 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
-public class CreateAdminUsersTest {
+public class CreateInitialAdminUserTest {
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
   @Rule public final TestWatcher testWatcher = new RecordingExporterTestWatcher();
