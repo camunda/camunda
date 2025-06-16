@@ -402,7 +402,10 @@ public class BackupManagerElasticSearch extends BackupManager {
         || snapshots.stream().map(SnapshotInfo::state).anyMatch(IN_PROGRESS::equals)) {
       response.setState(BackupStateDto.IN_PROGRESS);
     } else if (snapshots.size() < expectedSnapshotsCount) {
-      response.setState(BackupStateDto.INCOMPLETE);
+      response.setState(
+          isWithinGracePeriodForIncomplete(snapshots.getLast().endTime())
+              ? BackupStateDto.IN_PROGRESS
+              : BackupStateDto.INCOMPLETE);
     } else {
       response.setState(BackupStateDto.FAILED);
     }
@@ -452,6 +455,19 @@ public class BackupManagerElasticSearch extends BackupManager {
       }
     }
     return response;
+  }
+
+  private boolean isWithinGracePeriodForIncomplete(final long lastSnapshotFinishedTime) {
+    final var incompleteCheckTimeoutInMilliseconds =
+        tasklistProperties.getBackup().getIncompleteCheckTimeoutInSeconds() * 1000;
+    try {
+      return Instant.now().toEpochMilli() - lastSnapshotFinishedTime
+          < incompleteCheckTimeoutInMilliseconds;
+    } catch (final Exception e) {
+      LOGGER.warn(
+          "Couldn't check incomplete timeout for backup. Return incomplete check is timed out", e);
+      return true;
+    }
   }
 
   private List<SnapshotInfo> findSnapshots(final Long backupId) {
