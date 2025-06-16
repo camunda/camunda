@@ -15,6 +15,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
+import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
@@ -30,12 +32,15 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class UserCreateAdminProcessor implements TypedRecordProcessor<UserRecord> {
   public static final String USER_ALREADY_EXISTS_ERROR_MESSAGE =
       "Expected to create user with username '%s', but a user with this username already exists";
   public static final String ADMIN_ROLE_NOT_FOUND_ERROR_MESSAGE =
       "Expected to create admin user, but role with id '%s' does not exist";
+  public static final String ADMIN_ROLE_HAS_USERS_ERROR_MESSAGE =
+      "Expected to create admin user, but role with id '%s' already has one or more user assigned to it";
 
   private final KeyGenerator keyGenerator;
   private final UserState userState;
@@ -44,6 +49,7 @@ public class UserCreateAdminProcessor implements TypedRecordProcessor<UserRecord
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final MembershipState membershipState;
 
   public UserCreateAdminProcessor(
       final KeyGenerator keyGenerator,
@@ -53,6 +59,7 @@ public class UserCreateAdminProcessor implements TypedRecordProcessor<UserRecord
     this.keyGenerator = keyGenerator;
     userState = processingState.getUserState();
     roleState = processingState.getRoleState();
+    membershipState = processingState.getMembershipState();
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
@@ -68,6 +75,7 @@ public class UserCreateAdminProcessor implements TypedRecordProcessor<UserRecord
         .flatMap(ignored -> checkRoleUpdateAuthorization(command))
         .flatMap(ignored -> checkUserDoesNotExist(record.getUsername()))
         .flatMap(ignored -> checkAdminRoleExists(adminRoleId))
+        .flatMap(ignored -> checkAdminRoleHasNoUsers(adminRoleId))
         .ifRightOrLeft(
             ignored -> {
               final var key = keyGenerator.nextKey();
@@ -124,5 +132,27 @@ public class UserCreateAdminProcessor implements TypedRecordProcessor<UserRecord
               final var message = ADMIN_ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(adminRoleId);
               return Either.left(new Rejection(RejectionType.NOT_FOUND, message));
             });
+  }
+
+  private Either<Rejection, Void> checkAdminRoleHasNoUsers(final String adminRoleId) {
+    final AtomicBoolean hasUsers = new AtomicBoolean(false);
+    membershipState.forEachMember(
+        RelationType.ROLE,
+        adminRoleId,
+        (entityType, entityId) -> {
+          if (entityType != EntityType.USER) {
+            return true; // Continue iteration for non-user entities
+          }
+
+          hasUsers.set(true);
+          return false; // Stop iteration if any member is found
+        });
+
+    if (hasUsers.get()) {
+      final var message = ADMIN_ROLE_HAS_USERS_ERROR_MESSAGE.formatted(adminRoleId);
+      return Either.left(new Rejection(RejectionType.ALREADY_EXISTS, message));
+    } else {
+      return Either.right(null);
+    }
   }
 }
