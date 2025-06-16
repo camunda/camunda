@@ -984,6 +984,69 @@ public final class AdHocSubProcessTest {
             tuple(PROCESS_ID, BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
+  @Test
+  public void shouldSetTreePathOfActivatedElements() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
+              adHocSubProcess.task("A");
+              adHocSubProcess.task("B");
+              adHocSubProcess.task("C");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("activateElements", List.of("A"))
+            .create();
+
+    // then
+    final Record<ProcessInstanceRecordValue> adHocSubProcess =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .getFirst();
+
+    final Record<ProcessInstanceRecordValue> adHocSubProcessInnerInstance =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .getFirst();
+
+    final Record<ProcessInstanceRecordValue> innerElement =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .getFirst();
+
+    assertThat(adHocSubProcess.getValue())
+        .hasElementInstancePath(List.of(processInstanceKey, adHocSubProcess.getKey()));
+
+    assertThat(adHocSubProcessInnerInstance.getValue())
+        .hasElementInstancePath(
+            List.of(
+                processInstanceKey,
+                adHocSubProcess.getKey(),
+                adHocSubProcessInnerInstance.getKey()));
+
+    assertThat(innerElement.getValue())
+        .hasElementInstancePath(
+            List.of(
+                processInstanceKey,
+                adHocSubProcess.getKey(),
+                adHocSubProcessInnerInstance.getKey(),
+                innerElement.getKey()));
+  }
+
   private static Predicate<Record<RecordValue>> signalBroadcasted(final String signalName) {
     return r ->
         r.getIntent() == SignalIntent.BROADCASTED

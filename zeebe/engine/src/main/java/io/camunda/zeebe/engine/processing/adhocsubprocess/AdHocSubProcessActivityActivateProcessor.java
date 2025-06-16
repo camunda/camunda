@@ -59,14 +59,15 @@ public class AdHocSubProcessActivityActivateProcessor
       final Writers writers,
       final ProcessingState processingState,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final KeyGenerator keyGenerator) {
+      final KeyGenerator keyGenerator,
+      final BpmnAdHocSubProcessBehavior adHocSubProcessBehavior) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     processState = processingState.getProcessState();
     elementInstanceState = processingState.getElementInstanceState();
     this.authCheckBehavior = authCheckBehavior;
-    adHocSubProcessBehavior = new BpmnAdHocSubProcessBehavior(keyGenerator, writers);
+    this.adHocSubProcessBehavior = adHocSubProcessBehavior;
   }
 
   @Override

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder.ElementTreePathProperties;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -24,11 +25,16 @@ public class BpmnAdHocSubProcessBehavior {
   private final KeyGenerator keyGenerator;
   private final TypedCommandWriter commandWriter;
   private final StateWriter stateWriter;
+  private final BpmnStateBehavior stateBehavior;
 
-  public BpmnAdHocSubProcessBehavior(final KeyGenerator keyGenerator, final Writers writers) {
+  public BpmnAdHocSubProcessBehavior(
+      final KeyGenerator keyGenerator,
+      final Writers writers,
+      final BpmnStateBehavior stateBehavior) {
     this.keyGenerator = keyGenerator;
     commandWriter = writers.command();
     stateWriter = writers.state();
+    this.stateBehavior = stateBehavior;
   }
 
   public void activateElement(
@@ -36,41 +42,61 @@ public class BpmnAdHocSubProcessBehavior {
       final BpmnElementContext context,
       final String elementIdToActivate) {
 
-    // create the inner instance
-    final ProcessInstanceRecord adHocSubprocessInnerInstanceRecord = new ProcessInstanceRecord();
-    adHocSubprocessInnerInstanceRecord.wrap(context.getRecordValue());
-    adHocSubprocessInnerInstanceRecord
-        .setFlowScopeKey(context.getElementInstanceKey())
+    final long adHocSubProcessInnerInstanceKey =
+        createAdHocSubProcessInnerInstance(adHocSubProcess, context);
+
+    final ExecutableFlowNode elementToActivate =
+        adHocSubProcess.getAdHocActivitiesById().get(elementIdToActivate);
+
+    activateInnerElement(context, adHocSubProcessInnerInstanceKey, elementToActivate);
+  }
+
+  private long createAdHocSubProcessInnerInstance(
+      final ExecutableAdHocSubProcess adHocSubProcess, final BpmnElementContext context) {
+    final long adHocSubProcessElementInstanceKey = context.getElementInstanceKey();
+
+    final long innerInstanceKey = keyGenerator.nextKey();
+
+    final ProcessInstanceRecord innerInstanceRecord = new ProcessInstanceRecord();
+    innerInstanceRecord.wrap(context.getRecordValue());
+    innerInstanceRecord
+        .setFlowScopeKey(adHocSubProcessElementInstanceKey)
         .setElementId(adHocSubProcess.getInnerInstanceId())
         .setBpmnElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
         .setBpmnEventType(BpmnEventType.UNSPECIFIED);
 
-    final long adHocSubProcessInnerInstanceKey = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(
-        adHocSubProcessInnerInstanceKey,
-        ProcessInstanceIntent.ELEMENT_ACTIVATING,
-        adHocSubprocessInnerInstanceRecord);
-    stateWriter.appendFollowUpEvent(
-        adHocSubProcessInnerInstanceKey,
-        ProcessInstanceIntent.ELEMENT_ACTIVATED,
-        adHocSubprocessInnerInstanceRecord);
+    final ElementTreePathProperties elementTreePath =
+        stateBehavior.getElementTreePath(
+            innerInstanceKey, adHocSubProcessElementInstanceKey, innerInstanceRecord);
 
-    // activate the element inside the inner instance
-    final ExecutableFlowNode elementToActivate =
-        adHocSubProcess.getAdHocActivitiesById().get(elementIdToActivate);
+    innerInstanceRecord.setElementInstancePath(elementTreePath.elementInstancePath());
+    innerInstanceRecord.setProcessDefinitionPath(elementTreePath.processDefinitionPath());
+    innerInstanceRecord.setCallingElementPath(elementTreePath.callingElementPath());
 
-    final var elementProcessInstanceRecord = new ProcessInstanceRecord();
-    elementProcessInstanceRecord.wrap(adHocSubprocessInnerInstanceRecord);
-    elementProcessInstanceRecord
+    stateWriter.appendFollowUpEvent(
+        innerInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATING, innerInstanceRecord);
+
+    stateWriter.appendFollowUpEvent(
+        innerInstanceKey, ProcessInstanceIntent.ELEMENT_ACTIVATED, innerInstanceRecord);
+
+    return innerInstanceKey;
+  }
+
+  private void activateInnerElement(
+      final BpmnElementContext context,
+      final long adHocSubProcessInnerInstanceKey,
+      final ExecutableFlowNode elementToActivate) {
+
+    final var elementRecord = new ProcessInstanceRecord();
+    elementRecord.wrap(context.getRecordValue());
+    elementRecord
         .setFlowScopeKey(adHocSubProcessInnerInstanceKey)
         .setElementId(elementToActivate.getId())
         .setBpmnElementType(elementToActivate.getElementType())
         .setBpmnEventType(elementToActivate.getEventType());
 
-    final long elementToActivateInstanceKey = keyGenerator.nextKey();
+    final long elementInstanceKey = keyGenerator.nextKey();
     commandWriter.appendFollowUpCommand(
-        elementToActivateInstanceKey,
-        ProcessInstanceIntent.ACTIVATE_ELEMENT,
-        elementProcessInstanceRecord);
+        elementInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, elementRecord);
   }
 }
