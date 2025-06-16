@@ -33,7 +33,7 @@ type ResourcePermissionsType = {
 const resourcePermissions: ResourcePermissionsType = {
   APPLICATION: ["ACCESS"],
   AUTHORIZATION: ["UPDATE", "CREATE", "READ", "DELETE"],
-  BATCH: ["CREATE", "READ", "DELETE"],
+  BATCH_OPERATION: ["CREATE", "READ", "DELETE"],
   DECISION_DEFINITION: [
     "DELETE_DECISION_INSTANCE",
     "CREATE_DECISION_INSTANCE",
