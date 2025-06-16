@@ -21,24 +21,22 @@ public final class SnapshotCopyUtil {
    *     at second argument. Used to copy all files of a snapshot from one place to another to test
    *     the copy
    */
-  public static BiConsumer<Path, Path> copyAllFiles() {
-    return (source, target) -> {
-      try (final var stream = Files.walk(source)) {
-        stream.forEach(
-            path -> {
-              if (!source.equals(path)) {
-                try {
-                  final var relativePath = source.relativize(path);
-                  final var targetPath = target.resolve(relativePath);
-                  Files.copy(path, targetPath, StandardCopyOption.REPLACE_EXISTING);
-                } catch (final IOException e) {
-                  throw new UncheckedIOException(e);
-                }
+  public static void copyAllFiles(final Path source, final Path target) {
+    try (final var stream = Files.walk(source)) {
+      stream.forEach(
+          path -> {
+            if (!source.equals(path)) {
+              try {
+                final var relativePath = source.relativize(path);
+                final var targetPath = target.resolve(relativePath);
+                Files.copy(path, targetPath, StandardCopyOption.REPLACE_EXISTING);
+              } catch (final IOException e) {
+                throw new UncheckedIOException(e);
               }
-            });
-      } catch (final IOException e) {
-        throw new RuntimeException(e);
-      }
-    };
+            }
+          });
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

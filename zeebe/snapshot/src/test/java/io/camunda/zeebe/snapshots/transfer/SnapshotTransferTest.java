@@ -60,7 +60,7 @@ public class SnapshotTransferTest {
             control ->
                 spy(
                     new SnapshotTransferServiceImpl(
-                        senderSnapshotStore, 1, SnapshotCopyUtil.copyAllFiles(), control)),
+                        senderSnapshotStore, 1, SnapshotCopyUtil::copyAllFiles, control)),
             receiverSnapshotStore);
     actorScheduler.submitActor(snapshotTransfer);
 

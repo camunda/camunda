@@ -114,7 +114,7 @@ public class SnapshotApiRequestHandlerTest {
 
     final var transferService =
         new SnapshotTransferServiceImpl(
-            senderSnapshotStore, 1, SnapshotCopyUtil.copyAllFiles(), snapshotHandler);
+            senderSnapshotStore, 1, SnapshotCopyUtil::copyAllFiles, snapshotHandler);
     snapshotHandler.addTransferService(1, transferService);
 
     receiverSnapshotStore =
