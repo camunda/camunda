@@ -720,7 +720,6 @@ describe('New Variable Modifications', () => {
       );
     });
 
-    // TODO : test is breaking here, not sure why. Maybe check selectFlowNode function.
     expect(await screen.findByDisplayValue('test1')).toBeInTheDocument();
     expect(screen.getByDisplayValue('123')).toBeInTheDocument();
 
