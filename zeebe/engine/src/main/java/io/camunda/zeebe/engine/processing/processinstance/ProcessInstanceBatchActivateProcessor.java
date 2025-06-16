@@ -11,11 +11,14 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMul
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -23,11 +26,15 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public final class ProcessInstanceBatchActivateProcessor
     implements TypedRecordProcessor<ProcessInstanceBatchRecord> {
+
+  public static final String PARENT_NOT_FOUND_ERROR_MESSAGE =
+      "Expected to activate child for batch element instance, but no parent element instance found for key '%s'. The parent was likely terminated before processing this batch activation.";
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
   private final KeyGenerator keyGenerator;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
+  private final TypedRejectionWriter rejectionWriter;
 
   public ProcessInstanceBatchActivateProcessor(
       final Writers writers,
@@ -39,6 +46,7 @@ public final class ProcessInstanceBatchActivateProcessor
     this.keyGenerator = keyGenerator;
     this.elementInstanceState = elementInstanceState;
     this.processState = processState;
+    rejectionWriter = writers.rejection();
   }
 
   @Override
@@ -46,15 +54,26 @@ public final class ProcessInstanceBatchActivateProcessor
     final var recordValue = record.getValue();
     final var remainingChildrenToActivate = recordValue.getIndex();
 
+    final var batchElementInstanceKey = record.getValue().getBatchElementInstanceKey();
+    final var parentElementInstance = elementInstanceState.getInstance(batchElementInstanceKey);
+    if (parentElementInstance == null) {
+      rejectionWriter.appendRejection(
+          record,
+          RejectionType.INVALID_STATE,
+          PARENT_NOT_FOUND_ERROR_MESSAGE.formatted(batchElementInstanceKey));
+      return;
+    }
+
     if (remainingChildrenToActivate > 0) {
-      writeActivateChildCommand(recordValue);
+      writeActivateChildCommand(parentElementInstance);
     }
 
     writeNextBatchCommand(remainingChildrenToActivate - 1, record);
   }
 
-  private void writeActivateChildCommand(final ProcessInstanceBatchRecord record) {
-    final ProcessInstanceRecord childInstanceRecord = createChildInstanceRecord(record);
+  private void writeActivateChildCommand(final ElementInstance parentElementInstance) {
+    final ProcessInstanceRecord childInstanceRecord =
+        createChildInstanceRecord(parentElementInstance);
 
     commandWriter.appendFollowUpCommand(
         keyGenerator.nextKey(), ProcessInstanceIntent.ACTIVATE_ELEMENT, childInstanceRecord);
@@ -87,9 +106,7 @@ public final class ProcessInstanceBatchActivateProcessor
   }
 
   private ProcessInstanceRecord createChildInstanceRecord(
-      final ProcessInstanceBatchRecord recordValue) {
-    final var parentElementInstance =
-        elementInstanceState.getInstance(recordValue.getBatchElementInstanceKey());
+      final ElementInstance parentElementInstance) {
     final var processDefinition =
         processState
             .getProcessByKeyAndTenant(
