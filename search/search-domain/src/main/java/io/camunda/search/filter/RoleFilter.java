@@ -9,6 +9,7 @@ package io.camunda.search.filter;
 
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.Map;
 import java.util.Set;
 
 public record RoleFilter(
@@ -20,7 +21,8 @@ public record RoleFilter(
     EntityType memberType,
     Set<String> roleIds,
     EntityType childMemberType,
-    String tenantId)
+    String tenantId,
+    Map<EntityType, Set<String>> memberIdsByType)
     implements FilterBase {
   public Builder toBuilder() {
     return new Builder()
@@ -31,7 +33,8 @@ public record RoleFilter(
         .memberType(memberType)
         .roleIds(roleIds)
         .childMemberType(childMemberType)
-        .tenantId(tenantId);
+        .tenantId(tenantId)
+        .memberIdsByType(memberIdsByType);
   }
 
   public static final class Builder implements ObjectBuilder<RoleFilter> {
@@ -44,6 +47,7 @@ public record RoleFilter(
     private Set<String> roleIds;
     private EntityType childMemberType;
     private String tenantId;
+    private Map<EntityType, Set<String>> memberIdsByType;
 
     public Builder roleId(final String value) {
       roleId = value;
@@ -94,6 +98,11 @@ public record RoleFilter(
       return this;
     }
 
+    public Builder memberIdsByType(final Map<EntityType, Set<String>> value) {
+      memberIdsByType = value;
+      return this;
+    }
+
     @Override
     public RoleFilter build() {
       if (memberIds != null && childMemberType == null) {
@@ -108,7 +117,8 @@ public record RoleFilter(
           memberType,
           roleIds,
           childMemberType,
-          tenantId);
+          tenantId,
+          memberIdsByType);
     }
   }
 }
