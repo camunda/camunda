@@ -65,22 +65,22 @@ public class MarkPartitionBootstrappedProcessor implements TypedRecordProcessor<
   private Optional<Tuple<RejectionType, String>> validate(final TypedRecord<ScaleRecord> command) {
     final var scaleUp = command.getValue();
     if (scaleUp.getRedistributedPartitions().size() != 1) {
-      final var reason =
+      final var rejection =
           "Only one partition can be marked as bootstrapped at a time. The redistributed partitions are %s."
               .formatted(scaleUp.getRedistributedPartitions());
-      return Optional.of(new Tuple<>(RejectionType.INVALID_ARGUMENT, reason));
+      return Optional.of(new Tuple<>(RejectionType.INVALID_ARGUMENT, rejection));
     }
     final var partition = scaleUp.getRedistributedPartitions().getFirst();
     if (partition > routingState.desiredPartitions().size()) {
-      final var reason =
+      final var rejection =
           "The redistributed partitions do not match the desired partitions. The redistributed partition is %s, the desired partitions are %s."
               .formatted(partition, routingState.desiredPartitions());
-      return Optional.of(new Tuple<>(RejectionType.INVALID_STATE, reason));
+      return Optional.of(new Tuple<>(RejectionType.INVALID_STATE, rejection));
     }
     if (!routingState.desiredPartitions().contains(partition)
         && !routingState.currentPartitions().contains(partition)) {
-      final var reason = "Partition %d is not a valid partition.".formatted(partition);
-      return Optional.of(new Tuple<>(RejectionType.INVALID_ARGUMENT, reason));
+      final var rejection = "Partition %d is not a valid partition.".formatted(partition);
+      return Optional.of(new Tuple<>(RejectionType.INVALID_ARGUMENT, rejection));
     }
 
     return Optional.empty();
