@@ -105,8 +105,7 @@ public class MarkPartitionBootstrappedProcessor
   }
 
   private void subscribeToStartEventsAndSignals() {
-    processState.forEachProcess(
-        null,
+    processState.forEachProcessWithLatestVersion(
         persistedProcess -> {
           final var deployed =
               processState.getLatestProcessVersionByProcessId(
