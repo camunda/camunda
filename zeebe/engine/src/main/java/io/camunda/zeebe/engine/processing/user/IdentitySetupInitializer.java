@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.DefaultRole;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -166,7 +167,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
   }
 
   private static void setupAdminRole(final IdentitySetupRecord setupRecord) {
-    final var adminRoleId = "admin";
+    final var adminRoleId = DefaultRole.ADMIN.getId();
     setupRecord.addRole(new RoleRecord().setRoleId(adminRoleId).setName("Admin"));
     for (final var resourceType : AuthorizationResourceType.values()) {
       if (resourceType == AuthorizationResourceType.UNSPECIFIED) {
@@ -190,7 +191,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
   }
 
   private static void setupConnectorsRole(final IdentitySetupRecord setupRecord) {
-    final var connectorsRoleId = "connectors";
+    final var connectorsRoleId = DefaultRole.CONNECTORS.getId();
     setupRecord.addRole(new RoleRecord().setRoleId(connectorsRoleId).setName("Connectors"));
     setupRecord.addAuthorization(
         new AuthorizationRecord()
@@ -217,7 +218,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
   }
 
   private static void setupRpaRole(final IdentitySetupRecord setupRecord) {
-    final var rpaRoleId = "rpa";
+    final var rpaRoleId = DefaultRole.RPA.getId();
     setupRecord
         .addRole(new RoleRecord().setRoleId(rpaRoleId).setName("RPA"))
         .addAuthorization(
