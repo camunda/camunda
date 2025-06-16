@@ -37,9 +37,7 @@ const List: FC = () => {
   const [deleteGroup, deleteModal] = useEntityModal(DeleteModal, reload);
   const showDetails = ({ groupId }: Group) => navigate(groupId);
 
-  const pageHeader = (
-    <PageHeader title="Groups" linkText="groups" linkUrl="/concepts/groups/" />
-  );
+  const pageHeader = <PageHeader title="Groups" linkText="groups" linkUrl="" />;
 
   if (success && !groupSearchResults?.items.length) {
     return (
@@ -54,7 +52,7 @@ const List: FC = () => {
             icon: Add,
           }}
           link={{
-            href: documentationHref("/concepts/access-control/groups", ""),
+            href: documentationHref("https://docs.camunda.io/", ""),
             label: t("learnMoreAboutGroups"),
           }}
         />

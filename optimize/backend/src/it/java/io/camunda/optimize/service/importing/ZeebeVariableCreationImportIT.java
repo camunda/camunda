@@ -127,6 +127,38 @@ public class ZeebeVariableCreationImportIT extends AbstractCCSMIT {
   }
 
   @Test
+  public void variableImportWorksForDateStrings() {
+    // given
+    final Process deployedProcess = zeebeExtension.deployProcess(createStartEndProcess(PROCESS_ID));
+    final String variableName = "date";
+    final String variableValue = "2025-10-10";
+    final String parsedDateValue = "2025-10-10T00:00:00.000+0000";
+    final Map<String, Object> variables = Map.of(variableName, variableValue);
+    final Long processInstanceKey =
+        zeebeExtension.startProcessInstanceWithVariables(
+            deployedProcess.getBpmnProcessId(), variables);
+
+    waitUntilNumberOfDefinitionsExported(1);
+    waitUntilMinimumProcessInstanceEventsExportedCount(4);
+    waitUntilMinimumVariableDocumentsExportedCount(1);
+    importAllZeebeEntitiesFromScratch();
+
+    // when
+    final ProcessInstanceDto importedProcessInstance =
+        getProcessInstanceForId(String.valueOf(processInstanceKey));
+
+    // then
+    assertThat(importedProcessInstance.getVariables())
+        .singleElement()
+        .satisfies(
+            variable -> {
+              assertThat(variable.getName()).isEqualTo(variableName);
+              assertThat(variable.getType()).isEqualTo(DATE.getId());
+              assertThat(variable.getValue().getFirst()).isEqualTo(parsedDateValue);
+            });
+  }
+
+  @Test
   public void zeebeVariableImport_variablesAddedAfterProcessStarted() {
     // given
     final ProcessInstanceEvent processInstanceEvent = deployProcessAndStartProcessInstance();

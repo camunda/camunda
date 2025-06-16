@@ -60,7 +60,7 @@ export const assignRoleMapping: ApiDefinition<
   undefined,
   AssignRoleMappingParams
 > = ({ roleId, mappingId }) => {
-  return apiPut(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/${mappingId}`);
+  return apiPut(`${ROLES_ENDPOINT}/${roleId}/mappings/${mappingId}`);
 };
 
 type UnassignRoleMappingParams = AssignRoleMappingParams;
@@ -68,7 +68,9 @@ export const unassignRoleMapping: ApiDefinition<
   undefined,
   UnassignRoleMappingParams
 > = ({ roleId, mappingId }) =>
-  apiDelete(`${ROLES_ENDPOINT}/${roleId}/mapping-rules/${mappingId}`);
+  apiDelete(`${ROLES_ENDPOINT}/${roleId}/mappings/${mappingId}`);
+
+// ----------------- Clients within a Role -----------------
 
 type GetRoleClientsParams = {
   roleId: string;

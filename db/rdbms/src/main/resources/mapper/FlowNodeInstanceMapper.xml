@@ -23,6 +23,7 @@
     SELECT
     FLOW_NODE_INSTANCE_KEY,
     FLOW_NODE_ID,
+    FLOW_NODE_NAME,
     PROCESS_INSTANCE_KEY,
     PROCESS_DEFINITION_ID,
     PROCESS_DEFINITION_KEY,
@@ -77,6 +78,10 @@
       AND FLOW_NODE_ID IN
       <foreach collection="filter.flowNodeIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
+    <if test="filter.flowNodeNames != null and !filter.flowNodeNames.isEmpty()">
+      AND FLOW_NODE_NAME IN
+      <foreach collection="filter.flowNodeNames" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
     <if test="filter.incidentKeys != null and !filter.incidentKeys.isEmpty()">
       AND INCIDENT_KEY IN
       <foreach collection="filter.incidentKeys" item="value" open="(" separator=", " close=")">#{value}</foreach>
@@ -105,6 +110,7 @@
       <arg column="START_DATE" javaType="java.time.OffsetDateTime"/>
       <arg column="END_DATE" javaType="java.time.OffsetDateTime"/>
       <arg column="FLOW_NODE_ID" javaType="java.lang.String"/>
+      <arg column="FLOW_NODE_NAME" javaType="java.lang.String"/>
       <arg column="TREE_PATH" javaType="java.lang.String"/>
       <arg column="TYPE" javaType="io.camunda.search.entities.FlowNodeInstanceEntity$FlowNodeType"/>
       <arg column="STATE" javaType="io.camunda.search.entities.FlowNodeInstanceEntity$FlowNodeState"/>

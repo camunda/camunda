@@ -72,7 +72,7 @@ const Roles: FC<RolesProps> = ({ groupId }) => {
           }}
           link={{
             label: t("learnMoreAboutGroups"),
-            href: `/identity/concepts/access-control/groups`,
+            href: "https://docs.camunda.io/",
           }}
         />
         {assignRolesModal}

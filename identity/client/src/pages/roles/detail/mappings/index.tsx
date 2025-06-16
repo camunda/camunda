@@ -72,7 +72,7 @@ const Mappings: FC<MappingsProps> = ({ roleId }) => {
           }}
           link={{
             label: t("learnMoreAboutRoles"),
-            href: `/identity/concepts/access-control/roles`,
+            href: "https://docs.camunda.io/",
           }}
         />
         {assignMappingsModal}

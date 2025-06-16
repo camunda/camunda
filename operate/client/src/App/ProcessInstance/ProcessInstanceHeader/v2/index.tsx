@@ -30,6 +30,7 @@ import {usePermissions} from 'modules/queries/permissions/usePermissions';
 import {useHasActiveOperations} from 'modules/queries/operations/useHasActiveOperations';
 import {useQueryClient} from '@tanstack/react-query';
 import {PROCESS_INSTANCE_DEPRECATED_QUERY_KEY} from 'modules/queries/processInstance/deprecated/useProcessInstanceDeprecated';
+import {useNavigate} from 'react-router-dom';
 
 const headerColumns = [
   'Process Name',
@@ -85,6 +86,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   const queryClient = useQueryClient();
   const {data: permissions} = usePermissions();
   const {data: hasActiveOperation} = useHasActiveOperations();
+  const navigate = useNavigate();
 
   const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
 
@@ -295,6 +297,22 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
                   operationType,
                   source: 'instance-header',
                 });
+
+                if (operationType === 'DELETE_PROCESS_INSTANCE') {
+                  navigate(
+                    Locations.processes({
+                      active: true,
+                      incidents: true,
+                    }),
+                    {replace: true},
+                  );
+
+                  notificationsStore.displayNotification({
+                    kind: 'success',
+                    title: 'Instance deleted',
+                    isDismissable: true,
+                  });
+                }
               }}
               forceSpinner={
                 variablesStore.hasActiveOperation || hasActiveOperation

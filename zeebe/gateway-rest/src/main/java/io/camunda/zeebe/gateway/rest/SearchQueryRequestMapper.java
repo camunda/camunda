@@ -1011,6 +1011,7 @@ public final class SearchQueryRequestMapper {
                   .ifPresent(
                       t -> builder.types(FlowNodeType.fromZeebeBpmnElementType(t.getValue())));
               Optional.ofNullable(f.getElementId()).ifPresent(builder::flowNodeIds);
+              Optional.ofNullable(f.getElementName()).ifPresent(builder::flowNodeNames);
               Optional.ofNullable(f.getHasIncident()).ifPresent(builder::hasIncident);
               Optional.ofNullable(f.getIncidentKey())
                   .map(KeyUtil::keyToLong)
@@ -1371,6 +1372,7 @@ public final class SearchQueryRequestMapper {
         case START_DATE -> builder.startDate();
         case END_DATE -> builder.endDate();
         case ELEMENT_ID -> builder.flowNodeId();
+        case ELEMENT_NAME -> builder.flowNodeName();
         case TYPE -> builder.type();
         case STATE -> builder.state();
         case INCIDENT_KEY -> builder.incidentKey();

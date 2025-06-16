@@ -41,7 +41,7 @@ jobs:
         working-directory: ./tasklist/client
         run: yarn test:visual --update-snapshots
       - name: Commit screenshots
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v6
         with:
           commit_message: "test: updated tasklist snapshots"
           file_pattern: "tasklist/client/**/*.png"

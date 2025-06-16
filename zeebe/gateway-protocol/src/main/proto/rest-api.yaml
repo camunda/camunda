@@ -316,6 +316,12 @@ paths:
           description: Key of the incident to resolve.
           schema:
             type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IncidentResolutionRequest"
       responses:
         "204":
           description: The incident is marked as resolved.
@@ -6433,6 +6439,7 @@ components:
             - startDate
             - endDate
             - elementId
+            - elementName
             - type
             - state
             - incidentKey
@@ -6502,7 +6509,9 @@ components:
           description: The element ID for this element instance.
         elementName:
           type: string
-          description: The element name.
+          description: >
+            The element name. This only works for data created with 8.8 and onwards.
+            Instances from prior versions don't contain this data and cannot be found.
         hasIncident:
           type: boolean
           description: Shows whether this element instance has an incident related to.
@@ -8364,6 +8373,13 @@ components:
       properties:
         changeset:
           $ref: "#/components/schemas/JobChangeset"
+        operationReference:
+          description: |
+            A reference key chosen by the user that will be part of all records resulting from this operation.
+            Must be > 0 if provided.
+          type: integer
+          format: int64
+          minimum: 1
       required:
         - changeset
     JobChangeset:
@@ -9204,6 +9220,17 @@ components:
         resourceKey:
           type: string
           description: The assigned key, which acts as a unique identifier for this Resource.
+
+    IncidentResolutionRequest:
+      type: object
+      properties:
+        operationReference:
+          description: |
+            A reference key chosen by the user that will be part of all records resulting from this operation.
+            Must be >0 if provided.
+          type: integer
+          format: int64
+          minimum: 1
 
     ProcessInstanceCreationInstruction:
       type: object

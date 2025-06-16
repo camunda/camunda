@@ -7,12 +7,21 @@
  */
 package io.camunda.migration.identity.config;
 
+import io.camunda.migration.identity.config.cluster.ClusterProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = "camunda.migration.identity")
+@ConfigurationProperties(
+    prefix = IdentityMigrationProperties.CONFIG_PREFIX_CAMUNDA_MIGRATION_IDENTITY)
 public class IdentityMigrationProperties {
-  private ManagementIdentityProperties managementIdentity;
+  public static final String CONFIG_PREFIX_CAMUNDA_MIGRATION_IDENTITY =
+      "camunda.migration.identity";
+  public static final String PROP_CAMUNDA_MIGRATION_IDENTITY_MODE =
+      CONFIG_PREFIX_CAMUNDA_MIGRATION_IDENTITY + ".mode";
+  private ManagementIdentityProperties managementIdentity = new ManagementIdentityProperties();
   private String organizationId;
+  private Mode mode = Mode.CLOUD;
+  private ConsoleProperties console = new ConsoleProperties();
+  private ClusterProperties cluster = new ClusterProperties();
 
   public ManagementIdentityProperties getManagementIdentity() {
     return managementIdentity;
@@ -28,5 +37,35 @@ public class IdentityMigrationProperties {
 
   public void setOrganizationId(final String organizationId) {
     this.organizationId = organizationId;
+  }
+
+  public Mode getMode() {
+    return mode;
+  }
+
+  public void setMode(final Mode mode) {
+    this.mode = mode;
+  }
+
+  public ConsoleProperties getConsole() {
+    return console;
+  }
+
+  public void setConsole(final ConsoleProperties console) {
+    this.console = console;
+  }
+
+  public ClusterProperties getCluster() {
+    return cluster;
+  }
+
+  public void setCluster(final ClusterProperties cluster) {
+    this.cluster = cluster;
+  }
+
+  public enum Mode {
+    CLOUD,
+    KEYCLOAK,
+    OIDC
   }
 }

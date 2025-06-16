@@ -37,11 +37,7 @@ const List: FC = () => {
   const showDetails = ({ tenantId }: Tenant) => navigate(`${tenantId}`);
 
   const pageHeader = (
-    <PageHeader
-      title="Tenants"
-      linkText="tenants"
-      linkUrl="/concepts/tenants/"
-    />
+    <PageHeader title="Tenants" linkText="tenants" linkUrl="" />
   );
 
   if (success && !tenantSearchResults?.items.length) {
@@ -56,7 +52,7 @@ const List: FC = () => {
             onClick: addTenant,
           }}
           link={{
-            href: documentationHref("/concepts/multi-tenancy/", ""),
+            href: documentationHref("https://docs.camunda.io/", ""),
             label: t("learnMoreAboutTenants"),
           }}
         />

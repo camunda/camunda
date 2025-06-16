@@ -180,7 +180,7 @@ class AuthorizationSearchIT {
                                 && auth.ownerId().equals(ADMIN)));
   }
 
-  // TODO once available, this test should use the client to make the request
+  // TODO: refactor this once https://github.com/camunda/camunda/issues/32721 is implemented
   private static AuthorizationSearchResponse searchAuthorizations(
       final String restAddress, final String username)
       throws URISyntaxException, IOException, InterruptedException {

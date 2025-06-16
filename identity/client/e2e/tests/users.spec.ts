@@ -22,6 +22,7 @@ const NEW_USER = {
 
 const EDITED_USER = {
   name: "Edited User",
+  username: NEW_USER.username,
   email: "editeduser@camunda.com",
   password: "editedtestpassword",
 };
@@ -41,23 +42,11 @@ test.describe.serial("users CRUD", () => {
       usersPage.usersList.getByRole("cell", { name: NEW_USER.email }),
     ).not.toBeVisible();
 
-    await usersPage.createUserButton.click();
-    await expect(usersPage.createUserModal).toBeVisible();
-    await usersPage.createUsernameField.fill(NEW_USER.username);
-    await usersPage.createNameField.fill(NEW_USER.name);
-    await usersPage.createEmailField.fill(NEW_USER.email);
-    await usersPage.createPasswordField.fill(NEW_USER.password);
-    await usersPage.createRepeatPasswordField.fill(NEW_USER.password);
-    await usersPage.createUserModalCreateButton.click();
-    await expect(usersPage.createUserModal).not.toBeVisible();
+    usersPage.createUser(NEW_USER);
 
-    const item = usersPage.usersList.getByRole("cell", {
-      name: NEW_USER.email,
-    });
-
-    await waitForItemInList(page, item, {
-      emptyStateLocator: usersPage.emptyState,
-    });
+    await expect(
+      usersPage.usersList.getByRole("cell", { name: NEW_USER.email }),
+    ).toBeVisible();
   });
 
   test("edits a user", async ({ page, usersPage }) => {
@@ -79,23 +68,13 @@ test.describe.serial("users CRUD", () => {
     await waitForItemInList(page, item);
   });
 
-  test("deletes a user", async ({ page, usersPage }) => {
+  test("deletes a user", async ({ usersPage }) => {
     await expect(
-      usersPage.usersList.getByRole("cell", { name: EDITED_USER.email }),
+      usersPage.usersList.getByRole("cell", { name: EDITED_USER.name }),
     ).toBeVisible();
-
-    await usersPage.deleteUserButton(EDITED_USER.email).click();
-    await expect(usersPage.deleteUserModal).toBeVisible();
-    await usersPage.deleteUserModalDeleteButton.click();
-    await expect(usersPage.deleteUserModal).not.toBeVisible();
-
-    const item = usersPage.usersList.getByRole("cell", {
-      name: EDITED_USER.email,
-    });
-
-    await waitForItemInList(page, item, {
-      shouldBeVisible: false,
-      emptyStateLocator: usersPage.emptyState,
-    });
+    await usersPage.deleteUser(EDITED_USER.name);
+    await expect(
+      usersPage.usersList.getByRole("cell", { name: EDITED_USER.name }),
+    ).not.toBeVisible();
   });
 });

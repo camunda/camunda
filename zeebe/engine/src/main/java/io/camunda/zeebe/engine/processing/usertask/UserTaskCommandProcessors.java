@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.usertask;
 
+import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
@@ -35,6 +36,7 @@ public final class UserTaskCommandProcessors {
       final KeyGenerator keyGenerator,
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
+      final AsyncRequestBehavior asyncRequestBehavior,
       final AuthorizationCheckBehavior authCheckBehavior) {
     final EventHandle eventHandle =
         new EventHandle(
@@ -52,19 +54,24 @@ public final class UserTaskCommandProcessors {
                 new UserTaskCreateProcessor(
                     processingState,
                     writers,
-                    authCheckBehavior,
                     bpmnBehaviors.userTaskBehavior(),
                     bpmnBehaviors.jobBehavior()),
                 UserTaskIntent.ASSIGN,
-                new UserTaskAssignProcessor(processingState, writers, authCheckBehavior),
+                new UserTaskAssignProcessor(
+                    processingState, writers, asyncRequestBehavior, authCheckBehavior),
                 UserTaskIntent.CLAIM,
-                new UserTaskClaimProcessor(processingState, writers, authCheckBehavior),
+                new UserTaskClaimProcessor(
+                    processingState, writers, asyncRequestBehavior, authCheckBehavior),
                 UserTaskIntent.UPDATE,
                 new UserTaskUpdateProcessor(
-                    processingState, writers, bpmnBehaviors.variableBehavior(), authCheckBehavior),
+                    processingState,
+                    writers,
+                    bpmnBehaviors.variableBehavior(),
+                    asyncRequestBehavior,
+                    authCheckBehavior),
                 UserTaskIntent.COMPLETE,
                 new UserTaskCompleteProcessor(
-                    processingState, eventHandle, writers, authCheckBehavior),
+                    processingState, eventHandle, writers, asyncRequestBehavior, authCheckBehavior),
                 UserTaskIntent.CANCEL,
                 new UserTaskCancelProcessor(processingState, writers)));
     validateProcessorsSetup(commandToProcessor);

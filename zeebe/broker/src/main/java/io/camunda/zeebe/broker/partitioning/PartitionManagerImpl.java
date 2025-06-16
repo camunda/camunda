@@ -284,7 +284,8 @@ public final class PartitionManagerImpl
 
   @Override
   public RaftPartition getRaftPartition(final int partitionId) {
-    return partitions.get(partitionId).raftPartition();
+    final var partition = partitions.get(partitionId);
+    return partition == null ? null : partition.raftPartition();
   }
 
   @Override

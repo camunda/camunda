@@ -105,6 +105,7 @@ public class CCSMAuthenticationCookieFilter extends AbstractPreAuthenticatedProc
         .flatMap(
             cookies ->
                 AuthCookieService.extractJoinedCookieValueFromCookies(Arrays.asList(cookies))
+                    .flatMap(this::validToken)
                     .map(ccsmTokenService::getSubjectFromToken))
         .orElseGet(
             () ->

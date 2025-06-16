@@ -13,6 +13,21 @@ public class SnapshotException extends RuntimeException {
     super(message);
   }
 
+  public SnapshotException(final String message, final Throwable cause) {
+    super(message, cause);
+  }
+
+  public static class SnapshotCopyForBootstrapException extends SnapshotException {
+
+    public SnapshotCopyForBootstrapException(final String message) {
+      super(message);
+    }
+
+    public SnapshotCopyForBootstrapException(final String message, final Throwable cause) {
+      super(message, cause);
+    }
+  }
+
   public static class SnapshotAlreadyExistsException extends SnapshotException {
     public SnapshotAlreadyExistsException(final String message) {
       super(message);

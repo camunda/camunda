@@ -95,6 +95,9 @@ public interface ActorClockActuator {
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   Response addTime(@RequestBody AddTimeRequest request);
 
+  @RequestLine("DELETE")
+  Response resetTime();
+
   record Response(long epochMilli, Instant instant) {}
 
   record AddTimeRequest(Long offsetMilli) {}

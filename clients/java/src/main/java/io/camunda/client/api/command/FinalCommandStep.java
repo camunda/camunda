@@ -45,4 +45,18 @@ public interface FinalCommandStep<T> {
    * @return a future tracking state of success/failure of the command.
    */
   CamundaFuture<T> send();
+
+  /**
+   * Sends the command to the Camunda gateway and returns the response. This operation is
+   * synchronous.
+   *
+   * <pre>
+   * JobEvent event = command.execute();
+   * </pre>
+   *
+   * @return the response of the command.
+   */
+  default T execute() {
+    return send().join();
+  }
 }

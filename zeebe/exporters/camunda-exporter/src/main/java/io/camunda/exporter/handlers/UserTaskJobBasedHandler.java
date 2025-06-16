@@ -25,6 +25,8 @@ import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.webapps.schema.entities.usertask.TaskState;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -55,15 +57,18 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
   private final ObjectReader objectReader;
   private final String indexName;
   private final ExporterEntityCache<String, CachedFormEntity> formCache;
+  private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
   private final ExporterMetadata exporterMetadata;
 
   public UserTaskJobBasedHandler(
       final String indexName,
       final ExporterEntityCache<String, CachedFormEntity> formCache,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
       final ExporterMetadata exporterMetadata,
       final ObjectMapper objectMapper) {
     this.indexName = indexName;
     this.formCache = formCache;
+    this.processCache = processCache;
     this.exporterMetadata = exporterMetadata;
     objectReader = objectMapper.readerFor(String[].class);
   }
@@ -117,6 +122,12 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
       case JobIntent.MIGRATED ->
           entity
               .setFlowNodeBpmnId(record.getValue().getElementId())
+              .setFlowNodeName(
+                  ProcessCacheUtil.getFlowNodeName(
+                          processCache,
+                          record.getValue().getProcessDefinitionKey(),
+                          record.getValue().getElementId())
+                      .orElse(null))
               .setBpmnProcessId(record.getValue().getBpmnProcessId())
               .setProcessDefinitionId(String.valueOf(record.getValue().getProcessDefinitionKey()))
               .setState(TaskState.CREATED);
@@ -171,6 +182,9 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
     if (entity.getFlowNodeBpmnId() != null) {
       updateFields.put(TaskTemplate.FLOW_NODE_BPMN_ID, entity.getFlowNodeBpmnId());
     }
+    if (entity.getFlowNodeName() != null) {
+      updateFields.put(TaskTemplate.FLOW_NODE_NAME, entity.getFlowNodeName());
+    }
     if (entity.getProcessDefinitionId() != null) {
       updateFields.put(TaskTemplate.PROCESS_DEFINITION_ID, entity.getProcessDefinitionId());
     }
@@ -204,6 +218,12 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
         .setFlowNodeInstanceId(String.valueOf(recordValue.getElementInstanceKey()))
         .setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()))
         .setFlowNodeBpmnId(recordValue.getElementId())
+        .setFlowNodeName(
+            ProcessCacheUtil.getFlowNodeName(
+                    processCache,
+                    record.getValue().getProcessDefinitionKey(),
+                    record.getValue().getElementId())
+                .orElse(null))
         .setBpmnProcessId(recordValue.getBpmnProcessId())
         .setProcessDefinitionId(String.valueOf(recordValue.getProcessDefinitionKey()))
         .setProcessDefinitionVersion(recordValue.getProcessDefinitionVersion())

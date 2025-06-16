@@ -241,6 +241,11 @@
       <artifactId>zeebe-protocol-test-util</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.camunda.migration</groupId>
+      <artifactId>identity-migration</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
@@ -318,6 +323,13 @@
     <dependency>
       <groupId>com.oracle.database.jdbc</groupId>
       <artifactId>ojdbc8</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.github.dasniko</groupId>
+      <artifactId>testcontainers-keycloak</artifactId>
+      <version>3.7.0</version>
       <scope>test</scope>
     </dependency>
 
@@ -475,6 +487,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-gateway</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock-standalone</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

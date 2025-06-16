@@ -75,6 +75,11 @@ public class BatchOperationItemProvider {
       final Supplier<Boolean> shouldAbort) {
     final var processInstanceFilter = filter.toBuilder().partitionId(partitionId).build();
 
+    LOG.debug(
+        "Fetching process instance items for partition {} with filter: {}",
+        partitionId,
+        processInstanceFilter);
+
     return fetchEntityItems(
         new ProcessInstancePageFetcher(), processInstanceFilter, authentication, shouldAbort);
   }
@@ -93,6 +98,8 @@ public class BatchOperationItemProvider {
       final IncidentFilter filter,
       final Authentication authentication,
       final Supplier<Boolean> shouldAbort) {
+
+    LOG.debug("Fetching incident items with filter: {}", filter);
     return fetchEntityItems(new IncidentPageFetcher(), filter, authentication, shouldAbort);
   }
 
@@ -142,7 +149,10 @@ public class BatchOperationItemProvider {
       items.addAll(result.items);
       searchValues = result.lastSortValues();
 
-      if (items.size() >= result.total() || result.items.isEmpty()) {
+      // the result.total count can be incorrect when using elasticsearch and could be capped at
+      // 10_000. If the result.total is smaller than the queryPageSize, we can assume that we have
+      // fetched all items. Otherwise, we fetch again until we fetch an empty page
+      if (result.items.isEmpty() || result.total < queryPageSize) {
         break;
       }
     }

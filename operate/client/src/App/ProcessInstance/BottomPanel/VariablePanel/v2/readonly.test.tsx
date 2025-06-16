@@ -41,11 +41,6 @@ import {cancelAllTokens} from 'modules/utils/modifications';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
-jest.mock('modules/feature-flags', () => ({
-  ...jest.requireActual('modules/feature-flags'),
-  IS_PROCESS_INSTANCE_V2_ENABLED: true,
-}));
-
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
     displayNotification: jest.fn(() => () => {}),
@@ -200,7 +195,7 @@ describe('VariablePanel', () => {
 
     modificationsStore.enableModificationMode();
 
-    render(<VariablePanel />, {
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
       wrapper: getWrapper([Paths.processInstance('processInstanceId123')]),
     });
     await waitFor(() => {
@@ -261,7 +256,9 @@ describe('VariablePanel', () => {
       modificationsStore.enableModificationMode();
     });
 
-    render(<VariablePanel />, {wrapper: getWrapper()});
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      wrapper: getWrapper(),
+    });
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -354,7 +351,9 @@ describe('VariablePanel', () => {
 
     modificationsStore.enableModificationMode();
 
-    render(<VariablePanel />, {wrapper: getWrapper()});
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      wrapper: getWrapper(),
+    });
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -457,7 +456,9 @@ describe('VariablePanel', () => {
       modificationsStore.enableModificationMode();
     });
 
-    render(<VariablePanel />, {wrapper: getWrapper()});
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      wrapper: getWrapper(),
+    });
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -520,7 +521,9 @@ describe('VariablePanel', () => {
   it('should be readonly if flow node has variables but no running instances', async () => {
     modificationsStore.enableModificationMode();
 
-    render(<VariablePanel />, {wrapper: getWrapper()});
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      wrapper: getWrapper(),
+    });
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });

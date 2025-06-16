@@ -361,7 +361,7 @@ jobs:
       # registry. As we want to verify the images first before pushing them to dockerhub though,
       # a local registry is used and if verification passes images are pushed to the remote registry.
       registry:
-        image: registry:2
+        image: registry:3
         ports:
           - 5000:5000
     env:
@@ -440,7 +440,7 @@ jobs:
       # registry. As we want to verify the images first before pushing them to dockerhub though,
       # a local registry is used and if verification passes images are pushed to the remote registry.
       registry:
-        image: registry:2
+        image: registry:3
         ports:
           - 5000:5000
     env:
@@ -522,7 +522,7 @@ jobs:
       # registry. As we want to verify the images first before pushing them to dockerhub though,
       # a local registry is used and if verification passes images are pushed to the remote registry.
       registry:
-        image: registry:2
+        image: registry:3
         ports:
           - 5000:5000
     env:
@@ -604,7 +604,7 @@ jobs:
       # registry. As we want to verify the images first before pushing them to dockerhub though,
       # a local registry is used and if verification passes images are pushed to the remote registry.
       registry:
-        image: registry:2
+        image: registry:3
         ports:
           - 5000:5000
     env:

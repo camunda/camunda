@@ -14,14 +14,14 @@ import Roles from "src/pages/roles";
 import Tenants from "src/pages/tenants";
 import Mappings from "src/pages/mappings";
 import Authorizations from "src/pages/authorizations";
-import { isOIDC } from "src/configuration";
+import { isOIDC, isInternalGroupsEnabled } from "src/configuration";
 import { Paths } from "src/components/global/routePaths";
 
 export const useGlobalRoutes = () => {
   const { t } = useTranslate();
   const { pathname } = useLocation();
 
-  const authTypeDependentRoutes = isOIDC
+  const OIDCDependentRoutes = isOIDC
     ? [
         {
           path: `${Paths.mappings()}/*`,
@@ -39,14 +39,20 @@ export const useGlobalRoutes = () => {
         },
       ];
 
+  const internalGroupsDependentRoutes = isInternalGroupsEnabled
+    ? [
+        {
+          path: `${Paths.groups()}/*`,
+          key: Paths.groups(),
+          label: t("groups"),
+          element: <Groups />,
+        },
+      ]
+    : [];
+
   const routes = [
-    ...authTypeDependentRoutes,
-    {
-      path: `${Paths.groups()}/*`,
-      key: Paths.groups(),
-      label: t("groups"),
-      element: <Groups />,
-    },
+    ...OIDCDependentRoutes,
+    ...internalGroupsDependentRoutes,
     {
       path: `${Paths.roles()}/*`,
       key: Paths.roles(),

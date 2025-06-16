@@ -58,11 +58,13 @@ public class MappingTest {
     final var mappingId = Strings.newRandomValidIdentityId();
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
+    final var name = UUID.randomUUID().toString();
     engine
         .mapping()
         .newMapping(mappingId)
         .withClaimName(claimName)
         .withClaimValue(claimValue)
+        .withName(name)
         .create();
 
     // when
@@ -72,6 +74,7 @@ public class MappingTest {
             .newMapping(mappingId)
             .withClaimName(claimName)
             .withClaimValue(claimValue)
+            .withName(name)
             .expectRejection()
             .create();
 
@@ -88,8 +91,15 @@ public class MappingTest {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
+    final var name = UUID.randomUUID().toString();
     final var id = UUID.randomUUID().toString();
-    engine.mapping().newMapping(id).withClaimName(claimName).withClaimValue(claimValue).create();
+    engine
+        .mapping()
+        .newMapping(id)
+        .withClaimName(claimName)
+        .withClaimValue(claimValue)
+        .withName(name)
+        .create();
 
     // when
     final var duplicatedMappingRecord =
@@ -98,6 +108,7 @@ public class MappingTest {
             .newMapping(id)
             .withClaimValue(UUID.randomUUID().toString())
             .withClaimName(UUID.randomUUID().toString())
+            .withName(UUID.randomUUID().toString())
             .expectRejection()
             .create();
 
@@ -178,11 +189,13 @@ public class MappingTest {
     final var mappingId = Strings.newRandomValidIdentityId();
     final var existingClaimName = UUID.randomUUID().toString();
     final var existingClaimValue = UUID.randomUUID().toString();
+    final var existingName = UUID.randomUUID().toString();
     engine
         .mapping()
         .newMapping(mappingId)
         .withClaimName(existingClaimName)
         .withClaimValue(existingClaimValue)
+        .withName(existingName)
         .create();
 
     final var claimName = UUID.randomUUID().toString();
@@ -204,7 +217,7 @@ public class MappingTest {
             .updateMapping(id)
             .withClaimName(existingClaimName)
             .withClaimValue(existingClaimValue)
-            .withName(name)
+            .withName(existingName)
             .expectRejection()
             .update();
 
@@ -212,7 +225,7 @@ public class MappingTest {
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
             String.format(
-                "Expected to create mapping with claimName '%s' and claimValue '%s', but a mapping with this claim already exists.",
+                "Expected to update mapping with claimName '%s' and claimValue '%s', but a mapping with this claim already exists.",
                 existingClaimName, existingClaimValue));
   }
 
@@ -244,6 +257,7 @@ public class MappingTest {
   public void shouldCleanupGroupAndRoleMembership() {
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
+    final var name = UUID.randomUUID().toString();
     final var mappingId = Strings.newRandomValidIdentityId();
     final var mappingRecord =
         engine
@@ -251,6 +265,7 @@ public class MappingTest {
             .newMapping(mappingId)
             .withClaimName(claimName)
             .withClaimValue(claimValue)
+            .withName(name)
             .create();
     final var groupId = Strings.newRandomValidIdentityId();
     engine.group().newGroup(groupId).withName("group").create();

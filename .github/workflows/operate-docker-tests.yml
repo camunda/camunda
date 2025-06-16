@@ -45,7 +45,7 @@ jobs:
       OPERATE_TEST_DOCKER_IMAGE: localhost:5000/camunda/operate:current-test
     services:
       registry:
-        image: registry:2
+        image: registry:3
         ports:
           - 5000:5000
     steps:

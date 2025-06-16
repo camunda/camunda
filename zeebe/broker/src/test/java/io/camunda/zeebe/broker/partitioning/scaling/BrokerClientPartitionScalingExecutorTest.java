@@ -16,7 +16,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerResponseConsumer;
 import io.camunda.zeebe.broker.client.api.BrokerResponseException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
-import io.camunda.zeebe.gateway.impl.broker.request.GetScaleUpProgress;
+import io.camunda.zeebe.gateway.impl.broker.request.scaling.GetScaleUpProgress;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.util.Either;

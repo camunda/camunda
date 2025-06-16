@@ -27,11 +27,7 @@ import Groups from "src/pages/tenants/detail/groups";
 import Roles from "src/pages/tenants/detail/roles";
 import Mappings from "src/pages/tenants/detail/mappings";
 import Clients from "src/pages/tenants/detail/clients";
-import {
-  IS_TENANT_GROUPS_SUPPORTED,
-  IS_TENANT_ROLES_SUPPORTED,
-} from "src/feature-flags";
-import { isOIDC } from "src/configuration";
+import { isInternalGroupsEnabled, isOIDC } from "src/configuration";
 
 const Details: FC = () => {
   const { t } = useTranslate("tenants");
@@ -93,7 +89,7 @@ const Details: FC = () => {
                   label: t("users"),
                   content: <Members tenantId={tenant.tenantId} />,
                 },
-                ...(IS_TENANT_GROUPS_SUPPORTED
+                ...(isInternalGroupsEnabled
                   ? [
                       {
                         key: "groups",
@@ -102,15 +98,11 @@ const Details: FC = () => {
                       },
                     ]
                   : []),
-                ...(IS_TENANT_ROLES_SUPPORTED
-                  ? [
-                      {
-                        key: "roles",
-                        label: t("roles"),
-                        content: <Roles tenantId={tenant.tenantId} />,
-                      },
-                    ]
-                  : []),
+                {
+                  key: "roles",
+                  label: t("roles"),
+                  content: <Roles tenantId={tenant.tenantId} />,
+                },
                 ...(isOIDC
                   ? [
                       {

@@ -225,7 +225,7 @@
     <dependency>
       <groupId>com.opencsv</groupId>
       <artifactId>opencsv</artifactId>
-      <version>5.9</version>
+      <version>5.11.1</version>
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>
@@ -657,7 +657,7 @@
     <dependency>
       <groupId>org.apache.tika</groupId>
       <artifactId>tika-core</artifactId>
-      <version>3.1.0</version>
+      <version>3.2.0</version>
     </dependency>
 
     <!-- this is necessary. Dependency:analyze error suppressed -->

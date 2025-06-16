@@ -347,11 +347,13 @@ public class IdentitySetupInitializeTest {
     final var mapping1 =
         new MappingRecord()
             .setMappingId(UUID.randomUUID().toString())
+            .setName(UUID.randomUUID().toString())
             .setClaimName(UUID.randomUUID().toString())
             .setClaimValue(UUID.randomUUID().toString());
     final var mapping2 =
         new MappingRecord()
             .setMappingId(UUID.randomUUID().toString())
+            .setName(UUID.randomUUID().toString())
             .setClaimName(UUID.randomUUID().toString())
             .setClaimValue(UUID.randomUUID().toString());
 

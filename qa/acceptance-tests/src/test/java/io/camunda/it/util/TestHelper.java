@@ -79,6 +79,33 @@ public final class TestHelper {
    * Deploys a process and waits for it to be available in the secondary database.
    *
    * @param client ... CamundaClient
+   * @param processDefinition ... BpmnModelInstance of the process definition
+   * @return the deployed process
+   */
+  public static Process deployProcessAndWaitForIt(
+      final CamundaClient client,
+      final BpmnModelInstance processDefinition,
+      final String resourceName) {
+    final var event =
+        client
+            .newDeployResourceCommand()
+            .addProcessModel(processDefinition, resourceName)
+            .send()
+            .join()
+            .getProcesses()
+            .getFirst();
+
+    // sync with secondary database
+    waitForProcessesToBeDeployed(
+        client, f -> f.processDefinitionKey(event.getProcessDefinitionKey()), 1);
+
+    return event;
+  }
+
+  /**
+   * Deploys a process and waits for it to be available in the secondary database.
+   *
+   * @param client ... CamundaClient
    * @param classpath ... e.g. process/migration-process_v1.bpmn
    * @return
    */

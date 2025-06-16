@@ -46,6 +46,7 @@ import io.camunda.zeebe.engine.processing.message.MessageEventProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.resource.ResourceDeletionDeleteProcessor;
 import io.camunda.zeebe.engine.processing.resource.ResourceFetchProcessor;
+import io.camunda.zeebe.engine.processing.scaling.ScalingProcessors;
 import io.camunda.zeebe.engine.processing.signal.SignalBroadcastProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -56,7 +57,6 @@ import io.camunda.zeebe.engine.processing.tenant.TenantProcessors;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.user.UserProcessors;
 import io.camunda.zeebe.engine.processing.usertask.UserTaskProcessor;
-import io.camunda.zeebe.engine.scaling.ScalingProcessors;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
@@ -125,6 +125,8 @@ public final class EngineProcessors {
         new DecisionBehavior(
             DecisionEngineFactory.createDecisionEngine(), processingState, processEngineMetrics);
     final var authCheckBehavior = new AuthorizationCheckBehavior(processingState, securityConfig);
+    final var asyncRequestBehavior =
+        new AsyncRequestBehavior(processingState.getKeyGenerator(), writers.state());
     final var transientProcessMessageSubscriptionState =
         typedRecordProcessorContext.getTransientProcessMessageSubscriptionState();
     final BpmnBehaviorsImpl bpmnBehaviors =
@@ -194,6 +196,7 @@ public final class EngineProcessors {
             routingInfo,
             clock,
             config,
+            asyncRequestBehavior,
             authCheckBehavior,
             transientProcessMessageSubscriptionState,
             processEngineMetrics);
@@ -213,7 +216,8 @@ public final class EngineProcessors {
         authCheckBehavior);
 
     final var userTaskProcessor =
-        createUserTaskProcessor(processingState, bpmnBehaviors, writers, authCheckBehavior);
+        createUserTaskProcessor(
+            processingState, bpmnBehaviors, writers, asyncRequestBehavior, authCheckBehavior);
     addUserTaskProcessors(typedRecordProcessors, userTaskProcessor);
 
     addIncidentProcessors(
@@ -287,7 +291,7 @@ public final class EngineProcessors {
         commandDistributionBehavior);
 
     ScalingProcessors.addScalingProcessors(
-        typedRecordProcessors, writers, keyGenerator, processingState);
+        commandDistributionBehavior, typedRecordProcessors, writers, keyGenerator, processingState);
 
     TenantProcessors.addTenantProcessors(
         typedRecordProcessors,
@@ -330,6 +334,7 @@ public final class EngineProcessors {
       final MutableProcessingState processingState,
       final BpmnBehaviorsImpl bpmnBehaviors,
       final Writers writers,
+      final AsyncRequestBehavior asyncRequestBehavior,
       final AuthorizationCheckBehavior authCheckBehavior) {
     return new UserTaskProcessor(
         processingState,
@@ -337,6 +342,7 @@ public final class EngineProcessors {
         processingState.getKeyGenerator(),
         bpmnBehaviors,
         writers,
+        asyncRequestBehavior,
         authCheckBehavior);
   }
 
@@ -379,6 +385,7 @@ public final class EngineProcessors {
       final RoutingInfo routingInfo,
       final InstantSource clock,
       final EngineConfiguration config,
+      final AsyncRequestBehavior asyncRequestBehavior,
       final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final ProcessEngineMetrics processEngineMetrics) {
@@ -395,6 +402,7 @@ public final class EngineProcessors {
         routingInfo,
         clock,
         config,
+        asyncRequestBehavior,
         authCheckBehavior,
         transientProcessMessageSubscriptionState,
         processEngineMetrics);

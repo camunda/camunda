@@ -288,7 +288,13 @@ public class RemoveEntityTenantTest {
     final var tenantId = UUID.randomUUID().toString();
     engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     final var mappingId = Strings.newRandomValidIdentityId();
-    engine.mapping().newMapping(mappingId).create();
+    engine
+        .mapping()
+        .newMapping(mappingId)
+        .withName("name")
+        .withClaimName("cn")
+        .withClaimValue("cv")
+        .create();
     engine
         .tenant()
         .addEntity(tenantId)
@@ -317,7 +323,13 @@ public class RemoveEntityTenantTest {
     final var tenantId = UUID.randomUUID().toString();
     final var mappingId = Strings.newRandomValidIdentityId();
     final var tenantRecord = engine.tenant().newTenant().withTenantId(tenantId).create();
-    engine.mapping().newMapping(mappingId).create();
+    engine
+        .mapping()
+        .newMapping(mappingId)
+        .withName("name")
+        .withClaimName("cn")
+        .withClaimValue("cv")
+        .create();
 
     // when
     final var createdTenant = tenantRecord.getValue();
@@ -347,7 +359,13 @@ public class RemoveEntityTenantTest {
 
     // when
     final var mappingId = "123";
-    engine.mapping().newMapping(mappingId).create();
+    engine
+        .mapping()
+        .newMapping(mappingId)
+        .withName("name")
+        .withClaimName("cn")
+        .withClaimValue("cv")
+        .create();
     final var notAssignedUpdateRecord =
         engine
             .tenant()

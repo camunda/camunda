@@ -203,6 +203,16 @@ test.describe('delete finished instances', () => {
     await page.getByRole('button', {name: /danger delete/i}).click();
 
     await page.route(URL_API_PATTERN, (route) => {
+      if (route.request().url().includes('call-hierarchy')) {
+        return route.fulfill({
+          status: 200,
+          body: JSON.stringify(completedOrderProcessInstance.callHierarchy),
+          headers: {
+            'content-type': 'application/json',
+          },
+        });
+      }
+
       if (route.request().url().includes('/api/process-instances/')) {
         return route.fulfill({
           status: 404,

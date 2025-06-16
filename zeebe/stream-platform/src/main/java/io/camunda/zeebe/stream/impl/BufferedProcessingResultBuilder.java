@@ -42,6 +42,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   private final RecordBatch mutableRecordBatch;
   private ProcessingResponseImpl processingResponse;
   private final long operationReference;
+  private boolean processInASeparateBatch = false;
 
   BufferedProcessingResultBuilder(final RecordBatchSizePredicate predicate) {
     this(predicate, operationReferenceNullValue());
@@ -57,8 +58,11 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   public Either<RuntimeException, ProcessingResultBuilder> appendRecordReturnEither(
       final long key, final RecordValue value, final RecordMetadata metadata) {
 
-    if (operationReference != operationReferenceNullValue()) {
-      metadata.operationReference(operationReference);
+    // `operationReference` from `metadata` should have a higher precedence
+    if (metadata.getOperationReference() == operationReferenceNullValue()) {
+      if (operationReference != operationReferenceNullValue()) {
+        metadata.operationReference(operationReference);
+      }
     }
 
     final ValueType valueType = TypedEventRegistry.TYPE_REGISTRY.get(value.getClass());
@@ -124,8 +128,15 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   }
 
   @Override
+  public ProcessingResultBuilder withProcessInASeparateBatch() {
+    processInASeparateBatch = true;
+    return this;
+  }
+
+  @Override
   public ProcessingResult build() {
-    return new BufferedResult(mutableRecordBatch, processingResponse, postCommitTasks);
+    return new BufferedResult(
+        mutableRecordBatch, processingResponse, postCommitTasks, processInASeparateBatch);
   }
 
   @Override

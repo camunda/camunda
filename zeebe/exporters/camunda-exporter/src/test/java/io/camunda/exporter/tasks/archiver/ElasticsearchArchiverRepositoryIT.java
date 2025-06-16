@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.http.HttpHost;
+import org.awaitility.Awaitility;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.AfterEach;
@@ -347,6 +348,88 @@ final class ElasticsearchArchiverRepositoryIT {
     final var batch = result.join();
     assertThat(batch.ids()).containsExactly("1", "2");
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
+  }
+
+  @Test
+  void shouldSetTheCorrectFinishDateWithRollover() throws IOException {
+    // given a rollover of 3 days:
+    config.setRolloverInterval("3d");
+    final var dateFormatter =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+    final var destIndexName = UUID.randomUUID().toString();
+    final var now = Instant.now();
+    final var fourDaysAgo = now.minus(Duration.ofDays(4)).toString();
+    final var twoDaysAgo = now.minus(Duration.ofDays(2)).toString();
+    final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
+    final var repository = createRepository();
+    final var documents =
+        List.of(new TestBatchOperation("1", fourDaysAgo), new TestBatchOperation("2", fourDaysAgo));
+
+    createBatchOperationIndex();
+    documents.forEach(doc -> index(batchOperationIndex, doc));
+    testClient.indices().refresh(r -> r.index(batchOperationIndex));
+
+    // when
+    final var firstBatch = repository.getBatchOperationsNextBatch();
+    Awaitility.await("waiting for first batch operation to be complete")
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () ->
+                firstBatch.isDone()
+                    && firstBatch.get().ids().containsAll(List.of("1", "2"))
+                    && firstBatch
+                        .get()
+                        .finishDate()
+                        .equals(dateFormatter.format(now.minus(Duration.ofDays(4)))));
+    repository
+        .moveDocuments(batchOperationIndex, destIndexName, "id", List.of("1", "2"), Runnable::run)
+        .join();
+
+    final var secondBatchDocuments =
+        List.of(new TestBatchOperation("3", twoDaysAgo), new TestBatchOperation("4", twoDaysAgo));
+
+    secondBatchDocuments.forEach(doc -> index(batchOperationIndex, doc));
+    testClient.indices().refresh(r -> r.index(batchOperationIndex));
+
+    // then
+    final var secondBatch = repository.getBatchOperationsNextBatch();
+    Awaitility.await("waiting for second batch operation to be complete")
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () ->
+                secondBatch.isDone()
+                    && secondBatch.get().ids().containsAll(List.of("3", "4"))
+                    && secondBatch
+                        .get()
+                        .finishDate()
+                        .equals(dateFormatter.format(now.minus(Duration.ofDays(4)))));
+    // it should still have the same finish date since the rollover window is three days, and the
+    // difference of both batches is only 2 days.
+    repository
+        .moveDocuments(batchOperationIndex, destIndexName, "id", List.of("3", "4"), Runnable::run)
+        .join();
+
+    // we create another batch of documents, which is two hours ago, since the default archive point
+    // is after 1 hour
+    final var thirdBatchDocuments =
+        List.of(new TestBatchOperation("5", twoHoursAgo), new TestBatchOperation("6", twoHoursAgo));
+
+    thirdBatchDocuments.forEach(doc -> index(batchOperationIndex, doc));
+    testClient.indices().refresh(r -> r.index(batchOperationIndex));
+
+    // then
+    final var thirdBatch = repository.getBatchOperationsNextBatch();
+
+    Awaitility.await("waiting for third batch operation to be complete")
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () ->
+                thirdBatch.isDone()
+                    && thirdBatch.get().ids().containsAll(List.of("5", "6"))
+                    && thirdBatch
+                        .get()
+                        .finishDate()
+                        .equals(dateFormatter.format(now.minus(Duration.ofHours(2)))));
   }
 
   private <T extends TDocument> void index(final String index, final T document) {

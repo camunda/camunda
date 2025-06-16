@@ -23,8 +23,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.env.EnvironmentPostProcessor;
 import org.springframework.boot.env.YamlPropertySourceLoader;
@@ -73,55 +75,65 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
     environment.getPropertySources().stream()
         .filter(o -> EnumerablePropertySource.class.isAssignableFrom(o.getClass()))
         .map(EnumerablePropertySource.class::cast)
+        .flatMap(propertySource -> mapLegacyOverrideFromSource(environment, propertySource))
         .forEach(
-            propertySource -> {
-              for (final String propertyName : propertySource.getPropertyNames()) {
-                for (final String prefix : LEGACY_OVERRIDE_PREFIX) {
-                  final String normalizedPropertyName =
-                      propertyName.replaceAll("_", ".").toLowerCase();
-                  if (normalizedPropertyName.startsWith(prefix)) {
-                    final String newPropertyName =
-                        OVERRIDE_PREFIX + normalizedPropertyName.substring(prefix.length());
-                    if (!environment.containsProperty(newPropertyName)) {
-                      log.debug(
-                          String.format(
-                              "Mapping worker override from '%s' to '%s'",
-                              propertyName, newPropertyName));
-                      addMapPropertySourceFirst(
-                          propertyName,
-                          Map.of(
-                              newPropertyName,
-                              Objects.requireNonNull(propertySource.getProperty(propertyName))),
-                          environment);
-                    }
-                  }
-                }
-              }
-            });
+            propertySource ->
+                addMapPropertySourceFirst(
+                    propertySource.sourceName(), propertySource.properties(), environment));
+  }
+
+  private Stream<MappedPropertySource> mapLegacyOverrideFromSource(
+      final ConfigurableEnvironment environment, final EnumerablePropertySource<?> propertySource) {
+    final Map<String, MappedPropertySource> result = new HashMap<>();
+    for (final String propertyName : propertySource.getPropertyNames()) {
+      for (final String prefix : LEGACY_OVERRIDE_PREFIX) {
+        final String normalizedPropertyName = propertyName.replaceAll("_", ".").toLowerCase();
+        if (normalizedPropertyName.startsWith(prefix)) {
+          final String newPropertyName =
+              OVERRIDE_PREFIX + normalizedPropertyName.substring(prefix.length());
+          if (!environment.containsProperty(newPropertyName)) {
+            final String sourceName = propertyName.replaceAll("\\[\\d*]", "");
+            final MappedPropertySource mappedPropertySource =
+                result.computeIfAbsent(
+                    sourceName, s -> new MappedPropertySource(s, new HashMap<>()));
+            mappedPropertySource
+                .properties()
+                .put(
+                    newPropertyName,
+                    Objects.requireNonNull(propertySource.getProperty(propertyName)));
+            log.debug(
+                String.format(
+                    "Mapping worker override from '%s' to '%s'", propertyName, newPropertyName));
+          }
+        }
+      }
+    }
+    return result.values().stream();
   }
 
   private void mapLegacyProperties(final ConfigurableEnvironment environment) {
     final List<CamundaClientLegacyPropertiesMapping> mappings =
         CamundaClientLegacyPropertiesMappingsLoader.load();
-    mappings.forEach(
-        mapping ->
-            detectPropertyValue(environment, mapping)
-                .forEach(
-                    (legacyPropertyName, detectedPropertyValue) ->
-                        addMapPropertySourceFirst(
-                            legacyPropertyName,
-                            Map.of(mapping.getPropertyName(), detectedPropertyValue),
-                            environment)));
+    mappings.stream()
+        .map(mapping -> detectPropertyValue(environment, mapping))
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .forEach(
+            mappedPropertySource ->
+                addMapPropertySourceFirst(
+                    mappedPropertySource.sourceName(),
+                    mappedPropertySource.properties(),
+                    environment));
   }
 
-  private Map<String, String> detectPropertyValue(
+  private Optional<MappedPropertySource> detectPropertyValue(
       final ConfigurableEnvironment environment,
       final CamundaClientLegacyPropertiesMapping property) {
     if (environment.containsProperty(property.getPropertyName())) {
       log.debug(
           String.format(
               "Property '%s' found, not looking up legacy properties", property.getPropertyName()));
-      return Map.of();
+      return Optional.empty();
     }
     for (final String legacyPropertyName : property.getLegacyPropertyNames()) {
       if (environment.containsProperty(legacyPropertyName)) {
@@ -129,13 +141,41 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
             String.format(
                 "Legacy property '%s' found, setting to '%s'. Please update your setup to use the latest property",
                 legacyPropertyName, property.getPropertyName()));
-        return Map.of(
-            legacyPropertyName,
-            Objects.requireNonNull(environment.getProperty(legacyPropertyName)));
+        return Optional.of(
+            new MappedPropertySource(
+                legacyPropertyName,
+                Map.of(
+                    property.getPropertyName(),
+                    Objects.requireNonNull(environment.getProperty(legacyPropertyName)))));
+      }
+      // check for indexed property
+      final Map<String, Object> indexedProperty = new HashMap<>();
+      for (int i = 0; i < Integer.MAX_VALUE; i++) {
+        final String indexedPropertyName = property.getPropertyName() + "[" + i + "]";
+        final String indexedLegacyPropertyName = legacyPropertyName + "[" + i + "]";
+
+        if (environment.containsProperty(indexedPropertyName)) {
+          // the new property is already present, no need to override
+          return Optional.empty();
+        }
+        if (!environment.containsProperty(indexedLegacyPropertyName)) {
+          // the index is not present, the for-loop is interrupted
+          break;
+        }
+        // the property is present, will be mapped
+        indexedProperty.put(
+            indexedPropertyName, environment.getProperty(indexedLegacyPropertyName));
+      }
+      if (!indexedProperty.isEmpty()) {
+        log.warn(
+            String.format(
+                "Legacy property '%s' found, setting to '%s'. Please update your setup to use the latest property",
+                legacyPropertyName, property.getPropertyName()));
+        return Optional.of(new MappedPropertySource(legacyPropertyName, indexedProperty));
       }
     }
     log.debug(String.format("No property found for '%s'", property.getPropertyName()));
-    return Map.of();
+    return Optional.empty();
   }
 
   private void processClientMode(final ConfigurableEnvironment environment) {
@@ -274,4 +314,6 @@ public class CamundaClientPropertiesPostProcessor implements EnvironmentPostProc
       case saas -> "modes/saas.yaml";
     };
   }
+
+  private record MappedPropertySource(String sourceName, Map<String, Object> properties) {}
 }

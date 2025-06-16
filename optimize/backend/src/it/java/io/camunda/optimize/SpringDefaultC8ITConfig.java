@@ -16,10 +16,12 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 
 @Import(io.camunda.optimize.Main.class)
 @Configuration
 @Conditional(CCSMCondition.class)
+@Profile("!variable-import-disabled")
 public class SpringDefaultC8ITConfig {
 
   @Bean

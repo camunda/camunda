@@ -161,7 +161,7 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
                     jobServices
                         .withAuthentication(authentication)
                         .updateJob(
-                            jobKey, new UpdateJobChangeset(retries, null), operationReference),
+                            jobKey, operationReference, new UpdateJobChangeset(retries, null)),
                 operationId));
   }
 

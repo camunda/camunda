@@ -23,7 +23,7 @@ services:
       - "5432:5432"
 
   mariadb:
-    image: mariadb:11.7
+    image: mariadb:11.8
     restart: always
     environment:
       MARIADB_ROOT_PASSWORD: example
@@ -54,7 +54,7 @@ services:
       start_period: 5s
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.3
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.18.2
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -78,7 +78,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
 
   opensearch:
-    image: opensearchproject/opensearch:2.19.1
+    image: opensearchproject/opensearch:2.19.2
     container_name: opensearch
     environment:
       - cluster.name=opensearch-cluster

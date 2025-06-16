@@ -33,6 +33,8 @@ public interface ElementInstanceSort extends SearchRequestSort<ElementInstanceSo
 
   ElementInstanceSort elementId();
 
+  ElementInstanceSort elementName();
+
   ElementInstanceSort type();
 
   ElementInstanceSort state();

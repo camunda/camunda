@@ -72,6 +72,7 @@ public final class BpmnProcessors {
       final RoutingInfo routingInfo,
       final InstantSource clock,
       final EngineConfiguration config,
+      final AsyncRequestBehavior asyncRequestBehavior,
       final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
       final ProcessEngineMetrics processEngineMetrics) {
@@ -106,6 +107,7 @@ public final class BpmnProcessors {
         keyGenerator,
         writers,
         processingState.getUserTaskState(),
+        asyncRequestBehavior,
         authCheckBehavior);
     addProcessInstanceCreationStreamProcessors(
         typedRecordProcessors,
@@ -223,6 +225,7 @@ public final class BpmnProcessors {
       final KeyGenerator keyGenerator,
       final Writers writers,
       final MutableUserTaskState userTaskState,
+      final AsyncRequestBehavior asyncRequestBehavior,
       final AuthorizationCheckBehavior authCheckBehavior) {
     typedRecordProcessors.onCommand(
         ValueType.VARIABLE_DOCUMENT,
@@ -233,6 +236,7 @@ public final class BpmnProcessors {
             bpmnBehaviors,
             writers,
             userTaskState,
+            asyncRequestBehavior,
             authCheckBehavior));
   }
 

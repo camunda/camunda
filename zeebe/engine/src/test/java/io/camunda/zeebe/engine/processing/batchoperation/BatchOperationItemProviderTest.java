@@ -47,8 +47,8 @@ class BatchOperationItemProviderTest {
     searchClientsProxy = mock(SearchClientsProxy.class);
 
     final EngineConfiguration engineConfiguration = mock(EngineConfiguration.class);
-    when(engineConfiguration.getBatchOperationQueryPageSize()).thenReturn(10);
-    when(engineConfiguration.getBatchOperationQueryInClauseSize()).thenReturn(10);
+    when(engineConfiguration.getBatchOperationQueryPageSize()).thenReturn(5);
+    when(engineConfiguration.getBatchOperationQueryInClauseSize()).thenReturn(5);
 
     when(searchClientsProxy.withSecurityContext(any())).thenReturn(searchClientsProxy);
 
@@ -106,21 +106,28 @@ class BatchOperationItemProviderTest {
                 List.of(
                     mockProcessInstanceEntity(1L),
                     mockProcessInstanceEntity(2L),
-                    mockProcessInstanceEntity(3L)))
-            .total(6)
+                    mockProcessInstanceEntity(3L),
+                    mockProcessInstanceEntity(4L),
+                    mockProcessInstanceEntity(5L)))
+            .total(10)
             .build();
     final var result2 =
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(
                 List.of(
-                    mockProcessInstanceEntity(4L),
-                    mockProcessInstanceEntity(5L),
-                    mockProcessInstanceEntity(6L)))
-            .total(6)
+                    mockProcessInstanceEntity(6L),
+                    mockProcessInstanceEntity(7L),
+                    mockProcessInstanceEntity(8L),
+                    mockProcessInstanceEntity(9L),
+                    mockProcessInstanceEntity(10L)))
+            .total(10)
             .build();
+    final var result3 =
+        new SearchQueryResult.Builder<ProcessInstanceEntity>().items(List.of()).total(10).build();
     when(searchClientsProxy.searchProcessInstances(queryCaptor.capture()))
         .thenReturn(result)
-        .thenReturn(result2);
+        .thenReturn(result2)
+        .thenReturn(result3);
 
     // when
     final var filter = new ProcessInstanceFilter.Builder().build();
@@ -135,7 +142,11 @@ class BatchOperationItemProviderTest {
             new Item(3L, 3L),
             new Item(4L, 4L),
             new Item(5L, 5L),
-            new Item(6L, 6L));
+            new Item(6L, 6L),
+            new Item(7L, 7L),
+            new Item(8L, 8L),
+            new Item(9L, 9L),
+            new Item(10L, 10L));
 
     // and partitionId is set in filter
     final var query = queryCaptor.getValue();

@@ -36,11 +36,6 @@ import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 
-jest.mock('modules/feature-flags', () => ({
-  ...jest.requireActual('modules/feature-flags'),
-  IS_PROCESS_INSTANCE_V2_ENABLED: true,
-}));
-
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
     displayNotification: jest.fn(() => () => {}),
@@ -163,7 +158,9 @@ describe('VariablePanel', () => {
         instanceMetadata: null,
       });
 
-      render(<VariablePanel />, {wrapper: getWrapper()});
+      render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+        wrapper: getWrapper(),
+      });
 
       await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
 
@@ -196,7 +193,9 @@ describe('VariablePanel', () => {
         modificationsStore.enableModificationMode();
       }
 
-      render(<VariablePanel />, {wrapper: getWrapper()});
+      render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+        wrapper: getWrapper(),
+      });
 
       await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
       expect(
@@ -233,7 +232,9 @@ describe('VariablePanel', () => {
         modificationsStore.enableModificationMode();
       }
 
-      render(<VariablePanel />, {wrapper: getWrapper()});
+      render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+        wrapper: getWrapper(),
+      });
 
       await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
       expect(

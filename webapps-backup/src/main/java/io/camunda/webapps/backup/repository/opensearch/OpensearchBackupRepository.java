@@ -12,8 +12,8 @@ import static io.camunda.webapps.backup.repository.opensearch.OpensearchRequestD
 import static io.camunda.webapps.backup.repository.opensearch.OpensearchRequestDSL.getSnapshotRequestBuilder;
 import static io.camunda.webapps.backup.repository.opensearch.OpensearchRequestDSL.repositoryRequestBuilder;
 import static io.camunda.webapps.backup.repository.opensearch.SnapshotState.FAILED;
+import static io.camunda.webapps.backup.repository.opensearch.SnapshotState.IN_PROGRESS;
 import static io.camunda.webapps.backup.repository.opensearch.SnapshotState.PARTIAL;
-import static io.camunda.webapps.backup.repository.opensearch.SnapshotState.STARTED;
 import static io.camunda.webapps.backup.repository.opensearch.SnapshotState.SUCCESS;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.groupingBy;
@@ -317,7 +317,7 @@ public class OpensearchBackupRepository implements BackupRepository {
                     // No need to continue
                     onFailure.run();
                     break;
-                  } else if (STARTED.equals(maybeCurrentSnapshot.get().getState())) {
+                  } else if (IN_PROGRESS.equals(maybeCurrentSnapshot.get().getState())) {
                     try {
                       Thread.sleep(100);
                     } catch (final InterruptedException ex) {
@@ -449,7 +449,9 @@ public class OpensearchBackupRepository implements BackupRepository {
         .map(OpenSearchSnapshotInfo::getState)
         .anyMatch(s -> FAILED.equals(s) || PARTIAL.equals(s))) {
       return BackupStateDto.FAILED;
-    } else if (snapshots.stream().map(OpenSearchSnapshotInfo::getState).anyMatch(STARTED::equals)) {
+    } else if (snapshots.stream()
+        .map(OpenSearchSnapshotInfo::getState)
+        .anyMatch(IN_PROGRESS::equals)) {
       return BackupStateDto.IN_PROGRESS;
     } else if (snapshots.size() < expectedSnapshotsCount) {
       if (isIncompleteCheckTimedOut(

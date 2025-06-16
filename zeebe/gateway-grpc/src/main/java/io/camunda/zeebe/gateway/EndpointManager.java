@@ -74,6 +74,7 @@ import io.grpc.stub.ServerCallStreamObserver;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -505,6 +506,12 @@ public final class EndpointManager {
     final String clientId = Context.current().call(AuthenticationHandler.CLIENT_ID::get);
     if (clientId != null) {
       claims.put(Authorization.AUTHORIZED_CLIENT_ID, clientId);
+    }
+
+    final List<String> groupsClaims =
+        Context.current().call(AuthenticationHandler.GROUPS_CLAIMS::get);
+    if (groupsClaims != null) {
+      claims.put(Authorization.USER_GROUPS_CLAIMS, groupsClaims);
     }
 
     brokerRequest.setAuthorization(claims);

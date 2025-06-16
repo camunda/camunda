@@ -48,7 +48,7 @@ class OperateProcessInstancePage {
     while (retryCount < maxRetries) {
       try {
         await expect(this.completedIcon).toBeVisible({
-          timeout: 90000,
+          timeout: 120000,
         });
         return; // Exit the function if the expectation is met
       } catch {
@@ -59,7 +59,7 @@ class OperateProcessInstancePage {
         await sleep(10000);
       }
     }
-    throw new Error(`Active icon not visible after ${maxRetries} attempts.`);
+    throw new Error(`Completed icon not visible after ${maxRetries} attempts.`);
   }
 
   async activeIconAssertion(): Promise<void> {

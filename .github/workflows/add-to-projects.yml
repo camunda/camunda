@@ -44,38 +44,32 @@ jobs:
           project-url: https://github.com/orgs/camunda/projects/92
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           labeled: component/zeebe
-      - id: add-to-zpa
-        name: Add to ZPA project
+      - id: add-to-core-features
+        name: Add to Core Features project
         uses: actions/add-to-project@v1.0.2
         if: ${{ steps.has-project.outputs.result == 'false' }}
         with:
-          project-url: https://github.com/orgs/camunda/projects/29
+          project-url: https://github.com/orgs/camunda/projects/173
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
-          labeled: component/zeebe
-      - id: add-to-operate
-        name: Add to Operate project
+          labeled: component/operate, component/tasklist, component/optimize
+          label-operator: OR
+      - id: add-to-data-layer
+        name: Add to Data Layer project
         uses: actions/add-to-project@v1.0.2
         if: ${{ steps.has-project.outputs.result == 'false' }}
         with:
-          project-url: https://github.com/orgs/camunda/projects/24
+          project-url: https://github.com/orgs/camunda/projects/184
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
-          labeled: component/operate
-      - id: add-to-hto
-        name: Add to HTO project
+          labeled: component/data-layer
+      - id: add-to-api
+        name: Add to C8 Rest API Proposals
         uses: actions/add-to-project@v1.0.2
         if: ${{ steps.has-project.outputs.result == 'false' }}
         with:
-          project-url: https://github.com/orgs/camunda/projects/41
+          project-url: https://github.com/orgs/camunda/projects/111
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
-          labeled: component/tasklist
-      - id: add-to-optimize
-        name: Add to Optimize project
-        uses: actions/add-to-project@v1.0.2
-        if: ${{ steps.has-project.outputs.result == 'false' }}
-        with:
-          project-url: https://github.com/orgs/camunda/projects/101
-          github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
-          labeled: component/optimize
+          labeled: component/c8-api, kind/proposal
+          label-operator: AND
       - id: add-to-connectors
         name: Add to Connectors project
         uses: actions/add-to-project@v1.0.2
@@ -126,7 +120,7 @@ jobs:
           github-token: ${{ secrets.GH_PROJECT_AUTOMATION_TOKEN }}
           # any of the following labels:
           labeled: component/clients, scope/clients-spring, scope/clients-java, scope/spring-boot-starter-camunda, component/camunda-process-test
-      # this steops needs to stay as last step to not interfer with other steps 
+      # this steops needs to stay as last step to not interfer with other steps
       - id: add-to-qualityboard
         name: Add to Quality Board project
         uses: actions/add-to-project@v1.0.2

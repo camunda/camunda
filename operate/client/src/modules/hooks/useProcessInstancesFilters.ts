@@ -108,11 +108,8 @@ function mapFiltersToRequest(
   if (canceled) state.push(ProcessInstanceState.TERMINATED);
 
   if (incidents) {
-    if (active) {
-      request.filter.$or = [
-        {state: {$eq: ProcessInstanceState.ACTIVE}},
-        {hasIncident: true},
-      ];
+    if (active || completed || canceled) {
+      request.filter.$or = [{state: {$in: state}}, {hasIncident: true}];
     } else {
       request.filter.hasIncident = true;
     }

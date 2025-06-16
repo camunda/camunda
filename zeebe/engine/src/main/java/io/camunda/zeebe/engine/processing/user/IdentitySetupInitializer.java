@@ -32,6 +32,7 @@ import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -78,6 +79,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
     final var initialization = securityConfig.getInitialization();
     final var setupRecord = new IdentitySetupRecord();
 
+    setupReadOnlyAdminRole(setupRecord);
     setupAdminRole(setupRecord);
     setupRpaRole(setupRecord);
     setupConnectorsRole(setupRecord);
@@ -135,6 +137,31 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
               new RoleRecord().setRoleId(roleId).setEntityType(entityType).setEntityId(entityId));
         }
       }
+    }
+  }
+
+  private static void setupReadOnlyAdminRole(final IdentitySetupRecord setupRecord) {
+    final var readOnlyAdminRoleId = "readonly-admin";
+    setupRecord.addRole(new RoleRecord().setRoleId(readOnlyAdminRoleId).setName("Readonly Admin"));
+
+    for (final var resourceType : AuthorizationResourceType.values()) {
+      if (resourceType == AuthorizationResourceType.UNSPECIFIED) {
+        // We shouldn't add empty permissions for an unspecified resource type
+        continue;
+      }
+
+      final var readBasedPermissions =
+          resourceType.getSupportedPermissionTypes().stream()
+              .filter(IdentitySetupInitializer::isReadPermission)
+              .collect(Collectors.toSet());
+
+      setupRecord.addAuthorization(
+          new AuthorizationRecord()
+              .setOwnerType(AuthorizationOwnerType.ROLE)
+              .setOwnerId(readOnlyAdminRoleId)
+              .setResourceType(resourceType)
+              .setResourceId(WILDCARD_PERMISSION)
+              .setPermissionTypes(readBasedPermissions));
     }
   }
 
@@ -210,5 +237,19 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
                 .setTenantId(DEFAULT_TENANT_ID)
                 .setEntityType(EntityType.ROLE)
                 .setEntityId(rpaRoleId));
+  }
+
+  private static boolean isReadPermission(final PermissionType permissionType) {
+    return switch (permissionType) {
+      case ACCESS,
+          READ,
+          READ_PROCESS_INSTANCE,
+          READ_USER_TASK,
+          READ_DECISION_INSTANCE,
+          READ_PROCESS_DEFINITION,
+          READ_DECISION_DEFINITION ->
+          true;
+      default -> false;
+    };
   }
 }

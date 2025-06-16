@@ -1,0 +1,4 @@
+camunda:
+  client:
+    zeebe:
+      max-metadata-size: 6MB
