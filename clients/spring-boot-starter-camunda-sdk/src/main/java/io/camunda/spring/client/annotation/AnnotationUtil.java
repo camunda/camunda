@@ -16,12 +16,14 @@
 package io.camunda.spring.client.annotation;
 
 import io.camunda.spring.client.annotation.value.DeploymentValue;
+import io.camunda.spring.client.annotation.value.DocumentValue;
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
 import io.camunda.spring.client.annotation.value.VariableValue;
 import io.camunda.spring.client.bean.BeanInfo;
 import io.camunda.spring.client.bean.ClassInfo;
 import io.camunda.spring.client.bean.MethodInfo;
 import io.camunda.spring.client.bean.ParameterInfo;
+import io.camunda.spring.client.jobhandling.DocumentContext;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -39,6 +41,11 @@ public class AnnotationUtil {
   public static boolean isVariable(final ParameterInfo parameterInfo) {
     return parameterInfo.getParameterInfo().isAnnotationPresent(Variable.class)
         || isVariableLegacy(parameterInfo);
+  }
+
+  public static boolean isDocument(final ParameterInfo parameterInfo) {
+    return parameterInfo.getParameterInfo().isAnnotationPresent(Document.class)
+        && parameterInfo.getParameterInfo().getType().equals(DocumentContext.class);
   }
 
   public static List<ParameterInfo> getVariableParameters(final MethodInfo methodInfo) {
@@ -152,6 +159,15 @@ public class AnnotationUtil {
     return Optional.empty();
   }
 
+  public static Optional<DocumentValue> getDocumentValue(final ParameterInfo parameterInfo) {
+    if (isDocument(parameterInfo)) {
+      return Optional.of(
+          new DocumentValue(
+              getDocumentName(parameterInfo), parameterInfo, getDocumentOptional(parameterInfo)));
+    }
+    return Optional.empty();
+  }
+
   public static Optional<DeploymentValue> getDeploymentValue(final ClassInfo beanInfo) {
     if (isDeployment(beanInfo)) {
       final List<String> resources = new ArrayList<>();
@@ -219,6 +235,25 @@ public class AnnotationUtil {
     return param.getParameterName();
   }
 
+  private static String getDocumentName(final ParameterInfo param) {
+    if (param.getParameterInfo().isAnnotationPresent(Document.class)) {
+      final String nameFromAnnotation =
+          param.getParameterInfo().getAnnotation(Document.class).name();
+      if (StringUtils.isNotBlank(nameFromAnnotation)) {
+        LOG.trace("Extracting name {} from Document.name", nameFromAnnotation);
+        return nameFromAnnotation;
+      }
+      final String valueFromAnnotation =
+          param.getParameterInfo().getAnnotation(Document.class).value();
+      if (StringUtils.isNotBlank(valueFromAnnotation)) {
+        LOG.trace("Extracting name {} from Document.value", valueFromAnnotation);
+        return valueFromAnnotation;
+      }
+    }
+    LOG.trace("Extracting document name from parameter name");
+    return param.getParameterName();
+  }
+
   private static boolean getVariableOptional(final ParameterInfo param) {
     if (param.getParameterInfo().isAnnotationPresent(Variable.class)) {
       final boolean optional = param.getParameterInfo().getAnnotation(Variable.class).optional();
@@ -226,6 +261,16 @@ public class AnnotationUtil {
       return optional;
     }
     LOG.trace("No variable annotation found, defaulting to true");
+    return true;
+  }
+
+  private static boolean getDocumentOptional(final ParameterInfo param) {
+    if (param.getParameterInfo().isAnnotationPresent(Document.class)) {
+      final boolean optional = param.getParameterInfo().getAnnotation(Document.class).optional();
+      LOG.trace("Extracting optional flag from Document");
+      return optional;
+    }
+    LOG.trace("No document annotation found, defaulting to true");
     return true;
   }
 
