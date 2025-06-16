@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -40,18 +41,36 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.assertj.core.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class UserTaskHandlerTest {
   private static final Set<UserTaskIntent> SUPPORTED_INTENTS =
       EnumSet.of(
+          UserTaskIntent.CREATING,
           UserTaskIntent.CREATED,
+          UserTaskIntent.COMPLETING,
           UserTaskIntent.COMPLETED,
+          UserTaskIntent.CANCELING,
           UserTaskIntent.CANCELED,
           UserTaskIntent.MIGRATED,
+          UserTaskIntent.ASSIGNING,
           UserTaskIntent.ASSIGNED,
-          UserTaskIntent.UPDATED);
+          UserTaskIntent.UPDATING,
+          UserTaskIntent.UPDATED,
+          UserTaskIntent.ASSIGNMENT_DENIED,
+          UserTaskIntent.UPDATE_DENIED,
+          UserTaskIntent.COMPLETION_DENIED);
+
+  @Captor private ArgumentCaptor<Map<String, Object>> updateFieldsCaptor;
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-tasklist-task";
@@ -85,7 +104,9 @@ public class UserTaskHandlerTest {
           final Record<UserTaskRecordValue> userTaskRecord =
               factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(intent));
           // when - then
-          assertThat(underTest.handlesRecord(userTaskRecord)).isTrue();
+          assertThat(underTest.handlesRecord(userTaskRecord))
+              .describedAs("Expect to handle intent %s", intent)
+              .isTrue();
         });
   }
 
@@ -99,7 +120,9 @@ public class UserTaskHandlerTest {
               final Record<UserTaskRecordValue> variableRecord =
                   factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(intent));
               // when - then
-              assertThat(underTest.handlesRecord(variableRecord)).isFalse();
+              assertThat(underTest.handlesRecord(variableRecord))
+                  .describedAs("Expect not to handle intent %s", intent)
+                  .isFalse();
             });
   }
 
@@ -238,7 +261,7 @@ public class UserTaskHandlerTest {
   }
 
   @Test
-  void shouldUpdateEntityFromRecord() {
+  void shouldCreateEntityFromRecord() {
     // given
     final long processInstanceKey = 123;
     final long processDefinitionKey = 555;
@@ -262,11 +285,11 @@ public class UserTaskHandlerTest {
             .withElementId(elementId)
             .build();
 
-    final Record<UserTaskRecordValue> taskRecord =
+    final Record<UserTaskRecordValue> taskCreatingRecord =
         factory.generateRecord(
             ValueType.USER_TASK,
             r ->
-                r.withIntent(UserTaskIntent.CREATED)
+                r.withIntent(UserTaskIntent.CREATING)
                     .withKey(recordKey)
                     .withValue(taskRecordValue)
                     .withTimestamp(System.currentTimeMillis()));
@@ -279,15 +302,25 @@ public class UserTaskHandlerTest {
     // when
     final TaskEntity taskEntity =
         new TaskEntity().setId(String.valueOf(taskRecordValue.getElementInstanceKey()));
-    underTest.updateEntity(taskRecord, taskEntity);
+    underTest.updateEntity(taskCreatingRecord, taskEntity);
+
+    final Record<UserTaskRecordValue> taskCreatedRecord =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withIntent(UserTaskIntent.CREATED)
+                    .withKey(recordKey)
+                    .withValue(taskRecordValue)
+                    .withTimestamp(System.currentTimeMillis()));
+    underTest.updateEntity(taskCreatedRecord, taskEntity);
 
     // then
     assertThat(taskEntity.getId())
         .isEqualTo(String.valueOf(taskRecordValue.getElementInstanceKey()));
-    assertThat(taskEntity.getKey()).isEqualTo(taskRecord.getKey());
+    assertThat(taskEntity.getKey()).isEqualTo(taskCreatingRecord.getKey());
     assertThat(taskEntity.getTenantId()).isEqualTo(taskRecordValue.getTenantId());
-    assertThat(taskEntity.getPartitionId()).isEqualTo(taskRecord.getPartitionId());
-    assertThat(taskEntity.getPosition()).isEqualTo(taskRecord.getPosition());
+    assertThat(taskEntity.getPartitionId()).isEqualTo(taskCreatingRecord.getPartitionId());
+    assertThat(taskEntity.getPosition()).isEqualTo(taskCreatingRecord.getPosition());
     assertThat(taskEntity.getProcessInstanceId()).isEqualTo(String.valueOf(processInstanceKey));
     assertThat(taskEntity.getFlowNodeBpmnId()).isEqualTo(taskRecordValue.getElementId());
     assertThat(taskEntity.getFlowNodeName()).isEqualTo("my-flow-node");
@@ -317,7 +350,8 @@ public class UserTaskHandlerTest {
     assertThat(taskEntity.getState()).isEqualTo(TaskState.CREATED);
     assertThat(taskEntity.getCreationTime())
         .isEqualTo(
-            ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(taskRecord.getTimestamp())));
+            ExporterUtil.toZonedOffsetDateTime(
+                Instant.ofEpochMilli(taskCreatingRecord.getTimestamp())));
     assertThat(taskEntity.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
   }
 
@@ -613,7 +647,13 @@ public class UserTaskHandlerTest {
     // given
     final long processInstanceKey = 123;
     final UserTaskRecordValue taskRecordValue =
-        ImmutableUserTaskRecordValue.builder().withProcessInstanceKey(processInstanceKey).build();
+        ImmutableUserTaskRecordValue.builder()
+            .withProcessInstanceKey(processInstanceKey)
+            .withProcessDefinitionKey(456L)
+            .withBpmnProcessId("ID")
+            .withProcessDefinitionVersion(2)
+            .withElementId("New_Element_ID")
+            .build();
 
     final Record<UserTaskRecordValue> taskRecord =
         factory.generateRecord(
@@ -628,7 +668,10 @@ public class UserTaskHandlerTest {
     underTest.updateEntity(taskRecord, taskEntity);
 
     // then
-    assertThat(taskEntity.getState()).isEqualTo(TaskState.CREATED);
+    assertThat(taskEntity.getProcessDefinitionId()).isEqualTo("456");
+    assertThat(taskEntity.getBpmnProcessId()).isEqualTo("ID");
+    assertThat(taskEntity.getProcessDefinitionVersion()).isEqualTo(2);
+    assertThat(taskEntity.getFlowNodeBpmnId()).isEqualTo("New_Element_ID");
   }
 
   @Test
@@ -640,6 +683,7 @@ public class UserTaskHandlerTest {
             .withElementId("elementId")
             .withBpmnProcessId("bpmnProcessId")
             .withProcessInstanceKey(processInstanceKey)
+            .withProcessDefinitionVersion(2)
             .build();
 
     final Record<UserTaskRecordValue> taskRecord =
@@ -663,7 +707,8 @@ public class UserTaskHandlerTest {
     expectedUpdates.put(TaskTemplate.PROCESS_DEFINITION_ID, taskEntity.getProcessDefinitionId());
     expectedUpdates.put(TaskTemplate.BPMN_PROCESS_ID, taskEntity.getBpmnProcessId());
     expectedUpdates.put(TaskTemplate.FLOW_NODE_BPMN_ID, taskEntity.getFlowNodeBpmnId());
-    expectedUpdates.put(TaskTemplate.STATE, TaskState.CREATED);
+    expectedUpdates.put(
+        TaskTemplate.PROCESS_DEFINITION_VERSION, taskEntity.getProcessDefinitionVersion());
 
     // then
     assertThat(taskEntity.getProcessDefinitionId())
@@ -919,5 +964,74 @@ public class UserTaskHandlerTest {
     verify(mockRequest, times(1))
         .upsertWithRouting(
             indexName, taskEntity.getId(), taskEntity, expectedUpdates, taskEntity.getId());
+  }
+
+  @ParameterizedTest
+  @EnumSource(value = UserTaskIntent.class)
+  void flushedEntityShouldContainPartialStates(final UserTaskIntent intent) {
+    Assumptions.assumeThat(intent.isEvent())
+        .describedAs("Only relevant for handled events")
+        .isTrue();
+
+    // given
+    final Record<UserTaskRecordValue> taskRecord =
+        factory.generateRecord(
+            ValueType.USER_TASK,
+            r ->
+                r.withIntent(intent)
+                    .withKey(111)
+                    .withValue(ImmutableUserTaskRecordValue.builder().build())
+                    .withTimestamp(System.currentTimeMillis()));
+
+    final TaskEntity taskEntity = underTest.createNewEntity(String.valueOf(111));
+    underTest.updateEntity(taskRecord, taskEntity);
+
+    // when
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+    underTest.flush(taskEntity, mockRequest);
+
+    // then
+    verify(mockRequest)
+        .upsertWithRouting(
+            eq(indexName),
+            eq(taskEntity.getId()),
+            eq(taskEntity),
+            updateFieldsCaptor.capture(),
+            eq(taskEntity.getId()));
+
+    final var expectedState = mapIntentToExpectedState(intent);
+    if (expectedState == null) {
+      assertThat(updateFieldsCaptor.getValue())
+          .describedAs("Expect state to not be updated")
+          .doesNotContainKey(TaskTemplate.STATE);
+    } else {
+      assertThat(updateFieldsCaptor.getValue())
+          .describedAs("Expect state to be updated to {}", expectedState)
+          .containsEntry(TaskTemplate.STATE, expectedState);
+    }
+  }
+
+  /**
+   * Maps a given {@link UserTaskIntent} to the expected {@link TaskState} that the user task should
+   * be updated to, or returns {@code null} if the intent should not result in a state update.
+   */
+  private TaskState mapIntentToExpectedState(final UserTaskIntent intent) {
+    return switch (intent) {
+      case CREATING -> TaskState.CREATING;
+      case CREATED, ASSIGNMENT_DENIED, COMPLETION_DENIED, UPDATE_DENIED -> TaskState.CREATED;
+      case ASSIGNING, CLAIMING -> TaskState.ASSIGNING;
+      case UPDATING -> TaskState.UPDATING;
+      case COMPLETING -> TaskState.COMPLETING;
+      case COMPLETED -> TaskState.COMPLETED;
+      case CANCELING -> TaskState.CANCELING;
+      case CANCELED -> TaskState.CANCELED;
+      case ASSIGNED, CORRECTED, MIGRATED, UPDATED -> /* doesn't affect the state */ null;
+      default ->
+          throw new IllegalArgumentException(
+              """
+              Not yet supported intent! \
+              Please consider whether this intent should update the task's state \
+              and add a case for it""");
+    };
   }
 }
