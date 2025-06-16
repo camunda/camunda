@@ -8,6 +8,7 @@
 
 import {Route} from '@playwright/test';
 import {
+  Variable,
   type GetProcessDefinitionStatisticsResponseBody,
   type GetProcessInstanceCallHierarchyResponseBody,
   type GetProcessInstanceSequenceFlowsResponseBody,
@@ -31,6 +32,7 @@ type InstanceMock = {
   sequenceFlows: SequenceFlowsDto;
   sequenceFlowsV2: GetProcessInstanceSequenceFlowsResponseBody;
   variables: VariableEntity[];
+  variablesV2: Variable[];
   incidents?: ProcessInstanceIncidentsDto;
   metaData?: MetaDataDto;
 };
@@ -44,6 +46,7 @@ function mockResponses({
   sequenceFlows,
   sequenceFlowsV2,
   variables,
+  variablesV2,
   xml,
   incidents,
   metaData,
@@ -56,6 +59,7 @@ function mockResponses({
   sequenceFlows?: SequenceFlowsDto;
   sequenceFlowsV2?: GetProcessInstanceSequenceFlowsResponseBody;
   variables?: VariableEntity[];
+  variablesV2?: Variable[];
   xml?: string;
   incidents?: ProcessInstanceIncidentsDto;
   metaData?: MetaDataDto;
@@ -112,6 +116,21 @@ function mockResponses({
       return route.fulfill({
         status: sequenceFlows === undefined ? 400 : 200,
         body: JSON.stringify(sequenceFlows),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('v2/variables/search')) {
+      return route.fulfill({
+        status: variablesV2 === undefined ? 400 : 200,
+        body: JSON.stringify({
+          items: variablesV2,
+          page: {
+            totalItems: variablesV2?.length ?? 0,
+          },
+        }),
         headers: {
           'content-type': 'application/json',
         },

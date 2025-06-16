@@ -41,6 +41,7 @@ test.describe('modifications', () => {
         sequenceFlows: runningInstance.sequenceFlows,
         sequenceFlowsV2: runningInstance.sequenceFlowsV2,
         variables: runningInstance.variables,
+        variablesV2: runningInstance.variablesV2,
         xml: runningInstance.xml,
       }),
     );
@@ -62,15 +63,18 @@ test.describe('modifications', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        processInstanceDetail: runningInstance.detail,
-        processInstanceDetailV2: runningInstance.detailV2,
-        callHierarchy: runningInstance.callHierarchy,
-        flowNodeInstances: runningInstance.flowNodeInstances,
-        statisticsV2: runningInstance.statisticsV2,
-        sequenceFlows: runningInstance.sequenceFlows,
-        sequenceFlowsV2: runningInstance.sequenceFlowsV2,
-        variables: runningInstance.variables,
-        xml: runningInstance.xml,
+        processInstanceDetail: instanceWithIncident.detail,
+        processInstanceDetailV2: instanceWithIncident.detailV2,
+        callHierarchy: instanceWithIncident.callHierarchy,
+        flowNodeInstances: instanceWithIncident.flowNodeInstances,
+        statisticsV2: instanceWithIncident.statisticsV2,
+        sequenceFlows: instanceWithIncident.sequenceFlows,
+        sequenceFlowsV2: instanceWithIncident.sequenceFlowsV2,
+        variables: instanceWithIncident.variables,
+        variablesV2: instanceWithIncident.variablesV2,
+        xml: instanceWithIncident.xml,
+        incidents: instanceWithIncident.incidents,
+        metaData: instanceWithIncident.metaData,
       }),
     );
 
@@ -131,6 +135,23 @@ test.describe('modifications', () => {
         name: /continue/i,
       })
       .click();
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: instanceWithIncident.detail,
+        processInstanceDetailV2: instanceWithIncident.detailV2,
+        callHierarchy: instanceWithIncident.callHierarchy,
+        flowNodeInstances: instanceWithIncident.flowNodeInstances,
+        statisticsV2: instanceWithIncident.statisticsV2,
+        sequenceFlows: instanceWithIncident.sequenceFlows,
+        sequenceFlowsV2: instanceWithIncident.sequenceFlowsV2,
+        variables: instanceWithIncident.variables,
+        variablesV2: instanceWithIncident.variablesV2,
+        xml: instanceWithIncident.xml,
+        incidents: instanceWithIncident.incidents,
+        metaData: instanceWithIncident.metaData,
+      }),
+    );
 
     await page
       .getByRole('button', {
