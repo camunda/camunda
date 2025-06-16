@@ -32,8 +32,10 @@ public final class SnapshotTransferUtil {
   public static ActorFuture<PersistedSnapshot> takePersistedSnapshot(
       final ConstructableSnapshotStore senderSnapshotStore,
       final Map<String, String> snapshotFileContents,
+      final long lastProcessedPosition,
       final ConcurrencyControl control) {
-    final var transientSnapshot = senderSnapshotStore.newTransientSnapshot(1L, 0L, 1, 0).get();
+    final var transientSnapshot =
+        senderSnapshotStore.newTransientSnapshot(1L, 0L, lastProcessedPosition, 0).get();
     return transientSnapshot
         .take(p -> writeSnapshot(p, snapshotFileContents))
         .andThen(ignored -> transientSnapshot.persist(), control);

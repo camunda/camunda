@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.transport.snapshotapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -20,6 +21,10 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerClusterStateImpl;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotTransferServiceClient;
+import io.camunda.zeebe.broker.transport.commandapi.CommandResponseWriterImpl;
+import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
@@ -27,22 +32,28 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotCopyUtil;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferImpl;
+import io.camunda.zeebe.snapshots.transfer.SnapshotTransferService.TakeSnapshot;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferServiceImpl;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.transport.impl.ServerResponseImpl;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.util.NetUtil;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class SnapshotApiRequestHandlerTest {
 
@@ -61,6 +72,8 @@ public class SnapshotApiRequestHandlerTest {
   private SnapshotApiRequestHandler snapshotHandler;
   private SnapshotTransferServiceClient client;
   private BrokerClientImpl brokerClient;
+  private TakeSnapshot takeSnapshotMock;
+  private AtomicInteger scaleUpProgressInvocationCount;
 
   @BeforeEach
   void setup() {
@@ -98,8 +111,11 @@ public class SnapshotApiRequestHandlerTest {
     serverTransport =
         submitActor(new AtomixServerTransport(messagingService, new SnowflakeIdGenerator(1L)));
 
-    snapshotHandler = submitActor(new SnapshotApiRequestHandler(serverTransport));
+    scaleUpProgressInvocationCount = new AtomicInteger();
 
+    snapshotHandler = submitActor(new SnapshotApiRequestHandler(serverTransport, brokerClient));
+
+    takeSnapshotMock = mock(TakeSnapshot.class);
     // Snapshot actors:
     final var senderDirectory = temporaryFolder.resolve("sender");
     final var receiverDirectory = temporaryFolder.resolve("receiver");
@@ -114,7 +130,11 @@ public class SnapshotApiRequestHandlerTest {
 
     final var transferService =
         new SnapshotTransferServiceImpl(
-            senderSnapshotStore, 1, SnapshotCopyUtil::copyAllFiles, snapshotHandler);
+            senderSnapshotStore,
+            takeSnapshotMock,
+            1,
+            SnapshotCopyUtil::copyAllFiles,
+            snapshotHandler);
     snapshotHandler.addTransferService(1, transferService);
 
     receiverSnapshotStore =
@@ -131,12 +151,21 @@ public class SnapshotApiRequestHandlerTest {
     scheduler.workUntilDone();
   }
 
-  @Test
-  void shouldSendAllChunksCorrectly() {
-
-    final var takeFuture = takePersistedSnapshot();
+  @ParameterizedTest
+  @ValueSource(longs = {1L, 11L, 100L})
+  // last processed position in the snapshot.
+  // required position is always bootstrappedAt
+  void shouldSendAllChunksCorrectly(final long position) {
+    // given
+    final var snapshotProcessedPosition = 11L;
+    final var takeFuture = takePersistedSnapshot(snapshotProcessedPosition);
     scheduler.workUntilDone();
     assertThat(takeFuture).succeedsWithin(Duration.ofSeconds(30));
+    if (position > snapshotProcessedPosition) {
+      when(takeSnapshotMock.takeSnapshot(eq(1), eq(position)))
+          .thenReturn(takePersistedSnapshot(position));
+    }
+    mockBootstrappedAtWith(position);
 
     final var transfer =
         submitActor(new SnapshotTransferImpl(ignore -> client, receiverSnapshotStore));
@@ -154,11 +183,12 @@ public class SnapshotApiRequestHandlerTest {
             });
   }
 
-  private ActorFuture<PersistedSnapshot> takePersistedSnapshot() {
+  private ActorFuture<PersistedSnapshot> takePersistedSnapshot(final long processedPosition) {
     return SnapshotTransferUtil.takePersistedSnapshot(
         senderSnapshotStore,
         SnapshotTransferUtil.SNAPSHOT_FILE_CONTENTS,
-        (Actor) receiverSnapshotStore);
+        processedPosition,
+        receiverSnapshotStore);
   }
 
   private <A extends Actor> A submitActor(final A actor) {
@@ -166,5 +196,26 @@ public class SnapshotApiRequestHandlerTest {
     scheduler.workUntilDone();
     assertThat(future).succeedsWithin(Duration.ofSeconds(30));
     return actor;
+  }
+
+  private void mockBootstrappedAtWith(final long position) {
+    serverTransport.subscribe(
+        1,
+        RequestType.COMMAND,
+        (output, partition, requestId, buffer, offset, length) -> {
+          // assume the request is a GetScaleUpProgress
+          scaleUpProgressInvocationCount.incrementAndGet();
+          final var writer =
+              new CommandResponseWriterImpl(output)
+                  .partitionId(partitionId)
+                  .valueWriter(new ScaleRecord().statusResponse(3, List.of(), position))
+                  .recordType(RecordType.COMMAND)
+                  .valueType(ValueType.SCALE);
+          output.sendResponse(
+              new ServerResponseImpl()
+                  .writer(writer)
+                  .setPartitionId(partitionId)
+                  .setRequestId(requestId));
+        });
   }
 }
