@@ -32,22 +32,30 @@ import io.camunda.tasklist.webapp.management.dto.BackupStateDto;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupRequestDto;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotRequest;
 import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsResponse;
 import org.elasticsearch.client.Cancellable;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.SnapshotClient;
+import org.elasticsearch.snapshots.SnapshotId;
 import org.elasticsearch.snapshots.SnapshotInfo;
 import org.elasticsearch.snapshots.SnapshotState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
@@ -266,5 +274,52 @@ class BackupManagerElasticsearchTest {
 
     // then
     assertThat(backupResponse.getState()).isEqualTo(BackupStateDto.IN_PROGRESS);
+  }
+
+  @ParameterizedTest
+  @MethodSource("incompleteBackupStateProvider")
+  void shouldReturnBackupStateProgress(
+      final Supplier<Long> lastSnapshotEndTime, final BackupStateDto expectedBackupStatus)
+      throws IOException {
+    final var snapshotClient = mock(SnapshotClient.class);
+    final var firstSnapshotInfo = mock(SnapshotInfo.class);
+    final var lastSnapshotInfo = mock(SnapshotInfo.class);
+    final var snapshotResponse = mock(GetSnapshotsResponse.class);
+    final long now = Instant.now().toEpochMilli();
+
+    // Set up Snapshot client
+    when(searchClient.snapshot()).thenReturn(snapshotClient);
+    // Set up operate properties
+    when(tasklistProperties.getBackup().getIncompleteCheckTimeoutInSeconds()).thenReturn(1L);
+    // Set up Snapshot details
+    final Map<String, Object> metadata =
+        MAPPER.convertValue(
+            new Metadata().setPartCount(3).setPartNo(1).setVersion("8.6"), Map.class);
+    when(firstSnapshotInfo.userMetadata()).thenReturn(metadata);
+    when(firstSnapshotInfo.snapshotId())
+        .thenReturn(new SnapshotId("first-snapshot-name", "uuid-first"));
+    when(lastSnapshotInfo.snapshotId())
+        .thenReturn(new SnapshotId("last-snapshot-name", "uuid-last"));
+    when(firstSnapshotInfo.state()).thenReturn(SnapshotState.SUCCESS);
+    when(lastSnapshotInfo.state()).thenReturn(SnapshotState.SUCCESS);
+    when(firstSnapshotInfo.startTime()).thenReturn(now - 4_000);
+    when(lastSnapshotInfo.startTime()).thenReturn(now - 2_000);
+    when(lastSnapshotInfo.endTime()).thenReturn(lastSnapshotEndTime.get());
+    // Set up Snapshot response
+    when(snapshotResponse.getSnapshots()).thenReturn(List.of(firstSnapshotInfo, lastSnapshotInfo));
+    when(snapshotClient.get(any(), any())).thenReturn(snapshotResponse);
+
+    // Test
+    final var backupState = backupManager.getBackupState(backupId);
+    assertThat(backupState.getState()).isEqualTo(expectedBackupStatus);
+  }
+
+  static Stream<Arguments> incompleteBackupStateProvider() {
+    return Stream.of(
+        Arguments.of(
+            (Supplier<Long>) () -> Instant.now().toEpochMilli() - 2000L, BackupStateDto.INCOMPLETE),
+        Arguments.of(
+            (Supplier<Long>) () -> Instant.now().toEpochMilli() - 500L, BackupStateDto.IN_PROGRESS),
+        Arguments.of((Supplier<Long>) () -> 0L, BackupStateDto.INCOMPLETE));
   }
 }
