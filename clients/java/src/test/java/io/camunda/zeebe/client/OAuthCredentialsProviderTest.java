@@ -17,6 +17,7 @@ package io.camunda.zeebe.client;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
+import static com.github.tomakehurst.wiremock.client.WireMock.notMatching;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.spy;
@@ -91,9 +92,13 @@ public final class OAuthCredentialsProviderTest {
   private static final String ACCESS_TOKEN = "someToken";
   private static final String TOKEN_TYPE = "Bearer";
   private static final String CLIENT_ID = "client";
+  private static final String OAUTH_SSL_CLIENT_CERT_PATH =
+      OAuthCredentialsProviderTest.class.getClassLoader().getResource("oauth/test.jks").getPath();
+  private static final String OAUTH_SSL_CLIENT_CERT_PASSWORD = "mstest";
 
   private final TestCredentialsApplier applier = new TestCredentialsApplier();
   private final WireMockRuntimeInfo wireMockInfo;
+  private final ObjectMapper jsonMapper = new ObjectMapper();
 
   private Path cacheFilePath;
 
@@ -339,6 +344,42 @@ public final class OAuthCredentialsProviderTest {
     wireMockInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
   }
 
+  private void mockTokenRequest(boolean withAssertion) {
+    final String assertionRegex = ".*client_assertion\\=[\\._\\-A-Za-z0-9]{400,500}.*";
+    final String assertionTypeRegex = ".*client_assertion_type.*";
+    final String clientSecret = ".*client_secret.*";
+    final HashMap<String, String> map = new HashMap<>();
+    map.put("access_token", ACCESS_TOKEN);
+    map.put("token_type", TOKEN_TYPE);
+    map.put("expires_in", "3600");
+    map.put("scope", SCOPE);
+
+    try {
+      wireMockInfo
+          .getWireMock()
+          .register(
+              WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
+                  .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
+                  .withHeader("Accept", equalTo("application/json"))
+                  .withHeader("User-Agent", matching("zeebe-client-java/\\d+\\.\\d+\\.\\d+.*"))
+                  .withRequestBody(
+                      withAssertion ? matching(assertionRegex) : notMatching(assertionRegex))
+                  .withRequestBody(
+                      withAssertion
+                          ? matching(assertionTypeRegex)
+                          : notMatching(assertionTypeRegex))
+                  .withRequestBody(
+                      !withAssertion ? matching(clientSecret) : notMatching(clientSecret))
+                  .willReturn(
+                      WireMock.aResponse()
+                          .withBody(jsonMapper.writeValueAsString(map))
+                          .withHeader("Content-Type", "application/json")
+                          .withStatus(200)));
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   private void mockCredentials(final String token, final String scope) {
     final HashMap<String, String> map = new HashMap<>();
     map.put("client_secret", SECRET);
@@ -398,6 +439,10 @@ public final class OAuthCredentialsProviderTest {
     public void put(final String key, final String value) {
       credentials.add(new Credential(key, value));
     }
+
+    public List<Credential> getCredentials() {
+      return credentials;
+    }
   }
 
   private static final class Credential {
@@ -444,6 +489,71 @@ public final class OAuthCredentialsProviderTest {
     @Override
     public boolean isUnauthorized() {
       return isUnauthorized;
+    }
+  }
+
+  @Nested
+  final class EntraTests {
+
+    @Test
+    void shouldUseEntraCredentialsWhenProvidedBoth() throws IOException {
+      final OAuthCredentialsProvider provider =
+          initializeCredentialsProviderBuilder(true, true).build();
+      mockTokenRequest(true);
+
+      provider.applyCredentials(applier);
+
+      final List<Credential> credentials = applier.getCredentials();
+      assertThat(credentials)
+          .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+    }
+
+    @Test
+    void shouldUseEntraCredentialsWhenProvidedOnlyAssertion() throws IOException {
+      final OAuthCredentialsProvider provider =
+          initializeCredentialsProviderBuilder(true, false).build();
+      mockTokenRequest(true);
+      mockCredentials(ACCESS_TOKEN, null);
+
+      provider.applyCredentials(applier);
+
+      final List<Credential> credentials = applier.getCredentials();
+      assertThat(credentials)
+          .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+    }
+
+    @Test
+    void shouldUseClientSecretWhenNoAssertionProvided() throws IOException {
+      final OAuthCredentialsProvider provider =
+          initializeCredentialsProviderBuilder(false, true).build();
+      mockTokenRequest(false);
+
+      provider.applyCredentials(applier);
+
+      final List<Credential> credentials = applier.getCredentials();
+      assertThat(credentials)
+          .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+    }
+
+    private OAuthCredentialsProviderBuilder initializeCredentialsProviderBuilder(
+        boolean withAssertion, boolean withClientSecret) {
+      OAuthCredentialsProviderBuilder builder =
+          new OAuthCredentialsProviderBuilder()
+              .clientId(CLIENT_ID)
+              .audience(AUDIENCE)
+              .scope(SCOPE)
+              .authorizationServerUrl(tokenUrlString())
+              .credentialsCachePath(cacheFilePath.toString());
+      if (withAssertion) {
+        builder =
+            builder
+                .sslClientCertPath(OAUTH_SSL_CLIENT_CERT_PATH)
+                .sslClientCertPassword(OAUTH_SSL_CLIENT_CERT_PASSWORD);
+      }
+      if (withClientSecret) {
+        builder = builder.clientSecret(SECRET);
+      }
+      return builder;
     }
   }
 
