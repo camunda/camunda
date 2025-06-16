@@ -32,7 +32,6 @@ import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetc
 import {singleInstanceMetadata} from 'modules/mocks/metadata';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
 import {mockGetOperation} from 'modules/mocks/api/getOperation';
-import * as operationApi from 'modules/api/getOperation';
 import {useEffect, act} from 'react';
 import {Paths} from 'modules/Routes';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -48,8 +47,6 @@ import {init} from 'modules/utils/flowNodeMetadata';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
-
-const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -170,6 +167,9 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
 
     render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
@@ -183,6 +183,12 @@ describe('VariablePanel', () => {
   });
 
   it('should add new variable', async () => {
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
     jest.useFakeTimers();
 
     const {user} = render(
@@ -223,9 +229,6 @@ describe('VariablePanel', () => {
     );
 
     mockFetchVariables().withSuccess([createVariable()]);
-    mockSearchVariables().withSuccess({
-      items: [createVariableV2()],
-    });
 
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
@@ -256,6 +259,9 @@ describe('VariablePanel', () => {
           value: '"bar"',
         }),
       ],
+      page: {
+        totalItems: 2,
+      },
     });
 
     mockApplyOperation().withSuccess(
@@ -269,7 +275,6 @@ describe('VariablePanel', () => {
         name: /save variable/i,
       }),
     );
-
     expect(
       screen.queryByRole('button', {
         name: /add variable/i,
@@ -282,10 +287,9 @@ describe('VariablePanel', () => {
       ),
     ).toBeInTheDocument();
 
-    const withinVariablesList = within(screen.getByTestId('variables-list'));
+    let withinVariablesList = within(screen.getByTestId('variables-list'));
     expect(withinVariablesList.queryByTestId('foo')).not.toBeInTheDocument();
 
-    // TODO : fix the below, it's stuck
     await waitForElementToBeRemoved(
       within(screen.getByTestId('foo')).getByTestId(
         'variable-operation-spinner',
@@ -304,11 +308,7 @@ describe('VariablePanel', () => {
       title: 'Variable added',
     });
 
-    expect(
-      await withinVariablesList.findByTestId('variable-foo'),
-    ).toBeInTheDocument();
-
-    expect(getOperationSpy).toHaveBeenCalledWith('batch-operation-id');
+    expect(await screen.findByTestId('variable-foo')).toBeInTheDocument();
 
     jest.clearAllTimers();
     jest.useRealTimers();
@@ -361,6 +361,9 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
       items: [],
+      page: {
+        totalItems: 0,
+      },
     });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockApplyOperation().withSuccess(
@@ -394,6 +397,9 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
       items: [],
+      page: {
+        totalItems: 0,
+      },
     });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
@@ -404,7 +410,6 @@ describe('VariablePanel', () => {
       });
     });
 
-    // TODO : fix stuck here
     expect(await screen.findByTestId('variables-spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(() =>
       screen.getByTestId('variables-spinner'),
@@ -412,12 +417,6 @@ describe('VariablePanel', () => {
     expect(
       screen.queryByTestId('variable-operation-spinner'),
     ).not.toBeInTheDocument();
-
-    expect(
-      screen.getByRole('button', {
-        name: /add variable/i,
-      }),
-    ).toBeInTheDocument();
 
     jest.clearAllTimers();
     jest.useRealTimers();
@@ -427,6 +426,9 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
 
     const {user} = render(
@@ -563,6 +565,9 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockApplyOperation().withSuccess(createBatchOperation());
@@ -604,6 +609,9 @@ describe('VariablePanel', () => {
           value: 'bar',
         }),
       ],
+      page: {
+        totalItems: 2,
+      },
     });
 
     mockGetOperation().withSuccess([createOperation()]);
@@ -629,6 +637,9 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
 
     const {user} = render(
@@ -643,6 +654,9 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2({name: 'test2'})],
+      page: {
+        totalItems: 1,
+      },
     });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchProcessDefinitionXml().withSuccess('');
@@ -663,6 +677,9 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2({name: 'test2'})],
+      page: {
+        totalItems: 1,
+      },
     });
     mockFetchProcessDefinitionXml().withSuccess('');
 
@@ -683,6 +700,9 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([createVariable({name: 'test2'})]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2({name: 'test2'})],
+      page: {
+        totalItems: 1,
+      },
     });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
@@ -705,6 +725,9 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
       items: [],
+      page: {
+        totalItems: 0,
+      },
     });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 

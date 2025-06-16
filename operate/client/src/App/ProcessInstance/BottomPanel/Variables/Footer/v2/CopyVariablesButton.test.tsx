@@ -65,9 +65,15 @@ describe('CopyVariableButton', () => {
             pages: [
               {
                 items: variables,
+                page: {
+                  totalItems: 50,
+                },
               },
               {
                 items: variables,
+                page: {
+                  totalItems: 50,
+                },
               },
             ],
             pageParams: [],
@@ -91,6 +97,9 @@ describe('CopyVariableButton', () => {
             pages: [
               {
                 items: [createVariableV2({isTruncated: true})],
+                page: {
+                  totalItems: 1,
+                },
               },
             ],
             pageParams: [],
@@ -129,6 +138,9 @@ describe('CopyVariableButton', () => {
                     value: '"text"',
                   }),
                 ],
+                page: {
+                  totalItems: 3,
+                },
               },
             ],
             pageParams: [],

@@ -50,13 +50,13 @@ const addVariable = async ({
     variableName: name,
     variableValue: value,
   });
-
-  invalidateQueries();
+  variablesStore.setPendingItem(null);
+  setTimeout(() => invalidateQueries(), 5000);
 
   if (response.isSuccess) {
+    onSuccess();
     return 'SUCCESSFUL';
   } else {
-    variablesStore.setPendingItem(null);
     if (response.statusCode === 400) {
       return 'VALIDATION_ERROR';
     }

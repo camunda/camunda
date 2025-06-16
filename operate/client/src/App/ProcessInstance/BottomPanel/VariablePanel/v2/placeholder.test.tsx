@@ -36,7 +36,6 @@ import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
-import {variablesStore} from 'modules/stores/variables';
 
 jest.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -125,6 +124,9 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
@@ -204,13 +206,12 @@ describe('VariablePanel', () => {
       ).toBeInTheDocument();
 
       mockFetchVariables().withServerError();
+      mockSearchVariables().withServerError();
 
-      // TODO : trigger fetchVariables V2 and remove the below
       act(() => {
-        variablesStore.fetchVariables({
-          fetchType: 'initial',
-          instanceId: 'invalid_instance',
-          payload: {pageSize: 10, scopeId: '1'},
+        flowNodeSelectionStore.setSelection({
+          flowNodeId: 'TEST_FLOW_NODE',
+          flowNodeInstanceId: '2',
         });
       });
 
@@ -239,17 +240,16 @@ describe('VariablePanel', () => {
       });
 
       expect(
-        screen.getByRole('button', {name: /add variable/i}),
+        await screen.findByRole('button', {name: /add variable/i}),
       ).toBeInTheDocument();
 
       mockFetchVariables().withNetworkError();
+      mockSearchVariables().withNetworkError();
 
-      // TODO : trigger fetchVariables V2 and remove the below
       act(() => {
-        variablesStore.fetchVariables({
-          fetchType: 'initial',
-          instanceId: 'invalid_instance',
-          payload: {pageSize: 10, scopeId: '1'},
+        flowNodeSelectionStore.setSelection({
+          flowNodeId: 'TEST_FLOW_NODE',
+          flowNodeInstanceId: '2',
         });
       });
 

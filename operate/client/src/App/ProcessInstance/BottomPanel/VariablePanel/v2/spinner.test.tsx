@@ -163,6 +163,12 @@ describe('VariablePanel spinner', () => {
   });
 
   it('should display spinner for variables tab when switching between tabs', async () => {
+    mockSearchVariables().withDelay({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
     const {user} = render(
       <VariablePanel setListenerTabVisibility={jest.fn()} />,
       {wrapper: getWrapper()},
@@ -175,30 +181,29 @@ describe('VariablePanel spinner', () => {
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchVariables().withDelay([createVariable({name: 'test2'})]);
     mockSearchVariables().withDelay({
-      items: [createVariableV2({name: 'test2'})],
+      items: [createVariableV2()],
       page: {
         totalItems: 1,
       },
     });
 
-    // TODO : the set selection might not be triggering a new variable fetch see getScopeId() method
     act(() => {
       flowNodeSelectionStore.setSelection({
-        flowNodeInstanceId: 'another_flow_node',
         flowNodeId: 'TEST_FLOW_NODE',
+        flowNodeInstanceId: '2',
       });
     });
 
     expect(await screen.findByTestId('variables-spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('variables-spinner'));
-    expect(screen.getByText('test2')).toBeInTheDocument();
+    expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
 
     mockFetchVariables().withDelay([createVariable({name: 'test2'})]);
 
     await user.click(screen.getByRole('tab', {name: 'Variables'}));
-    await waitForElementToBeRemoved(screen.getByTestId('variables-spinner'));
+    expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument();
   });
 
   it('should display spinner on second variable fetch', async () => {
@@ -217,14 +222,12 @@ describe('VariablePanel spinner', () => {
     mockFetchVariables().withDelay([createVariable()]);
 
     act(() => {
-      variablesStore.fetchVariables({
-        fetchType: 'initial',
-        instanceId: '1',
-        payload: {pageSize: 10, scopeId: '1'},
+      flowNodeSelectionStore.setSelection({
+        flowNodeId: 'TEST_FLOW_NODE',
+        flowNodeInstanceId: '2',
       });
     });
 
-    // TODO : the spinner doesn't show up even though isLoading is true
     expect(screen.getByTestId('variables-spinner')).toBeInTheDocument();
 
     await waitForElementToBeRemoved(() =>

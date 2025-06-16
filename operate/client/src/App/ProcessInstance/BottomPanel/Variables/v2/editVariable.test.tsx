@@ -110,7 +110,10 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -164,7 +167,10 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -209,7 +215,10 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -267,6 +276,9 @@ describe('Edit variable', () => {
           value: '"124.26"',
         }),
       ],
+      page: {
+        totalItems: 1,
+      },
     });
     mockSearchVariables().withSuccess({
       items: [
@@ -280,6 +292,9 @@ describe('Edit variable', () => {
           value: '"124.26"',
         }),
       ],
+      page: {
+        totalItems: 1,
+      },
     });
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchVariables().withSuccess([
@@ -297,7 +312,10 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -345,6 +363,9 @@ describe('Edit variable', () => {
           isTruncated: true,
         }),
       ],
+      page: {
+        totalItems: 1,
+      },
     });
     mockSearchVariables().withSuccess({
       items: [
@@ -353,6 +374,9 @@ describe('Edit variable', () => {
           isTruncated: true,
         }),
       ],
+      page: {
+        totalItems: 1,
+      },
     });
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchVariables().withSuccess([
@@ -365,7 +389,10 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -405,6 +432,9 @@ describe('Edit variable', () => {
           isTruncated: false,
         }),
       ],
+      page: {
+        totalItems: 1,
+      },
     });
     mockSearchVariables().withSuccess({
       items: [
@@ -413,6 +443,9 @@ describe('Edit variable', () => {
           isTruncated: false,
         }),
       ],
+      page: {
+        totalItems: 1,
+      },
     });
 
     processInstanceDetailsStore.setProcessInstance(instanceMock);
@@ -425,7 +458,10 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -466,6 +502,9 @@ describe('Edit variable', () => {
           isTruncated: true,
         }),
       ],
+      page: {
+        totalItems: 1,
+      },
     });
     mockSearchVariables().withSuccess({
       items: [
@@ -474,6 +513,9 @@ describe('Edit variable', () => {
           isTruncated: true,
         }),
       ],
+      page: {
+        totalItems: 1,
+      },
     });
     mockFetchVariables().withSuccess([
       createVariable({isPreview: true, value: '123'}),
@@ -485,9 +527,12 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<VariablePanel />, {
-      wrapper: getWrapper(),
-    });
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -530,6 +575,9 @@ describe('Edit variable', () => {
           isTruncated: true,
         }),
       ],
+      page: {
+        totalItems: 1,
+      },
     });
     mockSearchVariables().withSuccess({
       items: [
@@ -538,6 +586,9 @@ describe('Edit variable', () => {
           isTruncated: true,
         }),
       ],
+      page: {
+        totalItems: 1,
+      },
     });
     mockFetchVariables().withSuccess([
       createVariable({isPreview: true, value: '123'}),
@@ -549,9 +600,12 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<VariablePanel />, {
-      wrapper: getWrapper(),
-    });
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -581,9 +635,15 @@ describe('Edit variable', () => {
 
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
     mockFetchVariables().withSuccess([createVariable()]);
     mockFetchVariable().withSuccess(mockVariables[0]!);
@@ -594,7 +654,10 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -634,7 +697,9 @@ describe('Edit variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<VariablePanel />, {wrapper: getWrapper()});
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      wrapper: getWrapper(),
+    });
 
     expect(
       screen.queryByRole('button', {name: /edit variable/i}),

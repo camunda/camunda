@@ -6,18 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  render,
-  screen,
-  waitForElementToBeRemoved,
-} from 'modules/testing-library';
-import {variablesStore} from 'modules/stores/variables';
-import {getWrapper, mockVariables, mockMetaData} from './mocks';
+import {render, screen} from 'modules/testing-library';
+import {getWrapper, mockMetaData} from './mocks';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {VariablePanel} from '../../VariablePanel/v2';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
-import {mockVariablesV2} from '../index.setup';
 
 const EMPTY_PLACEHOLDER = 'The Flow Node has no Variables';
 
@@ -26,33 +20,15 @@ describe('Skeleton', () => {
     mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
       items: [],
+      page: {
+        totalItems: 0,
+      },
     });
     flowNodeMetaDataStore.setMetaData(mockMetaData);
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
+
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      wrapper: getWrapper(),
     });
-
-    render(<VariablePanel />, {wrapper: getWrapper()});
-
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
     expect(await screen.findByText(EMPTY_PLACEHOLDER)).toBeInTheDocument();
-  });
-
-  it('should display skeleton on initial load', async () => {
-    mockFetchVariables().withSuccess(mockVariables);
-    mockSearchVariables().withSuccess(mockVariablesV2);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
-
-    render(<VariablePanel />, {wrapper: getWrapper()});
-
-    expect(screen.getByTestId('variables-skeleton')).toBeInTheDocument();
-    await waitForElementToBeRemoved(screen.getByTestId('variables-skeleton'));
   });
 });

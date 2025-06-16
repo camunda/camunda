@@ -169,9 +169,15 @@ describe('VariablePanel', () => {
   it('should display correct state for a flow node that has only one running token on it', async () => {
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
     mockFetchFlowNodeMetadata().withSuccess({
       ...singleInstanceMetadata,
@@ -201,9 +207,15 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
       items: [],
+      page: {
+        totalItems: 0,
+      },
     });
     mockSearchVariables().withSuccess({
       items: [],
+      page: {
+        totalItems: 0,
+      },
     });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
@@ -361,9 +373,15 @@ describe('VariablePanel', () => {
   it('should display correct state for a flow node that has no running or finished tokens on it', async () => {
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
     modificationsStore.enableModificationMode();
 
@@ -397,8 +415,8 @@ describe('VariablePanel', () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByText('testVariableName')).not.toBeInTheDocument();
     expect(
-      screen.queryByText('The Flow Node has no Variables'),
-    ).not.toBeInTheDocument();
+      screen.getByText('The Flow Node has no Variables'),
+    ).toBeInTheDocument();
 
     // one 'add token' modification is created
     act(() => {
@@ -437,6 +455,9 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
       items: [],
+      page: {
+        totalItems: 0,
+      },
     });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
@@ -477,6 +498,9 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
       items: [],
+      page: {
+        totalItems: 0,
+      },
     });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
@@ -503,6 +527,9 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
       items: [],
+      page: {
+        totalItems: 0,
+      },
     });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
@@ -559,12 +586,21 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
 
     modificationsStore.enableModificationMode();
@@ -587,12 +623,21 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
       items: [],
+      page: {
+        totalItems: 0,
+      },
     });
     mockSearchVariables().withSuccess({
       items: [],
+      page: {
+        totalItems: 0,
+      },
     });
     mockSearchVariables().withSuccess({
       items: [],
+      page: {
+        totalItems: 0,
+      },
     });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);

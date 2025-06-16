@@ -80,20 +80,20 @@ const getWrapper = (
   return Wrapper;
 };
 
+const mockProcessInstance: ProcessInstance = {
+  processInstanceKey: 'instance_id',
+  state: 'ACTIVE',
+  startDate: '2018-06-21',
+  processDefinitionKey: '2',
+  processDefinitionVersion: 1,
+  processDefinitionId: 'someKey',
+  tenantId: '<default>',
+  processDefinitionName: 'someProcessName',
+  hasIncident: false,
+};
+
 describe('VariablePanel', () => {
   beforeEach(() => {
-    const mockProcessInstance: ProcessInstance = {
-      processInstanceKey: 'instance_id',
-      state: 'ACTIVE',
-      startDate: '2018-06-21',
-      processDefinitionKey: '2',
-      processDefinitionVersion: 1,
-      processDefinitionId: 'someKey',
-      tenantId: '<default>',
-      processDefinitionName: 'someProcessName',
-      hasIncident: false,
-    };
-
     const mockProcessInstanceDeprecated = createInstance();
 
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
@@ -187,6 +187,9 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
 
     mockFetchFlowNodeMetadata().withSuccess({
@@ -248,6 +251,9 @@ describe('VariablePanel', () => {
     };
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
     mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
     mockFetchFlowNodeMetadata().withSuccess({
@@ -279,6 +285,9 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
       items: [],
+      page: {
+        totalItems: 0,
+      },
     });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
@@ -361,6 +370,9 @@ describe('VariablePanel', () => {
     });
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
 
     modificationsStore.enableModificationMode();
@@ -381,6 +393,9 @@ describe('VariablePanel', () => {
     mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
       items: [],
+      page: {
+        totalItems: 0,
+      },
     });
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
@@ -461,6 +476,9 @@ describe('VariablePanel', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
 
     mockFetchFlowNodeMetadata().withSuccess({
@@ -499,6 +517,9 @@ describe('VariablePanel', () => {
           name: 'some-other-variable',
         }),
       ],
+      page: {
+        totalItems: 1,
+      },
     });
     mockSearchVariables().withSuccess({
       items: [
@@ -506,6 +527,9 @@ describe('VariablePanel', () => {
           name: 'some-other-variable',
         }),
       ],
+      page: {
+        totalItems: 1,
+      },
     });
 
     mockFetchFlowNodeMetadata().withSuccess({
@@ -534,6 +558,9 @@ describe('VariablePanel', () => {
       screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
     expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /edit variable/i}),
+    ).not.toBeInTheDocument();
 
     act(() => {
       cancelAllTokens('Activity_0qtp1k6', 2, 2, {});
@@ -547,17 +574,19 @@ describe('VariablePanel', () => {
     expect(screen.getByText('some-other-variable')).toBeInTheDocument();
 
     expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
-
-    // TODO : why is edit variable button still visible
-    expect(
-      screen.queryByRole('button', {name: /edit variable/i}),
-    ).not.toBeInTheDocument();
   });
 
   it('should be readonly if flow node has variables but no running instances', async () => {
+    mockFetchProcessInstance().withSuccess({
+      ...mockProcessInstance,
+      state: 'COMPLETED',
+    });
     modificationsStore.enableModificationMode();
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
 
     render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
@@ -584,6 +613,9 @@ describe('VariablePanel', () => {
           name: 'some-other-variable',
         }),
       ],
+      page: {
+        totalItems: 1,
+      },
     });
     mockSearchVariables().withSuccess({
       items: [
@@ -591,6 +623,9 @@ describe('VariablePanel', () => {
           name: 'some-other-variable',
         }),
       ],
+      page: {
+        totalItems: 1,
+      },
     });
 
     mockFetchFlowNodeMetadata().withSuccess({
@@ -617,7 +652,6 @@ describe('VariablePanel', () => {
     ).not.toBeInTheDocument();
     expect(screen.queryByTestId('edit-variable-value')).not.toBeInTheDocument();
 
-    // TODO : same as above, why is edit variable button still visible
     expect(
       screen.queryByRole('button', {name: /edit variable/i}),
     ).not.toBeInTheDocument();
