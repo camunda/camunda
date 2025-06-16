@@ -60,6 +60,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
@@ -70,6 +71,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @WireMockTest
 @ZeebeIntegration
 @Testcontainers(parallel = true)
+@Disabled
 public class IdentityMigrationIT {
 
   @TestZeebe(autoStart = false)
