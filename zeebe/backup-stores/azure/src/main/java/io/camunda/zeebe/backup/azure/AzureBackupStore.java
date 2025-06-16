@@ -32,6 +32,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 
 /**
  * {@link BackupStore} for Azure. Stores all backups in a given bucket.
@@ -51,11 +52,11 @@ public final class AzureBackupStore implements BackupStore {
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
 
-  public AzureBackupStore(final AzureBackupConfig config) {
+  AzureBackupStore(final AzureBackupConfig config) {
     this(config, buildClient(config));
   }
 
-  public AzureBackupStore(final AzureBackupConfig config, final BlobServiceClient client) {
+  AzureBackupStore(final AzureBackupConfig config, final BlobServiceClient client) {
     executor = Executors.newVirtualThreadPerTaskExecutor();
     final BlobContainerClient blobContainerClient = getContainerClient(client, config);
 
@@ -124,6 +125,7 @@ public final class AzureBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
+    LOG.info("Saving {}", backup.id());
     return CompletableFuture.runAsync(
         () -> {
           final var persistedManifest = manifestManager.createInitialManifest(backup);
@@ -274,5 +276,9 @@ public final class AzureBackupStore implements BackupStore {
       }
     }
     return false;
+  }
+
+  public static BackupStore of(final AzureBackupConfig storeConfig) {
+    return new AzureBackupStore(storeConfig).logging(LOG, Level.INFO);
   }
 }
