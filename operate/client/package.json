@@ -16,7 +16,7 @@
     "@tanstack/react-query": "5.80.6",
     "@tanstack/react-query-devtools": "^5.67.1",
     "@types/loadable__component": "5.13.9",
-    "@vzeta/camunda-api-zod-schemas": "0.0.2-beta.56",
+    "@vzeta/camunda-api-zod-schemas": "0.0.2-beta.58",
     "bpmn-js": "18.6.2",
     "bpmn-moddle": "9.0.1",
     "date-fns": "4.1.0",

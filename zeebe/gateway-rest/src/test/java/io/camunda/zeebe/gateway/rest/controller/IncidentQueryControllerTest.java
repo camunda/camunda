@@ -57,8 +57,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 1,
-                  "searchBeforeCursor": "f",
-                  "searchAfterCursor": "v"
+                  "startCursor": "f",
+                  "endCursor": "v"
               }
           }""";
 
@@ -80,8 +80,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                       IncidentState.ACTIVE,
                       101L,
                       "tenantId")))
-          .searchBeforeCursor("f")
-          .searchAfterCursor("v")
+          .startCursor("f")
+          .endCursor("v")
           .build();
 
   static final String EXPECTED_GET_RESPONSE =

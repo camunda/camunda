@@ -72,7 +72,7 @@ abstract class AbstractEntityReader<T> {
 
   public DbQueryPage convertPaging(final DbQuerySorting<T> sort, final SearchQueryPage page) {
     List<KeySetPagination> keySetPagination = new ArrayList<>();
-    if (page.searchAfter() != null || page.searchBefore() != null) {
+    if (page.after() != null || page.before() != null) {
       keySetPagination = createKeySetPagination(sort, page);
     }
 
@@ -101,8 +101,8 @@ abstract class AbstractEntityReader<T> {
    */
   private List<KeySetPagination> createKeySetPagination(
       final DbQuerySorting<T> sort, final SearchQueryPage page) {
-    final boolean isSearchAfter = page.searchAfter() != null;
-    final var cursorValue = isSearchAfter ? page.searchAfter() : page.searchBefore();
+    final boolean isSearchAfter = page.after() != null;
+    final var cursorValue = isSearchAfter ? page.after() : page.before();
     final Object[] sortValues = Cursor.decode(cursorValue, sort.columns());
     final List<KeySetPagination> keySetPagination = new ArrayList<>();
 
@@ -135,8 +135,8 @@ abstract class AbstractEntityReader<T> {
     if (!hits.isEmpty()) {
       final var columns = dbSort.columns();
       result
-          .searchBeforeCursor(Cursor.encode(hits.getFirst(), columns))
-          .searchAfterCursor(Cursor.encode(hits.getLast(), columns));
+          .startCursor(Cursor.encode(hits.getFirst(), columns))
+          .endCursor(Cursor.encode(hits.getLast(), columns));
     }
 
     return result.build();

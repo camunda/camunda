@@ -83,8 +83,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
           ],
           "page": {
               "totalItems": 1,
-              "searchBeforeCursor": "f",
-              "searchAfterCursor": "v"
+              "startCursor": "f",
+              "endCursor": "v"
           }
       }""";
   static final SearchQueryResult<ProcessDefinitionEntity> SEARCH_QUERY_RESULT =
@@ -102,8 +102,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
                       "alpha",
                       "<default>",
                       "formId")))
-          .searchBeforeCursor("f")
-          .searchAfterCursor("v")
+          .startCursor("f")
+          .endCursor("v")
           .build();
   private static final String FORM_ITEM_JSON =
       """

@@ -91,7 +91,7 @@ class AbstractEntityReaderTest {
 
     final SearchQueryResult result = reader.buildSearchQueryResult(1L, List.of(entity), sort);
 
-    final SearchQueryPage page = new SearchQueryPage(0, 10, result.searchAfterCursor(), null);
+    final SearchQueryPage page = new SearchQueryPage(0, 10, result.endCursor(), null);
 
     final DbQueryPage dbPage = reader.convertPaging(sort, page);
 
@@ -135,7 +135,7 @@ class AbstractEntityReaderTest {
 
     final SearchQueryResult result = reader.buildSearchQueryResult(1L, List.of(entity), sort);
 
-    final SearchQueryPage page = new SearchQueryPage(0, 10, null, result.searchBeforeCursor());
+    final SearchQueryPage page = new SearchQueryPage(0, 10, null, result.startCursor());
 
     final DbQueryPage dbPage = reader.convertPaging(sort, page);
 

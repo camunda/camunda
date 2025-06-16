@@ -57,8 +57,8 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 1,
-                  "searchBeforeCursor": "f",
-                  "searchAfterCursor": "v"
+                  "startCursor": "f",
+                  "endCursor": "v"
               }
           }""";
 
@@ -66,8 +66,8 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
       new Builder<DecisionDefinitionEntity>()
           .total(1L)
           .items(List.of(new DecisionDefinitionEntity(0L, "dId", "name", 1, "drId", 2L, "t")))
-          .searchBeforeCursor("f")
-          .searchAfterCursor("v")
+          .startCursor("f")
+          .endCursor("v")
           .build();
 
   static final String DECISION_DEFINITIONS_SEARCH_URL = "/v2/decision-definitions/search";

@@ -88,8 +88,8 @@ public class VariablesQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 2,
-                  "searchBeforeCursor": "0",
-                  "searchAfterCursor": "1"
+                  "startCursor": "0",
+                  "endCursor": "1"
               }
           }""";
 
@@ -101,8 +101,8 @@ public class VariablesQueryControllerTest extends RestControllerTest {
               List.of(
                   new VariableEntity(0L, "n", "v", null, false, 2L, 3L, "bpid", "<default>"),
                   new VariableEntity(1L, "ne", "v", "ve", true, 2L, 3L, "bpid", "<default>")))
-          .searchBeforeCursor("0")
-          .searchAfterCursor("1")
+          .startCursor("0")
+          .endCursor("1")
           .build();
   @MockBean VariableServices variableServices;
   @Captor ArgumentCaptor<VariableQuery> variableQueryCaptor;
@@ -293,8 +293,8 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         """
             {
                 "page": {
-                    "searchAfter": "a",
-                    "searchBefore": "b"
+                    "after": "a",
+                    "before": "b"
                 }
             }""";
     final var expectedResponse =
@@ -304,7 +304,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "INVALID_ARGUMENT",
                   "status": 400,
-                  "detail": "Both searchAfter and searchBefore cannot be set at the same time.",
+                  "detail": "Both after and before cannot be set at the same time.",
                   "instance": "%s"
                 }""",
             VARIABLE_TASKS_SEARCH_URL);
@@ -333,7 +333,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         """
             {
                 "page": {
-                    "searchAfter": "a",
+                    "after": "a",
                     "from": 4
                 }
             }""";
@@ -344,7 +344,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "INVALID_ARGUMENT",
                   "status": 400,
-                  "detail": "Both searchAfter/searchBefore and from cannot be set at the same time.",
+                  "detail": "Both after/before and from cannot be set at the same time.",
                   "instance": "%s"
                 }""",
             VARIABLE_TASKS_SEARCH_URL);

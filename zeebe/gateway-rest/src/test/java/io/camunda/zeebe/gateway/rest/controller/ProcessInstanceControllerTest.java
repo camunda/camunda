@@ -1583,8 +1583,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                         IncidentState.ACTIVE,
                         1L,
                         "<default>")))
-            .searchBeforeCursor("<cursor before>")
-            .searchAfterCursor("<cursor after>")
+            .startCursor("<cursor before>")
+            .endCursor("<cursor after>")
             .build();
     final var query = new IncidentQuery.Builder().build();
     when(processInstanceServices.searchIncidents(processInstanceKey, query))
@@ -1610,8 +1610,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         ],
         "page": {
             "totalItems": 1,
-            "searchBeforeCursor": "<cursor before>",
-            "searchAfterCursor": "<cursor after>"
+            "startCursor": "<cursor before>",
+            "endCursor": "<cursor after>"
         }
     }""";
 

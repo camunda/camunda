@@ -10,7 +10,7 @@ package io.camunda.search.page;
 import io.camunda.util.ObjectBuilder;
 import java.util.function.Function;
 
-public record SearchQueryPage(Integer from, Integer size, String searchAfter, String searchBefore) {
+public record SearchQueryPage(Integer from, Integer size, String after, String before) {
 
   public static final Integer DEFAULT_FROM = 0;
   public static final Integer DEFAULT_SIZE = 100;
@@ -19,29 +19,24 @@ public record SearchQueryPage(Integer from, Integer size, String searchAfter, St
   public static final SearchQueryPage NO_ENTITIES_QUERY = new SearchQueryPage(0, 0, null, null);
 
   public boolean isNextPage() {
-    return searchAfter != null || !isPreviousPage();
+    return after != null || !isPreviousPage();
   }
 
   public boolean isPreviousPage() {
-    return searchBefore != null;
+    return before != null;
   }
 
   public String startNextPageAfter() {
     if (isNextPage()) {
-      return searchAfter;
+      return after;
     } else if (isPreviousPage()) {
-      return searchBefore;
+      return before;
     }
     return null;
   }
 
   public SearchQueryPage sanitize() {
-    return new Builder()
-        .from(from)
-        .size(size)
-        .searchAfter(searchAfter)
-        .searchBefore(searchBefore)
-        .build();
+    return new Builder().from(from).size(size).after(after).before(before).build();
   }
 
   public static SearchQueryPage of(final Function<Builder, ObjectBuilder<SearchQueryPage>> fn) {
@@ -52,8 +47,8 @@ public record SearchQueryPage(Integer from, Integer size, String searchAfter, St
 
     private Integer from = DEFAULT_FROM;
     private Integer size = DEFAULT_SIZE;
-    private String searchAfter;
-    private String searchBefore;
+    private String after;
+    private String before;
 
     public Builder from(final Integer value) {
       from = value;
@@ -65,13 +60,13 @@ public record SearchQueryPage(Integer from, Integer size, String searchAfter, St
       return this;
     }
 
-    public Builder searchAfter(final String value) {
-      searchAfter = value;
+    public Builder after(final String value) {
+      after = value;
       return this;
     }
 
-    public Builder searchBefore(final String value) {
-      searchBefore = value;
+    public Builder before(final String value) {
+      before = value;
       return this;
     }
 
@@ -79,7 +74,7 @@ public record SearchQueryPage(Integer from, Integer size, String searchAfter, St
     public SearchQueryPage build() {
       final var sanitizedFrom = (from == null) ? DEFAULT_FROM : Math.max(0, from);
       final var sanitizedSize = (size == null) ? DEFAULT_SIZE : Math.max(0, size);
-      return new SearchQueryPage(sanitizedFrom, sanitizedSize, searchAfter, searchBefore);
+      return new SearchQueryPage(sanitizedFrom, sanitizedSize, after, before);
     }
   }
 }

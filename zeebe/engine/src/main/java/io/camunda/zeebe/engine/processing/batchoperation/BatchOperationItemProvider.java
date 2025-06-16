@@ -246,7 +246,7 @@ public class BatchOperationItemProvider {
           createSecurityContext(
               authentication, Authorization.of(a -> a.processDefinition().readProcessInstance()));
       final var page =
-          SearchQueryPageBuilders.page().size(queryPageSize).searchAfter(searchAfter).build();
+          SearchQueryPageBuilders.page().size(queryPageSize).after(searchAfter).build();
       final var query =
           SearchQueryBuilders.processInstanceSearchQuery()
               .filter(filter)
@@ -261,7 +261,7 @@ public class BatchOperationItemProvider {
           result.items().stream()
               .map(pi -> new Item(pi.processInstanceKey(), pi.processInstanceKey()))
               .collect(Collectors.toList()),
-          result.searchAfterCursor(),
+          result.endCursor(),
           result.total());
     }
   }
@@ -276,7 +276,7 @@ public class BatchOperationItemProvider {
           createSecurityContext(
               authentication, Authorization.of(a -> a.processDefinition().readProcessInstance()));
       final var page =
-          SearchQueryPageBuilders.page().size(queryPageSize).searchAfter(searchAfter).build();
+          SearchQueryPageBuilders.page().size(queryPageSize).after(searchAfter).build();
       final var query = SearchQueryBuilders.incidentSearchQuery().filter(filter).page(page).build();
 
       final var result =
@@ -286,7 +286,7 @@ public class BatchOperationItemProvider {
           result.items().stream()
               .map(pi -> new Item(pi.incidentKey(), pi.processInstanceKey()))
               .collect(Collectors.toList()),
-          result.searchAfterCursor(),
+          result.endCursor(),
           result.total());
     }
   }

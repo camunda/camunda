@@ -123,8 +123,8 @@ public class RoleQueryControllerTest extends RestControllerTest {
         .thenReturn(
             new SearchQueryResult.Builder<RoleEntity>()
                 .total(3)
-                .searchBeforeCursor("f")
-                .searchAfterCursor("v")
+                .startCursor("f")
+                .endCursor("v")
                 .items(
                     List.of(
                         new RoleEntity(100L, "role1", "Role 1", "description 1"),
@@ -167,8 +167,8 @@ public class RoleQueryControllerTest extends RestControllerTest {
              ],
              "page": {
                "totalItems": 3,
-               "searchBeforeCursor": "f",
-               "searchAfterCursor": "v"
+               "startCursor": "f",
+               "endCursor": "v"
              }
            }""");
 

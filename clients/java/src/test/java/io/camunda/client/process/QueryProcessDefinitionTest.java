@@ -157,7 +157,7 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
     // when
     client
         .newProcessDefinitionSearchRequest()
-        .page(p -> p.from(23).limit(5).searchBefore("b").searchAfter("a"))
+        .page(p -> p.from(23).limit(5).before("b").after("a"))
         .send()
         .join();
 
@@ -168,8 +168,8 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
     assertThat(pageRequest).isNotNull();
     assertThat(pageRequest.getFrom()).isEqualTo(23);
     assertThat(pageRequest.getLimit()).isEqualTo(5);
-    assertThat(pageRequest.getSearchBefore()).isEqualTo("b");
-    assertThat(pageRequest.getSearchAfter()).isEqualTo("a");
+    assertThat(pageRequest.getBefore()).isEqualTo("b");
+    assertThat(pageRequest.getAfter()).isEqualTo("a");
   }
 
   private void assertSort(

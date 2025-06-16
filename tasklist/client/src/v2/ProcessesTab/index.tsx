@@ -53,8 +53,8 @@ const ProcessesTab: React.FC = observer(() => {
   const selectedTenantId = defaultTenant?.tenantId;
   const [paginationParams, setPaginationParams] = useState<{
     currentPage: number;
-    searchAfter?: string;
-    searchBefore?: string;
+    after?: string;
+    before?: string;
   }>({currentPage: 1});
 
   const {data, error, isLoading} = useProcessDefinitions(
@@ -64,8 +64,8 @@ const ProcessesTab: React.FC = observer(() => {
       },
       page: {
         limit: PAGE_SIZE,
-        searchAfter: paginationParams.searchAfter,
-        searchBefore: paginationParams.searchBefore,
+        after: paginationParams.after,
+        before: paginationParams.before,
       },
     },
     {
@@ -112,25 +112,25 @@ const ProcessesTab: React.FC = observer(() => {
   }, [error, t]);
 
   const handleNextPage = () => {
-    if (data?.page.searchAfterCursor === undefined) {
+    if (data?.page.endCursor === undefined) {
       return;
     }
-    const {searchAfterCursor} = data.page;
+    const {endCursor} = data.page;
 
     setPaginationParams(({currentPage}) => ({
       currentPage: currentPage + 1,
-      searchAfter: searchAfterCursor,
+      after: endCursor,
     }));
   };
 
   const handlePreviousPage = () => {
-    if (data?.page.searchBeforeCursor === undefined) {
+    if (data?.page.startCursor === undefined) {
       return;
     }
-    const {searchBeforeCursor} = data.page;
+    const {startCursor} = data.page;
     setPaginationParams(({currentPage}) => ({
       currentPage: currentPage - 1,
-      searchBefore: searchBeforeCursor,
+      before: startCursor,
     }));
   };
 

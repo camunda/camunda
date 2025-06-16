@@ -246,7 +246,7 @@ public class ElementInstanceIT {
                 b ->
                     b.filter(f -> f.processDefinitionIds(processDefinition.processDefinitionId()))
                         .sort(sort)
-                        .page(p -> p.size(5).searchAfter(firstPage.searchAfterCursor()))));
+                        .page(p -> p.size(5).after(firstPage.endCursor()))));
 
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);

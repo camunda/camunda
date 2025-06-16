@@ -20,12 +20,12 @@ public interface SearchRequestPage {
   /** Start the page from. */
   SearchRequestPage from(final Integer value);
 
-  /** Limit the the number of returned entities. */
+  /** Limit the number of returned entities. */
   SearchRequestPage limit(final Integer value);
 
-  /** Get previous page before the set of values. */
-  SearchRequestPage searchBefore(final String values);
+  /** Get previous page before the cursor. */
+  SearchRequestPage before(final String cursor);
 
-  /** Get next page after the set of values. */
-  SearchRequestPage searchAfter(final String values);
+  /** Get next page after the cursor. */
+  SearchRequestPage after(final String cursor);
 }

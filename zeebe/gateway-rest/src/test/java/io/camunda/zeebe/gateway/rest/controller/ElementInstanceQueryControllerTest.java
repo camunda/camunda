@@ -61,8 +61,8 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 1,
-                  "searchBeforeCursor": "f",
-                  "searchAfterCursor": "v"
+                  "startCursor": "f",
+                  "endCursor": "v"
               }
           }""";
 
@@ -86,8 +86,8 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                       null,
                       "bpmnProcessId",
                       "<default>")))
-          .searchBeforeCursor("f")
-          .searchAfterCursor("v")
+          .startCursor("f")
+          .endCursor("v")
           .build();
 
   static final String EXPECTED_GET_RESPONSE =

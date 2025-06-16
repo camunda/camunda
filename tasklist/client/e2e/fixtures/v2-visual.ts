@@ -27,8 +27,8 @@ function getCollectionResponse<Item>(items: Item[]) {
     items,
     page: {
       totalItems: items.length,
-      searchBeforeCursor: "<beforeCursor>",
-      searchAfterCursor: "<afterCursor>",
+      startCursor: "<startCursor>",
+      endCursor: "<endCursor>",
     },
   };
 }

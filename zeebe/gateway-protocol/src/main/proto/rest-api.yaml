@@ -8460,11 +8460,11 @@ components:
           type: integer
           format: int32
           default: 100
-        searchAfter:
-          description: Use the `searchAfterCursor` value from the previous response to fetch the next page of results.
+        after:
+          description: Use the `endCursor` value from the previous response to fetch the next page of results.
           type: string
-        searchBefore:
-          description: Use the `searchBeforeCursor` value from the previous response to fetch the previous page of results.
+        before:
+          description: Use the `startCursor` value from the previous response to fetch the previous page of results.
           type: string
     SearchQueryResponse:
       type: object
@@ -8481,11 +8481,11 @@ components:
           description: Total items matching the criteria.
           type: integer
           format: int64
-        searchBeforeCursor:
-          description: The cursor value for getting the previous page of results. (used in `searchBefore` field)
+        startCursor:
+          description: The cursor value for getting the previous page of results. Use this in the `before` field of an ensuing request.
           type: string
-        searchAfterCursor:
-          description: The cursor value for getting the next page of results. (used in `searchAfter` field)
+        endCursor:
+          description: The cursor value for getting the next page of results. Use this in the `after` field of an ensuing request.
           type: string
     DecisionRequirementsSearchQuerySortRequest:
       type: object

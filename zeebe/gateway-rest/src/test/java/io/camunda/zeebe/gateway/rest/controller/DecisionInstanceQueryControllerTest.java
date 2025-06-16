@@ -66,8 +66,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                ],
                "page": {
                    "totalItems": 1,
-                   "searchBeforeCursor": "f",
-                   "searchAfterCursor": "v"
+                   "startCursor": "f",
+                   "endCursor": "v"
                }
            }""";
 
@@ -94,8 +94,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                       "result",
                       null,
                       null)))
-          .searchBeforeCursor("f")
-          .searchAfterCursor("v")
+          .startCursor("f")
+          .endCursor("v")
           .build();
 
   @MockBean private DecisionInstanceServices decisionInstanceServices;

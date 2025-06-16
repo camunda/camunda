@@ -46,8 +46,8 @@ function getQueryTasksResponseMock(
     items: tasks,
     page: {
       totalItems,
-      searchBeforeCursor: "searchBeforeCursor",
-      searchAfterCursor: "searchAfterCursor",
+      startCursor: "startCursor",
+      endCursor: "endCursor",
     },
   };
 }

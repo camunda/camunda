@@ -100,8 +100,8 @@ function getQueryVariablesResponseMock(
     items: variables,
     page: {
       totalItems,
-      searchBeforeCursor: "searchBeforeCursor",
-      searchAfterCursor: "searchAfterCursor",
+      startCursor: "startCursor",
+      endCursor: "endCursor",
     },
   };
 }

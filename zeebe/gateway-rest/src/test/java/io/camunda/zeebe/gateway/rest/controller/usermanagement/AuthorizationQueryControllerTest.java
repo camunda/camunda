@@ -55,8 +55,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
              ],
              "page": {
                "totalItems": 1,
-               "searchBeforeCursor": "f",
-               "searchAfterCursor": "v"
+               "startCursor": "f",
+               "endCursor": "v"
              }
            }""";
   private static final String AUTHORIZATION_SEARCH_URL = "/v2/authorizations/search";
@@ -73,8 +73,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                       ResourceTypeEnum.PROCESS_DEFINITION.getValue(),
                       "2",
                       Set.of(PermissionType.CREATE))))
-          .searchBeforeCursor("f")
-          .searchAfterCursor("v")
+          .startCursor("f")
+          .endCursor("v")
           .build();
 
   @MockitoBean private AuthorizationServices authorizationServices;
@@ -336,8 +336,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
             """
                 {
                     "page": {
-                        "searchAfter": "a",
-                        "searchBefore": "b"
+                        "after": "a",
+                        "before": "b"
                     }
                 }""",
             String.format(
@@ -346,7 +346,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                       "type": "about:blank",
                       "title": "INVALID_ARGUMENT",
                       "status": 400,
-                      "detail": "Both searchAfter and searchBefore cannot be set at the same time.",
+                      "detail": "Both after and before cannot be set at the same time.",
                       "instance": "%s"
                     }""",
                 endpoint)));

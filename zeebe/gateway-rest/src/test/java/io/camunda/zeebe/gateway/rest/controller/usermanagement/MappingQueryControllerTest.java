@@ -107,8 +107,8 @@ public class MappingQueryControllerTest extends RestControllerTest {
         .thenReturn(
             new SearchQueryResult.Builder<MappingEntity>()
                 .total(3)
-                .searchBeforeCursor("f")
-                .searchAfterCursor("v")
+                .startCursor("f")
+                .endCursor("v")
                 .items(
                     List.of(
                         new MappingEntity("id1", 100L, "Claim Name1", "Claim Value1", "Map Name1"),
@@ -151,8 +151,8 @@ public class MappingQueryControllerTest extends RestControllerTest {
              ],
              "page": {
                "totalItems": 3,
-               "searchBeforeCursor": "f",
-               "searchAfterCursor": "v"
+               "startCursor": "f",
+               "endCursor": "v"
              }
            }""");
 

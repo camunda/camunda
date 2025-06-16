@@ -66,7 +66,6 @@ class CursorTest {
     final var encodedCursor = cursor.encode(entity, columns);
     final var decodedValues = cursor.decode(encodedCursor, columns);
 
-    final var encodedValue = columns.stream().map(c -> c.getPropertyValue(entity)).toArray();
     assertThat(decodedValues).isNull();
   }
 

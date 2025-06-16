@@ -36,8 +36,8 @@ function getQueryProcessDefinitionsResponseMock(
     items: processDefinitions,
     page: {
       totalItems,
-      searchBeforeCursor: "searchBeforeCursor",
-      searchAfterCursor: "searchAfterCursor",
+      startCursor: "startCursor",
+      endCursor: "endCursor",
     },
   };
 }

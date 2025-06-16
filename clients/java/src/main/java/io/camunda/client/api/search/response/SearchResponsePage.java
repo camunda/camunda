@@ -20,9 +20,9 @@ public interface SearchResponsePage {
   /** Total number of items that matches the query */
   Long totalItems();
 
-  /** The sort values of the first item in the returned page. */
-  String searchBeforeCursor();
+  /** The cursor to the first item in the returned page. */
+  String startCursor();
 
-  /** The sort values of the last item in the returned page. */
-  String searchAfterCursor();
+  /** The cursor to the last item in the returned page. */
+  String endCursor();
 }
