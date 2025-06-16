@@ -789,6 +789,11 @@ final class JsonSerializableToJsonTest {
                   "candidateGroupsList": ["fellowship", "eagles"],
                   "candidateUsersList": ["frodo", "sam", "gollum"],
                   "priority": 1
+                },
+                "adHocSubProcess":{
+                  "activateElements":[],
+                  "completionConditionFulfilled":false,
+                  "cancelRemainingInstances":false
                 }
               }
             }
@@ -934,6 +939,11 @@ final class JsonSerializableToJsonTest {
               "candidateGroupsList": ["fellowship", "eagles"],
               "candidateUsersList": ["frodo", "sam", "gollum"],
               "priority": 1
+            },
+            "adHocSubProcess":{
+              "activateElements":[],
+              "completionConditionFulfilled":false,
+              "cancelRemainingInstances":false
             }
           }
         }
@@ -980,6 +990,11 @@ final class JsonSerializableToJsonTest {
               "candidateGroupsList": [],
               "candidateUsersList": [],
               "priority": -1
+            },
+            "adHocSubProcess":{
+              "activateElements":[],
+              "completionConditionFulfilled":false,
+              "cancelRemainingInstances":false
             }
           }
         }
@@ -1031,6 +1046,11 @@ final class JsonSerializableToJsonTest {
               "candidateGroupsList": [],
               "candidateUsersList": [],
               "priority": -1
+            },
+            "adHocSubProcess":{
+              "activateElements":[],
+              "completionConditionFulfilled":false,
+              "cancelRemainingInstances":false
             }
           }
         }

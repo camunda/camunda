@@ -114,6 +114,26 @@
                       "type": "integer"
                     }
                   }
+                },
+                "adHocSubProcess": {
+                  "properties": {
+                    "activateElements": {
+                      "properties": {
+                        "elementId": {
+                          "type": "text"
+                        },
+                        "variables": {
+                          "enabled": false
+                        }
+                      }
+                    },
+                    "isCompletionConditionFulfilled": {
+                      "type": "boolean"
+                    },
+                    "isCancelRemainingInstances": {
+                      "type": "boolean"
+                    }
+                  }
                 }
               }
             }

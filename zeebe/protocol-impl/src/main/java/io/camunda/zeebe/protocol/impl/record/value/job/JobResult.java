@@ -37,12 +37,16 @@ public class JobResult extends UnpackedObject implements JobResultValue {
       new ObjectProperty<>("corrections", new JobResultCorrections());
   private final StringProperty deniedReasonProp = new StringProperty("deniedReason", EMPTY_STRING);
 
+  private final ObjectProperty<JobResultAdHocSubProcess> adHocSubProcessProp =
+      new ObjectProperty<>("adHocSubProcess", new JobResultAdHocSubProcess());
+
   public JobResult() {
-    super(4);
+    super(5);
     declareProperty(deniedProp)
         .declareProperty(correctionsProp)
         .declareProperty(correctedAttributesProp)
-        .declareProperty(deniedReasonProp);
+        .declareProperty(deniedReasonProp)
+        .declareProperty(adHocSubProcessProp);
   }
 
   /** Sets all properties to current instance from provided user task job data */
@@ -51,6 +55,7 @@ public class JobResult extends UnpackedObject implements JobResultValue {
     setCorrectedAttributes(result.getCorrectedAttributes());
     setCorrections(result.getCorrections());
     setDeniedReason(result.getDeniedReason());
+    setAdHocSubProcess(result.getAdHocSubProcess());
   }
 
   @Override
@@ -95,6 +100,16 @@ public class JobResult extends UnpackedObject implements JobResultValue {
 
   public JobResult setCorrections(final JobResultCorrections corrections) {
     correctionsProp.getValue().wrap(corrections);
+    return this;
+  }
+
+  @Override
+  public JobResultAdHocSubProcess getAdHocSubProcess() {
+    return adHocSubProcessProp.getValue();
+  }
+
+  public JobResult setAdHocSubProcess(final JobResultAdHocSubProcess adHocSubProcess) {
+    adHocSubProcessProp.getValue().wrap(adHocSubProcess);
     return this;
   }
 }

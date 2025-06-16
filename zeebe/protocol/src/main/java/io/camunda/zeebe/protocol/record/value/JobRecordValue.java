@@ -162,6 +162,11 @@ public interface JobRecordValue
      *     JobResultValue#getCorrectedAttributes()} to determine which fields are set
      */
     JobResultCorrectionsValue getCorrections();
+
+    /**
+     * @return the ad-hoc sub-process properties the worker made as a result of completing the job
+     */
+    JobResultAdHocSubProcessValue getAdHocSubProcess();
   }
 
   /**
@@ -203,5 +208,45 @@ public interface JobRecordValue
      * @return the corrected priority
      */
     int getPriority();
+  }
+
+  /** Represents the ad-hoc sub-process properties that can be part of a {@link JobResultValue}. */
+  @Value.Immutable
+  @ImmutableProtocol(builder = ImmutableJobResultAdHocSubProcessValue.Builder.class)
+  interface JobResultAdHocSubProcessValue {
+
+    /**
+     * @return the instructions to activate elements
+     */
+    List<JobResultAdHocSubProcessActivateElementValue> getActivateElements();
+
+    /**
+     * @return true if the completion condition of the ad-hoc sub-process is fulfilled.
+     */
+    boolean isCompletionConditionFulfilled();
+
+    /**
+     * @return true if the remaining instances of the ad-hoc sub-process should be canceled
+     */
+    boolean isCancelRemainingInstances();
+  }
+
+  /**
+   * Represents the instructions to activate an element of an ad-hoc sub-process that can be part of
+   * a {@link JobResultAdHocSubProcessValue}.
+   */
+  @Value.Immutable
+  @ImmutableProtocol(builder = ImmutableJobResultAdHocSubProcessActivateElementValue.Builder.class)
+  interface JobResultAdHocSubProcessActivateElementValue {
+
+    /**
+     * @return the BPMN element ID of the element to activate
+     */
+    String getElementId();
+
+    /**
+     * @return the variables to activate the element with
+     */
+    Map<String, Object> getVariables();
   }
 }
