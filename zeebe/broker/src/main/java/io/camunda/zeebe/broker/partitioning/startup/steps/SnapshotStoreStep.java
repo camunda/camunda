@@ -57,7 +57,7 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
                             snapshotStore);
                     return context
                         .schedulingService()
-                        .submitActor(snapshotTransfer)
+                        .submitActor(snapshotTransfer, SchedulingHints.IO_BOUND)
                         .thenApply(
                             empty -> {
                               context.setSnapshotTransfer(snapshotTransfer);
