@@ -29,12 +29,10 @@ import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.io.entity.HttpEntities;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@Disabled("Disabled until the Connector container startup issue is solved")
 @SpringBootTest(
     classes = {CamundaSpringProcessTestConnectorsIT.class},
     properties = {
