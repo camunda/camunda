@@ -137,7 +137,6 @@ public class BrokerClientPartitionScalingExecutor implements PartitionScalingCha
   }
 
   private ActorFuture<Void> deleteSnapshot() {
-
     LOGGER.debug("Sending delete snapshot request for deployment partition");
     final var request =
         new SnapshotBrokerRequest(

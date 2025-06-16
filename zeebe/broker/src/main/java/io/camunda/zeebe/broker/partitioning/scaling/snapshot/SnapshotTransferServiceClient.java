@@ -45,11 +45,6 @@ public class SnapshotTransferServiceClient implements SnapshotTransferService {
         partition, Optional.of(snapshotId), Optional.of(previousChunkName), transferId);
   }
 
-  @Override
-  public ActorFuture<Void> deleteSnapshots(final int partitionId) {
-    return CompletableActorFuture.completed();
-  }
-
   private ActorFuture<SnapshotChunk> sendRequest(
       final int partition,
       final Optional<String> snapshotId,

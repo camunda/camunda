@@ -27,7 +27,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import org.agrona.CloseHelper;
 
-public class SnapshotTransferServiceImpl implements SnapshotTransferService {
+public class SnapshotTransferServiceImpl implements SnapshotSenderService {
 
   private final PersistedSnapshotStore snapshotStore;
   private final Map<UUID, PendingTransfer> pendingTransfers = new HashMap<>();

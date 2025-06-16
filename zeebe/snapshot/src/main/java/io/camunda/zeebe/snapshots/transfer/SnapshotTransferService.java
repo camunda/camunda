@@ -54,10 +54,4 @@ public interface SnapshotTransferService extends AsyncClosable {
     ActorFuture<PersistedSnapshot> takeSnapshot(
         int partition, long lastProcessedPosition, ConcurrencyControl control);
   }
-  /**
-   * Delete the underlying snapshot for bootstrap and terminate all pending transfers
-   *
-   * @param partitionId the partition for which to delete snapshots
-   */
-  ActorFuture<Void> deleteSnapshots(int partitionId);
 }

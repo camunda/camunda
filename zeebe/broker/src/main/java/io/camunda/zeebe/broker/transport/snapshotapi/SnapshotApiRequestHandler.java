@@ -18,6 +18,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.scaling.GetScaleUpProgress;
 import io.camunda.zeebe.scheduler.AsyncClosable;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.snapshots.transfer.SnapshotSenderService;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferService;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerTransport;
@@ -34,7 +35,7 @@ public class SnapshotApiRequestHandler
     extends AsyncApiRequestHandler<SnapshotApiRequestReader, SnapshotApiResponseWriter> {
 
   private static final Logger LOG = LoggerFactory.getLogger(SnapshotApiRequestHandler.class);
-  private final ConcurrentMap<Integer, SnapshotTransferService> transferServices =
+  private final ConcurrentMap<Integer, SnapshotSenderService> transferServices =
       new ConcurrentHashMap<>();
   private final ServerTransport serverTransport;
   private final BrokerClient brokerClient;
@@ -47,7 +48,7 @@ public class SnapshotApiRequestHandler
   }
 
   public void addTransferService(
-      final int partitionId, final SnapshotTransferService transferService) {
+      final int partitionId, final SnapshotSenderService transferService) {
     serverTransport.subscribe(partitionId, RequestType.SNAPSHOT, this);
     transferServices.put(partitionId, transferService);
     LOG.debug("Added SnapshotTransferService for partition {}.", partitionId);
@@ -57,7 +58,7 @@ public class SnapshotApiRequestHandler
     serverTransport.unsubscribe(partitionId, RequestType.SNAPSHOT);
     final var service = transferServices.remove(partitionId);
     LOG.debug("Removed SnapshotTransferService for partition {}.", partitionId);
-    service.closeAsync();
+    AsyncClosable.closeHelper(service);
   }
 
   @Override
