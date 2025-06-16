@@ -44,7 +44,7 @@ public class CreateInitialAdminUserTest {
     final var createdUser =
         engine
             .user()
-            .newAdminUser(username)
+            .newInitialAdminUser(username)
             .withName("name")
             .withEmail("email")
             .withPassword("password")
@@ -89,7 +89,7 @@ public class CreateInitialAdminUserTest {
     final var rejection =
         engine
             .user()
-            .newAdminUser(username)
+            .newInitialAdminUser(username)
             .withName("Bar Foo")
             .withEmail("bar@foo.com")
             .withPassword("password")
@@ -110,7 +110,7 @@ public class CreateInitialAdminUserTest {
     final var rejection =
         engine
             .user()
-            .newAdminUser(username)
+            .newInitialAdminUser(username)
             .withName("name")
             .withEmail("email")
             .withPassword("password")
@@ -147,7 +147,7 @@ public class CreateInitialAdminUserTest {
     final var rejection =
         engine
             .user()
-            .newAdminUser(UUID.randomUUID().toString())
+            .newInitialAdminUser(UUID.randomUUID().toString())
             .withName("name")
             .withEmail("email")
             .withPassword("password")

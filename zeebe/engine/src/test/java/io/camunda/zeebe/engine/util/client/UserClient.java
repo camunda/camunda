@@ -26,7 +26,7 @@ public final class UserClient {
     return new UserCreationClient(writer, username, UserIntent.CREATE);
   }
 
-  public UserCreationClient newAdminUser(final String username) {
+  public UserCreationClient newInitialAdminUser(final String username) {
     return new UserCreationClient(writer, username, UserIntent.CREATE_INITIAL_ADMIN);
   }
 
