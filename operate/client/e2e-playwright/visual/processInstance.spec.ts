@@ -56,6 +56,7 @@ test.describe('process instance page', () => {
         },
       });
 
+      await expect(processInstancePage.variablesTableSpinner).not.toBeVisible();
       await expect(page).toHaveScreenshot();
     });
 

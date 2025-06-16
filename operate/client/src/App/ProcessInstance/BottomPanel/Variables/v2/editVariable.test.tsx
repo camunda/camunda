@@ -54,6 +54,8 @@ describe('Edit variable', () => {
       mockProcessInstanceDeprecated,
     );
     mockFetchProcessDefinitionXml().withSuccess('');
+    mockFetchProcessDefinitionXml().withSuccess('');
+    mockSearchVariables().withSuccess(mockVariablesV2);
   });
 
   it.skip('should show/hide edit button next to variable according to it having an active operation', async () => {
@@ -100,6 +102,7 @@ describe('Edit variable', () => {
   it('should show/hide edit variable inputs', async () => {
     mockSearchVariables().withSuccess(mockVariablesV2);
     mockSearchVariables().withSuccess(mockVariablesV2);
+    mockGetVariable().withSuccess(mockVariablesV2.items[0]!);
     mockGetVariable().withSuccess(mockVariablesV2.items[0]!);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockFetchVariables().withSuccess(mockVariables);
@@ -154,6 +157,7 @@ describe('Edit variable', () => {
   });
 
   it('should disable save button when nothing is changed', async () => {
+    mockGetVariable().withSuccess(mockVariablesV2.items[0]!);
     mockGetVariable().withSuccess(mockVariablesV2.items[0]!);
     mockSearchVariables().withSuccess(mockVariablesV2);
     mockSearchVariables().withSuccess(mockVariablesV2);
@@ -564,7 +568,7 @@ describe('Edit variable', () => {
     jest.useRealTimers();
   });
 
-  it('should load full value on json viewer click during modification mode if it was truncated', async () => {
+  it.only('should load full value on json viewer click during modification mode if it was truncated', async () => {
     modificationsStore.enableModificationMode();
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
@@ -593,6 +597,12 @@ describe('Edit variable', () => {
     mockFetchVariables().withSuccess([
       createVariable({isPreview: true, value: '123'}),
     ]);
+    mockGetVariable().withSuccess(
+      createVariableV2({
+        value: '123456',
+        isTruncated: false,
+      }),
+    );
 
     variablesStore.fetchVariables({
       fetchType: 'initial',

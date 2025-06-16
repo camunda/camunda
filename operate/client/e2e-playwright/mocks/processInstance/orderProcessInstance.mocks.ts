@@ -335,7 +335,7 @@ const orderProcessInstance: {
       {
         variableKey: '2251799813725328-orderId',
         name: 'orderId',
-        value: '1234',
+        value: '"1234"',
         isTruncated: false,
         tenantId: '',
         processInstanceKey: '2251799813725328',
@@ -344,7 +344,7 @@ const orderProcessInstance: {
       {
         variableKey: '2251799813725328-orderValue',
         name: 'orderValue',
-        value: '99',
+        value: '"99"',
         isTruncated: false,
         tenantId: '',
         processInstanceKey: '2251799813725328',
