@@ -21,7 +21,7 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.migration.process.MigrationRunner;
+import io.camunda.migration.process.ProcessMigrator;
 import io.camunda.migration.process.TestData;
 import io.camunda.migration.process.adapter.MigrationRepositoryIndex;
 import io.camunda.migration.process.adapter.ProcessorStep;
@@ -66,8 +66,8 @@ public abstract class AdapterTest {
   protected static OpenSearchClient osClient;
   protected static final ConnectConfiguration ES_CONFIGURATION = new ConnectConfiguration();
   protected static final ConnectConfiguration OS_CONFIGURATION = new ConnectConfiguration();
-  protected static MigrationRunner osMigrator;
-  protected static MigrationRunner esMigrator;
+  protected static ProcessMigrator osMigrator;
+  protected static ProcessMigrator esMigrator;
 
   protected static MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
@@ -100,8 +100,8 @@ public abstract class AdapterTest {
     final var osConnector = new OpensearchConnector(OS_CONFIGURATION);
     osObjectMapper = osConnector.objectMapper();
     osClient = osConnector.createClient();
-    esMigrator = new MigrationRunner(properties, ES_CONFIGURATION, meterRegistry);
-    osMigrator = new MigrationRunner(properties, OS_CONFIGURATION, meterRegistry);
+    esMigrator = new ProcessMigrator(properties, ES_CONFIGURATION, meterRegistry);
+    osMigrator = new ProcessMigrator(properties, OS_CONFIGURATION, meterRegistry);
     createIndices();
   }
 
@@ -134,7 +134,7 @@ public abstract class AdapterTest {
   public void cleanUp() throws IOException {
     properties.setBatchSize(5);
     if (isElasticsearch) {
-      esMigrator = new MigrationRunner(properties, ES_CONFIGURATION, meterRegistry);
+      esMigrator = new ProcessMigrator(properties, ES_CONFIGURATION, meterRegistry);
       esClient.deleteByQuery(
           DeleteByQueryRequest.of(
               d ->
@@ -148,7 +148,7 @@ public abstract class AdapterTest {
       esClient.indices().refresh();
 
     } else {
-      osMigrator = new MigrationRunner(properties, OS_CONFIGURATION, meterRegistry);
+      osMigrator = new ProcessMigrator(properties, OS_CONFIGURATION, meterRegistry);
       osClient.deleteByQuery(
           org.opensearch.client.opensearch.core.DeleteByQueryRequest.of(
               d ->

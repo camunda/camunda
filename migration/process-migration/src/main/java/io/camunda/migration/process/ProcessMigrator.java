@@ -36,9 +36,9 @@ import org.springframework.stereotype.Component;
 
 @Component("process-migrator")
 @EnableConfigurationProperties(ProcessMigrationProperties.class)
-public class MigrationRunner implements Migrator {
+public class ProcessMigrator implements Migrator {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MigrationRunner.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ProcessMigrator.class);
 
   private final Adapter adapter;
   private final ProcessMigrationProperties properties;
@@ -46,7 +46,7 @@ public class MigrationRunner implements Migrator {
   private final ScheduledExecutorService scheduler;
   private final MetricRegistry metricRegistry;
 
-  public MigrationRunner(
+  public ProcessMigrator(
       final ProcessMigrationProperties properties,
       final ConnectConfiguration connect,
       final MeterRegistry meterRegistry) {

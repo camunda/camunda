@@ -7,14 +7,23 @@
  */
 package io.camunda.application;
 
-import io.camunda.application.commons.migration.MigrationsRunner;
+import io.camunda.application.commons.migration.BlockingMigrationsRunner;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.ExitCodeGenerator;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
 @SpringBootConfiguration(proxyBeanMethods = false)
-public class StandaloneIdentityMigration {
+public class StandaloneIdentityMigration implements CommandLineRunner, ExitCodeGenerator {
+  private final BlockingMigrationsRunner asyncMigrationsRunner;
+
+  private int exitCode;
+
+  public StandaloneIdentityMigration(final BlockingMigrationsRunner blockingMigrationsRunner) {
+    asyncMigrationsRunner = blockingMigrationsRunner;
+  }
 
   public static void main(final String[] args) {
     MainSupport.putSystemPropertyIfAbsent(
@@ -29,12 +38,25 @@ public class StandaloneIdentityMigration {
         new SpringApplicationBuilder()
             .logStartupInfo(true)
             .web(WebApplicationType.NONE)
-            .sources(MigrationsRunner.class)
+            .sources(StandaloneIdentityMigration.class, BlockingMigrationsRunner.class)
             .profiles(Profile.IDENTITY_MIGRATION.getId())
             .addCommandLineProperties(true)
             .build(args);
 
-    final var context = application.run(args);
-    SpringApplication.exit(context, () -> 0);
+    System.exit(SpringApplication.exit(application.run(args)));
+  }
+
+  @Override
+  public void run(final String... args) throws Exception {
+    try {
+      asyncMigrationsRunner.run();
+    } catch (final Throwable e) {
+      exitCode = 1;
+    }
+  }
+
+  @Override
+  public int getExitCode() {
+    return exitCode;
   }
 }

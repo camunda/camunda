@@ -9,7 +9,8 @@ package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
-import io.camunda.application.commons.migration.MigrationsRunner;
+import io.camunda.application.StandaloneIdentityMigration;
+import io.camunda.application.commons.migration.BlockingMigrationsRunner;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
@@ -17,7 +18,9 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Encapsulates an instance of the {@link MigrationsRunner} for identity Spring application. */
+/**
+ * Encapsulates an instance of the {@link BlockingMigrationsRunner} for identity Spring application.
+ */
 public final class TestStandaloneIdentityMigration
     extends TestSpringApplication<TestStandaloneIdentityMigration> {
   private static final Logger LOGGER =
@@ -26,7 +29,7 @@ public final class TestStandaloneIdentityMigration
   private final IdentityMigrationProperties config;
 
   public TestStandaloneIdentityMigration(final IdentityMigrationProperties migrationProperties) {
-    super(MigrationsRunner.class);
+    super(StandaloneIdentityMigration.class, BlockingMigrationsRunner.class);
     config = migrationProperties;
 
     migrationProperties.getCluster().setPort(SocketUtil.getNextAddress().getPort());
@@ -75,5 +78,9 @@ public final class TestStandaloneIdentityMigration
       case CLUSTER -> config.getCluster().getPort();
       default -> super.mappedPort(port);
     };
+  }
+
+  public int getExitCode() {
+    return springContext.getBean(StandaloneIdentityMigration.class).getExitCode();
   }
 }

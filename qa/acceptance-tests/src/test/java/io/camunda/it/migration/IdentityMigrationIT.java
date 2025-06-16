@@ -70,7 +70,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @WireMockTest
 @ZeebeIntegration
 @Testcontainers(parallel = true)
-public class IdentityDefaultEntitiesIT {
+public class IdentityMigrationIT {
 
   @TestZeebe(autoStart = false)
   static final TestStandaloneBroker BROKER =
@@ -115,7 +115,7 @@ public class IdentityDefaultEntitiesIT {
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
   private static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-  private TestStandaloneIdentityMigration standaloneIdentityMigration;
+  private TestStandaloneIdentityMigration migration;
   private CamundaClient client;
 
   @BeforeAll
@@ -149,7 +149,7 @@ public class IdentityDefaultEntitiesIT {
     migrationProperties.getConsole().setClusterId("cluster123");
     migrationProperties.getConsole().setInternalClientId("client123");
 
-    standaloneIdentityMigration =
+    migration =
         new TestStandaloneIdentityMigration(migrationProperties)
             .withAppConfig(
                 config -> {
@@ -164,7 +164,7 @@ public class IdentityDefaultEntitiesIT {
   @Test
   void canMigrateGroups() {
     // when
-    standaloneIdentityMigration.start();
+    migration.start();
 
     Awaitility.await()
         .atMost(Duration.ofSeconds(5))
@@ -176,6 +176,8 @@ public class IdentityDefaultEntitiesIT {
             });
 
     // then
+    assertThat(migration.getExitCode()).isEqualTo(0);
+
     final var groups = client.newGroupsSearchRequest().send().join();
     assertThat(groups.items().size()).isEqualTo(3);
     assertThat(groups.items())
@@ -196,7 +198,7 @@ public class IdentityDefaultEntitiesIT {
   @Test
   public void canMigrateRoles() {
     // when
-    standaloneIdentityMigration.start();
+    migration.start();
 
     Awaitility.await()
         .atMost(Duration.ofSeconds(5))
@@ -214,6 +216,8 @@ public class IdentityDefaultEntitiesIT {
             });
 
     // then
+    assertThat(migration.getExitCode()).isEqualTo(0);
+
     final var roles = client.newRolesSearchRequest().send().join();
     assertThat(roles.items())
         .map(
@@ -235,7 +239,7 @@ public class IdentityDefaultEntitiesIT {
   public void canMigrateRolePermissions()
       throws URISyntaxException, IOException, InterruptedException {
     // when
-    standaloneIdentityMigration.start();
+    migration.start();
     final var restAddress = client.getConfiguration().getRestAddress().toString();
 
     Awaitility.await()
@@ -253,6 +257,8 @@ public class IdentityDefaultEntitiesIT {
             });
 
     // then
+    assertThat(migration.getExitCode()).isEqualTo(0);
+
     final var authorizations = searchAuthorizations(restAddress);
     assertThat(authorizations.items())
         .extracting(
