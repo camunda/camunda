@@ -22,7 +22,7 @@ public enum UserIntent implements Intent {
   UPDATED(3),
   DELETE(4),
   DELETED(5),
-  CREATE_ADMIN(6);
+  CREATE_INITIAL_ADMIN(6);
 
   private final short value;
 
@@ -62,7 +62,7 @@ public enum UserIntent implements Intent {
       case 5:
         return DELETED;
       case 6:
-        return CREATE_ADMIN;
+        return CREATE_INITIAL_ADMIN;
       default:
         return UNKNOWN;
     }
