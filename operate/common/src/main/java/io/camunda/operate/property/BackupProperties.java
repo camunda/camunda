@@ -10,8 +10,8 @@ package io.camunda.operate.property;
 public class BackupProperties {
 
   private String repositoryName;
-
   private int snapshotTimeout = 0;
+  private Long incompleteCheckTimeoutInSeconds = 5 /* minutes */ * 60L;
 
   public String getRepositoryName() {
     return repositoryName;
@@ -29,5 +29,13 @@ public class BackupProperties {
   public BackupProperties setSnapshotTimeout(final int snapshotTimeout) {
     this.snapshotTimeout = snapshotTimeout;
     return this;
+  }
+
+  public Long getIncompleteCheckTimeoutInSeconds() {
+    return incompleteCheckTimeoutInSeconds;
+  }
+
+  public void setIncompleteCheckTimeoutInSeconds(final Long incompleteCheckTimeoutInSeconds) {
+    this.incompleteCheckTimeoutInSeconds = incompleteCheckTimeoutInSeconds;
   }
 }

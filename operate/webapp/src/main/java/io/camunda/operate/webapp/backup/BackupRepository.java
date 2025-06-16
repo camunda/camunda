@@ -9,11 +9,15 @@ package io.camunda.operate.webapp.backup;
 
 import io.camunda.operate.util.Either;
 import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
+import java.time.Instant;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public interface BackupRepository {
+  Logger LOGGER = LoggerFactory.getLogger(BackupRepository.class);
   // Match all numbers, optionally ending with a *
   Pattern BACKUPID_PATTERN = Pattern.compile("^(\\d*)\\*?$");
 
@@ -46,6 +50,19 @@ public interface BackupRepository {
       return Either.right(pattern);
     } else {
       return Either.left(new IllegalArgumentException("Invalid pattern: " + pattern));
+    }
+  }
+
+  default boolean isIncompleteCheckTimedOut(
+      final long incompleteCheckTimeoutInSeconds, final long lastSnapshotFinishedTime) {
+    final var incompleteCheckTimeoutInMilliseconds = incompleteCheckTimeoutInSeconds * 1000;
+    try {
+      final var now = Instant.now().toEpochMilli();
+      return (now - lastSnapshotFinishedTime) > (incompleteCheckTimeoutInMilliseconds);
+    } catch (final Exception e) {
+      LOGGER.warn(
+          "Couldn't check incomplete timeout for backup. Return incomplete check is timed out", e);
+      return true;
     }
   }
 }
