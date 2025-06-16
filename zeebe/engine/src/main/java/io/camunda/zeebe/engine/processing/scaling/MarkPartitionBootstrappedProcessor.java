@@ -95,7 +95,7 @@ public class MarkPartitionBootstrappedProcessor
     stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.PARTITION_BOOTSTRAPPED, scaleUp);
     // if the partition that has completed bootstrapping is the current one, resubscribe to all
     // message start events and signals
-    if (scaleUp.getRedistributedPartitions().getFirst() == command.getPartitionId()) {
+    if (scaleUp.getRedistributedPartitions().contains(command.getPartitionId())) {
       subscribeToStartEventsAndSignals();
     }
     if (!wasAlreadyBootstrapped && areAllPartitionsBootstrapped()) {
