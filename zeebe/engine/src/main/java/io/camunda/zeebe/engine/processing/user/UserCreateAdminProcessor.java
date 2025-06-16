@@ -32,9 +32,9 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 
 public class UserCreateAdminProcessor implements TypedRecordProcessor<UserRecord> {
-  private static final String USER_ALREADY_EXISTS_ERROR_MESSAGE =
+  public static final String USER_ALREADY_EXISTS_ERROR_MESSAGE =
       "Expected to create user with username '%s', but a user with this username already exists";
-  private static final String ADMIN_ROLE_NOT_FOUND_ERROR_MESSAGE =
+  public static final String ADMIN_ROLE_NOT_FOUND_ERROR_MESSAGE =
       "Expected to create admin user, but role with id '%s' does not exist";
 
   private final KeyGenerator keyGenerator;
