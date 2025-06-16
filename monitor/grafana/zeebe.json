@@ -5141,7 +5141,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "rate(zeebe_snapshot_count_total{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\"}[$__rate_interval])",
+              "expr": "rate(zeebe_snapshot_count_total{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\", bootstrap=~\"false\"}[$__rate_interval])",
               "interval": "",
               "legendFormat": "{{pod}} p{{partition}}",
               "refId": "A"
@@ -5224,7 +5224,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(increase(zeebe_snapshot_duration_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(zeebe_snapshot_duration_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\", bootstrap=~\"false\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "interval": "",
               "legendFormat": "{{le}}",
@@ -5236,7 +5236,7 @@
                 "uid": "$DS_PROMETHEUS"
               },
               "editorMode": "code",
-              "expr": "sum(increase(zeebe_snapshot_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(zeebe_snapshot_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\", bootstrap=~\"false\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "interval": "",
               "legendFormat": "{{le}}",
@@ -5334,7 +5334,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "zeebe_snapshot_size_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\"}",
+              "expr": "zeebe_snapshot_size_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\", bootstrap=~\"false\"}",
               "legendFormat": "{{pod}} p{{partition}}",
               "refId": "A"
             }
@@ -5414,7 +5414,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "sum(increase(zeebe_snapshot_file_size_megabytes_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(zeebe_snapshot_file_size_megabytes_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\", bootstrap=~\"false\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "legendFormat": "{{le}}",
               "refId": "A"
@@ -5510,7 +5510,7 @@
                 "type": "prometheus",
                 "uid": "${DS_PROMETHEUS}"
               },
-              "expr": "zeebe_snapshot_chunks_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\"}",
+              "expr": "zeebe_snapshot_chunks_count{cluster=~\"$cluster\", namespace=~\"$namespace\", pod=~\"$pod\", bootstrap=~\"false\"}",
               "interval": "",
               "legendFormat": "{{pod}} {{partition}}",
               "refId": "A"
@@ -23629,6 +23629,409 @@
       ],
       "title": "Cluster",
       "type": "row"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 28
+      },
+      "id": 665,
+      "title": "Dynamic scaling",
+      "type": "row",
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "Total number of committed snapshots on disk",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 29
+          },
+          "id": 669,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "11.4.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "rate(zeebe_snapshot_count_total{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\", bootstrap=\"true\"}[$__rate_interval])",
+              "interval": "",
+              "legendFormat": "{{pod}} p{{partition}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Snapshot Count",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "Size in bytes of snapshots for bootstrap on disk",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "decbytes"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 29
+          },
+          "id": 666,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.4.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "zeebe_snapshot_size_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\", bootstrap=\"true\"}",
+              "legendFormat": "{{pod}} p{{partition}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Snapshot for Bootstrap Size",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "Approximate duration of taking a single snapshot from the processor point-of-view (without replication or committing).",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "scaleDistribution": {
+                  "type": "linear"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 37
+          },
+          "id": 668,
+          "options": {
+            "calculate": false,
+            "calculation": {},
+            "cellGap": 2,
+            "cellValues": {},
+            "color": {
+              "exponent": 0.5,
+              "fill": "#b4ff00",
+              "mode": "opacity",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Oranges",
+              "steps": 128
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
+            "legend": {
+              "show": false
+            },
+            "rowsFrame": {
+              "layout": "auto"
+            },
+            "showValue": "never",
+            "tooltip": {
+              "mode": "single",
+              "showColorScale": false,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "dtdurations"
+            }
+          },
+          "pluginVersion": "10.4.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "sum(increase(zeebe_snapshot_transfer_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\", bootstrap=\"true\"}[$__rate_interval])) by (le)",
+              "format": "heatmap",
+              "interval": "",
+              "legendFormat": "{{le}}",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(increase(zeebe_snapshot_transfer_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\", bootstrap=\"true\"}[$__rate_interval])) by (le)",
+              "format": "heatmap",
+              "interval": "",
+              "legendFormat": "{{le}}",
+              "range": true,
+              "refId": "B"
+            }
+          ],
+          "title": "Snapshot for Bootstrap Transfer Duration",
+          "type": "heatmap"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "$DS_PROMETHEUS"
+          },
+          "description": "Approximate duration of creating a new snapshot for bootstrap from a previously persisted snapshot.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "scaleDistribution": {
+                  "type": "linear"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 37
+          },
+          "id": 670,
+          "options": {
+            "calculate": false,
+            "calculation": {},
+            "cellGap": 2,
+            "cellValues": {},
+            "color": {
+              "exponent": 0.5,
+              "fill": "#b4ff00",
+              "mode": "opacity",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Oranges",
+              "steps": 128
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
+            "legend": {
+              "show": false
+            },
+            "rowsFrame": {
+              "layout": "auto"
+            },
+            "showValue": "never",
+            "tooltip": {
+              "mode": "single",
+              "showColorScale": false,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "dtdurations"
+            }
+          },
+          "pluginVersion": "10.4.0",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${DS_PROMETHEUS}"
+              },
+              "editorMode": "code",
+              "expr": "sum(increase(zeebe_snapshot_duration_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\", bootstrap=\"true\"}[$__rate_interval])) by (le)",
+              "format": "heatmap",
+              "interval": "",
+              "legendFormat": "{{le}}",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "uid": "$DS_PROMETHEUS"
+              },
+              "editorMode": "code",
+              "expr": "sum(increase(zeebe_snapshot_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\", bootstrap=\"true\"}[$__rate_interval])) by (le)",
+              "format": "heatmap",
+              "interval": "",
+              "legendFormat": "{{le}}",
+              "range": true,
+              "refId": "B"
+            }
+          ],
+          "title": "Snapshot for Bootstrap Creation Duration",
+          "type": "heatmap"
+        }
+      ]
     },
     {
       "collapsed": true,
