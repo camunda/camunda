@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.user;
 
+import static io.camunda.zeebe.engine.processing.user.UserCreateAdminProcessor.ADMIN_ROLE_HAS_USERS_ERROR_MESSAGE;
 import static io.camunda.zeebe.engine.processing.user.UserCreateAdminProcessor.ADMIN_ROLE_NOT_FOUND_ERROR_MESSAGE;
 import static io.camunda.zeebe.engine.processing.user.UserCreateAdminProcessor.USER_ALREADY_EXISTS_ERROR_MESSAGE;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
@@ -120,5 +121,41 @@ public class CreateAdminUsersTest {
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
             ADMIN_ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(DefaultRole.ADMIN.getId()));
+  }
+
+  @Test
+  public void shouldRejectIfAdminRoleAlreadyHasUsers() {
+    // given
+    final var adminRoleId = DefaultRole.ADMIN.getId();
+    engine.role().newRole(adminRoleId).withName(adminRoleId).create();
+    final var username = UUID.randomUUID().toString();
+    engine
+        .user()
+        .newUser(username)
+        .withName("name")
+        .withEmail("email")
+        .withPassword("password")
+        .create();
+    engine
+        .role()
+        .addEntity(adminRoleId)
+        .withEntityId(username)
+        .withEntityType(EntityType.USER)
+        .add();
+
+    // when
+    final var rejection =
+        engine
+            .user()
+            .newAdminUser(UUID.randomUUID().toString())
+            .withName("name")
+            .withEmail("email")
+            .withPassword("password")
+            .expectRejection()
+            .create();
+
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(ADMIN_ROLE_HAS_USERS_ERROR_MESSAGE.formatted(adminRoleId));
   }
 }
