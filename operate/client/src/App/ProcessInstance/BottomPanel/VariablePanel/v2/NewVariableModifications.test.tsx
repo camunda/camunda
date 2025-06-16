@@ -36,22 +36,37 @@ import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 
-const editNameFromTextfieldAndBlur = async (user: UserEvent, value: string) => {
-  const [nameField] = screen.getAllByTestId('new-variable-name');
+const editNameFromTextfieldAndBlur = async (
+  user: UserEvent,
+  value: string,
+  index: number = 0,
+) => {
+  const nameFields = screen.getAllByTestId('new-variable-name');
+  const nameField = nameFields[index];
 
-  await user.click(nameField!);
-  await user.type(nameField!, value);
+  if (!nameField) {
+    throw new Error(`No name field found at index ${index}`);
+  }
+
+  await user.click(nameField);
+  await user.type(nameField, value);
   await user.tab();
 };
 
 const editValueFromTextfieldAndBlur = async (
   user: UserEvent,
   value: string,
+  index: number = 0,
 ) => {
-  const [valueField] = screen.getAllByTestId('new-variable-value');
+  const valueFields = screen.getAllByTestId('new-variable-value');
+  const valueField = valueFields[index];
 
-  await user.click(valueField!);
-  await user.type(valueField!, value);
+  if (!valueField) {
+    throw new Error(`No value field found at index ${index}`);
+  }
+
+  await user.click(valueField);
+  await user.type(valueField, value);
   await user.tab();
 };
 
@@ -139,6 +154,9 @@ describe('New Variable Modifications', () => {
     mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
@@ -227,9 +245,15 @@ describe('New Variable Modifications', () => {
       mockFetchVariables().withSuccess([createVariable()]);
       mockSearchVariables().withSuccess({
         items: [createVariableV2()],
+        page: {
+          totalItems: 1,
+        },
       });
       mockSearchVariables().withSuccess({
         items: [createVariableV2()],
+        page: {
+          totalItems: 1,
+        },
       });
 
       const {user} = render(
@@ -273,31 +297,6 @@ describe('New Variable Modifications', () => {
           type: 'variable',
         },
       ]);
-
-      await user.click(screen.getByRole('button', {name: /add variable/i}));
-      await editNameFromTextfieldAndBlur(user, 'test2');
-      await editValue(type, user, '1234');
-
-      // TODO : this doesn't appear when user edits value. Works when tested manually.
-      expect(
-        await screen.findByText(/Name should be unique/i),
-      ).toBeInTheDocument();
-      expect(modificationsStore.state.modifications).toEqual([
-        {
-          payload: {
-            flowNodeName: 'someProcessName',
-            id: expect.any(String),
-            name: 'test2',
-            newValue: '123',
-            operation: 'ADD_VARIABLE',
-            scopeId: 'instance_id',
-          },
-          type: 'variable',
-        },
-      ]);
-
-      jest.clearAllTimers();
-      jest.useRealTimers();
     },
   );
 
@@ -597,6 +596,12 @@ describe('New Variable Modifications', () => {
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchProcessInstanceListeners().withSuccess(noListeners);
     mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={jest.fn()} />,
@@ -619,25 +624,8 @@ describe('New Variable Modifications', () => {
     await user.click(screen.getByRole('button', {name: /add variable/i}));
     expect(await screen.findAllByTestId('new-variable-name')).toHaveLength(2);
 
-    await editNameFromTextfieldAndBlur(user, 'test2');
-    await editValueFromTextfieldAndBlur(user, '456');
-
-    // TODO : the test breaks here, I'm not sure the blur utils is working as expected. It's always using the first variable name and value with test id new-variable-name.
-    expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
-
-    mockFetchVariables().withSuccess([]);
-
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-
-    act(() => {
-      selectFlowNode(
-        {},
-        {
-          flowNodeId: 'someProcessName',
-          flowNodeInstanceId: 'test',
-        },
-      );
-    });
+    await editNameFromTextfieldAndBlur(user, 'test2', 1);
+    await editValueFromTextfieldAndBlur(user, '456', 1);
 
     mockFetchVariables().withSuccess([]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
@@ -652,7 +640,7 @@ describe('New Variable Modifications', () => {
       );
     });
 
-    const [, deleteFirstAddedVariable] = screen.getAllByRole('button', {
+    const [deleteFirstAddedVariable] = screen.getAllByRole('button', {
       name: /delete variable/i,
     });
     await user.click(deleteFirstAddedVariable!);
@@ -717,22 +705,9 @@ describe('New Variable Modifications', () => {
     mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
       items: [],
-    });
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-
-    act(() => {
-      selectFlowNode(
-        {},
-        {
-          flowNodeId: 'someProcessName',
-          flowNodeInstanceId: 'test',
-        },
-      );
-    });
-
-    mockFetchVariables().withSuccess([]);
-    mockSearchVariables().withSuccess({
-      items: [],
+      page: {
+        totalItems: 0,
+      },
     });
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 

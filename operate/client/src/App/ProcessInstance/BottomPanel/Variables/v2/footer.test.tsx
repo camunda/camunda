@@ -102,7 +102,10 @@ describe('Footer', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -136,12 +139,21 @@ describe('Footer', () => {
     mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
       items: [],
+      page: {
+        totalItems: 0,
+      },
     });
     mockSearchVariables().withSuccess({
       items: [],
+      page: {
+        totalItems: 0,
+      },
     });
     mockSearchVariables().withSuccess({
       items: [],
+      page: {
+        totalItems: 0,
+      },
     });
 
     init('process-instance', []);
@@ -168,7 +180,9 @@ describe('Footer', () => {
       }),
     );
 
-    render(<VariablePanel />, {wrapper: getWrapper()});
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      wrapper: getWrapper(),
+    });
 
     await waitFor(() =>
       expect(
@@ -213,7 +227,9 @@ describe('Footer', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<VariablePanel />, {wrapper: getWrapper()});
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      wrapper: getWrapper(),
+    });
 
     await waitFor(() =>
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled(),
@@ -241,7 +257,9 @@ describe('Footer', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<VariablePanel />, {wrapper: getWrapper()});
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      wrapper: getWrapper(),
+    });
 
     await waitFor(() =>
       expect(

@@ -84,7 +84,6 @@ const useDisplayStatusFromVariablesStore = () => {
 
 const useDisplayStatus = ({
   isLoading,
-  isFetching,
   isFetchingNextPage,
   isFetchingPreviousPage,
   isFetched,
@@ -92,7 +91,6 @@ const useDisplayStatus = ({
   hasItems,
 }: {
   isLoading: boolean;
-  isFetching: boolean;
   isFetchingNextPage: boolean;
   isFetchingPreviousPage: boolean;
   isFetched: boolean;
@@ -108,7 +106,7 @@ const useDisplayStatus = ({
   }
 
   if (hasNoContent) {
-    return 'no-content';
+    return 'no-variables';
   }
 
   if (hasMultipleInstances) {
@@ -122,14 +120,10 @@ const useDisplayStatus = ({
     return 'no-variables';
   }
 
-  if (isLoading) {
-    return 'skeleton';
-  }
-
   if (modificationsStore.isModificationModeEnabled && getScopeId() === null) {
     return 'no-variables';
   }
-  if (isFetching || getScopeId() === null) {
+  if (isLoading || getScopeId() === null) {
     return 'spinner';
   }
   if (!hasItems) {

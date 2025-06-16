@@ -34,7 +34,6 @@ const VariablesContent: React.FC = observer(() => {
 
   const {
     isLoading,
-    isFetching,
     isFetchingPreviousPage,
     isFetched,
     isError,
@@ -52,7 +51,6 @@ const VariablesContent: React.FC = observer(() => {
 
   const displayStatus = useDisplayStatus({
     isLoading,
-    isFetching,
     isFetchingNextPage,
     isFetchingPreviousPage,
     isFetched,
@@ -123,7 +121,7 @@ const VariablesContent: React.FC = observer(() => {
               value,
               invalidateQueries: () => {
                 queryClient.invalidateQueries({
-                  queryKey: [VARIABLES_SEARCH_QUERY_KEY, processInstanceId],
+                  queryKey: [VARIABLES_SEARCH_QUERY_KEY],
                 });
               },
               onSuccess: () => {

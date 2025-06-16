@@ -68,9 +68,15 @@ describe('Restricted user with resource based permissions', () => {
     mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
@@ -85,7 +91,9 @@ describe('Restricted user with resource based permissions', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<VariablePanel />, {wrapper: getWrapper()});
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      wrapper: getWrapper(),
+    });
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -107,7 +115,9 @@ describe('Restricted user with resource based permissions', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<VariablePanel />, {wrapper: getWrapper()});
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      wrapper: getWrapper(),
+    });
 
     expect(
       screen.queryByRole('button', {name: /add variable/i}),
@@ -123,15 +133,27 @@ describe('Restricted user with resource based permissions', () => {
     mockFetchVariables().withSuccess([createVariable({isPreview: true})]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2({isTruncated: true})],
+      page: {
+        totalItems: 1,
+      },
     });
     mockSearchVariables().withSuccess({
       items: [createVariableV2({isTruncated: true})],
+      page: {
+        totalItems: 1,
+      },
     });
     mockSearchVariables().withSuccess({
       items: [createVariableV2({isTruncated: true})],
+      page: {
+        totalItems: 1,
+      },
     });
     mockSearchVariables().withSuccess({
       items: [createVariableV2({isTruncated: true})],
+      page: {
+        totalItems: 1,
+      },
     });
 
     variablesStore.fetchVariables({
@@ -140,7 +162,9 @@ describe('Restricted user with resource based permissions', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<VariablePanel />, {wrapper: getWrapper()});
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      wrapper: getWrapper(),
+    });
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });

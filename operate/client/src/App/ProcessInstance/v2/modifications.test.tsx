@@ -182,9 +182,15 @@ describe('ProcessInstance - modification mode', () => {
   it('should display summary modifications modal when apply modifications is clicked during the modification mode', async () => {
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
 
     const {user} = render(<ProcessInstance />, {
@@ -214,6 +220,9 @@ describe('ProcessInstance - modification mode', () => {
     mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
 
     await user.click(
@@ -225,6 +234,9 @@ describe('ProcessInstance - modification mode', () => {
     mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
 
     await user.click(screen.getByTestId('apply-modifications-button'));

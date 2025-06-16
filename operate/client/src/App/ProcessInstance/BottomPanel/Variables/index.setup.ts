@@ -69,6 +69,9 @@ const mockVariablesV2: QueryVariablesResponseBody = {
       processInstanceKey: '2251799813696123',
     },
   ],
+  page: {
+    totalItems: 3,
+  },
 };
 
 const mockMetaData: MetaDataDto = {

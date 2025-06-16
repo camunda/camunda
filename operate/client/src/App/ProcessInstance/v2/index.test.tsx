@@ -52,6 +52,9 @@ describe('ProcessInstance', () => {
     jest.useFakeTimers();
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
     });
 
     render(<ProcessInstance />, {wrapper: getWrapper()});

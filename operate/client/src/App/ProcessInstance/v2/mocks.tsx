@@ -144,6 +144,9 @@ const mockRequests = (contextPath: string = '') => {
   mockFetchVariables(contextPath).withSuccess([createVariable()]);
   mockSearchVariables(contextPath).withSuccess({
     items: [createVariableV2()],
+    page: {
+      totalItems: 1,
+    },
   });
   mockFetchVariables(contextPath).withSuccess([createVariable()]);
   mockFetchProcessInstanceIncidents(contextPath).withSuccess({

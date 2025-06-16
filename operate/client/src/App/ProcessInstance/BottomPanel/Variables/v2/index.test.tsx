@@ -55,7 +55,9 @@ describe('Variables', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<VariablePanel />, {wrapper: getWrapper()});
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      wrapper: getWrapper(),
+    });
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -84,7 +86,9 @@ describe('Variables', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<VariablePanel />, {wrapper: getWrapper()});
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      wrapper: getWrapper(),
+    });
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -115,6 +119,9 @@ describe('Variables', () => {
   it('should have a button to see full variable value', async () => {
     mockSearchVariables().withSuccess({
       items: [createVariableV2({isTruncated: true})],
+      page: {
+        totalItems: 1,
+      },
     });
     mockFetchProcessInstance().withSuccess({
       ...mockProcessInstance,
@@ -133,7 +140,9 @@ describe('Variables', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<VariablePanel />, {wrapper: getWrapper()});
+    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+      wrapper: getWrapper(),
+    });
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
