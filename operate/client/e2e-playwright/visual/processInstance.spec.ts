@@ -52,6 +52,7 @@ test.describe('process instance page', () => {
       id: runningInstance.detail.id,
     });
 
+    await expect(processInstancePage.variablesTableSpinner).not.toBeVisible();
     await processInstancePage.resetZoomButton.click();
     await page.waitForTimeout(500);
 

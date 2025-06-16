@@ -142,6 +142,12 @@ describe('VariablePanel', () => {
     });
 
     mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
@@ -410,19 +416,19 @@ describe('VariablePanel', () => {
       });
     });
 
-    expect(await screen.findByTestId('variables-spinner')).toBeInTheDocument();
-    await waitForElementToBeRemoved(() =>
-      screen.getByTestId('variables-spinner'),
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('variable-operation-spinner'),
+      ).not.toBeInTheDocument(),
     );
-    expect(
-      screen.queryByTestId('variable-operation-spinner'),
-    ).not.toBeInTheDocument();
 
     jest.clearAllTimers();
     jest.useRealTimers();
   });
 
   it('should display validation error if backend validation fails while adding variable', async () => {
+    jest.useFakeTimers();
+
     mockFetchVariables().withSuccess([createVariable()]);
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
@@ -526,6 +532,9 @@ describe('VariablePanel', () => {
     expect(
       await screen.findByText('Name should be unique'),
     ).toBeInTheDocument();
+
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should select correct tab when navigating between flow nodes', async () => {

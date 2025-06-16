@@ -128,6 +128,12 @@ describe('VariablePanel', () => {
         totalItems: 1,
       },
     });
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
@@ -206,6 +212,7 @@ describe('VariablePanel', () => {
       ).toBeInTheDocument();
 
       mockFetchVariables().withServerError();
+      mockSearchVariables().withServerError();
       mockSearchVariables().withServerError();
 
       act(() => {
