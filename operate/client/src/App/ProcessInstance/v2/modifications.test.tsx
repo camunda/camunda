@@ -183,6 +183,9 @@ describe('ProcessInstance - modification mode', () => {
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
     });
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+    });
 
     const {user} = render(<ProcessInstance />, {
       wrapper: getWrapper({selectableFlowNode: {flowNodeId: 'taskD'}}),
