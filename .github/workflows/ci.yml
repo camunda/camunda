@@ -690,7 +690,7 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "[IT] ${{ matrix.name }}"
     needs: [ detect-changes ]
-    timeout-minutes: 40
+    timeout-minutes: 25
     permissions: {}  # GITHUB_TOKEN unused in this job
     runs-on: ${{ matrix.runs-on }}
     strategy:
