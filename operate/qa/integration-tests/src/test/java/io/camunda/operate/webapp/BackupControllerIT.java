@@ -530,10 +530,11 @@ public class BackupControllerIT {
   @Test
   public void shouldReturnIncompleteState() throws IOException {
     final Long backupId = 2L;
-    // we have only 2 out of 3 snapshots
+    // we have only 2 out of 3 snapshots + timeout
     final SnapshotInfo snapshotInfo1 =
         createSnapshotInfoMock(
             backupId, 1, 3, UUID.randomUUID().toString(), SnapshotState.SUCCESS, null);
+    when(snapshotInfo1.startTime()).thenReturn(1L);
     final SnapshotInfo snapshotInfo2 =
         createSnapshotInfoMock(
             backupId, 2, 3, UUID.randomUUID().toString(), SnapshotState.SUCCESS, null);
@@ -712,17 +713,19 @@ public class BackupControllerIT {
             new Metadata().setBackupId(backupId1).setVersion("8.8.8").setPartNo(2).setPartCount(2),
             UUID.randomUUID().toString(),
             SnapshotState.SUCCESS);
-    // we have only 2 out of 3 snapshots -> INCOMPLETE
+    // we have only 2 out of 3 snapshots + TIMEOUT -> INCOMPLETE
     final SnapshotInfo snapshotInfo21 =
         createSnapshotInfoMock(
             new Metadata().setBackupId(backupId2).setVersion("8.8.8").setPartNo(1).setPartCount(3),
             UUID.randomUUID().toString(),
             SnapshotState.SUCCESS);
+    when(snapshotInfo21.startTime()).thenReturn(1L);
     final SnapshotInfo snapshotInfo22 =
         createSnapshotInfoMock(
             new Metadata().setBackupId(backupId2).setVersion("8.8.8").setPartNo(2).setPartCount(3),
             UUID.randomUUID().toString(),
             SnapshotState.SUCCESS);
+    when(snapshotInfo22.startTime()).thenReturn(1L);
     // IN_PROGRESS
     final SnapshotInfo snapshotInfo31 =
         createSnapshotInfoMock(
