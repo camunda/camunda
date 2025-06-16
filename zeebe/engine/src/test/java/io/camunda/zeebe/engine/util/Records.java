@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
@@ -176,6 +177,14 @@ public final class Records {
     record.setProcessInstanceKey(instanceKey);
     record.setBpmnProcessId(processId);
     return record;
+  }
+
+  public static ProcessInstanceBatchRecord processInstanceBatch(
+      final long processInstanceKey, final long batchElementInstanceKey) {
+    return new ProcessInstanceBatchRecord()
+        .setProcessInstanceKey(processInstanceKey)
+        .setBatchElementInstanceKey(batchElementInstanceKey)
+        .setIndex(3);
   }
 
   public static ErrorRecord error(final int instanceKey, final long pos) {
