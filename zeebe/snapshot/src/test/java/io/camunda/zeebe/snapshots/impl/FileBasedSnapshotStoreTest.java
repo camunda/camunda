@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
+import io.camunda.zeebe.snapshots.SnapshotCopyUtil;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.TestChecksumProvider;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
@@ -25,12 +26,10 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
 import java.util.zip.CRC32C;
 import org.junit.Before;
 import org.junit.Rule;
@@ -422,7 +421,7 @@ public class FileBasedSnapshotStoreTest {
 
     // when
     final var copiedSnapshot =
-        snapshotStore.copyForBootstrap(persistedSnapshot, copyAllFiles()).join();
+        snapshotStore.copyForBootstrap(persistedSnapshot, SnapshotCopyUtil::copyAllFiles).join();
 
     // then
     assertThat(copiedSnapshot)
@@ -448,7 +447,7 @@ public class FileBasedSnapshotStoreTest {
 
     // when
     final var copiedSnapshot =
-        snapshotStore.copyForBootstrap(persistedSnapshot, copyAllFiles()).join();
+        snapshotStore.copyForBootstrap(persistedSnapshot, SnapshotCopyUtil::copyAllFiles).join();
 
     final var files = copiedSnapshot.files();
     snapshotStore.restore(copiedSnapshot.getId(), files);
@@ -470,7 +469,8 @@ public class FileBasedSnapshotStoreTest {
   public void shouldDeleteAllBootstrapSnapshots() throws IOException {
     // given
     final var persistedSnapshot = takeTransientSnapshotWithFiles(2L).persist().join();
-    final var copied = snapshotStore.copyForBootstrap(persistedSnapshot, copyAllFiles()).join();
+    final var copied =
+        snapshotStore.copyForBootstrap(persistedSnapshot, SnapshotCopyUtil::copyAllFiles).join();
 
     assertThat(copied)
         .satisfies(
@@ -501,11 +501,14 @@ public class FileBasedSnapshotStoreTest {
     final var transientSnapshot = takeTransientSnapshotWithFiles(123L);
     final var persistedSnapshot = transientSnapshot.persist().join();
     // when
-    snapshotStore.copyForBootstrap(persistedSnapshot, copyAllFiles()).join();
+    snapshotStore.copyForBootstrap(persistedSnapshot, SnapshotCopyUtil::copyAllFiles).join();
 
     // then
     assertThatThrownBy(
-            (() -> snapshotStore.copyForBootstrap(persistedSnapshot, copyAllFiles()).join()))
+            (() ->
+                snapshotStore
+                    .copyForBootstrap(persistedSnapshot, SnapshotCopyUtil::copyAllFiles)
+                    .join()))
         .hasMessageContaining("Destination folder already exists");
   }
 
@@ -552,27 +555,6 @@ public class FileBasedSnapshotStoreTest {
             })
         .join();
     return transientSnapshot;
-  }
-
-  private BiConsumer<Path, Path> copyAllFiles() {
-    return (source, target) -> {
-      try (final var stream = Files.walk(source)) {
-        stream.forEach(
-            path -> {
-              if (!source.equals(path)) {
-                try {
-                  final var relativePath = source.relativize(path);
-                  final var targetPath = target.resolve(relativePath);
-                  Files.copy(path, targetPath, StandardCopyOption.REPLACE_EXISTING);
-                } catch (final IOException e) {
-                  throw new UncheckedIOException(e);
-                }
-              }
-            });
-      } catch (final IOException e) {
-        throw new RuntimeException(e);
-      }
-    };
   }
 
   private TransientSnapshot takeTransientSnapshot(
