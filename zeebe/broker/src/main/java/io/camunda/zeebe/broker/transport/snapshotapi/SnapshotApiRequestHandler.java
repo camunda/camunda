@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 
 public class SnapshotApiRequestHandler
     extends AsyncApiRequestHandler<SnapshotApiRequestReader, SnapshotApiResponseWriter> {
@@ -81,14 +82,15 @@ public class SnapshotApiRequestHandler
                   return Either.right(responseWriter);
                 });
       } else {
-        LOG.debug(
-            "[{}] Received request to get the latest snapshot for partition {}",
-            request.transferId(),
-            partitionId);
+        LOG.atLevel(Level.DEBUG)
+            .addKeyValue("transferId", request.transferId())
+            .log("Received request to get the latest snapshot for partition {}", partitionId);
         return getLastProcessedPositionRequired(request.transferId())
             .andThen(
                 lastProcessedPosition -> {
-                  LOG.debug("Last processed position is {}", lastProcessedPosition);
+                  LOG.atLevel(Level.DEBUG)
+                      .addKeyValue("transferId", request.transferId())
+                      .log("Last processed position is {}", lastProcessedPosition);
                   return service
                       .getLatestSnapshot(partitionId, lastProcessedPosition, request.transferId())
                       .thenApply(
@@ -119,7 +121,9 @@ public class SnapshotApiRequestHandler
         .sendRequestWithRetry(new GetScaleUpProgress())
         .thenApply(
             r -> {
-              LOG.debug("[{}] Received response from broker {}", transferId, r.getResponse());
+              LOG.atLevel(Level.DEBUG)
+                  .addKeyValue("transferId", transferId)
+                  .log("Received response from broker {}", r.getResponse());
               return r.getResponse().getBootstrappedAt();
             })
         .whenComplete(lastProcessedPosition);
