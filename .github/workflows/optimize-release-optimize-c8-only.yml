@@ -32,6 +32,9 @@ defaults:
   run:
     shell: bash
 
+env:
+  GH_TOKEN: ${{ github.token }} # needs to be available for the gh CLI tool
+
 jobs:
   build:
     name: Execute Release
@@ -49,6 +52,30 @@ jobs:
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
 
+      - name: Log Input Variables
+        run: |
+          echo "RELEASE_VERSION: ${{ inputs.RELEASE_VERSION }}"
+          echo "DEVELOPMENT_VERSION: ${{ inputs.DEVELOPMENT_VERSION }}"
+          echo "BRANCH: ${{ inputs.BRANCH }}"
+          echo "DOCKER_LATEST: ${{ inputs.DOCKER_LATEST }}"
+          echo "IS_DRY_RUN: ${{ inputs.IS_DRY_RUN }}"
+
+
+        # This step generates a GitHub App token to be used in Git operations as a workaround  for
+        # the known GitHub issue described in https://github.com/camunda/camunda/issues/28522
+      - name: Generate GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+
       - name: Import Secrets
         id: secrets
         uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
@@ -63,13 +90,10 @@ jobs:
             secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_USR;
             secret/data/products/optimize/ci/camunda-optimize REGISTRY_HUB_DOCKER_COM_PSW;
 
-      - name: Log Input Variables
+      - name: Git User Setup
         run: |
-          echo "RELEASE_VERSION: ${{ inputs.RELEASE_VERSION }}"
-          echo "DEVELOPMENT_VERSION: ${{ inputs.DEVELOPMENT_VERSION }}"
-          echo "BRANCH: ${{ inputs.BRANCH }}"
-          echo "DOCKER_LATEST: ${{ inputs.DOCKER_LATEST }}"
-          echo "IS_DRY_RUN: ${{ inputs.IS_DRY_RUN }}"
+          git config --global user.email "github-actions[release]"
+          git config --global user.name "github-actions[release]@users.noreply.github.com"
 
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
@@ -165,6 +189,12 @@ jobs:
         with:
           ref: ${{ env.BRANCH }}
           fetch-depth: 0
+          # Overriding the default GITHUB_TOKEN with a GitHub App token in order to workaround
+          # the known GitHub issue described in https://github.com/camunda/camunda/issues/28522
+          # NOTES:
+          # - This token will be used for all git operations in this job
+          # - This token expires after 1 hour (https://github.com/actions/create-github-app-token?tab=readme-ov-file#create-github-app-token)
+          token: ${{ steps.github-token.outputs.token }}
 
 
       - name: "Read Java / Version Info"
@@ -172,11 +202,6 @@ jobs:
         uses: YunaBraska/java-info-action@main
         with:
           work-dir: ./optimize
-
-      - name: Configure GitHub user
-        run: |
-          git config --global user.name "github-actions[release]"
-          git config --global user.email "github-actions[release]@users.noreply.github.com"
 
       - name: Prepare release
         run: |
