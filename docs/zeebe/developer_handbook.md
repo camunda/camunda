@@ -143,6 +143,18 @@ You'll need to do 4 things:
    the [CompactRecordLogger](../../zeebe/test-util/src/main/java/io/camunda/zeebe/test/util/record/CompactRecordLogger.java)
    of this `RecordValue`.
 
+## Authorization Checks in the Engine
+
+Always enforce an authorization check on any command that originates from “outside” the Engine—for example, when a user-triggered deployment request for a resource arrives.
+Before executing the deployment, consult the user’s permissions (see [Authorization Guide](https://docs.camunda.io/docs/next/components/identity/authorization/)) and reject any requests for which the user lacks the required role or scope.
+By contrast, you **do not** need to perform authorization checks for purely internal events or callbacks—such as a `ProcessInstance.COMPLETE_ELEMENT` notification fired by the Engine itself—because such actions are triggered by the Engine and not by an external user.
+State-machine transitions assume that all external permissions have been verified upstream.
+
+Always perform an authorization check on any user-triggered command before you mutate state or emit events.
+To do so, check `AuthorizationResourceType` and `PermissionType` to determine the required permissions for the command.
+If you cannot find an existing authorization check that fits your needs, you can create a new one by adding a new value to the `AuthorizationResourceType` and `PermissionType` enum classes.
+Before processing the command, if the auth check fails, immediately reject the command and halt processing; only proceed with record handling once the request has been authorized.
+
 ## How to do inter-partition communication?
 
 Generally, each [partition](https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/partitions/) is isolated from the others. The gateway chooses the partition for each user command and sends the command to that partition's leader. This distributes the load over the partitions. When the engine processes commands, the follow-up records are written on the same partition.
