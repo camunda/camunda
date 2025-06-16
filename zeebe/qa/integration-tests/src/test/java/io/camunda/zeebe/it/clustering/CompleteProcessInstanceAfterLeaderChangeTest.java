@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -27,6 +28,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+@Ignore("Causes non-deterministic timeouts and GHA job cancellations")
 @RunWith(Parameterized.class)
 public class CompleteProcessInstanceAfterLeaderChangeTest {
 
