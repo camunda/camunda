@@ -30,15 +30,20 @@ import io.camunda.tasklist.webapp.management.dto.BackupStateDto;
 import io.camunda.tasklist.webapp.management.dto.TakeBackupRequestDto;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
@@ -313,5 +318,57 @@ class BackupManagerOpenSearchTest {
 
     // then
     assertThat(backupResponse.getState()).isEqualTo(BackupStateDto.IN_PROGRESS);
+  }
+
+  @ParameterizedTest
+  @MethodSource("incompleteBackupStateProvider")
+  void shouldReturnBackupStateIncompleteWhenEndIsInTimeout(
+      final Supplier<String> lastSnapshotEndTime, final BackupStateDto expectedBackupStatus)
+      throws IOException {
+    final long now = Instant.now().toEpochMilli();
+    when(tasklistProperties.getBackup().getIncompleteCheckTimeoutInSeconds()).thenReturn(1L);
+    final var metadata =
+        new Metadata().setBackupId(2L).setPartCount(3).setPartNo(1).setVersion(TASKLIST_VERSION);
+    final var snapshots = new ArrayList<SnapshotInfo>(metadata.getPartCount());
+
+    snapshots.add(
+        SnapshotInfo.of(
+            sib ->
+                sib.snapshot(metadata.buildSnapshotName())
+                    .state("SUCCESS")
+                    .uuid(UUID.randomUUID().toString())
+                    .dataStreams(List.of())
+                    .indices(List.of())
+                    .startTimeInMillis(String.valueOf(now - 5000L))
+                    .endTimeInMillis(String.valueOf(now - 4000L))));
+
+    snapshots.add(
+        SnapshotInfo.of(
+            sib ->
+                sib.snapshot(new Metadata(metadata).setPartNo(2).buildSnapshotName())
+                    .state("SUCCESS")
+                    .uuid(UUID.randomUUID().toString())
+                    .dataStreams(List.of())
+                    .indices(List.of())
+                    .startTimeInMillis(String.valueOf(now - 3000L))
+                    .endTimeInMillis(lastSnapshotEndTime.get())));
+
+    when(openSearchTransport.performRequest(any(), any(), any()))
+        .thenReturn(GetCustomSnapshotResponse.of(b -> b.snapshots(snapshots)));
+
+    // Test
+    final var backupState = backupManagerOpenSearch.getBackupState(backupId);
+    assertThat(backupState.getState()).isEqualTo(expectedBackupStatus);
+  }
+
+  static Stream<Arguments> incompleteBackupStateProvider() {
+    return Stream.of(
+        Arguments.of(
+            (Supplier<String>) () -> String.valueOf(Instant.now().toEpochMilli() - 2000L),
+            BackupStateDto.INCOMPLETE),
+        Arguments.of(
+            (Supplier<String>) () -> String.valueOf(Instant.now().toEpochMilli() - 0L),
+            BackupStateDto.IN_PROGRESS),
+        Arguments.of((Supplier<String>) () -> null, BackupStateDto.INCOMPLETE));
   }
 }
