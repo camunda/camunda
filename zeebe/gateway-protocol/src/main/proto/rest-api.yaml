@@ -5736,7 +5736,8 @@ components:
       properties:
         name:
           description: Name of this process definition.
-          type: string
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         resourceName:
           description: Resource name of this process definition.
           type: string
@@ -5749,7 +5750,8 @@ components:
           type: string
         processDefinitionId:
           description: Process definition ID of this process definition.
-          type: string
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         tenantId:
           description: Tenant ID of this process definition.
           type: string
@@ -5791,6 +5793,9 @@ components:
         processDefinitionKey:
           description: The key for this process definition.
           type: string
+        formKey:
+          type: string
+          description: The identifier of the form used to start the process, applicable when the process is initiated via a form.
     ProcessInstanceSearchQuerySortRequest:
       type: object
       properties:
