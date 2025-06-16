@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.ProcessInstanceModificationMoveInstructionValue;
+import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import java.util.ArrayDeque;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -73,7 +74,9 @@ public class ModifyProcessInstanceBatchOperationExecutor implements BatchOperati
         processInstanceKey,
         ProcessInstanceModificationIntent.MODIFY,
         command,
-        batchOperation.getKey(),
-        batchOperation.getAuthentication().claims());
+        FollowUpCommandMetadata.of(
+            b ->
+                b.batchOperationReference(batchOperation.getKey())
+                    .claims(batchOperation.getAuthentication().claims())));
   }
 }

@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWr
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +35,9 @@ public class CancelProcessInstanceBatchOperationExecutor implements BatchOperati
         itemKey,
         ProcessInstanceIntent.CANCEL,
         command,
-        batchOperation.getKey(),
-        batchOperation.getAuthentication().claims());
+        FollowUpCommandMetadata.of(
+            b ->
+                b.batchOperationReference(batchOperation.getKey())
+                    .claims(batchOperation.getAuthentication().claims())));
   }
 }

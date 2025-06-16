@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Collections;
@@ -111,7 +112,10 @@ public final class BatchOperationExecuteProcessor
     final var followupCommand = new BatchOperationExecutionRecord();
     followupCommand.setBatchOperationKey(batchKey);
     commandWriter.appendFollowUpCommand(
-        command.getKey(), BatchOperationExecutionIntent.EXECUTE, followupCommand, batchKey, null);
+        command.getKey(),
+        BatchOperationExecutionIntent.EXECUTE,
+        followupCommand,
+        FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperation.getKey())));
   }
 
   @Override

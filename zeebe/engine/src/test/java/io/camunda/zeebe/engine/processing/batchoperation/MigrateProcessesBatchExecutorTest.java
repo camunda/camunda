@@ -95,6 +95,7 @@ public final class MigrateProcessesBatchExecutorTest extends AbstractBatchOperat
             .getFirst();
     assertThat(migrationCommand.getIntent()).isEqualTo(ProcessInstanceMigrationIntent.MIGRATE);
     assertThat(migrationCommand.getAuthorizations()).isEqualTo(claims);
+    assertThat(migrationCommand.getBatchOperationReference()).isEqualTo(batchOperationKey);
   }
 
   @Test
