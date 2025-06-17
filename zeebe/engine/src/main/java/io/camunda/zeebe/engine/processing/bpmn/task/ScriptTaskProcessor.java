@@ -107,13 +107,18 @@ public final class ScriptTaskProcessor
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
-              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+              stateTransitionBehavior
+                  .suspendProcessInstanceIfNeeded(element, completed)
+                  .ifRight(
+                      notSuspended ->
+                          stateTransitionBehavior.takeOutgoingSequenceFlows(element, notSuspended));
             });
   }
 
   @Override
   protected TransitionOutcome onTerminateInternal(
       final ExecutableScriptTask element, final BpmnElementContext context) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
     if (element.hasExecutionListeners()) {

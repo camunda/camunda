@@ -44,8 +44,13 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   private final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructionsProperty =
       new ArrayProperty<>("startInstructions", ProcessInstanceCreationStartInstruction::new);
 
+  private final ArrayProperty<ProcessInstanceCreationRuntimeInstruction>
+      runtimeInstructionsProperty =
+          new ArrayProperty<>(
+              "runtimeInstructions", ProcessInstanceCreationRuntimeInstruction::new);
+
   public ProcessInstanceCreationRecord() {
-    super(8);
+    super(9);
     declareProperty(bpmnProcessIdProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)
@@ -53,6 +58,7 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
         .declareProperty(variablesProperty)
         .declareProperty(fetchVariablesProperty)
         .declareProperty(startInstructionsProperty)
+        .declareProperty(runtimeInstructionsProperty)
         .declareProperty(tenantIdProperty);
   }
 
@@ -86,6 +92,22 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
               final var elementCopy = new ProcessInstanceCreationStartInstruction();
               elementCopy.copy(element);
               return (ProcessInstanceCreationStartInstructionValue) elementCopy;
+            })
+        .toList();
+  }
+
+  @Override
+  public List<ProcessInstanceCreationRuntimeInstructionValue> getRuntimeInstructions() {
+    // we need to make a copy of each element in the ArrayProperty while iterating it because the
+    // inner values are updated during the iteration
+    return runtimeInstructionsProperty.stream()
+        .map(
+            element -> {
+              final RuntimeInstructionType elementType = element.getInstructionType();
+              final ProcessInstanceCreationRuntimeInstruction elementCopy =
+                  ProcessInstanceCreationRuntimeInstruction.createInstruction();
+              elementCopy.copy(element);
+              return (ProcessInstanceCreationRuntimeInstructionValue) elementCopy;
             })
         .toList();
   }
@@ -152,6 +174,22 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
   public ProcessInstanceCreationRecord addStartInstruction(
       final ProcessInstanceCreationStartInstruction startInstruction) {
     startInstructionsProperty.add().copy(startInstruction);
+    return this;
+  }
+
+  public ProcessInstanceCreationRecord addRuntimeInstructions(
+      final List<ProcessInstanceCreationRuntimeInstruction> runtimeInstructions) {
+    if (runtimeInstructions == null) {
+      runtimeInstructionsProperty.reset();
+      return this;
+    }
+    runtimeInstructions.forEach(this::addRuntimeInstruction);
+    return this;
+  }
+
+  public ProcessInstanceCreationRecord addRuntimeInstruction(
+      final ProcessInstanceCreationRuntimeInstruction runtimeInstruction) {
+    runtimeInstructionsProperty.add().copy(runtimeInstruction);
     return this;
   }
 

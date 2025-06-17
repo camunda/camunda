@@ -92,6 +92,8 @@ public class IntermediateThrowEventProcessor
   @Override
   public TransitionOutcome onTerminate(
       final ExecutableIntermediateThrowEvent element, final BpmnElementContext terminating) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, terminating);
+
     eventBehaviorOf(element).onTerminate(element, terminating);
 
     if (element.hasExecutionListeners()) {
@@ -173,7 +175,13 @@ public class IntermediateThrowEventProcessor
       return stateTransitionBehavior
           .transitionToCompleted(element, completing)
           .thenDo(
-              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
+              completed ->
+                  stateTransitionBehavior
+                      .suspendProcessInstanceIfNeeded(element, completed)
+                      .ifRight(
+                          notSuspended ->
+                              stateTransitionBehavior.takeOutgoingSequenceFlows(
+                                  element, notSuspended)));
     }
   }
 
@@ -220,7 +228,13 @@ public class IntermediateThrowEventProcessor
       return stateTransitionBehavior
           .transitionToCompleted(element, completing)
           .thenDo(
-              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
+              completed ->
+                  stateTransitionBehavior
+                      .suspendProcessInstanceIfNeeded(element, completed)
+                      .ifRight(
+                          notSuspended ->
+                              stateTransitionBehavior.takeOutgoingSequenceFlows(
+                                  element, notSuspended)));
     }
 
     @Override
@@ -303,7 +317,13 @@ public class IntermediateThrowEventProcessor
       return stateTransitionBehavior
           .transitionToCompleted(element, completing)
           .thenDo(
-              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
+              completed ->
+                  stateTransitionBehavior
+                      .suspendProcessInstanceIfNeeded(element, completed)
+                      .ifRight(
+                          notSuspended ->
+                              stateTransitionBehavior.takeOutgoingSequenceFlows(
+                                  element, notSuspended)));
     }
 
     private Either<Failure, DirectBuffer> evaluateEscalationCode(
@@ -359,7 +379,13 @@ public class IntermediateThrowEventProcessor
       return stateTransitionBehavior
           .transitionToCompleted(element, completing)
           .thenDo(
-              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
+              completed ->
+                  stateTransitionBehavior
+                      .suspendProcessInstanceIfNeeded(element, completed)
+                      .ifRight(
+                          notSuspended ->
+                              stateTransitionBehavior.takeOutgoingSequenceFlows(
+                                  element, notSuspended)));
     }
   }
 
@@ -397,7 +423,13 @@ public class IntermediateThrowEventProcessor
       return stateTransitionBehavior
           .transitionToCompleted(element, completing)
           .thenDo(
-              completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
+              completed ->
+                  stateTransitionBehavior
+                      .suspendProcessInstanceIfNeeded(element, completed)
+                      .ifRight(
+                          notSuspended ->
+                              stateTransitionBehavior.takeOutgoingSequenceFlows(
+                                  element, notSuspended)));
     }
   }
 }

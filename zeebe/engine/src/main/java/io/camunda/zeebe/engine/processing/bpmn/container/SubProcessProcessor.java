@@ -91,13 +91,19 @@ public final class SubProcessProcessor
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
-              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+              stateTransitionBehavior
+                  .suspendProcessInstanceIfNeeded(element, completed)
+                  .ifRight(
+                      notSuspended ->
+                          stateTransitionBehavior.takeOutgoingSequenceFlows(element, notSuspended));
             });
   }
 
   @Override
   public TransitionOutcome onTerminate(
       final ExecutableFlowElementContainer element, final BpmnElementContext terminating) {
+
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, terminating);
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(terminating);
     }

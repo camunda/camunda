@@ -79,7 +79,11 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
-              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+              stateTransitionBehavior
+                  .suspendProcessInstanceIfNeeded(element, completed)
+                  .ifRight(
+                      notSuspended ->
+                          stateTransitionBehavior.takeOutgoingSequenceFlows(element, notSuspended));
             });
   }
 
@@ -87,6 +91,8 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
   public TransitionOutcome onTerminate(
       final ExecutableReceiveTask element, final BpmnElementContext context) {
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
+
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
 
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(context);

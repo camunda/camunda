@@ -57,13 +57,19 @@ public class UndefinedTaskProcessor implements BpmnElementProcessor<ExecutableAc
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
-              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+              stateTransitionBehavior
+                  .suspendProcessInstanceIfNeeded(element, completed)
+                  .ifRight(
+                      notSuspended ->
+                          stateTransitionBehavior.takeOutgoingSequenceFlows(element, notSuspended));
             });
   }
 
   @Override
   public TransitionOutcome onTerminate(
       final ExecutableActivity element, final BpmnElementContext context) {
+
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(context);
     }

@@ -41,6 +41,16 @@
                 }
               }
             },
+            "runtimeInstructions": {
+              "properties": {
+                "type": {
+                  "type": "keyword"
+                },
+                "afterElementId": {
+                  "type": "keyword"
+                }
+              }
+            },
             "tenantId": {
               "type": "keyword"
             }
