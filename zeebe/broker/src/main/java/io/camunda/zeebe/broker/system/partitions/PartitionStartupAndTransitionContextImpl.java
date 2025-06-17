@@ -34,6 +34,8 @@ import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
+import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
+import io.camunda.zeebe.db.SnapshotCopy;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
@@ -81,6 +83,7 @@ public class PartitionStartupAndTransitionContextImpl
   private final ExporterRepository exporterRepository;
   private final PartitionProcessingState partitionProcessingState;
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
+  private final SnapshotCopy snapshotCopy;
   private final StateController stateController;
   private DynamicPartitionConfig dynamicPartitionConfig;
   private StreamProcessor streamProcessor;
@@ -113,6 +116,7 @@ public class PartitionStartupAndTransitionContextImpl
   private final MeterRegistry startupMeterRegistry;
   private MeterRegistry transitionMeterRegistry;
   private volatile boolean migrationsPerformed = false;
+  private final SnapshotApiRequestHandler snapshotApiRequestHandler;
 
   public PartitionStartupAndTransitionContextImpl(
       final int nodeId,
@@ -126,6 +130,8 @@ public class PartitionStartupAndTransitionContextImpl
       final BrokerCfg brokerCfg,
       final CommandApiService commandApiService,
       final PersistedSnapshotStore persistedSnapshotStore,
+      final SnapshotCopy snapshotCopy,
+      final SnapshotApiRequestHandler snapshotApiRequestHandler,
       final StateController stateController,
       final TypedRecordProcessorsFactory typedRecordProcessorsFactory,
       final ExporterRepository exporterRepository,
@@ -142,7 +148,9 @@ public class PartitionStartupAndTransitionContextImpl
     this.raftPartition = raftPartition;
     messagingService = partitionCommunicationService;
     this.brokerCfg = brokerCfg;
+    this.snapshotApiRequestHandler = snapshotApiRequestHandler;
     this.stateController = stateController;
+    this.snapshotCopy = snapshotCopy;
     this.typedRecordProcessorsFactory = typedRecordProcessorsFactory;
     this.commandApiService = commandApiService;
     this.persistedSnapshotStore = persistedSnapshotStore;
@@ -451,6 +459,11 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
+  public SnapshotApiRequestHandler getSnapshotApiRequestHandler() {
+    return snapshotApiRequestHandler;
+  }
+
+  @Override
   public ControllableStreamClock getStreamClock() {
     return clock;
   }
@@ -498,6 +511,11 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public StateController getStateController() {
     return stateController;
+  }
+
+  @Override
+  public SnapshotCopy snapshotCopy() {
+    return snapshotCopy;
   }
 
   @Override

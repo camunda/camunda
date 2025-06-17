@@ -30,9 +30,7 @@ public class PartitionBootstrappedApplier implements TypedEventApplier<ScaleInte
       final var partitionId = value.getRedistributedPartitions().getFirst();
       final var allActivated = routingState.activatePartition(partitionId);
       if (allActivated) {
-        LOG.debug(
-            "All partitions for scale operation to {} have been activated.",
-            value.getDesiredPartitionCount());
+        LOG.debug("All new partitions have been activated.");
       }
     } else {
       LOG.warn(

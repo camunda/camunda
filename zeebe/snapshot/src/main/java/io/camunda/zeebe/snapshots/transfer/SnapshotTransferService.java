@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.snapshots.transfer;
 
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
@@ -49,6 +50,7 @@ public interface SnapshotTransferService {
      * @param lastProcessedPosition the minimum value for lastProcessedPosition in the snapshot
      * @return
      */
-    ActorFuture<PersistedSnapshot> takeSnapshot(int partition, long lastProcessedPosition);
+    ActorFuture<PersistedSnapshot> takeSnapshot(
+        int partition, long lastProcessedPosition, ConcurrencyControl control);
   }
 }

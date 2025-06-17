@@ -43,17 +43,22 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.MetricsStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.MigrationTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.QueryServicePartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotAfterMigrationTransitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotApiHandlerTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTransitionStep;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceTransitionStep;
+import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
+import io.camunda.zeebe.db.ZeebeDbFactory;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDBSnapshotCopy;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -92,6 +97,7 @@ public final class ZeebePartitionFactory {
           new CommandApiServiceTransitionStep(),
           new SnapshotDirectorPartitionTransitionStep(),
           new SnapshotAfterMigrationTransitionStep(),
+          new SnapshotApiHandlerTransitionStep(),
           new ExporterDirectorPartitionTransitionStep(),
           new BackupApiRequestHandlerStep(),
           new AdminApiRequestHandlerStep());
@@ -100,6 +106,7 @@ public final class ZeebePartitionFactory {
   private final BrokerCfg brokerCfg;
   private final BrokerInfo localBroker;
   private final CommandApiService commandApiService;
+  private final SnapshotApiRequestHandler snapshotApiRequestHandler;
   private final ClusterServices clusterServices;
   private final ExporterRepository exporterRepository;
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
@@ -117,6 +124,7 @@ public final class ZeebePartitionFactory {
       final BrokerCfg brokerCfg,
       final BrokerInfo localBroker,
       final CommandApiService commandApiService,
+      final SnapshotApiRequestHandler snapshotApiRequestHandler,
       final ClusterServices clusterServices,
       final ExporterRepository exporterRepository,
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
@@ -132,6 +140,7 @@ public final class ZeebePartitionFactory {
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
     this.commandApiService = commandApiService;
+    this.snapshotApiRequestHandler = snapshotApiRequestHandler;
     this.clusterServices = clusterServices;
     this.exporterRepository = exporterRepository;
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
@@ -155,9 +164,19 @@ public final class ZeebePartitionFactory {
     final var membershipService = clusterServices.getMembershipService();
     final var typedRecordProcessorsFactory = createFactory(localBroker, featureFlags);
 
+    final var databaseCfg = brokerCfg.getExperimental().getRocksdb();
+    final var consistencyChecks = brokerCfg.getExperimental().getConsistencyChecks();
+    final var partitionId = raftPartition.id().id();
+    final var zeebeFactory =
+        new ZeebeRocksDbFactory<ZbColumnFamilies>(
+            databaseCfg.createRocksDbConfiguration(),
+            consistencyChecks.getSettings(),
+            new AccessMetricsConfiguration(databaseCfg.getAccessMetrics(), partitionId),
+            () -> MicrometerUtil.wrap(partitionMeterRegistry, PartitionKeyNames.tags(partitionId)));
     final StateController stateController =
-        createStateController(raftPartition, snapshotStore, snapshotStore, partitionMeterRegistry);
+        createStateController(raftPartition, zeebeFactory, snapshotStore, snapshotStore);
 
+    final var snapshotCopy = new RocksDBSnapshotCopy(zeebeFactory);
     final var context =
         new PartitionStartupAndTransitionContextImpl(
             localBroker.getNodeId(),
@@ -172,6 +191,8 @@ public final class ZeebePartitionFactory {
             brokerCfg,
             commandApiService,
             snapshotStore,
+            snapshotCopy,
+            snapshotApiRequestHandler,
             stateController,
             typedRecordProcessorsFactory,
             exporterRepository,
@@ -191,9 +212,9 @@ public final class ZeebePartitionFactory {
 
   private StateController createStateController(
       final RaftPartition raftPartition,
+      final ZeebeDbFactory<ZbColumnFamilies> zeebeRocksDbFactory,
       final ConstructableSnapshotStore snapshotStore,
-      final ConcurrencyControl concurrencyControl,
-      final MeterRegistry partitionMeterRegistry) {
+      final ConcurrencyControl concurrencyControl) {
     final Path runtimeDirectory;
     final var partitionId = raftPartition.id().id();
     if (brokerCfg.getData().useSeparateRuntimeDirectory()) {
@@ -208,14 +229,9 @@ public final class ZeebePartitionFactory {
     } else {
       runtimeDirectory = raftPartition.dataDirectory().toPath().resolve("runtime");
     }
-    final var databaseCfg = brokerCfg.getExperimental().getRocksdb();
-    final var consistencyChecks = brokerCfg.getExperimental().getConsistencyChecks();
     return new StateControllerImpl(
-        new ZeebeRocksDbFactory<>(
-            databaseCfg.createRocksDbConfiguration(),
-            consistencyChecks.getSettings(),
-            new AccessMetricsConfiguration(databaseCfg.getAccessMetrics(), partitionId),
-            () -> MicrometerUtil.wrap(partitionMeterRegistry, PartitionKeyNames.tags(partitionId))),
+        partitionId,
+        zeebeRocksDbFactory,
         snapshotStore,
         runtimeDirectory,
         new AtomixRecordEntrySupplierImpl(raftPartition.getServer()),

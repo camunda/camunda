@@ -10,8 +10,9 @@ package io.camunda.zeebe.broker.system.partitions;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
+import io.camunda.zeebe.snapshots.transfer.SnapshotTransferService;
 
-public interface StateController extends AutoCloseable {
+public interface StateController extends AutoCloseable, SnapshotTransferService.TakeSnapshot {
   /**
    * Takes a snapshot based on the given position. The position is a last processed lower bound
    * event position. When the returned future completes successfully the transient snapshot will be

@@ -10,7 +10,6 @@ package io.camunda.zeebe.broker.partitioning;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl.PartitionAlreadyExistsException;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -55,27 +54,6 @@ public final class PartitionBootstrapTest {
     assertThat(result).succeedsWithin(Duration.ofSeconds(10));
     assertThat(partitionManager.getRaftPartition(partitionId)).isNotNull();
     assertThat(partitionManager.getRaftPartitions()).hasSize(2); // Original 1 + new 1
-  }
-
-  @Test
-  public void shouldNotBootstrapPartitionWithSnapshotInitializationWhenNotScaling() {
-    // given
-    final var partitionId = 2;
-    final var priority = 1;
-    final var config = DynamicPartitionConfig.init();
-
-    // when
-    final var result = partitionManager.bootstrap(partitionId, priority, config, true);
-
-    // then
-    assertThat(result)
-        .failsWithin(Duration.ofSeconds(10))
-        .withThrowableOfType(ExecutionException.class)
-        .withCauseInstanceOf(BrokerRejectionException.class)
-        .withMessageStartingWith("Command (MARK_PARTITION_BOOTSTRAPPED) rejected");
-
-    assertThat(brokerRule.getBroker().getBrokerContext().getPartitionManager().getRaftPartition(2))
-        .isNull();
   }
 
   @Test

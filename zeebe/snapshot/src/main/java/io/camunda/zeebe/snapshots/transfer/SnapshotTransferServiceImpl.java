@@ -11,8 +11,8 @@ package io.camunda.zeebe.snapshots.transfer;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.snapshots.BootstrapSnapshotStore;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
+import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
@@ -29,7 +29,7 @@ import org.agrona.CloseHelper;
 
 public class SnapshotTransferServiceImpl implements SnapshotTransferService {
 
-  private final BootstrapSnapshotStore snapshotStore;
+  private final PersistedSnapshotStore snapshotStore;
   private final Map<UUID, PendingTransfer> pendingTransfers = new HashMap<>();
   private final TakeSnapshot takeSnapshot;
   private final int partitionId;
@@ -37,7 +37,7 @@ public class SnapshotTransferServiceImpl implements SnapshotTransferService {
   private final ConcurrencyControl concurrency;
 
   public SnapshotTransferServiceImpl(
-      final BootstrapSnapshotStore snapshotStore,
+      final PersistedSnapshotStore snapshotStore,
       final TakeSnapshot takeSnapshot,
       final int partitionId,
       final BiConsumer<Path, Path> copyForBootstrap,
@@ -63,6 +63,9 @@ public class SnapshotTransferServiceImpl implements SnapshotTransferService {
     return getLatestSnapshotForBootstrap(lastProcessedPosition, transferId)
         .andThen(
             snapshot -> {
+              if (snapshot == null) {
+                return CompletableActorFuture.completed(null);
+              }
               final var snapshotId = snapshot.getId();
               try {
                 final var reader = new FileBasedSnapshotChunkReader(snapshot.getPath());
@@ -133,7 +136,7 @@ public class SnapshotTransferServiceImpl implements SnapshotTransferService {
         lastPersistedSnapshot.isEmpty()
                 || lastPersistedSnapshot.get().getMetadata().processedPosition()
                     < lastProcessedPosition
-            ? takeSnapshot.takeSnapshot(partitionId, lastProcessedPosition)
+            ? takeSnapshot.takeSnapshot(partitionId, lastProcessedPosition, concurrency)
             : CompletableActorFuture.completed(lastPersistedSnapshot.get());
 
     return lastSnapshot.andThen(

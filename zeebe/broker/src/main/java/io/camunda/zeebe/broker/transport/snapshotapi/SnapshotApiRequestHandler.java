@@ -16,7 +16,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferService;
 import io.camunda.zeebe.transport.RequestType;
-import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.transport.ServerTransport;
 import io.camunda.zeebe.util.Either;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,11 +32,11 @@ public class SnapshotApiRequestHandler
   private static final Logger LOG = LoggerFactory.getLogger(SnapshotApiRequestHandler.class);
   private final ConcurrentMap<Integer, SnapshotTransferService> transferServices =
       new ConcurrentHashMap<>();
-  private final AtomixServerTransport serverTransport;
+  private final ServerTransport serverTransport;
   private final BrokerClient brokerClient;
 
-  protected SnapshotApiRequestHandler(
-      final AtomixServerTransport serverTransport, final BrokerClient brokerClient) {
+  public SnapshotApiRequestHandler(
+      final ServerTransport serverTransport, final BrokerClient brokerClient) {
     super(SnapshotApiRequestReader::new, SnapshotApiResponseWriter::new);
     this.serverTransport = serverTransport;
     this.brokerClient = brokerClient;
@@ -91,15 +91,24 @@ public class SnapshotApiRequestHandler
                   LOG.atLevel(Level.DEBUG)
                       .addKeyValue("transferId", request.transferId())
                       .log("Last processed position is {}", lastProcessedPosition);
-                  return service
-                      .getLatestSnapshot(partitionId, lastProcessedPosition, request.transferId())
-                      .thenApply(
-                          chunk -> {
-                            responseWriter.setResponse(
-                                new SnapshotChunkResponse(
-                                    request.transferId(), Optional.ofNullable(chunk)));
-                            return Either.right(responseWriter);
-                          });
+                  return service.getLatestSnapshot(
+                      partitionId, lastProcessedPosition, request.transferId());
+                },
+                actor)
+            .andThen(
+                (chunk, error) -> {
+                  if (error != null) {
+                    LOG.error(
+                        "Failed to get the latest snapshot for partition {}: {}",
+                        partitionId,
+                        error.getMessage(),
+                        error);
+                    return CompletableActorFuture.completed(
+                        Either.left(errorWriter.internalError(error.getMessage())));
+                  }
+                  responseWriter.setResponse(
+                      new SnapshotChunkResponse(request.transferId(), Optional.ofNullable(chunk)));
+                  return CompletableActorFuture.completed(Either.right(responseWriter));
                 },
                 actor);
       }

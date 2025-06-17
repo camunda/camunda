@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.partitioning.startup;
 import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
@@ -19,11 +20,12 @@ import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
+import io.camunda.zeebe.snapshots.transfer.SnapshotTransfer;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.nio.file.Path;
 
-public final class PartitionStartupContext {
+public class PartitionStartupContext {
   private final ActorSchedulingService schedulingService;
   private final TopologyManager topologyManager;
   private final ConcurrencyControl concurrencyControl;
@@ -37,6 +39,7 @@ public final class PartitionStartupContext {
   private final DynamicPartitionConfig initialPartitionConfig;
   private final boolean initializeFromSnapshot;
   private final MeterRegistry brokerMeterRegistry;
+  private final BrokerClient brokerClient;
 
   private Path partitionDirectory;
 
@@ -44,6 +47,7 @@ public final class PartitionStartupContext {
   private FileBasedSnapshotStore snapshotStore;
   private RaftPartition raftPartition;
   private ZeebePartition zeebePartition;
+  private SnapshotTransfer snapshotTransfer;
 
   public PartitionStartupContext(
       final ActorSchedulingService schedulingService,
@@ -58,7 +62,8 @@ public final class PartitionStartupContext {
       final BrokerCfg brokerConfig,
       final DynamicPartitionConfig initialPartitionConfig,
       final boolean initializeFromSnapshot,
-      final MeterRegistry brokerMeterRegistry) {
+      final MeterRegistry brokerMeterRegistry,
+      final BrokerClient brokerClient) {
     this.schedulingService = schedulingService;
     this.topologyManager = topologyManager;
     this.concurrencyControl = concurrencyControl;
@@ -72,11 +77,16 @@ public final class PartitionStartupContext {
     this.initialPartitionConfig = initialPartitionConfig;
     this.initializeFromSnapshot = initializeFromSnapshot;
     this.brokerMeterRegistry = brokerMeterRegistry;
+    this.brokerClient = brokerClient;
   }
 
   @Override
   public String toString() {
     return "PartitionStartupContext{" + "partition=" + partitionMetadata.id().id() + '}';
+  }
+
+  public Integer partitionId() {
+    return partitionMetadata.id().id();
   }
 
   public ActorSchedulingService schedulingService() {
@@ -175,5 +185,17 @@ public final class PartitionStartupContext {
 
   public boolean isInitializeFromSnapshot() {
     return initializeFromSnapshot;
+  }
+
+  public BrokerClient brokerClient() {
+    return brokerClient;
+  }
+
+  public void setSnapshotTransfer(final SnapshotTransfer snapshotTransfer) {
+    this.snapshotTransfer = snapshotTransfer;
+  }
+
+  public SnapshotTransfer snapshotTransfer() {
+    return snapshotTransfer;
   }
 }

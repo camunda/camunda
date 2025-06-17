@@ -7,15 +7,24 @@
  */
 package io.camunda.zeebe.broker.partitioning.startup.steps;
 
+import static io.camunda.zeebe.scheduler.AsyncClosable.closeHelper;
+
+import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotTransferServiceClient;
 import io.camunda.zeebe.broker.partitioning.startup.PartitionStartupContext;
 import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
+import io.camunda.zeebe.snapshots.transfer.SnapshotTransferImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public final class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
+public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(SnapshotStoreStep.class);
 
   @Override
   public String getName() {
@@ -27,7 +36,7 @@ public final class SnapshotStoreStep implements StartupStep<PartitionStartupCont
     final var snapshotStore =
         new FileBasedSnapshotStore(
             context.brokerConfig().getCluster().getNodeId(),
-            context.partitionMetadata().id().id(),
+            context.partitionId(),
             context.partitionDirectory(),
             new ChecksumProviderRocksDBImpl(),
             context.partitionMeterRegistry());
@@ -38,21 +47,52 @@ public final class SnapshotStoreStep implements StartupStep<PartitionStartupCont
             .submitActor(snapshotStore, SchedulingHints.ioBound())
             .thenApply(v -> context.snapshotStore(snapshotStore), context.concurrencyControl());
     if (context.isInitializeFromSnapshot()) {
-      // TODO acquire the snapshot and initialize it using it
-      result = result.thenApply(ignored -> context);
+      result =
+          result
+              .andThen(
+                  ignored -> {
+                    final var snapshotTransfer =
+                        new SnapshotTransferImpl(
+                            actor -> new SnapshotTransferServiceClient(context.brokerClient()),
+                            snapshotStore);
+                    return context
+                        .schedulingService()
+                        .submitActor(snapshotTransfer, SchedulingHints.IO_BOUND)
+                        .thenApply(
+                            empty -> {
+                              context.setSnapshotTransfer(snapshotTransfer);
+                              return context;
+                            },
+                            context.concurrencyControl());
+                  },
+                  context.concurrencyControl())
+              .andThen(this::initializeFromBootstrapSnapshot, context.concurrencyControl());
     }
     return result;
   }
 
   @Override
   public ActorFuture<PartitionStartupContext> shutdown(final PartitionStartupContext context) {
-    final var snapshotStore = context.snapshotStore();
-    if (snapshotStore == null) {
-      return CompletableActorFuture.completed(context);
-    } else {
-      return snapshotStore
-          .closeAsync()
-          .thenApply(ignored -> context.snapshotStore(null), context.concurrencyControl());
-    }
+    return closeHelper(context.snapshotTransfer())
+        .andThen(ignore -> closeHelper(context.snapshotStore()), context.concurrencyControl())
+        .thenApply(ignored -> context.snapshotStore(null), context.concurrencyControl());
+  }
+
+  ActorFuture<PartitionStartupContext> initializeFromBootstrapSnapshot(
+      final PartitionStartupContext context) {
+    final var fut = context.snapshotTransfer().getLatestSnapshot(Protocol.DEPLOYMENT_PARTITION);
+    return fut.andThen(
+            snapshot -> {
+              if (snapshot == null) {
+                LOG.info("Received no snapshot from leader, skipping restore from snapshot");
+                return CompletableActorFuture.completed();
+              } else {
+                LOG.info(
+                    "Received snapshot {} from leader, restoring from snapshot", snapshot.getId());
+                return context.snapshotStore().restore(snapshot);
+              }
+            },
+            context.concurrencyControl())
+        .thenApply(ignored -> context, context.concurrencyControl());
   }
 }

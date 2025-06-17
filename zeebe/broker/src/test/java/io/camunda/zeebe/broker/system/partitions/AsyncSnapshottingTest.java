@@ -71,6 +71,7 @@ public final class AsyncSnapshottingTest {
 
     snapshotController =
         new StateControllerImpl(
+            1,
             DefaultZeebeDbFactory.defaultFactory(),
             persistedSnapshotStore,
             rootDirectory.resolve("runtime"),
