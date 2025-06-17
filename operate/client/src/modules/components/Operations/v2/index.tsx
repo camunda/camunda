@@ -24,7 +24,7 @@ import {OperationsContainer} from '../styled';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import {getStateLocally} from 'modules/utils/localStorage';
 import {ModificationHelperModal} from '../ModificationHelperModal';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
+import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {useOperations} from 'modules/queries/operations/useOperations';
 import {useRootInstanceId} from 'modules/queries/callHierarchy/useRootInstanceId';
 

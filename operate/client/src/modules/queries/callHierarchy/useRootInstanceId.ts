@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {GetProcessInstanceCallHierarchyResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
+import {GetProcessInstanceCallHierarchyResponseBody} from '@vzeta/camunda-api-zod-schemas';
 import {useCallHierarchy} from './useCallHierarchy';
 
 const rootInstanceIdParser = (

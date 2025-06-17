@@ -7,7 +7,7 @@
  */
 
 import {Route} from '@playwright/test';
-import {GetProcessDefinitionStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
+import {type GetProcessDefinitionStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas';
 import {ProcessInstancesDto} from 'modules/api/processInstances/fetchProcessInstances';
 import {ProcessDto} from 'modules/api/processes/fetchGroupedProcesses';
 import {BatchOperationDto} from 'modules/api/sharedTypes';

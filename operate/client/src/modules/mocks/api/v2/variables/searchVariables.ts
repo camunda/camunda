@@ -7,7 +7,7 @@
  */
 
 import {mockPostRequest} from '../../mockRequest';
-import {QueryVariablesResponseBody} from '@vzeta/camunda-api-zod-schemas/process-management';
+import {QueryVariablesResponseBody} from '@vzeta/camunda-api-zod-schemas';
 
 const mockSearchVariables = (contextPath = '') =>
   mockPostRequest<QueryVariablesResponseBody>(

@@ -6,8 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {Variable} from '@vzeta/camunda-api-zod-schemas/process-management';
-import type {QueryVariablesByUserTaskResponseBody} from '@vzeta/camunda-api-zod-schemas/tasklist';
+import type {
+  QueryVariablesByUserTaskResponseBody,
+  Variable,
+} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {DEFAULT_TENANT_ID} from 'common/multitenancy/constants';
 
 const variables: Variable[] = [

@@ -15,7 +15,7 @@ import {
 import {
   GetProcessDefinitionStatisticsRequestBody,
   GetProcessDefinitionStatisticsResponseBody,
-} from '@vzeta/camunda-api-zod-schemas/operate';
+} from '@vzeta/camunda-api-zod-schemas';
 
 function instancesCountParser(
   flowNodeId?: string,

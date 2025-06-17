@@ -7,28 +7,22 @@
  */
 
 import {
-  endpoints as tasklistEndpoints,
+  endpoints,
   type CompleteTaskRequestBody,
   type QueryUserTasksRequestBody,
   type UserTask,
   type QueryVariablesByUserTaskRequestBody,
-} from '@vzeta/camunda-api-zod-schemas/tasklist';
-import {
-  endpoints as operateEndpoints,
   type QueryProcessDefinitionsRequestBody,
   type ProcessDefinition,
-} from '@vzeta/camunda-api-zod-schemas/operate';
-import {
-  endpoints as processManagementEndpoints,
   type CreateProcessInstanceRequestBody,
-} from '@vzeta/camunda-api-zod-schemas/process-management';
+} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {BASE_REQUEST_OPTIONS, getFullURL} from 'common/api';
 
 const api = {
   queryTasks: (body: QueryUserTasksRequestBody = {}) => {
-    return new Request(getFullURL(tasklistEndpoints.queryUserTasks.getUrl()), {
+    return new Request(getFullURL(endpoints.queryUserTasks.getUrl()), {
       ...BASE_REQUEST_OPTIONS,
-      method: tasklistEndpoints.queryUserTasks.method,
+      method: endpoints.queryUserTasks.method,
       body: JSON.stringify(body),
       headers: {
         'Content-Type': 'application/json',
@@ -37,33 +31,30 @@ const api = {
     });
   },
   queryProcesses: (body: QueryProcessDefinitionsRequestBody = {}) => {
-    return new Request(
-      getFullURL(operateEndpoints.queryProcessDefinitions.getUrl()),
-      {
-        ...BASE_REQUEST_OPTIONS,
-        method: operateEndpoints.queryProcessDefinitions.method,
-        body: JSON.stringify(body),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+    return new Request(getFullURL(endpoints.queryProcessDefinitions.getUrl()), {
+      ...BASE_REQUEST_OPTIONS,
+      method: endpoints.queryProcessDefinitions.method,
+      body: JSON.stringify(body),
+      headers: {
+        'Content-Type': 'application/json',
       },
-    );
+    });
   },
   getProcessDefinitionXml: (
     body: Pick<ProcessDefinition, 'processDefinitionKey'>,
   ) => {
     return new Request(
-      getFullURL(operateEndpoints.getProcessDefinitionXml.getUrl(body)),
+      getFullURL(endpoints.getProcessDefinitionXml.getUrl(body)),
       {
         ...BASE_REQUEST_OPTIONS,
-        method: operateEndpoints.getProcessDefinitionXml.method,
+        method: endpoints.getProcessDefinitionXml.method,
       },
     );
   },
   getTask: (body: Pick<UserTask, 'userTaskKey'>) => {
-    return new Request(getFullURL(tasklistEndpoints.getTask.getUrl(body)), {
+    return new Request(getFullURL(endpoints.getTask.getUrl(body)), {
       ...BASE_REQUEST_OPTIONS,
-      method: tasklistEndpoints.getTask.method,
+      method: endpoints.getTask.method,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -71,41 +62,33 @@ const api = {
   },
   assignTask: (params: Pick<UserTask, 'userTaskKey'> & {assignee: string}) => {
     const {userTaskKey, ...body} = params;
-    return new Request(
-      getFullURL(tasklistEndpoints.assignTask.getUrl({userTaskKey})),
-      {
-        ...BASE_REQUEST_OPTIONS,
-        method: tasklistEndpoints.assignTask.method,
-        body: JSON.stringify(body),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+    return new Request(getFullURL(endpoints.assignTask.getUrl({userTaskKey})), {
+      ...BASE_REQUEST_OPTIONS,
+      method: endpoints.assignTask.method,
+      body: JSON.stringify(body),
+      headers: {
+        'Content-Type': 'application/json',
       },
-    );
+    });
   },
   unassignTask: (body: Pick<UserTask, 'userTaskKey'>) => {
-    return new Request(
-      getFullURL(tasklistEndpoints.unassignTask.getUrl(body)),
-      {
-        ...BASE_REQUEST_OPTIONS,
-        method: tasklistEndpoints.unassignTask.method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+    return new Request(getFullURL(endpoints.unassignTask.getUrl(body)), {
+      ...BASE_REQUEST_OPTIONS,
+      method: endpoints.unassignTask.method,
+      headers: {
+        'Content-Type': 'application/json',
       },
-    );
+    });
   },
   queryVariablesByUserTask: (
     params: Pick<UserTask, 'userTaskKey'> & QueryVariablesByUserTaskRequestBody,
   ) => {
     const {userTaskKey, ...body} = params;
     return new Request(
-      getFullURL(
-        tasklistEndpoints.queryVariablesByUserTask.getUrl({userTaskKey}),
-      ),
+      getFullURL(endpoints.queryVariablesByUserTask.getUrl({userTaskKey})),
       {
         ...BASE_REQUEST_OPTIONS,
-        method: tasklistEndpoints.queryVariablesByUserTask.method,
+        method: endpoints.queryVariablesByUserTask.method,
         body: JSON.stringify(body),
         headers: {
           'Content-Type': 'application/json',
@@ -119,10 +102,10 @@ const api = {
     const {userTaskKey, variables, ...body} = params;
 
     return new Request(
-      getFullURL(tasklistEndpoints.completeTask.getUrl({userTaskKey})),
+      getFullURL(endpoints.completeTask.getUrl({userTaskKey})),
       {
         ...BASE_REQUEST_OPTIONS,
-        method: tasklistEndpoints.completeTask.method,
+        method: endpoints.completeTask.method,
         body: JSON.stringify({...body, variables}),
         headers: {
           'Content-Type': 'application/json',
@@ -132,10 +115,10 @@ const api = {
   },
   getVariable: (variableKey: string) => {
     return new Request(
-      getFullURL(processManagementEndpoints.getVariable.getUrl({variableKey})),
+      getFullURL(endpoints.getVariable.getUrl({variableKey})),
       {
         ...BASE_REQUEST_OPTIONS,
-        method: processManagementEndpoints.getVariable.method,
+        method: endpoints.getVariable.method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -143,29 +126,23 @@ const api = {
     );
   },
   getUserTaskForm: (params: Pick<UserTask, 'userTaskKey'>) => {
-    return new Request(
-      getFullURL(tasklistEndpoints.getUserTaskForm.getUrl(params)),
-      {
-        ...BASE_REQUEST_OPTIONS,
-        method: tasklistEndpoints.getUserTaskForm.method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+    return new Request(getFullURL(endpoints.getUserTaskForm.getUrl(params)), {
+      ...BASE_REQUEST_OPTIONS,
+      method: endpoints.getUserTaskForm.method,
+      headers: {
+        'Content-Type': 'application/json',
       },
-    );
+    });
   },
   createProcessInstance: (params: CreateProcessInstanceRequestBody) => {
-    return new Request(
-      getFullURL(processManagementEndpoints.createProcessInstance.getUrl()),
-      {
-        ...BASE_REQUEST_OPTIONS,
-        method: processManagementEndpoints.createProcessInstance.method,
-        body: JSON.stringify(params),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+    return new Request(getFullURL(endpoints.createProcessInstance.getUrl()), {
+      ...BASE_REQUEST_OPTIONS,
+      method: endpoints.createProcessInstance.method,
+      body: JSON.stringify(params),
+      headers: {
+        'Content-Type': 'application/json',
       },
-    );
+    });
   },
 } as const;
 
