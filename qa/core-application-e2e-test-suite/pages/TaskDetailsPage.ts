@@ -209,16 +209,10 @@ class TaskDetailsPage {
     while (attempt < maxRetries) {
       try {
         await input.click({timeout: 120000});
-
-        await input.evaluate((el, val) => {
-          if ('value' in el) {
-            (el as HTMLInputElement | HTMLTextAreaElement).value = val;
-            el.dispatchEvent(new Event('input', {bubbles: true}));
-            el.dispatchEvent(new Event('change', {bubbles: true}));
-          }
-        }, value);
-
-        await expect(input).toHaveValue(value, {timeout: 10000});
+        await sleep(500);
+        await input.fill(value);
+        await input.blur();
+        await expect(input).toHaveValue(value);
         return;
       } catch (error) {
         attempt++;
