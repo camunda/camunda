@@ -47,18 +47,18 @@ final class BackupStoreComponent {
     };
   }
 
-  private static S3BackupStore buildS3BackupStore(final BackupStoreCfg backupStoreCfg) {
+  private static BackupStore buildS3BackupStore(final BackupStoreCfg backupStoreCfg) {
     final var storeConfig = S3BackupStoreConfig.toStoreConfig(backupStoreCfg.getS3());
-    return new S3BackupStore(storeConfig);
+    return S3BackupStore.of(storeConfig);
   }
 
-  private static GcsBackupStore buildGcsBackupStore(final BackupStoreCfg backupStoreCfg) {
+  private static BackupStore buildGcsBackupStore(final BackupStoreCfg backupStoreCfg) {
     final var storeConfig = GcsBackupStoreConfig.toStoreConfig(backupStoreCfg.getGcs());
-    return new GcsBackupStore(storeConfig);
+    return GcsBackupStore.of(storeConfig);
   }
 
-  private static AzureBackupStore buildAzureBackupStore(final BackupStoreCfg backupStoreCfg) {
+  private static BackupStore buildAzureBackupStore(final BackupStoreCfg backupStoreCfg) {
     final var storeConfig = AzureBackupStoreConfig.toStoreConfig(backupStoreCfg.getAzure());
-    return new AzureBackupStore(storeConfig);
+    return AzureBackupStore.of(storeConfig);
   }
 }
