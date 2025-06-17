@@ -150,10 +150,26 @@ Before executing the deployment, consult the user’s permissions (see [Authoriz
 By contrast, you **do not** need to perform authorization checks for purely internal events or callbacks—such as a `ProcessInstance.COMPLETE_ELEMENT` notification fired by the Engine itself—because such actions are triggered by the Engine and not by an external user.
 State-machine transitions assume that all external permissions have been verified upstream.
 
-Always perform an authorization check on any user-triggered command before you mutate state or emit events.
-To do so, check `AuthorizationResourceType` and `PermissionType` to determine the required permissions for the command.
-If you cannot find an existing authorization check that fits your needs, you can create a new one by adding a new value to the `AuthorizationResourceType` and `PermissionType` enum classes.
+To perform an authorization check on any user-triggered command before you mutate state or emit events, check `AuthorizationResourceType` and `PermissionType` to determine the required permissions for the command.
+Additionally, for existing resource related commands (e.g., BPMN, DMN or Form), you can use corresponding `ResourceIdentifier` implementation to retrieve the resource with permissions (e.g., tenant id and resource key).
 Before processing the command, if the auth check fails, immediately reject the command and halt processing; only proceed with record handling once the request has been authorized.
+
+### Adding a new authorization check
+
+If you cannot find an existing authorization check that fits your needs, follow these steps to add a new one:
+
+1. **Get Product Management sign-off**
+  - Check with PM if new permissions are required in the first place.
+  - Decide and define new permissions with PM.
+
+2. **Add the new enum values**
+  - In the engine code, extend `AuthorizationResourceType` and/or `PermissionType`.
+
+3. **Expose them through the REST API**
+  - In `camunda/zeebe/gateway-protocol/src/main/proto/rest-api.yaml`, under
+    - `PermissionTypeEnum`
+    - `ResourceTypeEnum`
+  - Add your new entries to the `enum` lists so the OpenAPI spec (and generated clients) know about them.
 
 ## How to do inter-partition communication?
 
