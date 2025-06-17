@@ -57,7 +57,7 @@ public class ConsoleClientIT {
         {
           "members": [
             {
-              "originalUserId": "user123",
+              "userId": "user123",
               "roles": ["admin", "developer"],
               "email": "user@example.com",
               "name": "John Doe"
@@ -112,7 +112,7 @@ public class ConsoleClientIT {
     assertNotNull(members);
     assertEquals(1, members.members().size());
     assertEquals("John Doe", members.members().getFirst().name());
-    assertEquals("user123", members.members().getFirst().originalUserId());
+    assertEquals("user123", members.members().getFirst().userId());
     assertEquals("user@example.com", members.members().getFirst().email());
     assertEquals(2, members.members().getFirst().roles().size());
     assertEquals(Role.ADMIN, members.members().getFirst().roles().get(0));
