@@ -15,6 +15,8 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AdHocSubProcessBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultAdHocSubProcess;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
@@ -116,5 +118,44 @@ public class AdHocSubProcessJobWorkerTest {
         .hasJobKind(JobKind.AD_HOC_SUB_PROCESS)
         .hasElementId(AD_HOC_SUB_PROCESS_ELEMENT_ID)
         .hasType(JOB_TYPE);
+  }
+
+  @Test
+  public void shouldActivateElementsWithJobCompletion() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.task("A");
+              adHocSubProcess.task("B");
+              adHocSubProcess.task("C");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    final JobResultAdHocSubProcess adHocSubProcess = new JobResultAdHocSubProcess();
+    final var activateElements = adHocSubProcess.activateElements();
+    activateElements.add().setElementId("A");
+    activateElements.add().setElementId("C");
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(JOB_TYPE)
+        .withResult(new JobResult().setAdHocSubProcess(adHocSubProcess))
+        .complete();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit("C", ProcessInstanceIntent.ELEMENT_ACTIVATED))
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("C", ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 }
