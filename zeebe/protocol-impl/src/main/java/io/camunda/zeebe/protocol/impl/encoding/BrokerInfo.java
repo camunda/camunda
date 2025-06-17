@@ -130,10 +130,6 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   }
 
   public BrokerInfo setPartitionsCount(final int partitionsCount) {
-    if (partitionsCount <= 0) {
-      throw new IllegalArgumentException(
-          "partitionsCount must be positive, was " + partitionsCount);
-    }
     this.partitionsCount = partitionsCount;
     return this;
   }
@@ -146,9 +142,6 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   }
 
   public BrokerInfo setClusterSize(final int clusterSize) {
-    if (clusterSize <= 0) {
-      throw new IllegalArgumentException("clusterSize must be positive, was " + partitionsCount);
-    }
     this.clusterSize = clusterSize;
     return this;
   }
@@ -161,10 +154,6 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   }
 
   public BrokerInfo setReplicationFactor(final int replicationFactor) {
-    if (replicationFactor <= 0) {
-      throw new IllegalArgumentException(
-          "replicationFactor must be positive, was " + partitionsCount);
-    }
     this.replicationFactor = replicationFactor;
     return this;
   }
