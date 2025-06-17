@@ -15,14 +15,14 @@
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel"
     statementType="PREPARED">
-    INSERT INTO ${prefix}USER_TASK (USER_TASK_KEY, ELEMENT_ID, ELEMENT_NAME, PROCESS_DEFINITION_ID, CREATION_DATE,
+    INSERT INTO ${prefix}USER_TASK (USER_TASK_KEY, ELEMENT_ID, NAME, PROCESS_DEFINITION_ID, CREATION_DATE,
                            COMPLETION_DATE, ASSIGNEE, STATE,
                            FORM_KEY,
                            PROCESS_DEFINITION_KEY, PROCESS_INSTANCE_KEY,
                            ELEMENT_INSTANCE_KEY, TENANT_ID, DUE_DATE, FOLLOW_UP_DATE,
                            EXTERNAL_FORM_REFERENCE, PROCESS_DEFINITION_VERSION, CUSTOM_HEADERS,
                                     PRIORITY, PARTITION_ID, HISTORY_CLEANUP_DATE)
-    VALUES (#{userTaskKey}, #{elementId}, #{elementName}, #{processDefinitionId}, #{creationDate},
+    VALUES (#{userTaskKey}, #{elementId}, #{name}, #{processDefinitionId}, #{creationDate},
             #{completionDate},
             #{assignee}, #{state}, #{formKey},
             #{processDefinitionKey}, #{processInstanceKey}, #{elementInstanceKey}, #{tenantId},
@@ -58,7 +58,7 @@
       <idArg column="USER_TASK_KEY" javaType="java.lang.Long"/>
     </constructor>
     <result property="elementId" column="ELEMENT_ID" javaType="java.lang.String"/>
-    <result property="elementName" column="ELEMENT_NAME" javaType="java.lang.String"/>
+    <result property="name" column="NAME" javaType="java.lang.String"/>
     <result property="processDefinitionId" column="PROCESS_DEFINITION_ID"
       javaType="java.lang.String"/>
     <result property="creationDate" column="CREATION_DATE" javaType="java.time.OffsetDateTime"/>
@@ -104,7 +104,7 @@
     SELECT
     ut.USER_TASK_KEY,
     ut.ELEMENT_ID,
-    ut.ELEMENT_NAME,
+    ut.NAME,
     ut.PROCESS_DEFINITION_ID,
     ut.CREATION_DATE,
     ut.COMPLETION_DATE,
@@ -158,9 +158,9 @@
         separator=", ">#{value}
       </foreach>
     </if>
-    <if test="filter.elementNames != null and !filter.elementNames.isEmpty()">
-      AND ut.ELEMENT_NAME IN
-      <foreach close=")" collection="filter.elementNames" item="value" open="("
+    <if test="filter.names != null and !filter.names.isEmpty()">
+      AND ut.NAME IN
+      <foreach close=")" collection="filter.names" item="value" open="("
                separator=", ">#{value}
       </foreach>
     </if>
@@ -361,7 +361,7 @@
     statementType="PREPARED">
     UPDATE ${prefix}USER_TASK SET
     ELEMENT_ID = #{elementId},
-    ELEMENT_NAME = #{elementName},
+    NAME = #{name},
     PROCESS_DEFINITION_ID = #{processDefinitionId},
     PROCESS_DEFINITION_KEY = #{processDefinitionKey},
     PROCESS_DEFINITION_VERSION = #{processDefinitionVersion}

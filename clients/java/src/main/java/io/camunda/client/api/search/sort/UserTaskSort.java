@@ -29,5 +29,5 @@ public interface UserTaskSort extends SearchRequestSort<UserTaskSort> {
 
   UserTaskSort priority();
 
-  UserTaskSort elementName();
+  UserTaskSort name();
 }

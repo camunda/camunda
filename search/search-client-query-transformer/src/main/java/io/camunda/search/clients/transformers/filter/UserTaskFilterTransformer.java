@@ -51,7 +51,7 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
         .ifPresent(queries::add);
     ofNullable(getBpmnProcessIdQuery(filter.bpmnProcessIds())).ifPresent(queries::add);
     ofNullable(getElementIdQuery(filter.elementIds())).ifPresent(queries::add);
-    ofNullable(getElementNameQuery(filter.elementNames())).ifPresent(queries::add);
+    ofNullable(getNameQuery(filter.names())).ifPresent(queries::add);
     queries.addAll(getCandidateUsersQuery(filter.candidateUserOperations()));
     queries.addAll(getCandidateGroupsQuery(filter.candidateGroupOperations()));
     queries.addAll(getAssigneesQuery(filter.assigneeOperations()));
@@ -146,8 +146,8 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
     return stringTerms(FLOW_NODE_BPMN_ID, taskDefinitionId);
   }
 
-  private SearchQuery getElementNameQuery(final List<String> elementName) {
-    return stringTerms(FLOW_NODE_NAME, elementName);
+  private SearchQuery getNameQuery(final List<String> name) {
+    return stringTerms(FLOW_NODE_NAME, name);
   }
 
   private SearchQuery getProcessInstanceVariablesQuery(

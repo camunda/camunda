@@ -52,7 +52,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                    "startDate": "2023-05-17T00:00:00.000Z",
                    "endDate":"2023-05-23T00:00:00.000Z",
                    "elementId":"elementId",
-                   "elementName":"elementName",
+                   "name":"name",
                    "type":"SERVICE_TASK",
                    "state":"ACTIVE",
                    "hasIncident":false,
@@ -80,7 +80,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                       OffsetDateTime.parse("2023-05-17T00:00:00Z"),
                       OffsetDateTime.parse("2023-05-23T00:00:00Z"),
                       "elementId",
-                      "elementName",
+                      "name",
                       null,
                       FlowNodeType.SERVICE_TASK,
                       FlowNodeState.ACTIVE,
@@ -102,7 +102,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                    "startDate": "2023-05-17T10:10:10.000Z",
                    "endDate":"2023-05-23T10:10:10.000Z",
                    "elementId":"startEvent_1",
-                   "elementName":"elementName",
+                   "name":"name",
                    "type":"SERVICE_TASK",
                    "state":"ACTIVE",
                    "hasIncident":true,
@@ -138,9 +138,9 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
   void setupServices() {
     when(elementInstanceServices.withAuthentication(any(Authentication.class)))
         .thenReturn(elementInstanceServices);
-    when(processCache.getElementName(any())).thenReturn("elementName");
+    when(processCache.getElementName(any())).thenReturn("name");
     final var processCacheItem = mock(ProcessCacheItem.class);
-    when(processCacheItem.getElementName(any())).thenReturn("elementName");
+    when(processCacheItem.getElementName(any())).thenReturn("name");
     final Map<Long, ProcessCacheItem> processDefinitionMap = mock(HashMap.class);
     when(processDefinitionMap.getOrDefault(any(), any())).thenReturn(processCacheItem);
     when(processCache.getElementNames(any())).thenReturn(processDefinitionMap);
@@ -209,7 +209,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                 "state": "ACTIVE",
                 "type": "SERVICE_TASK",
                 "elementId": "StartEvent_1",
-                "elementName": "name",
+                "name": "name",
                 "hasIncident": true,
                 "incidentKey": "2251799813685320",
                 "tenantId": "default"

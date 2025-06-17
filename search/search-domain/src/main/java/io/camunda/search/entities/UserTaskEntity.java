@@ -16,7 +16,7 @@ import java.util.Map;
 public record UserTaskEntity(
     Long userTaskKey,
     String elementId,
-    String elementName,
+    String name,
     String processDefinitionId,
     OffsetDateTime creationDate,
     OffsetDateTime completionDate,

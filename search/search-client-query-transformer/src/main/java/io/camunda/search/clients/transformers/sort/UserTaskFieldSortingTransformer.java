@@ -24,7 +24,7 @@ public class UserTaskFieldSortingTransformer implements FieldSortingTransformer 
       case "priority" -> PRIORITY;
       case "dueDate" -> DUE_DATE;
       case "followUpDate" -> FOLLOW_UP_DATE;
-      case "elementName" -> FLOW_NODE_NAME;
+      case "name" -> FLOW_NODE_NAME;
       default -> throw new IllegalArgumentException("Unknown sortField: " + domainField);
     };
   }

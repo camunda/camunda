@@ -18,7 +18,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
 
   private Long userTaskKey;
   private String elementId;
-  private String elementName;
+  private String name;
   private String processDefinitionId;
   private OffsetDateTime creationDate;
   private OffsetDateTime completionDate;
@@ -48,7 +48,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
   public UserTaskDbModel(
       final Long userTaskKey,
       final String elementId,
-      final String elementName,
+      final String name,
       final String processDefinitionId,
       final OffsetDateTime creationDate,
       final OffsetDateTime completionDate,
@@ -69,7 +69,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
       final OffsetDateTime historyCleanupDate) {
     this.userTaskKey = userTaskKey;
     this.elementId = elementId;
-    this.elementName = elementName;
+    this.name = name;
     this.processDefinitionId = processDefinitionId;
     this.creationDate = creationDate;
     this.completionDate = completionDate;
@@ -115,12 +115,12 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
     this.elementId = elementId;
   }
 
-  public String elementName() {
-    return elementName;
+  public String name() {
+    return name;
   }
 
-  public void elementName(final String elementName) {
-    this.elementName = elementName;
+  public void name(final String name) {
+    this.name = name;
   }
 
   public String processDefinitionId() {
@@ -292,7 +292,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
     return new Builder()
         .userTaskKey(userTaskKey)
         .elementId(elementId)
-        .elementName(elementName)
+        .name(name)
         .processDefinitionId(processDefinitionId)
         .creationDate(creationDate)
         .completionDate(completionDate)
@@ -319,7 +319,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
 
     private Long userTaskKey;
     private String elementId;
-    private String elementName;
+    private String name;
     private String processDefinitionId;
     private OffsetDateTime creationDate;
     private OffsetDateTime completionDate;
@@ -360,8 +360,8 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
       return this;
     }
 
-    public Builder elementName(final String elementName) {
-      this.elementName = elementName;
+    public Builder name(final String name) {
+      this.name = name;
       return this;
     }
 
@@ -472,7 +472,7 @@ public class UserTaskDbModel implements Copyable<UserTaskDbModel> {
           new UserTaskDbModel(
               userTaskKey,
               elementId,
-              elementName,
+              name,
               processDefinitionId,
               creationDate,
               completionDate,

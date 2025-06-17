@@ -50,8 +50,8 @@ public record UserTaskSort(List<FieldSorting> orderings) implements SortOption {
       return this;
     }
 
-    public Builder elementName() {
-      currentOrdering = new FieldSorting("elementName", null);
+    public Builder name() {
+      currentOrdering = new FieldSorting("name", null);
       return this;
     }
 

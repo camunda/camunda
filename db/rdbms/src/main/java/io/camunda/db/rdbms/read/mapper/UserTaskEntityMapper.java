@@ -17,7 +17,7 @@ public class UserTaskEntityMapper {
     return new UserTaskEntity(
         dbModel.userTaskKey(),
         dbModel.elementId(),
-        dbModel.elementName(),
+        dbModel.name(),
         dbModel.processDefinitionId(),
         dbModel.creationDate(),
         dbModel.completionDate(),
