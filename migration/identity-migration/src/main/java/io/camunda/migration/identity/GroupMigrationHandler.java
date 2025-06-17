@@ -8,6 +8,8 @@
 package io.camunda.migration.identity;
 
 import io.camunda.migration.api.MigrationException;
+import io.camunda.migration.identity.console.ConsoleClient;
+import io.camunda.migration.identity.console.ConsoleClient.Member;
 import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.security.auth.Authentication;
@@ -16,16 +18,22 @@ import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class GroupMigrationHandler extends MigrationHandler<Group> {
 
+  private final ConsoleClient consoleClient;
   private final ManagementIdentityClient managementIdentityClient;
   private final GroupServices groupServices;
 
   public GroupMigrationHandler(
       final Authentication authentication,
+      final ConsoleClient consoleClient,
       final ManagementIdentityClient managementIdentityClient,
       final GroupServices groupServices) {
+    this.consoleClient = consoleClient;
     this.managementIdentityClient = managementIdentityClient;
     this.groupServices = groupServices.withAuthentication(authentication);
   }
@@ -37,13 +45,16 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
 
   @Override
   protected void process(final List<Group> batch) {
+    final Map<String, String> userIdToEmailMapping =
+        consoleClient.fetchMembers().members().stream()
+            .collect(Collectors.toMap(Member::userId, Member::email));
     batch.forEach(
         group -> {
           try {
             final var normalizedGroupId = normalizeGroupID(group);
             final var groupDTO = new GroupDTO(normalizedGroupId, group.name(), "");
             groupServices.createGroup(groupDTO).join();
-            assignUsersToGroup(group.id(), normalizedGroupId);
+            assignUsersToGroup(group.id(), normalizedGroupId, userIdToEmailMapping);
           } catch (final Exception e) {
             if (!isConflictError(e)) {
               throw new MigrationException("Failed to migrate group with ID: " + group.id(), e);
@@ -70,13 +81,24 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
     return normalizedId;
   }
 
-  private void assignUsersToGroup(final String sourceGroupId, final String targetGroupId) {
+  private void assignUsersToGroup(
+      final String sourceGroupId,
+      final String targetGroupId,
+      final Map<String, String> userIdToEmailMapping) {
     final var users = managementIdentityClient.fetchGroupUsers(sourceGroupId);
     users.forEach(
         user -> {
           try {
-            final var groupMember =
-                new GroupMemberDTO(targetGroupId, user.getEmail(), EntityType.USER);
+            final String userEmail =
+                Optional.ofNullable(user.getEmail())
+                    .orElseGet(() -> userIdToEmailMapping.get(user.getId()));
+            if (userEmail == null) {
+              logger.warn(
+                  "Could not resolve user email for userId: {}, will skip this member.",
+                  user.getId());
+              return;
+            }
+            final var groupMember = new GroupMemberDTO(targetGroupId, userEmail, EntityType.USER);
             groupServices.assignMember(groupMember).join();
           } catch (final Exception e) {
             if (!isConflictError(e)) {
