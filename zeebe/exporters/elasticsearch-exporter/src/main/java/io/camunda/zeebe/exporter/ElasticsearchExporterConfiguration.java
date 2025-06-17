@@ -219,6 +219,8 @@ public class ElasticsearchExporterConfiguration {
 
     public boolean asyncRequest = false;
 
+    public boolean usageMetrics = false;
+
     // index settings
     private Integer numberOfShards = null;
     private Integer numberOfReplicas = null;
