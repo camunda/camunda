@@ -5,10 +5,10 @@
 #
 # It is allowed to have merge commits in a pull request.
 # An example is a pull request that builds upon the work of another pull request.
+# type: CI Helper
+# owner: @camunda/monorepo-devops-team
 
 name: Reject Merge Commits
-
-# owner: @camunda/monorepo-devops-team
 
 on:
   pull_request: {}

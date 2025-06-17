@@ -1,3 +1,7 @@
+# description: Sends a daily report of Optimize tests to the #optimize-status slack channel
+# test location: /optimize
+# type: CI Helper
+# owner: @camunda/core-features
 name: Optimize health status report
 
 on:

@@ -1,5 +1,6 @@
-# This workflow either scans all distribute-able projects with snyk, or updates the relevant
-# projects on the Snyk servers
+# description: This workflow either scans all distribute-able projects with snyk, or updates the relevant projects on the Snyk servers
+# type: Project Management
+# owner @camunda/core-features
 name: Zeebe Snyk
 
 on:

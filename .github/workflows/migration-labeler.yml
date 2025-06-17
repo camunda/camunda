@@ -1,3 +1,4 @@
+# type: Project Management
 # owner: @vheinila
 name: Issue Migration Labeler
 
@@ -7,7 +8,7 @@ permissions:
 
 on:
   workflow_dispatch:
-    
+
 jobs:
   label_migrated_issues:
     runs-on: ubuntu-latest

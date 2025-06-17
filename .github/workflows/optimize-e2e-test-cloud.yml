@@ -1,8 +1,8 @@
-# NOTE:
-# This pipeline is currently not active. For more info, see:
-# https://github.com/camunda/camunda/issues/24886
-
-name: Optimize e2e cloud test
+# description: This test is disabled. See https://github.com/camunda/camunda/issues/24886 Otherwise, this is a Workflow for running end to end FE tests on Optimize in Cloud mode. Starts an instance of Optimize and uses that instance to run tests on
+# test location: /optimize/client/e2e/cloud-tests
+# type: CI
+# owner: @camunda/core-features
+name: Optimize E2E Cloud
 
 on:
   pull_request:

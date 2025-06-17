@@ -3,6 +3,7 @@
 # The SBOM provides a list of dependencies and helps track potential security risks.
 # The workflow runs on a schedule for testing purposes and can be manually triggered.
 # The generated SBOM is uploaded as an artifact for further analysis or distribution.
+# type: Release
 
 name: Generate and Attach SBOM
 

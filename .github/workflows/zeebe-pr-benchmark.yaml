@@ -1,3 +1,6 @@
+# description: Create a zeebe benchmark for an individual PR. When a PR is closed, the benchmark is cleaned up and removed
+# type: CI
+# owner @camunda/core-features
 name: Zeebe Pull Request Benchmark
 on:
   pull_request:

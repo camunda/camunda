@@ -1,3 +1,7 @@
+# description: This step for helm install deploys a camunda cluster in zeebe-io with additional tools for benchmarking. We use this worklow to start weekly medic benchmarks. The health of the cluster and results of the benchmarks are monitored by the zeebe team regularly. https://grafana.dev.zeebe.io/login
+# called by: zeebe-medic-benchmarks.yml, zeebe-pr-benchmark.yaml
+# type: CI
+# owner: @camunda/core-features
 name: Zeebe Benchmark
 on:
   workflow_dispatch:

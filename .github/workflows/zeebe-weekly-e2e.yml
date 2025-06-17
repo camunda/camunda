@@ -1,8 +1,7 @@
-# This workflow runs e2e tests weekly. It runs each test suite against the
-# development head (e.g. main).
-
-# As this is meant to be run via scheduling, the workflow itself only runs on the default branch
-# (e.g. main), so any changes you make will affect any other branches we test via this workflow.
+# description: This workflow runs e2e tests weekly. It runs each test suite against the development head (e.g. main).
+#  As this is meant to be run via scheduling, the workflow itself only runs on the default branch (e.g. main), so any changes you make will affect any other branches we test via this workflow.
+# type: CI
+# owner: @camunda/core-features
 name: Zeebe Weekly E2E tests
 
 on:

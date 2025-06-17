@@ -1,3 +1,6 @@
+# description: Run weekly benchmark test on a long running migration
+# type: CI
+# owner @camunda/core-features
 name: Zeebe Long Running Migrating Benchmark
 on:
   workflow_dispatch:

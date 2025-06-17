@@ -1,3 +1,7 @@
+# description: Runs regression tests on Identity. Tests are defined as .http files
+# test location: /http
+# type: CI
+# owner: @camunda/identity
 name: Identity API Regression Tests
 
 on:

@@ -1,7 +1,7 @@
+# type: Project Management
+# owner: @camunda/monorepo-devops-team
 ---
 name: "Pull Request Labeler"
-
-# owner: @camunda/monorepo-devops-team
 
 on:
   pull_request_target: {}

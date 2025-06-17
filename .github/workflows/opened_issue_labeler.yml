@@ -1,3 +1,5 @@
+# type: Project Management
+# owner:
 name: "Opened Issue Labeler"
 on:
   issues:

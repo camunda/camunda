@@ -1,3 +1,6 @@
+# description: Deploys new zeebe benchmarks weekly. Old benchmarks are removed. Multiple kinds of benchmarks are created - Data, Normal, Mixed, Latency
+# type: CI
+# owner @camunda/core-features
 name: Zeebe Weekly medic benchmark
 on:
   workflow_dispatch:

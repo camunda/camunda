@@ -1,6 +1,6 @@
-name: Update Identity Version
-
+# type: CI Helper - Manual
 # owner: @camunda/monorepo-devops-team
+name: Update Identity Version
 
 on:
   workflow_dispatch:

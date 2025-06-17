@@ -1,6 +1,7 @@
 # description: Workflow for Front-End end unit tests
 # test location: operate/client/src/App
-# owner: Core Features
+# type: CI
+# owner: @camunda/core-features
 ---
 name: "[Legacy] Operate [FE]"
 on:
