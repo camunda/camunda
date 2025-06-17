@@ -60,6 +60,10 @@ public final class DeployedProcess {
     return persistedProcess.getDeploymentKey();
   }
 
+  public PersistedProcess getPersistedProcess() {
+    return persistedProcess;
+  }
+
   @Override
   public String toString() {
     return "DeployedProcess{"

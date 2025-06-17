@@ -8,13 +8,17 @@
 package io.camunda.zeebe.engine.processing.scaling;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.deployment.StartEventSubscriptionManager;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.resource.StartEventSubscriptions;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoutingState;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
@@ -35,18 +39,29 @@ public class MarkPartitionBootstrappedProcessor
   private final TypedResponseWriter responseWriter;
   private final RoutingState routingState;
   private final CommandDistributionBehavior distributionBehavior;
+  private final ProcessState processState;
+  private final StartEventSubscriptions startEventSubscriptions;
 
   public MarkPartitionBootstrappedProcessor(
       final KeyGenerator keyGenerator,
       final Writers writers,
       final ProcessingState processingState,
-      final CommandDistributionBehavior distributionBehavior) {
+      final CommandDistributionBehavior distributionBehavior,
+      final BpmnBehaviors bpmnBehaviors) {
     this.keyGenerator = keyGenerator;
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     stateWriter = writers.state();
     routingState = processingState.getRoutingState();
     this.distributionBehavior = distributionBehavior;
+    processState = processingState.getProcessState();
+    final var startEventSubscriptionManager =
+        new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
+    startEventSubscriptions =
+        new StartEventSubscriptions(
+            bpmnBehaviors.expressionBehavior(),
+            bpmnBehaviors.catchEventBehavior(),
+            startEventSubscriptionManager);
   }
 
   @Override
@@ -63,6 +78,7 @@ public class MarkPartitionBootstrappedProcessor
     stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.PARTITION_BOOTSTRAPPED, scaleUp);
     responseWriter.writeEventOnCommand(
         scalingKey, ScaleIntent.PARTITION_BOOTSTRAPPED, scaleUp, command);
+
     // now the PARTITION_BOOTSTRAPPED event has been applied to the state, let's check if
     // it was the last partition missing.
     if (!wasAlreadyBootstrapped && areAllPartitionsBootstrapped()) {
@@ -77,10 +93,27 @@ public class MarkPartitionBootstrappedProcessor
     final var scalingKey = command.getKey();
     final var wasAlreadyBootstrapped = areAllPartitionsBootstrapped();
     stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.PARTITION_BOOTSTRAPPED, scaleUp);
+    // if the partition that has completed bootstrapping is the current one and the command was
+    // not already processed, resubscribe to all message start events and signals
+    if (scaleUp.getRedistributedPartitions().contains(command.getPartitionId())
+        && !routingState.currentPartitions().contains(command.getPartitionId())) {
+      subscribeToStartEventsAndSignals();
+    }
     if (!wasAlreadyBootstrapped && areAllPartitionsBootstrapped()) {
       stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.SCALED_UP, scaleUp);
     }
     distributionBehavior.acknowledgeCommand(command);
+  }
+
+  private void subscribeToStartEventsAndSignals() {
+    processState.forEachProcessWithLatestVersion(
+        persistedProcess -> {
+          final var deployed =
+              processState.getLatestProcessVersionByProcessId(
+                  persistedProcess.getBpmnProcessId(), persistedProcess.getTenantId());
+          startEventSubscriptions.resubscribeToStartEvents(deployed);
+          return true;
+        });
   }
 
   private Optional<Tuple<RejectionType, String>> validate(final TypedRecord<ScaleRecord> command) {

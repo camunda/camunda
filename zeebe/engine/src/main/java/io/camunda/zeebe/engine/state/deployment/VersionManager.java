@@ -155,5 +155,16 @@ public final class VersionManager {
     return getVersionInfo().findVersionBefore(version);
   }
 
+  public void forEachResource(final ResourceVisitor resourceVisitor) {
+    versionInfoColumnFamily.forEach(
+        versionInfo ->
+            resourceVisitor.visit(
+                idKey.getBuffer(), tenantAwareIdKey.tenantKey().toString(), versionInfo));
+  }
+
   private record TenantIdAndResourceId(String tenantId, String resourceId) {}
+
+  public interface ResourceVisitor {
+    boolean visit(DirectBuffer resourceId, String tenantId, VersionInfo versionInfo);
+  }
 }

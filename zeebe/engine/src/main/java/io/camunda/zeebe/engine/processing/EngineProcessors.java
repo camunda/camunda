@@ -291,7 +291,12 @@ public final class EngineProcessors {
         commandDistributionBehavior);
 
     ScalingProcessors.addScalingProcessors(
-        commandDistributionBehavior, typedRecordProcessors, writers, keyGenerator, processingState);
+        commandDistributionBehavior,
+        bpmnBehaviors,
+        typedRecordProcessors,
+        writers,
+        keyGenerator,
+        processingState);
 
     TenantProcessors.addTenantProcessors(
         typedRecordProcessors,

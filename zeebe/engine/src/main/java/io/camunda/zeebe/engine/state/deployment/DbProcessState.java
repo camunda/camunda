@@ -585,6 +585,21 @@ public final class DbProcessState implements MutableProcessState {
         });
   }
 
+  @Override
+  public void forEachProcessWithLatestVersion(final PersistedProcessVisitor visitor) {
+    versionManager.forEachResource(
+        (processId, tenantId, versionInfo) -> {
+          if (versionInfo.getLatestVersion() > 0) {
+            final var process =
+                getProcessByProcessIdAndVersion(
+                    processId, versionInfo.getLatestVersion().intValue(), tenantId);
+            return visitor.visit(process.getPersistedProcess());
+          } else {
+            return true;
+          }
+        });
+  }
+
   private DeployedProcess lookupProcessByIdAndPersistedVersion(
       final long latestVersion, final String tenantId) {
     tenantIdKey.wrapString(tenantId);
