@@ -8449,7 +8449,7 @@ components:
         filter:
           description: The job search filters.
           allOf:
-            - $ref: "#/components/schemas/JobFilter"
+            - $ref: "#/components/schemas/JobFilterRequest"
     JobSearchQuerySortRequest:
       type: object
       properties:
@@ -8481,7 +8481,7 @@ components:
           $ref: "#/components/schemas/SortOrderEnum"
       required:
           - field
-    JobFilter:
+    JobFilterRequest:
       description: Job search filter.
       type: object
       properties:
