@@ -16,6 +16,8 @@ import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
+import io.camunda.authentication.handler.OidcLogoutSuccessHandler;
+import io.camunda.authentication.handler.OidcSecurityContextLogoutHandler;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.AuthorizationServices;
@@ -44,6 +46,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -56,6 +59,7 @@ import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import org.springframework.web.client.RestTemplate;
 
 @Configuration
 @EnableWebSecurity
@@ -333,6 +337,23 @@ public class WebSecurityConfig {
       return decoder;
     }
 
+    @Bean
+    public OidcSecurityContextLogoutHandler logoutHandler(
+        final ClientRegistrationRepository clientRegistrationRepository,
+        final OAuth2AuthorizedClientService authorizedClientService,
+        final SecurityConfiguration securityConfiguration) {
+      return new OidcSecurityContextLogoutHandler(
+          clientRegistrationRepository,
+          authorizedClientService,
+          securityConfiguration,
+          new RestTemplate());
+    }
+
+    @Bean
+    public OidcLogoutSuccessHandler oidcLogoutSuccessHandler() {
+      return new OidcLogoutSuccessHandler();
+    }
+
     private static OAuth2TokenValidator<Jwt> getTokenValidator(
         final SecurityConfiguration configuration) {
       final var validAudiences = configuration.getAuthentication().getOidc().getAudiences();
@@ -395,7 +416,9 @@ public class WebSecurityConfig {
         final ClientRegistrationRepository clientRegistrationRepository,
         final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter,
         final JwtDecoder jwtDecoder,
-        final CamundaJwtAuthenticationConverter converter)
+        final CamundaJwtAuthenticationConverter converter,
+        final OidcSecurityContextLogoutHandler oidcSecurityContextLogoutHandler,
+        final OidcLogoutSuccessHandler oidcLogoutSuccessHandler)
         throws Exception {
       return httpSecurity
           .securityMatcher(WEBAPP_PATHS.toArray(new String[0]))
@@ -426,12 +449,14 @@ public class WebSecurityConfig {
                         redirectionEndpointConfig ->
                             redirectionEndpointConfig.baseUri("/sso-callback"));
               })
-          .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
+          .oidcLogout(
+              oidcLogoutConfigurer -> oidcLogoutConfigurer.backChannel(Customizer.withDefaults()))
           .logout(
               (logout) ->
                   logout
                       .logoutUrl(LOGOUT_URL)
-                      .logoutSuccessHandler(WebSecurityConfig::noContentSuccessHandler)
+                      .addLogoutHandler(oidcSecurityContextLogoutHandler)
+                      .logoutSuccessHandler(oidcLogoutSuccessHandler)
                       .deleteCookies(SESSION_COOKIE)
                       .invalidateHttpSession(true)
                       .clearAuthentication(true))
