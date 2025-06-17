@@ -18,7 +18,6 @@ import static io.camunda.it.migration.IdentityMigrationTestUtil.CAMUNDA_IDENTITY
 import static io.camunda.it.migration.IdentityMigrationTestUtil.IDENTITY_CLIENT;
 import static io.camunda.it.migration.IdentityMigrationTestUtil.IDENTITY_CLIENT_SECRET;
 import static io.camunda.it.migration.IdentityMigrationTestUtil.externalIdentityUrl;
-import static io.camunda.it.migration.IdentityMigrationTestUtil.externalKeycloakUrl;
 import static io.camunda.migration.identity.config.saas.StaticEntities.CLIENT_IDS;
 import static io.camunda.migration.identity.config.saas.StaticEntities.CLIENT_PERMISSIONS;
 import static io.camunda.migration.identity.config.saas.StaticEntities.DEVELOPER_ROLE_ID;
@@ -38,7 +37,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
@@ -76,7 +74,6 @@ import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.wiremock.integrations.testcontainers.WireMockContainer;
 
 @WireMockTest
 @ZeebeIntegration
@@ -92,6 +89,7 @@ public class SaaSIdentityMigrationIT {
 
   @Container
   private static final GenericContainer<?> POSTGRES = IdentityMigrationTestUtil.getPostgres();
+
   private static final GenericContainer<?> IDENTITY =
       IdentityMigrationTestUtil.getManagementIdentitySaaS(POSTGRES)
           .waitingFor(
@@ -102,6 +100,7 @@ public class SaaSIdentityMigrationIT {
                   .forStatusCode(200)
                   .withReadTimeout(Duration.ofSeconds(10))
                   .withStartupTimeout(Duration.ofMinutes(5)));
+
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
   private static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -118,19 +117,19 @@ public class SaaSIdentityMigrationIT {
   public void setup(final WireMockRuntimeInfo wmRuntimeInfo) throws Exception {
     // given
     org.testcontainers.Testcontainers.exposeHostPorts(wmRuntimeInfo.getHttpPort());
-    IDENTITY
-        .withEnv("IDENTITY_AUTH_PROVIDER_BACKEND_URL", "http://host.testcontainers.internal:%d/".formatted(wmRuntimeInfo.getHttpPort()));
-    IDENTITY
-        .withEnv("IDENTITY_AUTH_PROVIDER_ISSUER_URL", "http://host.testcontainers.internal:%d/".formatted(wmRuntimeInfo.getHttpPort()));
+    IDENTITY.withEnv(
+        "IDENTITY_AUTH_PROVIDER_BACKEND_URL",
+        "http://host.testcontainers.internal:%d/".formatted(wmRuntimeInfo.getHttpPort()));
+    IDENTITY.withEnv(
+        "IDENTITY_AUTH_PROVIDER_ISSUER_URL",
+        "http://host.testcontainers.internal:%d/".formatted(wmRuntimeInfo.getHttpPort()));
     IDENTITY.start();
 
     stubConsoleClient();
 
     final IdentityMigrationProperties migrationProperties = new IdentityMigrationProperties();
     migrationProperties.getManagementIdentity().setBaseUrl(externalIdentityUrl(IDENTITY));
-    migrationProperties
-        .getManagementIdentity()
-        .setIssuerBackendUrl(wmRuntimeInfo.getHttpBaseUrl());
+    migrationProperties.getManagementIdentity().setIssuerBackendUrl(wmRuntimeInfo.getHttpBaseUrl());
     migrationProperties.getManagementIdentity().setIssuerType("AUTH0");
     migrationProperties.getManagementIdentity().setClientId(IDENTITY_CLIENT);
     migrationProperties.getManagementIdentity().setClientSecret(IDENTITY_CLIENT_SECRET);
@@ -499,16 +498,14 @@ public class SaaSIdentityMigrationIT {
   }
 
   private void stubConsoleClient() {
-    final String token = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Ik5FSTFSa1JGUkVaRVJUQTFSalU0T1VJNE5EQXdOMFF5TUVZek1ERkdRVGcxUmpsRE1ERkdOQSJ9.eyJpc3MiOiJodHRwczovL3dlYmxvZ2luLmNsb3VkLmRldi51bHRyYXdvbWJhdC5jb20vIiwic3ViIjoiRVk1djU1VFlJc3B5UTZsTHhRTklMdUlMN1dCcDFmaWxAY2xpZW50cyIsImF1ZCI6ImlkZW50aXR5IiwiaWF0IjoxNzUwMTQ2MjIyLCJleHAiOjE3NTAyMzI2MjIsInNjb3BlIjoicmVhZCB3cml0ZSIsImd0eSI6ImNsaWVudC1jcmVkZW50aWFscyIsImF6cCI6IkVZNXY1NVRZSXNweVE2bEx4UU5JTHVJTDdXQnAxZmlsIiwicGVybWlzc2lvbnMiOlsicmVhZCIsIndyaXRlIl19.kePACag2xHIHau_oVxjF53KgY-lXdaYGJ3t9DfD3ycpj1mvTE57qlmBqPrgaJLt8HBuqMaxHpD8hkizCUF6l3feLtsXLPKzp56DlxtlxcCq4LDfzAK9rhB6YYeO6DwORKvU6VG5pAgAgffnlLoF7mLs2Rk3QGV3sG_srw5jTlBSqAQqpMKTuLsyqojD8GzpRzUpLRHZVMa7EAqo4bQadnymyibJAIEaHLzXn0K494bRQZG0ou43vnM_unEOAZWGyPMjW4vmfCc_la2DQ2wOfvdsgOJ2RhuOcLVTDlc3qvwxpS6-RWFFLj-WCUCtI1_7kyklJnjyuH8bLUB-tUOCFaA";
+    final String token = loadFixture("jwt-identity-client.txt");
 
     // IDENTITY
     stubFor(
-        get("/.well-known/jwks.json").willReturn(
-            ok()
-                .withHeader("Content-Type", "application/json")
-                .withBody(loadFixture("jwks.json"))
-        )
-    );
+        get("/.well-known/jwks.json")
+            .willReturn(
+                ok().withHeader("Content-Type", "application/json")
+                    .withBody(loadFixture("jwks.json"))));
 
     stubFor(
         post(urlEqualTo("/oauth/token"))
@@ -556,8 +553,10 @@ public class SaaSIdentityMigrationIT {
   }
 
   protected static String loadFixture(final String filename) {
-      final InputStream inputStream =
-          SaaSIdentityMigrationIT.class.getClassLoader().getResourceAsStream("identity-migration/" + filename);
+    final InputStream inputStream =
+        SaaSIdentityMigrationIT.class
+            .getClassLoader()
+            .getResourceAsStream("identity-migration/" + filename);
     return new BufferedReader(new InputStreamReader(inputStream))
         .lines()
         .collect(Collectors.joining("\n"));
