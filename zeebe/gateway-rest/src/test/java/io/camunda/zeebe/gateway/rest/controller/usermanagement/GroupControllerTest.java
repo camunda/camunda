@@ -14,6 +14,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.Authentication;
+import io.camunda.security.configuration.AuthenticationConfiguration;
+import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
@@ -51,6 +54,26 @@ public class GroupControllerTest {
   @TestPropertySource(properties = "camunda.security.authentication.oidc.groupsClaim=g1")
   public class InternalGroupsDisabledTest extends RestControllerTest {
 
+    public static final String FORBIDDEN_MESSAGE =
+        """
+        {
+          "type": "about:blank",
+          "status": 403,
+          "title": "Access issue",
+          "detail": "Due to security configuration, groups's endpoints are not accessible",
+          "instance": "%s"
+        }""";
+    @MockBean private SecurityConfiguration securityConfiguration;
+    @MockBean private AuthenticationConfiguration authenticationConfiguration;
+    @MockBean private OidcAuthenticationConfiguration oidcConfiguration;
+
+    @BeforeEach
+    public void setup() {
+      when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfiguration);
+      when(authenticationConfiguration.getOidc()).thenReturn(oidcConfiguration);
+      when(oidcConfiguration.getGroupsClaim()).thenReturn("g1");
+    }
+
     @Test
     void shouldReturnErrorOnCreate() {
       // given
@@ -67,7 +90,9 @@ public class GroupControllerTest {
               new GroupCreateRequest().name(groupName).groupId(groupId).description(description))
           .exchange()
           .expectStatus()
-          .isNotFound();
+          .isForbidden()
+          .expectBody()
+          .json(FORBIDDEN_MESSAGE.formatted(GROUP_BASE_URL));
     }
 
     @Test
@@ -87,7 +112,9 @@ public class GroupControllerTest {
           .bodyValue(new GroupUpdateRequest().name(groupName).description(description))
           .exchange()
           .expectStatus()
-          .isNotFound();
+          .isForbidden()
+          .expectBody()
+          .json(FORBIDDEN_MESSAGE.formatted("%s/%s".formatted(GROUP_BASE_URL, groupId)));
     }
 
     @Test
@@ -102,7 +129,9 @@ public class GroupControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .exchange()
           .expectStatus()
-          .isNotFound();
+          .isForbidden()
+          .expectBody()
+          .json(FORBIDDEN_MESSAGE.formatted("%s/%s".formatted(GROUP_BASE_URL, groupId)));
     }
 
     @Test
@@ -118,7 +147,11 @@ public class GroupControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .exchange()
           .expectStatus()
-          .isNotFound();
+          .isForbidden()
+          .expectBody()
+          .json(
+              FORBIDDEN_MESSAGE.formatted(
+                  "%s/%s/users/%s".formatted(GROUP_BASE_URL, groupId, username)));
     }
 
     @Test
@@ -134,7 +167,11 @@ public class GroupControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .exchange()
           .expectStatus()
-          .isNotFound();
+          .isForbidden()
+          .expectBody()
+          .json(
+              FORBIDDEN_MESSAGE.formatted(
+                  "%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId)));
     }
 
     @Test
@@ -150,7 +187,11 @@ public class GroupControllerTest {
           .accept(MediaType.APPLICATION_JSON)
           .exchange()
           .expectStatus()
-          .isNotFound();
+          .isForbidden()
+          .expectBody()
+          .json(
+              FORBIDDEN_MESSAGE.formatted(
+                  "%s/%s/users/%s".formatted(GROUP_BASE_URL, groupId, username)));
     }
 
     @Test
@@ -168,7 +209,11 @@ public class GroupControllerTest {
           .accept(MediaType.APPLICATION_PROBLEM_JSON)
           .exchange()
           .expectStatus()
-          .isNotFound();
+          .isForbidden()
+          .expectBody()
+          .json(
+              FORBIDDEN_MESSAGE.formatted(
+                  "%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId)));
     }
   }
 
