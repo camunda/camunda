@@ -29,7 +29,8 @@ public class EventFromProcessInstanceHandler
           ProcessInstanceIntent.ELEMENT_ACTIVATED,
           ProcessInstanceIntent.ELEMENT_COMPLETING,
           ProcessInstanceIntent.ELEMENT_COMPLETED,
-          ProcessInstanceIntent.ELEMENT_TERMINATED);
+          ProcessInstanceIntent.ELEMENT_TERMINATED,
+          ProcessInstanceIntent.ELEMENT_SUSPENDED);
 
   public EventFromProcessInstanceHandler(final String indexName) {
     super(indexName);
