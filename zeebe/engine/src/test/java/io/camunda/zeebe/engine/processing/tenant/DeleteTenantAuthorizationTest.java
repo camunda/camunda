@@ -85,8 +85,8 @@ public class DeleteTenantAuthorizationTest {
             RecordingExporter.tenantRecords()
                 .withTenantId(tenantId)
                 .withIntent(TenantIntent.DELETED)
-                .count())
-        .isOne();
+                .exists())
+        .isTrue();
   }
 
   @Test

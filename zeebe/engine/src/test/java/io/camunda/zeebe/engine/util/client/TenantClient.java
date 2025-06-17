@@ -336,7 +336,6 @@ public class TenantClient {
     private final CommandWriter writer;
     private final TenantRecord tenantRecord;
     private Function<Long, Record<TenantRecordValue>> expectation = SUCCESS_SUPPLIER;
-    private final boolean expectRejection = false;
 
     public TenantDeleteClient(final CommandWriter writer, final String tenantId) {
       this.writer = writer;
