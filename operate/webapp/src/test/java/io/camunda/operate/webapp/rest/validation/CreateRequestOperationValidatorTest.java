@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -79,26 +80,18 @@ public class CreateRequestOperationValidatorTest {
         .hasMessage("ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
   }
 
-  @Test
-  public void testValidateUpdateVariable() {
-    final CreateOperationRequestDto operationRequest =
-        new CreateOperationRequestDto(UPDATE_VARIABLE);
+  @ParameterizedTest(name = "should pass for {0} operation with valid scopeId, name, and value")
+  @EnumSource(
+      value = OperationType.class,
+      names = {"ADD_VARIABLE", "UPDATE_VARIABLE"})
+  void shouldPassValidationForValidVariableOperation(final OperationType operationType) {
+    // given
+    final var request = new CreateOperationRequestDto(operationType);
+    request.setVariableScopeId("abc");
+    request.setVariableName("var");
+    request.setVariableValue("val");
 
-    operationRequest.setVariableScopeId("abc");
-    operationRequest.setVariableName("var");
-    operationRequest.setVariableValue("val");
-
-    assertDoesNotThrow(() -> underTest.validate(operationRequest, "123"));
-  }
-
-  @Test
-  public void testValidateAddVariable() {
-    final CreateOperationRequestDto operationRequest = new CreateOperationRequestDto(ADD_VARIABLE);
-
-    operationRequest.setVariableScopeId("abc");
-    operationRequest.setVariableName("var");
-    operationRequest.setVariableValue("val");
-
-    assertDoesNotThrow(() -> underTest.validate(operationRequest, "123"));
+    // when - then
+    assertDoesNotThrow(() -> underTest.validate(request, "123"));
   }
 }
