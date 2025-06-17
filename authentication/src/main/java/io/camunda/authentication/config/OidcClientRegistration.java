@@ -40,6 +40,9 @@ public final class OidcClientRegistration {
     if (configuration.getAuthorizationUri() != null) {
       builder.authorizationUri(configuration.getAuthorizationUri());
     }
+    if (configuration.getTokenUri() != null) {
+      builder.tokenUri(configuration.getTokenUri());
+    }
     if (configuration.getJwkSetUri() != null) {
       builder.jwkSetUri(configuration.getJwkSetUri());
     }

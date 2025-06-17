@@ -21,6 +21,7 @@ public class OidcAuthenticationConfiguration {
   private List<String> scope = Arrays.asList("openid", "profile");
   private String jwkSetUri;
   private String authorizationUri;
+  private String tokenUri;
   private Set<String> audiences;
   private String usernameClaim = "sub";
   private String clientIdClaim;
@@ -89,6 +90,14 @@ public class OidcAuthenticationConfiguration {
 
   public void setAuthorizationUri(final String authorizationUri) {
     this.authorizationUri = authorizationUri;
+  }
+
+  public String getTokenUri() {
+    return tokenUri;
+  }
+
+  public void setTokenUri(String tokenUri) {
+    this.tokenUri = tokenUri;
   }
 
   public Set<String> getAudiences() {
