@@ -26,12 +26,10 @@ import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.PR
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.PROCESS_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.STATE;
 import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.TREE_PATH;
-import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import java.util.ArrayList;
 
 public class IncidentFilterTransformer extends IndexFilterTransformer<IncidentFilter> {
 
@@ -41,31 +39,20 @@ public class IncidentFilterTransformer extends IndexFilterTransformer<IncidentFi
 
   @Override
   public SearchQuery toSearchQuery(final IncidentFilter filter) {
-    final var queries = new ArrayList<SearchQuery>();
-    ofNullable(longOperations(KEY, filter.incidentKeyOperations())).ifPresent(queries::addAll);
-    ofNullable(longOperations(PROCESS_DEFINITION_KEY, filter.processDefinitionKeyOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(stringOperations(BPMN_PROCESS_ID, filter.processDefinitionIdOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(longOperations(PROCESS_INSTANCE_KEY, filter.processInstanceKeyOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(stringOperations(ERROR_TYPE, filter.errorTypeOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(stringOperations(ERROR_MSG, filter.errorMessageOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(stringOperations(FLOW_NODE_ID, filter.flowNodeIdOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(longOperations(FLOW_NODE_INSTANCE_KEY, filter.flowNodeInstanceKeyOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(dateTimeOperations(CREATION_TIME, filter.creationTimeOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(stringOperations(STATE, filter.stateOperations())).ifPresent(queries::addAll);
-    ofNullable(stringOperations(TREE_PATH, filter.treePathOperations())).ifPresent(queries::addAll);
-    ofNullable(longOperations(JOB_KEY, filter.jobKeyOperations())).ifPresent(queries::addAll);
-    ofNullable(stringOperations(TENANT_ID, filter.tenantIdOperations())).ifPresent(queries::addAll);
-    ofNullable(intOperations(ERROR_MSG_HASH, filter.errorMessageHashOperations()))
-        .ifPresent(queries::addAll);
-
-    return and(queries);
+    return and(
+        longOperations(KEY, filter.incidentKeyOperations()),
+        longOperations(PROCESS_DEFINITION_KEY, filter.processDefinitionKeyOperations()),
+        stringOperations(BPMN_PROCESS_ID, filter.processDefinitionIdOperations()),
+        longOperations(PROCESS_INSTANCE_KEY, filter.processInstanceKeyOperations()),
+        stringOperations(ERROR_TYPE, filter.errorTypeOperations()),
+        stringOperations(ERROR_MSG, filter.errorMessageOperations()),
+        stringOperations(FLOW_NODE_ID, filter.flowNodeIdOperations()),
+        longOperations(FLOW_NODE_INSTANCE_KEY, filter.flowNodeInstanceKeyOperations()),
+        dateTimeOperations(CREATION_TIME, filter.creationTimeOperations()),
+        stringOperations(STATE, filter.stateOperations()),
+        stringOperations(TREE_PATH, filter.treePathOperations()),
+        longOperations(JOB_KEY, filter.jobKeyOperations()),
+        stringOperations(TENANT_ID, filter.tenantIdOperations()),
+        intOperations(ERROR_MSG_HASH, filter.errorMessageHashOperations()));
   }
 }

@@ -14,9 +14,7 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.BatchOperationItemFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public final class BatchOperationItemFilterTransformer
     extends IndexFilterTransformer<BatchOperationItemFilter> {
@@ -27,18 +25,11 @@ public final class BatchOperationItemFilterTransformer
 
   @Override
   public SearchQuery toSearchQuery(final BatchOperationItemFilter filter) {
-    final var queries = new ArrayList<SearchQuery>();
-
-    Optional.ofNullable(stringOperations(BATCH_OPERATION_ID, filter.batchOperationIdOperations()))
-        .ifPresent(queries::addAll);
-    Optional.ofNullable(stringOperations(STATE, mapStateOperations(filter.stateOperations())))
-        .ifPresent(queries::addAll);
-    Optional.ofNullable(longOperations(ITEM_KEY, filter.itemKeyOperations()))
-        .ifPresent(queries::addAll);
-    Optional.ofNullable(longOperations(PROCESS_INSTANCE_KEY, filter.processInstanceKeyOperations()))
-        .ifPresent(queries::addAll);
-
-    return and(queries);
+    return and(
+        stringOperations(BATCH_OPERATION_ID, filter.batchOperationIdOperations()),
+        stringOperations(STATE, mapStateOperations(filter.stateOperations())),
+        longOperations(ITEM_KEY, filter.itemKeyOperations()),
+        longOperations(PROCESS_INSTANCE_KEY, filter.processInstanceKeyOperations()));
   }
 
   private List<Operation<String>> mapStateOperations(

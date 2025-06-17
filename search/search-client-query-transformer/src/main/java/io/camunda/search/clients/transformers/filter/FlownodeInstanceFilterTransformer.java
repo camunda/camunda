@@ -40,7 +40,7 @@ public class FlownodeInstanceFilterTransformer
         .ifPresent(queries::add);
     ofNullable(stringTerms(BPMN_PROCESS_ID, filter.processDefinitionIds())).ifPresent(queries::add);
     ofNullable(getTypeQuery(filter.types())).ifPresent(queries::add);
-    ofNullable(stringOperations(STATE, filter.stateOperations())).ifPresent(queries::addAll);
+    queries.addAll(stringOperations(STATE, filter.stateOperations()));
     ofNullable(stringTerms(FLOW_NODE_ID, filter.flowNodeIds())).ifPresent(queries::add);
     ofNullable(stringTerms(FLOW_NODE_NAME, filter.flowNodeNames())).ifPresent(queries::add);
     ofNullable(longTerms(INCIDENT_KEY, filter.incidentKeys())).ifPresent(queries::add);

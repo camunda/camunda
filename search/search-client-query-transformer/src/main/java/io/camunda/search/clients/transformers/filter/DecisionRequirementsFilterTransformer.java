@@ -21,7 +21,6 @@ import static io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIn
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.DecisionRequirementsFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import java.util.List;
 
 public final class DecisionRequirementsFilterTransformer
     extends IndexFilterTransformer<DecisionRequirementsFilter> {
@@ -32,44 +31,12 @@ public final class DecisionRequirementsFilterTransformer
 
   @Override
   public SearchQuery toSearchQuery(final DecisionRequirementsFilter filter) {
-    final var keysQuery = getKeysQuery(filter.decisionRequirementsKeys());
-    final var namesQuery = getNamesQuery(filter.names());
-    final var versionsQuery = getVersionsQuery(filter.versions());
-    final var decisionRequirementsIdsQuery =
-        getDecisionRequirementsIdsQuery(filter.decisionRequirementsIds());
-    final var tenantIdsQuery = getTenantIdsQuery(filter.tenantIds());
-    final var resourceNamesQuery = getResourceNamesQuery(filter.resourceNames());
-
     return and(
-        keysQuery,
-        namesQuery,
-        versionsQuery,
-        decisionRequirementsIdsQuery,
-        tenantIdsQuery,
-        resourceNamesQuery);
-  }
-
-  private SearchQuery getKeysQuery(final List<Long> keys) {
-    return longTerms(KEY, keys);
-  }
-
-  private SearchQuery getNamesQuery(final List<String> names) {
-    return stringTerms(NAME, names);
-  }
-
-  private SearchQuery getVersionsQuery(final List<Integer> versions) {
-    return intTerms(VERSION, versions);
-  }
-
-  private SearchQuery getDecisionRequirementsIdsQuery(final List<String> decisionRequirementsIds) {
-    return stringTerms(DECISION_REQUIREMENTS_ID, decisionRequirementsIds);
-  }
-
-  private SearchQuery getTenantIdsQuery(final List<String> tenantIds) {
-    return stringTerms(TENANT_ID, tenantIds);
-  }
-
-  private SearchQuery getResourceNamesQuery(final List<String> resourceNames) {
-    return stringTerms(RESOURCE_NAME, resourceNames);
+        longTerms(KEY, filter.decisionRequirementsKeys()),
+        stringTerms(NAME, filter.names()),
+        intTerms(VERSION, filter.versions()),
+        stringTerms(DECISION_REQUIREMENTS_ID, filter.decisionRequirementsIds()),
+        stringTerms(TENANT_ID, filter.tenantIds()),
+        stringTerms(RESOURCE_NAME, filter.resourceNames()));
   }
 }

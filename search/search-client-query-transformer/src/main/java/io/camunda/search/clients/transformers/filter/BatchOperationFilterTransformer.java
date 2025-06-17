@@ -9,12 +9,10 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.*;
 import static io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate.*;
-import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.BatchOperationFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import java.util.ArrayList;
 
 public final class BatchOperationFilterTransformer
     extends IndexFilterTransformer<BatchOperationFilter> {
@@ -25,13 +23,9 @@ public final class BatchOperationFilterTransformer
 
   @Override
   public SearchQuery toSearchQuery(final BatchOperationFilter filter) {
-    final var queries = new ArrayList<SearchQuery>();
-
-    ofNullable(stringOperations(ID, filter.batchOperationIdOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(stringOperations(STATE, filter.stateOperations())).ifPresent(queries::addAll);
-    ofNullable(stringOperations(TYPE, filter.operationTypeOperations())).ifPresent(queries::addAll);
-
-    return and(queries);
+    return and(
+        stringOperations(ID, filter.batchOperationIdOperations()),
+        stringOperations(STATE, filter.stateOperations()),
+        stringOperations(TYPE, filter.operationTypeOperations()));
   }
 }

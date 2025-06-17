@@ -39,12 +39,11 @@ public class VariableFilterTransformer extends IndexFilterTransformer<VariableFi
   @Override
   public SearchQuery toSearchQuery(final VariableFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
-    ofNullable(stringOperations(NAME, filter.nameOperations())).ifPresent(queries::addAll);
-    ofNullable(getVariablesQuery(filter.valueOperations())).ifPresent(queries::addAll);
-    ofNullable(getScopeKeyQuery(filter.scopeKeyOperations())).ifPresent(queries::addAll);
-    ofNullable(getProcessInstanceKeyQuery(filter.processInstanceKeyOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(getVariableKeyQuery(filter.variableKeyOperations())).ifPresent(queries::addAll);
+    queries.addAll(stringOperations(NAME, filter.nameOperations()));
+    queries.addAll(getVariablesQuery(filter.valueOperations()));
+    queries.addAll(getScopeKeyQuery(filter.scopeKeyOperations()));
+    queries.addAll(getProcessInstanceKeyQuery(filter.processInstanceKeyOperations()));
+    queries.addAll(getVariableKeyQuery(filter.variableKeyOperations()));
     ofNullable(getTenantIdQuery(filter.tenantIds())).ifPresent(queries::add);
     ofNullable(getIsTruncatedQuery(filter.isTruncated())).ifPresent(queries::add);
     return and(queries);
