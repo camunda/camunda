@@ -44,6 +44,11 @@ public class AdminUserCheckFilter extends OncePerRequestFilter {
       final HttpServletResponse response,
       final FilterChain filterChain)
       throws ServletException, IOException {
+    if (!securityConfig.isApiProtected()) {
+      filterChain.doFilter(request, response);
+      return;
+    }
+
     final var hasConfiguredAdminUser =
         !securityConfig
             .getInitialization()

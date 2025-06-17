@@ -37,6 +37,7 @@ class AdminUserCheckFilterTest {
   void shouldRedirectIfNoAdminUserExistsOrIsConfigured() throws ServletException, IOException {
     // given
     final var securityConfig = new SecurityConfiguration();
+    securityConfig.getAuthentication().setUnprotectedApi(false);
     when(roleServices.searchMembers(any())).thenReturn(SearchQueryResult.empty());
     when(request.getContextPath()).thenReturn("localhost:8080");
     final AdminUserCheckFilter adminUserCheckFilter =
@@ -53,6 +54,7 @@ class AdminUserCheckFilterTest {
   void shouldNotRedirectIfAdminUserIsConfigured() throws ServletException, IOException {
     // given
     final var securityConfig = new SecurityConfiguration();
+    securityConfig.getAuthentication().setUnprotectedApi(false);
     securityConfig
         .getInitialization()
         .getDefaultRoles()
@@ -71,8 +73,24 @@ class AdminUserCheckFilterTest {
   void shouldNotRedirectIfAdminUserExists() throws ServletException, IOException {
     // given
     final var securityConfig = new SecurityConfiguration();
+    securityConfig.getAuthentication().setUnprotectedApi(false);
     when(roleServices.searchMembers(any()))
         .thenReturn(new SearchQueryResult.Builder<RoleMemberEntity>().total(1).build());
+    final AdminUserCheckFilter adminUserCheckFilter =
+        new AdminUserCheckFilter(securityConfig, roleServices);
+
+    // when
+    adminUserCheckFilter.doFilterInternal(request, response, filterChain);
+
+    // then
+    verify(filterChain).doFilter(request, response);
+  }
+
+  @Test
+  void shouldNotRedirectIfApiIsNotProtected() throws ServletException, IOException {
+    // given
+    final var securityConfig = new SecurityConfiguration();
+    securityConfig.getAuthentication().setUnprotectedApi(true);
     final AdminUserCheckFilter adminUserCheckFilter =
         new AdminUserCheckFilter(securityConfig, roleServices);
 
