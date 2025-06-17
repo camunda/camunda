@@ -93,9 +93,10 @@ public class MarkPartitionBootstrappedProcessor
     final var scalingKey = command.getKey();
     final var wasAlreadyBootstrapped = areAllPartitionsBootstrapped();
     stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.PARTITION_BOOTSTRAPPED, scaleUp);
-    // if the partition that has completed bootstrapping is the current one, resubscribe to all
-    // message start events and signals
-    if (scaleUp.getRedistributedPartitions().contains(command.getPartitionId())) {
+    // if the partition that has completed bootstrapping is the current one and the command was
+    // not already processed, resubscribe to all message start events and signals
+    if (scaleUp.getRedistributedPartitions().contains(command.getPartitionId())
+        && !routingState.currentPartitions().contains(command.getPartitionId())) {
       subscribeToStartEventsAndSignals();
     }
     if (!wasAlreadyBootstrapped && areAllPartitionsBootstrapped()) {
