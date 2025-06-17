@@ -7,9 +7,10 @@
  */
 package io.camunda.operate.webapp.rest.validation;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static io.camunda.webapps.schema.entities.operation.OperationType.ADD_VARIABLE;
+import static io.camunda.webapps.schema.entities.operation.OperationType.UPDATE_VARIABLE;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.webapp.reader.OperationReader;
@@ -17,8 +18,12 @@ import io.camunda.operate.webapp.reader.VariableReader;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import org.junit.jupiter.api.BeforeEach;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -36,88 +41,48 @@ public class CreateRequestOperationValidatorTest {
   }
 
   @Test
-  public void testValidateWithNullOperationType() {
-    final CreateOperationRequestDto operationRequest = new CreateOperationRequestDto(null);
+  public void shouldFailValidationWhenOperationTypeIsNull() {
+    final var request = new CreateOperationRequestDto(null);
 
-    final InvalidRequestException exception =
-        assertThrows(
-            InvalidRequestException.class, () -> underTest.validate(operationRequest, "123"));
-
-    assertThat(exception.getMessage()).isEqualTo("Operation type must be defined.");
+    // when - then
+    assertThatThrownBy(() -> underTest.validate(request, "123"))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage("Operation type must be defined.");
   }
 
-  @Test
-  public void testValidateUpdateVariableWithNullScopeId() {
-    final CreateOperationRequestDto operationRequest =
-        new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
-
-    operationRequest.setVariableScopeId(null);
-    operationRequest.setVariableName("var");
-    operationRequest.setVariableValue("val");
-
-    final InvalidRequestException exception =
-        assertThrows(
-            InvalidRequestException.class, () -> underTest.validate(operationRequest, "123"));
-
-    assertThat(exception.getMessage())
-        .isEqualTo("ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
+  private static Stream<Arguments> invalidAddOrUpdateVariableOperation() {
+    return Stream.of(
+        Arguments.of(UPDATE_VARIABLE, null, "name", "val"),
+        Arguments.of(UPDATE_VARIABLE, "scope", null, "val"),
+        // var name is empty
+        Arguments.of(UPDATE_VARIABLE, "scope", "", "val"),
+        Arguments.of(UPDATE_VARIABLE, "scope", "name", null),
+        Arguments.of(ADD_VARIABLE, null, "name", "val"),
+        Arguments.of(ADD_VARIABLE, "scope", null, "val"),
+        // var name is empty
+        Arguments.of(ADD_VARIABLE, "scope", "", "val"),
+        Arguments.of(ADD_VARIABLE, "scope", "name", null));
   }
 
-  @Test
-  public void testValidateUpdateVariableWithNullVariableName() {
-    final CreateOperationRequestDto operationRequest =
-        new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
+  @ParameterizedTest(name = "should fail for {0} with scopeId=''{1}'', name=''{2}'', value=''{3}''")
+  @MethodSource("invalidAddOrUpdateVariableOperation")
+  void shouldFailValidationWhenRequiredFieldsForVariableOperationAreMissing(
+      final OperationType type, final String scopeId, final String name, final String value) {
+    final var request = new CreateOperationRequestDto(type);
+    request.setVariableScopeId(scopeId);
+    request.setVariableName(name);
+    request.setVariableValue(value);
 
-    operationRequest.setVariableScopeId("abc");
-    operationRequest.setVariableName(null);
-    operationRequest.setVariableValue("val");
-
-    final InvalidRequestException exception =
-        assertThrows(
-            InvalidRequestException.class, () -> underTest.validate(operationRequest, "123"));
-
-    assertThat(exception.getMessage())
-        .isEqualTo("ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
-  }
-
-  @Test
-  public void testValidateUpdateVariableWithEmptyVariableName() {
-    final CreateOperationRequestDto operationRequest =
-        new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
-
-    operationRequest.setVariableScopeId("abc");
-    operationRequest.setVariableName("");
-    operationRequest.setVariableValue("val");
-
-    final InvalidRequestException exception =
-        assertThrows(
-            InvalidRequestException.class, () -> underTest.validate(operationRequest, "123"));
-
-    assertThat(exception.getMessage())
-        .isEqualTo("ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
-  }
-
-  @Test
-  public void testValidateUpdateVariableWithNullVariableValue() {
-    final CreateOperationRequestDto operationRequest =
-        new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
-
-    operationRequest.setVariableScopeId("abc");
-    operationRequest.setVariableName("var");
-    operationRequest.setVariableValue(null);
-
-    final InvalidRequestException exception =
-        assertThrows(
-            InvalidRequestException.class, () -> underTest.validate(operationRequest, "123"));
-
-    assertThat(exception.getMessage())
-        .isEqualTo("ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
+    // when - then
+    assertThatThrownBy(() -> underTest.validate(request, "123"))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage("ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
   }
 
   @Test
   public void testValidateUpdateVariable() {
     final CreateOperationRequestDto operationRequest =
-        new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
+        new CreateOperationRequestDto(UPDATE_VARIABLE);
 
     operationRequest.setVariableScopeId("abc");
     operationRequest.setVariableName("var");
@@ -127,77 +92,8 @@ public class CreateRequestOperationValidatorTest {
   }
 
   @Test
-  public void testValidateAddVariableWithNullScopeId() {
-    final CreateOperationRequestDto operationRequest =
-        new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
-
-    operationRequest.setVariableScopeId(null);
-    operationRequest.setVariableName("var");
-    operationRequest.setVariableValue("val");
-
-    final InvalidRequestException exception =
-        assertThrows(
-            InvalidRequestException.class, () -> underTest.validate(operationRequest, "123"));
-
-    assertThat(exception.getMessage())
-        .isEqualTo("ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
-  }
-
-  @Test
-  public void testValidateAddVariableWithNullVariableName() {
-    final CreateOperationRequestDto operationRequest =
-        new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
-
-    operationRequest.setVariableScopeId("abc");
-    operationRequest.setVariableName(null);
-    operationRequest.setVariableValue("val");
-
-    final InvalidRequestException exception =
-        assertThrows(
-            InvalidRequestException.class, () -> underTest.validate(operationRequest, "123"));
-
-    assertThat(exception.getMessage())
-        .isEqualTo("ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
-  }
-
-  @Test
-  public void testValidateAddVariableWithEmptyVariableName() {
-    final CreateOperationRequestDto operationRequest =
-        new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
-
-    operationRequest.setVariableScopeId("abc");
-    operationRequest.setVariableName("");
-    operationRequest.setVariableValue("val");
-
-    final InvalidRequestException exception =
-        assertThrows(
-            InvalidRequestException.class, () -> underTest.validate(operationRequest, "123"));
-
-    assertThat(exception.getMessage())
-        .isEqualTo("ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
-  }
-
-  @Test
-  public void testValidateAddVariableWithNullVariableValue() {
-    final CreateOperationRequestDto operationRequest =
-        new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
-
-    operationRequest.setVariableScopeId("abc");
-    operationRequest.setVariableName("var");
-    operationRequest.setVariableValue(null);
-
-    final InvalidRequestException exception =
-        assertThrows(
-            InvalidRequestException.class, () -> underTest.validate(operationRequest, "123"));
-
-    assertThat(exception.getMessage())
-        .isEqualTo("ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
-  }
-
-  @Test
   public void testValidateAddVariable() {
-    final CreateOperationRequestDto operationRequest =
-        new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
+    final CreateOperationRequestDto operationRequest = new CreateOperationRequestDto(ADD_VARIABLE);
 
     operationRequest.setVariableScopeId("abc");
     operationRequest.setVariableName("var");
