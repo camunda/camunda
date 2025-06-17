@@ -14,7 +14,7 @@ fi
 
 # temporarily needed for https://github.com/camunda/product-hub/issues/2618
 if [ "${IS_STABLE_87}" = "true" ]; then
-    tags+=("${DOCKER_IMAGE_DOCKER_HUB}:8.7.0-SNAPSHOT")
+    tags+=("${DOCKER_IMAGE_DOCKER_HUB}:8.7-SNAPSHOT")
 fi
 
 printf -v tag_arguments -- "-t %s " "${tags[@]}"
