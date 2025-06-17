@@ -11,9 +11,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
+import io.camunda.search.clients.query.SearchTermsQuery;
+import io.camunda.search.clients.types.TypedValue;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.Operation;
+import io.camunda.webapps.schema.entities.operation.OperationState;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class BatchOperationItemFilterTransformerTest extends AbstractTransformerTest {
 
@@ -94,10 +101,12 @@ class BatchOperationItemFilterTransformerTest extends AbstractTransformerTest {
             });
   }
 
-  @Test
-  void shouldQueryByState() {
+  @ParameterizedTest
+  @CsvSource(value = {"ACTIVE, SCHEDULED", "COMPLETED, COMPLETED", "FAILED, FAILED"})
+  void shouldQueryByState(
+      final BatchOperationItemState apiState, final OperationState backendState) {
     // given
-    final var filter = FilterBuilders.batchOperationItem(f -> f.states("ACTIVE"));
+    final var filter = FilterBuilders.batchOperationItem(f -> f.states(apiState.name()));
 
     // when
     final var searchRequest = transformQuery(filter);
@@ -109,7 +118,64 @@ class BatchOperationItemFilterTransformerTest extends AbstractTransformerTest {
             SearchTermQuery.class,
             t -> {
               assertThat(t.field()).isEqualTo("state");
-              assertThat(t.value().stringValue()).isEqualTo("ACTIVE");
+              assertThat(t.value().stringValue()).isEqualTo(backendState.name());
+            });
+  }
+
+  @Test
+  void shouldQueryByMultipleState() {
+    // given
+    final var filter =
+        FilterBuilders.batchOperationItem(
+            f ->
+                f.states(
+                    BatchOperationItemState.ACTIVE.name(),
+                    BatchOperationItemState.COMPLETED.name(),
+                    BatchOperationItemState.FAILED.name()));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermsQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("state");
+              assertThat(t.values())
+                  .containsExactlyInAnyOrder(
+                      TypedValue.of(OperationState.SCHEDULED.name()),
+                      TypedValue.of(OperationState.COMPLETED.name()),
+                      TypedValue.of(OperationState.FAILED.name()));
+            });
+  }
+
+  @Test
+  void shouldQueryByStateNegate() {
+    // given
+    final var filter =
+        FilterBuilders.batchOperationItem(
+            f -> f.stateOperations(Operation.neq(BatchOperationItemState.COMPLETED.name())));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            t -> {
+              assertThat(t.mustNot()).isNotEmpty();
+            });
+    final var mustNotQuery = ((SearchBoolQuery) queryVariant).mustNot().get(0).queryOption();
+    assertThat(mustNotQuery)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("state");
+              assertThat(t.value().stringValue()).isEqualTo(OperationState.COMPLETED.name());
             });
   }
 
@@ -145,7 +211,7 @@ class BatchOperationItemFilterTransformerTest extends AbstractTransformerTest {
             SearchTermQuery.class,
             t -> {
               assertThat(t.field()).isEqualTo("state");
-              assertThat(t.value().stringValue()).isEqualTo("ACTIVE");
+              assertThat(t.value().stringValue()).isEqualTo("SCHEDULED");
             });
 
     assertThat(((SearchBoolQuery) queryVariant).must().get(2).queryOption())
