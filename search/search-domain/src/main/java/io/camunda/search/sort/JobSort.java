@@ -66,7 +66,7 @@ public record JobSort(List<FieldSorting> orderings) implements SortOption {
     }
 
     public JobSort.Builder jobKind() {
-      currentOrdering = new FieldSorting("jobKind", null);
+      currentOrdering = new FieldSorting("kind", null);
       return this;
     }
 

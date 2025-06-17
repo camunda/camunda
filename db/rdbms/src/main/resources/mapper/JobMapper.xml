@@ -15,9 +15,7 @@
   <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*)
     FROM ${prefix}JOB
-    <where>
-      <include refid="io.camunda.db.rdbms.sql.JobMapper.searchFilter" />
-    </where>
+    <include refid="io.camunda.db.rdbms.sql.JobMapper.searchFilter" />
   </select>
 
   <!-- default search statement for databases supporting LIMIT/OFFSET-->
@@ -51,16 +49,13 @@
         HAS_FAILED_WITH_RETRIES_LEFT,
         HISTORY_CLEANUP_DATE
       FROM ${prefix}JOB
-    <where>
-      <include refid="io.camunda.db.rdbms.sql.JobMapper.searchFilter" />
-    </where>
 
+    <include refid="io.camunda.db.rdbms.sql.JobMapper.searchFilter" />
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter" />
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy" />
     <include refid="io.camunda.db.rdbms.sql.Commons.paging" />
   </select>
-
 
   <sql id="searchFilter">
     WHERE 1 = 1
