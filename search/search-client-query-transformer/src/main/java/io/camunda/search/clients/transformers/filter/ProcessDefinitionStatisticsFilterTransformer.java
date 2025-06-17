@@ -93,10 +93,8 @@ public class ProcessDefinitionStatisticsFilterTransformer
       final ProcessDefinitionStatisticsFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
 
-    ofNullable(stringOperations(ACTIVITY_ID, filter.flowNodeIdOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(stringOperations(ACTIVITY_STATE, filter.flowNodeInstanceStateOperations()))
-        .ifPresent(queries::addAll);
+    queries.addAll((stringOperations(ACTIVITY_ID, filter.flowNodeIdOperations())));
+    queries.addAll(stringOperations(ACTIVITY_STATE, filter.flowNodeInstanceStateOperations()));
     ofNullable(filter.hasFlowNodeInstanceIncident())
         .ifPresent(value -> queries.add(term(INCIDENT, value)));
 
@@ -107,32 +105,25 @@ public class ProcessDefinitionStatisticsFilterTransformer
       final ProcessDefinitionStatisticsFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
 
-    ofNullable(longOperations(KEY, filter.processInstanceKeyOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(
-            longOperations(
-                PARENT_PROCESS_INSTANCE_KEY, filter.parentProcessInstanceKeyOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(
-            longOperations(
-                PARENT_FLOW_NODE_INSTANCE_KEY, filter.parentFlowNodeInstanceKeyOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(dateTimeOperations(START_DATE, filter.startDateOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(dateTimeOperations(END_DATE, filter.endDateOperations())).ifPresent(queries::addAll);
-    ofNullable(stringOperations(STATE, filter.stateOperations())).ifPresent(queries::addAll);
+    queries.addAll(longOperations(KEY, filter.processInstanceKeyOperations()));
+    queries.addAll(
+        longOperations(PARENT_PROCESS_INSTANCE_KEY, filter.parentProcessInstanceKeyOperations()));
+    queries.addAll(
+        longOperations(
+            PARENT_FLOW_NODE_INSTANCE_KEY, filter.parentFlowNodeInstanceKeyOperations()));
+    queries.addAll(dateTimeOperations(START_DATE, filter.startDateOperations()));
+    queries.addAll(dateTimeOperations(END_DATE, filter.endDateOperations()));
+    queries.addAll(stringOperations(STATE, filter.stateOperations()));
     ofNullable(filter.hasIncident()).ifPresent(value -> queries.add(term(INCIDENT, value)));
-    ofNullable(stringOperations(TENANT_ID, filter.tenantIdOperations())).ifPresent(queries::addAll);
+    queries.addAll(stringOperations(TENANT_ID, filter.tenantIdOperations()));
     ofNullable(getProcessVariablesQuery(filter.variableFilters())).ifPresent(queries::add);
-    ofNullable(
-            stringMatchWithHasChildOperations(
-                ERROR_MSG,
-                filter.errorMessageOperations(),
-                ACTIVITIES_JOIN_RELATION,
-                SearchMatchQueryOperator.AND))
-        .ifPresent(queries::addAll);
-    ofNullable(stringOperations(BATCH_OPERATION_IDS, filter.batchOperationIdOperations()))
-        .ifPresent(queries::addAll);
+    queries.addAll(
+        stringMatchWithHasChildOperations(
+            ERROR_MSG,
+            filter.errorMessageOperations(),
+            ACTIVITIES_JOIN_RELATION,
+            SearchMatchQueryOperator.AND));
+    queries.addAll(stringOperations(BATCH_OPERATION_IDS, filter.batchOperationIdOperations()));
     ofNullable(filter.hasRetriesLeft()).ifPresent(value -> queries.add(hasRetriesLeftQuery(value)));
 
     return ofNullable(queries.isEmpty() ? null : queries);

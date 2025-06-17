@@ -14,7 +14,6 @@ import static io.camunda.webapps.schema.descriptors.index.UserIndex.EMAIL;
 import static io.camunda.webapps.schema.descriptors.index.UserIndex.KEY;
 import static io.camunda.webapps.schema.descriptors.index.UserIndex.NAME;
 import static io.camunda.webapps.schema.descriptors.index.UserIndex.USERNAME;
-import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.UserFilter;
@@ -33,9 +32,9 @@ public class UserFilterTransformer extends IndexFilterTransformer<UserFilter> {
     if (filter.key() != null) {
       queries.add(term(KEY, filter.key()));
     }
-    ofNullable(stringOperations(USERNAME, filter.usernameOperations())).ifPresent(queries::addAll);
-    ofNullable(stringOperations(NAME, filter.nameOperations())).ifPresent(queries::addAll);
-    ofNullable(stringOperations(EMAIL, filter.emailOperations())).ifPresent(queries::addAll);
+    queries.addAll(stringOperations(USERNAME, filter.usernameOperations()));
+    queries.addAll(stringOperations(NAME, filter.nameOperations()));
+    queries.addAll(stringOperations(EMAIL, filter.emailOperations()));
     return and(queries);
   }
 }

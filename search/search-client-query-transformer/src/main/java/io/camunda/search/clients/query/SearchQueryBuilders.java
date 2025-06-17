@@ -21,6 +21,7 @@ import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -79,6 +80,11 @@ public final class SearchQueryBuilders {
 
   public static SearchQuery and(final List<SearchQuery> queries) {
     return map(queries, SearchQueryBuilders::must);
+  }
+
+  @SafeVarargs
+  public static SearchQuery and(final List<SearchQuery>... queries) {
+    return map(Arrays.stream(queries).flatMap(List::stream).toList(), SearchQueryBuilders::must);
   }
 
   public static SearchQuery not(final SearchQuery query, final SearchQuery... queries) {
@@ -336,7 +342,7 @@ public final class SearchQueryBuilders {
   public static <C extends List<Operation<Integer>>> List<SearchQuery> intOperations(
       final String field, final C operations) {
     if (operations == null || operations.isEmpty()) {
-      return null;
+      return List.of();
     } else {
       final var queries = new ArrayList<SearchQuery>();
       SearchRangeQuery.Builder rangeQueryBuilder = null;
@@ -373,7 +379,7 @@ public final class SearchQueryBuilders {
   public static <C extends List<Operation<Long>>> List<SearchQuery> longOperations(
       final String field, final C operations) {
     if (operations == null || operations.isEmpty()) {
-      return null;
+      return List.of();
     } else {
       final var queries = new ArrayList<SearchQuery>();
       SearchRangeQuery.Builder rangeQueryBuilder = null;
@@ -410,7 +416,7 @@ public final class SearchQueryBuilders {
   public static <C extends List<Operation<String>>> List<SearchQuery> stringOperations(
       final String field, final C operations) {
     if (operations == null || operations.isEmpty()) {
-      return null;
+      return List.of();
     } else {
       final var searchQueries = new ArrayList<SearchQuery>();
       operations.forEach(
@@ -439,7 +445,7 @@ public final class SearchQueryBuilders {
           final SearchMatchQueryOperator matchQueryOperator) {
 
     if (operations == null || operations.isEmpty()) {
-      return null;
+      return List.of();
     }
 
     return operations.stream()
@@ -504,7 +510,7 @@ public final class SearchQueryBuilders {
   public static <C extends List<Operation<OffsetDateTime>>> List<SearchQuery> dateTimeOperations(
       final String field, final C operations) {
     if (operations == null || operations.isEmpty()) {
-      return null;
+      return List.of();
     } else {
       final var queries = new ArrayList<SearchQuery>();
       SearchRangeQuery.Builder rangeQueryBuilder = null;
@@ -592,7 +598,7 @@ public final class SearchQueryBuilders {
   public static <C extends List<UntypedOperation>> List<SearchQuery> variableOperations(
       final String field, final C operations) {
     if (operations == null || operations.isEmpty()) {
-      return null;
+      return List.of();
     } else {
       return operations.stream()
           .map(op -> variableOperation(field, op))

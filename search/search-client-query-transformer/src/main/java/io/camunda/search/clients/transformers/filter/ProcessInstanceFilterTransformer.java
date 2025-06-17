@@ -55,33 +55,23 @@ public final class ProcessInstanceFilterTransformer
 
   public ArrayList<SearchQuery> toSearchQueryFields(final ProcessInstanceFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
-    ofNullable(longOperations(KEY, filter.processInstanceKeyOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(stringOperations(BPMN_PROCESS_ID, filter.processDefinitionIdOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(stringOperations(PROCESS_NAME, filter.processDefinitionNameOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(intOperations(PROCESS_VERSION, filter.processDefinitionVersionOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(
-            stringOperations(PROCESS_VERSION_TAG, filter.processDefinitionVersionTagOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(longOperations(PROCESS_KEY, filter.processDefinitionKeyOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(
-            longOperations(
-                PARENT_PROCESS_INSTANCE_KEY, filter.parentProcessInstanceKeyOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(
-            longOperations(
-                PARENT_FLOW_NODE_INSTANCE_KEY, filter.parentFlowNodeInstanceKeyOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(dateTimeOperations(START_DATE, filter.startDateOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(dateTimeOperations(END_DATE, filter.endDateOperations())).ifPresent(queries::addAll);
-    ofNullable(stringOperations(STATE, filter.stateOperations())).ifPresent(queries::addAll);
+    queries.addAll(longOperations(KEY, filter.processInstanceKeyOperations()));
+    queries.addAll(stringOperations(BPMN_PROCESS_ID, filter.processDefinitionIdOperations()));
+    queries.addAll(stringOperations(PROCESS_NAME, filter.processDefinitionNameOperations()));
+    queries.addAll(intOperations(PROCESS_VERSION, filter.processDefinitionVersionOperations()));
+    queries.addAll(
+        stringOperations(PROCESS_VERSION_TAG, filter.processDefinitionVersionTagOperations()));
+    queries.addAll(longOperations(PROCESS_KEY, filter.processDefinitionKeyOperations()));
+    queries.addAll(
+        longOperations(PARENT_PROCESS_INSTANCE_KEY, filter.parentProcessInstanceKeyOperations()));
+    queries.addAll(
+        longOperations(
+            PARENT_FLOW_NODE_INSTANCE_KEY, filter.parentFlowNodeInstanceKeyOperations()));
+    queries.addAll(dateTimeOperations(START_DATE, filter.startDateOperations()));
+    queries.addAll(dateTimeOperations(END_DATE, filter.endDateOperations()));
+    queries.addAll(stringOperations(STATE, filter.stateOperations()));
     ofNullable(getIncidentQuery(filter.hasIncident())).ifPresent(queries::add);
-    ofNullable(stringOperations(TENANT_ID, filter.tenantIdOperations())).ifPresent(queries::addAll);
+    queries.addAll(stringOperations(TENANT_ID, filter.tenantIdOperations()));
 
     if (filter.variableFilters() != null && !filter.variableFilters().isEmpty()) {
       final var processVariableQuery = getProcessVariablesQuery(filter.variableFilters());
@@ -89,17 +79,15 @@ public final class ProcessInstanceFilterTransformer
     }
 
     if (filter.errorMessageOperations() != null && !filter.errorMessageOperations().isEmpty()) {
-      ofNullable(
-              stringMatchWithHasChildOperations(
-                  ERROR_MSG,
-                  filter.errorMessageOperations(),
-                  ACTIVITIES_JOIN_RELATION,
-                  SearchMatchQueryOperator.AND))
-          .ifPresent(queries::addAll);
+      queries.addAll(
+          stringMatchWithHasChildOperations(
+              ERROR_MSG,
+              filter.errorMessageOperations(),
+              ACTIVITIES_JOIN_RELATION,
+              SearchMatchQueryOperator.AND));
     }
 
-    ofNullable(stringOperations(BATCH_OPERATION_IDS, filter.batchOperationIdOperations()))
-        .ifPresent(queries::addAll);
+    queries.addAll(stringOperations(BATCH_OPERATION_IDS, filter.batchOperationIdOperations()));
 
     ofNullable(getHasRetriesLeftQuery(filter.hasRetriesLeft())).ifPresent(queries::add);
 
@@ -133,10 +121,9 @@ public final class ProcessInstanceFilterTransformer
   private static SearchQuery getFlowNodeInstanceQuery(final ProcessInstanceFilter filter) {
     final var flowNodeInstanceQueries = new ArrayList<SearchQuery>();
 
-    ofNullable(stringOperations(ACTIVITY_ID, filter.flowNodeIdOperations()))
-        .ifPresent(flowNodeInstanceQueries::addAll);
-    ofNullable(stringOperations(ACTIVITY_STATE, filter.flowNodeInstanceStateOperations()))
-        .ifPresent(flowNodeInstanceQueries::addAll);
+    flowNodeInstanceQueries.addAll(stringOperations(ACTIVITY_ID, filter.flowNodeIdOperations()));
+    flowNodeInstanceQueries.addAll(
+        stringOperations(ACTIVITY_STATE, filter.flowNodeInstanceStateOperations()));
     ofNullable(filter.hasFlowNodeInstanceIncident())
         .ifPresent(incident -> flowNodeInstanceQueries.add((term(INCIDENT, incident))));
 

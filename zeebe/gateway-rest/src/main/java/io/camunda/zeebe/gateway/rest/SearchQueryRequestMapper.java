@@ -17,8 +17,6 @@ import static java.util.Optional.ofNullable;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
-import io.camunda.search.entities.IncidentEntity;
-import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.filter.*;
 import io.camunda.search.filter.AuthorizationFilter;
@@ -1123,17 +1121,15 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getProcessInstanceKey())
           .map(KeyUtil::keyToLong)
           .ifPresent(builder::processInstanceKeys);
-      ofNullable(filter.getErrorType())
-          .ifPresent(t -> builder.errorTypes(IncidentEntity.ErrorType.valueOf(t.getValue())));
+      ofNullable(filter.getErrorType()).ifPresent(t -> builder.errorTypes(t.getValue()));
       ofNullable(filter.getErrorMessage()).ifPresent(builder::errorMessages);
       ofNullable(filter.getElementId()).ifPresent(builder::flowNodeIds);
       ofNullable(filter.getElementInstanceKey())
           .map(KeyUtil::keyToLong)
           .ifPresent(builder::flowNodeInstanceKeys);
       ofNullable(filter.getCreationTime())
-          .ifPresent(t -> builder.creationTime(toDateValueFilter(t)));
-      ofNullable(filter.getState())
-          .ifPresent(s -> builder.states(IncidentState.valueOf(s.getValue())));
+          .ifPresent(t -> builder.creationTime(toOffsetDateTime(t)));
+      ofNullable(filter.getState()).ifPresent(s -> builder.states(s.getValue()));
       ofNullable(filter.getJobKey()).map(KeyUtil::keyToLong).ifPresent(builder::jobKeys);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
@@ -1638,27 +1634,6 @@ public final class SearchQueryRequestMapper {
     } else {
       return values.toArray();
     }
-  }
-
-  private static DateValueFilter toDateValueFilter(final String text) {
-    if (StringUtils.isEmpty(text)) {
-      return null;
-    }
-    final var date = OffsetDateTime.parse(text);
-    return new DateValueFilter.Builder().before(date).after(date).build();
-  }
-
-  private static DateValueFilter toDateValueFilter(final String after, final String before) {
-    final Optional<OffsetDateTime> beforeDateTime = ofNullable(before).map(OffsetDateTime::parse);
-    final Optional<OffsetDateTime> afterDateTime =
-        Optional.ofNullable(after).map(OffsetDateTime::parse);
-    if (beforeDateTime.isEmpty() && afterDateTime.isEmpty()) {
-      return null;
-    }
-    return new DateValueFilter.Builder()
-        .before(beforeDateTime.orElse(null))
-        .after(afterDateTime.orElse(null))
-        .build();
   }
 
   public static Either<ProblemDetail, AuthorizationQuery> toAuthorizationQuery(

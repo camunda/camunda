@@ -19,6 +19,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.util.FilterUtil;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -174,7 +175,10 @@ public class BatchOperationItemProvider {
         return Set.of();
       }
       final var filter =
-          new IncidentFilter.Builder().processInstanceKeys(processInstanceKeysBatch).build();
+          new IncidentFilter.Builder()
+              .processInstanceKeyOperations(
+                  FilterUtil.mapDefaultToOperation(processInstanceKeysBatch))
+              .build();
       incidents.addAll(fetchIncidentItems(filter, authentication, shouldAbort));
     }
 

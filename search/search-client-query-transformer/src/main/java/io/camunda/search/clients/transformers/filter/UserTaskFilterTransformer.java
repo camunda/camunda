@@ -67,19 +67,17 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
         .ifPresent(queries::add);
     ofNullable(getBpmnProcessIdQuery(filter.bpmnProcessIds())).ifPresent(queries::add);
     ofNullable(getElementIdQuery(filter.elementIds())).ifPresent(queries::add);
-    ofNullable(getCandidateUsersQuery(filter.candidateUserOperations())).ifPresent(queries::addAll);
-    ofNullable(getCandidateGroupsQuery(filter.candidateGroupOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(getAssigneesQuery(filter.assigneeOperations())).ifPresent(queries::addAll);
-    ofNullable(getPrioritiesQuery(filter.priorityOperations())).ifPresent(queries::addAll);
+    queries.addAll(getCandidateUsersQuery(filter.candidateUserOperations()));
+    queries.addAll(getCandidateGroupsQuery(filter.candidateGroupOperations()));
+    queries.addAll(getAssigneesQuery(filter.assigneeOperations()));
+    queries.addAll(getPrioritiesQuery(filter.priorityOperations()));
     ofNullable(getStateQuery(filter.states())).ifPresent(queries::add);
     ofNullable(getTenantQuery(filter.tenantIds())).ifPresent(queries::add);
     ofNullable(getElementInstanceKeyQuery(filter.elementInstanceKeys())).ifPresent(queries::add);
-    ofNullable(getCreationTimeQuery(filter.creationDateOperations())).ifPresent(queries::addAll);
-    ofNullable(getCompletionTimeQuery(filter.completionDateOperations()))
-        .ifPresent(queries::addAll);
-    ofNullable(getFollowUpDateQuery(filter.followUpDateOperations())).ifPresent(queries::addAll);
-    ofNullable(getDueDateQuery(filter.dueDateOperations())).ifPresent(queries::addAll);
+    queries.addAll(getCreationTimeQuery(filter.creationDateOperations()));
+    queries.addAll(getCompletionTimeQuery(filter.completionDateOperations()));
+    queries.addAll(getFollowUpDateQuery(filter.followUpDateOperations()));
+    queries.addAll(getDueDateQuery(filter.dueDateOperations()));
 
     // Process Instance Variable Query: Check if processVariable  with specified varName and
     // varValue exists

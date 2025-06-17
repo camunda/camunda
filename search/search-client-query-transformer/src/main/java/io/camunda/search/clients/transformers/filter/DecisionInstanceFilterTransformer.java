@@ -53,14 +53,12 @@ public final class DecisionInstanceFilterTransformer
     ofNullable(getKeysQuery(filter.decisionInstanceKeys())).ifPresent(queries::add);
     ofNullable(getIdsQuery(filter.decisionInstanceIds())).ifPresent(queries::add);
     ofNullable(getStatesQuery(filter.states())).ifPresent(queries::add);
-    ofNullable(getEvaluationDateQuery(filter.evaluationDateOperations()))
-        .ifPresent(queries::addAll);
+    queries.addAll(getEvaluationDateQuery(filter.evaluationDateOperations()));
     ofNullable(getEvaluationFailuresQuery(filter.evaluationFailures())).ifPresent(queries::add);
     ofNullable(getProcessDefinitionKeysQuery(filter.processDefinitionKeys()))
         .ifPresent(queries::add);
     ofNullable(getProcessInstanceKeysQuery(filter.processInstanceKeys())).ifPresent(queries::add);
-    ofNullable(getDecisionDefinitionKeysQuery(filter.decisionDefinitionKeyOperations()))
-        .ifPresent(queries::addAll);
+    queries.addAll(getDecisionDefinitionKeysQuery(filter.decisionDefinitionKeyOperations()));
     ofNullable(getDecisionDefinitionIdsQuery(filter.decisionDefinitionIds()))
         .ifPresent(queries::add);
     ofNullable(getDecisionDefinitionNamesQuery(filter.decisionDefinitionNames()))
