@@ -25,17 +25,18 @@ public class SearchTopHitsAggregatorTransformer
         new Aggregation.Builder()
             .topHits(
                 topHitsAggBuilder -> {
-                  topHitsAggBuilder.size(value.size());
-                  topHitsAggBuilder.sort(
-                      sortBuilder -> {
-                        sortBuilder.field(
-                            fieldSort -> {
-                              fieldSort.field(value.field());
-                              fieldSort.order(SortOrder.Desc);
-                              return fieldSort;
-                            });
-                        return sortBuilder;
-                      });
+                  topHitsAggBuilder
+                      .size(value.size())
+                      .sort(
+                          sortBuilder -> {
+                            sortBuilder.field(
+                                fieldSort -> {
+                                  fieldSort.field(value.field());
+                                  fieldSort.order(SortOrder.Desc);
+                                  return fieldSort;
+                                });
+                            return sortBuilder;
+                          });
                   return topHitsAggBuilder;
                 });
     applySubAggregations(builder, value);
