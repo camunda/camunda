@@ -7,12 +7,8 @@
  */
 
 import React, { useState } from "react";
-import {
-  Button,
-  InlineNotification,
-  PasswordInput,
-  TextInput,
-} from "@carbon/react";
+import { Button, PasswordInput, TextInput } from "@carbon/react";
+import { UserAdmin } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import CamundaLogo from "src/assets/images/camunda.svg";
 import {
@@ -21,10 +17,12 @@ import {
   Content,
   Header,
   PageTitle,
+  InlineNotification,
 } from "src/pages/setup/styled.ts";
 import Divider from "src/components/form/Divider";
 import { createAdminUser } from "src/utility/api/setup";
 import { useApiCall } from "src/utility/api";
+import { isValidEmail } from "src/utility/isValidEmail";
 
 interface SetupFormProps {
   onSuccess: () => void;
@@ -48,10 +46,6 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
     errorText: "",
   });
   const [confirmPasswordError, setConfirmPasswordError] = useState({
-    hasError: false,
-    errorText: "",
-  });
-  const [nameError, setNameError] = useState({
     hasError: false,
     errorText: "",
   });
@@ -135,6 +129,14 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
               hasError: true,
               errorText: t("setupPasswordRequired"),
             });
+          } else if (
+            target.value.trim().length < 6 ||
+            !/\d/.test(target.value)
+          ) {
+            setPasswordError({
+              hasError: true,
+              errorText: t("setupPasswordHelperText"),
+            });
           } else {
             setPasswordError({
               hasError: false,
@@ -163,6 +165,11 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
               hasError: true,
               errorText: t("setupConfirmPasswordRequired"),
             });
+          } else if (target.value.trim() !== password.trim()) {
+            setConfirmPasswordError({
+              hasError: true,
+              errorText: t("setupConfirmPasswordMismatch"),
+            });
           } else {
             setConfirmPasswordError({
               hasError: false,
@@ -180,15 +187,7 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
           setName(e.target.value.trim())
         }
         labelText={t("setupNameLabel")}
-        invalid={nameError.hasError}
-        invalidText={nameError.errorText}
         placeholder={t("setupNamePlaceholder")}
-        onBlur={() => {
-          setNameError({
-            hasError: false,
-            errorText: "",
-          });
-        }}
       />
       <TextInput
         id="email"
@@ -201,11 +200,21 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
         invalid={emailError.hasError}
         invalidText={emailError.errorText}
         placeholder={t("setupEmailPlaceholder")}
-        onBlur={() => {
-          setEmailError({
-            hasError: false,
-            errorText: "",
-          });
+        onBlur={({ target }) => {
+          if (
+            target.value.trim().length > 1 &&
+            !isValidEmail(target.value.trim())
+          ) {
+            setEmailError({
+              hasError: true,
+              errorText: t("setupEmailInvalid"),
+            });
+          } else {
+            setEmailError({
+              hasError: false,
+              errorText: "",
+            });
+          }
         }}
       />
       <Button
@@ -217,9 +226,9 @@ const SetupForm: React.FC<SetupFormProps> = ({ onSuccess }) => {
           usernameError.hasError ||
           passwordError.hasError ||
           confirmPasswordError.hasError ||
-          nameError.hasError ||
           emailError.hasError
         }
+        renderIcon={UserAdmin}
       >
         {t("setupCreateUser")}
       </Button>

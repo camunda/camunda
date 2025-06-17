@@ -61,9 +61,11 @@
   "setupConfirmPasswordLabel": "Confirm password *",
   "setupConfirmPasswordPlaceholder": "Confirm password",
   "setupConfirmPasswordRequired": "Confirm password is required",
+  "setupConfirmPasswordMismatch": "Passwords do not match",
   "setupNameLabel": "Full name",
   "setupNamePlaceholder": "Enter full name",
   "setupEmailLabel": "Email",
   "setupEmailPlaceholder": "Enter email",
+  "setupEmailInvalid": "Please enter a valid email",
   "setupCreateUser": "Create user"
 }

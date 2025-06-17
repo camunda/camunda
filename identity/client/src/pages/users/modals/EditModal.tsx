@@ -13,7 +13,7 @@ import useTranslate from "src/utility/localization";
 import Divider from "src/components/form/Divider";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
 import { updateUser, User } from "src/utility/api/users";
-import { isValidEmail } from "./isValidEmail";
+import { isValidEmail } from "src/utility/isValidEmail";
 
 type UserWithPassword = User & { password: string };
 
@@ -73,7 +73,7 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
         placeholder={t("enterEmailAddress")}
         onChange={(email) => setUser({ ...user, email })}
         onBlur={() => setEmailValid(isValidEmail(user.email))}
-        errors={!emailValid ? [t("validEmail")] : []}
+        errors={!emailValid ? [t("pleaseEnterValidEmail")] : []}
       />
       <Divider />
       <h3>{t("resetPassword")}</h3>
