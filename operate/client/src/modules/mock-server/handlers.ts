@@ -6,14 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {GetJobsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
+import {
+  endpoints,
+  type QueryJobsResponseBody,
+} from '@vzeta/camunda-api-zod-schemas';
 import {IS_LISTENERS_TAB_V2} from 'modules/feature-flags';
 import {RequestHandler, rest} from 'msw';
 
 const mockListenerEndpoint = rest.post(
-  '/v2/jobs/search',
-  async (req, res, ctx) => {
-    const mockResponse: GetJobsResponseBody = {
+  endpoints.queryJobs.getUrl(),
+  async (_, res, ctx) => {
+    const mockResponse: QueryJobsResponseBody = {
       items: [
         {
           jobKey: '2251799813916032',

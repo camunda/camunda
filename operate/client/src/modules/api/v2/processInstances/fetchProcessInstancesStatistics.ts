@@ -8,9 +8,9 @@
 
 import {
   endpoints,
-  GetProcessDefinitionStatisticsRequestBody,
-  GetProcessDefinitionStatisticsResponseBody,
-} from '@vzeta/camunda-api-zod-schemas/operate';
+  type GetProcessDefinitionStatisticsRequestBody,
+  type GetProcessDefinitionStatisticsResponseBody,
+} from '@vzeta/camunda-api-zod-schemas';
 import {RequestResult, requestWithThrow} from 'modules/request';
 
 enum ProcessInstanceState {
@@ -25,7 +25,7 @@ const fetchProcessInstancesStatistics = async (
 ): RequestResult<GetProcessDefinitionStatisticsResponseBody> => {
   return requestWithThrow<GetProcessDefinitionStatisticsResponseBody>({
     url: endpoints.getProcessDefinitionStatistics.getUrl({
-      processDefinitionId: processDefinitionKey,
+      processDefinitionKey,
       statisticName: 'element-instances',
     }),
     method: endpoints.getProcessDefinitionStatistics.method,

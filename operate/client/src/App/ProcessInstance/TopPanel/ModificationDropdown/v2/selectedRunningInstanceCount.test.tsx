@@ -14,7 +14,7 @@ import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownod
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
+import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 
 const mockProcessInstance: ProcessInstance = {
   processInstanceKey: 'instance_id',

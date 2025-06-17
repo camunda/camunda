@@ -19,7 +19,7 @@ import {fetchMetaData, init} from 'modules/utils/flowNodeMetadata';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
+import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 
 describe('Modification Dropdown', () => {
   const statisticsData = [

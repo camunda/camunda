@@ -10,7 +10,7 @@ import {
   endpoints,
   QueryVariablesRequestBody,
   QueryVariablesResponseBody,
-} from '@vzeta/camunda-api-zod-schemas/process-management';
+} from '@vzeta/camunda-api-zod-schemas';
 import {RequestResult, requestWithThrow} from 'modules/request';
 
 const searchVariables = async (

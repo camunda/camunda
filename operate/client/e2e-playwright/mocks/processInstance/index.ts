@@ -8,11 +8,11 @@
 
 import {Route} from '@playwright/test';
 import {
-  GetProcessDefinitionStatisticsResponseBody,
-  GetProcessInstanceCallHierarchyResponseBody,
-  GetProcessSequenceFlowsResponseBody,
-  ProcessInstance,
-} from '@vzeta/camunda-api-zod-schemas/operate';
+  type GetProcessDefinitionStatisticsResponseBody,
+  type GetProcessInstanceCallHierarchyResponseBody,
+  type GetProcessInstanceSequenceFlowsResponseBody,
+  type ProcessInstance,
+} from '@vzeta/camunda-api-zod-schemas';
 import {
   FlowNodeInstanceDto,
   FlowNodeInstancesDto,
@@ -29,7 +29,7 @@ type InstanceMock = {
   flowNodeInstances: FlowNodeInstancesDto<FlowNodeInstanceDto>;
   statisticsV2: GetProcessDefinitionStatisticsResponseBody;
   sequenceFlows: SequenceFlowsDto;
-  sequenceFlowsV2: GetProcessSequenceFlowsResponseBody;
+  sequenceFlowsV2: GetProcessInstanceSequenceFlowsResponseBody;
   variables: VariableEntity[];
   incidents?: ProcessInstanceIncidentsDto;
   metaData?: MetaDataDto;
@@ -54,7 +54,7 @@ function mockResponses({
   flowNodeInstances?: FlowNodeInstancesDto<FlowNodeInstanceDto>;
   statisticsV2?: GetProcessDefinitionStatisticsResponseBody;
   sequenceFlows?: SequenceFlowsDto;
-  sequenceFlowsV2?: GetProcessSequenceFlowsResponseBody;
+  sequenceFlowsV2?: GetProcessInstanceSequenceFlowsResponseBody;
   variables?: VariableEntity[];
   xml?: string;
   incidents?: ProcessInstanceIncidentsDto;

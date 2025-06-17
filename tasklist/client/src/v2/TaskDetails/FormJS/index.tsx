@@ -7,8 +7,7 @@
  */
 
 import {Layer, type InlineLoadingProps} from '@carbon/react';
-import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/identity';
-import type {UserTask} from '@vzeta/camunda-api-zod-schemas/tasklist';
+import type {CurrentUser, UserTask} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {FormJSRenderer} from 'common/form-js/FormJSRenderer';
 import type {FormManager} from 'common/form-js/formManager';
 import {notificationsStore} from 'common/notifications/notifications.store';

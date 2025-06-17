@@ -9,9 +9,11 @@
 import {api} from 'v2/api';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {request} from 'common/api/request';
-import type {Variable} from '@vzeta/camunda-api-zod-schemas/process-management';
+import type {
+  Variable,
+  QueryVariablesByUserTaskResponseBody,
+} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {getAllVariablesQueryKey} from './useQueryAllVariables.query';
-import type {QueryVariablesByUserTaskResponseBody} from '@vzeta/camunda-api-zod-schemas/tasklist';
 
 function useFetchFullVariable() {
   const client = useQueryClient();

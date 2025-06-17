@@ -8,7 +8,7 @@
 
 import {getClientConfig} from 'common/config/getClientConfig';
 import {mergePathname} from './mergePathname';
-import {identity, management} from '@vzeta/camunda-api-zod-schemas';
+import {endpoints} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {buildDocumentMultipart} from 'common/document-handling/buildDocumentMultipart';
 
 const BASE_REQUEST_OPTIONS: RequestInit = {
@@ -47,17 +47,17 @@ const commonApi = {
       },
     }),
   getCurrentUser: () =>
-    new Request(getFullURL(identity.endpoints.getCurrentUser.getUrl()), {
+    new Request(getFullURL(endpoints.getCurrentUser.getUrl()), {
       ...BASE_REQUEST_OPTIONS,
-      method: identity.endpoints.getCurrentUser.method,
+      method: endpoints.getCurrentUser.method,
       headers: {
         'Content-Type': 'application/json',
       },
     }),
   getLicense: () => {
-    return new Request(getFullURL(management.endpoints.getLicense.getUrl()), {
+    return new Request(getFullURL(endpoints.getLicense.getUrl()), {
       ...BASE_REQUEST_OPTIONS,
-      method: management.endpoints.getLicense.method,
+      method: endpoints.getLicense.method,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -66,16 +66,16 @@ const commonApi = {
   uploadDocuments: ({files}: {files: Map<string, File[]>}) => {
     const {body, headers} = buildDocumentMultipart(files);
 
-    return new Request(getFullURL('/v2/documents/batch'), {
+    return new Request(getFullURL(endpoints.createDocuments.getUrl()), {
       ...BASE_REQUEST_OPTIONS,
-      method: 'POST',
+      method: endpoints.createDocuments.method,
       body,
       headers,
     });
   },
-  getDocument: (id: string) => {
-    return new Request(getFullURL(`/v2/documents/${id}`), {
-      method: 'GET',
+  getDocument: (documentId: string) => {
+    return new Request(getFullURL(endpoints.getDocument.getUrl({documentId})), {
+      method: endpoints.getDocument.method,
       ...BASE_REQUEST_OPTIONS,
     });
   },

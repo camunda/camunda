@@ -8,17 +8,17 @@
 
 import {
   endpoints,
-  GetJobsRequestBody,
-  GetJobsResponseBody,
-} from '@vzeta/camunda-api-zod-schemas/operate';
+  type QueryJobsRequestBody,
+  type QueryJobsResponseBody,
+} from '@vzeta/camunda-api-zod-schemas';
 import {RequestResult, requestWithThrow} from 'modules/request';
 
 const searchJobs = async (
-  payload: GetJobsRequestBody,
-): RequestResult<GetJobsResponseBody> => {
-  return requestWithThrow<GetJobsResponseBody>({
-    url: endpoints.getJobs.getUrl(),
-    method: endpoints.getJobs.method,
+  payload: QueryJobsRequestBody,
+): RequestResult<QueryJobsResponseBody> => {
+  return requestWithThrow<QueryJobsResponseBody>({
+    url: endpoints.queryJobs.getUrl(),
+    method: endpoints.queryJobs.method,
     body: payload,
   });
 };
