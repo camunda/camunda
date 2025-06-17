@@ -376,6 +376,14 @@ public class AdHocSubProcessProcessor
         final ExecutableAdHocSubProcess adHocSubProcess,
         final BpmnElementContext adHocSubProcessContext,
         final BpmnElementContext childContext,
-        final Boolean satisfiesCompletionCondition) {}
+        final Boolean satisfiesCompletionCondition) {
+
+      jobBehavior
+          .evaluateJobExpressions(adHocSubProcess.getJobWorkerProperties(), adHocSubProcessContext)
+          .thenDo(
+              jobProperties ->
+                  jobBehavior.createNewAdHocSubProcessJob(
+                      adHocSubProcessContext, adHocSubProcess, jobProperties));
+    }
   }
 }

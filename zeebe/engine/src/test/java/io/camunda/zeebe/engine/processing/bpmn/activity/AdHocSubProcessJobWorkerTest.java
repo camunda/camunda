@@ -136,17 +136,13 @@ public class AdHocSubProcessJobWorkerTest {
     final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
 
     // when
-    final JobResultAdHocSubProcess adHocSubProcess = new JobResultAdHocSubProcess();
-    final var activateElements = adHocSubProcess.activateElements();
-    activateElements.add().setElementId("A");
-    activateElements.add().setElementId("C");
-
-    ENGINE
-        .job()
-        .ofInstance(processInstanceKey)
-        .withType(JOB_TYPE)
-        .withResult(new JobResult().setAdHocSubProcess(adHocSubProcess))
-        .complete();
+    completeAdHocSubProcessJob(
+        processInstanceKey,
+        0,
+        adHocSubProcess -> {
+          adHocSubProcess.activateElements().add().setElementId("A");
+          adHocSubProcess.activateElements().add().setElementId("C");
+        });
 
     // then
     Assertions.assertThat(
@@ -157,5 +153,114 @@ public class AdHocSubProcessJobWorkerTest {
         .containsSubsequence(
             tuple("A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("C", ProcessInstanceIntent.ELEMENT_ACTIVATED));
+  }
+
+  @Test
+  public void shouldCreateJobOnElementCompletion() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.task("A");
+              adHocSubProcess.task("B");
+              adHocSubProcess.task("C");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    completeAdHocSubProcessJob(
+        processInstanceKey,
+        0,
+        adHocSubProcess -> adHocSubProcess.activateElements().add().setElementId("A"));
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit("A", ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    final Record<JobRecordValue> jobCreated =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .skip(1)
+            .getFirst();
+    assertThat(jobCreated.getValue())
+        .hasJobKind(JobKind.AD_HOC_SUB_PROCESS)
+        .hasElementId(AD_HOC_SUB_PROCESS_ELEMENT_ID)
+        .hasType(JOB_TYPE);
+  }
+
+  @Test
+  public void shouldCreateAndCompleteJobs() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.task("A");
+              adHocSubProcess.task("B");
+              adHocSubProcess.task("C");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    completeAdHocSubProcessJob(
+        processInstanceKey,
+        0,
+        adHocSubProcess -> adHocSubProcess.activateElements().add().setElementId("A"));
+
+    completeAdHocSubProcessJob(
+        processInstanceKey,
+        1,
+        adHocSubProcess -> adHocSubProcess.activateElements().add().setElementId("B"));
+
+    completeAdHocSubProcessJob(
+        processInstanceKey,
+        2,
+        adHocSubProcess -> adHocSubProcess.activateElements().add().setElementId("C"));
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit("C", ProcessInstanceIntent.ELEMENT_COMPLETED))
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("B", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("C", ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  private static void completeAdHocSubProcessJob(
+      final long processInstanceKey,
+      final int skip,
+      final Consumer<JobResultAdHocSubProcess> adHocSubProcessProperties) {
+    final JobResultAdHocSubProcess adHocSubProcess = new JobResultAdHocSubProcess();
+    adHocSubProcessProperties.accept(adHocSubProcess);
+    final var jobResult = new JobResult().setAdHocSubProcess(adHocSubProcess);
+
+    final long jobKey =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withType(JOB_TYPE)
+            .withProcessInstanceKey(processInstanceKey)
+            .skip(skip)
+            .getFirst()
+            .getKey();
+
+    ENGINE.job().withKey(jobKey).withType(JOB_TYPE).withResult(jobResult).complete();
   }
 }
