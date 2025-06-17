@@ -139,6 +139,37 @@ You'll need to do 4 things:
    the [CompactRecordLogger](/zeebe/test-util/src/main/java/io/camunda/zeebe/test/util/record/CompactRecordLogger.java)
    of this `RecordValue`.
 
+## Authorization Checks in the Engine
+
+Always enforce an authorization check on any command that originates from “outside” the Engine—for example, when a user-triggered deployment request for a resource arrives.
+Before executing the deployment, consult the user’s permissions (see [Authorization Guide](https://docs.camunda.io/docs/next/components/identity/authorization/)) and reject any requests for which the user lacks the required role or scope.
+By contrast, you **do not** need to perform authorization checks for purely internal events or callbacks—such as a `ProcessInstance.COMPLETE_ELEMENT` notification fired by the Engine itself—because such actions are triggered by the Engine and not by an external user.
+State-machine transitions assume that all external permissions have been verified upstream.
+
+To perform an authorization check on any user-triggered command before you mutate state or emit events, check `AuthorizationResourceType` and `PermissionType` to determine the required permissions for the command.
+Additionally, for existing resource related commands (e.g., BPMN, DMN or Form), resource identifiers (e.g., process id) should be added to authorization request to ensure that the user has the required permissions for the specific resource.
+Before processing the command, if the auth check fails, immediately reject the command and halt processing; only proceed with record handling once the request has been authorized.
+
+### Adding a new authorization check
+
+If you cannot find an existing authorization check that fits your needs, follow these steps to add a new one:
+
+1. **Get Product Management sign-off**
+
+- Check with PM if new permissions are required in the first place.
+- Decide and define new permissions with PM.
+
+2. **Add the new enum values**
+
+- In the engine code, extend `AuthorizationResourceType` and/or `PermissionType`.
+
+3. **Expose them through the REST API**
+
+- In `camunda/zeebe/gateway-protocol/src/main/proto/rest-api.yaml`, under
+  - `PermissionTypeEnum`
+  - `ResourceTypeEnum`
+- Add your new entries to the `enum` lists so the OpenAPI spec (and generated clients) know about them.
+
 ## How to do inter-partition communication?
 
 Generally, each [partition](https://docs.camunda.io/docs/next/components/zeebe/technical-concepts/partitions/) is isolated from the others. The gateway chooses the partition for each user command and sends the command to that partition's leader. This distributes the load over the partitions. When the engine processes commands, the follow-up records are written on the same partition.
