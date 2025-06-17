@@ -91,15 +91,24 @@ public class SnapshotApiRequestHandler
                   LOG.atLevel(Level.DEBUG)
                       .addKeyValue("transferId", request.transferId())
                       .log("Last processed position is {}", lastProcessedPosition);
-                  return service
-                      .getLatestSnapshot(partitionId, lastProcessedPosition, request.transferId())
-                      .thenApply(
-                          chunk -> {
-                            responseWriter.setResponse(
-                                new SnapshotChunkResponse(
-                                    request.transferId(), Optional.ofNullable(chunk)));
-                            return Either.right(responseWriter);
-                          });
+                  return service.getLatestSnapshot(
+                      partitionId, lastProcessedPosition, request.transferId());
+                },
+                actor)
+            .andThen(
+                (chunk, error) -> {
+                  if (error != null) {
+                    LOG.error(
+                        "Failed to get the latest snapshot for partition {}: {}",
+                        partitionId,
+                        error.getMessage(),
+                        error);
+                    return CompletableActorFuture.completed(
+                        Either.left(errorWriter.internalError(error.getMessage())));
+                  }
+                  responseWriter.setResponse(
+                      new SnapshotChunkResponse(request.transferId(), Optional.ofNullable(chunk)));
+                  return CompletableActorFuture.completed(Either.right(responseWriter));
                 },
                 actor);
       }
