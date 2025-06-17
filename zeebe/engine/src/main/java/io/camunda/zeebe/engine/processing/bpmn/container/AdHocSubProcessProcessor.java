@@ -378,6 +378,9 @@ public class AdHocSubProcessProcessor
         final BpmnElementContext childContext,
         final Boolean satisfiesCompletionCondition) {
 
+      // Cancel previous job if exists. There should be only one active job.
+      jobBehavior.cancelJob(adHocSubProcessContext);
+
       jobBehavior
           .evaluateJobExpressions(adHocSubProcess.getJobWorkerProperties(), adHocSubProcessContext)
           .thenDo(

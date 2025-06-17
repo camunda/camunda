@@ -245,6 +245,46 @@ public class AdHocSubProcessJobWorkerTest {
             tuple("C", ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
+  @Test
+  public void shouldCancelJobOnCreatingNewJob() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.task("A");
+              adHocSubProcess.task("B");
+              adHocSubProcess.task("C");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    completeAdHocSubProcessJob(
+        processInstanceKey,
+        0,
+        adHocSubProcess -> {
+          adHocSubProcess.activateElements().add().setElementId("A");
+          adHocSubProcess.activateElements().add().setElementId("B");
+        });
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.jobRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withType(JOB_TYPE)
+                .limit(5))
+        .extracting(Record::getIntent)
+        .containsSequence(
+            JobIntent.CREATED, // on ad-hoc sub-process: ACTIVATED
+            JobIntent.COMPLETED, // job worker: activate elements [A,B]
+            JobIntent.CREATED, // on element A: COMPLETED
+            JobIntent.CANCELED, // <<-- expected cancellation
+            JobIntent.CREATED // on element B: COMPLETED
+            );
+  }
+
   private static void completeAdHocSubProcessJob(
       final long processInstanceKey,
       final int skip,
