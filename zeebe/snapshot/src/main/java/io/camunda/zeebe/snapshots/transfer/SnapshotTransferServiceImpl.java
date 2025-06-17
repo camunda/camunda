@@ -136,7 +136,7 @@ public class SnapshotTransferServiceImpl implements SnapshotTransferService {
         lastPersistedSnapshot.isEmpty()
                 || lastPersistedSnapshot.get().getMetadata().processedPosition()
                     < lastProcessedPosition
-            ? takeSnapshot.takeSnapshot(partitionId, lastProcessedPosition)
+            ? takeSnapshot.takeSnapshot(partitionId, lastProcessedPosition, concurrency)
             : CompletableActorFuture.completed(lastPersistedSnapshot.get());
 
     return lastSnapshot.andThen(

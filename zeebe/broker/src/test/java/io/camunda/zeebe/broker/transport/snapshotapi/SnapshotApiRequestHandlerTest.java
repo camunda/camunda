@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.transport.snapshotapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -162,7 +163,7 @@ public class SnapshotApiRequestHandlerTest {
     scheduler.workUntilDone();
     assertThat(takeFuture).succeedsWithin(Duration.ofSeconds(30));
     if (position > snapshotProcessedPosition) {
-      when(takeSnapshotMock.takeSnapshot(eq(1), eq(position)))
+      when(takeSnapshotMock.takeSnapshot(eq(1), eq(position), any()))
           .thenReturn(takePersistedSnapshot(position));
     }
     mockBootstrappedAtWith(position);

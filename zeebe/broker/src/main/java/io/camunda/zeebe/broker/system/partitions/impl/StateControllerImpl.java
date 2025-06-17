@@ -286,7 +286,7 @@ public class StateControllerImpl implements StateController {
 
   @Override
   public ActorFuture<PersistedSnapshot> takeSnapshot(
-      final int partition, final long lastProcessedPosition) {
+      final int partition, final long lastProcessedPosition, final ConcurrencyControl control) {
     if (partition != partitionId) {
       return CompletableActorFuture.completedExceptionally(
           new IllegalArgumentException(
@@ -295,7 +295,7 @@ public class StateControllerImpl implements StateController {
                   partitionId, partition)));
     }
     return takeTransientSnapshot(lastProcessedPosition)
-        .andThen(PersistableSnapshot::persist, concurrencyControl);
+        .andThen(PersistableSnapshot::persist, control);
   }
 
   private record NextSnapshotId(

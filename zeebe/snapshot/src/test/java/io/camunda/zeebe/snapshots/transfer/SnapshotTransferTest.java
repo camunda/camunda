@@ -118,13 +118,13 @@ public class SnapshotTransferTest {
   public void shouldTakeSnapshotIfNoneIsPresent() {
     // given
     final int partitionId = 1;
-    when(takeSnapshotMock.takeSnapshot(anyInt(), anyLong()))
+    when(takeSnapshotMock.takeSnapshot(anyInt(), anyLong(), any()))
         .thenReturn(CompletableActorFuture.completed(null));
 
     // when
     final var persistedSnapshotFuture = snapshotTransfer.getLatestSnapshot(partitionId);
 
     // then
-    verify(takeSnapshotMock, timeout(5000)).takeSnapshot(eq(1), eq(-1L));
+    verify(takeSnapshotMock, timeout(5000)).takeSnapshot(eq(1), eq(-1L), any());
   }
 }
