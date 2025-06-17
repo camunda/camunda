@@ -45,6 +45,7 @@ tags:
   - name: Process instance
   - name: Resource
   - name: Role
+  - name: Setup
   - name: Signal
   - name: Tenant
   - name: User
@@ -4580,6 +4581,35 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+
+  /setup/user:
+    post:
+      tags:
+        - Setup
+      operationId: createAdminUser
+      summary: Create admin user
+      description: Creates a new user and assign the admin role to it.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRequest"
+        required: true
+      responses:
+        "201":
+          description: |
+            The user was created and got assigned the admin role successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserCreateResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
 
   /incidents/search:
     post:
