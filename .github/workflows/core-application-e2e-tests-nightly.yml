@@ -1,7 +1,9 @@
+# description: Runs End to End tests on the Core Applications (ie, Tasklist, Operate). This workflow runs on a schedule
+# test location: /qa/core-application-e2e-test-suite
+# type: CI
+# owner: @camunda/qa-engineering
 ---
 name: Core Application E2E Tests Nightly
-
-# owner: @camunda/qa-engineering
 
 on:
   schedule:

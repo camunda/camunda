@@ -1,3 +1,6 @@
+# description: Publishes the C4 bundle for Optimize. This is abundle of react components which are imported and used in Optimize. They are published here: https://www.npmjs.com/package/@camunda/camunda-optimize-composite-components
+# type: CI Helper - Manual
+# owner: @camunda/core-features
 name: Optimize publish c4 to npm
 
 on:

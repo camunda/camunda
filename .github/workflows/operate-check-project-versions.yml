@@ -1,3 +1,5 @@
+# type: Release
+# owner: @camunda/monorepo-devops-team
 name: Operate Check project versions
 
 on:

@@ -1,7 +1,7 @@
+# type: Project Management
+# owner: @camunda/monorepo-devops-team
 ---
 name: Add support label to issue
-
-# owner: @camunda/monorepo-devops-team
 
 on:
   issues:

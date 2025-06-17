@@ -1,6 +1,7 @@
 # description: Runs the CI tests owned by Data Layer. Runs unit tests, and integration tests
 # test location: operate/common, operate/importer, operate/importer-8_7, operate/importer-common, operate/qa/integration-tests, operate/schema, operate/webapp
-# owner: Data Layer
+# type: CI
+# owner: @camunda/data-layer
 ---
 name: "[Legacy] Operate / [IT] Data Layer"
 on:

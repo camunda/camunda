@@ -1,4 +1,8 @@
-name: Optimize test dockerfiles with Hadolint
+# description: Runs Hadolint on Optimize's dockerfile. Hadolint is a dockerfile linting tool
+# test location: /optimize
+# type: CI
+# owner: @camunda/core-features
+name: Optimize Dockerfile Linting
 on: [pull_request]
 jobs:
   hadolint:

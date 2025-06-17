@@ -16,6 +16,7 @@
 # "Run workflow" dropdown, selecting the workflow, filling in the input fields and clicking "Run workflow".
 #
 # Link to Release manual workflow: https://github.com/camunda/camunda/actions/workflows/release-manual.yml
+# type: Release
 
 name: Operate Release manual
 

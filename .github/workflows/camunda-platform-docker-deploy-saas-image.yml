@@ -1,7 +1,7 @@
+# type: CI Helper - Manual
+# owner: @camunda/monorepo-devops-team
 ---
 name: Deploy Camunda Docker Images to SaaS registry
-
-# owner: @camunda/monorepo-devops-team
 
 on:
   workflow_dispatch:

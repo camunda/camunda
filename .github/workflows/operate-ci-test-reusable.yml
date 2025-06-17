@@ -16,7 +16,8 @@
 # description: Automates the CI test process for operate
 # called by: operate-ci-data-layer.yml, operate-ci-core-features.yml
 # test location: operate
-# owner: Data Layer, Core Features
+# type: CI
+# owner: @camunda/data-layer, @camunda/core-features
 ---
 name: Operate CI IT test reusable
 

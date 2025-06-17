@@ -1,3 +1,7 @@
+# description: Runs Optimize Integration tests on various version of Zeebe to ensure compatibility
+# test location: /optimize
+# type: CI
+# owner: @camunda/core-features
 name: Optimize Zeebe Compatibility
 on:
   schedule:

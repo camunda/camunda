@@ -1,6 +1,6 @@
-name: Camunda Helm Chart Integration Test
-
+# type: CI
 # owner: @camunda/monorepo-devops-team
+name: Camunda Helm Chart Integration Test
 
 on:
   schedule:

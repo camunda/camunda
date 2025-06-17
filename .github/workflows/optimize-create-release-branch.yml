@@ -1,3 +1,4 @@
+# type: Release
 name: Optimize Create Release Branch
 on:
   workflow_dispatch:

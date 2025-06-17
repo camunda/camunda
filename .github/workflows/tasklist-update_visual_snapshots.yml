@@ -1,3 +1,7 @@
+# description: This is a Workflow runs tests and created updated screenshots of Tasklist
+# test location: /tasklist/client/
+# type: CI Helper
+# owner: @camunda/core-features
 name: Tasklist Update Visual Regression Snapshots
 
 on:

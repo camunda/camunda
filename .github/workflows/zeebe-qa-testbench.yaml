@@ -1,3 +1,7 @@
+# description: Run testbench on a specific branch and generation
+# called by: zeebe-daily-qa.yml, zeebe-dspatch-qa.yml
+# type: CI
+# owner @camunda/core-features
 name: Zeebe QA Testbench run
 
 on:

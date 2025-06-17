@@ -1,3 +1,4 @@
+# type: Project Management
 name: Slack notification for critical issue
 on:
   issues:

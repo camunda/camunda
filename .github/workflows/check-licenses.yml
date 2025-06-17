@@ -1,7 +1,9 @@
+# description: Checks for license issues by using FOSSA. If a PR introduces a denied or flagged license, this check will fail
+# test location: /
+# type: CI
+# owner: @camunda/monorepo-devops-team
 ---
 name: Check Licenses
-
-# owner: @camunda/monorepo-devops-team
 
 on:
   push:
@@ -111,7 +113,7 @@ jobs:
         # If none is found, fall back to the original base commit — this will cause the check to fail.
         base-revision: >-
           ${{
-            steps.info.outputs.base-revision-most-recent-with-scanning-results || 
+            steps.info.outputs.base-revision-most-recent-with-scanning-results ||
             steps.info.outputs.base-revision
           }}
         path: ${{ matrix.project.path }}

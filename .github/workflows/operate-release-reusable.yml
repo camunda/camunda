@@ -18,6 +18,7 @@
 # - If specified, uploads the release to GitHub.
 # - If specified, uploads the Docker image to the Docker registry.
 # - If the release process fails, sends a notification to a (#operate-ci) Slack channel.
+# type: Release
 
 name: Operate Release (reusable workflow)
 

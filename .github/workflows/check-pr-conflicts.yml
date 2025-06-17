@@ -1,7 +1,7 @@
+# type: Preview Environments
+# owner: @camunda/monorepo-devops-team
 ---
 name: Check for PR conflicts
-
-# owner: @camunda/monorepo-devops-team
 
 on:
   schedule:

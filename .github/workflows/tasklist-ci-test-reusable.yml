@@ -13,6 +13,11 @@
 # CI IT test reusable GitHub Actions Workflow
 # Triggers on a workflow_call event and accepts inputs for branch name and fork count
 # Performs integration tests for the tasklist service with parallel execution.
+# description:
+# test location:
+# called by: tasklist-ci.yml
+# type: CI
+# owner: @camunda/core-features
 
 name: Tasklist CI IT test reusable
 
