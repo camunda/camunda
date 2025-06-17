@@ -10,6 +10,7 @@ package io.camunda.it.migration;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.ok;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
@@ -50,7 +51,10 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneIdentityMigration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -61,6 +65,7 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
@@ -71,11 +76,12 @@ import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.wiremock.integrations.testcontainers.WireMockContainer;
 
 @WireMockTest
 @ZeebeIntegration
 @Testcontainers(parallel = true)
-public class IdentityMigrationIT {
+public class SaaSIdentityMigrationIT {
 
   @TestZeebe(autoStart = false)
   static final TestStandaloneBroker BROKER =
@@ -85,29 +91,9 @@ public class IdentityMigrationIT {
   private static final ElasticsearchContainer ELASTIC = IdentityMigrationTestUtil.getElastic();
 
   @Container
-  private static final KeycloakContainer KEYCLOAK = IdentityMigrationTestUtil.getKeycloak();
-
-  @Container
+  private static final GenericContainer<?> POSTGRES = IdentityMigrationTestUtil.getPostgres();
   private static final GenericContainer<?> IDENTITY =
-      IdentityMigrationTestUtil.getManagementIdentity(KEYCLOAK)
-          // create groups
-          .withEnv("KEYCLOAK_GROUPS_0_NAME", "groupA")
-          .withEnv("KEYCLOAK_GROUPS_1_NAME", "groupB")
-          .withEnv("KEYCLOAK_GROUPS_2_NAME", "groupC")
-          // create users and assign them to groups
-          .withEnv("KEYCLOAK_USERS_0_EMAIL", "user0@email.com")
-          .withEnv("KEYCLOAK_USERS_0_FIRST-NAME", "user0")
-          .withEnv("KEYCLOAK_USERS_0_LAST-NAME", "user0")
-          .withEnv("KEYCLOAK_USERS_0_USERNAME", "user0")
-          .withEnv("KEYCLOAK_USERS_0_PASSWORD", "password")
-          .withEnv("KEYCLOAK_USERS_0_GROUPS_0", "groupA")
-          .withEnv("KEYCLOAK_USERS_0_GROUPS_1", "groupB")
-          .withEnv("KEYCLOAK_USERS_1_EMAIL", "user1@email.com")
-          .withEnv("KEYCLOAK_USERS_1_FIRST-NAME", "user1")
-          .withEnv("KEYCLOAK_USERS_1_LAST-NAME", "user1")
-          .withEnv("KEYCLOAK_USERS_1_USERNAME", "user1")
-          .withEnv("KEYCLOAK_USERS_1_PASSWORD", "password")
-          .withEnv("KEYCLOAK_USERS_1_GROUPS_0", "groupC")
+      IdentityMigrationTestUtil.getManagementIdentitySaaS(POSTGRES)
           .waitingFor(
               new HttpWaitStrategy()
                   .forPort(8082)
@@ -116,10 +102,10 @@ public class IdentityMigrationIT {
                   .forStatusCode(200)
                   .withReadTimeout(Duration.ofSeconds(10))
                   .withStartupTimeout(Duration.ofMinutes(5)));
-
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
   private static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
   private TestStandaloneIdentityMigration migration;
   private CamundaClient client;
 
@@ -131,14 +117,21 @@ public class IdentityMigrationIT {
   @BeforeEach
   public void setup(final WireMockRuntimeInfo wmRuntimeInfo) throws Exception {
     // given
+    org.testcontainers.Testcontainers.exposeHostPorts(wmRuntimeInfo.getHttpPort());
+    IDENTITY
+        .withEnv("IDENTITY_AUTH_PROVIDER_BACKEND_URL", "http://host.testcontainers.internal:%d/".formatted(wmRuntimeInfo.getHttpPort()));
+    IDENTITY
+        .withEnv("IDENTITY_AUTH_PROVIDER_ISSUER_URL", "http://host.testcontainers.internal:%d/".formatted(wmRuntimeInfo.getHttpPort()));
+    IDENTITY.start();
+
     stubConsoleClient();
 
     final IdentityMigrationProperties migrationProperties = new IdentityMigrationProperties();
     migrationProperties.getManagementIdentity().setBaseUrl(externalIdentityUrl(IDENTITY));
     migrationProperties
         .getManagementIdentity()
-        .setIssuerBackendUrl(externalKeycloakUrl(KEYCLOAK) + "/realms/camunda-platform/");
-    migrationProperties.getManagementIdentity().setIssuerType("KEYCLOAK");
+        .setIssuerBackendUrl(wmRuntimeInfo.getHttpBaseUrl());
+    migrationProperties.getManagementIdentity().setIssuerType("AUTH0");
     migrationProperties.getManagementIdentity().setClientId(IDENTITY_CLIENT);
     migrationProperties.getManagementIdentity().setClientSecret(IDENTITY_CLIENT_SECRET);
     migrationProperties.getManagementIdentity().setAudience(CAMUNDA_IDENTITY_RESOURCE_SERVER);
@@ -172,7 +165,7 @@ public class IdentityMigrationIT {
     migration.start();
 
     Awaitility.await()
-        .atMost(Duration.ofSeconds(5))
+        .atMost(Duration.ofHours(5))
         .ignoreExceptions()
         .untilAsserted(
             () -> {
@@ -506,7 +499,16 @@ public class IdentityMigrationIT {
   }
 
   private void stubConsoleClient() {
-    final String token = "mocked-access-token";
+    final String token = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6Ik5FSTFSa1JGUkVaRVJUQTFSalU0T1VJNE5EQXdOMFF5TUVZek1ERkdRVGcxUmpsRE1ERkdOQSJ9.eyJpc3MiOiJodHRwczovL3dlYmxvZ2luLmNsb3VkLmRldi51bHRyYXdvbWJhdC5jb20vIiwic3ViIjoiRVk1djU1VFlJc3B5UTZsTHhRTklMdUlMN1dCcDFmaWxAY2xpZW50cyIsImF1ZCI6ImlkZW50aXR5IiwiaWF0IjoxNzUwMTQ2MjIyLCJleHAiOjE3NTAyMzI2MjIsInNjb3BlIjoicmVhZCB3cml0ZSIsImd0eSI6ImNsaWVudC1jcmVkZW50aWFscyIsImF6cCI6IkVZNXY1NVRZSXNweVE2bEx4UU5JTHVJTDdXQnAxZmlsIiwicGVybWlzc2lvbnMiOlsicmVhZCIsIndyaXRlIl19.kePACag2xHIHau_oVxjF53KgY-lXdaYGJ3t9DfD3ycpj1mvTE57qlmBqPrgaJLt8HBuqMaxHpD8hkizCUF6l3feLtsXLPKzp56DlxtlxcCq4LDfzAK9rhB6YYeO6DwORKvU6VG5pAgAgffnlLoF7mLs2Rk3QGV3sG_srw5jTlBSqAQqpMKTuLsyqojD8GzpRzUpLRHZVMa7EAqo4bQadnymyibJAIEaHLzXn0K494bRQZG0ou43vnM_unEOAZWGyPMjW4vmfCc_la2DQ2wOfvdsgOJ2RhuOcLVTDlc3qvwxpS6-RWFFLj-WCUCtI1_7kyklJnjyuH8bLUB-tUOCFaA";
+
+    // IDENTITY
+    stubFor(
+        get("/.well-known/jwks.json").willReturn(
+            ok()
+                .withHeader("Content-Type", "application/json")
+                .withBody(loadFixture("jwks.json"))
+        )
+    );
 
     stubFor(
         post(urlEqualTo("/oauth/token"))
@@ -516,6 +518,7 @@ public class IdentityMigrationIT {
                     .withHeader("Content-Type", "application/json")
                     .withBody("{\"access_token\": \"" + token + "\"}")));
 
+    // CONSOLE
     final String endpoint =
         MessageFormat.format(
             "/external/organizations/{0}/clusters/{1}/migrationData/{2}",
@@ -550,6 +553,14 @@ public class IdentityMigrationIT {
                     .withStatus(200)
                     .withHeader("Content-Type", "application/json")
                     .withBody(responseJson)));
+  }
+
+  protected static String loadFixture(final String filename) {
+      final InputStream inputStream =
+          SaaSIdentityMigrationIT.class.getClassLoader().getResourceAsStream("identity-migration/" + filename);
+    return new BufferedReader(new InputStreamReader(inputStream))
+        .lines()
+        .collect(Collectors.joining("\n"));
   }
 
   // TODO: refactor this once https://github.com/camunda/camunda/issues/32721 is implemented
