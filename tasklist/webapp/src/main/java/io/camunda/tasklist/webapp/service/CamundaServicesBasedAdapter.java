@@ -205,7 +205,7 @@ public class CamundaServicesBasedAdapter implements TasklistServicesAdapter {
 
     final var tenant = tenantValidationResult.get();
     return new ProcessInstanceCreateRequest(
-        -1L, bpmnProcessId, -1, variables, tenant, null, null, null, List.of(), null);
+        -1L, bpmnProcessId, -1, variables, tenant, null, null, null, List.of(), List.of(), null);
   }
 
   private DeployResourcesRequest toDeployResourcesRequest(

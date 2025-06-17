@@ -30,6 +30,7 @@ public record ProcessInstanceEntity(
   public enum ProcessInstanceState {
     ACTIVE,
     COMPLETED,
+    SUSPENDED,
     CANCELED;
 
     public static ProcessInstanceState fromValue(final String value) {
