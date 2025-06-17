@@ -1678,10 +1678,10 @@
   resolved "https://registry.yarnpkg.com/@csstools/utilities/-/utilities-2.0.0.tgz#f7ff0fee38c9ffb5646d47b6906e0bc8868bde60"
   integrity sha512-5VdOr0Z71u+Yp3ozOx8T11N703wIFGVRgOWbOZMKgglPJsWA54MRIoMNVMa7shUToIhx5J8vX4sOZgD2XiihiQ==
 
-"@cyclonedx/cyclonedx-library@^8.0.0":
-  version "8.3.0"
-  resolved "https://registry.yarnpkg.com/@cyclonedx/cyclonedx-library/-/cyclonedx-library-8.3.0.tgz#b328be23c8d25a0fe90e954cd07f5dbe733193e0"
-  integrity sha512-CHa8FZ6T5ywYkwBoeqlHF+Ov514zCaLPh5HbbV5bN+RiZNgsvAIHUtn6XV6OzL5pqM8qD33FwEI1kq0o3k1LZQ==
+"@cyclonedx/cyclonedx-library@^8.4.0":
+  version "8.4.0"
+  resolved "https://registry.yarnpkg.com/@cyclonedx/cyclonedx-library/-/cyclonedx-library-8.4.0.tgz#c7480089a8bb52cadd5bc77417453d7cfd719959"
+  integrity sha512-mVcqKA8UonMVoR1T2vMwxe8dMidpGJ26tDFp/LWR3RWJMKTAeKjI+OTZCpej2hW1AQlu2PB3/b4HmAP5G2rsaQ==
   dependencies:
     packageurl-js "^2.0.1"
     spdx-expression-parse "^3.0.1 || ^4"
@@ -1692,12 +1692,12 @@
     libxmljs2 "^0.35||^0.37"
     xmlbuilder2 "^3.0.2"
 
-"@cyclonedx/webpack-plugin@5.0.1":
-  version "5.0.1"
-  resolved "https://registry.yarnpkg.com/@cyclonedx/webpack-plugin/-/webpack-plugin-5.0.1.tgz#65aed83606e8a17f01afa6a792bded2be27587e8"
-  integrity sha512-0SWF9MkFXk0kF2ZmbRlKtdWuS/FjYUQ72O0+9GJtk4+U9xq6yIbTlTAvtr/v6Y0unT3wEgGA2PZBWvF6iqFT6g==
+"@cyclonedx/webpack-plugin@5.1.0":
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/@cyclonedx/webpack-plugin/-/webpack-plugin-5.1.0.tgz#11674c56ecdb096aec08ab8a0dd1a9e7e4394580"
+  integrity sha512-IZIqbQ2FqaEUvyeJ4A3Jpcb2UxyvMuKRrKGPIsqUBD1nMRlV+3MRAUCo08BFx2wwtTHzyG+P01V6MgYxWnl+0A==
   dependencies:
-    "@cyclonedx/cyclonedx-library" "^8.0.0"
+    "@cyclonedx/cyclonedx-library" "^8.4.0"
     normalize-package-data "^7.0.0"
     xmlbuilder2 "^3.0.2"
 
