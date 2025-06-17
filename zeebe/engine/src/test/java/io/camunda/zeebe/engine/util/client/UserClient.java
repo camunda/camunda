@@ -50,7 +50,7 @@ public final class UserClient {
                 .withIntent(UserIntent.CREATED)
                 .withSourceRecordPosition(position)
                 .getFirst();
-    private final Function<Long, Record<UserRecordValue>> REJECTION_SUPPLIER;
+    private final Function<Long, Record<UserRecordValue>> rejectionSupplier;
 
     private final CommandWriter writer;
     private final UserIntent intent;
@@ -63,7 +63,7 @@ public final class UserClient {
       this.intent = intent;
       userCreationRecord = new UserRecord();
       userCreationRecord.setUsername(username);
-      REJECTION_SUPPLIER =
+      rejectionSupplier =
           (position) ->
               RecordingExporter.userRecords()
                   .onlyCommandRejections()
@@ -103,7 +103,7 @@ public final class UserClient {
     }
 
     public UserCreationClient expectRejection() {
-      expectation = REJECTION_SUPPLIER;
+      expectation = rejectionSupplier;
       return this;
     }
   }
