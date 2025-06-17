@@ -35,9 +35,13 @@ import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.micrometer.core.instrument.Timer;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
@@ -45,6 +49,7 @@ import org.slf4j.Logger;
 public final class ElasticsearchArchiverRepository extends ElasticsearchRepository
     implements ArchiverRepository {
   private static final String ALL_INDICES = "*";
+  private static final String ALL_INDICES_PATTERN = ".*";
   private static final String INDEX_WILDCARD = ".+-\\d+\\.\\d+\\.\\d+_.+$";
 
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
@@ -88,7 +93,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     return client
         .search(searchRequest, Object.class)
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenApplyAsync(
+        .thenComposeAsync(
             (response) -> createArchiveBatch(response, ListViewTemplate.END_DATE), executor);
   }
 
@@ -100,7 +105,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     return client
         .search(searchRequest, Object.class)
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenApplyAsync(
+        .thenComposeAsync(
             (response) -> createArchiveBatch(response, BatchOperationTemplate.END_DATE), executor);
   }
 
@@ -223,28 +228,41 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     return client.indices().putSettings(settingsRequest).thenApplyAsync(ok -> null, executor);
   }
 
-  private ArchiveBatch createArchiveBatch(final SearchResponse<?> response, final String field) {
+  private CompletableFuture<ArchiveBatch> createArchiveBatch(
+      final SearchResponse<?> response, final String field) {
     final var hits = response.hits().hits();
     if (hits.isEmpty()) {
-      return new ArchiveBatch(null, List.of());
+      return CompletableFuture.completedFuture(new ArchiveBatch(null, List.of()));
     }
 
     final String endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
-    lastHistoricalArchiverDate =
-        DateOfArchivedDocumentsUtil.calculateDateOfArchiveIndexForBatch(
-            endDate,
-            lastHistoricalArchiverDate,
-            config.getRolloverInterval(),
-            config.getElsRolloverDateFormat());
 
-    final var ids =
-        hits.stream()
-            .takeWhile(
-                hit -> hit.fields().get(field).toJson().asJsonArray().getString(0).equals(endDate))
-            .map(Hit::id)
-            .toList();
+    final CompletableFuture<String> dateFuture =
+        (lastHistoricalArchiverDate == null)
+            ? fetchLastHistoricalArchiverDate()
+            : CompletableFuture.completedFuture(lastHistoricalArchiverDate);
 
-    return new ArchiveBatch(lastHistoricalArchiverDate, ids);
+    return dateFuture.thenApply(
+        date -> {
+          lastHistoricalArchiverDate =
+              DateOfArchivedDocumentsUtil.calculateDateOfArchiveIndexForBatch(
+                  endDate, date, config.getRolloverInterval(), config.getElsRolloverDateFormat());
+
+          final var ids =
+              hits.stream()
+                  .takeWhile(
+                      hit ->
+                          hit.fields()
+                              .get(field)
+                              .toJson()
+                              .asJsonArray()
+                              .getString(0)
+                              .equals(endDate))
+                  .map(Hit::id)
+                  .toList();
+
+          return new ArchiveBatch(lastHistoricalArchiverDate, ids);
+        });
   }
 
   private TermsQuery buildIdTermsQuery(final String idFieldName, final List<String> idValues) {
@@ -285,5 +303,43 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .sort(sort -> sort.field(field -> field.field(sortField).order(SortOrder.Asc)))
         .size(config.getRolloverBatchSize())
         .build();
+  }
+
+  private CompletableFuture<String> fetchLastHistoricalArchiverDate() {
+    final DateTimeFormatter formatterWithHour = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH");
+    final DateTimeFormatter formatterWithoutHour = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    final LocalDateTime[] latest = {null};
+    final String[] latestDate = {null};
+    final Pattern indexDatePattern = Pattern.compile("_(\\d{4}-\\d{2}-\\d{2}(?:-\\d{2})?)");
+
+    return fetchMatchingIndexes(ALL_INDICES_PATTERN)
+        .thenApply(
+            indexes ->
+                // we want to filter out zeebe records since the
+                // rollover interval does not apply to these.
+                indexes.stream().filter(index -> !index.contains("zeebe-record")).toList())
+        .thenApply(
+            indexes -> {
+              for (final String index : indexes) {
+                final Matcher matcher = indexDatePattern.matcher(index);
+                if (matcher.find()) {
+                  final String dateStr = matcher.group(1);
+                  final LocalDateTime dateTime;
+
+                  if (dateStr.length() == 13) { // e.g., 2025-06-16-10
+                    dateTime = LocalDateTime.parse(dateStr, formatterWithHour);
+                  } else { // e.g., 2025-06-16
+                    dateTime = LocalDate.parse(dateStr, formatterWithoutHour).atStartOfDay();
+                  }
+
+                  if (latest[0] == null || dateTime.isAfter(latest[0])) {
+                    latest[0] = dateTime;
+                    latestDate[0] = dateStr;
+                  }
+                }
+              }
+              // if no date historical index exists we want to return null
+              return latestDate[0];
+            });
   }
 }

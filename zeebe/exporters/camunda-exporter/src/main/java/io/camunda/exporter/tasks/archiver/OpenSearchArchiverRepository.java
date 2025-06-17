@@ -19,11 +19,15 @@ import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.WillCloseWhenClosed;
 import org.opensearch.client.json.JsonData;
@@ -52,6 +56,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final long AUTO_SLICES = 0; // see OS docs; 0 means auto
   private static final String INDEX_WILDCARD = ".+-\\d+\\.\\d+\\.\\d+_.+$";
+  private static final String ALL_INDICES_PATTERN = ".*";
 
   private final int partitionId;
   private final HistoryConfiguration config;
@@ -93,7 +98,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(request, Object.class))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenApplyAsync(
+        .thenComposeAsync(
             (response) -> createArchiveBatch(response, ListViewTemplate.END_DATE), executor);
   }
 
@@ -104,7 +109,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(searchRequest, Object.class))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenApplyAsync(
+        .thenComposeAsync(
             (response) -> createArchiveBatch(response, BatchOperationTemplate.END_DATE), executor);
   }
 
@@ -235,28 +240,45 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         batchOperationIndex, endDateQ.toQuery(), BatchOperationTemplate.END_DATE);
   }
 
-  private ArchiveBatch createArchiveBatch(final SearchResponse<?> response, final String field) {
+  private CompletableFuture<ArchiveBatch> createArchiveBatch(
+      final SearchResponse<?> response, final String field) {
     final var hits = response.hits().hits();
     if (hits.isEmpty()) {
-      return new ArchiveBatch(null, List.of());
+      return CompletableFuture.completedFuture(new ArchiveBatch(null, List.of()));
     }
     final var endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
 
-    lastHistoricalArchiverDate =
-        DateOfArchivedDocumentsUtil.calculateDateOfArchiveIndexForBatch(
-            endDate,
-            lastHistoricalArchiverDate,
-            config.getRolloverInterval(),
-            config.getElsRolloverDateFormat());
+    final CompletableFuture<String> dateFuture;
+    try {
+      dateFuture =
+          (lastHistoricalArchiverDate == null)
+              ? fetchLastHistoricalArchiverDate()
+              : CompletableFuture.completedFuture(lastHistoricalArchiverDate);
+    } catch (final IOException e) {
+      return CompletableFuture.failedFuture(new ExporterException("Failed to fetch indexes:", e));
+    }
 
-    final var ids =
-        hits.stream()
-            .takeWhile(
-                hit -> hit.fields().get(field).toJson().asJsonArray().getString(0).equals(endDate))
-            .map(Hit::id)
-            .toList();
+    return dateFuture.thenApply(
+        date -> {
+          lastHistoricalArchiverDate =
+              DateOfArchivedDocumentsUtil.calculateDateOfArchiveIndexForBatch(
+                  endDate, date, config.getRolloverInterval(), config.getElsRolloverDateFormat());
 
-    return new ArchiveBatch(lastHistoricalArchiverDate, ids);
+          final var ids =
+              hits.stream()
+                  .takeWhile(
+                      hit ->
+                          hit.fields()
+                              .get(field)
+                              .toJson()
+                              .asJsonArray()
+                              .getString(0)
+                              .equals(endDate))
+                  .map(Hit::id)
+                  .toList();
+
+          return new ArchiveBatch(lastHistoricalArchiverDate, ids);
+        });
   }
 
   private TermsQuery buildIdTermsQuery(final String idFieldName, final List<String> idValues) {
@@ -320,6 +342,44 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .sort(sort -> sort.field(field -> field.field(sortField).order(SortOrder.Asc)))
         .size(config.getRolloverBatchSize())
         .build();
+  }
+
+  private CompletableFuture<String> fetchLastHistoricalArchiverDate() throws IOException {
+    final DateTimeFormatter formatterWithHour = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH");
+    final DateTimeFormatter formatterWithoutHour = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    final LocalDateTime[] latest = {null};
+    final String[] latestDate = {null};
+    final Pattern indexDatePattern = Pattern.compile("_(\\d{4}-\\d{2}-\\d{2}(?:-\\d{2})?)");
+
+    return fetchIndexMatchingIndexes(ALL_INDICES_PATTERN)
+        .thenApply(
+            indexes ->
+                // we want to filter out zeebe records since the
+                // rollover interval does not apply to these.
+                indexes.stream().filter(index -> !index.contains("zeebe-record")).toList())
+        .thenApply(
+            indexes -> {
+              for (final String index : indexes) {
+                final Matcher matcher = indexDatePattern.matcher(index);
+                if (matcher.find()) {
+                  final String dateStr = matcher.group(1);
+                  final LocalDateTime dateTime;
+
+                  if (dateStr.length() == 13) { // e.g., 2025-06-16-10
+                    dateTime = LocalDateTime.parse(dateStr, formatterWithHour);
+                  } else { // e.g., 2025-06-16
+                    dateTime = LocalDate.parse(dateStr, formatterWithoutHour).atStartOfDay();
+                  }
+
+                  if (latest[0] == null || dateTime.isAfter(latest[0])) {
+                    latest[0] = dateTime;
+                    latestDate[0] = dateStr;
+                  }
+                }
+              }
+              // if no date historical index exists we want to return null
+              return latestDate[0];
+            });
   }
 
   private record AddPolicyRequestBody(@JsonProperty("policy_id") String policyId) {}
