@@ -22,19 +22,18 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationElement;
-import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionElement;
+import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
-import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue.AdHocSubProcessActivityActivationElementValue;
+import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
+import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue.AdHocSubProcessInstructionElementValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 
-public class AdHocSubProcessActivityActivateProcessor
-    implements TypedRecordProcessor<AdHocSubProcessActivityActivationRecord> {
+public class AdHocSubProcessInstructionActivateProcessor
+    implements TypedRecordProcessor<AdHocSubProcessInstructionRecord> {
 
   private static final String ERROR_MSG_AD_HOC_SUB_PROCESS_NOT_FOUND =
       "Expected to activate activities for ad-hoc sub-process but no ad-hoc sub-process instance found with key '%s'.";
@@ -55,11 +54,10 @@ public class AdHocSubProcessActivityActivateProcessor
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final BpmnAdHocSubProcessBehavior adHocSubProcessBehavior;
 
-  public AdHocSubProcessActivityActivateProcessor(
+  public AdHocSubProcessInstructionActivateProcessor(
       final Writers writers,
       final ProcessingState processingState,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final KeyGenerator keyGenerator,
       final BpmnAdHocSubProcessBehavior adHocSubProcessBehavior) {
     stateWriter = writers.state();
     responseWriter = writers.response();
@@ -71,7 +69,7 @@ public class AdHocSubProcessActivityActivateProcessor
   }
 
   @Override
-  public void processRecord(final TypedRecord<AdHocSubProcessActivityActivationRecord> command) {
+  public void processRecord(final TypedRecord<AdHocSubProcessInstructionRecord> command) {
     final var adHocSubProcessElementInstance =
         elementInstanceState.getInstance(
             Long.parseLong(command.getValue().getAdHocSubProcessInstanceKey()));
@@ -147,7 +145,7 @@ public class AdHocSubProcessActivityActivateProcessor
     // check that the given elements exist within the ad-hoc sub-process
     final var elementsNotInAdHocSubProcess =
         command.getValue().elements().stream()
-            .map(AdHocSubProcessActivityActivationElement::getElementId)
+            .map(AdHocSubProcessInstructionElement::getElementId)
             .filter(elementId -> !adHocActivitiesById.containsKey(elementId))
             .toList();
     if (!elementsNotInAdHocSubProcess.isEmpty()) {
@@ -178,17 +176,14 @@ public class AdHocSubProcessActivityActivateProcessor
     }
 
     stateWriter.appendFollowUpEvent(
-        command.getKey(), AdHocSubProcessActivityActivationIntent.ACTIVATED, command.getValue());
+        command.getKey(), AdHocSubProcessInstructionIntent.ACTIVATED, command.getValue());
 
     responseWriter.writeEventOnCommand(
-        command.getKey(),
-        AdHocSubProcessActivityActivationIntent.ACTIVATED,
-        command.getValue(),
-        command);
+        command.getKey(), AdHocSubProcessInstructionIntent.ACTIVATED, command.getValue(), command);
   }
 
   private void writeRejectionError(
-      final TypedRecord<AdHocSubProcessActivityActivationRecord> command,
+      final TypedRecord<AdHocSubProcessInstructionRecord> command,
       final RejectionType rejectionType,
       final String errorMessage) {
     rejectionWriter.appendRejection(command, rejectionType, errorMessage);
@@ -196,16 +191,16 @@ public class AdHocSubProcessActivityActivateProcessor
   }
 
   private boolean hasDuplicateElements(
-      final TypedRecord<AdHocSubProcessActivityActivationRecord> command) {
+      final TypedRecord<AdHocSubProcessInstructionRecord> command) {
     return command.getValue().getElements().stream()
-            .map(AdHocSubProcessActivityActivationElementValue::getElementId)
+            .map(AdHocSubProcessInstructionElementValue::getElementId)
             .distinct()
             .count()
         != command.getValue().getElements().size();
   }
 
   private Either<Rejection, Void> authorize(
-      final TypedRecord<AdHocSubProcessActivityActivationRecord> command,
+      final TypedRecord<AdHocSubProcessInstructionRecord> command,
       final ElementInstance adHocSubProcessElementInstance) {
     final var authRequest =
         new AuthorizationRequest(

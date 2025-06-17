@@ -20,12 +20,12 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
-import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultAdHocSubProcess;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
-import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
+import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -191,7 +191,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
         final JobResultAdHocSubProcess adHocSubProcessJobResult =
             value.getResult().getAdHocSubProcess();
         if (!adHocSubProcessJobResult.getActivateElements().isEmpty()) {
-          final var adHocSubProcessRecord = new AdHocSubProcessActivityActivationRecord();
+          final var adHocSubProcessRecord = new AdHocSubProcessInstructionRecord();
           adHocSubProcessRecord.setAdHocSubProcessInstanceKey(String.valueOf(elementInstanceKey));
           adHocSubProcessRecord.setTenantId(value.getTenantId());
 
@@ -206,7 +206,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
                           .setVariables(element.getVariablesBuffer()));
 
           commandWriter.appendNewCommand(
-              AdHocSubProcessActivityActivationIntent.ACTIVATE, adHocSubProcessRecord);
+              AdHocSubProcessInstructionIntent.ACTIVATE, adHocSubProcessRecord);
         }
       }
       default -> {

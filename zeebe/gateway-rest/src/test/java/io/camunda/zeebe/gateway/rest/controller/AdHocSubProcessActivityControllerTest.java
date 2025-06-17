@@ -28,7 +28,7 @@ import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivityResult;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivityResult.TypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivitySearchQueryResult;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
@@ -295,8 +295,7 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
     void shouldActivateActivities() {
       when(adHocSubProcessActivityServices.activateActivities(
               any(AdHocSubProcessActivateActivitiesRequest.class)))
-          .thenReturn(
-              CompletableFuture.completedFuture(new AdHocSubProcessActivityActivationRecord()));
+          .thenReturn(CompletableFuture.completedFuture(new AdHocSubProcessInstructionRecord()));
 
       webClient
           .post()

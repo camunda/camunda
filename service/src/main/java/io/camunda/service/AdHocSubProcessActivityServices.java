@@ -18,12 +18,12 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateAdHocSubProcessActivityRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateAdHocSubProcessInstructionRequest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
-import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessActivityActivationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -112,10 +112,10 @@ public class AdHocSubProcessActivityServices extends ApiServices<AdHocSubProcess
     return documentation;
   }
 
-  public CompletableFuture<AdHocSubProcessActivityActivationRecord> activateActivities(
+  public CompletableFuture<AdHocSubProcessInstructionRecord> activateActivities(
       final AdHocSubProcessActivateActivitiesRequest request) {
     final var brokerRequest =
-        new BrokerActivateAdHocSubProcessActivityRequest()
+        new BrokerActivateAdHocSubProcessInstructionRequest()
             .setAdHocSubProcessInstanceKey(request.adHocSubProcessInstanceKey());
 
     request.elements().stream()

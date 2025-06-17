@@ -12,24 +12,24 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue;
+import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 
-public final class AdHocSubProcessActivityActivationRecord extends UnifiedRecordValue
-    implements AdHocSubProcessActivityActivationRecordValue {
+public final class AdHocSubProcessInstructionRecord extends UnifiedRecordValue
+    implements AdHocSubProcessInstructionRecordValue {
 
   private static final String DEFAULT_STRING = "";
 
   private final StringProperty adHocSubProcessInstanceKey =
       new StringProperty("adHocSubProcessInstanceKey", DEFAULT_STRING);
-  private final ArrayProperty<AdHocSubProcessActivityActivationElement> elements =
-      new ArrayProperty<>("elements", AdHocSubProcessActivityActivationElement::new);
+  private final ArrayProperty<AdHocSubProcessInstructionElement> elements =
+      new ArrayProperty<>("elements", AdHocSubProcessInstructionElement::new);
   private final StringProperty tenantId =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
-  public AdHocSubProcessActivityActivationRecord() {
+  public AdHocSubProcessInstructionRecord() {
     super(3);
     declareProperty(adHocSubProcessInstanceKey).declareProperty(elements).declareProperty(tenantId);
   }
@@ -39,17 +39,15 @@ public final class AdHocSubProcessActivityActivationRecord extends UnifiedRecord
     return BufferUtil.bufferAsString(adHocSubProcessInstanceKey.getValue());
   }
 
-  public AdHocSubProcessActivityActivationRecord setAdHocSubProcessInstanceKey(
+  public AdHocSubProcessInstructionRecord setAdHocSubProcessInstanceKey(
       final String adHocSubProcessInstanceKey) {
     this.adHocSubProcessInstanceKey.setValue(adHocSubProcessInstanceKey);
     return this;
   }
 
   @Override
-  public List<AdHocSubProcessActivityActivationElementValue> getElements() {
-    return elements.stream()
-        .map(AdHocSubProcessActivityActivationElementValue.class::cast)
-        .toList();
+  public List<AdHocSubProcessInstructionElementValue> getElements() {
+    return elements.stream().map(AdHocSubProcessInstructionElementValue.class::cast).toList();
   }
 
   /**
@@ -59,7 +57,7 @@ public final class AdHocSubProcessActivityActivationRecord extends UnifiedRecord
    * @return a {@link ValueArray} of flow nodes that can easily be added to.
    */
   @JsonIgnore
-  public ValueArray<AdHocSubProcessActivityActivationElement> elements() {
+  public ValueArray<AdHocSubProcessInstructionElement> elements() {
     return elements;
   }
 
@@ -68,7 +66,7 @@ public final class AdHocSubProcessActivityActivationRecord extends UnifiedRecord
     return BufferUtil.bufferAsString(tenantId.getValue());
   }
 
-  public AdHocSubProcessActivityActivationRecord setTenantId(final String tenantId) {
+  public AdHocSubProcessInstructionRecord setTenantId(final String tenantId) {
     this.tenantId.setValue(tenantId);
     return this;
   }

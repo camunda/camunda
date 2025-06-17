@@ -9,7 +9,7 @@ package io.camunda.zeebe.engine.processing;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
-import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessActivityActivateProcessor;
+import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessInstructionActivateProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
@@ -43,7 +43,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessActivityActivationIntent;
+import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -130,13 +130,8 @@ public final class BpmnProcessors {
         authCheckBehavior,
         keyGenerator);
     addProcessInstanceBatchStreamProcessors(typedRecordProcessors, processingState, writers);
-    addAdHocSubProcessActivityStreamProcessors(
-        typedRecordProcessors,
-        processingState,
-        writers,
-        authCheckBehavior,
-        keyGenerator,
-        bpmnBehaviors);
+    addAdHocSubProcessInstructionStreamProcessors(
+        typedRecordProcessors, processingState, writers, authCheckBehavior, bpmnBehaviors);
 
     return bpmnStreamProcessor;
   }
@@ -340,21 +335,16 @@ public final class BpmnProcessors {
                 processingState.getProcessState()));
   }
 
-  private static void addAdHocSubProcessActivityStreamProcessors(
+  private static void addAdHocSubProcessInstructionStreamProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final MutableProcessingState processingState,
       final Writers writers,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final KeyGenerator keyGenerator,
       final BpmnBehaviors bpmnBehaviors) {
     typedRecordProcessors.onCommand(
-        ValueType.AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION,
-        AdHocSubProcessActivityActivationIntent.ACTIVATE,
-        new AdHocSubProcessActivityActivateProcessor(
-            writers,
-            processingState,
-            authCheckBehavior,
-            keyGenerator,
-            bpmnBehaviors.adHocSubProcessBehavior()));
+        ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION,
+        AdHocSubProcessInstructionIntent.ACTIVATE,
+        new AdHocSubProcessInstructionActivateProcessor(
+            writers, processingState, authCheckBehavior, bpmnBehaviors.adHocSubProcessBehavior()));
   }
 }
