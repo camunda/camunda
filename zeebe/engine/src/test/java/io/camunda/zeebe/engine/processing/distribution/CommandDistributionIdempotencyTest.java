@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.filter.ProcessInstanceFilter.Builder;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCancelProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCreateProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationPartitionCompleteProcessor;
@@ -754,15 +755,26 @@ public class CommandDistributionIdempotencyTest {
 
   private static Record<BatchOperationCreationRecordValue> createBatchOperation(
       final int partitionId) {
-    return ENGINE
-        .batchOperation()
-        .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
-        .onPartition(partitionId)
-        .withFilter(
-            new UnsafeBuffer(
-                MsgPackConverter.convertToMsgPack(
-                    new ProcessInstanceFilter.Builder().processInstanceKeys(1L, 3L, 8L).build())))
-        .create();
+    final Record<BatchOperationCreationRecordValue> batchOperationCreationRecordValueRecord =
+        ENGINE
+            .batchOperation()
+            .newCreation(BatchOperationType.CANCEL_PROCESS_INSTANCE)
+            .onPartition(partitionId)
+            .withFilter(
+                new UnsafeBuffer(
+                    MsgPackConverter.convertToMsgPack(
+                        new Builder().processInstanceKeys(1L, 3L, 8L).build())))
+            .create();
+
+    if (partitionId != BatchOperationClient.DEFAULT_PARTITION) {
+      // Wait until the batch is also on default partition
+      RecordingExporter.batchOperationCreationRecords()
+          .withPartitionId(BatchOperationClient.DEFAULT_PARTITION)
+          .withIntent(BatchOperationIntent.CREATED)
+          .await();
+    }
+
+    return batchOperationCreationRecordValueRecord;
   }
 
   private static Record<BatchOperationLifecycleManagementRecordValue> suspendBatchOperation(
