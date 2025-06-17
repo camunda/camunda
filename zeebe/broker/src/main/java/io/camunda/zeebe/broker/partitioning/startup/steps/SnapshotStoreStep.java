@@ -66,7 +66,7 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
                             context.concurrencyControl());
                   },
                   context.concurrencyControl())
-              .andThen(this::initializeFromSnapshot, context.concurrencyControl());
+              .andThen(this::initializeFromBootstrapSnapshot, context.concurrencyControl());
     }
     return result;
   }
@@ -78,7 +78,7 @@ public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
         .thenApply(ignored -> context.snapshotStore(null), context.concurrencyControl());
   }
 
-  ActorFuture<PartitionStartupContext> initializeFromSnapshot(
+  ActorFuture<PartitionStartupContext> initializeFromBootstrapSnapshot(
       final PartitionStartupContext context) {
     final var fut = context.snapshotTransfer().getLatestSnapshot(Protocol.DEPLOYMENT_PARTITION);
     return fut.andThen(
