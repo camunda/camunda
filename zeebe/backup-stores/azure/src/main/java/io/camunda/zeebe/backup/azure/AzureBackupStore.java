@@ -125,7 +125,6 @@ public final class AzureBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
-    LOG.info("Saving {}", backup.id());
     return CompletableFuture.runAsync(
         () -> {
           final var persistedManifest = manifestManager.createInitialManifest(backup);
