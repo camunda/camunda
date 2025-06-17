@@ -16,6 +16,9 @@ import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.topH
 
 import io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation;
 import io.camunda.search.clients.aggregator.SearchAggregator;
+import io.camunda.search.clients.aggregator.SearchTopHitsAggregator;
+import io.camunda.search.clients.aggregator.SearchTopHitsAggregator.Builder;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import java.util.List;
 
 public class ProcessDefinitionLatestVersionAggregationTransformer
@@ -23,10 +26,13 @@ public class ProcessDefinitionLatestVersionAggregationTransformer
 
   @Override
   public List<SearchAggregator> apply(final ProcessDefinitionLatestVersionAggregation value) {
-    // TODO Do nothing if the "latest" filter is not set
-
-    final var maxVersionsAgg =
-        topHits().name(AGGREGATION_NAME_LATEST_DEFINITION).field(AGGREGATION_MAX_VERSION).build();
+    final Builder<ProcessEntity> builder = topHits();
+    final SearchTopHitsAggregator<ProcessEntity> maxVersionsAgg =
+        builder
+            .name(AGGREGATION_NAME_LATEST_DEFINITION)
+            .field(AGGREGATION_MAX_VERSION)
+            .documentClass(ProcessEntity.class)
+            .build();
     // aggregate terms by process id
     final var byProcessIdAgg =
         terms()

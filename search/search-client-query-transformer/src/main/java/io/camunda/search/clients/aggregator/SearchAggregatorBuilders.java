@@ -35,12 +35,14 @@ public final class SearchAggregatorBuilders {
     return terms().name(name).field(field).build();
   }
 
-  public static SearchTopHitsAggregator.Builder topHits() {
-    return new SearchTopHitsAggregator.Builder();
+  public static <T> SearchTopHitsAggregator.Builder<T> topHits() {
+    return new SearchTopHitsAggregator.Builder<>();
   }
 
-  public static SearchTopHitsAggregator topHits(final String name, final String field) {
-    return topHits().name(name).field(field).build();
+  public static <T> SearchTopHitsAggregator<T> topHits(
+      final String name, final String field, final Class<T> documentClass) {
+    final SearchTopHitsAggregator.Builder<T> builder = topHits();
+    return builder.name(name).field(field).documentClass(documentClass).build();
   }
 
   public static SearchFilterAggregator.Builder filter() {
