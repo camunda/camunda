@@ -46,9 +46,15 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
         .transitionToCompleted(element, completing)
         .thenDo(
             completed ->
-                // fork the process processing by taking all outgoing sequence flows of the parallel
-                // gateway
-                stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
+                stateTransitionBehavior
+                    .suspendProcessInstanceIfNeeded(element, completed)
+                    // fork the process processing by taking all outgoing sequence flows of the
+                    // parallel
+                    // gateway
+                    .ifRight(
+                        notSuspended ->
+                            stateTransitionBehavior.takeOutgoingSequenceFlows(
+                                element, notSuspended)));
   }
 
   @Override
