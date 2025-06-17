@@ -31,6 +31,7 @@ import io.camunda.exporter.rdbms.handlers.ProcessInstanceIncidentExportHandler;
 import io.camunda.exporter.rdbms.handlers.RoleExportHandler;
 import io.camunda.exporter.rdbms.handlers.SequenceFlowExportHandler;
 import io.camunda.exporter.rdbms.handlers.TenantExportHandler;
+import io.camunda.exporter.rdbms.handlers.UsageMetricExportHandler;
 import io.camunda.exporter.rdbms.handlers.UserExportHandler;
 import io.camunda.exporter.rdbms.handlers.UserTaskExportHandler;
 import io.camunda.exporter.rdbms.handlers.VariableExportHandler;
@@ -286,6 +287,8 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
         new SequenceFlowExportHandler(rdbmsWriter.getSequenceFlowWriter()));
+    builder.withHandler(
+        ValueType.USAGE_METRIC, new UsageMetricExportHandler(rdbmsWriter.getUsageMetricWriter()));
   }
 
   private void createBatchOperationHandlers(
