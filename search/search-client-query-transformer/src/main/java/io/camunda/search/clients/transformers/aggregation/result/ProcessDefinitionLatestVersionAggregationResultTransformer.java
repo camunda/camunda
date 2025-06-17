@@ -10,13 +10,11 @@ package io.camunda.search.clients.transformers.aggregation.result;
 import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.AGGREGATION_NAME_BY_PROCESS_ID;
 import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.AGGREGATION_NAME_LATEST_DEFINITION;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.aggregation.result.ProcessDefinitionLatestVersionAggregationResult;
 import io.camunda.search.clients.core.AggregationResult;
-import io.camunda.search.entities.ProcessDefinitionEntity;
-import java.util.List;
+import io.camunda.search.clients.core.SearchQueryHit;
+import io.camunda.search.clients.transformers.entity.ProcessDefinitionEntityTransfomer;
+import io.camunda.webapps.schema.entities.ProcessEntity;
 import java.util.Map;
 
 public class ProcessDefinitionLatestVersionAggregationResultTransformer
@@ -31,28 +29,11 @@ public class ProcessDefinitionLatestVersionAggregationResultTransformer
                 aggregationResult -> {
                   final var latestDefinition =
                       aggregationResult.aggregations().get(AGGREGATION_NAME_LATEST_DEFINITION);
-                  final var jsonHits = latestDefinition.jsonHits();
-                  final var objectMapper = new ObjectMapper();
-                  try {
-                    final var list =
-                        objectMapper.readValue(
-                            jsonHits, new TypeReference<List<Map<String, Object>>>() {});
-                    return list.stream()
-                        .map(
-                            itemAsMap ->
-                                new ProcessDefinitionEntity(
-                                    (Long) itemAsMap.get("key"),
-                                    (String) itemAsMap.get("name"),
-                                    (String) itemAsMap.get("bpmnProcessId"),
-                                    (String) itemAsMap.get("bpmnXml"),
-                                    (String) itemAsMap.get("resourceName"),
-                                    (Integer) itemAsMap.get("version"),
-                                    (String) itemAsMap.get("versionTag"),
-                                    (String) itemAsMap.get("tenantId"),
-                                    (String) itemAsMap.get("formId")));
-                  } catch (final JsonProcessingException e) {
-                    throw new RuntimeException(e);
-                  }
+                  return latestDefinition.hits().stream()
+                      .map(SearchQueryHit::source)
+                      .filter(ProcessEntity.class::isInstance)
+                      .map(ProcessEntity.class::cast)
+                      .map(new ProcessDefinitionEntityTransfomer()::apply);
                 })
             .toList());
   }

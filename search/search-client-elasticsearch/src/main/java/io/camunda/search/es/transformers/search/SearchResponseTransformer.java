@@ -11,6 +11,7 @@ import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.TotalHits;
+import io.camunda.search.clients.aggregator.SearchAggregator;
 import co.elastic.clients.elasticsearch.core.search.TotalHitsRelation;
 import io.camunda.search.clients.core.AggregationResult;
 import io.camunda.search.clients.core.SearchQueryHit;
@@ -31,11 +32,11 @@ public final class SearchResponseTransformer<T>
     super(transformers);
   }
 
-  @Override
-  public SearchQueryResponse<T> apply(final SearchResponse<T> value) {
+  public SearchQueryResponse<T> apply(
+      final SearchResponse<T> value, final List<SearchAggregator> aggregators) {
     final var hits = value.hits();
     final var scrollId = value.scrollId();
-    final var aggregations = value.aggregations();
+    final var responseAggregations = value.aggregations();
 
     final var total = hits.total();
     final var totalHits = of(total);
@@ -44,7 +45,7 @@ public final class SearchResponseTransformer<T>
 
     final var sourceHits = hits.hits();
     final var transformedHits = of(sourceHits);
-    final var transformedAggregations = of(aggregations);
+    final var transformedAggregations = of(responseAggregations, aggregators);
 
     return new SearchQueryResponse.Builder<T>()
         .totalHits(totalHits, hasMoreTotalItems)
@@ -62,9 +63,10 @@ public final class SearchResponseTransformer<T>
     return new ArrayList<>();
   }
 
-  private Map<String, AggregationResult> of(final Map<String, Aggregate> value) {
+  private Map<String, AggregationResult> of(
+      final Map<String, Aggregate> value, final List<SearchAggregator> aggregators) {
     if (value != null) {
-      return new SearchAggregationResultTransformer().apply(value);
+      return new SearchAggregationResultTransformer(transformers, aggregators).apply(value);
     }
     return null;
   }

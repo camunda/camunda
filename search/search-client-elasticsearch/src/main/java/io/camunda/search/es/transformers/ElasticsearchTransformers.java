@@ -66,6 +66,7 @@ import io.camunda.search.es.transformers.search.SearchDeleteRequestTransformer;
 import io.camunda.search.es.transformers.search.SearchGetRequestTransformer;
 import io.camunda.search.es.transformers.search.SearchGetResponseTransformer;
 import io.camunda.search.es.transformers.search.SearchIndexRequestTransformer;
+import io.camunda.search.es.transformers.search.SearchQueryHitTransformer;
 import io.camunda.search.es.transformers.search.SearchRequestTransformer;
 import io.camunda.search.es.transformers.search.SearchResponseTransformer;
 import io.camunda.search.es.transformers.search.SearchWriteResponseTransformer;
@@ -105,7 +106,7 @@ public final class ElasticsearchTransformers {
     // requests/response
     mappers.put(SearchQueryRequest.class, new SearchRequestTransformer(mappers));
     mappers.put(SearchQueryResponse.class, new SearchResponseTransformer(mappers));
-    mappers.put(SearchQueryHit.class, new SearchRequestTransformer(mappers));
+    mappers.put(SearchQueryHit.class, new SearchQueryHitTransformer<>(mappers));
 
     // get request/response
     mappers.put(SearchGetRequest.class, new SearchGetRequestTransformer(mappers));
