@@ -22,7 +22,7 @@ import org.junit.rules.Timeout;
 public class HealthMonitoringTest {
 
   private final EmbeddedBrokerRule embeddedBrokerRule = new EmbeddedBrokerRule();
-  private final Timeout timeout = Timeout.seconds(5 * 60);
+  private final Timeout timeout = Timeout.seconds(60);
 
   @Rule public final RuleChain chain = RuleChain.outerRule(timeout).around(embeddedBrokerRule);
 
