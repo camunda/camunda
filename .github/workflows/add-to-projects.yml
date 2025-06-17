@@ -4,6 +4,12 @@ name: Assign new issues to the default projects
 # owner: @camunda/monorepo-devops-team
 
 on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'The issue number to simulate'
+        required: true
+        type: number
   issues:
     types: [ opened, reopened, transferred, labeled ]
 
