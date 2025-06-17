@@ -1,7 +1,7 @@
 # Dynamic Scaling
 
 *Dynamic Scaling* refers to the process of increasing the number of partitions of a zeebe cluster once a cluster has been created.
-Before this feature the number of partitions could not be changed.
+Before this feature, the number of partitions could not be changed.
 
 The scaling process is comprised of two sequential phases that ensure new partitions are fully integrated into the cluster:
 
@@ -23,7 +23,7 @@ participant P-NEW
 
 CoordinatorNode ->>+ CoordinatorNode: Add ClusterChangeOperations to ClusterPlan
 
-CoordinatorNode ->> P-1: Send SCALE_UP (w/ desiredParitionCount)
+CoordinatorNode ->> P-1: Send SCALE_UP (w/ desiredPartitionCount)
 P-1 ->> P-1: [SCALING_UP] Add desiredPartitionCount to RoutingInfo: <br> new partitions are included in distribution (only enqueued)
 
 CoordinatorNode ->>+ P-NEW: Bootstrap new partition from snapshot of P1
@@ -76,10 +76,10 @@ P-1 ->> P-NEW: Distribution event at b_e + n
     - When the snapshot is received, it will restore the `PersistedSnapshotStore` with it, before the partition is even started (in a `PartitionStartupStep`)
     - When the bootstrap is completed, it will inform partition 1 that they are ready to process messages
     - Partition 1 will include the newly bootstrapped partitions to the `activePartitions` field in `RoutingInfo` in the state
-    - Partition 1 will distribute to all partition the newly received bootstrap command
+    - Partition 1 will distribute to all partitions the newly received bootstrap command
     - All other partition will do the same changes to the `RoutingInfo` in the state
 
 1. `AwaitRedistributionCompletion`:
-   CoordinatorNode will keep polling Partition1 to know when all partitions have been bootstrapped.
+   CoordinatorNode will keep polling Partition 1 to know when all partitions have been bootstrapped.
 
    When redistribution is completed, the routing information in the dynamic config module will update, so that gateways will send new requests to the new partitions
