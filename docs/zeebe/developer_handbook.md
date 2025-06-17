@@ -151,7 +151,7 @@ By contrast, you **do not** need to perform authorization checks for purely inte
 State-machine transitions assume that all external permissions have been verified upstream.
 
 To perform an authorization check on any user-triggered command before you mutate state or emit events, check `AuthorizationResourceType` and `PermissionType` to determine the required permissions for the command.
-Additionally, for existing resource related commands (e.g., BPMN, DMN or Form), you can use corresponding `ResourceIdentifier` implementation to retrieve the resource with permissions (e.g., tenant id and resource key).
+Additionally, for existing resource related commands (e.g., BPMN, DMN or Form), resource identifiers (e.g., process id) should be added to authorization request to ensure that the user has the required permissions for the specific resource.
 Before processing the command, if the auth check fails, immediately reject the command and halt processing; only proceed with record handling once the request has been authorized.
 
 ### Adding a new authorization check
@@ -159,17 +159,20 @@ Before processing the command, if the auth check fails, immediately reject the c
 If you cannot find an existing authorization check that fits your needs, follow these steps to add a new one:
 
 1. **Get Product Management sign-off**
-  - Check with PM if new permissions are required in the first place.
-  - Decide and define new permissions with PM.
+
+- Check with PM if new permissions are required in the first place.
+- Decide and define new permissions with PM.
 
 2. **Add the new enum values**
-  - In the engine code, extend `AuthorizationResourceType` and/or `PermissionType`.
+
+- In the engine code, extend `AuthorizationResourceType` and/or `PermissionType`.
 
 3. **Expose them through the REST API**
-  - In `camunda/zeebe/gateway-protocol/src/main/proto/rest-api.yaml`, under
-    - `PermissionTypeEnum`
-    - `ResourceTypeEnum`
-  - Add your new entries to the `enum` lists so the OpenAPI spec (and generated clients) know about them.
+
+- In `camunda/zeebe/gateway-protocol/src/main/proto/rest-api.yaml`, under
+  - `PermissionTypeEnum`
+  - `ResourceTypeEnum`
+- Add your new entries to the `enum` lists so the OpenAPI spec (and generated clients) know about them.
 
 ## How to do inter-partition communication?
 
