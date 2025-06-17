@@ -9,6 +9,7 @@ package io.camunda.zeebe.stream.api.scheduling;
 
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 
 /** Here the interface is just a suggestion. Can be whatever PDT team thinks is best to work with */
 public interface TaskResultBuilder {
@@ -16,11 +17,23 @@ public interface TaskResultBuilder {
   long NULL_KEY = -1;
 
   /**
+   * Appends a record to the result without a key
+   *
+   * @return returns true if the record still fits into the result, false otherwise
+   */
+  default boolean appendCommandRecord(final Intent intent, final UnifiedRecordValue value) {
+    return appendCommandRecord(NULL_KEY, intent, value);
+  }
+
+  /**
    * Appends a record to the result
    *
    * @return returns true if the record still fits into the result, false otherwise
    */
-  boolean appendCommandRecord(final long key, final Intent intent, final UnifiedRecordValue value);
+  default boolean appendCommandRecord(
+      final long key, final Intent intent, final UnifiedRecordValue value) {
+    return appendCommandRecord(key, intent, value, FollowUpCommandMetadata.empty());
+  }
 
   /**
    * Appends a record to the result
@@ -31,16 +44,7 @@ public interface TaskResultBuilder {
       final long key,
       final Intent intent,
       final UnifiedRecordValue value,
-      final long operationReference);
-
-  /**
-   * Appends a record to the result without a key
-   *
-   * @return returns true if the record still fits into the result, false otherwise
-   */
-  default boolean appendCommandRecord(final Intent intent, final UnifiedRecordValue value) {
-    return appendCommandRecord(NULL_KEY, intent, value);
-  }
+      final FollowUpCommandMetadata metadata);
 
   TaskResult build();
 }

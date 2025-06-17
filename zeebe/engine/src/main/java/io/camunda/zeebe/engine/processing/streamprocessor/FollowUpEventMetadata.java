@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
+import java.util.function.Consumer;
 
 /**
  * Metadata for customizing the writing of follow-up event.
@@ -17,20 +18,27 @@ import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
  * recordVersion} (to specify a version of the event record to use when writing and applying the
  * event).
  */
-public final class FollowUpEventMetadata {
+public record FollowUpEventMetadata(
+    long operationReference, long batchOperationReference, int recordVersion) {
 
   public static final int VERSION_NOT_SET = -1;
 
-  private final long operationReference;
-  private final int recordVersion;
+  public static FollowUpEventMetadata of(final Consumer<Builder> consumer) {
+    final Builder builder = new Builder();
+    consumer.accept(builder);
+    return builder.build();
+  }
 
-  private FollowUpEventMetadata(Builder builder) {
-    this.operationReference = builder.operationReference;
-    this.recordVersion = builder.recordVersion;
+  public static FollowUpEventMetadata empty() {
+    return new Builder().build();
   }
 
   public long getOperationReference() {
     return operationReference;
+  }
+
+  public long getBatchOperationReference() {
+    return batchOperationReference;
   }
 
   public int getRecordVersion() {
@@ -44,10 +52,16 @@ public final class FollowUpEventMetadata {
   public static final class Builder {
 
     private long operationReference = RecordMetadataDecoder.operationReferenceNullValue();
+    private long batchOperationReference = RecordMetadataDecoder.batchOperationReferenceNullValue();
     private int recordVersion = VERSION_NOT_SET;
 
     public Builder operationReference(final long operationReference) {
       this.operationReference = operationReference;
+      return this;
+    }
+
+    public Builder batchOperationReference(final long batchOperationReference) {
+      this.batchOperationReference = batchOperationReference;
       return this;
     }
 
@@ -57,7 +71,7 @@ public final class FollowUpEventMetadata {
     }
 
     public FollowUpEventMetadata build() {
-      return new FollowUpEventMetadata(this);
+      return new FollowUpEventMetadata(operationReference, batchOperationReference, recordVersion);
     }
   }
 }

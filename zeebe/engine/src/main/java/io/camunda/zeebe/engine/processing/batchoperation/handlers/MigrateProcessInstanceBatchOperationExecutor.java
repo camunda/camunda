@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +53,9 @@ public class MigrateProcessInstanceBatchOperationExecutor implements BatchOperat
         processInstanceKey,
         ProcessInstanceMigrationIntent.MIGRATE,
         command,
-        batchOperation.getKey(),
-        batchOperation.getAuthentication().claims());
+        FollowUpCommandMetadata.of(
+            b ->
+                b.batchOperationReference(batchOperation.getKey())
+                    .claims(batchOperation.getAuthentication().claims())));
   }
 }

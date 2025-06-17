@@ -13,8 +13,8 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
-import java.util.Map;
 import java.util.function.Supplier;
 
 final class ResultBuilderBackedTypedCommandWriter extends AbstractResultBuilderBackedWriter
@@ -40,9 +40,8 @@ final class ResultBuilderBackedTypedCommandWriter extends AbstractResultBuilderB
       final long key,
       final Intent intent,
       final RecordValue value,
-      final long operationReference,
-      final Map<String, Object> claims) {
-    appendRecord(key, intent, value, operationReference, claims);
+      final FollowUpCommandMetadata metadata) {
+    appendRecord(key, intent, value, metadata);
   }
 
   @Override
@@ -51,25 +50,25 @@ final class ResultBuilderBackedTypedCommandWriter extends AbstractResultBuilderB
   }
 
   private void appendRecord(final long key, final Intent intent, final RecordValue value) {
-    appendRecord(key, intent, value, -1, null);
+    appendRecord(key, intent, value, FollowUpCommandMetadata.empty());
   }
 
   private void appendRecord(
       final long key,
       final Intent intent,
       final RecordValue value,
-      final long operationReference,
-      final Map<String, Object> claims) {
+      final FollowUpCommandMetadata commandMetadata) {
     final var metadata =
         new RecordMetadata()
             .recordType(RecordType.COMMAND)
             .intent(intent)
             .rejectionType(RejectionType.NULL_VAL)
             .rejectionReason("")
-            .operationReference(operationReference);
+            .operationReference(commandMetadata.operationReference())
+            .batchOperationReference(commandMetadata.batchOperationReference());
 
-    if (claims != null) {
-      metadata.authorization(new AuthInfo().setClaims(claims));
+    if (commandMetadata.claims() != null) {
+      metadata.authorization(new AuthInfo().setClaims(commandMetadata.claims()));
     }
 
     resultBuilder().appendRecord(key, value, metadata);

@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.batchoperation;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.slf4j.Logger;
@@ -68,12 +70,16 @@ public final class BatchOperationFailProcessor
       commandWriter.appendFollowUpCommand(
           recordValue.getBatchOperationKey(),
           BatchOperationIntent.FAIL_PARTITION,
-          batchInternalFail);
+          batchInternalFail,
+          FollowUpCommandMetadata.of(
+              b -> b.batchOperationReference(recordValue.getBatchOperationKey())));
     } else {
       stateWriter.appendFollowUpEvent(
           recordValue.getBatchOperationKey(),
           BatchOperationIntent.PARTITION_FAILED,
-          batchInternalFail);
+          batchInternalFail,
+          FollowUpEventMetadata.of(
+              b -> b.batchOperationReference(recordValue.getBatchOperationKey())));
       commandDistributionBehavior
           .withKey(keyGenerator.nextKey())
           .inQueue(DistributionQueue.BATCH_OPERATION)

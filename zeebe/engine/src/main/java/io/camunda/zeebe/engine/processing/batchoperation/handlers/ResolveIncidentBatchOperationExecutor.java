@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +47,9 @@ public class ResolveIncidentBatchOperationExecutor implements BatchOperationExec
         itemKey,
         IncidentIntent.RESOLVE,
         command,
-        batchOperation.getKey(),
-        batchOperation.getAuthentication().claims());
+        FollowUpCommandMetadata.of(
+            b ->
+                b.batchOperationReference(batchOperation.getKey())
+                    .claims(batchOperation.getAuthentication().claims())));
   }
 }

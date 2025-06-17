@@ -417,8 +417,9 @@ public final class StreamProcessorTest {
 
     // when
     final long operationReference = 1234L;
+    final long batchOperationKey = 5678L;
     streamPlatform.writeBatch(
-        RecordToWrite.command(operationReference)
+        RecordToWrite.command(operationReference, batchOperationKey)
             .processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
     // then
@@ -446,6 +447,9 @@ public final class StreamProcessorTest {
     assertThat(firstRecordMetadata.getOperationReference())
         .as("Record metadata should contain the operation reference")
         .isEqualTo(operationReference);
+    assertThat(firstRecordMetadata.getBatchOperationReference())
+        .as("Record metadata should contain the batch operation reference")
+        .isEqualTo(batchOperationKey);
 
     await("should write follow up events")
         .untilAsserted(() -> assertThat(logStreamReader.hasNext()).isTrue());

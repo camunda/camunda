@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -145,13 +147,20 @@ public final class BatchOperationResumeProcessor
       final Long resumeKey,
       final PersistedBatchOperation batchOperation,
       final BatchOperationLifecycleManagementRecord recordValue) {
-    stateWriter.appendFollowUpEvent(resumeKey, BatchOperationIntent.RESUMED, recordValue);
+    stateWriter.appendFollowUpEvent(
+        resumeKey,
+        BatchOperationIntent.RESUMED,
+        recordValue,
+        FollowUpEventMetadata.of(m -> m.batchOperationReference(batchOperation.getKey())));
 
     final var batchExecute = new BatchOperationExecutionRecord();
     batchExecute.setBatchOperationKey(batchOperation.getKey());
     if (batchOperation.isInitialized()) {
       commandWriter.appendFollowUpCommand(
-          batchOperation.getKey(), BatchOperationExecutionIntent.EXECUTE, batchExecute);
+          batchOperation.getKey(),
+          BatchOperationExecutionIntent.EXECUTE,
+          batchExecute,
+          FollowUpCommandMetadata.of(b -> b.batchOperationReference(batchOperation.getKey())));
     }
   }
 

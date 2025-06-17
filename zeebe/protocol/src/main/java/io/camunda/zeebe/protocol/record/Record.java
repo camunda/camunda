@@ -140,6 +140,16 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
   long getOperationReference();
 
   /**
+   * The batchOperationKey indicates the batch operation this record was produced by.
+   *
+   * @return the batch operation key
+   */
+  @Value.Default
+  default long getBatchOperationReference() {
+    return RecordMetadataDecoder.batchOperationReferenceNullValue();
+  }
+
+  /**
    * Creates a deep copy of the current record. Can be used to collect records.
    *
    * @return a deep copy of this record

@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.batchoperation;
 
 import static org.mockito.Mockito.*;
 
+import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -64,8 +65,13 @@ class BatchOperationResumeProcessorTest {
     processor.resumeBatchOperation(resumeKey, batchOperation, recordValue);
 
     // then
-    verify(stateWriter).appendFollowUpEvent(resumeKey, BatchOperationIntent.RESUMED, recordValue);
-    verify(commandWriter, never()).appendFollowUpCommand(anyLong(), any(), any());
+    verify(stateWriter)
+        .appendFollowUpEvent(
+            resumeKey,
+            BatchOperationIntent.RESUMED,
+            recordValue,
+            FollowUpEventMetadata.of(m -> m.batchOperationReference(batchOperationKey)));
+    verify(commandWriter, never()).appendFollowUpCommand(anyLong(), any(), any(), any());
   }
 
   @Test
@@ -85,13 +91,21 @@ class BatchOperationResumeProcessorTest {
     processor.resumeBatchOperation(resumeKey, batchOperation, recordValue);
 
     // then
-    verify(stateWriter).appendFollowUpEvent(resumeKey, BatchOperationIntent.RESUMED, recordValue);
+    verify(stateWriter)
+        .appendFollowUpEvent(
+            resumeKey,
+            BatchOperationIntent.RESUMED,
+            recordValue,
+            FollowUpEventMetadata.of(m -> m.batchOperationReference(batchOperationKey)));
 
     final ArgumentCaptor<BatchOperationExecutionRecord> captor =
         ArgumentCaptor.forClass(BatchOperationExecutionRecord.class);
     verify(commandWriter)
         .appendFollowUpCommand(
-            eq(batchOperationKey), eq(BatchOperationExecutionIntent.EXECUTE), captor.capture());
+            eq(batchOperationKey),
+            eq(BatchOperationExecutionIntent.EXECUTE),
+            captor.capture(),
+            any());
 
     final BatchOperationExecutionRecord capturedRecord = captor.getValue();
     assert capturedRecord.getBatchOperationKey() == batchOperationKey;
