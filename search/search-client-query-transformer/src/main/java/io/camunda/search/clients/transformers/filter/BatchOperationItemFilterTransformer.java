@@ -12,8 +12,10 @@ import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.*
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.BatchOperationItemFilter;
+import io.camunda.search.filter.Operation;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public final class BatchOperationItemFilterTransformer
@@ -29,7 +31,7 @@ public final class BatchOperationItemFilterTransformer
 
     Optional.ofNullable(stringOperations(BATCH_OPERATION_ID, filter.batchOperationIdOperations()))
         .ifPresent(queries::addAll);
-    Optional.ofNullable(stringOperations(STATE, filter.stateOperations()))
+    Optional.ofNullable(stringOperations(STATE, mapStateOperations(filter.stateOperations())))
         .ifPresent(queries::addAll);
     Optional.ofNullable(longOperations(ITEM_KEY, filter.itemKeyOperations()))
         .ifPresent(queries::addAll);
@@ -37,5 +39,28 @@ public final class BatchOperationItemFilterTransformer
         .ifPresent(queries::addAll);
 
     return and(queries);
+  }
+
+  private List<Operation<String>> mapStateOperations(
+      final List<Operation<String>> stateOperations) {
+    if (stateOperations == null) {
+      return null;
+    }
+
+    return stateOperations.stream()
+        .map(o -> new Operation<>(o.operator(), o.values().stream().map(this::mapState).toList()))
+        .toList();
+  }
+
+  private String mapState(final String state) {
+    return switch (state) {
+      case "ACTIVE" -> "SCHEDULED";
+      case "COMPLETED" -> "COMPLETED";
+      case "CANCELED" -> "CANCELED";
+      case "FAILED" -> "FAILED";
+      default -> {
+        throw new IllegalArgumentException("Unknown batch operation item state: " + state);
+      }
+    };
   }
 }
