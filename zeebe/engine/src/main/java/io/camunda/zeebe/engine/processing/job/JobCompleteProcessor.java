@@ -196,11 +196,15 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
           adHocSubProcessRecord.setTenantId(value.getTenantId());
 
           adHocSubProcessJobResult
-              .getActivateElements()
+              .activateElements()
               .forEach(
-                  element -> {
-                    adHocSubProcessRecord.elements().add().setElementId(element.getElementId());
-                  });
+                  element ->
+                      adHocSubProcessRecord
+                          .elements()
+                          .add()
+                          .setElementId(element.getElementId())
+                          .setVariables(element.getVariablesBuffer()));
+
           commandWriter.appendNewCommand(
               AdHocSubProcessActivityActivationIntent.ACTIVATE, adHocSubProcessRecord);
         }

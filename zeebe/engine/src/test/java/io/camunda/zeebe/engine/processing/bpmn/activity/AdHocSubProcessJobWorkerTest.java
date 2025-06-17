@@ -22,11 +22,15 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.junit.ClassRule;
@@ -283,6 +287,76 @@ public class AdHocSubProcessJobWorkerTest {
             JobIntent.CANCELED, // <<-- expected cancellation
             JobIntent.CREATED // on element B: COMPLETED
             );
+  }
+
+  @Test
+  public void shouldActivateElementsWithVariables() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.task("A");
+              adHocSubProcess.task("B");
+              adHocSubProcess.task("C");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    completeAdHocSubProcessJob(
+        processInstanceKey,
+        0,
+        adHocSubProcess -> {
+          adHocSubProcess
+              .activateElements()
+              .add()
+              .setElementId("A")
+              .setVariables(MsgPackUtil.asMsgPack(Map.of("a", 1)));
+
+          adHocSubProcess
+              .activateElements()
+              .add()
+              .setElementId("B")
+              .setVariables(MsgPackUtil.asMsgPack(Map.of("b", 2)));
+        });
+
+    // then
+    final var elementA =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("A")
+            .getFirst()
+            .getValue();
+
+    final var elementB =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId("B")
+            .getFirst()
+            .getValue();
+
+    Assertions.assertThat(
+            RecordingExporter.variableRecords().withProcessInstanceKey(processInstanceKey).limit(2))
+        .extracting(Record::getValue)
+        .extracting(
+            VariableRecordValue::getName,
+            VariableRecordValue::getValue,
+            VariableRecordValue::getScopeKey)
+        .contains(
+            tuple("a", "1", elementA.getFlowScopeKey()),
+            tuple("b", "2", elementB.getFlowScopeKey()));
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE)
+                .limit(2))
+        .extracting(Record::getKey, r -> r.getValue().getBpmnElementType())
+        .contains(
+            tuple(elementA.getFlowScopeKey(), BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE),
+            tuple(elementB.getFlowScopeKey(), BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE));
   }
 
   private static void completeAdHocSubProcessJob(
