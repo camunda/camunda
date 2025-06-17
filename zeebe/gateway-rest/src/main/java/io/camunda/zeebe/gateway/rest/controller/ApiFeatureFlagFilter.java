@@ -14,7 +14,6 @@ import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -45,8 +44,7 @@ public class ApiFeatureFlagFilter extends HttpFilter {
     super.doFilter(req, res, chain);
   }
 
-  private static @NotNull String generateAccessDeniedResponse(
-      final HttpServletRequest req, final String message) {
+  private String generateAccessDeniedResponse(final HttpServletRequest req, final String message) {
     return """
         {
            "type": "about:blank",
