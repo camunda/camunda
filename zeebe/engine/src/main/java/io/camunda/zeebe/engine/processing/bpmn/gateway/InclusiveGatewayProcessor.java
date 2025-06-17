@@ -82,6 +82,8 @@ public final class InclusiveGatewayProcessor
   @Override
   public TransitionOutcome onTerminate(
       final ExecutableInclusiveGateway element, final BpmnElementContext context) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
+
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(context);
     }

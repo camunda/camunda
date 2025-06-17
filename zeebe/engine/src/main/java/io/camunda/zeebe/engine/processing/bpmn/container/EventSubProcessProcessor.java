@@ -74,6 +74,8 @@ public final class EventSubProcessProcessor
   @Override
   public TransitionOutcome onTerminate(
       final ExecutableFlowElementContainer element, final BpmnElementContext terminating) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, terminating);
+
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(terminating);
     }

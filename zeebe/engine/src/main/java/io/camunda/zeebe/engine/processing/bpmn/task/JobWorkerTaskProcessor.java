@@ -87,7 +87,11 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
-              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+              stateTransitionBehavior
+                  .suspendProcessInstanceIfNeeded(element, completed)
+                  .ifRight(
+                      notSuspended ->
+                          stateTransitionBehavior.takeOutgoingSequenceFlows(element, notSuspended));
             });
   }
 
@@ -100,6 +104,8 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
     jobBehavior.cancelJob(context);
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     incidentBehavior.resolveIncidents(context);
+
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
 
     eventSubscriptionBehavior
         .findEventTrigger(context)

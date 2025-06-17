@@ -79,6 +79,8 @@ public final class ExclusiveGatewayProcessor
   @Override
   public TransitionOutcome onTerminate(
       final ExecutableExclusiveGateway element, final BpmnElementContext context) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
+
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(context);
     }

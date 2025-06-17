@@ -112,13 +112,19 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
-              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+              stateTransitionBehavior
+                  .suspendProcessInstanceIfNeeded(element, completed)
+                  .ifRight(
+                      notSuspended ->
+                          stateTransitionBehavior.takeOutgoingSequenceFlows(element, notSuspended));
             });
   }
 
   @Override
   protected TransitionOutcome onTerminateInternal(
       final ExecutableUserTask element, final BpmnElementContext context) {
+
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
 
     if (element.hasExecutionListeners() || element.hasTaskListeners()) {
       jobBehavior.cancelJob(context);

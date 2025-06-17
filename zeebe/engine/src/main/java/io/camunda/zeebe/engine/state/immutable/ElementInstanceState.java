@@ -121,6 +121,8 @@ public interface ElementInstanceState {
    */
   boolean hasActiveProcessInstances(long processDefinitionKey, final List<Long> bannedInstances);
 
+  boolean shouldSuspendElementInstance(long processInstanceKey, String elementId);
+
   @FunctionalInterface
   interface TakenSequenceFlowVisitor {
     void visit(

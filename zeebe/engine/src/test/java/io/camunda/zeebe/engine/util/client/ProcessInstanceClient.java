@@ -15,6 +15,7 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.RuntimeInstructionType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
@@ -127,6 +129,16 @@ public final class ProcessInstanceClient {
     public ProcessInstanceCreationClient withStartInstruction(final String elementId) {
       final var instruction = new ProcessInstanceCreationStartInstruction().setElementId(elementId);
       processInstanceCreationRecord.addStartInstruction(instruction);
+      return this;
+    }
+
+    public ProcessInstanceCreationClient withRuntimeSuspendInstruction(
+        final String afterElementId) {
+      final var instruction =
+          new ProcessInstanceCreationRuntimeInstruction()
+              .setType(RuntimeInstructionType.SUSPEND_PROCESS_INSTANCE)
+              .setAfterElementId(afterElementId);
+      processInstanceCreationRecord.addRuntimeInstruction(instruction);
       return this;
     }
 

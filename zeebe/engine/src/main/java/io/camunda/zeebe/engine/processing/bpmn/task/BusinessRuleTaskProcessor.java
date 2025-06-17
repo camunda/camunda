@@ -101,13 +101,18 @@ public final class BusinessRuleTaskProcessor
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
-              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+              stateTransitionBehavior
+                  .suspendProcessInstanceIfNeeded(element, completed)
+                  .ifRight(
+                      notSuspended ->
+                          stateTransitionBehavior.takeOutgoingSequenceFlows(element, notSuspended));
             });
   }
 
   @Override
   public TransitionOutcome onTerminateInternal(
       final ExecutableBusinessRuleTask element, final BpmnElementContext context) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(context);
     }

@@ -241,7 +241,9 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   USER_TASK_INITIAL_ASSIGNEE(121, PARTITION_LOCAL),
 
   USAGE_METRICS(122, PARTITION_LOCAL),
-  BOOTSTRAPPED_AT(123, GLOBAL);
+  BOOTSTRAPPED_AT(123, GLOBAL),
+
+  RUNTIME_INSTRUCTIONS(124, PARTITION_LOCAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
