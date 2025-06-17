@@ -28,6 +28,9 @@
               "properties": {
                 "elementId": {
                   "type": "keyword"
+                },
+                "variables": {
+                  "enabled": false
                 }
               }
             },

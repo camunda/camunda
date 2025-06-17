@@ -18,6 +18,7 @@ package io.camunda.zeebe.protocol.record.value;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 
 /**
@@ -44,5 +45,7 @@ public interface AdHocSubProcessActivityActivationRecordValue extends RecordValu
   @ImmutableProtocol(builder = ImmutableAdHocSubProcessActivityActivationElementValue.Builder.class)
   interface AdHocSubProcessActivityActivationElementValue {
     String getElementId();
+
+    Map<String, Object> getVariables();
   }
 }

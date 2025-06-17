@@ -2265,7 +2265,8 @@ final class JsonSerializableToJsonTest {
           "tenantId": "<default>",
           "elements": [
             {
-              "elementId": "123"
+              "elementId": "123",
+              "variables":{}
             }
           ]
         }
