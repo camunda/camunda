@@ -5,12 +5,16 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication;
+package io.camunda.authentication.config.controllers;
 
+import io.camunda.authentication.CamundaOAuthPrincipalService;
 import io.camunda.authentication.entity.OAuthContext;
 import java.util.Map;
 
-public interface CamundaOAuthPrincipalService {
+public class TestCamundaOAuthPrincipalService implements CamundaOAuthPrincipalService {
 
-  OAuthContext loadOAuthContext(final Map<String, Object> claims);
+  @Override
+  public OAuthContext loadOAuthContext(Map<String, Object> claims) {
+    return new OAuthContext(null, null);
+  }
 }

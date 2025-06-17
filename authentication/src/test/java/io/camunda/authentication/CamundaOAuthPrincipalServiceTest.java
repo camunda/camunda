@@ -71,7 +71,7 @@ public class CamundaOAuthPrincipalServiceTest {
       when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn(APPLICATION_ID_CLAIM);
 
       camundaOAuthPrincipalService =
-          new CamundaOAuthPrincipalService(
+          new CamundaOAuthPrincipalServiceImpl(
               mappingServices,
               tenantServices,
               roleServices,
@@ -153,7 +153,7 @@ public class CamundaOAuthPrincipalServiceTest {
       when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn("not-tested");
 
       camundaOAuthPrincipalService =
-          new CamundaOAuthPrincipalService(
+          new CamundaOAuthPrincipalServiceImpl(
               mappingServices,
               tenantServices,
               roleServices,
@@ -312,7 +312,7 @@ public class CamundaOAuthPrincipalServiceTest {
       when(oidcAuthenticationConfiguration.getGroupsClaim()).thenReturn(GROUPS_CLAIM);
 
       camundaOAuthPrincipalService =
-          new CamundaOAuthPrincipalService(
+          new CamundaOAuthPrincipalServiceImpl(
               mappingServices,
               tenantServices,
               roleServices,
@@ -352,7 +352,7 @@ public class CamundaOAuthPrincipalServiceTest {
       when(oidcAuthenticationConfiguration.getGroupsClaim()).thenReturn("$.groups['name']");
 
       camundaOAuthPrincipalService =
-          new CamundaOAuthPrincipalService(
+          new CamundaOAuthPrincipalServiceImpl(
               mappingServices,
               tenantServices,
               roleServices,
