@@ -127,6 +127,11 @@ public final class ProcessInstanceModificationModifyProcessor
       Expected to modify instance of process '%s' but it contains one or more activate instructions \
       with an ancestor scope key that is not an ancestor of the element to activate:%s""";
 
+  private static final String ERROR_MESSAGE_PROCESS_INSTANCE_SUSPENDED =
+      """
+      Expected to modify instance of process '%s' but it is currently suspended. \
+      Suspended process instances cannot be modified.""";
+
   private static final EnumSet<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       EnumSet.of(
           BpmnElementType.UNSPECIFIED,
@@ -216,7 +221,7 @@ public final class ProcessInstanceModificationModifyProcessor
         processState.getProcessByKeyAndTenant(
             processInstanceRecord.getProcessDefinitionKey(), processInstanceRecord.getTenantId());
 
-    final var validationResult = validateCommand(command, process);
+    final var validationResult = validateCommand(command, process, processInstance);
     if (validationResult.isLeft()) {
       final var rejection = validationResult.getLeft();
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
@@ -329,7 +334,9 @@ public final class ProcessInstanceModificationModifyProcessor
   }
 
   private Either<Rejection, ?> validateCommand(
-      final TypedRecord<ProcessInstanceModificationRecord> command, final DeployedProcess process) {
+      final TypedRecord<ProcessInstanceModificationRecord> command,
+      final DeployedProcess process,
+      final ElementInstance processInstance) {
     final var value = command.getValue();
     final var activateInstructions = value.getActivateInstructions();
     final var terminateInstructions = value.getTerminateInstructions();
@@ -340,6 +347,7 @@ public final class ProcessInstanceModificationModifyProcessor
         .flatMap(valid -> validateVariableScopeExists(process, activateInstructions))
         .flatMap(valid -> validateVariableScopeIsFlowScope(process, activateInstructions))
         .flatMap(valid -> validateAncestorKeys(process, value))
+        .flatMap(valid -> validateProcessInstanceNotSuspended(process, processInstance))
         .map(valid -> VALID);
   }
 
@@ -665,6 +673,18 @@ public final class ProcessInstanceModificationModifyProcessor
     }
 
     return false;
+  }
+
+  private Either<Rejection, ?> validateProcessInstanceNotSuspended(
+      final DeployedProcess process, final ElementInstance processInstance) {
+
+    if (processInstance.isSuspended()) {
+      final var reason =
+          ERROR_MESSAGE_PROCESS_INSTANCE_SUSPENDED.formatted(
+              BufferUtil.bufferAsString(process.getBpmnProcessId()));
+      return Either.left(new Rejection(RejectionType.INVALID_STATE, reason));
+    }
+    return VALID;
   }
 
   public void executeVariableInstruction(
