@@ -381,7 +381,7 @@ jobs:
         id: build-zeebe-docker
         with:
           repository: camunda/zeebe
-          version: 8.7.0-SNAPSHOT
+          version: 8.7-SNAPSHOT
           platforms: ${{ env.DOCKER_PLATFORMS }}
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
