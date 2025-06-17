@@ -18,9 +18,9 @@ import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Timer.ResourceSample;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class BatchOperationMetrics {
 
@@ -31,8 +31,9 @@ public class BatchOperationMetrics {
   final int partitionId;
 
   private final Map<Tuple<BatchOperationAction, BatchOperationType>, Counter> executedActions =
-      new HashMap<>();
-  private final Map<Tuple<BatchOperationLatency, Long>, ResourceSample> latency = new HashMap<>();
+      new ConcurrentHashMap<>();
+  private final Map<Tuple<BatchOperationLatency, Long>, ResourceSample> latency =
+      new ConcurrentHashMap<>();
   private Counter queryCounter;
 
   public BatchOperationMetrics(final MeterRegistry registry, final int partitionId) {
@@ -139,7 +140,7 @@ public class BatchOperationMetrics {
    * <p>Since in the scheduler we have no batch operation type, we cannot use the executedActions
    * map
    */
-  public void recordQueryAgainstSecondaryDatabase() {
+  public synchronized void recordQueryAgainstSecondaryDatabase() {
     if (queryCounter == null) {
       final var meterDoc = BatchOperationMetricsDoc.EXECUTED_QUERIES;
       queryCounter =
