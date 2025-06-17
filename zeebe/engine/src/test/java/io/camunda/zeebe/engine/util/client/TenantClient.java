@@ -354,6 +354,16 @@ public class TenantClient {
     }
 
     /**
+     * Submits a user-requested delete command for the tenant and returns the resulting record.
+     *
+     * @return the deleted tenant record
+     */
+    public Record<TenantRecordValue> delete(final String username) {
+      final long position = writer.writeCommand(TenantIntent.DELETE, username, tenantRecord);
+      return expectation.apply(position);
+    }
+
+    /**
      * Expects the tenant deletion to be rejected.
      *
      * @return this instance with rejection expectation
