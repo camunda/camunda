@@ -25,7 +25,6 @@ import java.util.Objects;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
@@ -69,9 +68,7 @@ public class ScaleUpPartitionsTest {
   }
 
   @Test
-  @Disabled
-  // TODO Enable when the other PRs are merged
-  public void shouldStartProcessInstancesDeploymentBeforeScaleUp() {
+  public void shouldStartProcessInstancesDeployedBeforeScaleUp() {
     // given
     final var desiredPartitionCount = PARTITIONS_COUNT + 1;
     cluster.awaitHealthyTopology();
