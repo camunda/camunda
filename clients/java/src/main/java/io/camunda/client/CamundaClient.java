@@ -119,6 +119,7 @@ import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
 import io.camunda.client.api.search.request.GroupsByRoleSearchRequest;
 import io.camunda.client.api.search.request.IncidentSearchRequest;
 import io.camunda.client.api.search.request.IncidentsByProcessInstanceSearchRequest;
+import io.camunda.client.api.search.request.JobSearchRequest;
 import io.camunda.client.api.search.request.MappingsByRoleSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
@@ -2424,4 +2425,20 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the groups by role search request
    */
   GroupsByRoleSearchRequest newGroupsByRoleSearchRequest(String roleId);
+
+  /**
+   * Executes a search request to query jobs.
+   *
+   * <pre>
+   * camundaClient
+   *  .newJobSearchRequest()
+   *  .filter((f) -> f.jobKey(userTaskKey))
+   *  .sort((s) -> s.endTime.asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the job search request
+   */
+  JobSearchRequest newJobSearchRequest();
 }

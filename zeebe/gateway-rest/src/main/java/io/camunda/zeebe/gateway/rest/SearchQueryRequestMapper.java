@@ -284,8 +284,7 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::jobSearchQuery);
   }
 
-  private static JobFilter toJobFilter(
-      final io.camunda.zeebe.gateway.protocol.rest.JobFilter filter) {
+  private static JobFilter toJobFilter(final JobFilterRequest filter) {
     final var builder = FilterBuilders.job();
     if (filter != null) {
       ofNullable(filter.getJobKey())

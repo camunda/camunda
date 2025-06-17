@@ -18,6 +18,7 @@ import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.IncidentState;
+import io.camunda.client.api.search.enums.JobState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
@@ -619,6 +620,36 @@ public final class TestHelper {
               assertThat(users)
                   .extracting(u -> u.getUsername())
                   .containsExactlyInAnyOrder(usernames);
+            });
+  }
+
+  public static void waitUntilJobHasBeenActivated(
+      final CamundaClient camundaClient, final Long jobKey, final int expectedJobs) {
+    Awaitility.await("should wait until job has been activated")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient.newJobSearchRequest().filter(f -> f.jobKey(jobKey)).send().join();
+              assertThat(result.page().totalItems()).isEqualTo(expectedJobs);
+            });
+  }
+
+  public static void waitUntilJobWorkerHasCompletedJob(
+      final CamundaClient camundaClient, final Long jobKey, final int expectedJobs) {
+    Awaitility.await("should wait until job has been completed")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newJobSearchRequest()
+                      .filter(f -> f.jobKey(jobKey).state(JobState.COMPLETED))
+                      .send()
+                      .join();
+              assertThat(result.page().totalItems()).isEqualTo(expectedJobs);
             });
   }
 
