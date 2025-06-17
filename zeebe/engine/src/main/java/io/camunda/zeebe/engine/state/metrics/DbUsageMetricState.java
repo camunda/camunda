@@ -10,67 +10,79 @@ package io.camunda.zeebe.engine.state.metrics;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.db.impl.DbCompositeKey;
-import io.camunda.zeebe.db.impl.DbLong;
-import io.camunda.zeebe.db.impl.DbString;
+import io.camunda.zeebe.db.impl.DbEnumValue;
 import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.time.Duration;
+import java.time.InstantSource;
 
 public class DbUsageMetricState implements MutableUsageMetricState {
 
-  private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbString> rPIColumnFamily;
-  private final DbCompositeKey<DbLong, DbLong> eventTimePiKey;
-  private final DbLong eventTimeKey;
-  private final DbLong piKey;
-  private final DbString tenantIdVal;
+  private final Duration exportInterval;
+
+  private final ColumnFamily<DbEnumValue<IntervalType>, PersistedUsageMetrics>
+      metricsBucketColumnFamily;
+  private final DbEnumValue<IntervalType> metricsBucketKey;
+  private final InstantSource clock;
 
   public DbUsageMetricState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext,
+      final InstantSource clock,
+      final Duration exportInterval) {
 
-    eventTimeKey = new DbLong();
-    piKey = new DbLong();
-    tenantIdVal = new DbString();
-    eventTimePiKey = new DbCompositeKey<>(eventTimeKey, piKey);
+    this.clock = clock;
+    this.exportInterval = exportInterval;
 
-    rPIColumnFamily =
+    metricsBucketKey = new DbEnumValue<>(IntervalType.class);
+    metricsBucketColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.RPI_USAGE_METRICS, transactionContext, eventTimePiKey, tenantIdVal);
+            ZbColumnFamilies.USAGE_METRICS,
+            transactionContext,
+            metricsBucketKey,
+            new PersistedUsageMetrics());
   }
 
   @Override
-  public Map<String, List<Long>> getTenantIdPIsMapByEventTime(final long eventTime) {
-    final var tenantIdPIsMap = new HashMap<String, List<Long>>();
-    eventTimeKey.wrapLong(eventTime);
-    rPIColumnFamily.whileEqualPrefix(
-        eventTimeKey,
-        (eventTimePiKey, tenantIdVal) -> {
-          tenantIdPIsMap
-              .computeIfAbsent(tenantIdVal.toString(), ignored -> new ArrayList<>())
-              .add(eventTimePiKey.second().getValue());
-        });
-    return tenantIdPIsMap;
+  public PersistedUsageMetrics getActiveBucket() {
+    setActiveBucketKeys();
+    return metricsBucketColumnFamily.get(metricsBucketKey);
+  }
+
+  public void updateActiveBucket(final PersistedUsageMetrics bucket) {
+    setActiveBucketKeys();
+    metricsBucketColumnFamily.update(metricsBucketKey, bucket);
+  }
+
+  private void setActiveBucketKeys() {
+    metricsBucketKey.setValue(IntervalType.ACTIVE);
   }
 
   @Override
-  public void createRPIMetric(
-      final long eventTime, final long processInstanceKey, final String tenantId) {
-    eventTimeKey.wrapLong(eventTime);
-    piKey.wrapLong(processInstanceKey);
-    tenantIdVal.wrapString(tenantId);
-    rPIColumnFamily.insert(eventTimePiKey, tenantIdVal);
+  public void recordRPIMetric(final String tenantId) {
+    updateActiveBucket(getOrCreateActiveBucket().recordRPI(tenantId));
   }
 
   @Override
-  public void deleteByEventTime(final long eventTime) {
-    eventTimeKey.wrapLong(eventTime);
-    rPIColumnFamily.whileEqualPrefix(
-        eventTimeKey,
-        (eventTimePiKey, tenantIdVal) -> {
-          rPIColumnFamily.deleteExisting(eventTimePiKey);
-        });
+  public void deleteActiveBucket() {
+    setActiveBucketKeys();
+    metricsBucketColumnFamily.deleteExisting(metricsBucketKey);
+  }
+
+  private PersistedUsageMetrics getOrCreateActiveBucket() {
+    var bucket = getActiveBucket();
+    if (bucket == null) {
+      final long millis = clock.millis();
+      bucket =
+          new PersistedUsageMetrics()
+              .setFromTime(millis)
+              .setToTime(millis + exportInterval.toMillis());
+      metricsBucketColumnFamily.insert(metricsBucketKey, bucket);
+    }
+    return bucket;
+  }
+
+  enum IntervalType {
+    ACTIVE
   }
 }

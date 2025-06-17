@@ -18,6 +18,7 @@ public final class EngineCfg implements ConfigurationEntry {
   private JobsCfg jobs = new JobsCfg();
   private ValidatorsCfg validators = new ValidatorsCfg();
   private BatchOperationCfg batchOperations = new BatchOperationCfg();
+  private UsageMetricsCfg usageMetrics = new UsageMetricsCfg();
   private int maxProcessDepth = EngineConfiguration.DEFAULT_MAX_PROCESS_DEPTH;
 
   @Override
@@ -69,6 +70,14 @@ public final class EngineCfg implements ConfigurationEntry {
     this.batchOperations = batchOperations;
   }
 
+  public UsageMetricsCfg getUsageMetrics() {
+    return usageMetrics;
+  }
+
+  public void setUsageMetrics(final UsageMetricsCfg usageMetrics) {
+    this.usageMetrics = usageMetrics;
+  }
+
   public int getMaxProcessDepth() {
     return maxProcessDepth;
   }
@@ -111,6 +120,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setBatchOperationDbChunkSize(batchOperations.getDbChunkSize())
         .setBatchOperationQueryPageSize(batchOperations.getQueryPageSize())
         .setBatchOperationQueryInClauseSize(batchOperations.getQueryInClauseSize())
+        .setUsageMetricsExportInterval(usageMetrics.getExportInterval())
         .setMaxProcessDepth(getMaxProcessDepth());
   }
 }
