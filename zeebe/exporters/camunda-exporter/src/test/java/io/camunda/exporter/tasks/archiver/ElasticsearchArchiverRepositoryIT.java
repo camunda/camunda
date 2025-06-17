@@ -432,6 +432,38 @@ final class ElasticsearchArchiverRepositoryIT {
                         .equals(dateFormatter.format(now.minus(Duration.ofHours(2)))));
   }
 
+  @Test
+  void shouldFetchHistoricalDatesOnStart() throws IOException {
+    final var dateFormatter =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+    final var now = Instant.now();
+    final var documents =
+        List.of(
+            new TestBatchOperation("1", now.minus(Duration.ofDays(1)).toString()),
+            new TestBatchOperation("2", now.minus(Duration.ofDays(1)).toString()));
+
+    final var repository = createRepository();
+    // we have an already existing index with a date of 3 days ago.
+    testClient
+        .indices()
+        .create(
+            r ->
+                r.index(
+                    batchOperationIndex
+                        + "_"
+                        + dateFormatter.format(now.minus(Duration.ofDays(3)))));
+
+    createBatchOperationIndex();
+    documents.forEach(doc -> index(batchOperationIndex, doc));
+    testClient.indices().refresh(r -> r.index(batchOperationIndex));
+    config.setRolloverInterval("3d");
+
+    // then the batch finish date should not update:
+    final var batch = repository.getBatchOperationsNextBatch().join();
+    assertThat(batch.ids()).containsAll(List.of("1", "2"));
+    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(3))));
+  }
+
   private <T extends TDocument> void index(final String index, final T document) {
     try {
       testClient.index(b -> b.index(index).document(document).id(document.id()));
