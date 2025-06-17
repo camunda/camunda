@@ -18,12 +18,17 @@ import static io.camunda.it.migration.IdentityMigrationTestUtil.IDENTITY_CLIENT;
 import static io.camunda.it.migration.IdentityMigrationTestUtil.IDENTITY_CLIENT_SECRET;
 import static io.camunda.it.migration.IdentityMigrationTestUtil.externalIdentityUrl;
 import static io.camunda.it.migration.IdentityMigrationTestUtil.externalKeycloakUrl;
+import static io.camunda.migration.identity.config.saas.StaticEntities.CLIENT_IDS;
+import static io.camunda.migration.identity.config.saas.StaticEntities.CLIENT_PERMISSIONS;
 import static io.camunda.migration.identity.config.saas.StaticEntities.DEVELOPER_ROLE_ID;
+import static io.camunda.migration.identity.config.saas.StaticEntities.OPERATE_CLIENT_ID;
 import static io.camunda.migration.identity.config.saas.StaticEntities.OPERATIONS_ENGINEER_ROLE_ID;
 import static io.camunda.migration.identity.config.saas.StaticEntities.ROLE_IDS;
 import static io.camunda.migration.identity.config.saas.StaticEntities.ROLE_PERMISSIONS;
+import static io.camunda.migration.identity.config.saas.StaticEntities.TASKLIST_CLIENT_ID;
 import static io.camunda.migration.identity.config.saas.StaticEntities.TASK_USER_ROLE_ID;
 import static io.camunda.migration.identity.config.saas.StaticEntities.VISITOR_ROLE_ID;
+import static io.camunda.migration.identity.config.saas.StaticEntities.ZEEBE_CLIENT_ID;
 import static io.camunda.zeebe.qa.util.cluster.TestZeebePort.CLUSTER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -236,8 +241,7 @@ public class IdentityMigrationIT {
   }
 
   @Test
-  public void canMigrateRolePermissions()
-      throws URISyntaxException, IOException, InterruptedException {
+  public void canMigratePermissions() throws URISyntaxException, IOException, InterruptedException {
     // when
     migration.start();
     final var restAddress = client.getConfiguration().getRestAddress().toString();
@@ -251,9 +255,10 @@ public class IdentityMigrationIT {
               final var migratedAuthorizations =
                   authorizations.items().stream()
                       .map(AuthorizationResponse::ownerId)
-                      .filter(ROLE_IDS::contains)
+                      .filter(id -> ROLE_IDS.contains(id) || CLIENT_IDS.contains(id))
                       .toList();
-              assertThat(migratedAuthorizations.size()).isEqualTo(ROLE_PERMISSIONS.size());
+              assertThat(migratedAuthorizations.size())
+                  .isEqualTo(ROLE_PERMISSIONS.size() + CLIENT_PERMISSIONS.size());
             });
 
     // then
@@ -268,6 +273,7 @@ public class IdentityMigrationIT {
             AuthorizationResponse::resourceType,
             AuthorizationResponse::permissionTypes)
         .contains(
+            // Role permissions
             tuple(
                 DEVELOPER_ROLE_ID,
                 OwnerType.ROLE,
@@ -392,7 +398,111 @@ public class IdentityMigrationIT {
                 OwnerType.ROLE,
                 "*",
                 ResourceType.DECISION_REQUIREMENTS_DEFINITION,
-                Set.of(PermissionType.READ)));
+                Set.of(PermissionType.READ)),
+            // Client permissions
+            tuple(
+                ZEEBE_CLIENT_ID,
+                OwnerType.CLIENT,
+                "*",
+                ResourceType.MESSAGE,
+                Set.of(PermissionType.CREATE)),
+            tuple(
+                ZEEBE_CLIENT_ID,
+                OwnerType.CLIENT,
+                "*",
+                ResourceType.SYSTEM,
+                Set.of(PermissionType.READ, PermissionType.UPDATE)),
+            tuple(
+                ZEEBE_CLIENT_ID,
+                OwnerType.CLIENT,
+                "*",
+                ResourceType.RESOURCE,
+                Set.of(
+                    PermissionType.CREATE,
+                    PermissionType.DELETE_FORM,
+                    PermissionType.DELETE_PROCESS,
+                    PermissionType.DELETE_DRD,
+                    PermissionType.DELETE_RESOURCE)),
+            tuple(
+                ZEEBE_CLIENT_ID,
+                OwnerType.CLIENT,
+                "*",
+                ResourceType.PROCESS_DEFINITION,
+                Set.of(
+                    PermissionType.UPDATE_PROCESS_INSTANCE,
+                    PermissionType.UPDATE_USER_TASK,
+                    PermissionType.CREATE_PROCESS_INSTANCE,
+                    PermissionType.DELETE_PROCESS_INSTANCE)),
+            tuple(
+                ZEEBE_CLIENT_ID,
+                OwnerType.CLIENT,
+                "*",
+                ResourceType.DECISION_DEFINITION,
+                Set.of(
+                    PermissionType.CREATE_DECISION_INSTANCE,
+                    PermissionType.DELETE_DECISION_INSTANCE)),
+            tuple(
+                ZEEBE_CLIENT_ID,
+                OwnerType.CLIENT,
+                "*",
+                ResourceType.DECISION_REQUIREMENTS_DEFINITION,
+                Set.of(PermissionType.UPDATE, PermissionType.DELETE)),
+            tuple(
+                OPERATE_CLIENT_ID,
+                OwnerType.CLIENT,
+                "*",
+                ResourceType.MESSAGE,
+                Set.of(PermissionType.READ)),
+            tuple(
+                OPERATE_CLIENT_ID,
+                OwnerType.CLIENT,
+                "*",
+                ResourceType.BATCH_OPERATION,
+                Set.of(PermissionType.READ, PermissionType.CREATE, PermissionType.UPDATE)),
+            tuple(
+                OPERATE_CLIENT_ID,
+                OwnerType.CLIENT,
+                "*",
+                ResourceType.RESOURCE,
+                Set.of(PermissionType.READ)),
+            tuple(
+                OPERATE_CLIENT_ID,
+                OwnerType.CLIENT,
+                "*",
+                ResourceType.PROCESS_DEFINITION,
+                Set.of(
+                    PermissionType.READ_PROCESS_DEFINITION,
+                    PermissionType.READ_PROCESS_INSTANCE,
+                    PermissionType.DELETE_PROCESS_INSTANCE)),
+            tuple(
+                OPERATE_CLIENT_ID,
+                OwnerType.CLIENT,
+                "*",
+                ResourceType.DECISION_DEFINITION,
+                Set.of(
+                    PermissionType.READ_DECISION_DEFINITION,
+                    PermissionType.READ_DECISION_INSTANCE)),
+            tuple(
+                OPERATE_CLIENT_ID,
+                OwnerType.CLIENT,
+                "*",
+                ResourceType.DECISION_REQUIREMENTS_DEFINITION,
+                Set.of(PermissionType.READ)),
+            tuple(
+                TASKLIST_CLIENT_ID,
+                OwnerType.CLIENT,
+                "*",
+                ResourceType.RESOURCE,
+                Set.of(PermissionType.READ)),
+            tuple(
+                TASKLIST_CLIENT_ID,
+                OwnerType.CLIENT,
+                "*",
+                ResourceType.PROCESS_DEFINITION,
+                Set.of(
+                    PermissionType.READ_PROCESS_DEFINITION,
+                    PermissionType.READ_USER_TASK,
+                    PermissionType.UPDATE_USER_TASK)));
   }
 
   private void stubConsoleClient() {
