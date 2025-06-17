@@ -8,7 +8,7 @@
 
 import { ApiDefinition, apiPost } from "src/utility/api/request";
 
-export const SETUP_ENDPOINT = "/setup";
+export const SETUP_ENDPOINT = "/setup/user";
 
 export type AdminUser = {
   username: string;

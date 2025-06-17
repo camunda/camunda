@@ -7,7 +7,10 @@
  */
 
 import styled from "styled-components";
-import { Stack } from "@carbon/react";
+import {
+  Stack,
+  InlineNotification as BaseInlineNotification,
+} from "@carbon/react";
 import { spacing06, spacing07 } from "@carbon/elements";
 import Page from "src/components/layout/Page.tsx";
 
@@ -29,6 +32,9 @@ export const SetupPageContainer = styled(Page)`
   display: flex;
   flex-direction: row;
   justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: ${spacing06};
 `;
 
 export const Content = styled.div`
@@ -43,6 +49,7 @@ export const PageTitle = styled.h1`
 
 export const Header = styled.div`
   margin: ${spacing06};
+  margin-top: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -54,4 +61,8 @@ export const Header = styled.div`
   img {
     height: ${spacing07};
   }
+`;
+
+export const InlineNotification = styled(BaseInlineNotification)`
+  margin-top: ${spacing06};
 `;
