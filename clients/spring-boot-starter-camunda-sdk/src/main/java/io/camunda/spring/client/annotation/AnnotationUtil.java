@@ -48,7 +48,8 @@ public class AnnotationUtil {
   static {
     DOCUMENT_PARAMETER_TYPES = new HashMap<>();
     DOCUMENT_PARAMETER_TYPES.put(
-        List.class + "<" + DocumentReferenceResponse.class + ">", ParameterType.LIST);
+        List.class.getName() + "<" + DocumentReferenceResponse.class.getName() + ">",
+        ParameterType.LIST);
     DOCUMENT_PARAMETER_TYPES.put(DocumentReferenceResponse.class.getName(), ParameterType.SINGLE);
     DOCUMENT_PARAMETER_TYPES.put(DocumentContext.class.getName(), ParameterType.CONTEXT);
   }
