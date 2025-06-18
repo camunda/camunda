@@ -19,6 +19,7 @@ public final class EngineCfg implements ConfigurationEntry {
   private JobsCfg jobs = new JobsCfg();
   private ValidatorsCfg validators = new ValidatorsCfg();
   private AuthorizationsCfg authorizations = new AuthorizationsCfg();
+  private DistributionCfg distribution = new DistributionCfg();
   private int maxProcessDepth = EngineConfiguration.DEFAULT_MAX_PROCESS_DEPTH;
 
   @Override
@@ -28,6 +29,7 @@ public final class EngineCfg implements ConfigurationEntry {
     jobs.init(globalConfig, brokerBase);
     validators.init(globalConfig, brokerBase);
     authorizations.init(globalConfig, brokerBase);
+    distribution.init(globalConfig, brokerBase);
   }
 
   public MessagesCfg getMessages() {
@@ -70,6 +72,14 @@ public final class EngineCfg implements ConfigurationEntry {
     this.authorizations = authorizations;
   }
 
+  public DistributionCfg getDistribution() {
+    return distribution;
+  }
+
+  public void setDistribution(final DistributionCfg distribution) {
+    this.distribution = distribution;
+  }
+
   public int getMaxProcessDepth() {
     return maxProcessDepth;
   }
@@ -91,6 +101,8 @@ public final class EngineCfg implements ConfigurationEntry {
         + validators
         + ", authorizations="
         + authorizations
+        + ", distribution="
+        + distribution
         + ", maxProcessDepth="
         + maxProcessDepth
         + '}';
@@ -108,6 +120,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setJobsTimeoutCheckerBatchLimit(jobs.getTimeoutCheckerBatchLimit())
         .setValidatorsResultsOutputMaxSize(validators.getResultsOutputMaxSize())
         .setEnableAuthorization(authorizations.isEnableAuthorization())
+        .setCommandDistributionPaused(distribution.isPauseCommandDistribution())
         .setMaxProcessDepth(getMaxProcessDepth());
   }
 }
