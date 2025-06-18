@@ -15,21 +15,40 @@
  */
 package io.camunda.process.test.api;
 
-import io.camunda.process.test.impl.containers.ContainerFactory;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestGlobalContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
+import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
+import java.util.concurrent.atomic.AtomicReference;
 
 /** Singleton for a long-running Camunda runtime used during Camunda Process Tests. */
 public enum CamundaProcessTestGlobalRuntime {
   INSTANCE;
 
-  private CamundaProcessTestGlobalContainerRuntime runtime = null;
+  private final AtomicReference<CamundaProcessTestRuntime> runtime = new AtomicReference<>(null);
+  private final AtomicReference<CamundaProcessTestRuntimeBuilder> runtimeBuilder =
+      new AtomicReference<>(null);
 
-  public CamundaProcessTestRuntime getRuntime(final ContainerFactory containerFactory) {
-    if (runtime == null) {
-      runtime = new CamundaProcessTestGlobalContainerRuntime(containerFactory);
+  public void initialize(final CamundaProcessTestRuntimeBuilder runtimeBuilder) {
+    this.runtimeBuilder.compareAndSet(null, runtimeBuilder);
+    this.runtime.compareAndSet(
+        null, new CamundaProcessTestGlobalContainerRuntime(runtimeBuilder.build()));
+  }
+
+  public CamundaProcessTestRuntime getRuntime() {
+    return runtime.get();
+  }
+
+  public CamundaProcessTestRuntimeBuilder getRuntimeBuilder() {
+    return runtimeBuilder.get();
+  }
+
+  // Accessible via reflection for testing
+  private void resetRuntime() throws Exception {
+    if (runtime.get() != null) {
+      runtime.get().close();
     }
 
-    return runtime;
+    runtime.set(null);
+    runtimeBuilder.set(null);
   }
 }

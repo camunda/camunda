@@ -29,11 +29,14 @@ import io.camunda.spring.client.properties.CamundaClientProperties.ClientMode;
 
 public class CamundaSpringProcessTestRuntimeBuilder {
 
-  public static CamundaProcessTestRuntime buildRuntime(
+  public static CamundaProcessTestRuntimeBuilder mergeRuntimeConfiguration(
       final CamundaProcessTestRuntimeBuilder runtimeBuilder,
       final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
 
     final CamundaProcessTestRuntimeMode runtimeMode = runtimeConfiguration.getRuntimeMode();
+    if (runtimeConfiguration.isForceLocalRuntime()) {
+      runtimeBuilder.withLocalRuntime();
+    }
 
     runtimeBuilder.withRuntimeMode(runtimeMode);
     if (runtimeMode == CamundaProcessTestRuntimeMode.REMOTE) {
@@ -42,16 +45,12 @@ public class CamundaSpringProcessTestRuntimeBuilder {
       configureManagedRuntime(runtimeBuilder, runtimeConfiguration);
     }
 
-    return runtimeBuilder.build();
+    return runtimeBuilder;
   }
 
   private static void configureManagedRuntime(
       final CamundaProcessTestRuntimeBuilder runtimeBuilder,
       final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
-
-    if (runtimeConfiguration.isForceLocalRuntime()) {
-      runtimeBuilder.withLocalRuntime();
-    }
 
     runtimeBuilder
         .withCamundaDockerImageVersion(runtimeConfiguration.getCamundaVersion())

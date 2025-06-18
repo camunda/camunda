@@ -100,6 +100,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   @Override
   public void beforeTestClass(final TestContext testContext) {
     // create runtime
+    initializeGlobalRuntime(testContext);
+
     runtime = buildRuntime(testContext);
     runtime.start();
 
@@ -218,12 +220,29 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     }
   }
 
+  private void initializeGlobalRuntime(final TestContext testContext) {
+    final CamundaProcessTestRuntimeConfiguration globalRuntimeConfiguration =
+        testContext
+            .getApplicationContext()
+            .getBean("globalRuntimeConfiguration", CamundaProcessTestRuntimeConfiguration.class);
+
+    final CamundaProcessTestRuntimeBuilder defaultRuntimeBuilder =
+        CamundaProcessTestContainerRuntime.newBuilder().withLocalRuntime();
+
+    final CamundaProcessTestRuntimeBuilder globalRuntimeBuilder =
+        CamundaSpringProcessTestRuntimeBuilder.mergeRuntimeConfiguration(
+            defaultRuntimeBuilder, globalRuntimeConfiguration);
+
+    CamundaProcessTestGlobalRuntime.INSTANCE.initialize(globalRuntimeBuilder);
+  }
+
   private CamundaProcessTestRuntime buildRuntime(final TestContext testContext) {
     final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
         testContext.getApplicationContext().getBean(CamundaProcessTestRuntimeConfiguration.class);
 
-    return CamundaSpringProcessTestRuntimeBuilder.buildRuntime(
-        containerRuntimeBuilder, runtimeConfiguration);
+    return CamundaSpringProcessTestRuntimeBuilder.mergeRuntimeConfiguration(
+            containerRuntimeBuilder, runtimeConfiguration)
+        .build();
   }
 
   private static CamundaClient createClient(

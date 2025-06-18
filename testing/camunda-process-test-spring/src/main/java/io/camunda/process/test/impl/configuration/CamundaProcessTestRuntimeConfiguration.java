@@ -25,7 +25,9 @@ import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
+@Primary
 @Configuration
 @ConfigurationProperties(prefix = "io.camunda.process.test")
 public class CamundaProcessTestRuntimeConfiguration {

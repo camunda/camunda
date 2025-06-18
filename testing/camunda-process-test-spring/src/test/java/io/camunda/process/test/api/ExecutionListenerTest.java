@@ -109,6 +109,9 @@ public class ExecutionListenerTest {
         .thenReturn(camundaProcessTestContextProxy);
     when(applicationContext.getBean(CamundaProcessTestRuntimeConfiguration.class))
         .thenReturn(new CamundaProcessTestRuntimeConfiguration());
+    when(applicationContext.getBean(
+            "globalRuntimeConfiguration", CamundaProcessTestRuntimeConfiguration.class))
+        .thenReturn(new CamundaProcessTestRuntimeConfiguration());
   }
 
   @Test

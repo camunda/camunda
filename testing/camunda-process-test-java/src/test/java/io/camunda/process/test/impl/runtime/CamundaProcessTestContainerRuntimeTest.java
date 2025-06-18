@@ -21,13 +21,17 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.process.test.api.CamundaProcessTestGlobalRuntime;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.ContainerFactory;
+import io.camunda.process.test.utils.GlobalCptRuntimeInvalidator;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Named;
@@ -68,6 +72,19 @@ public class CamundaProcessTestContainerRuntimeTest {
 
   @Mock(answer = Answers.RETURNS_SELF)
   private ConnectorsContainer connectorsContainer;
+
+  @BeforeAll
+  static void configureGlobalRuntime() throws Exception {
+    GlobalCptRuntimeInvalidator.invalidate();
+
+    CamundaProcessTestGlobalRuntime.INSTANCE.initialize(
+        CamundaProcessTestContainerRuntime.newBuilder());
+  }
+
+  @AfterAll
+  static void resetGlobalRuntime() throws Exception {
+    GlobalCptRuntimeInvalidator.invalidate();
+  }
 
   @BeforeEach
   void configureMocks() {

@@ -15,26 +15,28 @@
  */
 package io.camunda.process.test.impl.runtime;
 
-import io.camunda.process.test.impl.containers.ContainerFactory;
+import io.camunda.process.test.api.CamundaClientBuilderFactory;
+import java.net.URI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CamundaProcessTestGlobalContainerRuntime extends CamundaProcessTestContainerRuntime {
+public class CamundaProcessTestGlobalContainerRuntime implements CamundaProcessTestRuntime {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(CamundaProcessTestGlobalContainerRuntime.class);
 
-  private static boolean isRuntimeStarted = false;
+  private CamundaProcessTestRuntime runtime = null;
+  private boolean isRuntimeStarted = false;
 
-  public CamundaProcessTestGlobalContainerRuntime(final ContainerFactory containerFactory) {
-    super(newBuilder(), containerFactory);
+  public CamundaProcessTestGlobalContainerRuntime(final CamundaProcessTestRuntime runtime) {
+    this.runtime = runtime;
   }
 
   @Override
   public void start() {
     if (!isRuntimeStarted) {
       LOGGER.info("Starting global CPT container runtime.");
-      super.start();
+      this.runtime.start();
       isRuntimeStarted = true;
     } else {
       LOGGER.debug("CPT global container runtime already started.");
@@ -44,5 +46,30 @@ public class CamundaProcessTestGlobalContainerRuntime extends CamundaProcessTest
   @Override
   public void close() {
     LOGGER.debug("Ignoring request to close global Camunda runtime.");
+  }
+
+  @Override
+  public URI getCamundaRestApiAddress() {
+    return runtime.getCamundaRestApiAddress();
+  }
+
+  @Override
+  public URI getCamundaGrpcApiAddress() {
+    return runtime.getCamundaGrpcApiAddress();
+  }
+
+  @Override
+  public URI getCamundaMonitoringApiAddress() {
+    return runtime.getCamundaMonitoringApiAddress();
+  }
+
+  @Override
+  public URI getConnectorsRestApiAddress() {
+    return runtime.getConnectorsRestApiAddress();
+  }
+
+  @Override
+  public CamundaClientBuilderFactory getCamundaClientBuilderFactory() {
+    return runtime.getCamundaClientBuilderFactory();
   }
 }

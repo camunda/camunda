@@ -31,9 +31,13 @@ import io.camunda.client.api.response.PartitionBrokerHealth;
 import io.camunda.client.api.response.PartitionInfo;
 import io.camunda.client.api.response.Topology;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
+import io.camunda.process.test.api.CamundaProcessTestGlobalRuntime;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import io.camunda.process.test.utils.GlobalCptRuntimeInvalidator;
 import java.net.URI;
 import java.util.Collections;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -49,6 +53,19 @@ public class CamundaProcessTestRemoteRuntimeTest {
   private CamundaClient camundaClient;
 
   @Mock private Topology topology;
+
+  @BeforeAll
+  static void configureGlobalRuntime() {
+    GlobalCptRuntimeInvalidator.invalidate();
+
+    CamundaProcessTestGlobalRuntime.INSTANCE.initialize(
+        CamundaProcessTestContainerRuntime.newBuilder());
+  }
+
+  @AfterAll
+  static void resetGlobalRuntime() {
+    GlobalCptRuntimeInvalidator.invalidate();
+  }
 
   @Test
   void shouldCreateRuntime() {

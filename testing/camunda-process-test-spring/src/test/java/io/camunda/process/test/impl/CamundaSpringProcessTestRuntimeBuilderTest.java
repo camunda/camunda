@@ -54,7 +54,9 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
 
     // when
     final CamundaProcessTestRuntime camundaRuntime =
-        CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
+        CamundaSpringProcessTestRuntimeBuilder.mergeRuntimeConfiguration(
+                runtimeBuilder, runtimeConfiguration)
+            .build();
 
     // then
     assertThat(camundaRuntime)
@@ -72,24 +74,6 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
   }
 
   @Test
-  void shouldBuildLocalRuntimeIfAnyConfigurationIsChanged() {
-    // given
-    final CamundaProcessTestRuntimeBuilder runtimeBuilder = new CamundaProcessTestRuntimeBuilder();
-    final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
-        new CamundaProcessTestRuntimeConfiguration();
-
-    runtimeConfiguration.setConnectorsEnabled(true);
-
-    // when
-    final CamundaProcessTestRuntime camundaRuntime =
-        CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
-
-    // then
-    assertThat(camundaRuntime).isNotNull().isInstanceOf(CamundaProcessTestContainerRuntime.class);
-    assertThat(runtimeBuilder.isConnectorsEnabled()).isTrue();
-  }
-
-  @Test
   void shouldForceBuildLocalRuntimeIfConfigured() {
     // given
     final CamundaProcessTestRuntimeBuilder runtimeBuilder = new CamundaProcessTestRuntimeBuilder();
@@ -100,7 +84,9 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
 
     // when
     final CamundaProcessTestRuntime camundaRuntime =
-        CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
+        CamundaSpringProcessTestRuntimeBuilder.mergeRuntimeConfiguration(
+                runtimeBuilder, runtimeConfiguration)
+            .build();
 
     // then
     assertThat(camundaRuntime).isNotNull().isInstanceOf(CamundaProcessTestContainerRuntime.class);
@@ -125,7 +111,8 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     runtimeConfiguration.setCamundaExposedPorts(camundaExposedPorts);
 
     // when
-    CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
+    CamundaSpringProcessTestRuntimeBuilder.mergeRuntimeConfiguration(
+        runtimeBuilder, runtimeConfiguration);
 
     // then
     assertThat(runtimeBuilder.getCamundaDockerImageName()).isEqualTo("custom-camunda");
@@ -155,7 +142,8 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     runtimeConfiguration.setConnectorsSecrets(connectorsSecrets);
 
     // when
-    CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
+    CamundaSpringProcessTestRuntimeBuilder.mergeRuntimeConfiguration(
+        runtimeBuilder, runtimeConfiguration);
 
     // then
     assertThat(runtimeBuilder.isConnectorsEnabled()).isTrue();
@@ -173,10 +161,13 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
         new CamundaProcessTestRuntimeConfiguration();
 
     runtimeConfiguration.setRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE);
+    runtimeConfiguration.setForceLocalRuntime(true);
 
     // when
     final CamundaProcessTestRuntime camundaRuntime =
-        CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
+        CamundaSpringProcessTestRuntimeBuilder.mergeRuntimeConfiguration(
+                runtimeBuilder, runtimeConfiguration)
+            .build();
 
     // then
     assertThat(camundaRuntime).isNotNull().isInstanceOf(CamundaProcessTestRemoteRuntime.class);
@@ -226,7 +217,8 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     remoteClientProperties.setGrpcAddress(remoteCamundaGrpcApiAddress);
 
     // when
-    CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
+    CamundaSpringProcessTestRuntimeBuilder.mergeRuntimeConfiguration(
+        runtimeBuilder, runtimeConfiguration);
 
     // then
     assertThat(runtimeBuilder.getRemoteCamundaMonitoringApiAddress())
@@ -268,7 +260,8 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     authProperties.setClientSecret("my-client-secret");
 
     // when
-    CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
+    CamundaSpringProcessTestRuntimeBuilder.mergeRuntimeConfiguration(
+        runtimeBuilder, runtimeConfiguration);
 
     // then
     final CamundaClientBuilderFactory remoteCamundaClientBuilderFactory =

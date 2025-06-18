@@ -123,6 +123,8 @@ public class CamundaProcessTestExtension
   @Override
   public void beforeAll(final ExtensionContext context) {
     // create runtime
+    initializeGlobalRuntime(context);
+
     runtime = runtimeBuilder.build();
     runtime.start();
 
@@ -137,6 +139,13 @@ public class CamundaProcessTestExtension
     final Store store = context.getStore(NAMESPACE);
     store.put(STORE_KEY_RUNTIME, runtime);
     store.put(STORE_KEY_CONTEXT, camundaProcessTestContext);
+  }
+
+  private void initializeGlobalRuntime(final ExtensionContext context) {
+    final CamundaProcessTestRuntimeBuilder defaultRuntimeBuilder =
+        CamundaProcessTestContainerRuntime.newBuilder().withLocalRuntime();
+
+    CamundaProcessTestGlobalRuntime.INSTANCE.initialize(defaultRuntimeBuilder);
   }
 
   @Override

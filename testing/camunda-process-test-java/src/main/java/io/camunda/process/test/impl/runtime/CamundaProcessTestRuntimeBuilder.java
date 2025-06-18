@@ -227,12 +227,18 @@ public class CamundaProcessTestRuntimeBuilder {
   // ============ Build =================
 
   public CamundaProcessTestRuntime build() {
-    if (runtimeMode == CamundaProcessTestRuntimeMode.REMOTE) {
-      return new CamundaProcessTestRemoteRuntime(this);
+    if (shouldUseGlobalRuntime()) {
+      System.out.println("Using the global runtime!");
+      return CamundaProcessTestGlobalRuntime.INSTANCE.getRuntime();
     }
 
-    if (shouldUseGlobalRuntime()) {
-      return CamundaProcessTestGlobalRuntime.INSTANCE.getRuntime(containerFactory);
+    System.out.println("Using a local runtime");
+    return buildRuntime();
+  }
+
+  private CamundaProcessTestRuntime buildRuntime() {
+    if (runtimeMode == CamundaProcessTestRuntimeMode.REMOTE) {
+      return new CamundaProcessTestRemoteRuntime(this);
     }
 
     return new CamundaProcessTestContainerRuntime(this, containerFactory);
@@ -331,72 +337,97 @@ public class CamundaProcessTestRuntimeBuilder {
   // ============ Global Runtime =================
 
   private boolean shouldUseGlobalRuntime() {
-    if (isGlobalRuntimeDisabled || forceLocalRuntime) {
-      return false;
-    }
-
-    final CamundaProcessTestRuntimeBuilder defaultBuilder = new CamundaProcessTestRuntimeBuilder();
-    return defaultBuilder.hashCode() == this.hashCode();
+    return !isGlobalRuntimeDisabled
+        && !forceLocalRuntime
+        && hasCompatibleConfiguration(CamundaProcessTestGlobalRuntime.INSTANCE.getRuntimeBuilder());
   }
 
-  /*
-   * Both hashCode() and equals() ignore the containerFactory.
-   */
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        camundaDockerImageName,
-        camundaDockerImageVersion,
-        elasticsearchDockerImageName,
-        elasticsearchDockerImageVersion,
-        connectorsDockerImageName,
-        connectorsDockerImageVersion,
-        camundaEnvVars,
-        elasticsearchEnvVars,
-        connectorsEnvVars,
-        camundaExposedPorts,
-        elasticsearchExposedPorts,
-        connectorsExposedPorts,
-        camundaLoggerName,
-        elasticsearchLoggerName,
-        connectorsLoggerName,
-        connectorsEnabled,
-        connectorsSecrets,
-        runtimeMode,
-        remoteCamundaClientBuilderFactory,
-        remoteCamundaMonitoringApiAddress,
-        remoteConnectorsRestApiAddress);
+  private boolean hasCompatibleConfiguration(final CamundaProcessTestRuntimeBuilder other) {
+    return connectorsEnabled == other.connectorsEnabled
+        && Objects.equals(camundaDockerImageName, other.camundaDockerImageName)
+        && Objects.equals(camundaDockerImageVersion, other.camundaDockerImageVersion)
+        && Objects.equals(elasticsearchDockerImageName, other.elasticsearchDockerImageName)
+        && Objects.equals(elasticsearchDockerImageVersion, other.elasticsearchDockerImageVersion)
+        && Objects.equals(connectorsDockerImageName, other.connectorsDockerImageName)
+        && Objects.equals(connectorsDockerImageVersion, other.connectorsDockerImageVersion)
+        && Objects.equals(camundaEnvVars, other.camundaEnvVars)
+        && Objects.equals(elasticsearchEnvVars, other.elasticsearchEnvVars)
+        && Objects.equals(connectorsEnvVars, other.connectorsEnvVars)
+        && Objects.equals(camundaExposedPorts, other.camundaExposedPorts)
+        && Objects.equals(elasticsearchExposedPorts, other.elasticsearchExposedPorts)
+        && Objects.equals(connectorsExposedPorts, other.connectorsExposedPorts)
+        && Objects.equals(camundaLoggerName, other.camundaLoggerName)
+        && Objects.equals(elasticsearchLoggerName, other.elasticsearchLoggerName)
+        && Objects.equals(connectorsLoggerName, other.connectorsLoggerName)
+        && Objects.equals(connectorsSecrets, other.connectorsSecrets)
+        && runtimeMode == other.runtimeMode
+        && Objects.equals(
+            remoteCamundaClientBuilderFactory, other.remoteCamundaClientBuilderFactory)
+        && Objects.equals(
+            remoteCamundaMonitoringApiAddress, other.remoteCamundaMonitoringApiAddress)
+        && Objects.equals(remoteConnectorsRestApiAddress, other.remoteConnectorsRestApiAddress);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-
-    final CamundaProcessTestRuntimeBuilder that = (CamundaProcessTestRuntimeBuilder) o;
-    return connectorsEnabled == that.connectorsEnabled
-        && isGlobalRuntimeDisabled == that.isGlobalRuntimeDisabled
-        && forceLocalRuntime == that.forceLocalRuntime
-        && Objects.equals(camundaDockerImageName, that.camundaDockerImageName)
-        && Objects.equals(camundaDockerImageVersion, that.camundaDockerImageVersion)
-        && Objects.equals(elasticsearchDockerImageName, that.elasticsearchDockerImageName)
-        && Objects.equals(elasticsearchDockerImageVersion, that.elasticsearchDockerImageVersion)
-        && Objects.equals(connectorsDockerImageName, that.connectorsDockerImageName)
-        && Objects.equals(connectorsDockerImageVersion, that.connectorsDockerImageVersion)
-        && Objects.equals(camundaEnvVars, that.camundaEnvVars)
-        && Objects.equals(elasticsearchEnvVars, that.elasticsearchEnvVars)
-        && Objects.equals(connectorsEnvVars, that.connectorsEnvVars)
-        && Objects.equals(camundaExposedPorts, that.camundaExposedPorts)
-        && Objects.equals(elasticsearchExposedPorts, that.elasticsearchExposedPorts)
-        && Objects.equals(connectorsExposedPorts, that.connectorsExposedPorts)
-        && Objects.equals(camundaLoggerName, that.camundaLoggerName)
-        && Objects.equals(elasticsearchLoggerName, that.elasticsearchLoggerName)
-        && Objects.equals(connectorsLoggerName, that.connectorsLoggerName)
-        && Objects.equals(connectorsSecrets, that.connectorsSecrets)
-        && runtimeMode == that.runtimeMode
-        && Objects.equals(remoteCamundaClientBuilderFactory, that.remoteCamundaClientBuilderFactory)
-        && Objects.equals(remoteCamundaMonitoringApiAddress, that.remoteCamundaMonitoringApiAddress)
-        && Objects.equals(remoteConnectorsRestApiAddress, that.remoteConnectorsRestApiAddress);
+  public String toString() {
+    return "CamundaProcessTestRuntimeBuilder{"
+        + "containerFactory="
+        + containerFactory
+        + ", camundaDockerImageName='"
+        + camundaDockerImageName
+        + '\''
+        + ", camundaDockerImageVersion='"
+        + camundaDockerImageVersion
+        + '\''
+        + ", elasticsearchDockerImageName='"
+        + elasticsearchDockerImageName
+        + '\''
+        + ", elasticsearchDockerImageVersion='"
+        + elasticsearchDockerImageVersion
+        + '\''
+        + ", connectorsDockerImageName='"
+        + connectorsDockerImageName
+        + '\''
+        + ", connectorsDockerImageVersion='"
+        + connectorsDockerImageVersion
+        + '\''
+        + ", camundaEnvVars="
+        + camundaEnvVars
+        + ", elasticsearchEnvVars="
+        + elasticsearchEnvVars
+        + ", connectorsEnvVars="
+        + connectorsEnvVars
+        + ", camundaExposedPorts="
+        + camundaExposedPorts
+        + ", elasticsearchExposedPorts="
+        + elasticsearchExposedPorts
+        + ", connectorsExposedPorts="
+        + connectorsExposedPorts
+        + ", camundaLoggerName='"
+        + camundaLoggerName
+        + '\''
+        + ", elasticsearchLoggerName='"
+        + elasticsearchLoggerName
+        + '\''
+        + ", connectorsLoggerName='"
+        + connectorsLoggerName
+        + '\''
+        + ", connectorsEnabled="
+        + connectorsEnabled
+        + ", connectorsSecrets="
+        + connectorsSecrets
+        + ", isGlobalRuntimeDisabled="
+        + isGlobalRuntimeDisabled
+        + ", forceLocalRuntime="
+        + forceLocalRuntime
+        + ", runtimeMode="
+        + runtimeMode
+        + ", remoteCamundaClientBuilderFactory="
+        + remoteCamundaClientBuilderFactory
+        + ", remoteCamundaMonitoringApiAddress="
+        + remoteCamundaMonitoringApiAddress
+        + ", remoteConnectorsRestApiAddress="
+        + remoteConnectorsRestApiAddress
+        + '}';
   }
 }
