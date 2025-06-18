@@ -28,6 +28,7 @@ public final class EngineConfiguration {
   public static final int DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE = 12 * 1024;
 
   public static final int DEFAULT_MAX_PROCESS_DEPTH = 1000;
+  public static final boolean DEFAULT_COMMAND_DISTRIBUTION_PAUSED = false;
 
   private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
   private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
@@ -41,6 +42,8 @@ public final class EngineConfiguration {
   private int validatorsResultsOutputMaxSize = DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE;
 
   private int maxProcessDepth = DEFAULT_MAX_PROCESS_DEPTH;
+
+  private boolean commandDistributionPaused = DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -124,6 +127,15 @@ public final class EngineConfiguration {
 
   public EngineConfiguration setMaxProcessDepth(final int maxProcessDepth) {
     this.maxProcessDepth = maxProcessDepth;
+    return this;
+  }
+
+  public boolean isCommandDistributionPaused() {
+    return commandDistributionPaused;
+  }
+
+  public EngineConfiguration setCommandDistributionPaused(final boolean commandDistributionPaused) {
+    this.commandDistributionPaused = commandDistributionPaused;
     return this;
   }
 }

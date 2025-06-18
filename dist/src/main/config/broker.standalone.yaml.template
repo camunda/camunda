@@ -1248,6 +1248,12 @@
           # PS: The default value is 12kb. Increasing it to a higher value introduces a risk that it will be throttled by NGINX proxy configs or the zeebe client configs.
           # resultsOutputMaxSize: 12288
 
+        # distribution:
+          # Allows pausing command redistribution. The flag can be used to prevent the redistribution of commands when
+          # the broker is under heavy load. This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENGINE_DISTRIBUTION_PAUSECOMMANDDISTRIBUTION.
+          # The default value is false, meaning that command redistribution is not paused.
+          # pauseCommandDistribution: false
+
       # Allows to configure feature flags. These are used to test new features in dev and int environments prior
       # to rolling them out to production
       # features:
