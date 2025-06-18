@@ -117,7 +117,7 @@ public class CamundaOAuthPrincipalService {
     if (StringUtils.hasText(groupsClaim)) {
       groups = new HashSet<>(oidcGroupsLoader.load(claims));
     } else {
-      // TODO: Get groups for username and clientId
+      // TODO: Get groups for username and clientId https://github.com/camunda/camunda/issues/26572
       groups =
           groupServices.getGroupsByMemberIds(mappingIds, MAPPING).stream()
               .map(GroupEntity::groupId)
@@ -135,7 +135,7 @@ public class CamundaOAuthPrincipalService {
                         roleFilter -> roleFilter.memberIdsByType(principalIdentifiers))));
     final var roleIds = roles.stream().map(RoleEntity::roleId).collect(Collectors.toSet());
 
-    // TODO: Get tenants for username and clientId
+    // TODO: Get tenants for username and clientId https://github.com/camunda/camunda/issues/26572
     final var tenants =
         tenantServices.getTenantsByMappingsAndGroupsAndRoles(mappingIds, groups, roleIds).stream()
             .map(TenantDTO::fromEntity)
