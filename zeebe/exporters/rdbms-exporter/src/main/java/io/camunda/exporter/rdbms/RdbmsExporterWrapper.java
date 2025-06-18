@@ -235,7 +235,8 @@ public class RdbmsExporterWrapper implements Exporter {
         new DecisionInstanceExportHandler(rdbmsWriter.getDecisionInstanceWriter()));
     builder.withHandler(ValueType.GROUP, new GroupExportHandler(rdbmsWriter.getGroupWriter()));
     builder.withHandler(
-        ValueType.INCIDENT, new IncidentExportHandler(rdbmsWriter.getIncidentWriter()));
+        ValueType.INCIDENT,
+        new IncidentExportHandler(rdbmsWriter.getIncidentWriter(), processCache));
     builder.withHandler(
         ValueType.INCIDENT,
         new ProcessInstanceIncidentExportHandler(rdbmsWriter.getProcessInstanceWriter()));
