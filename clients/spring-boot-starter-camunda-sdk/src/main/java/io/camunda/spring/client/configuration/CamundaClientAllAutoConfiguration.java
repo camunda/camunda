@@ -17,6 +17,7 @@ package io.camunda.spring.client.configuration;
 
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.worker.BackoffSupplier;
+import io.camunda.client.api.worker.JobClient;
 import io.camunda.spring.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.spring.client.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
@@ -78,8 +79,8 @@ public class CamundaClientAllAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  public ResultProcessorStrategy resultProcessorStrategy() {
-    return new DefaultResultProcessorStrategy();
+  public ResultProcessorStrategy resultProcessorStrategy(final JobClient jobClient) {
+    return new DefaultResultProcessorStrategy(jobClient);
   }
 
   @Bean
