@@ -8,14 +8,13 @@
 package io.camunda.migration.identity.midentity;
 
 import io.camunda.identity.sdk.users.dto.User;
+import io.camunda.migration.identity.dto.Authorization;
 import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.dto.MappingRule.MappingRuleType;
 import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.dto.TenantMappingRule;
-import io.camunda.migration.identity.dto.UserResourceAuthorization;
 import io.camunda.migration.identity.dto.UserTenants;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -36,6 +35,8 @@ public class ManagementIdentityClient {
   private static final String MIGRATION_GROUPS_ENDPOINT = "/api/groups?page={0}&organizationId={1}";
   private static final String MIGRATION_USER_GROUPS_ENDPOINT =
       "/api/groups/{0}/users?organizationId={1}";
+  private static final String MIGRATION_AUTHORIZATION_ENDPOINT =
+      "/api/authorizations?organizationId={0}";
 
   private final String organizationId;
   private final RestTemplate restTemplate;
@@ -44,12 +45,6 @@ public class ManagementIdentityClient {
     this.restTemplate = restTemplate;
     this.organizationId = organizationId;
   }
-
-  public List<UserResourceAuthorization> fetchUserResourceAuthorizations(final int pageSize) {
-    return new ArrayList<>();
-  }
-
-  public void markAuthorizationsAsMigrated(final Collection<UserResourceAuthorization> migrated) {}
 
   public List<TenantMappingRule> fetchTenantMappingRules(final int pageSize) {
     return Arrays.stream(
@@ -90,6 +85,14 @@ public class ManagementIdentityClient {
             Objects.requireNonNull(
                 restTemplate.getForObject(
                     MIGRATION_USER_GROUPS_ENDPOINT, User[].class, groupId, organizationId)))
+        .toList();
+  }
+
+  public List<Authorization> fetchAuthorizations() {
+    return Arrays.stream(
+            Objects.requireNonNull(
+                restTemplate.getForObject(
+                    MIGRATION_AUTHORIZATION_ENDPOINT, Authorization[].class, organizationId)))
         .toList();
   }
 
