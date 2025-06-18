@@ -19,16 +19,16 @@ import io.camunda.client.api.search.filter.UserFilter;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
-import io.camunda.client.protocol.rest.UserFilterRequest;
 import java.util.function.Consumer;
 
-public class UserFilterImpl extends TypedSearchRequestPropertyProvider<UserFilterRequest>
+public class UserFilterImpl
+    extends TypedSearchRequestPropertyProvider<io.camunda.client.protocol.rest.UserFilter>
     implements UserFilter {
 
-  private final UserFilterRequest filter;
+  private final io.camunda.client.protocol.rest.UserFilter filter;
 
   public UserFilterImpl() {
-    filter = new UserFilterRequest();
+    filter = new io.camunda.client.protocol.rest.UserFilter();
   }
 
   @Override
@@ -71,7 +71,7 @@ public class UserFilterImpl extends TypedSearchRequestPropertyProvider<UserFilte
   }
 
   @Override
-  protected UserFilterRequest getSearchRequestProperty() {
+  protected io.camunda.client.protocol.rest.UserFilter getSearchRequestProperty() {
     return filter;
   }
 }

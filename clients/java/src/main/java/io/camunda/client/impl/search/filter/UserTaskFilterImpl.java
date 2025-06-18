@@ -146,7 +146,7 @@ public class UserTaskFilterImpl
       final List<Consumer<VariableValueFilter>> variableFilters) {
 
     filter.setProcessInstanceVariables(
-        VariableFilterMapper.toVariableValueFilterRequest(variableFilters));
+        VariableFilterMapper.toVariableValueFilterProperty(variableFilters));
     return this;
   }
 
@@ -154,14 +154,14 @@ public class UserTaskFilterImpl
   public UserTaskFilter processInstanceVariables(final Map<String, Object> variableValueFilters) {
     if (variableValueFilters != null && !variableValueFilters.isEmpty()) {
       filter.setProcessInstanceVariables(
-          VariableFilterMapper.toVariableValueFilterRequest(variableValueFilters));
+          VariableFilterMapper.toVariableValueFilterProperty(variableValueFilters));
     }
     return this;
   }
 
   @Override
   public UserTaskFilter localVariables(final List<Consumer<VariableValueFilter>> variableFilters) {
-    filter.setLocalVariables(VariableFilterMapper.toVariableValueFilterRequest(variableFilters));
+    filter.setLocalVariables(VariableFilterMapper.toVariableValueFilterProperty(variableFilters));
     return this;
   }
 
@@ -169,7 +169,7 @@ public class UserTaskFilterImpl
   public UserTaskFilter localVariables(final Map<String, Object> variableValueFilters) {
     if (variableValueFilters != null && !variableValueFilters.isEmpty()) {
       filter.setLocalVariables(
-          VariableFilterMapper.toVariableValueFilterRequest(variableValueFilters));
+          VariableFilterMapper.toVariableValueFilterProperty(variableValueFilters));
     }
     return this;
   }

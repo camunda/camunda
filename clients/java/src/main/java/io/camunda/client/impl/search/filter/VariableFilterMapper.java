@@ -28,23 +28,23 @@ import java.util.stream.Stream;
 
 public class VariableFilterMapper {
 
-  public static List<VariableValueFilterRequest> toVariableValueFilterRequest(
+  public static List<VariableValueFilterProperty> toVariableValueFilterProperty(
       final List<Consumer<VariableValueFilter>> variableValueFilters) {
-    return toVariableValueFilterRequest(
+    return toVariableValueFilterProperty(
         variableValueFilters.stream()
             .map(SearchRequestBuilders::variableValueFilter)
             .map(
                 TypedSearchRequestPropertyProvider
-                    ::<VariableValueFilterRequest>provideSearchRequestProperty));
+                    ::<VariableValueFilterProperty>provideSearchRequestProperty));
   }
 
-  public static List<VariableValueFilterRequest> toVariableValueFilterRequest(
+  public static List<VariableValueFilterProperty> toVariableValueFilterProperty(
       final Map<String, Object> variableValueFilters) {
-    return toVariableValueFilterRequest(
+    return toVariableValueFilterProperty(
         variableValueFilters.entrySet().stream()
             .map(
                 entry ->
-                    new VariableValueFilterRequest()
+                    new VariableValueFilterProperty()
                         .name(entry.getKey())
                         .value(
                             entry.getValue() == null
@@ -52,10 +52,10 @@ public class VariableFilterMapper {
                                 : new StringFilterProperty().$eq(entry.getValue().toString()))));
   }
 
-  static List<VariableValueFilterRequest> toVariableValueFilterRequest(
-      final Stream<VariableValueFilterRequest> filterStream) {
+  static List<VariableValueFilterProperty> toVariableValueFilterProperty(
+      final Stream<VariableValueFilterProperty> filterStream) {
     final List<String> violations = new ArrayList<>();
-    final List<VariableValueFilterRequest> filters =
+    final List<VariableValueFilterProperty> filters =
         filterStream
             .map(filter -> checkVariableValueNotNull(filter, violations))
             .collect(Collectors.toList());
@@ -66,8 +66,8 @@ public class VariableFilterMapper {
     return filters;
   }
 
-  static VariableValueFilterRequest checkVariableValueNotNull(
-      final VariableValueFilterRequest filter, final List<String> violations) {
+  static VariableValueFilterProperty checkVariableValueNotNull(
+      final VariableValueFilterProperty filter, final List<String> violations) {
     if (filter.getValue() == null || filter.getValue().equals(new StringFilterProperty())) {
       violations.add("Variable value cannot be null for variable '" + filter.getName() + "'");
     }

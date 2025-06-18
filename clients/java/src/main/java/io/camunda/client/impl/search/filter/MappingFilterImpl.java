@@ -17,15 +17,15 @@ package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.MappingFilter;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
-import io.camunda.client.protocol.rest.MappingFilterRequest;
 
-public class MappingFilterImpl extends TypedSearchRequestPropertyProvider<MappingFilterRequest>
+public class MappingFilterImpl
+    extends TypedSearchRequestPropertyProvider<io.camunda.client.protocol.rest.MappingFilter>
     implements MappingFilter {
 
-  private final MappingFilterRequest filter;
+  private final io.camunda.client.protocol.rest.MappingFilter filter;
 
   public MappingFilterImpl() {
-    filter = new MappingFilterRequest();
+    filter = new io.camunda.client.protocol.rest.MappingFilter();
   }
 
   @Override
@@ -53,7 +53,7 @@ public class MappingFilterImpl extends TypedSearchRequestPropertyProvider<Mappin
   }
 
   @Override
-  protected MappingFilterRequest getSearchRequestProperty() {
+  protected io.camunda.client.protocol.rest.MappingFilter getSearchRequestProperty() {
     return filter;
   }
 }

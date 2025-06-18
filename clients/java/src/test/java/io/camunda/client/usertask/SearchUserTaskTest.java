@@ -24,7 +24,7 @@ import io.camunda.client.protocol.rest.IntegerFilterProperty;
 import io.camunda.client.protocol.rest.StringFilterProperty;
 import io.camunda.client.protocol.rest.UserTaskFilter;
 import io.camunda.client.protocol.rest.UserTaskSearchQuery;
-import io.camunda.client.protocol.rest.VariableValueFilterRequest;
+import io.camunda.client.protocol.rest.VariableValueFilterProperty;
 import io.camunda.client.util.ClientRestTest;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -171,11 +171,13 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByProcessInstanceVariable() {
     // when
-    final VariableValueFilterRequest userTaskVariableFilterRequest =
-        new VariableValueFilterRequest().name("test").value(new StringFilterProperty().$eq("test"));
-    final ArrayList<VariableValueFilterRequest> listFilter = new ArrayList<>();
+    final VariableValueFilterProperty userTaskVariableFilterProperty =
+        new VariableValueFilterProperty()
+            .name("test")
+            .value(new StringFilterProperty().$eq("test"));
+    final ArrayList<VariableValueFilterProperty> listFilter = new ArrayList<>();
 
-    listFilter.add(userTaskVariableFilterRequest);
+    listFilter.add(userTaskVariableFilterProperty);
 
     client
         .newUserTaskSearchRequest()
@@ -191,11 +193,13 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByLocalVariable() {
     // when
-    final VariableValueFilterRequest userTaskVariableFilterRequest =
-        new VariableValueFilterRequest().name("test").value(new StringFilterProperty().$eq("test"));
-    final ArrayList<VariableValueFilterRequest> listFilter = new ArrayList<>();
+    final VariableValueFilterProperty userTaskVariableFilterProperty =
+        new VariableValueFilterProperty()
+            .name("test")
+            .value(new StringFilterProperty().$eq("test"));
+    final ArrayList<VariableValueFilterProperty> listFilter = new ArrayList<>();
 
-    listFilter.add(userTaskVariableFilterRequest);
+    listFilter.add(userTaskVariableFilterProperty);
 
     client
         .newUserTaskSearchRequest()

@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.client.api.search.filter;
 
-import io.camunda.client.protocol.rest.VariableValueFilterRequest;
+import io.camunda.client.protocol.rest.VariableValueFilterProperty;
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
 
 /**
@@ -65,7 +65,7 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
   ProcessInstanceFilter processDefinitionVersion(final Integer processDefinitionVersion);
 
   /** Filter by variable */
-  ProcessInstanceFilter variable(final VariableValueFilterRequest variable);
+  ProcessInstanceFilter variable(final VariableValueFilterProperty variable);
 
   /** Filter by batchOperationId */
   ProcessInstanceFilter batchOperationId(final String batchOperationId);

@@ -5306,9 +5306,9 @@ components:
         filter:
           description: The tenant search filters.
           allOf:
-            - $ref: "#/components/schemas/TenantFilterRequest"
+            - $ref: "#/components/schemas/TenantFilter"
 
-    TenantFilterRequest:
+    TenantFilter:
       description: Tenant filter request
       type: object
       properties:
@@ -5392,7 +5392,7 @@ components:
         filter:
           description: The user task variable search filters.
           allOf:
-            - $ref: "#/components/schemas/UserTaskVariableFilterRequest"
+            - $ref: "#/components/schemas/UserTaskVariableFilter"
     UserTaskSearchQueryResult:
       description: User task search query response.
       type: object
@@ -5461,12 +5461,12 @@ components:
           type: array
           description: Process instance variables associated with the user task.
           items:
-            $ref: "#/components/schemas/VariableValueFilterRequest"
+            $ref: "#/components/schemas/VariableValueFilterProperty"
         localVariables:
           type: array
           description: Local variables associated with the user task.
           items:
-            $ref: "#/components/schemas/VariableValueFilterRequest"
+            $ref: "#/components/schemas/VariableValueFilterProperty"
         userTaskKey:
           type: string
           description: The key for this user task.
@@ -5479,7 +5479,7 @@ components:
         elementInstanceKey:
           type: string
           description: The key of the element instance.
-    VariableValueFilterRequest:
+    VariableValueFilterProperty:
       type: object
       properties:
         name:
@@ -5492,7 +5492,7 @@ components:
       required:
         - name
         - value
-    UserTaskVariableFilterRequest:
+    UserTaskVariableFilter:
       description: The user task variable search filters.
       type: object
       properties:
@@ -6103,7 +6103,7 @@ components:
           description: The process instance variables.
           type: array
           items:
-            $ref: "#/components/schemas/VariableValueFilterRequest"
+            $ref: "#/components/schemas/VariableValueFilterProperty"
         processInstanceKey:
           description: The key of this process instance.
           allOf:
@@ -7229,7 +7229,7 @@ components:
         filter:
           description: The user search filters.
           allOf:
-            - $ref: "#/components/schemas/UserFilterRequest"
+            - $ref: "#/components/schemas/UserFilter"
     MappingSearchQuerySortRequest:
       type: object
       properties:
@@ -7258,8 +7258,8 @@ components:
         filter:
           description: The mapping search filters.
           allOf:
-            - $ref: "#/components/schemas/MappingFilterRequest"
-    UserFilterRequest:
+            - $ref: "#/components/schemas/MappingFilter"
+    UserFilter:
       description: User search filter.
       type: object
       properties:
@@ -7275,7 +7275,7 @@ components:
           description: The email of the user.
           allOf:
             - $ref: "#/components/schemas/StringFilterProperty"
-    MappingFilterRequest:
+    MappingFilter:
       description: Mapping search filter.
       type: object
       properties:
@@ -7555,8 +7555,8 @@ components:
         filter:
           description: The role search filters.
           allOf:
-            - $ref: "#/components/schemas/RoleFilterRequest"
-    RoleFilterRequest:
+            - $ref: "#/components/schemas/RoleFilter"
+    RoleFilter:
       description: Role filter request
       type: object
       properties:
@@ -7744,8 +7744,8 @@ components:
         filter:
           description: The group search filters.
           allOf:
-            - $ref: "#/components/schemas/GroupFilterRequest"
-    GroupFilterRequest:
+            - $ref: "#/components/schemas/GroupFilter"
+    GroupFilter:
       description: Group filter request
       type: object
       properties:

@@ -19,17 +19,17 @@ import io.camunda.client.api.search.filter.UserTaskVariableFilter;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
-import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
 import java.util.function.Consumer;
 
 public class UserTaskVariableFilterImpl
-    extends TypedSearchRequestPropertyProvider<UserTaskVariableFilterRequest>
+    extends TypedSearchRequestPropertyProvider<
+        io.camunda.client.protocol.rest.UserTaskVariableFilter>
     implements UserTaskVariableFilter {
 
-  private final UserTaskVariableFilterRequest filter;
+  private final io.camunda.client.protocol.rest.UserTaskVariableFilter filter;
 
   public UserTaskVariableFilterImpl() {
-    filter = new UserTaskVariableFilterRequest();
+    filter = new io.camunda.client.protocol.rest.UserTaskVariableFilter();
   }
 
   @Override
@@ -47,7 +47,7 @@ public class UserTaskVariableFilterImpl
   }
 
   @Override
-  protected UserTaskVariableFilterRequest getSearchRequestProperty() {
+  protected io.camunda.client.protocol.rest.UserTaskVariableFilter getSearchRequestProperty() {
     return filter;
   }
 }

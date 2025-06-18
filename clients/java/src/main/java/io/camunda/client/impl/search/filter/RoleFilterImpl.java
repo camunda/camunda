@@ -17,15 +17,15 @@ package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.RoleFilter;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
-import io.camunda.client.protocol.rest.RoleFilterRequest;
 
-public class RoleFilterImpl extends TypedSearchRequestPropertyProvider<RoleFilterRequest>
+public class RoleFilterImpl
+    extends TypedSearchRequestPropertyProvider<io.camunda.client.protocol.rest.RoleFilter>
     implements RoleFilter {
 
-  private final RoleFilterRequest filter;
+  private final io.camunda.client.protocol.rest.RoleFilter filter;
 
   public RoleFilterImpl() {
-    filter = new RoleFilterRequest();
+    filter = new io.camunda.client.protocol.rest.RoleFilter();
   }
 
   @Override
@@ -41,7 +41,7 @@ public class RoleFilterImpl extends TypedSearchRequestPropertyProvider<RoleFilte
   }
 
   @Override
-  protected RoleFilterRequest getSearchRequestProperty() {
+  protected io.camunda.client.protocol.rest.RoleFilter getSearchRequestProperty() {
     return filter;
   }
 }

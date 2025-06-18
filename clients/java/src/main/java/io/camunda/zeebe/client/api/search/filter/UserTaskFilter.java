@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.client.api.search.filter;
 
-import io.camunda.client.protocol.rest.UserTaskVariableFilterRequest;
+import io.camunda.client.protocol.rest.UserTaskVariableFilter;
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
 import java.util.List;
 
@@ -112,5 +112,5 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @param variableValueFilters from the task
    * @return the updated filter
    */
-  UserTaskFilter variables(final List<UserTaskVariableFilterRequest> variableValueFilters);
+  UserTaskFilter variables(final List<UserTaskVariableFilter> variableValueFilters);
 }

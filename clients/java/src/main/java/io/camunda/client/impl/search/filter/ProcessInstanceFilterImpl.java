@@ -228,14 +228,14 @@ public class ProcessInstanceFilterImpl
   @Override
   public ProcessInstanceFilter variables(
       final List<Consumer<VariableValueFilter>> variableFilters) {
-    filter.setVariables(VariableFilterMapper.toVariableValueFilterRequest(variableFilters));
+    filter.setVariables(VariableFilterMapper.toVariableValueFilterProperty(variableFilters));
     return this;
   }
 
   @Override
   public ProcessInstanceFilter variables(final Map<String, Object> variableValueFilters) {
     if (variableValueFilters != null && !variableValueFilters.isEmpty()) {
-      filter.setVariables(VariableFilterMapper.toVariableValueFilterRequest(variableValueFilters));
+      filter.setVariables(VariableFilterMapper.toVariableValueFilterProperty(variableValueFilters));
     }
     return this;
   }
