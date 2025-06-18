@@ -82,15 +82,6 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
     return roles.stream().distinct().toList();
   }
 
-  public List<RoleEntity> getRolesByMappingsAndGroups(
-      final Set<String> mappings, final Set<String> groupIds) {
-    final var roles = new ArrayList<>(getRolesByMemberIds(mappings, EntityType.MAPPING));
-    final var groupRoles = getRolesByMemberIds(groupIds, EntityType.GROUP);
-
-    roles.addAll(groupRoles);
-    return roles.stream().distinct().toList();
-  }
-
   public List<RoleEntity> findAll(final RoleQuery query) {
     return roleSearchClient
         .withSecurityContext(
