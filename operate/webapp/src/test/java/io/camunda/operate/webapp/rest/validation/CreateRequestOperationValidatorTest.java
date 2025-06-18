@@ -109,7 +109,11 @@ public class CreateRequestOperationValidatorTest {
 
   @ParameterizedTest(
       name = "should fail when ADD_VARIABLE operation with state ''{0}'' exists for same variable")
-  @EnumSource(value = OperationState.class)
+  @EnumSource(
+      value = OperationState.class,
+      // we should allow retry after failure)
+      names = "FAILED",
+      mode = EnumSource.Mode.EXCLUDE)
   void shouldFailValidationWhenOperationWithStateExists(final OperationState opState) {
     // given
     final var request = new CreateOperationRequestDto(ADD_VARIABLE);
@@ -129,6 +133,26 @@ public class CreateRequestOperationValidatorTest {
     assertThatThrownBy(() -> underTest.validate(request, "123"))
         .isInstanceOf(InvalidRequestException.class)
         .hasMessage("Variable with the name \"name\" already exists.");
+  }
+
+  @Test
+  void shouldPassValidationWhenFailedAddVariableOperationExists() {
+    // given
+    final var request = new CreateOperationRequestDto(ADD_VARIABLE);
+    request.setVariableScopeId("scope");
+    request.setVariableName("name");
+    request.setVariableValue("val");
+
+    // no existing variable
+    when(mockVariableReader.getVariableByName("123", "scope", "name")).thenReturn(null);
+
+    // simulate failed operation exists
+    final var failedOperation = new OperationDto().setState(OperationState.FAILED);
+    when(mockOperationReader.getOperations(ADD_VARIABLE, "123", "scope", "name"))
+        .thenReturn(List.of(failedOperation));
+
+    // when - then
+    assertDoesNotThrow(() -> underTest.validate(request, "123"));
   }
 
   @ParameterizedTest(name = "should pass for {0} operation with valid scopeId, name, and value")
