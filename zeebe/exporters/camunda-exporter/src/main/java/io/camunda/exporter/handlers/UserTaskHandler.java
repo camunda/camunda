@@ -173,8 +173,8 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     if (entity.getFlowNodeBpmnId() != null) {
       updateFields.put(TaskTemplate.FLOW_NODE_BPMN_ID, entity.getFlowNodeBpmnId());
     }
-    if (entity.getFlowNodeName() != null) {
-      updateFields.put(TaskTemplate.FLOW_NODE_NAME, entity.getFlowNodeName());
+    if (entity.getName() != null) {
+      updateFields.put(TaskTemplate.NAME, entity.getName());
     }
     if (entity.getProcessDefinitionId() != null) {
       updateFields.put(TaskTemplate.PROCESS_DEFINITION_ID, entity.getProcessDefinitionId());
@@ -199,7 +199,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
         .setFlowNodeInstanceId(String.valueOf(record.getValue().getElementInstanceKey()))
         .setProcessInstanceId(String.valueOf(record.getValue().getProcessInstanceKey()))
         .setFlowNodeBpmnId(record.getValue().getElementId())
-        .setFlowNodeName(
+        .setName(
             ProcessCacheUtil.getFlowNodeName(
                     processCache,
                     record.getValue().getProcessDefinitionKey(),
@@ -307,7 +307,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
   private void handleMigration(final Record<UserTaskRecordValue> record, final TaskEntity entity) {
     entity
         .setFlowNodeBpmnId(record.getValue().getElementId())
-        .setFlowNodeName(
+        .setName(
             ProcessCacheUtil.getFlowNodeName(
                     processCache,
                     record.getValue().getProcessDefinitionKey(),

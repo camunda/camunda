@@ -147,7 +147,7 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
   }
 
   private SearchQuery getNameQuery(final List<String> name) {
-    return stringTerms(FLOW_NODE_NAME, name);
+    return stringTerms(NAME, name);
   }
 
   private SearchQuery getProcessInstanceVariablesQuery(

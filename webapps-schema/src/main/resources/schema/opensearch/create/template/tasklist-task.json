@@ -17,9 +17,6 @@
       "flowNodeBpmnId": {
         "type": "keyword"
       },
-      "flowNodeName": {
-        "type": "keyword"
-      },
       "flowNodeInstanceId": {
         "type": "keyword"
       },
