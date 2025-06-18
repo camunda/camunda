@@ -393,9 +393,10 @@ public class OpensearchBackupRepository implements BackupRepository {
         || snapshots.stream().map(OpenSearchSnapshotInfo::getState).anyMatch(IN_PROGRESS::equals)) {
       return BackupStateDto.IN_PROGRESS;
     } else if (snapshots.size() < expectedSnapshotsCount) {
-      if (isIncompleteCheckTimedOut(
-          operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds(),
-          snapshots.getLast().getEndTimeInMillis())) {
+      if (snapshots.getLast().getEndTimeInMillis() == null
+          || isIncompleteCheckTimedOut(
+              operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds(),
+              snapshots.getLast().getEndTimeInMillis())) {
         return BackupStateDto.INCOMPLETE;
       } else {
         return BackupStateDto.IN_PROGRESS;

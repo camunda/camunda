@@ -86,9 +86,22 @@ public class OpenSearchSnapshotOperations extends OpenSearchSyncOperation {
         .setSnapshot((String) map.get("snapshot"))
         .setUuid((String) map.get("uuid"))
         .setState(SnapshotState.valueOf((String) map.get("state")))
-        .setStartTimeInMillis((Long) map.get("start_time_in_millis"))
-        .setEndTimeInMillis((Long) map.get("end_time_in_millis"))
+        .setStartTimeInMillis(toLong(map.get("start_time_in_millis")))
+        .setEndTimeInMillis(toLong(map.get("end_time_in_millis")))
         .setMetadata(metadata)
         .setFailures(failures);
+  }
+
+  private Long toLong(final Object value) {
+    if (value == null) {
+      return null;
+    }
+    if (value instanceof Number) {
+      return ((Number) value).longValue();
+    }
+    if (value instanceof String) {
+      return Long.parseLong((String) value);
+    }
+    throw new IllegalArgumentException("Cannot convert to Long: " + value);
   }
 }
