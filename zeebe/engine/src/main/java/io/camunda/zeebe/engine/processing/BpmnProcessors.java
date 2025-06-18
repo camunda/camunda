@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessInstructionActivateProcessor;
+import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocSubProcessInstructionCompleteProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
@@ -341,10 +342,22 @@ public final class BpmnProcessors {
       final Writers writers,
       final AuthorizationCheckBehavior authCheckBehavior,
       final BpmnBehaviors bpmnBehaviors) {
-    typedRecordProcessors.onCommand(
-        ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION,
-        AdHocSubProcessInstructionIntent.ACTIVATE,
-        new AdHocSubProcessInstructionActivateProcessor(
-            writers, processingState, authCheckBehavior, bpmnBehaviors.adHocSubProcessBehavior()));
+    typedRecordProcessors
+        .onCommand(
+            ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION,
+            AdHocSubProcessInstructionIntent.ACTIVATE,
+            new AdHocSubProcessInstructionActivateProcessor(
+                writers,
+                processingState,
+                authCheckBehavior,
+                bpmnBehaviors.adHocSubProcessBehavior()))
+        .onCommand(
+            ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION,
+            AdHocSubProcessInstructionIntent.COMPLETE,
+            new AdHocSubProcessInstructionCompleteProcessor(
+                writers,
+                processingState,
+                authCheckBehavior,
+                bpmnBehaviors.adHocSubProcessBehavior()));
   }
 }

@@ -359,6 +359,82 @@ public class AdHocSubProcessJobWorkerTest {
             tuple(elementB.getFlowScopeKey(), BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE));
   }
 
+  @Test
+  public void shouldCompleteAdHocSubProcess() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.task("A");
+              adHocSubProcess.task("B");
+              adHocSubProcess.task("C");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    completeAdHocSubProcessJob(
+        processInstanceKey,
+        0,
+        adHocSubProcess -> adHocSubProcess.setCompletionConditionFulfilled(true));
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldCompleteAdHocSubProcessAndCancelRemainingInstances() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.task("A");
+              adHocSubProcess.serviceTask("B", t -> t.zeebeJobType("B"));
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    completeAdHocSubProcessJob(
+        processInstanceKey,
+        0,
+        adHocSubProcess -> {
+          adHocSubProcess.activateElements().add().setElementId("A");
+          adHocSubProcess.activateElements().add().setElementId("B");
+        });
+
+    completeAdHocSubProcessJob(
+        processInstanceKey,
+        1,
+        adHocSubProcess ->
+            adHocSubProcess
+                .setCompletionConditionFulfilled(true)
+                .setCancelRemainingInstances(true));
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("B", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
   private static void completeAdHocSubProcessJob(
       final long processInstanceKey,
       final int skip,

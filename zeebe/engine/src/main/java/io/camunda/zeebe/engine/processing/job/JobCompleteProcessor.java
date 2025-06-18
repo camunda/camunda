@@ -187,28 +187,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
               userTask.getUserTaskKey(), UserTaskIntent.COMPLETE_TASK_LISTENER, userTask);
         }
       }
-      case AD_HOC_SUB_PROCESS -> {
-        final JobResultAdHocSubProcess adHocSubProcessJobResult =
-            value.getResult().getAdHocSubProcess();
-        if (!adHocSubProcessJobResult.getActivateElements().isEmpty()) {
-          final var adHocSubProcessRecord = new AdHocSubProcessInstructionRecord();
-          adHocSubProcessRecord.setAdHocSubProcessInstanceKey(String.valueOf(elementInstanceKey));
-          adHocSubProcessRecord.setTenantId(value.getTenantId());
-
-          adHocSubProcessJobResult
-              .activateElements()
-              .forEach(
-                  element ->
-                      adHocSubProcessRecord
-                          .elements()
-                          .add()
-                          .setElementId(element.getElementId())
-                          .setVariables(element.getVariablesBuffer()));
-
-          commandWriter.appendNewCommand(
-              AdHocSubProcessInstructionIntent.ACTIVATE, adHocSubProcessRecord);
-        }
-      }
+      case AD_HOC_SUB_PROCESS -> handleAdHocSubProcessJob(commandWriter, value, elementInstanceKey);
       default -> {
         final long scopeKey = elementInstance.getValue().getFlowScopeKey();
         final ElementInstance scopeInstance = elementInstanceState.getInstance(scopeKey);
@@ -221,6 +200,42 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
               elementInstance.getValue());
         }
       }
+    }
+  }
+
+  private static void handleAdHocSubProcessJob(
+      final TypedCommandWriter commandWriter,
+      final JobRecord value,
+      final long elementInstanceKey) {
+    // TODO: validate job command
+    final JobResultAdHocSubProcess adHocSubProcessJobResult =
+        value.getResult().getAdHocSubProcess();
+
+    final var adHocSubProcessRecord = new AdHocSubProcessInstructionRecord();
+    adHocSubProcessRecord.setAdHocSubProcessInstanceKey(String.valueOf(elementInstanceKey));
+    adHocSubProcessRecord.setTenantId(value.getTenantId());
+
+    if (!adHocSubProcessJobResult.getActivateElements().isEmpty()) {
+      adHocSubProcessJobResult
+          .activateElements()
+          .forEach(
+              element ->
+                  adHocSubProcessRecord
+                      .elements()
+                      .add()
+                      .setElementId(element.getElementId())
+                      .setVariables(element.getVariablesBuffer()));
+
+      commandWriter.appendNewCommand(
+          AdHocSubProcessInstructionIntent.ACTIVATE, adHocSubProcessRecord);
+    }
+
+    if (adHocSubProcessJobResult.isCompletionConditionFulfilled()) {
+      adHocSubProcessRecord.setCancelRemainingInstances(
+          adHocSubProcessJobResult.isCancelRemainingInstances());
+
+      commandWriter.appendNewCommand(
+          AdHocSubProcessInstructionIntent.COMPLETE, adHocSubProcessRecord);
     }
   }
 
