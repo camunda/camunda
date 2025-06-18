@@ -50,8 +50,9 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
             .collect(Collectors.toMap(Member::userId, Member::email));
     batch.forEach(
         group -> {
-          logger.debug("Migrating Group: {}", group);
           final var normalizedGroupId = normalizeGroupID(group);
+          logger.debug(
+              "Migrating Group: {} to a Group with the identifier: {}.", group, normalizedGroupId);
           try {
             final var groupDTO = new GroupDTO(normalizedGroupId, group.name(), "");
             groupServices.createGroup(groupDTO).join();
@@ -99,6 +100,11 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
                   user.getId());
               return;
             }
+            logger.debug(
+                "Adding User: {} with E-mail: {} to Group: {}",
+                user.getId(),
+                userEmail,
+                targetGroupId);
             final var groupMember = new GroupMemberDTO(targetGroupId, userEmail, EntityType.USER);
             groupServices.assignMember(groupMember).join();
           } catch (final Exception e) {
