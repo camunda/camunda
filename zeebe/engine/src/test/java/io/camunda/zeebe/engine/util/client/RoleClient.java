@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
@@ -188,6 +189,11 @@ public class RoleClient {
       return this;
     }
 
+    public Record<RoleRecordValue> add(final AuthInfo authorization) {
+      final long position = writer.writeCommand(RoleIntent.ADD_ENTITY, roleRecord, authorization);
+      return expectation.apply(position);
+    }
+
     public Record<RoleRecordValue> add() {
       final long position = writer.writeCommand(RoleIntent.ADD_ENTITY, roleRecord);
       return expectation.apply(position);
@@ -241,6 +247,12 @@ public class RoleClient {
 
     public Record<RoleRecordValue> remove() {
       final long position = writer.writeCommand(RoleIntent.REMOVE_ENTITY, roleRecord);
+      return expectation.apply(position);
+    }
+
+    public Record<RoleRecordValue> remove(final AuthInfo authorization) {
+      final long position =
+          writer.writeCommand(RoleIntent.REMOVE_ENTITY, roleRecord, authorization);
       return expectation.apply(position);
     }
 

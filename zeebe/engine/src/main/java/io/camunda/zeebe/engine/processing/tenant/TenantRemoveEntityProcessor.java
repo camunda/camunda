@@ -134,8 +134,9 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
   }
 
   private boolean isGroupsClaimEnabled(final TypedRecord<TenantRecord> command) {
-    return Boolean.getBoolean(
-        (String) command.getAuthorizations().get(Authorization.GROUPS_CLAIM_ENABLED));
+    final var groupsClaimEnabled =
+        (Boolean) command.getAuthorizations().get(Authorization.GROUPS_CLAIM_ENABLED);
+    return groupsClaimEnabled != null && groupsClaimEnabled;
   }
 
   private void createEntityNotExistRejectCommand(
