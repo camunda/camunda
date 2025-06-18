@@ -34,7 +34,9 @@ public class DefaultExecutionQueue implements ExecutionQueue {
           "io.camunda.db.rdbms.sql.UserTaskMapper.deleteCandidateGroups",
           "io.camunda.db.rdbms.sql.IncidentMapper.updateHistoryCleanupDate",
           "io.camunda.db.rdbms.sql.DecisionInstanceMapper.updateHistoryCleanupDate",
-          "io.camunda.db.rdbms.sql.VariableMapper.updateHistoryCleanupDate");
+          "io.camunda.db.rdbms.sql.VariableMapper.updateHistoryCleanupDate",
+          "io.camunda.db.rdbms.sql.JobMapper.updateHistoryCleanupDate",
+          "io.camunda.db.rdbms.sql.SequenceFlowMapper.createIfNotExists");
 
   private final SqlSessionFactory sessionFactory;
   private final List<PreFlushListener> preFlushListeners = new ArrayList<>();

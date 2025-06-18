@@ -72,7 +72,7 @@ public class HistoryCleanupService {
       final Long processInstanceKey, final OffsetDateTime endDate) {
     final OffsetDateTime historyCleanupDate = endDate.plus(defaultHistoryTTL);
 
-    LOG.debug(
+    LOG.trace(
         "Scheduling process instance cleanup for key {} at {}",
         processInstanceKey,
         historyCleanupDate);
@@ -87,7 +87,7 @@ public class HistoryCleanupService {
   }
 
   public Duration cleanupHistory(final int partitionId, final OffsetDateTime cleanupDate) {
-    LOG.debug("Cleanup history for partition {} with TTL before {}", partitionId, cleanupDate);
+    LOG.trace("Cleanup history for partition {} with TTL before {}", partitionId, cleanupDate);
 
     final var sample = metrics.measureHistoryCleanupDuration();
     final long start = System.currentTimeMillis();
@@ -124,7 +124,7 @@ public class HistoryCleanupService {
       LOG.debug("    Deleted {}s: {}", entry.getKey(), entry.getValue());
     }
 
-    LOG.info(
+    LOG.debug(
         "Cleanup history for partition {} with TTL before {} took {} ms. Deleted {} records",
         partitionId,
         cleanupDate,
@@ -133,7 +133,7 @@ public class HistoryCleanupService {
 
     final var nextDuration =
         calculateNewDuration(lastCleanupInterval.get(partitionId), numDeletedRecords);
-    LOG.debug("Schedule next cleanup for partition {} with TTL in {}", partitionId, nextDuration);
+    LOG.trace("Schedule next cleanup for partition {} with TTL in {}", partitionId, nextDuration);
 
     saveLastCleanupInterval(partitionId, nextDuration);
     return nextDuration;
