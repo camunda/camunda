@@ -26,11 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class AuthorizationMigrationHandler extends MigrationHandler<Authorization> {
-  private static final Logger LOG = LoggerFactory.getLogger(AuthorizationMigrationHandler.class);
   private final AuthorizationServices authorizationService;
   private final ManagementIdentityClient managementIdentityClient;
   private final ConsoleClient consoleClient;
@@ -70,7 +67,7 @@ public class AuthorizationMigrationHandler extends MigrationHandler<Authorizatio
                   convertPermissions(authorization.permissions(), authorization.resourceType()));
           try {
             authorizationService.createAuthorization(request).join();
-            LOG.debug(
+            logger.debug(
                 "Migrating authorization: {} to an Authorization with ownerId: {}",
                 authorization,
                 request.ownerId());
@@ -79,7 +76,7 @@ public class AuthorizationMigrationHandler extends MigrationHandler<Authorizatio
               throw new RuntimeException(
                   "Failed to migrate authorization for entity ID: " + authorization.entityId(), e);
             }
-            LOG.debug(
+            logger.debug(
                 "Authorization already exists for entity ID: {}. Skipping creation.",
                 authorization.entityId());
           }
@@ -104,7 +101,7 @@ public class AuthorizationMigrationHandler extends MigrationHandler<Authorizatio
     try {
       return AuthorizationOwnerType.valueOf(ownerType);
     } catch (final IllegalArgumentException e) {
-      LOG.debug("Unknown owner type: {}. Defaulting to UNSPECIFIED.", ownerType);
+      logger.debug("Unknown owner type: {}. Defaulting to UNSPECIFIED.", ownerType);
       return AuthorizationOwnerType.UNSPECIFIED;
     }
   }
@@ -116,7 +113,7 @@ public class AuthorizationMigrationHandler extends MigrationHandler<Authorizatio
     if (IDENTITY_DECISION_DEFINITION_RESOURCE_TYPE.equalsIgnoreCase(resourceType)) {
       return AuthorizationResourceType.DECISION_DEFINITION;
     }
-    LOG.debug("Unknown resource type: {}. Defaulting to UNSPECIFIED.", resourceType);
+    logger.debug("Unknown resource type: {}. Defaulting to UNSPECIFIED.", resourceType);
     return AuthorizationResourceType.UNSPECIFIED;
   }
 
@@ -126,7 +123,7 @@ public class AuthorizationMigrationHandler extends MigrationHandler<Authorizatio
       case IDENTITY_DECISION_DEFINITION_RESOURCE_TYPE -> convertDecisionPermissions(permissions);
       case IDENTITY_PROCESS_DEFINITION_RESOURCE_TYPE -> convertProcessPermissions(permissions);
       default -> {
-        LOG.warn("Unknown resource type: {}. Skipping permissions conversion.", resourceType);
+        logger.warn("Unknown resource type: {}. Skipping permissions conversion.", resourceType);
         yield Collections.emptySet();
       }
     };
