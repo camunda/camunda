@@ -198,6 +198,86 @@ public class SaaSIdentityMigrationIT {
     assertThat(userC.items().getFirst().getUsername()).isEqualTo("user1@email.com");
   }
 
+  private void createGroups() throws IOException, InterruptedException, URISyntaxException {
+    final var groupsNames = List.of("groupA", "groupB", "groupC");
+    for (final String groupName : groupsNames) {
+      createGroup(groupName);
+    }
+  }
+
+  private void createGroup(final String groupName)
+      throws IOException, InterruptedException, URISyntaxException {
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(new URI("%s%s".formatted(externalIdentityUrl(IDENTITY), "/api/groups")))
+            .POST(
+                HttpRequest.BodyPublishers.ofString(
+                    """
+                    {
+                      "name": "%s",
+                      "organizationId": "org123"
+                    }
+                    """
+                        .formatted(groupName)))
+            .header("Content-Type", "application/json")
+            .header("Authorization", "Bearer %s".formatted(TOKEN))
+            .build();
+
+    HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+  }
+
+  private void assignGroupsToUsers() throws IOException, URISyntaxException, InterruptedException {
+    final var groupIds =
+        getGroups().stream().map(io.camunda.migration.identity.dto.Group::id).toList();
+    assignGroupToUser(groupIds.getFirst(), "user0");
+    assignGroupToUser(groupIds.get(1), "user0");
+    assignGroupToUser(groupIds.getLast(), "user1");
+  }
+
+  private void assignGroupToUser(final String groupId, final String userId)
+      throws IOException, InterruptedException, URISyntaxException {
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(
+                new URI(
+                    "%s%s"
+                        .formatted(
+                            externalIdentityUrl(IDENTITY),
+                            "/api/groups/%s/users".formatted(groupId))))
+            .POST(
+                HttpRequest.BodyPublishers.ofString(
+                    """
+                    {
+                      "userId": "%s",
+                      "organizationId": "org123"
+                    }
+                    """
+                        .formatted(userId)))
+            .header("Content-Type", "application/json")
+            .header("Authorization", "Bearer %s".formatted(TOKEN))
+            .build();
+
+    HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+  }
+
+  private List<io.camunda.migration.identity.dto.Group> getGroups()
+      throws IOException, InterruptedException, URISyntaxException {
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(
+                new URI(
+                    "%s%s"
+                        .formatted(
+                            externalIdentityUrl(IDENTITY), "/api/groups?organizationId=org123")))
+            .GET()
+            .header("Authorization", "Bearer %s".formatted(TOKEN))
+            .build();
+
+    final HttpResponse<String> response =
+        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    return OBJECT_MAPPER.readValue(response.body(), new TypeReference<>() {});
+  }
+
   @Test
   public void canMigrateRoles() {
     // when
