@@ -21,6 +21,7 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.util.FilterUtil;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -39,6 +40,7 @@ public class BatchOperationItemProvider {
   private static final Logger LOG = LoggerFactory.getLogger(BatchOperationItemProvider.class);
 
   private final SearchClientsProxy searchClientsProxy;
+  private final BatchOperationMetrics metrics;
 
   /**
    * The size of a page when fetching entities. This is the maximum number of items that can be
@@ -53,8 +55,11 @@ public class BatchOperationItemProvider {
   private final int inClauseSize;
 
   public BatchOperationItemProvider(
-      final SearchClientsProxy searchClientsProxy, final EngineConfiguration engineConfiguration) {
+      final SearchClientsProxy searchClientsProxy,
+      final EngineConfiguration engineConfiguration,
+      final BatchOperationMetrics metrics) {
     this.searchClientsProxy = searchClientsProxy;
+    this.metrics = metrics;
     queryPageSize = engineConfiguration.getBatchOperationQueryPageSize();
     inClauseSize = engineConfiguration.getBatchOperationQueryInClauseSize();
   }
@@ -145,6 +150,8 @@ public class BatchOperationItemProvider {
         LOG.warn("Batch operation is no longer active, stopping query.");
         return Set.of();
       }
+
+      metrics.recordQueryAgainstSecondaryDatabase();
 
       final var result = itemPageFetcher.fetchItems(filter, searchValues, authentication);
       items.addAll(result.items);

@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.batchoperation;
 
 import static org.mockito.Mockito.*;
 
+import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
@@ -45,7 +46,9 @@ class BatchOperationResumeProcessorTest {
     when(state.getBatchOperationState()).thenReturn(batchOperationState);
 
     // Inject mocked writers
-    processor = new BatchOperationResumeProcessor(writers, null, state, null, null);
+    processor =
+        new BatchOperationResumeProcessor(
+            writers, null, state, null, null, mock(BatchOperationMetrics.class));
   }
 
   @Test

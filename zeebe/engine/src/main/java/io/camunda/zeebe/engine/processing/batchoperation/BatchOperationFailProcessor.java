@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
@@ -36,17 +37,20 @@ public final class BatchOperationFailProcessor
   private final TypedCommandWriter commandWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final KeyGenerator keyGenerator;
+  private final BatchOperationMetrics metrics;
   private final int partitionId;
 
   public BatchOperationFailProcessor(
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final KeyGenerator keyGenerator,
-      final int partitionId) {
+      final int partitionId,
+      final BatchOperationMetrics metrics) {
     stateWriter = writers.state();
     commandWriter = writers.command();
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.keyGenerator = keyGenerator;
+    this.metrics = metrics;
     this.partitionId = partitionId;
   }
 
@@ -73,6 +77,8 @@ public final class BatchOperationFailProcessor
           batchInternalFail,
           FollowUpCommandMetadata.of(
               b -> b.batchOperationReference(recordValue.getBatchOperationKey())));
+
+      metrics.recordFailed(recordValue.getBatchOperationType());
     } else {
       stateWriter.appendFollowUpEvent(
           recordValue.getBatchOperationKey(),

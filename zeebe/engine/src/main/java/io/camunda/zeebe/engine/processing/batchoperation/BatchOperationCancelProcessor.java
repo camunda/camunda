@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
+import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
@@ -49,13 +50,15 @@ public final class BatchOperationCancelProcessor
   private final BatchOperationState batchOperationState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
+  private final BatchOperationMetrics metrics;
 
   public BatchOperationCancelProcessor(
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior,
       final ProcessingState processingState,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final KeyGenerator keyGenerator) {
+      final KeyGenerator keyGenerator,
+      final BatchOperationMetrics metrics) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
@@ -63,6 +66,7 @@ public final class BatchOperationCancelProcessor
     batchOperationState = processingState.getBatchOperationState();
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
+    this.metrics = metrics;
   }
 
   @Override
@@ -96,6 +100,8 @@ public final class BatchOperationCancelProcessor
           .withKey(cancelKey)
           .inQueue(DistributionQueue.BATCH_OPERATION)
           .distribute(command);
+
+      metrics.recordCancelled(batchOperation.get().getBatchOperationType());
     } else {
       rejectionWriter.appendRejection(
           command,
