@@ -123,6 +123,7 @@ public class ScaleUpPartitionsTest {
     cluster.awaitHealthyTopology();
   }
 
+  @Test
   private void awaitScaleUpCompletion(final int desiredPartitionCount) {
     Awaitility.await("until scaling is done")
         .timeout(Duration.ofMinutes(5))
