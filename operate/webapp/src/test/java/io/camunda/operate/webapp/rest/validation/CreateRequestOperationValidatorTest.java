@@ -11,12 +11,17 @@ import static io.camunda.webapps.schema.entities.operation.OperationType.ADD_VAR
 import static io.camunda.webapps.schema.entities.operation.OperationType.UPDATE_VARIABLE;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.reader.VariableReader;
+import io.camunda.operate.webapp.rest.dto.OperationDto;
+import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -78,6 +83,51 @@ public class CreateRequestOperationValidatorTest {
     assertThatThrownBy(() -> underTest.validate(request, "123"))
         .isInstanceOf(InvalidRequestException.class)
         .hasMessage("ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
+  }
+
+  @Test
+  void shouldFailValidationWhenVariableAlreadyExists() {
+    // given
+    final var request = new CreateOperationRequestDto(ADD_VARIABLE);
+    request.setVariableScopeId("scope");
+    request.setVariableName("name");
+    request.setVariableValue("val");
+
+    // simulate existing variable
+    when(mockVariableReader.getVariableByName("123", "scope", "name"))
+        .thenReturn(new VariableDto());
+
+    // when - then
+    assertThatThrownBy(() -> underTest.validate(request, "123"))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage("Variable with the name \"name\" already exists.");
+
+    // shouldn't query for operations
+    verifyNoInteractions(mockOperationReader);
+  }
+
+  @ParameterizedTest(
+      name = "should fail when ADD_VARIABLE operation with state ''{0}'' exists for same variable")
+  @EnumSource(value = OperationState.class)
+  void shouldFailValidationWhenOperationWithStateExists(final OperationState opState) {
+    // given
+    final var request = new CreateOperationRequestDto(ADD_VARIABLE);
+    request.setVariableScopeId("scope");
+    request.setVariableName("name");
+    request.setVariableValue("val");
+
+    // no existing variable
+    when(mockVariableReader.getVariableByName("123", "scope", "name")).thenReturn(null);
+
+    // simulate pending operation
+    final var operation = new OperationDto().setState(opState);
+    when(mockOperationReader.getOperations(ADD_VARIABLE, "123", "scope", "name"))
+        .thenReturn(List.of(operation));
+
+    // when - then
+    assertThatThrownBy(() -> underTest.validate(request, "123"))
+        .isInstanceOf(InvalidRequestException.class)
+        .hasMessage("Variable with the name \"name\" already exists.");
   }
 
   @ParameterizedTest(name = "should pass for {0} operation with valid scopeId, name, and value")
