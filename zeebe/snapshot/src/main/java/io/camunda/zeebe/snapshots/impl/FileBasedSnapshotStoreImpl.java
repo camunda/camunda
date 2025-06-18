@@ -111,16 +111,8 @@ public final class FileBasedSnapshotStoreImpl {
   }
 
   public void start() {
-    initializeFromFileSystem();
+    setLatestSnapshot(loadLatestSnapshot(snapshotsDirectory));
     purgePendingSnapshotsDirectory();
-  }
-
-  private void initializeFromFileSystem() {
-    final FileBasedSnapshot latestSnapshot = loadLatestSnapshot(snapshotsDirectory);
-    currentPersistedSnapshotRef.set(latestSnapshot);
-    if (latestSnapshot != null) {
-      availableSnapshots.add(latestSnapshot);
-    }
   }
 
   public void close() {
@@ -258,6 +250,13 @@ public final class FileBasedSnapshotStoreImpl {
 
   public Optional<PersistedSnapshot> getLatestSnapshot() {
     return Optional.ofNullable(currentPersistedSnapshotRef.get());
+  }
+
+  private void setLatestSnapshot(final FileBasedSnapshot snapshot) {
+    currentPersistedSnapshotRef.set(snapshot);
+    if (snapshot != null) {
+      availableSnapshots.add(snapshot);
+    }
   }
 
   public ActorFuture<Set<PersistedSnapshot>> getAvailableSnapshots() {
@@ -705,7 +704,7 @@ public final class FileBasedSnapshotStoreImpl {
       throw new CorruptedSnapshotException(
           "Failed to open restored snapshot in %s".formatted(snapshotPath));
     }
-    initializeFromFileSystem();
+    setLatestSnapshot(snapshot);
   }
 
   public ActorFuture<Void> restore(final PersistedSnapshot snapshot) {

@@ -449,6 +449,8 @@ public class FileBasedSnapshotStoreTest {
     final var copiedSnapshot =
         snapshotStore.copyForBootstrap(persistedSnapshot, SnapshotCopyUtil::copyAllFiles).join();
 
+    snapshotStore.delete().join();
+
     final var files = copiedSnapshot.files();
     snapshotStore.restore(copiedSnapshot.getId(), files);
 
