@@ -8292,6 +8292,10 @@ components:
             The unique key identifying the associated task, unique within the scope of the
             process instance.
           type: string
+        kind:
+          $ref: "#/components/schemas/JobKindEnum"
+        listenerEventType:
+          $ref: "#/components/schemas/JobListenerEventTypeEnum"
     JobFailRequest:
       type: object
       properties:
