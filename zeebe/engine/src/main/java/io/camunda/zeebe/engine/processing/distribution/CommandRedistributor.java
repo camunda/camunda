@@ -56,6 +56,8 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
   private final CommandDistributionBehavior distributionBehavior;
   private final RoutingInfo routingInfo;
 
+  private boolean isDistributionPaused = false;
+
   /**
    * Tracks the number of attempted retry cycles for each retriable distribution. Note that this
    * includes retry cycles where the retriable distribution was not resend due to exponential
@@ -64,13 +66,20 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
   private final Map<RetriableDistribution, Long> retryCyclesPerDistribution = new HashMap<>();
 
   public CommandRedistributor(
-      final CommandDistributionBehavior distributionBehavior, final RoutingInfo routingInfo) {
+      final CommandDistributionBehavior distributionBehavior,
+      final RoutingInfo routingInfo,
+      final boolean isDistributionPaused) {
     this.distributionBehavior = distributionBehavior;
     this.routingInfo = routingInfo;
+    this.isDistributionPaused = isDistributionPaused;
   }
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
+    if (isDistributionPaused) {
+      LOG.debug("Command distribution is paused, skipping retry cycle.");
+      return;
+    }
     context
         .getScheduleService()
         .runAtFixedRate(COMMAND_REDISTRIBUTION_INTERVAL, this::runRetryCycle);
