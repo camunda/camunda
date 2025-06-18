@@ -135,7 +135,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
               builder.getSslClientCertPath().toAbsolutePath().toString(),
               builder.getSslClientCertPassword(),
               builder.getClientId(),
-              builder.getAudience()));
+              builder.getIssuer()));
       payload.put("client_assertion_type", JWT_ASSERTION_TYPE);
     } else {
       payload.put("client_secret", builder.getClientSecret());
@@ -155,7 +155,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   }
 
   private static String getClientAssertion(
-      String certPath, String certStorePassword, String clientId, String audience) {
+      String certPath, String certStorePassword, String clientId, String issuer) {
     final X509Certificate certificate;
     final Algorithm algorithm;
     try (FileInputStream stream = new FileInputStream(certPath)) {
@@ -186,7 +186,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
         .withHeader(header)
         .withIssuer(clientId)
         .withSubject(clientId)
-        .withAudience(audience)
+        .withAudience(issuer)
         .withIssuedAt(now)
         .withNotBefore(now)
         .withExpiresAt(new Date(now.getTime() + 5 * 60 * 1000))
