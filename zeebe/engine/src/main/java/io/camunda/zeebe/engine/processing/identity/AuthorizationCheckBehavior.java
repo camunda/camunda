@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -97,26 +98,39 @@ public final class AuthorizationCheckBehavior {
     final var username = getUsername(request);
     final var clientId = getClientId(request);
 
+    final List<AuthorizationRejection> aggregatedRejections = new ArrayList<>();
     if (username.isPresent()) {
       final var userAuthorized =
           isEntityAuthorized(request, EntityType.USER, Set.of(username.get()));
       if (userAuthorized.isRight()) {
-        return userAuthorized;
+        return Either.right(null);
+      } else {
+        aggregatedRejections.add(userAuthorized.getLeft());
       }
     } else if (clientId.isPresent()) {
       final var clientAuthorized =
           isEntityAuthorized(request, EntityType.CLIENT, Set.of(clientId.get()));
       if (clientAuthorized.isRight()) {
-        return clientAuthorized;
+        return Either.right(null);
+      } else {
+        aggregatedRejections.add(clientAuthorized.getLeft());
       }
     }
 
-    return isEntityAuthorized(
-        request,
-        EntityType.MAPPING,
-        getPersistedMappings(request)
-            .map(PersistedMapping::getMappingId)
-            .collect(Collectors.toSet()));
+    final var mappingAuthorized =
+        isEntityAuthorized(
+            request,
+            EntityType.MAPPING,
+            getPersistedMappings(request)
+                .map(PersistedMapping::getMappingId)
+                .collect(Collectors.toSet()));
+    if (mappingAuthorized.isRight()) {
+      return Either.right(null);
+    } else {
+      aggregatedRejections.add(mappingAuthorized.getLeft());
+    }
+
+    return getRejection(aggregatedRejections);
   }
 
   /**
@@ -128,7 +142,7 @@ public final class AuthorizationCheckBehavior {
    * @param entityIds the username of the user making this request
    * @return an {@link Either} containing a {@link Rejection} or {@link Void}
    */
-  private Either<Rejection, Void> isEntityAuthorized(
+  private Either<AuthorizationRejection, Void> isEntityAuthorized(
       final AuthorizationRequest request,
       final EntityType entityType,
       final Collection<String> entityIds) {
@@ -142,7 +156,10 @@ public final class AuthorizationCheckBehavior {
       if (isAssignedToTenant) {
         final var rejectionType =
             request.isNewResource() ? RejectionType.FORBIDDEN : RejectionType.NOT_FOUND;
-        return Either.left(new Rejection(rejectionType, request.getTenantErrorMessage()));
+        return Either.left(
+            new AuthorizationRejection(
+                new Rejection(rejectionType, request.getTenantErrorMessage()),
+                AuthorizationRejectionType.TENANT));
       }
     }
 
@@ -165,7 +182,60 @@ public final class AuthorizationCheckBehavior {
       return Either.right(null);
     }
 
-    return Either.left(new Rejection(RejectionType.FORBIDDEN, request.getForbiddenErrorMessage()));
+    return Either.left(
+        new AuthorizationRejection(
+            new Rejection(RejectionType.FORBIDDEN, request.getForbiddenErrorMessage()),
+            AuthorizationRejectionType.PERMISSION));
+  }
+
+  /**
+   * Returns a rejection based on the collected rejections. It prioritizes permission rejections
+   * first, then tenant rejections, and finally returns the first rejection if no specific type is
+   * found.
+   *
+   * @param rejections the list of collected authorization rejections
+   * @return an {@link Either} containing a {@link Rejection} or {@link Void}
+   */
+  private Either<Rejection, Void> getRejection(final List<AuthorizationRejection> rejections) {
+    // return permission rejection first, if it exists
+    final var permissionRejections =
+        rejections.stream()
+            .filter(r -> r.authorizationRejectionType() == AuthorizationRejectionType.PERMISSION)
+            .map(AuthorizationRejection::rejection)
+            .toList();
+    if (!permissionRejections.isEmpty()) {
+      final var reason =
+          permissionRejections.stream()
+              .map(Rejection::reason)
+              .distinct()
+              .collect(Collectors.joining("; "));
+      return Either.left(new Rejection(RejectionType.FORBIDDEN, reason));
+    }
+
+    // if there are tenant rejections, return them
+    final var tenantRejections =
+        rejections.stream()
+            .filter(r -> r.authorizationRejectionType() == AuthorizationRejectionType.TENANT)
+            .map(AuthorizationRejection::rejection)
+            .toList();
+    if (!tenantRejections.isEmpty()) {
+      final var reason =
+          tenantRejections.stream()
+              .map(Rejection::reason)
+              .distinct()
+              .collect(Collectors.joining("; "));
+      // Use the first rejection type (should be FORBIDDEN or NOT_FOUND)
+      return Either.left(new Rejection(tenantRejections.get(0).type(), reason));
+    }
+
+    // Fallback: return the first rejection if present
+    if (!rejections.isEmpty()) {
+      return Either.left(rejections.get(0).rejection());
+    }
+
+    // Should not happen, but fallback to forbidden
+    return Either.left(
+        new Rejection(RejectionType.FORBIDDEN, "Authorization failed for unknown reason"));
   }
 
   /**
@@ -538,5 +608,13 @@ public final class AuthorizationCheckBehavior {
     }
   }
 
+  private record AuthorizationRejection(
+      Rejection rejection, AuthorizationRejectionType authorizationRejectionType) {}
+
   private record UserTokenClaim(String claimName, String claimValue) {}
+
+  private enum AuthorizationRejectionType {
+    TENANT,
+    PERMISSION
+  }
 }
