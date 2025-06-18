@@ -1383,6 +1383,11 @@
           # PS: The default value is 5m. Increasing it to a higher value would cause the engine to store more data thus require more disk space. Increasing it above 15m is not recommended.
           # exportInterval: 5m
 
+        # distribution:
+          # Allows pausing command redistribution. The flag can be used to prevent the redistribution of commands when
+          # the broker is under heavy load.
+          # isCommandDistributionPaused: false
+
       # Allows to configure feature flags. These are used to test new features in dev and int environments prior
       # to rolling them out to production
       # features:
