@@ -15,10 +15,10 @@
  */
 package io.camunda.spring.client.bean;
 
+import static io.camunda.spring.client.testsupport.ClassInfoUtil.classInfo;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.spring.client.annotation.*;
-import java.beans.Introspector;
 import org.junit.jupiter.api.Test;
 
 public class ClassInfoTest {
@@ -27,7 +27,7 @@ public class ClassInfoTest {
   public void getBeanInfo() {
     final WithDeploymentAnnotation withDeploymentAnnotation = new WithDeploymentAnnotation();
 
-    final ClassInfo beanInfo = beanInfo(withDeploymentAnnotation);
+    final ClassInfo beanInfo = classInfo(withDeploymentAnnotation);
 
     assertThat(beanInfo.getBean()).isEqualTo(withDeploymentAnnotation);
     assertThat(beanInfo.getBeanName()).isEqualTo("withDeploymentAnnotation");
@@ -36,31 +36,24 @@ public class ClassInfoTest {
 
   @Test
   public void hasDeploymentAnnotation() {
-    assertThat(beanInfo(new WithDeploymentAnnotation()).hasClassAnnotation(Deployment.class))
+    assertThat(classInfo(new WithDeploymentAnnotation()).hasClassAnnotation(Deployment.class))
         .isTrue();
   }
 
   @Test
   public void hasNoDeploymentAnnotation() {
-    assertThat(beanInfo(new WithoutDeploymentAnnotation()).hasClassAnnotation(Deployment.class))
+    assertThat(classInfo(new WithoutDeploymentAnnotation()).hasClassAnnotation(Deployment.class))
         .isFalse();
   }
 
   @Test
   public void hasJobWorkerMethod() {
-    assertThat(beanInfo(new WithJobWorker()).hasMethodAnnotation(JobWorker.class)).isTrue();
+    assertThat(classInfo(new WithJobWorker()).hasMethodAnnotation(JobWorker.class)).isTrue();
   }
 
   @Test
   public void hasNotJobWorkerMethod() {
-    assertThat(beanInfo("normal String").hasMethodAnnotation(JobWorker.class)).isFalse();
-  }
-
-  private ClassInfo beanInfo(final Object bean) {
-    return ClassInfo.builder()
-        .bean(bean)
-        .beanName(Introspector.decapitalize(bean.getClass().getSimpleName()))
-        .build();
+    assertThat(classInfo("normal String").hasMethodAnnotation(JobWorker.class)).isFalse();
   }
 
   @Deployment(resources = "classpath*:/1.bpmn")
