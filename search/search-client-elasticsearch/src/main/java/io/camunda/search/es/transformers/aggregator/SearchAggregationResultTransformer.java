@@ -70,16 +70,16 @@ public class SearchAggregationResultTransformer<T>
             .filter(aggregator -> aggregator.getName().equals(key))
             .findFirst();
 
-    if (directMatch.isPresent()) {
-      return directMatch.get();
-    }
-
     // If not found, search recursively in sub-aggregations
-    return aggregators.stream()
-        .map(aggregator -> findTopHitsAggregatorRecursively(aggregator.getAggregations(), key))
-        .filter(Objects::nonNull)
-        .findFirst()
-        .orElse(null);
+    return directMatch.orElseGet(
+        () ->
+            aggregators.stream()
+                .map(
+                    aggregator ->
+                        findTopHitsAggregatorRecursively(aggregator.getAggregations(), key))
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null));
   }
 
   private AggregationResult transformTopHitsAggregate(
