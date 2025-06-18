@@ -23,11 +23,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [ 0.8.2, 0.8.2-alpha1 ]
+        version: [ 1.0.2, 1.0.0-alpha1 ]
         include:
-          - version: 0.8.2
+          - version: 1.0.2
             latest: true
-          - version: 0.8.2-alpha1
+          - version: 1.0.0-alpha1
             latest: false
     with:
       releaseBranch: ${{ inputs.branch || 'main' }}
