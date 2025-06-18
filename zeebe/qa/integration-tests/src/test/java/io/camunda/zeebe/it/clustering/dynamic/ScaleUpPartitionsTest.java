@@ -26,9 +26,14 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ZeebeIntegration
 public class ScaleUpPartitionsTest {
+  private static final Logger LOG = LoggerFactory.getLogger(ScaleUpPartitionsTest.class);
 
   private static final int PARTITIONS_COUNT = 3;
   private static final String JOB_TYPE = "job";
@@ -67,25 +72,28 @@ public class ScaleUpPartitionsTest {
     createInstanceWithAJobOnAllPartitions(camundaClient, JOB_TYPE, desiredPartitionCount);
   }
 
-  @Test
-  public void shouldStartProcessInstancesDeployedBeforeScaleUp() {
+  @ParameterizedTest
+  @ValueSource(ints = {1, 3})
+  public void shouldStartProcessInstancesDeployedBeforeScaleUp(final int partitionsToAdd) {
     // given
-    final var desiredPartitionCount = PARTITIONS_COUNT + 1;
+    final var desiredPartitionCount = PARTITIONS_COUNT + partitionsToAdd;
     cluster.awaitHealthyTopology();
 
     // when
-    final var deploymentKey = deployProcessModel(camundaClient, JOB_TYPE, "processId");
+    deployProcessModel(camundaClient, JOB_TYPE, "processId");
 
     scaleToPartitions(desiredPartitionCount);
     awaitScaleUpCompletion(desiredPartitionCount);
 
     for (int i = 0; i < 20; i++) {
-      createInstanceWithAJobOnAllPartitions(camundaClient, JOB_TYPE, desiredPartitionCount, false);
+      createInstanceWithAJobOnAllPartitions(
+          camundaClient, JOB_TYPE, desiredPartitionCount, false, "processId");
     }
 
     cluster.awaitHealthyTopology();
   }
 
+  @Test
   private void awaitScaleUpCompletion(final int desiredPartitionCount) {
     Awaitility.await("until scaling is done")
         .timeout(Duration.ofMinutes(5))
