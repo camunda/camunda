@@ -313,6 +313,37 @@ class OpensearchBackupRepositoryTest {
   }
 
   @Test
+  void getBackupStateShouldBeIncompleteWhenLastSnaspshotEndTimeIsNull() {
+    when(operateProperties.getBackup()).thenReturn(new BackupProperties());
+    mockSynchronSnapshotOperations();
+    mockObjectMapperForMetadata(new Metadata().setPartCount(3).setPartNo(1).setVersion("8.6"));
+
+    final long endtime = now - (incompleteCheckTimeoutLength * 2);
+
+    when(openSearchSnapshotOperations.get(any()))
+        .thenReturn(
+            new OpenSearchGetSnapshotResponse(
+                List.of(
+                    new OpenSearchSnapshotInfo()
+                        .setSnapshot("snapshot")
+                        .setState(SnapshotState.SUCCESS)
+                        .setStartTimeInMillis(endtime - 20)
+                        .setEndTimeInMillis(null))));
+
+    final var response = repository.getBackupState("repo", 5L, id -> false);
+
+    assertThat(response).isNotNull();
+    assertThat(response.getState()).isEqualTo(BackupStateDto.INCOMPLETE);
+    assertThat(response.getBackupId()).isEqualTo(5L);
+    final var snapshotDetails = response.getDetails();
+    assertThat(snapshotDetails).hasSize(1);
+    final var snapshotDetail = snapshotDetails.get(0);
+    assertThat(snapshotDetail.getState()).isEqualTo(SnapshotState.SUCCESS.toString());
+    assertThat(snapshotDetail.getSnapshotName()).isEqualTo("snapshot");
+    assertThat(snapshotDetail.getFailures()).isNull();
+  }
+
+  @Test
   void validateRepositoryExistsSuccess() {
     mockSynchronSnapshotOperations();
     when(openSearchSnapshotOperations.getRepository(any())).thenReturn(Map.of());
