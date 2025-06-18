@@ -15,7 +15,9 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
@@ -125,5 +127,44 @@ public class BpmnAdHocSubProcessBehavior {
     final long elementInstanceKey = keyGenerator.nextKey();
     commandWriter.appendFollowUpCommand(
         elementInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, elementRecord);
+  }
+
+  public void completionConditionFulfilled(
+      final BpmnElementContext context, final boolean cancelRemainingInstances) {
+
+    final var adHocSubProcessInstance = stateBehavior.getElementInstance(context);
+    final boolean hasActiveChildInstances =
+        adHocSubProcessInstance.getNumberOfActiveElementInstances() > 0;
+    final boolean hasActiveSequenceFlows = adHocSubProcessInstance.getActiveSequenceFlows() > 0;
+
+    // TODO: mark the completion condition as fulfilled to avoid new activations
+
+    if (cancelRemainingInstances) {
+      if (hasActiveChildInstances) {
+        terminateChildInstances(context);
+      } else {
+        completeAdHocSubProcess(context);
+      }
+
+    } else if (!hasActiveChildInstances && !hasActiveSequenceFlows) {
+      completeAdHocSubProcess(context);
+    }
+  }
+
+  private void terminateChildInstances(final BpmnElementContext context) {
+    final var batchRecord =
+        new ProcessInstanceBatchRecord()
+            .setProcessInstanceKey(context.getProcessInstanceKey())
+            .setBatchElementInstanceKey(context.getElementInstanceKey());
+
+    commandWriter.appendFollowUpCommand(
+        keyGenerator.nextKey(), ProcessInstanceBatchIntent.TERMINATE, batchRecord);
+  }
+
+  private void completeAdHocSubProcess(final BpmnElementContext context) {
+    commandWriter.appendFollowUpCommand(
+        context.getElementInstanceKey(),
+        ProcessInstanceIntent.COMPLETE_ELEMENT,
+        context.getRecordValue());
   }
 }
