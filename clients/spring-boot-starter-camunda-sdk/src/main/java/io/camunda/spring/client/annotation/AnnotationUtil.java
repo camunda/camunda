@@ -15,8 +15,12 @@
  */
 package io.camunda.spring.client.annotation;
 
+import static java.util.Optional.ofNullable;
+
+import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.spring.client.annotation.value.DeploymentValue;
 import io.camunda.spring.client.annotation.value.DocumentValue;
+import io.camunda.spring.client.annotation.value.DocumentValue.ParameterType;
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
 import io.camunda.spring.client.annotation.value.VariableValue;
 import io.camunda.spring.client.bean.BeanInfo;
@@ -28,7 +32,9 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
@@ -37,6 +43,15 @@ import org.slf4j.LoggerFactory;
 
 public class AnnotationUtil {
   private static final Logger LOG = LoggerFactory.getLogger(AnnotationUtil.class);
+  private static final Map<String, ParameterType> DOCUMENT_PARAMETER_TYPES;
+
+  static {
+    DOCUMENT_PARAMETER_TYPES = new HashMap<>();
+    DOCUMENT_PARAMETER_TYPES.put(
+        List.class + "<" + DocumentReferenceResponse.class + ">", ParameterType.LIST);
+    DOCUMENT_PARAMETER_TYPES.put(DocumentReferenceResponse.class.getName(), ParameterType.SINGLE);
+    DOCUMENT_PARAMETER_TYPES.put(DocumentContext.class.getName(), ParameterType.CONTEXT);
+  }
 
   public static boolean isVariable(final ParameterInfo parameterInfo) {
     return parameterInfo.getParameterInfo().isAnnotationPresent(Variable.class)
@@ -45,7 +60,8 @@ public class AnnotationUtil {
 
   public static boolean isDocument(final ParameterInfo parameterInfo) {
     return parameterInfo.getParameterInfo().isAnnotationPresent(Document.class)
-        && parameterInfo.getParameterInfo().getType().equals(DocumentContext.class);
+        && (DOCUMENT_PARAMETER_TYPES.containsKey(
+            parameterInfo.getParameterInfo().getParameterizedType().getTypeName()));
   }
 
   public static List<ParameterInfo> getVariableParameters(final MethodInfo methodInfo) {
@@ -163,9 +179,23 @@ public class AnnotationUtil {
     if (isDocument(parameterInfo)) {
       return Optional.of(
           new DocumentValue(
-              getDocumentName(parameterInfo), parameterInfo, getDocumentOptional(parameterInfo)));
+              getDocumentName(parameterInfo),
+              parameterInfo,
+              getDocumentOptional(parameterInfo),
+              getDocumentParameterType(parameterInfo)));
     }
     return Optional.empty();
+  }
+
+  private static ParameterType getDocumentParameterType(final ParameterInfo parameterInfo) {
+    return ofNullable(
+            DOCUMENT_PARAMETER_TYPES.get(
+                parameterInfo.getParameterInfo().getParameterizedType().getTypeName()))
+        .orElseThrow(
+            () ->
+                new IllegalArgumentException(
+                    "Unsupported parameter type for document: "
+                        + parameterInfo.getParameterInfo().getParameterizedType().getTypeName()));
   }
 
   public static Optional<DeploymentValue> getDeploymentValue(final ClassInfo beanInfo) {
