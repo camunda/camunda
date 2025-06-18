@@ -17,6 +17,7 @@ import static io.camunda.optimize.service.exceptions.ExceptionHelper.safe;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static java.lang.String.format;
 
+import com.google.common.annotations.VisibleForTesting;
 import io.camunda.optimize.dto.optimize.DataImportSourceType;
 import io.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
@@ -111,12 +112,14 @@ import org.opensearch.client.opensearch.indices.rollover.RolloverConditions;
 import org.opensearch.client.opensearch.snapshot.CreateSnapshotRequest;
 import org.opensearch.client.opensearch.snapshot.CreateSnapshotResponse;
 import org.opensearch.client.opensearch.snapshot.GetRepositoryRequest;
+import org.opensearch.client.opensearch.snapshot.GetRepositoryResponse;
 import org.opensearch.client.opensearch.snapshot.GetSnapshotRequest;
 import org.opensearch.client.opensearch.snapshot.GetSnapshotResponse;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 import org.opensearch.client.opensearch.tasks.ListRequest;
 import org.opensearch.client.opensearch.tasks.ListResponse;
 import org.opensearch.client.opensearch.tasks.Status;
+import org.opensearch.client.transport.endpoints.SimpleEndpoint;
 import org.springframework.context.ApplicationContext;
 
 @Slf4j
@@ -1048,9 +1051,19 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     }
   }
 
+  @VisibleForTesting
   public void verifyRepositoryExists(final GetRepositoryRequest getRepositoriesRequest)
       throws IOException, OpenSearchException {
-    openSearchClient.snapshot().getRepository(getRepositoriesRequest);
+    final SimpleEndpoint<GetRepositoryRequest, Object> endpoint =
+        ((SimpleEndpoint<GetRepositoryRequest, GetRepositoryResponse>)
+                (GetRepositoryRequest._ENDPOINT))
+            .withResponseDeserializer(null);
+
+    openSearchAsyncClient
+        ._transport()
+        .performRequestAsync(
+            getRepositoriesRequest, endpoint, openSearchAsyncClient._transportOptions())
+        .join();
   }
 
   public GetSnapshotResponse getSnapshots(final GetSnapshotRequest getSnapshotRequest)
