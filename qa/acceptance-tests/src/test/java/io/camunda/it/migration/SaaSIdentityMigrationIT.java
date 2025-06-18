@@ -33,6 +33,7 @@ import static io.camunda.zeebe.qa.util.cluster.TestZeebePort.CLUSTER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
@@ -83,6 +84,8 @@ public class SaaSIdentityMigrationIT {
   @TestZeebe(autoStart = false)
   static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
+
+  private static final String TOKEN = loadFixture("jwt-identity-client.txt");
 
   @Container
   private static final ElasticsearchContainer ELASTIC = IdentityMigrationTestUtil.getElastic();
@@ -159,12 +162,15 @@ public class SaaSIdentityMigrationIT {
   }
 
   @Test
-  void canMigrateGroups() {
+  void canMigrateGroups() throws IOException, URISyntaxException, InterruptedException {
     // when
+    createGroups();
+    assignGroupsToUsers();
+
     migration.start();
 
     Awaitility.await()
-        .atMost(Duration.ofHours(5))
+        .atMost(Duration.ofSeconds(5))
         .ignoreExceptions()
         .untilAsserted(
             () -> {
@@ -226,10 +232,14 @@ public class SaaSIdentityMigrationIT {
             tuple(Role.TASK_USER.getName(), "Task User"),
             tuple(Role.VISITOR.getName(), "Visitor"));
     final var members = client.newUsersByRoleSearchRequest("admin").send().join();
-    assertThat(members.items()).map(RoleUser::getUsername).contains("user@example.com");
+    assertThat(members.items())
+        .map(RoleUser::getUsername)
+        .contains("user0@email.com", "user1@email.com");
     final var members2 = client.newUsersByRoleSearchRequest("developer").send().join();
-    assertThat(members2.items().size()).isEqualTo(1);
-    assertThat(members2.items().getFirst().getUsername()).isEqualTo("user@example.com");
+    assertThat(members2.items().size()).isEqualTo(2);
+    assertThat(members2.items())
+        .map(RoleUser::getUsername)
+        .contains("user0@email.com", "user1@email.com");
   }
 
   @Test
@@ -497,9 +507,87 @@ public class SaaSIdentityMigrationIT {
                     PermissionType.UPDATE_USER_TASK)));
   }
 
-  private void stubConsoleClient() {
-    final String token = loadFixture("jwt-identity-client.txt");
+  private void createGroups() throws IOException, InterruptedException, URISyntaxException {
+    final var groupsNames = List.of("groupA", "groupB", "groupC");
+    for (final String groupName : groupsNames) {
+      createGroup(groupName);
+    }
+  }
 
+  private void createGroup(final String groupName)
+      throws IOException, InterruptedException, URISyntaxException {
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(new URI("%s%s".formatted(externalIdentityUrl(IDENTITY), "/api/groups")))
+            .POST(
+                HttpRequest.BodyPublishers.ofString(
+                    """
+                    {
+                      "name": "%s",
+                      "organizationId": "org123"
+                    }
+                    """
+                        .formatted(groupName)))
+            .header("Content-Type", "application/json")
+            .header("Authorization", "Bearer %s".formatted(TOKEN))
+            .build();
+
+    HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+  }
+
+  private void assignGroupsToUsers() throws IOException, URISyntaxException, InterruptedException {
+    final var groupIds =
+        getGroups().stream().map(io.camunda.migration.identity.dto.Group::id).toList();
+    assignGroupToUser(groupIds.getFirst(), "user0");
+    assignGroupToUser(groupIds.get(1), "user0");
+    assignGroupToUser(groupIds.getLast(), "user1");
+  }
+
+  private void assignGroupToUser(final String groupId, final String userId)
+      throws IOException, InterruptedException, URISyntaxException {
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(
+                new URI(
+                    "%s%s"
+                        .formatted(
+                            externalIdentityUrl(IDENTITY),
+                            "/api/groups/%s/users".formatted(groupId))))
+            .POST(
+                HttpRequest.BodyPublishers.ofString(
+                    """
+                    {
+                      "userId": "%s",
+                      "organizationId": "org123"
+                    }
+                    """
+                        .formatted(userId)))
+            .header("Content-Type", "application/json")
+            .header("Authorization", "Bearer %s".formatted(TOKEN))
+            .build();
+
+    HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+  }
+
+  private List<io.camunda.migration.identity.dto.Group> getGroups()
+      throws IOException, InterruptedException, URISyntaxException {
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(
+                new URI(
+                    "%s%s"
+                        .formatted(
+                            externalIdentityUrl(IDENTITY), "/api/groups?organizationId=org123")))
+            .GET()
+            .header("Authorization", "Bearer %s".formatted(TOKEN))
+            .build();
+
+    final HttpResponse<String> response =
+        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    return OBJECT_MAPPER.readValue(response.body(), new TypeReference<>() {});
+  }
+
+  private void stubConsoleClient() {
     // IDENTITY
     stubFor(
         get("/.well-known/jwks.json")
@@ -513,7 +601,7 @@ public class SaaSIdentityMigrationIT {
                 aResponse()
                     .withStatus(200)
                     .withHeader("Content-Type", "application/json")
-                    .withBody("{\"access_token\": \"" + token + "\"}")));
+                    .withBody("{\"access_token\": \"" + TOKEN + "\"}")));
 
     // CONSOLE
     final String endpoint =
@@ -526,9 +614,15 @@ public class SaaSIdentityMigrationIT {
         {
           "members": [
             {
-              "userId": "user123",
+              "userId": "user0",
               "roles": ["owner", "developer"],
-              "email": "user@example.com",
+              "email": "user0@email.com",
+              "name": "John Doe"
+            },
+            {
+              "userId": "user1",
+              "roles": ["owner", "developer"],
+              "email": "user1@email.com",
               "name": "John Doe"
             }
           ],
@@ -544,7 +638,7 @@ public class SaaSIdentityMigrationIT {
 
     stubFor(
         get(urlEqualTo(endpoint))
-            .withHeader("Authorization", equalTo("Bearer " + token))
+            .withHeader("Authorization", equalTo("Bearer " + TOKEN))
             .willReturn(
                 aResponse()
                     .withStatus(200)
@@ -553,13 +647,16 @@ public class SaaSIdentityMigrationIT {
   }
 
   protected static String loadFixture(final String filename) {
-    final InputStream inputStream =
+    try (final InputStream inputStream =
         SaaSIdentityMigrationIT.class
             .getClassLoader()
-            .getResourceAsStream("identity-migration/" + filename);
-    return new BufferedReader(new InputStreamReader(inputStream))
-        .lines()
-        .collect(Collectors.joining("\n"));
+            .getResourceAsStream("identity-migration/" + filename)) {
+      return new BufferedReader(new InputStreamReader(inputStream))
+          .lines()
+          .collect(Collectors.joining("\n"));
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   // TODO: refactor this once https://github.com/camunda/camunda/issues/32721 is implemented
