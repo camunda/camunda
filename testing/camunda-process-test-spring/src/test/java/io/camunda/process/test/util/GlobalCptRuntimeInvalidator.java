@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.utils;
+package io.camunda.process.test.util;
 
 import io.camunda.process.test.impl.runtime.CamundaProcessTestGlobalRuntime;
 import java.lang.reflect.Method;

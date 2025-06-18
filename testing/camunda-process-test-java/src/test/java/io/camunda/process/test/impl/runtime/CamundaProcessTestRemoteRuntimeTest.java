@@ -31,7 +31,6 @@ import io.camunda.client.api.response.PartitionBrokerHealth;
 import io.camunda.client.api.response.PartitionInfo;
 import io.camunda.client.api.response.Topology;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
-import io.camunda.process.test.api.CamundaProcessTestGlobalRuntime;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.utils.GlobalCptRuntimeInvalidator;
 import java.net.URI;

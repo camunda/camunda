@@ -47,7 +47,7 @@ public class CamundaProcessTestRuntimeConfiguration {
   private Map<String, String> connectorsSecrets = Collections.emptyMap();
 
   private CamundaProcessTestRuntimeMode runtimeMode = CamundaProcessTestRuntimeMode.MANAGED;
-  private boolean forceLocalRuntime = false;
+  private boolean ignoreGlobalRuntime = false;
 
   @NestedConfigurationProperty private RemoteConfiguration remote = new RemoteConfiguration();
 
@@ -131,12 +131,12 @@ public class CamundaProcessTestRuntimeConfiguration {
     this.runtimeMode = runtimeMode;
   }
 
-  public boolean isForceLocalRuntime() {
-    return forceLocalRuntime;
+  public boolean isIgnoreGlobalRuntime() {
+    return ignoreGlobalRuntime;
   }
 
-  public void setForceLocalRuntime(final boolean forceLocalRuntime) {
-    this.forceLocalRuntime = forceLocalRuntime;
+  public void setIgnoreGlobalRuntime(final boolean ignoreGlobalRuntime) {
+    this.ignoreGlobalRuntime = ignoreGlobalRuntime;
   }
 
   public RemoteConfiguration getRemote() {

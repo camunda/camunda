@@ -20,6 +20,7 @@ import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
+import io.camunda.process.test.impl.runtime.CamundaProcessTestGlobalRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
@@ -142,8 +143,13 @@ public class CamundaProcessTestExtension
   }
 
   private void initializeGlobalRuntime(final ExtensionContext context) {
+    /*
+     * The runtimeBuilder chooses the global runtime or creates a new one based on the configuration
+     * provided. Since we're using the runtimeBuilder to create a new runtime for our global
+     * instance, we don't want it to defer to the not-yet-initialized global runtime.
+     */
     final CamundaProcessTestRuntimeBuilder defaultRuntimeBuilder =
-        CamundaProcessTestContainerRuntime.newBuilder().withLocalRuntime();
+        CamundaProcessTestContainerRuntime.newBuilder().withIgnoringGlobalRuntime();
 
     CamundaProcessTestGlobalRuntime.INSTANCE.initialize(defaultRuntimeBuilder);
   }
@@ -408,13 +414,12 @@ public class CamundaProcessTestExtension
 
   /**
    * Forces the extension to run against a local Camunda container runtime instead of using the
-   * global runtime. This is *only* necessary if you haven't changed any other configurations, for
-   * example by invoking `withConnectorsDockerImageVersion`.
+   * global runtime.
    *
    * @return the extension builder
    */
-  public CamundaProcessTestExtension withLocalRuntime() {
-    runtimeBuilder.withLocalRuntime();
+  public CamundaProcessTestExtension withIgnoringGlobalRuntime() {
+    runtimeBuilder.withIgnoringGlobalRuntime();
     return this;
   }
 

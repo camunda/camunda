@@ -36,7 +36,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest(
     classes = {CamundaSpringProcessTestConnectorsIT.class},
     properties = {
-      "io.camunda.process.test.force-local-runtime=true",
+      "io.camunda.process.test.ignore-global-runtime=true",
       "io.camunda.process.test.connectors-enabled=true",
       "io.camunda.process.test.connectors-secrets.CONNECTORS_URL=http://connectors:8080/actuator/health/readiness"
     })

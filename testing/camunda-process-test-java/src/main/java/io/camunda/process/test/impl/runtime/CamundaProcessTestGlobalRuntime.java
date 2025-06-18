@@ -13,11 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.api;
+package io.camunda.process.test.impl.runtime;
 
-import io.camunda.process.test.impl.runtime.CamundaProcessTestGlobalContainerRuntime;
-import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
-import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import java.util.concurrent.atomic.AtomicReference;
 
 /** Singleton for a long-running Camunda runtime used during Camunda Process Tests. */

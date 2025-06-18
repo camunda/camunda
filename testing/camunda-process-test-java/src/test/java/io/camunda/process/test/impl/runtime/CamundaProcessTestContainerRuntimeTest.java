@@ -21,7 +21,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.process.test.api.CamundaProcessTestGlobalRuntime;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.ContainerFactory;
@@ -193,7 +192,7 @@ public class CamundaProcessTestContainerRuntimeTest {
         (CamundaProcessTestContainerRuntime)
             CamundaProcessTestContainerRuntime.newBuilder()
                 .withContainerFactory(containerFactory)
-                .withLocalRuntime()
+                .withIgnoringGlobalRuntime()
                 .build();
 
     // then
@@ -212,7 +211,7 @@ public class CamundaProcessTestContainerRuntimeTest {
         (CamundaProcessTestContainerRuntime)
             CamundaProcessTestContainerRuntime.newBuilder()
                 .withContainerFactory(containerFactory)
-                .withLocalRuntime()
+                .withIgnoringGlobalRuntime()
                 .build();
 
     // when
@@ -235,7 +234,7 @@ public class CamundaProcessTestContainerRuntimeTest {
     // given/when
     CamundaProcessTestContainerRuntime.newBuilder()
         .withContainerFactory(containerFactory)
-        .withLocalRuntime()
+        .withIgnoringGlobalRuntime()
         .build();
 
     // then
@@ -263,7 +262,8 @@ public class CamundaProcessTestContainerRuntimeTest {
 
   @ParameterizedTest
   @MethodSource("provideCptConfigurations")
-  void shouldUseLocalRuntimeIfConfigurationChanged(CamundaProcessTestRuntimeBuilder builder) {
+  void shouldIgnoreGlobalRuntimeIfConfigurationIsDifferent(
+      CamundaProcessTestRuntimeBuilder builder) {
 
     // given/when
     final CamundaProcessTestRuntime runtime =

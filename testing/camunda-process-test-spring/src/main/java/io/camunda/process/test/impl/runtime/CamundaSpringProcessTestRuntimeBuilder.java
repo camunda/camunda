@@ -34,8 +34,8 @@ public class CamundaSpringProcessTestRuntimeBuilder {
       final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
 
     final CamundaProcessTestRuntimeMode runtimeMode = runtimeConfiguration.getRuntimeMode();
-    if (runtimeConfiguration.isForceLocalRuntime()) {
-      runtimeBuilder.withLocalRuntime();
+    if (runtimeConfiguration.isIgnoreGlobalRuntime()) {
+      runtimeBuilder.withIgnoringGlobalRuntime();
     }
 
     runtimeBuilder.withRuntimeMode(runtimeMode);

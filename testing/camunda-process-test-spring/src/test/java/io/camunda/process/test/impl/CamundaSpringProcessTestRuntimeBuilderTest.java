@@ -28,12 +28,14 @@ import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfi
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration.RemoteConfiguration;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestGlobalContainerRuntime;
+import io.camunda.process.test.impl.runtime.CamundaProcessTestGlobalRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRemoteRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import io.camunda.process.test.impl.runtime.CamundaSpringProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.runtime.ContainerRuntimePorts;
+import io.camunda.process.test.util.GlobalCptRuntimeInvalidator;
 import io.camunda.spring.client.properties.CamundaClientAuthProperties;
 import io.camunda.spring.client.properties.CamundaClientCloudProperties;
 import io.camunda.spring.client.properties.CamundaClientProperties;
@@ -41,9 +43,30 @@ import io.camunda.spring.client.properties.CamundaClientProperties.ClientMode;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 public class CamundaSpringProcessTestRuntimeBuilderTest {
+
+  @BeforeAll
+  static void configureGlobalRuntime() {
+    GlobalCptRuntimeInvalidator.invalidate();
+
+    final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
+        new CamundaProcessTestRuntimeConfiguration();
+
+    final CamundaProcessTestRuntimeBuilder camundaRuntimeBuilder =
+        CamundaSpringProcessTestRuntimeBuilder.mergeRuntimeConfiguration(
+            CamundaProcessTestContainerRuntime.newBuilder(), runtimeConfiguration);
+
+    CamundaProcessTestGlobalRuntime.INSTANCE.initialize(camundaRuntimeBuilder);
+  }
+
+  @AfterAll
+  static void resetGlobalRuntime() {
+    GlobalCptRuntimeInvalidator.invalidate();
+  }
 
   @Test
   void shouldBuildManagedWithGlobalRuntimeByDefault() {
@@ -74,13 +97,13 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
   }
 
   @Test
-  void shouldForceBuildLocalRuntimeIfConfigured() {
+  void shouldIgnoreGlobalRuntimeIfConfigured() {
     // given
     final CamundaProcessTestRuntimeBuilder runtimeBuilder = new CamundaProcessTestRuntimeBuilder();
     final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
         new CamundaProcessTestRuntimeConfiguration();
 
-    runtimeConfiguration.setForceLocalRuntime(true);
+    runtimeConfiguration.setIgnoreGlobalRuntime(true);
 
     // when
     final CamundaProcessTestRuntime camundaRuntime =
@@ -90,7 +113,7 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
 
     // then
     assertThat(camundaRuntime).isNotNull().isInstanceOf(CamundaProcessTestContainerRuntime.class);
-    assertThat(runtimeBuilder.isForceLocalRuntime()).isTrue();
+    assertThat(runtimeBuilder.isIgnoreGlobalRuntime()).isTrue();
   }
 
   @Test
@@ -106,7 +129,7 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     runtimeConfiguration.setCamundaVersion("8.6.0-custom");
     runtimeConfiguration.setCamundaDockerImageName("custom-camunda");
     runtimeConfiguration.setCamundaEnvVars(camundaEnvVars);
-    runtimeConfiguration.setForceLocalRuntime(true);
+    runtimeConfiguration.setIgnoreGlobalRuntime(true);
     final List<Integer> camundaExposedPorts = List.of(100, 200);
     runtimeConfiguration.setCamundaExposedPorts(camundaExposedPorts);
 
@@ -134,7 +157,7 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     final Map<String, String> connectorsSecrets =
         Map.ofEntries(entry("secret-1", "1"), entry("secret-2", "2"));
 
-    runtimeConfiguration.setForceLocalRuntime(true);
+    runtimeConfiguration.setIgnoreGlobalRuntime(true);
     runtimeConfiguration.setConnectorsEnabled(true);
     runtimeConfiguration.setConnectorsDockerImageName("custom-connectors");
     runtimeConfiguration.setConnectorsDockerImageVersion("8.6.0-custom");
@@ -161,7 +184,7 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
         new CamundaProcessTestRuntimeConfiguration();
 
     runtimeConfiguration.setRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE);
-    runtimeConfiguration.setForceLocalRuntime(true);
+    runtimeConfiguration.setIgnoreGlobalRuntime(true);
 
     // when
     final CamundaProcessTestRuntime camundaRuntime =

@@ -17,7 +17,6 @@ package io.camunda.process.test.impl.runtime;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
-import io.camunda.process.test.api.CamundaProcessTestGlobalRuntime;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.containers.ContainerFactory;
 import java.net.URI;
@@ -62,9 +61,9 @@ public class CamundaProcessTestRuntimeBuilder {
   private boolean connectorsEnabled = false;
   private final Map<String, String> connectorsSecrets = new HashMap<>();
 
-  private final boolean isGlobalRuntimeDisabled =
-      CamundaProcessTestRuntimeDefaults.GLOBAL_CPT_RUNTIME_DISABLED;
-  private boolean forceLocalRuntime = false;
+  private final boolean isGlobalRuntimeEnabled =
+      CamundaProcessTestRuntimeDefaults.GLOBAL_CPT_RUNTIME_ENABLED;
+  private boolean ignoreGlobalRuntime = false;
   private CamundaProcessTestRuntimeMode runtimeMode = CamundaProcessTestRuntimeMode.MANAGED;
 
   private CamundaClientBuilderFactory remoteCamundaClientBuilderFactory =
@@ -201,8 +200,8 @@ public class CamundaProcessTestRuntimeBuilder {
     return this;
   }
 
-  public CamundaProcessTestRuntimeBuilder withLocalRuntime() {
-    this.forceLocalRuntime = true;
+  public CamundaProcessTestRuntimeBuilder withIgnoringGlobalRuntime() {
+    this.ignoreGlobalRuntime = true;
     return this;
   }
 
@@ -228,11 +227,9 @@ public class CamundaProcessTestRuntimeBuilder {
 
   public CamundaProcessTestRuntime build() {
     if (shouldUseGlobalRuntime()) {
-      System.out.println("Using the global runtime!");
       return CamundaProcessTestGlobalRuntime.INSTANCE.getRuntime();
     }
 
-    System.out.println("Using a local runtime");
     return buildRuntime();
   }
 
@@ -318,8 +315,8 @@ public class CamundaProcessTestRuntimeBuilder {
     return runtimeMode;
   }
 
-  public boolean isForceLocalRuntime() {
-    return forceLocalRuntime;
+  public boolean isIgnoreGlobalRuntime() {
+    return ignoreGlobalRuntime;
   }
 
   public CamundaClientBuilderFactory getRemoteCamundaClientBuilderFactory() {
@@ -337,8 +334,8 @@ public class CamundaProcessTestRuntimeBuilder {
   // ============ Global Runtime =================
 
   private boolean shouldUseGlobalRuntime() {
-    return !isGlobalRuntimeDisabled
-        && !forceLocalRuntime
+    return isGlobalRuntimeEnabled
+        && !ignoreGlobalRuntime
         && hasCompatibleConfiguration(CamundaProcessTestGlobalRuntime.INSTANCE.getRuntimeBuilder());
   }
 
@@ -366,68 +363,5 @@ public class CamundaProcessTestRuntimeBuilder {
         && Objects.equals(
             remoteCamundaMonitoringApiAddress, other.remoteCamundaMonitoringApiAddress)
         && Objects.equals(remoteConnectorsRestApiAddress, other.remoteConnectorsRestApiAddress);
-  }
-
-  @Override
-  public String toString() {
-    return "CamundaProcessTestRuntimeBuilder{"
-        + "containerFactory="
-        + containerFactory
-        + ", camundaDockerImageName='"
-        + camundaDockerImageName
-        + '\''
-        + ", camundaDockerImageVersion='"
-        + camundaDockerImageVersion
-        + '\''
-        + ", elasticsearchDockerImageName='"
-        + elasticsearchDockerImageName
-        + '\''
-        + ", elasticsearchDockerImageVersion='"
-        + elasticsearchDockerImageVersion
-        + '\''
-        + ", connectorsDockerImageName='"
-        + connectorsDockerImageName
-        + '\''
-        + ", connectorsDockerImageVersion='"
-        + connectorsDockerImageVersion
-        + '\''
-        + ", camundaEnvVars="
-        + camundaEnvVars
-        + ", elasticsearchEnvVars="
-        + elasticsearchEnvVars
-        + ", connectorsEnvVars="
-        + connectorsEnvVars
-        + ", camundaExposedPorts="
-        + camundaExposedPorts
-        + ", elasticsearchExposedPorts="
-        + elasticsearchExposedPorts
-        + ", connectorsExposedPorts="
-        + connectorsExposedPorts
-        + ", camundaLoggerName='"
-        + camundaLoggerName
-        + '\''
-        + ", elasticsearchLoggerName='"
-        + elasticsearchLoggerName
-        + '\''
-        + ", connectorsLoggerName='"
-        + connectorsLoggerName
-        + '\''
-        + ", connectorsEnabled="
-        + connectorsEnabled
-        + ", connectorsSecrets="
-        + connectorsSecrets
-        + ", isGlobalRuntimeDisabled="
-        + isGlobalRuntimeDisabled
-        + ", forceLocalRuntime="
-        + forceLocalRuntime
-        + ", runtimeMode="
-        + runtimeMode
-        + ", remoteCamundaClientBuilderFactory="
-        + remoteCamundaClientBuilderFactory
-        + ", remoteCamundaMonitoringApiAddress="
-        + remoteCamundaMonitoringApiAddress
-        + ", remoteConnectorsRestApiAddress="
-        + remoteConnectorsRestApiAddress
-        + '}';
   }
 }

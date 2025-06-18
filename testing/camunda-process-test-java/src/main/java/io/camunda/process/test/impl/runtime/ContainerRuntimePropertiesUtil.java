@@ -39,8 +39,8 @@ public final class ContainerRuntimePropertiesUtil {
   public static final String PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_VERSION =
       "connectors.dockerImageVersion";
   public static final String PROPERTY_NAME_ELASTICSEARCH_VERSION = "elasticsearch.version";
-  public static final String PROPERTY_NAME_GLOBAL_CPT_RUNTIME_DISABLED =
-      "camunda.process.test.globalRuntimeDisabled";
+  public static final String PROPERTY_NAME_GLOBAL_CPT_RUNTIME_ENABLED =
+      "camunda.process.test.globalRuntimeEnabled";
 
   public static final String SNAPSHOT_VERSION = "SNAPSHOT";
 
@@ -63,7 +63,7 @@ public final class ContainerRuntimePropertiesUtil {
   private final String connectorsDockerImageName;
   private final String connectorsDockerImageVersion;
   private final String elasticsearchVersion;
-  private final boolean isGlobalCptRuntimeDisabled;
+  private final boolean isGlobalCptRuntimeEnabled;
 
   public ContainerRuntimePropertiesUtil(final Properties properties) {
     camundaVersion =
@@ -99,8 +99,8 @@ public final class ContainerRuntimePropertiesUtil {
             PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_VERSION,
             CamundaProcessTestRuntimeDefaults.DEFAULT_CONNECTORS_DOCKER_IMAGE_VERSION);
 
-    isGlobalCptRuntimeDisabled =
-        getPropertyOrDefault(properties, PROPERTY_NAME_GLOBAL_CPT_RUNTIME_DISABLED, "false")
+    isGlobalCptRuntimeEnabled =
+        getPropertyOrDefault(properties, PROPERTY_NAME_GLOBAL_CPT_RUNTIME_ENABLED, "true")
             .trim()
             .equalsIgnoreCase("true");
   }
@@ -203,7 +203,7 @@ public final class ContainerRuntimePropertiesUtil {
     return connectorsDockerImageVersion;
   }
 
-  public boolean getGlobalCptRuntimeDisabled() {
-    return isGlobalCptRuntimeDisabled;
+  public boolean getGlobalCptRuntimeEnabled() {
+    return isGlobalCptRuntimeEnabled;
   }
 }
