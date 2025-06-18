@@ -17,7 +17,6 @@ import static io.camunda.optimize.service.exceptions.ExceptionHelper.safe;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static java.lang.String.format;
 
-import com.google.common.annotations.VisibleForTesting;
 import io.camunda.optimize.dto.optimize.DataImportSourceType;
 import io.camunda.optimize.dto.optimize.DefinitionOptimizeResponseDto;
 import io.camunda.optimize.dto.optimize.ImportRequestDto;
@@ -1051,7 +1050,6 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     }
   }
 
-  @VisibleForTesting
   public void verifyRepositoryExists(final GetRepositoryRequest getRepositoriesRequest)
       throws IOException, OpenSearchException {
     final SimpleEndpoint<GetRepositoryRequest, Object> endpoint =
