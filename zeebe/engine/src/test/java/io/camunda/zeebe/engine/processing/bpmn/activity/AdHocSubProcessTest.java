@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import io.camunda.zeebe.test.util.JsonUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
@@ -593,7 +594,7 @@ public final class AdHocSubProcessTest {
             .getFirst();
 
     assertThat(
-            RecordingExporter.variableRecords().withProcessInstanceKey(processInstanceKey).limit(2))
+            RecordingExporter.variableRecords().withProcessInstanceKey(processInstanceKey).limit(3))
         .extracting(Record::getValue)
         .extracting(
             VariableRecordValue::getName,
@@ -1045,6 +1046,56 @@ public final class AdHocSubProcessTest {
                 adHocSubProcess.getKey(),
                 adHocSubProcessInnerInstance.getKey(),
                 innerElement.getKey()));
+  }
+
+  @Test
+  public void shouldSetAdHocActivitiesAsVariable() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.task("task_A").name("Task A").documentation("This is the task A");
+              adHocSubProcess.task("task_B").name("Task B").documentation("This is the task B");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    final Record<ProcessInstanceRecordValue> acHocSubProcessActivated =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+            .getFirst();
+
+    assertThat(
+            RecordingExporter.variableRecords().withProcessInstanceKey(processInstanceKey).limit(1))
+        .extracting(Record::getValue)
+        .extracting(VariableRecordValue::getName, VariableRecordValue::getScopeKey)
+        .contains(tuple("adHocSubProcessElements", acHocSubProcessActivated.getKey()));
+
+    final VariableRecordValue variable =
+        RecordingExporter.variableRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withName("adHocSubProcessElements")
+            .limit(1)
+            .getFirst()
+            .getValue();
+
+    final var expectedVariableValue =
+        List.of(
+            Map.ofEntries(
+                Map.entry("elementId", "task_B"),
+                Map.entry("elementName", "Task B"),
+                Map.entry("documentation", "This is the task B")),
+            Map.ofEntries(
+                Map.entry("elementId", "task_A"),
+                Map.entry("elementName", "Task A"),
+                Map.entry("documentation", "This is the task A")));
+
+    JsonUtil.assertEquality(variable.getValue(), JsonUtil.toJson(expectedVariableValue));
   }
 
   private static Predicate<Record<RecordValue>> signalBroadcasted(final String signalName) {

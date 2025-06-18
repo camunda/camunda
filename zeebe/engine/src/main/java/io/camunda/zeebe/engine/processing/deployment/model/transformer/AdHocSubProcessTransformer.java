@@ -23,9 +23,13 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHocImplementationType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public final class AdHocSubProcessTransformer implements ModelElementTransformer<AdHocSubProcess> {
@@ -65,6 +69,8 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
     setJobWorkerProperties(executableAdHocSubProcess, element, context);
 
     setInnerInstance(executableAdHocSubProcess, childElements, process);
+
+    setAdHocActivitiesDescription(executableAdHocSubProcess);
   }
 
   private static void setActiveElementsCollection(
@@ -157,5 +163,27 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
     executableAdHocSubProcess.addChildElement(adHocSubProcessInnerInstance);
 
     process.addFlowElement(adHocSubProcessInnerInstance);
+  }
+
+  private static void setAdHocActivitiesDescription(
+      final ExecutableAdHocSubProcess executableAdHocSubProcess) {
+    final List<Map<String, String>> adHocActivityDescription =
+        executableAdHocSubProcess.getAdHocActivitiesById().values().stream()
+            .map(
+                flowNode -> {
+                  final String elementId = BufferUtil.bufferAsString(flowNode.getId());
+                  final String elementName = BufferUtil.bufferAsString(flowNode.getName());
+                  final String documentation =
+                      BufferUtil.bufferAsString(flowNode.getDocumentation());
+
+                  return Map.ofEntries(
+                      Map.entry("elementId", elementId),
+                      Map.entry("elementName", elementName),
+                      Map.entry("documentation", documentation));
+                })
+            .toList();
+
+    final byte[] msgPack = MsgPackConverter.convertToMsgPack(adHocActivityDescription);
+    executableAdHocSubProcess.setAdHocActivitiesDescription(BufferUtil.wrapArray(msgPack));
   }
 }

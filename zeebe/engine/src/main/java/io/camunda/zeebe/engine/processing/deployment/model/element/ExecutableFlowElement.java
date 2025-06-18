@@ -15,6 +15,10 @@ public interface ExecutableFlowElement {
 
   DirectBuffer getId();
 
+  DirectBuffer getName();
+
+  DirectBuffer getDocumentation();
+
   BpmnElementType getElementType();
 
   ExecutableFlowElement getFlowScope();

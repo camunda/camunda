@@ -57,14 +57,20 @@ import io.camunda.zeebe.model.bpmn.instance.SubProcess;
 import io.camunda.zeebe.model.bpmn.instance.Task;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class FlowElementInstantiationTransformer
     implements ModelElementTransformer<FlowElement> {
+
+  private static final UnsafeBuffer EMPTY_BUFFER = new UnsafeBuffer();
 
   private static final Map<Class<?>, Function<String, AbstractFlowElement>> ELEMENT_FACTORIES;
   private static final Set<Class<?>> NON_EXECUTABLE_ELEMENT_TYPES = new HashSet<>();
@@ -122,6 +128,18 @@ public final class FlowElementInstantiationTransformer
 
       executableElement.setElementType(
           BpmnElementType.bpmnElementTypeFor(element.getElementType().getTypeName()));
+
+      final DirectBuffer elementName =
+          Optional.ofNullable(element.getName()).map(BufferUtil::wrapString).orElse(EMPTY_BUFFER);
+      executableElement.setName(elementName);
+
+      final DirectBuffer elementDocumentation =
+          Optional.ofNullable(element.getDocumentations())
+              .flatMap(documentations -> documentations.stream().findFirst())
+              .flatMap(documentation -> Optional.ofNullable(documentation.getTextContent()))
+              .map(BufferUtil::wrapString)
+              .orElse(EMPTY_BUFFER);
+      executableElement.setDocumentation(elementDocumentation);
 
       process.addFlowElement(executableElement);
     }

@@ -338,7 +338,7 @@ public class AdHocSubProcessJobWorkerTest {
             .getValue();
 
     Assertions.assertThat(
-            RecordingExporter.variableRecords().withProcessInstanceKey(processInstanceKey).limit(2))
+            RecordingExporter.variableRecords().withProcessInstanceKey(processInstanceKey).limit(3))
         .extracting(Record::getValue)
         .extracting(
             VariableRecordValue::getName,
