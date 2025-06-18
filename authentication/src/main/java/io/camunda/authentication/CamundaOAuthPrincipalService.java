@@ -34,7 +34,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -134,6 +133,9 @@ public class CamundaOAuthPrincipalService {
                     roleQuery.filter(
                         roleFilter -> roleFilter.memberIdsByType(principalIdentifiers))));
     final var roleIds = roles.stream().map(RoleEntity::roleId).collect(Collectors.toSet());
+    if (!roleIds.isEmpty()) {
+      principalIdentifiers.put(EntityType.ROLE, roleIds);
+    }
 
     // TODO: Get tenants for username and clientId https://github.com/camunda/camunda/issues/26572
     final var tenants =
@@ -141,11 +143,13 @@ public class CamundaOAuthPrincipalService {
             .map(TenantDTO::fromEntity)
             .toList();
 
+    final var principalIds =
+        principalIdentifiers.values().stream().flatMap(Set::stream).collect(Collectors.toSet());
+    final var authorizedApplications =
+        authorizationServices.getAuthorizedApplications(principalIds);
+
     authContextBuilder
-        .withAuthorizedApplications(
-            authorizationServices.getAuthorizedApplications(
-                Stream.concat(roles.stream().map(RoleEntity::roleId), mappingIds.stream())
-                    .collect(Collectors.toSet())))
+        .withAuthorizedApplications(authorizedApplications)
         .withTenants(tenants)
         .withGroups(groups.stream().toList())
         .withRoles(roles);
