@@ -116,7 +116,7 @@ public class RdbmsExporter {
     if (registeredHandlers.containsKey(record.getValueType())) {
       for (final var handler : registeredHandlers.get(record.getValueType())) {
         if (handler.canExport(record)) {
-          LOG.debug(
+          LOG.trace(
               "[RDBMS Exporter] Exporting record {} with handler {}",
               record.getValue(),
               handler.getClass());
