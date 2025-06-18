@@ -33,7 +33,7 @@ public final class ContainerRuntimeVersionUtil {
   public static final String PROPERTY_NAME_CAMUNDA_VERSION = "camunda.version";
   public static final String PROPERTY_NAME_ELASTICSEARCH_VERSION = "elasticsearch.version";
 
-  public static final String CAMUNDA_VERSION_SNAPSHOT = "SNAPSHOT";
+  public static final String CAMUNDA_VERSION_SNAPSHOT = "8.6-SNAPSHOT";
   public static final String ELASTICSEARCH_VERSION_DEFAULT = "8.13.0";
 
   private static final Pattern SEMANTIC_VERSION_PATTERN =
