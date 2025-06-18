@@ -35,7 +35,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class UserCreateAdminProcessor implements TypedRecordProcessor<UserRecord> {
+public class UserCreateInitialAdminProcessor implements TypedRecordProcessor<UserRecord> {
   public static final String USER_ALREADY_EXISTS_ERROR_MESSAGE =
       "Expected to create user with username '%s', but a user with this username already exists";
   public static final String ADMIN_ROLE_NOT_FOUND_ERROR_MESSAGE =
@@ -53,7 +53,7 @@ public class UserCreateAdminProcessor implements TypedRecordProcessor<UserRecord
   private final MembershipState membershipState;
   private final StateWriter stateWriter;
 
-  public UserCreateAdminProcessor(
+  public UserCreateInitialAdminProcessor(
       final KeyGenerator keyGenerator,
       final ProcessingState processingState,
       final Writers writers,
