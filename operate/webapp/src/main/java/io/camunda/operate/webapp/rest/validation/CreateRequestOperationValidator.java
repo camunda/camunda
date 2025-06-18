@@ -14,6 +14,7 @@ import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.reader.VariableReader;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import io.camunda.webapps.schema.entities.operation.OperationState;
 import java.util.Set;
 import org.springframework.stereotype.Component;
 
@@ -33,6 +34,7 @@ public class CreateRequestOperationValidator {
     if (operationRequest.getOperationType() == null) {
       throw new InvalidRequestException("Operation type must be defined.");
     }
+
     if (Set.of(UPDATE_VARIABLE, ADD_VARIABLE).contains(operationRequest.getOperationType())
         && (operationRequest.getVariableScopeId() == null
             || operationRequest.getVariableName() == null
@@ -41,22 +43,34 @@ public class CreateRequestOperationValidator {
       throw new InvalidRequestException(
           "ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
     }
-    if (operationRequest.getOperationType().equals(ADD_VARIABLE)
-        && (variableReader.getVariableByName(
-                    processInstanceId,
-                    operationRequest.getVariableScopeId(),
-                    operationRequest.getVariableName())
-                != null
-            || !operationReader
-                .getOperations(
-                    ADD_VARIABLE,
-                    processInstanceId,
-                    operationRequest.getVariableScopeId(),
-                    operationRequest.getVariableName())
-                .isEmpty())) {
-      throw new InvalidRequestException(
-          String.format(
-              "Variable with the name \"%s\" already exists.", operationRequest.getVariableName()));
+
+    if (operationRequest.getOperationType().equals(ADD_VARIABLE)) {
+      if (variableAlreadyExists(operationRequest, processInstanceId)
+          || hasNonFailedAddVariableOperation(operationRequest, processInstanceId)) {
+        throw new InvalidRequestException(
+            String.format(
+                "Variable with the name \"%s\" already exists.",
+                operationRequest.getVariableName()));
+      }
     }
+  }
+
+  private boolean variableAlreadyExists(
+      final CreateOperationRequestDto request, final String processInstanceId) {
+    final var variable = variableReader.getVariableByName(
+        processInstanceId, request.getVariableScopeId(), request.getVariableName());
+    return variable != null;
+  }
+
+  private boolean hasNonFailedAddVariableOperation(
+      final CreateOperationRequestDto request, final String processInstanceId) {
+    return operationReader
+        .getOperations(
+            ADD_VARIABLE,
+            processInstanceId,
+            request.getVariableScopeId(),
+            request.getVariableName())
+        .stream()
+        .anyMatch(op -> op.getState() != OperationState.FAILED);
   }
 }
