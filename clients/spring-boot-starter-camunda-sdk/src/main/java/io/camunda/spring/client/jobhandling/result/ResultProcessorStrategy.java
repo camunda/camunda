@@ -21,7 +21,7 @@ public interface ResultProcessorStrategy {
 
   @Deprecated
   default ResultProcessor createProcessor(final Class<?> resultType) {
-    return new DefaultResultProcessor();
+    return new ResultProcessor() {};
   }
 
   default ResultProcessor createProcessor(final MethodInfo methodInfo) {

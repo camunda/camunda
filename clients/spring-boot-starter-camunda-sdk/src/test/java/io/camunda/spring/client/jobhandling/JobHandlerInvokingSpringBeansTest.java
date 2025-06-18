@@ -224,7 +224,7 @@ public class JobHandlerInvokingSpringBeansTest {
 
   private static ResultProcessor resultProcessor(final JobWorkerValue jobWorkerValue) {
     return JobHandlingUtil.createResultProcessor(
-        new DefaultResultProcessorStrategy(), jobWorkerValue);
+        new DefaultResultProcessorStrategy(mock(JobClient.class)), jobWorkerValue);
   }
 
   private static JobExceptionHandlingStrategy jobExceptionHandlingStrategy() {
