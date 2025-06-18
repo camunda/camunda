@@ -99,7 +99,7 @@ class UserAuthorizationIT {
     final String username = "username";
 
     adminClient
-        .newUserCreateCommand()
+        .newCreateUserCommand()
         .username(username)
         .name("name")
         .password("password")

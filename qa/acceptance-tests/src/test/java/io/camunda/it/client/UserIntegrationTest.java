@@ -33,7 +33,7 @@ public class UserIntegrationTest {
 
     // when
     camundaClient
-        .newUserCreateCommand()
+        .newCreateUserCommand()
         .username(username)
         .name(name)
         .password("some password")
@@ -65,7 +65,7 @@ public class UserIntegrationTest {
     final var username = "username";
 
     camundaClient
-        .newUserCreateCommand()
+        .newCreateUserCommand()
         .username(username)
         .name("name")
         .password("some password")

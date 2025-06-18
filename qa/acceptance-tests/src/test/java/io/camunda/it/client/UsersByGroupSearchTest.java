@@ -73,7 +73,7 @@ public class UsersByGroupSearchTest {
 
   private static void createUser(final String username) {
     camundaClient
-        .newUserCreateCommand()
+        .newCreateUserCommand()
         .username(username)
         .password("password")
         .name("name")

@@ -51,7 +51,7 @@ class AssignUserToTenantTest {
 
     // Create User
     client
-        .newUserCreateCommand()
+        .newCreateUserCommand()
         .username(USERNAME)
         .name("name")
         .email("email@example.com")

@@ -1598,7 +1598,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  CreateUserCommandStep1 newUserCreateCommand();
+  CreateUserCommandStep1 newCreateUserCommand();
 
   /**
    * Command to delete a user by username

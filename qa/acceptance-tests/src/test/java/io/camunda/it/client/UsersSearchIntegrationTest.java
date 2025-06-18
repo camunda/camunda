@@ -34,7 +34,7 @@ public class UsersSearchIntegrationTest {
   @BeforeAll
   static void setup() {
     camundaClient
-        .newUserCreateCommand()
+        .newCreateUserCommand()
         .username(USERNAME_1)
         .password("password")
         .name(NAME_1)
@@ -44,7 +44,7 @@ public class UsersSearchIntegrationTest {
     assertUserCreated(USERNAME_1);
 
     camundaClient
-        .newUserCreateCommand()
+        .newCreateUserCommand()
         .username(USERNAME_2)
         .password("password2")
         .name(NAME_2)
