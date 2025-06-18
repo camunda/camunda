@@ -103,6 +103,20 @@
       "enabled": false
     },
     {
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "elasticsearch",
+        "opensearchproject/opensearch"
+      ],
+      "matchUpdateTypes": [
+        "major",
+        "minor"
+      ],
+      "enabled": false
+    },
+    {
       "description": "Skip lucene major updates to avoid breaking changes.",
       "matchManagers": [
         "maven"
