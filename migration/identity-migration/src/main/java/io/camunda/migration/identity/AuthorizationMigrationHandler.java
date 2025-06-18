@@ -7,133 +7,158 @@
  */
 package io.camunda.migration.identity;
 
-import io.camunda.migration.identity.dto.UserResourceAuthorization;
+import static io.camunda.migration.identity.config.saas.StaticEntities.IDENTITY_DECISION_DEFINITION_RESOURCE_TYPE;
+import static io.camunda.migration.identity.config.saas.StaticEntities.IDENTITY_PROCESS_DEFINITION_RESOURCE_TYPE;
+
+import io.camunda.migration.identity.console.ConsoleClient;
+import io.camunda.migration.identity.console.ConsoleClient.Member;
+import io.camunda.migration.identity.dto.Authorization;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
+import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.util.AbstractMap.SimpleEntry;
-import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AuthorizationMigrationHandler extends MigrationHandler<UserResourceAuthorization> {
-
+public class AuthorizationMigrationHandler extends MigrationHandler<Authorization> {
   private static final Logger LOG = LoggerFactory.getLogger(AuthorizationMigrationHandler.class);
   private final AuthorizationServices authorizationService;
   private final ManagementIdentityClient managementIdentityClient;
+  private final ConsoleClient consoleClient;
 
   public AuthorizationMigrationHandler(
       final Authentication authentication,
       final AuthorizationServices authorizationService,
+      final ConsoleClient consoleClient,
       final ManagementIdentityClient managementIdentityClient) {
+    this.consoleClient = consoleClient;
     this.managementIdentityClient = managementIdentityClient;
     this.authorizationService = authorizationService.withAuthentication(authentication);
   }
 
-  // TODO: this will be revisited
   @Override
-  protected List<UserResourceAuthorization> fetchBatch(final int page) {
-    return managementIdentityClient.fetchUserResourceAuthorizations(SIZE);
+  protected List<Authorization> fetchBatch(final int page) {
+    // The authorizations are fetched without pagination
+    return List.of();
   }
 
   @Override
-  protected void process(final List<UserResourceAuthorization> authorizations) {
-    final Map<String, Map<String, Map<String, List<String>>>> authorizationMap =
-        authorizations.stream()
-            .collect(
-                Collectors.groupingBy(
-                    UserResourceAuthorization::username,
-                    Collectors.groupingBy(
-                        UserResourceAuthorization::resourceType,
-                        Collectors.groupingBy(
-                            UserResourceAuthorization::permission,
-                            Collectors.mapping(
-                                UserResourceAuthorization::resourceId, Collectors.toList())))));
+  protected void process(final List<Authorization> authorizations) {
+    createAuthorizations();
+  }
 
-    authorizationMap.forEach(
-        (owner, value) -> {
-          value.forEach(
-              (resourceType, permissionAndResources) -> {
-                final Map<PermissionType, Set<String>> permissions =
-                    permissionAndResources.entrySet().stream()
-                        .flatMap(
-                            e ->
-                                convertPermission(e).stream()
-                                    .map(entry -> new SimpleEntry<>(entry, e.getValue())))
-                        .collect(
-                            Collectors.groupingBy(
-                                SimpleEntry::getKey,
-                                Collectors.flatMapping(
-                                    e -> e.getValue().stream(), Collectors.toSet())));
-                final long ownerKey = getOwnerKeyForUsername(owner);
-                // TODO: this part needs to be revisited
-                //                authorizationService
-                //                    .patchAuthorization(
-                //                        new PatchAuthorizationRequest(
-                //                            ownerKey,
-                //                            PermissionAction.ADD,
-                //                            convertResourceType(resourceType),
-                //                            permissions))
-                //                    .join();
-
-                final Collection<UserResourceAuthorization> migrated =
-                    permissionAndResources.entrySet().stream()
-                        .flatMap(
-                            entry ->
-                                entry.getValue().stream()
-                                    .map(
-                                        resourceId ->
-                                            new UserResourceAuthorization(
-                                                owner, resourceId, resourceType, entry.getKey())))
-                        .toList();
-                managementIdentityClient.markAuthorizationsAsMigrated(migrated);
-              });
+  private void createAuthorizations() {
+    final var usersEmailByUsername = getUsersEmailByID();
+    final var authorizations = managementIdentityClient.fetchAuthorizations();
+    authorizations.forEach(
+        authorization -> {
+          final var request =
+              new CreateAuthorizationRequest(
+                  getOwnerId(authorization.entityId(), usersEmailByUsername),
+                  convertOwnerType(authorization.entityType()),
+                  authorization.resourceKey(),
+                  convertResourceType(authorization.resourceType()),
+                  convertPermissions(authorization.permissions(), authorization.resourceType()));
+          try {
+            authorizationService.createAuthorization(request).join();
+            LOG.debug(
+                "Migrating authorization: {} to an Authorization with ownerId: {}",
+                authorization,
+                request.ownerId());
+          } catch (final Exception e) {
+            if (!isConflictError(e)) {
+              throw new RuntimeException(
+                  "Failed to migrate authorization for entity ID: " + authorization.entityId(), e);
+            }
+            LOG.debug(
+                "Authorization already exists for entity ID: {}. Skipping creation.",
+                authorization.entityId());
+          }
         });
   }
 
-  private static AuthorizationResourceType convertResourceType(final String resourceType) {
-    if ("process-definition".equalsIgnoreCase(resourceType)) {
+  // Fetches all users and their emails from console
+  private Map<String, String> getUsersEmailByID() {
+    return consoleClient.fetchMembers().members().stream()
+        .collect(Collectors.toMap(Member::userId, Member::email));
+  }
+
+  private String getOwnerId(
+      final String identityEntityId, final Map<String, String> usersEmailByUsername) {
+    if (usersEmailByUsername.containsKey(identityEntityId)) {
+      return usersEmailByUsername.get(identityEntityId);
+    }
+    ;
+    return identityEntityId;
+  }
+
+  private AuthorizationOwnerType convertOwnerType(final String ownerType) {
+    try {
+      return AuthorizationOwnerType.valueOf(ownerType);
+    } catch (final IllegalArgumentException e) {
+      LOG.debug("Unknown owner type: {}. Defaulting to UNSPECIFIED.", ownerType);
+      return AuthorizationOwnerType.UNSPECIFIED;
+    }
+  }
+
+  private AuthorizationResourceType convertResourceType(final String resourceType) {
+    if (IDENTITY_PROCESS_DEFINITION_RESOURCE_TYPE.equalsIgnoreCase(resourceType)) {
       return AuthorizationResourceType.PROCESS_DEFINITION;
     }
-    if ("decision-definition".equalsIgnoreCase(resourceType)) {
+    if (IDENTITY_DECISION_DEFINITION_RESOURCE_TYPE.equalsIgnoreCase(resourceType)) {
       return AuthorizationResourceType.DECISION_DEFINITION;
     }
-    throw new IllegalArgumentException("Unsupported resource type: " + resourceType);
+    LOG.debug("Unknown resource type: {}. Defaulting to UNSPECIFIED.", resourceType);
+    return AuthorizationResourceType.UNSPECIFIED;
   }
 
-  // TODO verify the correct permissions are set here
-  private static List<PermissionType> convertPermission(final Entry<String, List<String>> e) {
-    if (e.getKey().startsWith("read")) {
-      return List.of(PermissionType.READ);
-    }
-    if (e.getKey().startsWith("write")) {
-      return List.of(PermissionType.CREATE, PermissionType.UPDATE, PermissionType.DELETE);
-    }
-
-    if (e.getKey().startsWith("create")) {
-      return List.of(PermissionType.CREATE);
-    }
-
-    if (e.getKey().startsWith("update")) {
-      return List.of(PermissionType.UPDATE);
-    }
-
-    if (e.getKey().startsWith("delete")) {
-      return List.of(PermissionType.DELETE);
-    }
-
-    throw new IllegalArgumentException("Unsupported permission type: " + e.getKey());
+  private Set<PermissionType> convertPermissions(final Set<String> permissions, final String resourceType) {
+    return switch (resourceType) {
+      case IDENTITY_DECISION_DEFINITION_RESOURCE_TYPE -> convertDecisionPermissions(permissions);
+      case IDENTITY_PROCESS_DEFINITION_RESOURCE_TYPE -> convertProcessPermissions(permissions);
+      default -> {
+        LOG.warn("Unknown resource type: {}. Skipping permissions conversion.", resourceType);
+        yield Collections.emptySet();
+      }
+    };
   }
 
-  private long getOwnerKeyForUsername(final String owner) {
-    // TODO should finalize the code to return the id for mapping rule
-    return 0;
+  private Set<PermissionType> convertDecisionPermissions(final Set<String> permissions) {
+    final Set<PermissionType> result = new HashSet<>();
+    if (permissions.contains("READ")) {
+      result.add(PermissionType.READ_DECISION_DEFINITION);
+      result.add(PermissionType.READ_DECISION_INSTANCE);
+    }
+    if (permissions.contains("DELETE")) {
+      result.add(PermissionType.DELETE_DECISION_INSTANCE);
+    }
+    return result;
+  }
+
+  private Set<PermissionType> convertProcessPermissions(final Set<String> permissions) {
+    final Set<PermissionType> result = new HashSet<>();
+    if (permissions.contains("READ")) {
+      result.add(PermissionType.READ_PROCESS_DEFINITION);
+      result.add(PermissionType.READ_PROCESS_INSTANCE);
+    }
+    if (permissions.contains("UPDATE_PROCESS_INSTANCE")) {
+      result.add(PermissionType.UPDATE_PROCESS_INSTANCE);
+    }
+    if (permissions.contains("START_PROCESS_INSTANCE")) {
+      result.add(PermissionType.CREATE_PROCESS_INSTANCE);
+    }
+    if (permissions.contains("DELETE") || permissions.contains("DELETE_PROCESS_INSTANCE")) {
+      result.add(PermissionType.DELETE_PROCESS_INSTANCE);
+    }
+    return result;
   }
 }
