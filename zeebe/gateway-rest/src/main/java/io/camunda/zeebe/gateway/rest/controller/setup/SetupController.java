@@ -7,13 +7,17 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.setup;
 
+import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
+import io.camunda.service.exception.ForbiddenException;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
+import io.camunda.zeebe.protocol.record.value.DefaultRole;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,14 +27,25 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/setup")
 public class SetupController {
   private final UserServices userServices;
+  private final RoleServices roleServices;
 
-  public SetupController(final UserServices userServices) {
+  public SetupController(final UserServices userServices, final RoleServices roleServices) {
     this.userServices = userServices;
+    this.roleServices = roleServices;
   }
 
   @CamundaPostMapping(path = "/user")
   public CompletableFuture<ResponseEntity<Object>> createAdminUser(
       @RequestBody final UserRequest request) {
+    if (roleServices.hasMembersOfType(DefaultRole.ADMIN.getId(), EntityType.USER)) {
+      final var exception =
+          new ForbiddenException(
+              "Expected to create an initial admin user, but found existing admin users. Please ask your admin to create a new user with the '%s' role."
+                  .formatted(DefaultRole.ADMIN.getId()));
+      return RestErrorMapper.mapProblemToCompletedResponse(
+          RestErrorMapper.mapForbiddenExceptionToProblem(exception));
+    }
+
     return RequestMapper.toUserDTO(request)
         .fold(
             RestErrorMapper::mapProblemToCompletedResponse,

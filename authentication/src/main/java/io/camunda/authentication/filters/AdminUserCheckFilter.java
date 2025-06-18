@@ -7,7 +7,6 @@
  */
 package io.camunda.authentication.filters;
 
-import io.camunda.search.query.RoleQuery;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.RoleServices;
 import io.camunda.zeebe.protocol.record.value.DefaultRole;
@@ -63,16 +62,7 @@ public class AdminUserCheckFilter extends OncePerRequestFilter {
     }
 
     try {
-      final var adminRoleMembers =
-          roleServices.searchMembers(
-              RoleQuery.of(
-                  builder ->
-                      builder.filter(
-                          filter ->
-                              filter.joinParentId(ADMIN_ROLE_ID).memberType(EntityType.USER))));
-      final var adminRoleHasMembers = adminRoleMembers.total() > 0;
-
-      if (!adminRoleHasMembers) {
+      if (!roleServices.hasMembersOfType(ADMIN_ROLE_ID, EntityType.USER)) {
         LOG.debug("No user with admin role exists. Redirecting to identity setup page.");
         final var redirectUrl = String.format("%s%s", request.getContextPath(), REDIRECT_PATH);
         response.sendRedirect(redirectUrl);

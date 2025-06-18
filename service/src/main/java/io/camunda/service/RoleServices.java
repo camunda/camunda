@@ -25,6 +25,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerRoleUpdateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleDeleteRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.record.value.DefaultRole;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,6 +61,19 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
             securityContextProvider.provideSecurityContext(
                 authentication, Authorization.of(a -> a.role().read())))
         .searchRoleMembers(query);
+  }
+
+  public boolean hasMembersOfType(final String roleId, final EntityType entityType) {
+    final var query =
+        RoleQuery.of(
+            builder ->
+                builder.filter(
+                    filter ->
+                        filter
+                            .joinParentId(DefaultRole.ADMIN.getId())
+                            .memberType(EntityType.USER)));
+    final var members = searchMembers(query);
+    return members.total() > 0;
   }
 
   public List<RoleEntity> getRolesByMemberIds(
