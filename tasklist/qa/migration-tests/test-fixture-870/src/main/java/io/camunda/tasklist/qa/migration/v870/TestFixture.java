@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class TestFixture extends AbstractTestFixture {
 
-  public static final String VERSION = "8.7.0-SNAPSHOT";
+  public static final String VERSION = "8.7-SNAPSHOT";
 
   @Override
   public String getVersion() {
