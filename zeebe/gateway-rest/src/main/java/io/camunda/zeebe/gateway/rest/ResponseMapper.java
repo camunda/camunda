@@ -49,6 +49,8 @@ import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateResult;
+import io.camunda.zeebe.gateway.protocol.rest.JobKindEnum;
+import io.camunda.zeebe.gateway.protocol.rest.JobListenerEventTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleUpdateResult;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
@@ -196,7 +198,9 @@ public final class ResponseMapper {
         .variables(job.getVariables())
         .customHeaders(job.getCustomHeadersObjectMap())
         .userTask(toUserTaskProperties(job))
-        .tenantId(job.getTenantId());
+        .tenantId(job.getTenantId())
+        .kind(JobKindEnum.valueOf(job.getJobKind().name()))
+        .listenerEventType(JobListenerEventTypeEnum.valueOf(job.getJobListenerEventType().name()));
   }
 
   private static UserTaskProperties toUserTaskProperties(final JobRecord job) {
