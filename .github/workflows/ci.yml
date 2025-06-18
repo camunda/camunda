@@ -712,7 +712,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions: {}  # GITHUB_TOKEN unused in this job
-    if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
+    if: always() && needs.check-results.result == 'success' && github.repository == 'camunda/camunda' && github.ref == 'refs/heads/stable/8.6'
     concurrency:
       group: deploy-camunda-docker-snapshot
       cancel-in-progress: false
@@ -744,7 +744,7 @@ jobs:
         id: build-camunda-docker
         with:
           repository: camunda/camunda
-          version: SNAPSHOT
+          version: 8.6-SNAPSHOT
           distball: ${{ steps.build-camunda.outputs.distball }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: camunda.Dockerfile

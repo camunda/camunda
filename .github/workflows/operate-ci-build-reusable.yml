@@ -38,6 +38,7 @@ defaults:
 env:
   BRANCH_NAME: ${{ inputs.branch }}
   IS_DEFAULT_BRANCH: ${{ inputs.branch == 'main' }}
+  SHOULD_PUSH_DOCKER_SNAPSHOT: ${{ inputs.branch == 'stable/8.6' }}
   DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
 
 jobs:
@@ -121,11 +122,11 @@ jobs:
       #########################################################################
       # Build SNAPSHOT Docker image
       - name: Build SNAPSHOT Docker image
-        if: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
+        if: ${{ env.SHOULD_PUSH_DOCKER_SNAPSHOT == 'true' }}
         uses: ./.github/actions/build-platform-docker
         with:
           repository: camunda/operate
-          version: SNAPSHOT
+          version: 8.6-SNAPSHOT
           push: true
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: operate.Dockerfile
@@ -133,7 +134,7 @@ jobs:
       #########################################################################
       # Deploy Nexus SNAPSHOT
       - name: Deploy - Nexus SNAPSHOT
-        if: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
+        if: ${{ env.SHOULD_PUSH_DOCKER_SNAPSHOT == 'true' }}
         run: |
           ./mvnw -f operate org.sonatype.plugins:nexus-staging-maven-plugin:deploy-staged -DskipTests=true -P -docker,skipFrontendBuild -B -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
 
