@@ -23,7 +23,7 @@ public class UserTaskDbModelTest {
         new UserTaskDbModel.Builder()
             .userTaskKey(1L)
             .elementId("flowNodeBpmnId")
-            .elementName("flowNodeName")
+            .name("name")
             .processDefinitionId("processDefinitionId")
             .creationDate(now)
             .completionDate(now)
@@ -47,7 +47,7 @@ public class UserTaskDbModelTest {
     assertThat(model).isNotNull();
     assertThat(model.userTaskKey()).isEqualTo(1L);
     assertThat(model.elementId()).isEqualTo("flowNodeBpmnId");
-    assertThat(model.elementName()).isEqualTo("flowNodeName");
+    assertThat(model.name()).isEqualTo("name");
     assertThat(model.processDefinitionId()).isEqualTo("processDefinitionId");
     assertThat(model.creationDate()).isEqualTo(now);
     assertThat(model.completionDate()).isEqualTo(now);
@@ -76,7 +76,7 @@ public class UserTaskDbModelTest {
         new UserTaskDbModel.Builder()
             .userTaskKey(1L)
             .elementId("flowNodeBpmnId")
-            .elementName("flowNodeName")
+            .name("name")
             .processDefinitionId("processDefinitionId")
             .creationDate(now)
             .completionDate(now)
@@ -103,7 +103,7 @@ public class UserTaskDbModelTest {
     assertThat(newModel).isNotNull();
     assertThat(newModel.userTaskKey()).isEqualTo(1L);
     assertThat(newModel.elementId()).isEqualTo("flowNodeBpmnId");
-    assertThat(newModel.elementName()).isEqualTo("flowNodeName");
+    assertThat(newModel.name()).isEqualTo("name");
     assertThat(newModel.processDefinitionId()).isEqualTo("processDefinitionId");
     assertThat(newModel.creationDate()).isEqualTo(now);
     assertThat(newModel.completionDate()).isEqualTo(now);

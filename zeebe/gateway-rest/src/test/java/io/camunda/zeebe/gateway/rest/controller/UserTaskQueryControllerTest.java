@@ -171,6 +171,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                   new UserTaskEntity(
                       0L, // key
                       "e", // elementBpmnId
+                      "name",
                       "b", // bpmnProcessId
                       OffsetDateTime.parse("2020-11-11T00:00:00.000Z"), // creationTime
                       OffsetDateTime.parse("2020-11-11T00:00:00.000Z"), // completionTime
@@ -220,6 +221,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             new UserTaskEntity(
                 0L,
                 "e",
+                "name",
                 "b",
                 OffsetDateTime.parse("2020-11-11T00:00:00.000Z"),
                 OffsetDateTime.parse("2020-11-11T00:00:00.000Z"),
@@ -579,7 +581,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "Bad Request",
                   "status": 400,
-                  "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [creationDate, completionDate, followUpDate, dueDate, priority]",
+                  "detail": "Unexpected value 'unknownField' for enum field 'field'. Use any of the following values: [creationDate, completionDate, followUpDate, dueDate, priority, name]",
                   "instance": "%s"
                 }""",
             USER_TASKS_SEARCH_URL);

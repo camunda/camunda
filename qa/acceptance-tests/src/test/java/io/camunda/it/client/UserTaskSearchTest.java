@@ -7,6 +7,7 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.it.util.TestHelper.assertSorted;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -327,6 +328,12 @@ class UserTaskSearchTest {
   }
 
   @Test
+  public void shouldRetrieveAllTasks() {
+    final var result = camundaClient.newUserTaskSearchRequest().send().join();
+    assertThat(result.items().size()).isEqualTo(8);
+  }
+
+  @Test
   public void shouldRetrieveTaskByLocalVariablesLike() {
 
     final var result =
@@ -424,6 +431,14 @@ class UserTaskSearchTest {
             .join();
     assertThat(result.items().size()).isEqualTo(2);
     result.items().forEach(item -> assertThat(item.getBpmnProcessId()).isEqualTo("process"));
+  }
+
+  @Test
+  public void shouldRetrieveTaskByName() {
+    final var result =
+        camundaClient.newUserTaskSearchRequest().filter(f -> f.name("P2")).send().join();
+    assertThat(result.items().size()).isEqualTo(1);
+    result.items().forEach(item -> assertThat(item.getName()).isEqualTo("P2"));
   }
 
   @Test
@@ -558,6 +573,16 @@ class UserTaskSearchTest {
         .isGreaterThanOrEqualTo(result.items().get(2).getCreationDate());
     assertThat(result.items().get(2).getCreationDate())
         .isGreaterThanOrEqualTo(result.items().get(3).getCreationDate());
+  }
+
+  @Test
+  void shouldSortTasksByName() {
+    // when
+    final var resultAsc =
+        camundaClient.newUserTaskSearchRequest().sort(s -> s.name().asc()).send().join();
+    final var resultDesc =
+        camundaClient.newUserTaskSearchRequest().sort(s -> s.name().desc()).send().join();
+    assertSorted(resultAsc, resultDesc, UserTask::getName);
   }
 
   @Test

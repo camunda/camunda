@@ -13,9 +13,10 @@ import java.util.List;
 import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public final record UserTaskEntity(
+public record UserTaskEntity(
     Long userTaskKey,
     String elementId,
+    String name,
     String processDefinitionId,
     OffsetDateTime creationDate,
     OffsetDateTime completionDate,

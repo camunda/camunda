@@ -90,6 +90,12 @@ public class UserTaskFilterImpl
   }
 
   @Override
+  public UserTaskFilter name(final String name) {
+    filter.setName(name);
+    return this;
+  }
+
+  @Override
   public UserTaskFilter candidateGroup(final String candidateGroup) {
     candidateGroup(b -> b.eq(candidateGroup));
     return this;

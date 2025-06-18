@@ -46,6 +46,11 @@ public class UserTaskSortImpl extends SearchRequestSortBase<UserTaskSort> implem
   }
 
   @Override
+  public UserTaskSort name() {
+    return field("name");
+  }
+
+  @Override
   protected UserTaskSort self() {
     return this;
   }

@@ -11,7 +11,7 @@ import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.function.Function;
 
-public final record UserTaskSort(List<FieldSorting> orderings) implements SortOption {
+public record UserTaskSort(List<FieldSorting> orderings) implements SortOption {
 
   @Override
   public List<FieldSorting> getFieldSortings() {
@@ -47,6 +47,11 @@ public final record UserTaskSort(List<FieldSorting> orderings) implements SortOp
 
     public Builder followUpDate() {
       currentOrdering = new FieldSorting("followUpDate", null);
+      return this;
+    }
+
+    public Builder name() {
+      currentOrdering = new FieldSorting("name", null);
       return this;
     }
 

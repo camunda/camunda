@@ -16,23 +16,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.intOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
-import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.ASSIGNEE;
-import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.BPMN_PROCESS_ID;
-import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.CANDIDATE_GROUPS;
-import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.CANDIDATE_USERS;
-import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.COMPLETION_TIME;
-import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.CREATION_TIME;
-import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.DUE_DATE;
-import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.FLOW_NODE_BPMN_ID;
-import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.FLOW_NODE_INSTANCE_ID;
-import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.FOLLOW_UP_DATE;
-import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.IMPLEMENTATION;
-import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.KEY;
-import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.PRIORITY;
-import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.PROCESS_DEFINITION_ID;
-import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.PROCESS_INSTANCE_ID;
-import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.STATE;
-import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.TENANT_ID;
+import static io.camunda.webapps.schema.descriptors.template.TaskTemplate.*;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -67,6 +51,7 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
         .ifPresent(queries::add);
     ofNullable(getBpmnProcessIdQuery(filter.bpmnProcessIds())).ifPresent(queries::add);
     ofNullable(getElementIdQuery(filter.elementIds())).ifPresent(queries::add);
+    ofNullable(getNameQuery(filter.names())).ifPresent(queries::add);
     queries.addAll(getCandidateUsersQuery(filter.candidateUserOperations()));
     queries.addAll(getCandidateGroupsQuery(filter.candidateGroupOperations()));
     queries.addAll(getAssigneesQuery(filter.assigneeOperations()));
@@ -159,6 +144,10 @@ public class UserTaskFilterTransformer extends IndexFilterTransformer<UserTaskFi
 
   private SearchQuery getElementIdQuery(final List<String> taskDefinitionId) {
     return stringTerms(FLOW_NODE_BPMN_ID, taskDefinitionId);
+  }
+
+  private SearchQuery getNameQuery(final List<String> name) {
+    return stringTerms(NAME, name);
   }
 
   private SearchQuery getProcessInstanceVariablesQuery(

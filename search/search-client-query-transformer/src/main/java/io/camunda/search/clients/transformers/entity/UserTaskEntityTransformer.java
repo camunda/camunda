@@ -21,6 +21,7 @@ public class UserTaskEntityTransformer implements ServiceTransformer<TaskEntity,
     return new UserTaskEntity(
         source.getKey(),
         source.getFlowNodeBpmnId(),
+        source.getName(),
         source.getBpmnProcessId(),
         source.getCreationTime(),
         source.getCompletionTime(),

@@ -59,7 +59,7 @@ public class TaskTemplate extends AbstractTemplateDescriptor
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
   public static final String FLOW_NODE_BPMN_ID = "flowNodeBpmnId";
-  public static final String FLOW_NODE_NAME = "flowNodeName";
+  public static final String NAME = "name";
   public static final String FLOW_NODE_INSTANCE_ID = "flowNodeInstanceId";
   public static final String PROCESS_INSTANCE_ID = "processInstanceId";
   public static final String PROCESS_DEFINITION_VERSION = "processDefinitionVersion";

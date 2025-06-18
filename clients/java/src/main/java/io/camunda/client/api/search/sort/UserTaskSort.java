@@ -28,4 +28,6 @@ public interface UserTaskSort extends SearchRequestSort<UserTaskSort> {
   UserTaskSort followUpDate();
 
   UserTaskSort priority();
+
+  UserTaskSort name();
 }
