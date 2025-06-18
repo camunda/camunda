@@ -361,7 +361,7 @@ jobs:
     permissions: {}  # GITHUB_TOKEN unused in this job
     needs: [ test-summary ]
     runs-on: ubuntu-latest
-    if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
+    if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/stable/8.6'
     concurrency:
       group: deploy-docker-snapshot
       cancel-in-progress: false
@@ -381,7 +381,7 @@ jobs:
         id: build-zeebe-docker
         with:
           repository: camunda/zeebe
-          version: SNAPSHOT
+          version: 8.6-SNAPSHOT
           platforms: ${{ env.DOCKER_PLATFORMS }}
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
