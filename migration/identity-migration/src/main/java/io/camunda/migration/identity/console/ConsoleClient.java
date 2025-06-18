@@ -44,7 +44,7 @@ public class ConsoleClient {
 
   public record Client(String name, String clientId, List<Permission> permissions) {}
 
-  public record Member(String originalUserId, List<Role> roles, String email, String name) {}
+  public record Member(String userId, List<Role> roles, String email, String name) {}
 
   public enum Permission {
     ZEEBE("Zeebe"),

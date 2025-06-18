@@ -526,7 +526,7 @@ public class IdentityMigrationIT {
         {
           "members": [
             {
-              "originalUserId": "user123",
+              "userId": "user123",
               "roles": ["owner", "developer"],
               "email": "user@example.com",
               "name": "John Doe"

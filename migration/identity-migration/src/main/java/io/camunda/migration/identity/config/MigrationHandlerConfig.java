@@ -25,9 +25,11 @@ public class MigrationHandlerConfig {
   @Bean
   public GroupMigrationHandler groupMigrationHandler(
       final Authentication authentication,
+      final ConsoleClient consoleClient,
       final ManagementIdentityClient managementIdentityClient,
       final GroupServices groupServices) {
-    return new GroupMigrationHandler(authentication, managementIdentityClient, groupServices);
+    return new GroupMigrationHandler(
+        authentication, consoleClient, managementIdentityClient, groupServices);
   }
 
   @Bean
