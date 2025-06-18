@@ -17,7 +17,10 @@ package io.camunda.zeebe.protocol.record.intent;
 
 public enum AdHocSubProcessInstructionIntent implements Intent {
   ACTIVATE(0),
-  ACTIVATED(1);
+  ACTIVATED(1),
+
+  COMPLETE(2),
+  COMPLETED(3);
 
   private final short value;
 
@@ -38,6 +41,7 @@ public enum AdHocSubProcessInstructionIntent implements Intent {
   public boolean isEvent() {
     switch (this) {
       case ACTIVATED:
+      case COMPLETED:
         return true;
       default:
         return false;
@@ -50,6 +54,10 @@ public enum AdHocSubProcessInstructionIntent implements Intent {
         return ACTIVATE;
       case 1:
         return ACTIVATED;
+      case 2:
+        return COMPLETE;
+      case 3:
+        return COMPLETED;
       default:
         return Intent.UNKNOWN;
     }

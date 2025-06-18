@@ -41,6 +41,11 @@ public interface AdHocSubProcessInstructionRecordValue extends RecordValue, Tena
    */
   List<AdHocSubProcessInstructionElementValue> getElements();
 
+  /**
+   * @return true if the remaining instances of the ad-hoc sub-process should be canceled
+   */
+  boolean isCancelRemainingInstances();
+
   @Value.Immutable
   @ImmutableProtocol(builder = ImmutableAdHocSubProcessInstructionElementValue.Builder.class)
   interface AdHocSubProcessInstructionElementValue {
