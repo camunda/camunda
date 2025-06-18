@@ -73,7 +73,6 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       "formKey": "0",
                       "elementId": "e",
                       "name": "name",
-                      "name": "name",
                       "creationDate": "2020-11-11T00:00:00.000Z",
                       "completionDate": "2020-11-11T00:00:00.000Z",
                       "dueDate": "2020-11-11T00:00:00.000Z",

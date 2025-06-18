@@ -85,8 +85,8 @@ public interface UserTaskFilter extends SearchRequestFilter {
   UserTaskFilter elementId(final String taskDefinitionId);
 
   /**
-   * Filters user tasks by the specified element name. This only works for data created with 8.8 and
-   * onwards. Instances from prior versions don't contain this data.
+   * Filters user tasks by their name. This only works for data created with 8.8 and onwards.
+   * Instances from prior versions don't contain this data.
    *
    * @param name the element name of the user task
    * @return the updated filter
