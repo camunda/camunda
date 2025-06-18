@@ -55,7 +55,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 
-public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequestDecoder> {
+public class CommandApiRequestReader implements RequestReader {
   static final Map<ValueType, Supplier<UnifiedRecordValue>> RECORDS_BY_TYPE =
       new EnumMap<>(ValueType.class);
 
@@ -116,11 +116,6 @@ public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequ
   }
 
   @Override
-  public ExecuteCommandRequestDecoder getMessageDecoder() {
-    return commandRequestDecoder;
-  }
-
-  @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     messageHeaderDecoder.wrap(buffer, offset);
 
@@ -153,6 +148,11 @@ public class CommandApiRequestReader implements RequestReader<ExecuteCommandRequ
       authInfo.wrap(buffer, authOffset, commandRequestDecoder.authorizationLength());
       metadata.authorization(authInfo);
     }
+  }
+
+  //  @Override
+  public ExecuteCommandRequestDecoder getMessageDecoder() {
+    return commandRequestDecoder;
   }
 
   public UnifiedRecordValue value() {

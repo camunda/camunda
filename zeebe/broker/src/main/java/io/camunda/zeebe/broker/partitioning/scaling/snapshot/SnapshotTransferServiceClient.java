@@ -9,7 +9,9 @@ package io.camunda.zeebe.broker.partitioning.scaling.snapshot;
 
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
-import io.camunda.zeebe.broker.transport.snapshotapi.GetSnapshotChunkBrokerRequest;
+import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotRequest.GetSnapshotChunk;
+import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotResponse.SnapshotChunkResponse;
+import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotBrokerRequest;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
@@ -49,15 +51,15 @@ public class SnapshotTransferServiceClient implements SnapshotTransferService {
       final Optional<String> previousChunkName,
       final UUID transferId) {
     final var request = new GetSnapshotChunk(partition, transferId, snapshotId, previousChunkName);
-    final var brokerRequest = new GetSnapshotChunkBrokerRequest(request);
+    final var brokerRequest = new SnapshotBrokerRequest(request);
     final var future = new CompletableActorFuture<SnapshotChunk>();
     client
         .sendRequestWithRetry(brokerRequest, Duration.ofSeconds(30))
         .thenCompose(
             response -> {
-              if (response.isResponse()) {
-                return CompletableFuture.completedFuture(
-                    response.getResponse().chunk().orElse(null));
+              if (response.isResponse()
+                  && response.getResponse() instanceof final SnapshotChunkResponse chunkResponse) {
+                return CompletableFuture.completedFuture(chunkResponse.chunk().orElse(null));
               } else {
                 if (response.isRejection()) {
                   return CompletableFuture.failedFuture(
@@ -71,5 +73,10 @@ public class SnapshotTransferServiceClient implements SnapshotTransferService {
         .whenComplete(future);
 
     return future;
+  }
+
+  @Override
+  public ActorFuture<Void> closeAsync() {
+    return CompletableActorFuture.completed();
   }
 }

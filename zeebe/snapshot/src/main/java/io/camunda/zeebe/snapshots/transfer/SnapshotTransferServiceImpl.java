@@ -27,7 +27,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import org.agrona.CloseHelper;
 
-public class SnapshotTransferServiceImpl implements SnapshotTransferService {
+public class SnapshotTransferServiceImpl implements SnapshotSenderService {
 
   private final PersistedSnapshotStore snapshotStore;
   private final Map<UUID, PendingTransfer> pendingTransfers = new HashMap<>();
@@ -115,6 +115,24 @@ public class SnapshotTransferServiceImpl implements SnapshotTransferService {
     }
   }
 
+  @Override
+  public ActorFuture<Void> deleteSnapshots(final int partitionId) {
+    if (partitionId != this.partitionId) {
+      return CompletableActorFuture.completedExceptionally(
+          new IllegalArgumentException(
+              String.format(
+                  "Invalid partition: %d. Current partition is %d",
+                  partitionId, this.partitionId)));
+    }
+    return snapshotStore
+        .deleteBootstrapSnapshots()
+        .thenApply(
+            ignored -> {
+              pendingTransfers.clear();
+              return null;
+            });
+  }
+
   private ActorFuture<PersistedSnapshot> getLatestSnapshotForBootstrap(
       final long lastProcessedPosition, final UUID transferId) {
     final ActorFuture<PersistedSnapshot> lastSnapshotFuture = concurrency.createFuture();
@@ -198,6 +216,11 @@ public class SnapshotTransferServiceImpl implements SnapshotTransferService {
               }
             },
             concurrency);
+  }
+
+  @Override
+  public ActorFuture<Void> closeAsync() {
+    return deleteSnapshots(partitionId);
   }
 
   private static class PendingTransfer {

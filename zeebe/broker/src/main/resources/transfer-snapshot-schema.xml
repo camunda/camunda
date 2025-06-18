@@ -27,6 +27,7 @@
   </types>
 
 
+  <!-- Request -->
   <sbe:message name="GetSnapshotChunk" id="1">
     <field name="partition" id="1" type="int32"/>
     <field name="transferId" id="2" type="UUID"/>
@@ -35,6 +36,7 @@
     <data name="lastChunkName" id="4" type="varDataEncoding" />
   </sbe:message>
 
+  <!-- Response -->
   <sbe:message name="SnapshotChunkResponse" id="2">
     <field name="transferId" id="1" type="UUID"/>
     <field name="totalCount" id="2" type="int32"/>
@@ -46,4 +48,15 @@
     <data name="content" id="22" type="blob"/>
   </sbe:message>
 
+
+  <!-- Request -->
+  <sbe:message name="DeleteSnapshotForBootstrapRequest" id="3">
+    <field name="partition" id="1" type="int32"/>
+  </sbe:message>
+
+
+  <!-- Response -->
+  <sbe:message name="DeleteSnapshotForBootstrapResponse" id="4">
+    <field name="partition" id="1" type="int32"/>
+  </sbe:message>
 </sbe:messageSchema>

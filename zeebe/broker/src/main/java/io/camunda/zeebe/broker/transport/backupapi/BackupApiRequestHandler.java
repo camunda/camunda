@@ -93,8 +93,7 @@ public final class BackupApiRequestHandler
       case LIST -> handleListBackupRequest(responseWriter, errorWriter);
       case DELETE -> handleDeleteBackupRequest(requestReader, responseWriter, errorWriter);
       default ->
-          CompletableActorFuture.completed(
-              unknownRequest(errorWriter, requestReader.getMessageDecoder().type()));
+          CompletableActorFuture.completed(unknownRequest(errorWriter, requestReader.type()));
     };
   }
 

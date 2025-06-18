@@ -9,14 +9,19 @@ package io.camunda.zeebe.broker.partitioning.scaling;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerResponseConsumer;
 import io.camunda.zeebe.broker.client.api.BrokerResponseException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
+import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotResponse.DeleteSnapshotForBootstrapResponse;
+import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotBrokerRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.scaling.GetScaleUpProgress;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.util.Either;
@@ -83,7 +88,7 @@ public class BrokerClientPartitionScalingExecutorTest {
         new ScaleRecord().setDesiredPartitionCount(5).setRedistributedPartitions(partitions);
 
     // then
-    assertThat(awaitRedistributionWith(Either.right(scaleRecord))).isCompleted();
+    assertThat(awaitRedistributionWith(Either.right(scaleRecord), true)).isCompleted();
   }
 
   @Test
@@ -94,9 +99,14 @@ public class BrokerClientPartitionScalingExecutorTest {
         .withCause(new BrokerResponseException("expected"));
   }
 
-  @SuppressWarnings("unchecked")
   private CompletableFuture<Void> awaitRedistributionWith(
       final Either<Throwable, ScaleRecord> scaleRecord) {
+    return awaitRedistributionWith(scaleRecord, false);
+  }
+
+  @SuppressWarnings("unchecked")
+  private CompletableFuture<Void> awaitRedistributionWith(
+      final Either<Throwable, ScaleRecord> scaleRecord, final boolean expectSnapshotRequestSent) {
     // given
     doNothing().when(brokerClient).sendRequestWithRetry(any(), any(), any());
     final var responseConsumerCaptor = ArgumentCaptor.forClass(BrokerResponseConsumer.class);
@@ -116,9 +126,24 @@ public class BrokerClientPartitionScalingExecutorTest {
     final var getScaleUpProgress = (GetScaleUpProgress) request;
     assertThat(request.getPartitionId()).isEqualTo(1);
 
+    clearInvocations(brokerClient);
     scaleRecord.ifRightOrLeft(
         record -> responseConsumerCaptor.getValue().accept(1L, record),
         ex -> throwableCaptor.getValue().accept(ex));
+
+    if (expectSnapshotRequestSent) {
+      verify(brokerClient, timeout(5000))
+          .sendRequestWithRetry(
+              requestCaptor.capture(), responseConsumerCaptor.capture(), throwableCaptor.capture());
+
+      assertThat(requestCaptor.getValue()).isInstanceOf(SnapshotBrokerRequest.class);
+      final var snapshotRequest = (SnapshotBrokerRequest) requestCaptor.getValue();
+      assertThat(snapshotRequest.getPartitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
+      assertThat(snapshotRequest.getRequest().partitionId())
+          .isEqualTo(Protocol.DEPLOYMENT_PARTITION);
+
+      responseConsumerCaptor.getValue().accept(1L, new DeleteSnapshotForBootstrapResponse(1));
+    }
     return future;
   }
 }

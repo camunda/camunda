@@ -10,7 +10,7 @@ package io.camunda.zeebe.broker.partitioning.scaling.snapshot.sbe;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotChunkRecord;
-import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotChunkResponse;
+import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotResponse.SnapshotChunkResponse;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
 import java.nio.ByteBuffer;
 import java.util.Optional;
