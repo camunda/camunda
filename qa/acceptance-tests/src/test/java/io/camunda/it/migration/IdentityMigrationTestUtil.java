@@ -32,6 +32,22 @@ final class IdentityMigrationTestUtil {
   private static final String KEYCLOAK_USER = "admin";
   private static final String KEYCLOAK_PASSWORD = "admin";
   private static final Network NETWORK = Network.newNetwork();
+  private static final String POSTGRES_HOST = "postgres";
+  private static final int POSTGRES_PORT = 5432;
+  private static final String IDENTITY_DATABASE_NAME = "identity";
+  private static final String IDENTITY_DATABASE_USERNAME = "identity";
+  private static final String IDENTITY_DATABASE_PASSWORD = "t2L@!AqSMg8%I%NmHM";
+
+  static GenericContainer<?> getPostgres() {
+    return new GenericContainer<>(DockerImageName.parse("postgres:16.6-alpine"))
+        .withNetwork(NETWORK)
+        .withNetworkAliases(POSTGRES_HOST)
+        .withExposedPorts(POSTGRES_PORT)
+        .withEnv("POSTGRES_DB", IDENTITY_DATABASE_NAME)
+        .withEnv("POSTGRES_USER", IDENTITY_DATABASE_USERNAME)
+        .withEnv("POSTGRES_PASSWORD", IDENTITY_DATABASE_PASSWORD)
+        .withStartupTimeout(Duration.ofMinutes(5));
+  }
 
   static ElasticsearchContainer getElastic() {
     return TestSearchContainers.createDefeaultElasticsearchContainer()
@@ -56,7 +72,7 @@ final class IdentityMigrationTestUtil {
                 .withStartupTimeout(Duration.ofMinutes(2)));
   }
 
-  static GenericContainer<?> getManagementIdentity(final KeycloakContainer keycloak) {
+  static GenericContainer<?> getManagementIdentitySMKeycloak(final KeycloakContainer keycloak) {
     return new GenericContainer<>(DockerImageName.parse("camunda/identity:SNAPSHOT"))
         .withImagePullPolicy(PullPolicy.alwaysPull())
         .dependsOn(keycloak)
@@ -77,6 +93,31 @@ final class IdentityMigrationTestUtil {
         .withEnv(
             "KEYCLOAK_CLIENTS_0_PERMISSIONS_0_RESOURCE_SERVER_ID", CAMUNDA_IDENTITY_RESOURCE_SERVER)
         .withEnv("KEYCLOAK_CLIENTS_0_PERMISSIONS_0_DEFINITION", "write")
+        .withEnv("IDENTITY_RETRY_ATTEMPTS", "90")
+        .withEnv("IDENTITY_RETRY_DELAY_SECONDS", "1")
+        // this will enable readiness checks by spring to await ApplicationRunner completion
+        .withEnv("MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED", "true")
+        .withEnv("MANAGEMENT_HEALTH_READINESSSTATE_ENABLED", "true")
+        .withNetworkAliases("identity")
+        .withNetwork(NETWORK)
+        .withExposedPorts(IDENTITY_PORT, 8082)
+        .withLogConsumer(
+            new Slf4jLogConsumer(LoggerFactory.getLogger(IdentityMigrationTestUtil.class)));
+  }
+
+  static GenericContainer<?> getManagementIdentitySaaS(final GenericContainer<?> postgres) {
+    return new GenericContainer<>(DockerImageName.parse("camunda/identity:SNAPSHOT"))
+        .withImagePullPolicy(PullPolicy.alwaysPull())
+        .dependsOn(postgres)
+        .withEnv("SERVER_PORT", Integer.toString(IDENTITY_PORT))
+        .withEnv("RESOURCE_PERMISSIONS_ENABLED", "true")
+        .withEnv("SPRING_PROFILES_ACTIVE", "saas")
+        .withEnv("IDENTITY_AUDIENCE", "identity")
+        .withEnv("IDENTITY_DATABASE_HOST", POSTGRES_HOST)
+        .withEnv("IDENTITY_DATABASE_NAME", IDENTITY_DATABASE_NAME)
+        .withEnv("IDENTITY_DATABASE_PASSWORD", IDENTITY_DATABASE_PASSWORD)
+        .withEnv("IDENTITY_DATABASE_PORT", Integer.toString(POSTGRES_PORT))
+        .withEnv("IDENTITY_DATABASE_USERNAME", IDENTITY_DATABASE_USERNAME)
         .withEnv("IDENTITY_RETRY_ATTEMPTS", "90")
         .withEnv("IDENTITY_RETRY_DELAY_SECONDS", "1")
         // this will enable readiness checks by spring to await ApplicationRunner completion
