@@ -15,14 +15,18 @@
  */
 package io.camunda.spring.client.jobhandling.parameter;
 
+import static io.camunda.spring.client.annotation.AnnotationUtil.getDocumentValue;
 import static io.camunda.spring.client.annotation.AnnotationUtil.getVariableValue;
 import static io.camunda.spring.client.annotation.AnnotationUtil.isCustomHeaders;
+import static io.camunda.spring.client.annotation.AnnotationUtil.isDocument;
 import static io.camunda.spring.client.annotation.AnnotationUtil.isVariable;
 import static io.camunda.spring.client.annotation.AnnotationUtil.isVariablesAsType;
 
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
+import io.camunda.spring.client.annotation.value.DocumentValue;
+import io.camunda.spring.client.annotation.value.DocumentValue.ParameterType;
 import io.camunda.spring.client.annotation.value.VariableValue;
 import io.camunda.spring.client.bean.ParameterInfo;
 
@@ -64,7 +68,7 @@ public class DefaultParameterResolverStrategy implements ParameterResolverStrate
     } else if (ActivatedJob.class.isAssignableFrom(parameterType)) {
       return new ActivatedJobParameterResolver();
     } else if (isVariable(parameterInfo)) {
-      // get() can be used savely here as isVariable() verifies that an annotation is present
+      // get() can be used safely here as isVariable() verifies that an annotation is present
       final VariableValue variableValue = getVariableValue(parameterInfo).get();
       final String variableName = variableValue.getName();
       final boolean optional = variableValue.isOptional();
@@ -73,6 +77,12 @@ public class DefaultParameterResolverStrategy implements ParameterResolverStrate
       return new VariablesAsTypeResolver(parameterType);
     } else if (isCustomHeaders(parameterInfo)) {
       return new CustomHeadersResolver();
+    } else if (isDocument(parameterInfo)) {
+      final DocumentValue documentValue = getDocumentValue(parameterInfo).get();
+      final String variableName = documentValue.getName();
+      final boolean optional = documentValue.isOptional();
+      final ParameterType documentParameterType = documentValue.getParameterType();
+      return new DocumentResolver(variableName, optional, documentParameterType);
     }
     throw new IllegalStateException(
         "Could not create parameter resolver for parameter " + parameterInfo);
