@@ -43,5 +43,18 @@ public class MetadataTest {
                 metadata.getVersion()),
             "");
     assertThat(extracted).isEqualTo(metadata);
+    assertThat(extracted.getBackupId())
+        .isEqualTo(
+            metadata.getBackupId()); // why backupId is not part of the Metadata.equals() method??
+  }
+
+  @Test
+  public void shouldExtractingBackupIdAsIntegerFromMetadataField() {
+    final var extracted =
+        Metadata.extractFromMetadataOrName(
+            new ObjectMapper(),
+            Map.of("backupId", 123, "partNo", 2, "partCount", 6, "version", "8.6.0"),
+            null);
+    assertThat(extracted.getBackupId()).isEqualTo(123);
   }
 }
