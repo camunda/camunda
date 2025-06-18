@@ -34,7 +34,7 @@ public class ContainerRuntimeVersionUtilTest {
         new ContainerRuntimeVersionUtil(versionProperties);
 
     // then
-    assertThat(versionUtil.getCamundaVersion()).isEqualTo("SNAPSHOT");
+    assertThat(versionUtil.getCamundaVersion()).isEqualTo("8.6-SNAPSHOT");
     assertThat(versionUtil.getElasticsearchVersion()).isEqualTo("8.13.0");
   }
 
@@ -53,7 +53,7 @@ public class ContainerRuntimeVersionUtilTest {
         new ContainerRuntimeVersionUtil(versionProperties);
 
     // then
-    assertThat(versionUtil.getCamundaVersion()).isEqualTo("SNAPSHOT");
+    assertThat(versionUtil.getCamundaVersion()).isEqualTo("8.6-SNAPSHOT");
     assertThat(versionUtil.getElasticsearchVersion()).isEqualTo("8.13.0");
   }
 
@@ -61,7 +61,7 @@ public class ContainerRuntimeVersionUtilTest {
   @CsvSource({
     "8.6.0, 8.6.0",
     "8.6.1, 8.6.1",
-    "8.6.0-SNAPSHOT, SNAPSHOT",
+    "8.6-SNAPSHOT, 8.6-SNAPSHOT",
     "8.5.2-SNAPSHOT, 8.5.1",
     "8.5.2-rc1, 8.5.1",
   })
