@@ -85,7 +85,7 @@ public class CamundaOAuthPrincipalService {
     final var username = principals.username();
     final var clientId = principals.clientId();
 
-    final var principalIdentifiers = new HashMap<EntityType, Set<String>>();
+    final var ownerTypeToIds = new HashMap<EntityType, Set<String>>();
 
     if (username == null && clientId == null) {
       throw new OAuth2AuthenticationException(
@@ -95,12 +95,12 @@ public class CamundaOAuthPrincipalService {
     }
     if (username != null) {
       authContextBuilder.withUsername(username);
-      principalIdentifiers.put(USER, Set.of(username));
+      ownerTypeToIds.put(USER, Set.of(username));
     }
 
     if (clientId != null) {
       authContextBuilder.withClientId(clientId);
-      principalIdentifiers.put(CLIENT, Set.of(clientId));
+      ownerTypeToIds.put(CLIENT, Set.of(clientId));
     }
 
     final var mappings = mappingServices.getMatchingMappings(claims);
@@ -109,7 +109,7 @@ public class CamundaOAuthPrincipalService {
     if (mappingIds.isEmpty()) {
       LOG.debug("No mappings found for these claims: {}", claims);
     } else {
-      principalIdentifiers.put(MAPPING, mappingIds);
+      ownerTypeToIds.put(MAPPING, mappingIds);
     }
 
     final Set<String> groups;
@@ -122,7 +122,7 @@ public class CamundaOAuthPrincipalService {
               .map(GroupEntity::groupId)
               .collect(Collectors.toSet());
       if (!groups.isEmpty()) {
-        principalIdentifiers.put(GROUP, groups);
+        ownerTypeToIds.put(GROUP, groups);
       }
     }
 
@@ -130,11 +130,10 @@ public class CamundaOAuthPrincipalService {
         roleServices.findAll(
             RoleQuery.of(
                 roleQuery ->
-                    roleQuery.filter(
-                        roleFilter -> roleFilter.memberIdsByType(principalIdentifiers))));
+                    roleQuery.filter(roleFilter -> roleFilter.memberIdsByType(ownerTypeToIds))));
     final var roleIds = roles.stream().map(RoleEntity::roleId).collect(Collectors.toSet());
     if (!roleIds.isEmpty()) {
-      principalIdentifiers.put(EntityType.ROLE, roleIds);
+      ownerTypeToIds.put(EntityType.ROLE, roleIds);
     }
 
     // TODO: Get tenants for username and clientId https://github.com/camunda/camunda/issues/26572
@@ -143,10 +142,9 @@ public class CamundaOAuthPrincipalService {
             .map(TenantDTO::fromEntity)
             .toList();
 
-    final var principalIds =
-        principalIdentifiers.values().stream().flatMap(Set::stream).collect(Collectors.toSet());
-    final var authorizedApplications =
-        authorizationServices.getAuthorizedApplications(principalIds);
+    final var ownerIds =
+        ownerTypeToIds.values().stream().flatMap(Set::stream).collect(Collectors.toSet());
+    final var authorizedApplications = authorizationServices.getAuthorizedApplications(ownerIds);
 
     authContextBuilder
         .withAuthorizedApplications(authorizedApplications)
