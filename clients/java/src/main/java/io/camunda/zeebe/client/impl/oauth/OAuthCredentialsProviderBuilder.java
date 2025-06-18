@@ -43,11 +43,13 @@ public final class OAuthCredentialsProviderBuilder {
   public static final String OAUTH_ENV_READ_TIMEOUT = "ZEEBE_AUTH_READ_TIMEOUT";
   public static final String OAUTH_ENV_SSL_CLIENT_CERT_PATH = "OAUTH_SSL_CLIENT_CERT_PATH";
   public static final String OAUTH_ENV_SSL_CLIENT_CERT_PASSWORD = "OAUTH_SSL_CLIENT_CERT_PASSWORD";
+  public static final String OAUTH_ENV_SSL_ISSUER = "OAUTH_SSL_ISSUER";
   private static final String DEFAULT_AUTHZ_SERVER = "https://login.cloud.camunda.io/oauth/token/";
   private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
   private static final Duration DEFAULT_READ_TIMEOUT = DEFAULT_CONNECT_TIMEOUT;
 
   private String clientId;
+  private String issuer;
   private String clientSecret;
   private String audience;
   private String scope;
@@ -192,6 +194,7 @@ public final class OAuthCredentialsProviderBuilder {
   private void applySSLClientCertConfiguration() {
     applyEnvironmentValueIfNotNull(this::sslClientCertPath, OAUTH_ENV_SSL_CLIENT_CERT_PATH);
     applyEnvironmentValueIfNotNull(this::sslClientCertPassword, OAUTH_ENV_SSL_CLIENT_CERT_PASSWORD);
+    applyEnvironmentValueIfNotNull(this::issuer, OAUTH_ENV_SSL_ISSUER);
   }
 
   private void checkEnvironmentOverrides() {
@@ -310,6 +313,19 @@ public final class OAuthCredentialsProviderBuilder {
 
   public Path getSslClientCertPath() {
     return sslClientCertPath;
+  }
+
+  /** Issuer to be used when requesting access token from OAuth authorization server. */
+  public OAuthCredentialsProviderBuilder issuer(final String issuer) {
+    this.issuer = issuer;
+    return this;
+  }
+
+  /**
+   * @see OAuthCredentialsProviderBuilder#issuer(String)
+   */
+  public String getIssuer() {
+    return issuer;
   }
 
   public OAuthCredentialsProviderBuilder sslClientCertPassword(
