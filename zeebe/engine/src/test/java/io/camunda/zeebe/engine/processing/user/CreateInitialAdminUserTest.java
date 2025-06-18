@@ -105,7 +105,7 @@ public class CreateInitialAdminUserTest {
             .create();
 
     assertThat(rejection)
-        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(USER_ALREADY_EXISTS_ERROR_MESSAGE.formatted(username));
   }
 
@@ -126,7 +126,7 @@ public class CreateInitialAdminUserTest {
             .create();
 
     assertThat(rejection)
-        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
             ADMIN_ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(DefaultRole.ADMIN.getId()));
   }
@@ -163,7 +163,7 @@ public class CreateInitialAdminUserTest {
             .create();
 
     assertThat(rejection)
-        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(ADMIN_ROLE_HAS_USERS_ERROR_MESSAGE.formatted(adminRoleId));
   }
 }

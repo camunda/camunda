@@ -94,53 +94,48 @@ public class UserCreateInitialAdminProcessor implements TypedRecordProcessor<Use
               responseWriter.writeEventOnCommand(
                   key, UserIntent.INITIAL_ADMIN_CREATED, record, command);
             },
-            rejection -> {
-              rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+            message -> {
+              // For this command we always want to reject with FORBIDDEN
+              rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, message);
+              responseWriter.writeRejectionOnCommand(command, RejectionType.FORBIDDEN, message);
             });
   }
 
-  private Either<Rejection, Void> checkUserCreateAuthorization(
-      final TypedRecord<UserRecord> command) {
+  private Either<String, Void> checkUserCreateAuthorization(final TypedRecord<UserRecord> command) {
     final var authRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.USER, PermissionType.CREATE);
-    return authCheckBehavior.isAuthorized(authRequest);
+    return authCheckBehavior.isAuthorized(authRequest).mapLeft(Rejection::reason);
   }
 
-  private Either<Rejection, Void> checkRoleUpdateAuthorization(
-      final TypedRecord<UserRecord> command) {
+  private Either<String, Void> checkRoleUpdateAuthorization(final TypedRecord<UserRecord> command) {
     final var authRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.ROLE, PermissionType.UPDATE);
-    return authCheckBehavior.isAuthorized(authRequest);
+    return authCheckBehavior.isAuthorized(authRequest).mapLeft(Rejection::reason);
   }
 
-  private Either<Rejection, Void> checkUserDoesNotExist(final String username) {
+  private Either<String, Void> checkUserDoesNotExist(final String username) {
     return userState
         .getUser(username)
         .map(
             user -> {
               final var message = USER_ALREADY_EXISTS_ERROR_MESSAGE.formatted(user.getUsername());
-              return Either.<Rejection, Void>left(
-                  new Rejection(RejectionType.ALREADY_EXISTS, message));
+              return Either.<String, Void>left(message);
             })
         .orElseGet(() -> Either.right(null));
   }
 
-  private Either<Rejection, Void> checkAdminRoleExists(final String adminRoleId) {
+  private Either<String, Void> checkAdminRoleExists(final String adminRoleId) {
     return roleState
         .getRole(adminRoleId)
-        .map(
-            adminRole -> {
-              return Either.<Rejection, Void>right(null);
-            })
+        .map(adminRole -> Either.<String, Void>right(null))
         .orElseGet(
             () -> {
               final var message = ADMIN_ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(adminRoleId);
-              return Either.left(new Rejection(RejectionType.NOT_FOUND, message));
+              return Either.left(message);
             });
   }
 
-  private Either<Rejection, Void> checkAdminRoleHasNoUsers(final String adminRoleId) {
+  private Either<String, Void> checkAdminRoleHasNoUsers(final String adminRoleId) {
     final AtomicBoolean hasUsers = new AtomicBoolean(false);
     membershipState.forEachMember(
         RelationType.ROLE,
@@ -156,7 +151,7 @@ public class UserCreateInitialAdminProcessor implements TypedRecordProcessor<Use
 
     if (hasUsers.get()) {
       final var message = ADMIN_ROLE_HAS_USERS_ERROR_MESSAGE.formatted(adminRoleId);
-      return Either.left(new Rejection(RejectionType.ALREADY_EXISTS, message));
+      return Either.left(message);
     } else {
       return Either.right(null);
     }
