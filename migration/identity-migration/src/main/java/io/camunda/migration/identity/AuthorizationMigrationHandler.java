@@ -97,7 +97,6 @@ public class AuthorizationMigrationHandler extends MigrationHandler<Authorizatio
     if (usersEmailByUsername.containsKey(identityEntityId)) {
       return usersEmailByUsername.get(identityEntityId);
     }
-    ;
     return identityEntityId;
   }
 
@@ -121,7 +120,8 @@ public class AuthorizationMigrationHandler extends MigrationHandler<Authorizatio
     return AuthorizationResourceType.UNSPECIFIED;
   }
 
-  private Set<PermissionType> convertPermissions(final Set<String> permissions, final String resourceType) {
+  private Set<PermissionType> convertPermissions(
+      final Set<String> permissions, final String resourceType) {
     return switch (resourceType) {
       case IDENTITY_DECISION_DEFINITION_RESOURCE_TYPE -> convertDecisionPermissions(permissions);
       case IDENTITY_PROCESS_DEFINITION_RESOURCE_TYPE -> convertProcessPermissions(permissions);

@@ -8,20 +8,26 @@
 package io.camunda.migration.identity;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.migration.identity.dto.UserResourceAuthorization;
+import io.camunda.migration.identity.console.ConsoleClient;
+import io.camunda.migration.identity.console.ConsoleClient.Member;
+import io.camunda.migration.identity.console.ConsoleClient.Role;
+import io.camunda.migration.identity.dto.Authorization;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
-import java.util.Collection;
+import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
-import org.apache.commons.lang3.NotImplementedException;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,100 +42,94 @@ final class AuthorizationMigrationHandlerTest {
   final AuthorizationServices authorizationServices;
   final ManagementIdentityClient managementIdentityClient;
   final AuthorizationMigrationHandler migrationHandler;
+  final ConsoleClient consoleClient;
 
   public AuthorizationMigrationHandlerTest(
       @Mock(answer = Answers.RETURNS_SELF) final AuthorizationServices authorizationServices,
+      @Mock final ConsoleClient consoleClient,
       @Mock final ManagementIdentityClient managementIdentityClient) {
-    //    when(authorizationServices.patchAuthorization(any()))
-    //        .thenReturn(CompletableFuture.completedFuture(new AuthorizationRecord()));
     this.authorizationServices = authorizationServices;
     this.managementIdentityClient = managementIdentityClient;
+    this.consoleClient = consoleClient;
     migrationHandler =
         new AuthorizationMigrationHandler(
-            Authentication.none(), authorizationServices, managementIdentityClient);
+            Authentication.none(), authorizationServices, consoleClient, managementIdentityClient);
   }
 
   @Test
-  void stopWhenIdentityEndpointNotFound() {
-    when(managementIdentityClient.fetchUserResourceAuthorizations(anyInt()))
-        .thenThrow(new NotImplementedException());
-
-    // when
-    assertThrows(NotImplementedException.class, migrationHandler::migrate);
-
-    // then
-    verify(managementIdentityClient).fetchUserResourceAuthorizations(anyInt());
-    verifyNoMoreInteractions(managementIdentityClient);
-  }
-
-  @Test
-  void stopWhenNoMoreRecords() {
+  public void shouldMigrateAuthorizations() {
     // given
-    when(managementIdentityClient.fetchUserResourceAuthorizations(anyInt()))
+    when(authorizationServices.createAuthorization(any(CreateAuthorizationRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(new AuthorizationRecord()));
+    final var members =
+        new ConsoleClient.Members(
+            List.of(
+                new Member("user1", List.of(Role.DEVELOPER), "user1@email.com", "User One"),
+                new Member(
+                    "user2", List.of(Role.OPERATIONS_ENGINEER), "user2@email.com", "User Two"),
+                new Member("user3", List.of(Role.IGNORED), "user3@email.com", "User Three")),
+            List.of());
+    when(consoleClient.fetchMembers()).thenReturn(members);
+
+    when(managementIdentityClient.fetchAuthorizations())
         .thenReturn(
             List.of(
-                new UserResourceAuthorization(
-                    "username", "resourceId", "process-definition", "create")))
-        .thenReturn(List.of());
+                new Authorization(
+                    "user1",
+                    "USER",
+                    "process",
+                    "process-definition",
+                    Set.of("READ", "UPDATE_PROCESS_INSTANCE", "START_PROCESS_INSTANCE")),
+                new Authorization(
+                    "user2",
+                    "USER",
+                    "*",
+                    "decision-definition",
+                    Set.of("DELETE_PROCESS_INSTANCE", "READ", "DELETE")),
+                new Authorization(
+                    "user3",
+                    "NOT_VALID",
+                    "process",
+                    "not-valid",
+                    Set.of("UNKNOWN", "UPDATE_PROCESS_INSTANCE", "DELETE"))));
 
     // when
     migrationHandler.migrate();
 
     // then
-    verify(managementIdentityClient, times(2)).fetchUserResourceAuthorizations(anyInt());
-  }
-
-  @Test
-  void groupedByOwnerResourceType() {
-    // given
-    when(managementIdentityClient.fetchUserResourceAuthorizations(anyInt()))
-        .thenReturn(
-            List.of(
-                new UserResourceAuthorization(
-                    "username-1", "resourceId-1", "process-definition", "create"),
-                new UserResourceAuthorization(
-                    "username-1", "resourceId-2", "process-definition", "delete"),
-                new UserResourceAuthorization(
-                    "username-1", "resourceId-4", "decision-definition", "create"),
-                new UserResourceAuthorization(
-                    "username-2", "resourceId-1", "decision-definition", "create"),
-                new UserResourceAuthorization(
-                    "username-1", "resourceId-3", "process-definition", "write")))
-        .thenReturn(List.of());
-
-    // when
-    migrationHandler.migrate();
-
-    // then
-    //    verify(authorizationServices, times(3)).patchAuthorization(any());
-
-    final ArgumentCaptor<Collection<UserResourceAuthorization>> migratedCaptor =
-        ArgumentCaptor.forClass(Collection.class);
-
-    verify(managementIdentityClient, times(3))
-        .markAuthorizationsAsMigrated(migratedCaptor.capture());
-
+    final ArgumentCaptor<CreateAuthorizationRequest> request =
+        ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
+    verify(authorizationServices, times(3)).createAuthorization(request.capture());
+    final List<CreateAuthorizationRequest> requests = request.getAllValues();
+    assertThat(requests, Matchers.hasSize(3));
+    assertThat(requests.getFirst().ownerId(), Matchers.is("user1@email.com"));
+    assertThat(requests.getFirst().ownerType(), Matchers.is(AuthorizationOwnerType.USER));
+    assertThat(requests.getFirst().resourceId(), Matchers.is("process"));
     assertThat(
-        migratedCaptor.getAllValues().get(0),
+        requests.getFirst().resourceType(),
+        Matchers.is(AuthorizationResourceType.PROCESS_DEFINITION));
+    assertThat(
+        requests.getFirst().permissionTypes(),
         Matchers.containsInAnyOrder(
-            new UserResourceAuthorization(
-                "username-1", "resourceId-1", "process-definition", "create"),
-            new UserResourceAuthorization(
-                "username-1", "resourceId-2", "process-definition", "delete"),
-            new UserResourceAuthorization(
-                "username-1", "resourceId-3", "process-definition", "write")));
-
+            PermissionType.READ_PROCESS_DEFINITION,
+            PermissionType.READ_PROCESS_INSTANCE,
+            PermissionType.UPDATE_PROCESS_INSTANCE,
+            PermissionType.CREATE_PROCESS_INSTANCE));
+    assertThat(requests.get(1).ownerId(), Matchers.is("user2@email.com"));
+    assertThat(requests.get(1).ownerType(), Matchers.is(AuthorizationOwnerType.USER));
+    assertThat(requests.get(1).resourceId(), Matchers.is("*"));
     assertThat(
-        migratedCaptor.getAllValues().get(1),
-        Matchers.is(
-            List.of(
-                new UserResourceAuthorization(
-                    "username-1", "resourceId-4", "decision-definition", "create"))));
+        requests.get(1).resourceType(), Matchers.is(AuthorizationResourceType.DECISION_DEFINITION));
     assertThat(
-        migratedCaptor.getAllValues().get(2),
-        Matchers.is(
-            List.of(
-                new UserResourceAuthorization(
-                    "username-2", "resourceId-1", "decision-definition", "create"))));
+        requests.get(1).permissionTypes(),
+        Matchers.containsInAnyOrder(
+            PermissionType.READ_DECISION_DEFINITION,
+            PermissionType.READ_DECISION_INSTANCE,
+            PermissionType.DELETE_DECISION_INSTANCE));
+    assertThat(requests.get(2).ownerId(), Matchers.is("user3@email.com"));
+    assertThat(requests.get(2).ownerType(), Matchers.is(AuthorizationOwnerType.UNSPECIFIED));
+    assertThat(requests.get(2).resourceId(), Matchers.is("process"));
+    assertThat(requests.get(2).resourceType(), Matchers.is(AuthorizationResourceType.UNSPECIFIED));
+    assertThat(requests.get(2).permissionTypes(), Matchers.empty());
   }
 }
