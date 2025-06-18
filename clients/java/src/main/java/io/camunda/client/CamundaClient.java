@@ -37,9 +37,6 @@ import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.client.api.command.CreateAuthorizationCommandStep1;
 import io.camunda.client.api.command.CreateBatchOperationCommandStep1;
-import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
-import io.camunda.client.api.command.CreateDocumentCommandStep1;
-import io.camunda.client.api.command.CreateDocumentLinkCommandStep1;
 import io.camunda.client.api.command.CreateGroupCommandStep1;
 import io.camunda.client.api.command.CreateMappingRuleCommandStep1;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
@@ -47,7 +44,6 @@ import io.camunda.client.api.command.CreateRoleCommandStep1;
 import io.camunda.client.api.command.CreateTenantCommandStep1;
 import io.camunda.client.api.command.CreateUserCommandStep1;
 import io.camunda.client.api.command.DeleteAuthorizationCommandStep1;
-import io.camunda.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.client.api.command.DeleteGroupCommandStep1;
 import io.camunda.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.client.api.command.DeleteRoleCommandStep1;
@@ -94,7 +90,6 @@ import io.camunda.client.api.fetch.DecisionDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.DecisionInstanceGetRequest;
 import io.camunda.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.client.api.fetch.DecisionRequirementsGetXmlRequest;
-import io.camunda.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.client.api.fetch.ElementInstanceGetRequest;
 import io.camunda.client.api.fetch.GroupGetRequest;
 import io.camunda.client.api.fetch.IncidentGetRequest;
@@ -111,6 +106,7 @@ import io.camunda.client.api.fetch.UserTaskGetFormRequest;
 import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.search.request.AdHocSubProcessActivitySearchRequest;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.api.search.request.BatchOperationItemSearchRequest;
 import io.camunda.client.api.search.request.BatchOperationSearchRequest;
@@ -206,11 +202,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return the request where you must call {@code send()}
    */
   TopologyRequestStep1 newTopologyRequest();
-
-  /**
-   * @return the client's configuration
-   */
-  CamundaClientConfiguration getConfiguration();
 
   @Override
   void close();
@@ -1811,205 +1802,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  @return a builder for the user task variable search request
    */
   UserTaskVariableSearchRequest newUserTaskVariableSearchRequest(long userTaskKey);
-
-  /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to create a document.
-   *
-   * <pre>
-   *   camundaClient
-   *   .newCreateDocumentCommand()
-   *   .content(inputStream)
-   *   .fileName("file.txt")
-   *   .timeToLive(Duration.ofDays(1))
-   *   .send();
-   *   </pre>
-   *
-   * @return a builder for the command
-   */
-  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
-  CreateDocumentCommandStep1 newCreateDocumentCommand();
-
-  /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to create a batch of documents. Unlike {@link #newCreateDocumentCommand()}, this
-   * command allows you to create multiple documents in a single request. This can be more efficient
-   * than creating each document individually, however, there are multiple limitations to consider.
-   * <br>
-   * <br>
-   * <strong>Limitations:</strong>
-   *
-   * <ul>
-   *   <li>The gateway does not guarantee the atomicity of the batch operation. If the gateway
-   *       receives the batch but fails to create one or more documents, it will not roll back the
-   *       operation. This means that some documents may be created while others are not. The client
-   *       should handle this scenario by checking the response for each document.
-   *   <li>Each document in the batch must have a unique name.
-   *   <li>It is not possible to assign a custom document ID to the documents in the batch. The
-   *       document ID will be generated by the broker.
-   *   <li>The total size of the batch must not exceed the multipart request size limit of the
-   *       gateway.
-   *   <li>The documents can only be created in a single store. If you need to create documents in
-   *       multiple stores, you must create separate batches for each store.
-   * </ul>
-   *
-   * <br>
-   *
-   * <pre>
-   *   zeebeClient
-   *   .newCreateDocumentBatchCommand()
-   *   .addDocument()
-   *   .content(inputStream1)
-   *   .fileName("file1.txt")
-   *   .timeToLive(Duration.ofDays(1))
-   *   .done()
-   *   .addDocument()
-   *   .content(inputStream2)
-   *   .fileName("file2.txt")
-   *   .timeToLive(Duration.ofDays(1))
-   *   .done()
-   *   </pre>
-   *
-   * @return a builder for the command
-   */
-  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
-  CreateDocumentBatchCommandStep1 newCreateDocumentBatchCommand();
-
-  /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to get a document.
-   *
-   * <pre>
-   *   camundaClient
-   *   .newDocumentContentGetRequest(documentId)
-   *   .storeId(storeId)
-   *   .send();
-   *   </pre>
-   *
-   * @param documentId the id of the document
-   * @return a builder for the request
-   */
-  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
-  DocumentContentGetRequest newDocumentContentGetRequest(String documentId);
-
-  /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to get a document.
-   *
-   * <pre>
-   *   camundaClient
-   *   .newDocumentContentGetRequest(documentReferenceResponse)
-   *   .send();
-   *   </pre>
-   *
-   * @param documentReferenceResponse the reference of the document
-   * @return a builder for the request
-   */
-  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
-  DocumentContentGetRequest newDocumentContentGetRequest(
-      DocumentReferenceResponse documentReferenceResponse);
-
-  /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to update a document.
-   *
-   * <pre>
-   *   camundaClient
-   *   .newCreateDocumentLinkCommand(documentId)
-   *   .storeId(storeId)
-   *   .timeToLive(Duration.ofHours(1))
-   *   .send();
-   *   </pre>
-   *
-   * @param documentId the id of the document
-   * @return a builder for the command
-   */
-  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
-  CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(String documentId);
-
-  /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to update a document.
-   *
-   * <pre>
-   *   camundaClient
-   *   .newCreateDocumentLinkCommand(documentReferenceResponse)
-   *   .timeToLive(Duration.ofHours(1))
-   *   .send();
-   *   </pre>
-   *
-   * @param documentReferenceResponse the reference of the document
-   * @return a builder for the command
-   */
-  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
-  CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(
-      DocumentReferenceResponse documentReferenceResponse);
-
-  /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to update a document.
-   *
-   * <pre>
-   *   camundaClient
-   *   .newDeleteDocumentCommand(documentId)
-   *   .storeId(storeId)
-   *   .send();
-   *   </pre>
-   *
-   * @param documentId the id of the document
-   * @return a builder for the command
-   */
-  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
-  DeleteDocumentCommandStep1 newDeleteDocumentCommand(String documentId);
-
-  /**
-   * <strong>Experimental: This method is under development. The respective API on compatible
-   * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
-   * with all clusters. Until this warning is removed, anything described below may not yet have
-   * taken effect, and the interface and its description are subject to change.</strong>
-   *
-   * <p>Command to update a document.
-   *
-   * <pre>
-   *   camundaClient
-   *   .newDeleteDocumentCommand(documentReferenceResponse)
-   *   .send();
-   *   </pre>
-   *
-   * @param documentReferenceResponse the reference of the document
-   * @return a builder for the command
-   */
-  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
-  DeleteDocumentCommandStep1 newDeleteDocumentCommand(
-      DocumentReferenceResponse documentReferenceResponse);
 
   /**
    * Command to create a tenant.
