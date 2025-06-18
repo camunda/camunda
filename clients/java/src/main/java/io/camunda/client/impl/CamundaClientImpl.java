@@ -162,9 +162,6 @@ import io.camunda.client.impl.command.CompleteUserTaskCommandImpl;
 import io.camunda.client.impl.command.CorrelateMessageCommandImpl;
 import io.camunda.client.impl.command.CreateAuthorizationCommandImpl;
 import io.camunda.client.impl.command.CreateBatchOperationCommandImpl.CreateBatchOperationCommandStep1Impl;
-import io.camunda.client.impl.command.CreateDocumentBatchCommandImpl;
-import io.camunda.client.impl.command.CreateDocumentCommandImpl;
-import io.camunda.client.impl.command.CreateDocumentLinkCommandImpl;
 import io.camunda.client.impl.command.CreateGroupCommandImpl;
 import io.camunda.client.impl.command.CreateMappingCommandImpl;
 import io.camunda.client.impl.command.CreateProcessInstanceCommandImpl;
@@ -172,7 +169,6 @@ import io.camunda.client.impl.command.CreateRoleCommandImpl;
 import io.camunda.client.impl.command.CreateTenantCommandImpl;
 import io.camunda.client.impl.command.CreateUserCommandImpl;
 import io.camunda.client.impl.command.DeleteAuthorizationCommandImpl;
-import io.camunda.client.impl.command.DeleteDocumentCommandImpl;
 import io.camunda.client.impl.command.DeleteGroupCommandImpl;
 import io.camunda.client.impl.command.DeleteResourceCommandImpl;
 import io.camunda.client.impl.command.DeleteRoleCommandImpl;
@@ -213,7 +209,6 @@ import io.camunda.client.impl.fetch.DecisionDefinitionGetXmlRequestImpl;
 import io.camunda.client.impl.fetch.DecisionInstanceGetRequestImpl;
 import io.camunda.client.impl.fetch.DecisionRequirementsGetRequestImpl;
 import io.camunda.client.impl.fetch.DecisionRequirementsGetXmlRequestImpl;
-import io.camunda.client.impl.fetch.DocumentContentGetRequestImpl;
 import io.camunda.client.impl.fetch.ElementInstanceGetRequestImpl;
 import io.camunda.client.impl.fetch.GroupGetRequestImpl;
 import io.camunda.client.impl.fetch.IncidentGetRequestImpl;
@@ -468,11 +463,6 @@ public final class CamundaClientImpl implements CamundaClient {
         config.getDefaultRequestTimeout(),
         credentialsProvider::shouldRetryRequest,
         config.preferRestOverGrpc());
-  }
-
-  @Override
-  public CamundaClientConfiguration getConfiguration() {
-    return config;
   }
 
   @Override
@@ -1026,62 +1016,6 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public CreateDocumentCommandStep1 newCreateDocumentCommand() {
-    return new CreateDocumentCommandImpl(jsonMapper, httpClient, config);
-  }
-
-  @Override
-  public CreateDocumentBatchCommandStep1 newCreateDocumentBatchCommand() {
-    return new CreateDocumentBatchCommandImpl(jsonMapper, httpClient, config);
-  }
-
-  @Override
-  public DocumentContentGetRequest newDocumentContentGetRequest(final String documentId) {
-    return new DocumentContentGetRequestImpl(httpClient, documentId, null, null, config);
-  }
-
-  @Override
-  public DocumentContentGetRequest newDocumentContentGetRequest(
-      final DocumentReferenceResponse documentReference) {
-    return new DocumentContentGetRequestImpl(
-        httpClient,
-        documentReference.getDocumentId(),
-        documentReference.getStoreId(),
-        documentReference.getContentHash(),
-        config);
-  }
-
-  @Override
-  public CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(final String documentId) {
-    return new CreateDocumentLinkCommandImpl(
-        documentId, null, null, jsonMapper, httpClient, config);
-  }
-
-  @Override
-  public CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(
-      final DocumentReferenceResponse documentReference) {
-    return new CreateDocumentLinkCommandImpl(
-        documentReference.getDocumentId(),
-        documentReference.getStoreId(),
-        documentReference.getContentHash(),
-        jsonMapper,
-        httpClient,
-        config);
-  }
-
-  @Override
-  public DeleteDocumentCommandStep1 newDeleteDocumentCommand(final String documentId) {
-    return new DeleteDocumentCommandImpl(documentId, null, httpClient, config);
-  }
-
-  @Override
-  public DeleteDocumentCommandStep1 newDeleteDocumentCommand(
-      final DocumentReferenceResponse documentReference) {
-    return new DeleteDocumentCommandImpl(
-        documentReference.getDocumentId(), documentReference.getStoreId(), httpClient, config);
-  }
-
-  @Override
   public CreateTenantCommandStep1 newCreateTenantCommand() {
     return new CreateTenantCommandImpl(httpClient, jsonMapper);
   }
@@ -1210,9 +1144,9 @@ public final class CamundaClientImpl implements CamundaClient {
     return new GroupsByRoleSearchRequestImpl(httpClient, jsonMapper, roleId);
   }
 
-  private JobClient newJobClient() {
-    return new JobClientImpl(
-        asyncStub, httpClient, config, jsonMapper, credentialsProvider::shouldRetryRequest);
+  @Override
+  public CamundaClientConfiguration getConfiguration() {
+    return jobClient.getConfiguration();
   }
 
   @Override
@@ -1254,5 +1188,53 @@ public final class CamundaClientImpl implements CamundaClient {
   public StreamJobsCommandStep1 newStreamJobsCommand() {
     return new StreamJobsCommandImpl(
         asyncStub, jsonMapper, credentialsProvider::shouldRetryRequest, config);
+  }
+
+  @Override
+  public CreateDocumentCommandStep1 newCreateDocumentCommand() {
+    return jobClient.newCreateDocumentCommand();
+  }
+
+  @Override
+  public CreateDocumentBatchCommandStep1 newCreateDocumentBatchCommand() {
+    return jobClient.newCreateDocumentBatchCommand();
+  }
+
+  @Override
+  public DocumentContentGetRequest newDocumentContentGetRequest(final String documentId) {
+    return jobClient.newDocumentContentGetRequest(documentId);
+  }
+
+  @Override
+  public DocumentContentGetRequest newDocumentContentGetRequest(
+      final DocumentReferenceResponse documentReference) {
+    return jobClient.newDocumentContentGetRequest(documentReference);
+  }
+
+  @Override
+  public CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(final String documentId) {
+    return jobClient.newCreateDocumentLinkCommand(documentId);
+  }
+
+  @Override
+  public CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(
+      final DocumentReferenceResponse documentReference) {
+    return jobClient.newCreateDocumentLinkCommand(documentReference);
+  }
+
+  @Override
+  public DeleteDocumentCommandStep1 newDeleteDocumentCommand(final String documentId) {
+    return jobClient.newDeleteDocumentCommand(documentId);
+  }
+
+  @Override
+  public DeleteDocumentCommandStep1 newDeleteDocumentCommand(
+      final DocumentReferenceResponse documentReference) {
+    return jobClient.newDeleteDocumentCommand(documentReference);
+  }
+
+  private JobClient newJobClient() {
+    return new JobClientImpl(
+        asyncStub, httpClient, config, jsonMapper, credentialsProvider::shouldRetryRequest);
   }
 }
