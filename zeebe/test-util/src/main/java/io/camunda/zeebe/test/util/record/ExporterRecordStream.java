@@ -17,6 +17,7 @@ import io.camunda.zeebe.test.util.stream.StreamWrapper;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public abstract class ExporterRecordStream<
@@ -66,6 +67,10 @@ public abstract class ExporterRecordStream<
 
   public S withIntent(final Intent intent) {
     return filter(m -> m.getIntent() == intent);
+  }
+
+  public S withIntent(final Supplier<Intent> intent) {
+    return withIntent(intent.get());
   }
 
   public S withPartitionId(final int partitionId) {

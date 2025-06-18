@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -50,6 +51,7 @@ public class UserCreateAdminProcessor implements TypedRecordProcessor<UserRecord
   private final TypedResponseWriter responseWriter;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final MembershipState membershipState;
+  private final StateWriter stateWriter;
 
   public UserCreateAdminProcessor(
       final KeyGenerator keyGenerator,
@@ -63,6 +65,7 @@ public class UserCreateAdminProcessor implements TypedRecordProcessor<UserRecord
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    stateWriter = writers.state();
     this.authCheckBehavior = authCheckBehavior;
   }
 
@@ -87,6 +90,9 @@ public class UserCreateAdminProcessor implements TypedRecordProcessor<UserRecord
                       .setRoleId(adminRoleId)
                       .setEntityId(record.getUsername())
                       .setEntityType(EntityType.USER));
+              stateWriter.appendFollowUpEvent(key, UserIntent.INITIAL_ADMIN_CREATED, record);
+              responseWriter.writeEventOnCommand(
+                  key, UserIntent.INITIAL_ADMIN_CREATED, record, command);
             },
             rejection -> {
               rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());

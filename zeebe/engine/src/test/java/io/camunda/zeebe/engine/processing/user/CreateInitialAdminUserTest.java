@@ -15,6 +15,7 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.DefaultRole;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -41,7 +42,7 @@ public class CreateInitialAdminUserTest {
     final var username = UUID.randomUUID().toString();
 
     // when
-    final var createdUser =
+    final var createdAdminUser =
         engine
             .user()
             .newInitialAdminUser(username)
@@ -52,13 +53,20 @@ public class CreateInitialAdminUserTest {
             .getValue();
 
     // then
-    assertThat(createdUser)
-        .describedAs("Has created the user with the given properties")
+    assertThat(createdAdminUser)
         .hasUsername(username)
         .hasName("name")
         .hasEmail("email")
         .hasPassword("password");
-
+    assertThat(
+            RecordingExporter.userRecords(UserIntent.CREATED)
+                .withUsername(username)
+                .getFirst()
+                .getValue())
+        .hasUsername(username)
+        .hasName("name")
+        .hasEmail("email")
+        .hasPassword("password");
     Assertions.assertThat(
             RecordingExporter.roleRecords(RoleIntent.ADD_ENTITY)
                 .withRoleId(adminRoleId)
