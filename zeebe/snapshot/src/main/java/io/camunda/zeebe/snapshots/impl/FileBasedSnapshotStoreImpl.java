@@ -111,11 +111,7 @@ public final class FileBasedSnapshotStoreImpl {
   }
 
   public void start() {
-    final FileBasedSnapshot latestSnapshot = loadLatestSnapshot(snapshotsDirectory);
-    currentPersistedSnapshotRef.set(latestSnapshot);
-    if (latestSnapshot != null) {
-      availableSnapshots.add(latestSnapshot);
-    }
+    setLatestSnapshot(loadLatestSnapshot(snapshotsDirectory));
     purgePendingSnapshotsDirectory();
   }
 
@@ -254,6 +250,13 @@ public final class FileBasedSnapshotStoreImpl {
 
   public Optional<PersistedSnapshot> getLatestSnapshot() {
     return Optional.ofNullable(currentPersistedSnapshotRef.get());
+  }
+
+  private void setLatestSnapshot(final FileBasedSnapshot snapshot) {
+    currentPersistedSnapshotRef.set(snapshot);
+    if (snapshot != null) {
+      availableSnapshots.add(snapshot);
+    }
   }
 
   public ActorFuture<Set<PersistedSnapshot>> getAvailableSnapshots() {
@@ -701,6 +704,7 @@ public final class FileBasedSnapshotStoreImpl {
       throw new CorruptedSnapshotException(
           "Failed to open restored snapshot in %s".formatted(snapshotPath));
     }
+    setLatestSnapshot(snapshot);
   }
 
   public ActorFuture<Void> restore(final PersistedSnapshot snapshot) {
@@ -739,7 +743,7 @@ public final class FileBasedSnapshotStoreImpl {
   public ActorFuture<PersistedSnapshot> copyForBootstrap(
       final PersistedSnapshot persistedSnapshot, final BiConsumer<Path, Path> copySnapshot) {
     final var snapshotPath = persistedSnapshot.getPath();
-    final var zeroedSnapshotId = new FileBasedSnapshotId(0, 0, 0, 0, brokerId);
+    final var zeroedSnapshotId = new FileBasedSnapshotId(1, 1, 0, 0, brokerId);
 
     final var destinationFolder = buildSnapshotDirectory(zeroedSnapshotId, true);
 

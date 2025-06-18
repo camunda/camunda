@@ -79,7 +79,11 @@ public class ScaleUpPartitionsTest {
     scaleToPartitions(desiredPartitionCount);
     awaitScaleUpCompletion(desiredPartitionCount);
 
-    createInstanceWithAJobOnAllPartitions(camundaClient, JOB_TYPE, desiredPartitionCount, false);
+    for (int i = 0; i < 20; i++) {
+      createInstanceWithAJobOnAllPartitions(camundaClient, JOB_TYPE, desiredPartitionCount, false);
+    }
+
+    cluster.awaitHealthyTopology();
   }
 
   private void awaitScaleUpCompletion(final int desiredPartitionCount) {

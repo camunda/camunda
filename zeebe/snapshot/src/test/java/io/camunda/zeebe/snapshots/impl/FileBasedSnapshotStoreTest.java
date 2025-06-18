@@ -427,8 +427,8 @@ public class FileBasedSnapshotStoreTest {
     assertThat(copiedSnapshot)
         .satisfies(
             s -> {
-              assertThat(s.getId()).isEqualTo("0-0-0-0-0");
-              assertThat(s.getPath().getFileName().toString()).isEqualTo("0-0-0-0-0");
+              assertThat(s.getId()).isEqualTo("1-1-0-0-0");
+              assertThat(s.getPath().getFileName().toString()).isEqualTo("1-1-0-0-0");
               assertThat(s.getMetadata())
                   .isEqualTo(
                       FileBasedSnapshotMetadata.forBootstrap(FileBasedSnapshotStoreImpl.VERSION));
@@ -449,6 +449,8 @@ public class FileBasedSnapshotStoreTest {
     final var copiedSnapshot =
         snapshotStore.copyForBootstrap(persistedSnapshot, SnapshotCopyUtil::copyAllFiles).join();
 
+    snapshotStore.delete().join();
+
     final var files = copiedSnapshot.files();
     snapshotStore.restore(copiedSnapshot.getId(), files);
 
@@ -462,7 +464,7 @@ public class FileBasedSnapshotStoreTest {
         .satisfies(s -> assertThat(s.get().getId()).isEqualTo(copiedSnapshot.getId()));
 
     assertThat(rootDirectory.resolve("snapshots"))
-        .isDirectoryContaining(p -> p.getFileName().startsWith("0-0-0-0-0"));
+        .isDirectoryContaining(p -> p.getFileName().startsWith("1-1-0-0-0"));
   }
 
   @Test
