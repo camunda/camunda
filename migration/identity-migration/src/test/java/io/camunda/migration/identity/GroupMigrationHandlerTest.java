@@ -226,6 +226,36 @@ public class GroupMigrationHandlerTest {
   }
 
   @Test
+  public void shouldAssignUsersToGroupWhenGroupAlreadyExists() {
+    // given
+    final var groupId = "groupId";
+    final Group group = new Group(groupId, "Test Group");
+    when(managementIdentityClient.fetchGroups(anyInt()))
+        .thenReturn(List.of(group))
+        .thenReturn(List.of());
+    when(managementIdentityClient.fetchGroupUsers(groupId))
+        .thenReturn(List.of(new User("user1", "username", "name", "email@email.com")));
+    when(groupService.createGroup(any(GroupDTO.class)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new BrokerRejectionException(
+                    new BrokerRejection(
+                        GroupIntent.CREATE,
+                        -1,
+                        RejectionType.ALREADY_EXISTS,
+                        "group already exists"))));
+    when(groupService.assignMember(any(GroupMemberDTO.class)))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(consoleClient.fetchMembers()).thenReturn(new Members(List.of(), List.of()));
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    verify(groupService).assignMember(any());
+  }
+
+  @Test
   public void shouldIgnoreAlreadyAssignedUsers() {
     // given
     final var groupId = "groupId";
@@ -245,7 +275,7 @@ public class GroupMigrationHandlerTest {
             CompletableFuture.failedFuture(
                 new BrokerRejectionException(
                     new BrokerRejection(
-                        GroupIntent.CREATE,
+                        GroupIntent.ADD_ENTITY,
                         -1,
                         RejectionType.ALREADY_EXISTS,
                         "member already exists"))));

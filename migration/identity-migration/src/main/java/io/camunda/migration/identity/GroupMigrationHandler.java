@@ -50,16 +50,17 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
             .collect(Collectors.toMap(Member::userId, Member::email));
     batch.forEach(
         group -> {
+          logger.debug("Migrating Group: {}", group);
+          final var normalizedGroupId = normalizeGroupID(group);
           try {
-            final var normalizedGroupId = normalizeGroupID(group);
             final var groupDTO = new GroupDTO(normalizedGroupId, group.name(), "");
             groupServices.createGroup(groupDTO).join();
-            assignUsersToGroup(group.id(), normalizedGroupId, userIdToEmailMapping);
           } catch (final Exception e) {
             if (!isConflictError(e)) {
               throw new MigrationException("Failed to migrate group with ID: " + group.id(), e);
             }
           }
+          assignUsersToGroup(group.id(), normalizedGroupId, userIdToEmailMapping);
         });
   }
 
