@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.rdbms;
 
+import static io.camunda.db.rdbms.write.RdbmsWriterConfig.DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE;
+
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
@@ -83,6 +85,7 @@ public class RdbmsExporterWrapper implements Exporter {
                 .defaultHistoryTTL(readHistoryTTL(context))
                 .minHistoryCleanupInterval(readMinHistoryCleanupInterval(context))
                 .maxHistoryCleanupInterval(readMaxHistoryCleanupInterval(context))
+                .batchOperationItemInsertBlockSize(readBatchOperationItemInsertBlockSize(context))
                 .build());
 
     final var builder =
@@ -152,6 +155,13 @@ public class RdbmsExporterWrapper implements Exporter {
 
   private int readCleanupBatchSize(final Context context) {
     return readInt(context, "historyCleanupBatchSize", DEFAULT_CLEANUP_BATCH_SIZE);
+  }
+
+  private int readBatchOperationItemInsertBlockSize(final Context context) {
+    return readInt(
+        context,
+        "batchOperationItemInsertBlockSize",
+        DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE);
   }
 
   private Duration readDuration(
