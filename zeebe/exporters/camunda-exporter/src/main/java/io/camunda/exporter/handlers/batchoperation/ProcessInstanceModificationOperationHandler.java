@@ -31,6 +31,11 @@ public class ProcessInstanceModificationOperationHandler
   }
 
   @Override
+  long getProcessInstanceKey(final Record<ProcessInstanceModificationRecordValue> record) {
+    return record.getValue().getProcessInstanceKey();
+  }
+
+  @Override
   boolean isCompleted(final Record<ProcessInstanceModificationRecordValue> record) {
     return record.getIntent().equals(ProcessInstanceModificationIntent.MODIFIED);
   }

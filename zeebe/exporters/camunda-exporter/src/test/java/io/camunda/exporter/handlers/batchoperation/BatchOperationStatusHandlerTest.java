@@ -120,6 +120,9 @@ class BatchOperationStatusHandlerTest {
     void shouldFlushEntityFields() {
       final var entity = new OperationEntity();
       entity.setState(OperationState.COMPLETED);
+      entity.setBatchOperationId(String.valueOf(batchOperationKey));
+      entity.setItemKey(123L);
+      entity.setProcessInstanceKey(456L);
       entity.setCompletedDate(OffsetDateTime.now());
       entity.setErrorMessage("error message");
 
@@ -130,11 +133,15 @@ class BatchOperationStatusHandlerTest {
 
       // then
       verify(mockRequest, times(1))
-          .update(
+          .upsert(
               indexName,
               entity.getId(),
+              entity,
               Map.of(
                   "state", entity.getState(),
+                  "batchOperationId", entity.getBatchOperationId(),
+                  "itemKey", entity.getItemKey(),
+                  "processInstanceKey", entity.getProcessInstanceKey(),
                   "completedDate", entity.getCompletedDate(),
                   "errorMessage", entity.getErrorMessage()));
     }
@@ -150,6 +157,9 @@ class BatchOperationStatusHandlerTest {
 
     @Test
     abstract void shouldExtractCorrectItemKey();
+
+    @Test
+    abstract void shouldExtractCorrectProcessInstanceKey();
 
     abstract Record<T> createSuccessRecord();
 
@@ -170,6 +180,14 @@ class BatchOperationStatusHandlerTest {
       final var itemKey = handler.getItemKey(record);
 
       assertThat(itemKey).isEqualTo(record.getValue().getProcessInstanceKey());
+    }
+
+    @Override
+    void shouldExtractCorrectProcessInstanceKey() {
+      final var record = createSuccessRecord();
+      final var processInstanceKey = handler.getProcessInstanceKey(record);
+
+      assertThat(processInstanceKey).isEqualTo(record.getValue().getProcessInstanceKey());
     }
 
     @Override
@@ -209,6 +227,14 @@ class BatchOperationStatusHandlerTest {
     }
 
     @Override
+    void shouldExtractCorrectProcessInstanceKey() {
+      final var record = createSuccessRecord();
+      final var processInstanceKey = handler.getProcessInstanceKey(record);
+
+      assertThat(processInstanceKey).isEqualTo(record.getValue().getProcessInstanceKey());
+    }
+
+    @Override
     Record<ProcessInstanceMigrationRecordValue> createSuccessRecord() {
       return factory.generateRecord(
           ValueType.PROCESS_INSTANCE_MIGRATION,
@@ -242,6 +268,14 @@ class BatchOperationStatusHandlerTest {
       final var itemKey = handler.getItemKey(record);
 
       assertThat(itemKey).isEqualTo(record.getValue().getProcessInstanceKey());
+    }
+
+    @Override
+    void shouldExtractCorrectProcessInstanceKey() {
+      final var record = createSuccessRecord();
+      final var processInstanceKey = handler.getProcessInstanceKey(record);
+
+      assertThat(processInstanceKey).isEqualTo(record.getValue().getProcessInstanceKey());
     }
 
     @Override
@@ -288,6 +322,14 @@ class BatchOperationStatusHandlerTest {
       final var itemKey = handler.getItemKey(record);
 
       assertThat(itemKey).isEqualTo(record.getValue().getProcessInstanceKey());
+    }
+
+    @Override
+    void shouldExtractCorrectProcessInstanceKey() {
+      final var record = createSuccessRecord();
+      final var processInstanceKey = handler.getProcessInstanceKey(record);
+
+      assertThat(processInstanceKey).isEqualTo(record.getValue().getProcessInstanceKey());
     }
 
     @Override
