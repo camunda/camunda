@@ -1,54 +1,34 @@
 ---
-name: Core Application E2E Tests On Demand
-
-# owner: @camunda/qa-engineering
+name: C8 Orchestration Cluster E2E Tests Nightly
 
 on:
-  workflow_dispatch:
-    inputs:
-      branch:
-        description: "Enter the branch to test"
-        required: true
-        default: "main"
+  schedule:
+    - cron: "0 0 * * *" # Run all tests at midnight UTC
 
 permissions:
   contents: read
 
 jobs:
-  validate-branch:
+  nightly-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [stable/8.6, stable/8.7, main] # Run all three branches in parallel
     runs-on: ubuntu-latest
     steps:
-      - name: Check if branch exists
-        run: |
-          echo "Checking if branch '${{ github.event.inputs.branch }}' exists..."
-          branch_name="${{ github.event.inputs.branch }}"
-          branch_check=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            https://api.github.com/repos/${{ github.repository }}/branches/$branch_name)
-
-          if [[ "$branch_check" != "200" ]]; then
-            echo "Error: Branch '$branch_name' does not exist (HTTP $branch_check)."
-            exit 1
-          fi
-
-          echo "Branch '$branch_name' exists."
-
-  core-e2e-component-tests:
-    needs: validate-branch
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.branch }} # Use the branch selected by the user
+          ref: ${{ matrix.branch }}
 
       - name: Start Tasklist and Operate
         run: |
           DATABASE=elasticsearch docker compose up -d tasklist operate
-        working-directory: qa/core-application-e2e-test-suite/config
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: List running Docker containers
         run: docker ps -a
-        working-directory: qa/core-application-e2e-test-suite/config
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Wait for services to be ready
         id: wait-for-services
@@ -93,20 +73,18 @@ jobs:
         run: |
           docker compose logs tasklist
           docker compose logs operate
-        working-directory: qa/core-application-e2e-test-suite/config
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-          cache-dependency-path: qa/core-application-e2e-test-suite/package-lock.json
+          cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
 
       - name: Install dependencies
-        run: |
-          echo "Installing dependencies..."
-          npm ci --verbose
-        working-directory: qa/core-application-e2e-test-suite
+        run: npm ci
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Import Secrets
         id: secrets
@@ -120,11 +98,12 @@ jobs:
           secrets: |
             secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
             secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
+            secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
 
       - name: Install Playwright Browsers
         shell: bash
         run: npx playwright install --with-deps chromium
-        working-directory: qa/core-application-e2e-test-suite
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Python setup
         if: always()
@@ -142,8 +121,11 @@ jobs:
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
           ZEEBE_REST_ADDRESS: "http://localhost:8089"
+          INCLUDE_SLACK_REPORTER: true
+          SLACK_BOT_USER_OAUTH_TOKEN: ${{ steps.secrets.outputs.SLACK_CORE_DOMAIN_BOT_TOKEN }}
+          VERSION: ${{ matrix.branch }}
         run: npm run test -- --project=chromium
-        working-directory: qa/core-application-e2e-test-suite
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Publish test results to TestRail
         if: always()
@@ -152,7 +134,8 @@ jobs:
           TESTRAIL_HOST: "https://camunda.testrail.com/"
           TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }} # Use the imported secret
           TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }} # Use the imported secret
-          JUNIT_RESULTS_FILE: "qa/core-application-e2e-test-suite/test-results/junit-report.xml"
+          JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
+          BRANCH_NAME: ${{ matrix.branch }}
         run: |
           pip install trcli
           trcli -y -h "$TESTRAIL_HOST" \
@@ -160,13 +143,6 @@ jobs:
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
             parse_junit --suite-id 17050 \
-            --title "On Demand Core Application Test Run Results -  ${{ github.event.inputs.branch }}" \
+            --title "Nightly C8 Orchestration Cluster Test Results - $BRANCH_NAME - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
-
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: Core Application E2E Test Result
-          path: qa/core-application-e2e-test-suite/html-report
-          retention-days: 10
