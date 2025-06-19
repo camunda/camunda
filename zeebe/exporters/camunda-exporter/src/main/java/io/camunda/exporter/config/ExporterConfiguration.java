@@ -21,6 +21,7 @@ public class ExporterConfiguration {
   private CacheConfiguration formCache = new CacheConfiguration();
   private PostExportConfiguration postExport = new PostExportConfiguration();
   private IncidentNotifierConfiguration notifier = new IncidentNotifierConfiguration();
+  private BatchOperationConfiguration batchOperation = new BatchOperationConfiguration();
   private boolean createSchema = true;
 
   public ConnectConfiguration getConnect() {
@@ -95,6 +96,14 @@ public class ExporterConfiguration {
     this.history = history;
   }
 
+  public BatchOperationConfiguration getBatchOperation() {
+    return batchOperation;
+  }
+
+  public void setBatchOperation(final BatchOperationConfiguration batchOperation) {
+    this.batchOperation = batchOperation;
+  }
+
   @Override
   public String toString() {
     return "ExporterConfiguration{"
@@ -114,6 +123,8 @@ public class ExporterConfiguration {
         + formCache
         + ", postExport="
         + postExport
+        + ", batchOperation="
+        + batchOperation
         + '}';
   }
 
@@ -359,6 +370,32 @@ public class ExporterConfiguration {
 
     public void setM2mAudience(final String m2mAudience) {
       this.m2mAudience = m2mAudience;
+    }
+  }
+
+  public static final class BatchOperationConfiguration {
+
+    /**
+     * Export the batch operation items when the initial chunk records are processed. If set to
+     * <code>false</code>, the batch operation items will be exported only when they have been
+     * processed and are completed or failed.
+     */
+    private boolean exportItemsOnCreation = true;
+
+    public boolean isExportItemsOnCreation() {
+      return exportItemsOnCreation;
+    }
+
+    public void setExportItemsOnCreation(final boolean exportItemsOnCreation) {
+      this.exportItemsOnCreation = exportItemsOnCreation;
+    }
+
+    @Override
+    public String toString() {
+      return "BatchOperationConfiguration{"
+          + "exportItemsOnCreation="
+          + exportItemsOnCreation
+          + '}';
     }
   }
 }
