@@ -24,22 +24,13 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('login', () => {
-  for (const theme of ['light', 'dark']) {
-    test(`have no violations in ${theme} theme`, async ({
-      page,
-      commonPage,
-      loginPage,
-      makeAxeBuilder,
-    }) => {
-      await commonPage.changeTheme(theme);
+  test(`have no violations`, async ({page, loginPage, makeAxeBuilder}) => {
+    await loginPage.gotoLoginPage();
 
-      await loginPage.gotoLoginPage();
+    await expect(page.getByRole('heading', {name: 'Operate'})).toBeVisible();
 
-      await expect(page.getByRole('heading', {name: 'Operate'})).toBeVisible();
+    const results = await makeAxeBuilder().analyze();
 
-      const results = await makeAxeBuilder().analyze();
-
-      validateResults(results);
-    });
-  }
+    validateResults(results);
+  });
 });

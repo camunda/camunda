@@ -32,51 +32,43 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('migration view', () => {
-  for (const theme of ['light', 'dark']) {
-    test(`initial migration view - ${theme}`, async ({
-      page,
-      commonPage,
-      processesPage,
-    }) => {
-      await commonPage.changeTheme(theme);
-
-      await page.addInitScript(() => {
-        window.localStorage.setItem(
-          'panelStates',
-          JSON.stringify({
-            isOperationsCollapsed: true,
-          }),
-        );
-      }, theme);
-
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          groupedProcesses: mockGroupedProcesses,
-          batchOperations: mockBatchOperations,
-          processInstances: mockProcessInstances,
-          statisticsV2: mockStatisticsV2,
-          processXml: open('LotsOfTasks.bpmn'),
+  test(`initial migration view`, async ({page, processesPage}) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        'panelStates',
+        JSON.stringify({
+          isOperationsCollapsed: true,
         }),
       );
-
-      await processesPage.gotoProcessesPage({
-        searchParams: {
-          active: 'true',
-          incidents: 'true',
-          process: 'LotsOfTasks',
-          version: '1',
-        },
-        options: {
-          waitUntil: 'networkidle',
-        },
-      });
-
-      await processesPage.getNthProcessInstanceCheckbox(0).click();
-      await processesPage.migrateButton.click();
-      await processesPage.migrationModal.confirmButton.click();
-
-      await expect(page).toHaveScreenshot();
     });
-  }
+
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        groupedProcesses: mockGroupedProcesses,
+        batchOperations: mockBatchOperations,
+        processInstances: mockProcessInstances,
+        statisticsV2: mockStatisticsV2,
+        processXml: open('LotsOfTasks.bpmn'),
+      }),
+    );
+
+    await processesPage.gotoProcessesPage({
+      searchParams: {
+        active: 'true',
+        incidents: 'true',
+        process: 'LotsOfTasks',
+        version: '1',
+      },
+      options: {
+        waitUntil: 'networkidle',
+      },
+    });
+
+    await processesPage.getNthProcessInstanceCheckbox(0).click();
+    await processesPage.migrateButton.click();
+    await processesPage.migrationModal.confirmButton.click();
+
+    await expect(page).toHaveScreenshot();
+  });
 });

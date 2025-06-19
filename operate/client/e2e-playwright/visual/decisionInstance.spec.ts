@@ -37,182 +37,144 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('decision instance page', () => {
-  for (const theme of ['light', 'dark']) {
-    //TODO: enable when https://github.com/camunda/operate/issues/3344 is implemented
-    test.skip(`error page - ${theme}`, async ({
-      page,
-      commonPage,
-      decisionInstancePage,
-    }) => {
-      await commonPage.changeTheme(theme);
+  //TODO: enable when https://github.com/camunda/operate/issues/3344 is implemented
+  test.skip(`error page`, async ({page, decisionInstancePage}) => {
+    await page.route(URL_API_PATTERN, mockResponses({}));
 
-      await page.route(URL_API_PATTERN, mockResponses({}));
-
-      await decisionInstancePage.gotoDecisionInstance({
-        decisionInstanceKey: '1',
-      });
-
-      await expect(page).toHaveScreenshot();
+    await decisionInstancePage.gotoDecisionInstance({
+      decisionInstanceKey: '1',
     });
 
-    test(`evaluated - ${theme}`, async ({
-      page,
-      commonPage,
-      decisionInstancePage,
-    }) => {
-      await commonPage.changeTheme(theme);
+    await expect(page).toHaveScreenshot();
+  });
 
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          decisionInstanceDetail: mockEvaluatedDecisionInstance,
-          drdData: mockEvaluatedDrdData,
-          xml: mockEvaluatedXml,
-        }),
-      );
+  test(`evaluated`, async ({page, decisionInstancePage}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        decisionInstanceDetail: mockEvaluatedDecisionInstance,
+        drdData: mockEvaluatedDrdData,
+        xml: mockEvaluatedXml,
+      }),
+    );
 
-      await decisionInstancePage.gotoDecisionInstance({
-        decisionInstanceKey: '1',
-      });
-
-      await expect(page).toHaveScreenshot();
+    await decisionInstancePage.gotoDecisionInstance({
+      decisionInstanceKey: '1',
     });
 
-    test(`evaluated (drd panel maximised) - ${theme}`, async ({
-      page,
-      commonPage,
-      decisionInstancePage,
-    }) => {
-      await commonPage.changeTheme(theme);
+    await expect(page).toHaveScreenshot();
+  });
 
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          decisionInstanceDetail: mockEvaluatedDecisionInstance,
-          drdData: mockEvaluatedDrdData,
-          xml: mockEvaluatedXml,
-        }),
-      );
+  test(`evaluated (drd panel maximised)`, async ({
+    page,
+    decisionInstancePage,
+  }) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        decisionInstanceDetail: mockEvaluatedDecisionInstance,
+        drdData: mockEvaluatedDrdData,
+        xml: mockEvaluatedXml,
+      }),
+    );
 
-      await decisionInstancePage.gotoDecisionInstance({
-        decisionInstanceKey: '1',
-      });
-
-      await page
-        .getByRole('button', {
-          name: /maximize drd panel/i,
-        })
-        .click();
-      await expect(page).toHaveScreenshot();
+    await decisionInstancePage.gotoDecisionInstance({
+      decisionInstanceKey: '1',
     });
 
-    test(`evaluated (without input output panel) - ${theme}`, async ({
-      page,
-      commonPage,
-      decisionInstancePage,
-    }) => {
-      await commonPage.changeTheme(theme);
+    await page
+      .getByRole('button', {
+        name: /maximize drd panel/i,
+      })
+      .click();
+    await expect(page).toHaveScreenshot();
+  });
 
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          decisionInstanceDetail: mockEvaluatedDecisionInstanceWithoutPanels,
-          drdData: mockEvaluatedDrdDataWithoutPanels,
-          xml: mockEvaluatedXmlWithoutPanels,
-        }),
-      );
+  test(`evaluated (without input output panel)`, async ({
+    page,
+    decisionInstancePage,
+  }) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        decisionInstanceDetail: mockEvaluatedDecisionInstanceWithoutPanels,
+        drdData: mockEvaluatedDrdDataWithoutPanels,
+        xml: mockEvaluatedXmlWithoutPanels,
+      }),
+    );
 
-      await decisionInstancePage.gotoDecisionInstance({
-        decisionInstanceKey: '1',
-      });
-
-      // wait for monaco-editor to be fully rendered
-      await page.waitForTimeout(500);
-
-      await expect(page).toHaveScreenshot();
+    await decisionInstancePage.gotoDecisionInstance({
+      decisionInstanceKey: '1',
     });
 
-    test(`evaluated (with large table) - ${theme}`, async ({
-      page,
-      commonPage,
-      decisionInstancePage,
-    }) => {
-      await commonPage.changeTheme(theme);
+    // wait for monaco-editor to be fully rendered
+    await page.waitForTimeout(500);
 
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          decisionInstanceDetail: mockEvaluatedDecisionInstance,
-          drdData: mockEvaluatedDrdData,
-          xml: mockEvaluatedLargeXml,
-        }),
-      );
+    await expect(page).toHaveScreenshot();
+  });
 
-      await decisionInstancePage.gotoDecisionInstance({
-        decisionInstanceKey: '1',
-      });
+  test(`evaluated (with large table)`, async ({page, decisionInstancePage}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        decisionInstanceDetail: mockEvaluatedDecisionInstance,
+        drdData: mockEvaluatedDrdData,
+        xml: mockEvaluatedLargeXml,
+      }),
+    );
 
-      // wait for monaco-editor to be fully rendered
-      await page.waitForTimeout(500);
-
-      await decisionInstancePage.closeDrdPanel();
-
-      // Scroll decision table to bottom right
-      await page.getByText(/test annotation/i).hover();
-
-      await expect(page).toHaveScreenshot();
+    await decisionInstancePage.gotoDecisionInstance({
+      decisionInstanceKey: '1',
     });
 
-    test(`failed - ${theme}`, async ({
-      page,
-      commonPage,
-      decisionInstancePage,
-    }) => {
-      await commonPage.changeTheme(theme);
+    // wait for monaco-editor to be fully rendered
+    await page.waitForTimeout(500);
 
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          decisionInstanceDetail: mockFailedDecisionInstance,
-          drdData: mockFailedDrdData,
-          xml: mockFailedXml,
-        }),
-      );
+    await decisionInstancePage.closeDrdPanel();
 
-      await decisionInstancePage.gotoDecisionInstance({
-        decisionInstanceKey: '1',
-      });
+    // Scroll decision table to bottom right
+    await page.getByText(/test annotation/i).hover();
 
-      await expect(page).toHaveScreenshot();
+    await expect(page).toHaveScreenshot();
+  });
+
+  test(`failed`, async ({page, decisionInstancePage}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        decisionInstanceDetail: mockFailedDecisionInstance,
+        drdData: mockFailedDrdData,
+        xml: mockFailedXml,
+      }),
+    );
+
+    await decisionInstancePage.gotoDecisionInstance({
+      decisionInstanceKey: '1',
     });
 
-    test(`failed (result tab selected) - ${theme}`, async ({
-      page,
-      commonPage,
-      decisionInstancePage,
-    }) => {
-      await commonPage.changeTheme(theme);
+    await expect(page).toHaveScreenshot();
+  });
 
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          decisionInstanceDetail: mockFailedDecisionInstance,
-          drdData: mockFailedDrdData,
-          xml: mockFailedXml,
-        }),
-      );
+  test(`failed (result tab selected)`, async ({page, decisionInstancePage}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        decisionInstanceDetail: mockFailedDecisionInstance,
+        drdData: mockFailedDrdData,
+        xml: mockFailedXml,
+      }),
+    );
 
-      await decisionInstancePage.gotoDecisionInstance({
-        decisionInstanceKey: '1',
-      });
-
-      await page
-        .getByRole('tab', {
-          name: /result/i,
-        })
-        .click();
-
-      await expect(page).toHaveScreenshot();
+    await decisionInstancePage.gotoDecisionInstance({
+      decisionInstanceKey: '1',
     });
-  }
+
+    await page
+      .getByRole('tab', {
+        name: /result/i,
+      })
+      .click();
+
+    await expect(page).toHaveScreenshot();
+  });
 });

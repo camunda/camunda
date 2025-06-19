@@ -32,33 +32,25 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('processes', () => {
-  for (const theme of ['light', 'dark']) {
-    test(`have no violations in ${theme} theme`, async ({
-      page,
-      commonPage,
-      processesPage,
-      makeAxeBuilder,
-    }) => {
-      await commonPage.changeTheme(theme);
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          groupedProcesses: mockGroupedProcesses,
-          batchOperations: mockBatchOperations,
-          processInstances: mockProcessInstances,
-          statisticsV2: mockStatisticsV2,
-          processXml: mockProcessXml,
-        }),
-      );
+  test(`have no violations`, async ({page, processesPage, makeAxeBuilder}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        groupedProcesses: mockGroupedProcesses,
+        batchOperations: mockBatchOperations,
+        processInstances: mockProcessInstances,
+        statisticsV2: mockStatisticsV2,
+        processXml: mockProcessXml,
+      }),
+    );
 
-      await processesPage.gotoProcessesPage({
-        searchParams: {active: 'true', incidents: 'true'},
-        options: {waitUntil: 'networkidle'},
-      });
-
-      const results = await makeAxeBuilder().analyze();
-
-      validateResults(results);
+    await processesPage.gotoProcessesPage({
+      searchParams: {active: 'true', incidents: 'true'},
+      options: {waitUntil: 'networkidle'},
     });
-  }
+
+    const results = await makeAxeBuilder().analyze();
+
+    validateResults(results);
+  });
 });

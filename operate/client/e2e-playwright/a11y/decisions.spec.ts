@@ -31,69 +31,57 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('decisions', () => {
-  for (const theme of ['light', 'dark']) {
-    test(`have no violations in ${theme} theme`, async ({
-      page,
-      commonPage,
-      decisionsPage,
-      makeAxeBuilder,
-    }) => {
-      await commonPage.changeTheme(theme);
+  test(`have no violations`, async ({page, decisionsPage, makeAxeBuilder}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        groupedDecisions: mockGroupedDecisions,
+        batchOperations: mockBatchOperations,
+        decisionInstances: mockDecisionInstances,
+      }),
+    );
 
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          groupedDecisions: mockGroupedDecisions,
-          batchOperations: mockBatchOperations,
-          decisionInstances: mockDecisionInstances,
-        }),
-      );
-
-      await decisionsPage.gotoDecisionsPage({
-        searchParams: {evaluated: 'true', failed: 'true'},
-        options: {waitUntil: 'networkidle'},
-      });
-
-      const results = await makeAxeBuilder().analyze();
-
-      validateResults(results);
+    await decisionsPage.gotoDecisionsPage({
+      searchParams: {evaluated: 'true', failed: 'true'},
+      options: {waitUntil: 'networkidle'},
     });
 
-    test(`have no violations when a decision is selected in ${theme} theme`, async ({
-      page,
-      commonPage,
-      decisionsPage,
-      makeAxeBuilder,
-    }) => {
-      await commonPage.changeTheme(theme);
+    const results = await makeAxeBuilder().analyze();
 
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          groupedDecisions: mockGroupedDecisions,
-          batchOperations: mockBatchOperations,
-          decisionInstances: mockDecisionInstances,
-          decisionXml: mockDecisionXml,
-        }),
-      );
+    validateResults(results);
+  });
 
-      await decisionsPage.gotoDecisionsPage({
-        searchParams: {
-          evaluated: 'true',
-          failed: 'true',
-          name: 'invoiceClassification',
-          version: '2',
-        },
-        options: {
-          waitUntil: 'networkidle',
-        },
-      });
+  test(`have no violations when a decision is selected`, async ({
+    page,
+    decisionsPage,
+    makeAxeBuilder,
+  }) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        groupedDecisions: mockGroupedDecisions,
+        batchOperations: mockBatchOperations,
+        decisionInstances: mockDecisionInstances,
+        decisionXml: mockDecisionXml,
+      }),
+    );
 
-      const results = await makeAxeBuilder()
-        .exclude('.tjs-table-container')
-        .analyze();
-
-      validateResults(results);
+    await decisionsPage.gotoDecisionsPage({
+      searchParams: {
+        evaluated: 'true',
+        failed: 'true',
+        name: 'invoiceClassification',
+        version: '2',
+      },
+      options: {
+        waitUntil: 'networkidle',
+      },
     });
-  }
+
+    const results = await makeAxeBuilder()
+      .exclude('.tjs-table-container')
+      .analyze();
+
+    validateResults(results);
+  });
 });

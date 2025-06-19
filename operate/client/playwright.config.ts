@@ -30,9 +30,14 @@ const config = defineConfig({
       testMatch: /e2e.setup\.ts/,
     },
     {
-      name: 'visual',
+      name: 'visual-light',
       testMatch: 'visual/**/*.spec.ts',
-      use: {...devices['Desktop Chrome']},
+      use: {...devices['Desktop Chrome'], colorScheme: 'light'},
+    },
+    {
+      name: 'visual-dark',
+      testMatch: 'visual/**/*.spec.ts',
+      use: {...devices['Desktop Chrome'], colorScheme: 'dark'},
     },
     {
       name: 'a11y',

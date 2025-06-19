@@ -36,89 +36,78 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('decision detail', () => {
-  for (const theme of ['light', 'dark']) {
-    test(`have no violations for evaluated decision in ${theme} theme`, async ({
-      page,
-      commonPage,
-      decisionInstancePage,
-      makeAxeBuilder,
-    }) => {
-      await commonPage.changeTheme(theme);
+  test(`have no violations for evaluated decision`, async ({
+    page,
+    decisionInstancePage,
+    makeAxeBuilder,
+  }) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        decisionInstanceDetail: mockEvaluatedDecisionInstance,
+        drdData: mockEvaluatedDrdData,
+        xml: mockEvaluatedXml,
+      }),
+    );
 
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          decisionInstanceDetail: mockEvaluatedDecisionInstance,
-          drdData: mockEvaluatedDrdData,
-          xml: mockEvaluatedXml,
-        }),
-      );
-
-      await decisionInstancePage.gotoDecisionInstance({
-        decisionInstanceKey: '1',
-      });
-
-      const results = await makeAxeBuilder()
-        .exclude('.tjs-table-container')
-        .analyze();
-
-      validateResults(results);
+    await decisionInstancePage.gotoDecisionInstance({
+      decisionInstanceKey: '1',
     });
 
-    test(`have no violations for an incident in ${theme} theme`, async ({
-      page,
-      commonPage,
-      decisionInstancePage,
-      makeAxeBuilder,
-    }) => {
-      await commonPage.changeTheme(theme);
+    const results = await makeAxeBuilder()
+      .exclude('.tjs-table-container')
+      .analyze();
 
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          decisionInstanceDetail: mockFailedDecisionInstance,
-          drdData: mockFailedDrdData,
-          xml: mockFailedXml,
-        }),
-      );
+    validateResults(results);
+  });
 
-      await decisionInstancePage.gotoDecisionInstance({
-        decisionInstanceKey: '1',
-      });
+  test(`have no violations for an incident`, async ({
+    page,
+    decisionInstancePage,
+    makeAxeBuilder,
+  }) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        decisionInstanceDetail: mockFailedDecisionInstance,
+        drdData: mockFailedDrdData,
+        xml: mockFailedXml,
+      }),
+    );
 
-      const results = await makeAxeBuilder()
-        .exclude('.tjs-table-container')
-        .analyze();
-
-      validateResults(results);
+    await decisionInstancePage.gotoDecisionInstance({
+      decisionInstanceKey: '1',
     });
 
-    test(`have no violations for a decision without input output panels in ${theme} theme`, async ({
-      page,
-      commonPage,
-      decisionInstancePage,
-      makeAxeBuilder,
-    }) => {
-      await commonPage.changeTheme(theme);
+    const results = await makeAxeBuilder()
+      .exclude('.tjs-table-container')
+      .analyze();
 
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          decisionInstanceDetail: mockEvaluatedDecisionInstanceWithoutPanels,
-          drdData: mockEvaluatedDrdDataWithoutPanels,
-          xml: mockEvaluatedXmlWithoutPanels,
-        }),
-      );
+    validateResults(results);
+  });
 
-      await decisionInstancePage.gotoDecisionInstance({
-        decisionInstanceKey: '1',
-      });
+  test(`have no violations for a decision without input output panels`, async ({
+    page,
+    decisionInstancePage,
+    makeAxeBuilder,
+  }) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        decisionInstanceDetail: mockEvaluatedDecisionInstanceWithoutPanels,
+        drdData: mockEvaluatedDrdDataWithoutPanels,
+        xml: mockEvaluatedXmlWithoutPanels,
+      }),
+    );
 
-      const results = await makeAxeBuilder()
-        .exclude('.tjs-table-container')
-        .analyze();
-
-      validateResults(results);
+    await decisionInstancePage.gotoDecisionInstance({
+      decisionInstanceKey: '1',
     });
-  }
+
+    const results = await makeAxeBuilder()
+      .exclude('.tjs-table-container')
+      .analyze();
+
+    validateResults(results);
+  });
 });

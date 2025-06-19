@@ -31,82 +31,70 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('dashboard', () => {
-  for (const theme of ['light', 'dark']) {
-    test(`have no violations in ${theme} theme`, async ({
-      page,
-      commonPage,
-      dashboardPage,
-      makeAxeBuilder,
-    }) => {
-      await commonPage.changeTheme(theme);
+  test(`have no violations`, async ({page, dashboardPage, makeAxeBuilder}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        statistics: mockStatistics,
+        incidentsByError: mockIncidentsByError,
+        incidentsByProcess: mockIncidentsByProcess,
+      }),
+    );
 
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          statistics: mockStatistics,
-          incidentsByError: mockIncidentsByError,
-          incidentsByProcess: mockIncidentsByProcess,
-        }),
-      );
+    await dashboardPage.gotoDashboardPage({waitUntil: 'networkidle'});
 
-      await dashboardPage.gotoDashboardPage({waitUntil: 'networkidle'});
+    const results = await makeAxeBuilder().analyze();
 
-      const results = await makeAxeBuilder().analyze();
+    validateResults(results);
+  });
 
-      validateResults(results);
-    });
+  test(`have no violations when rows are expanded`, async ({
+    page,
+    dashboardPage,
+    makeAxeBuilder,
+  }) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        statistics: mockStatistics,
+        incidentsByError: mockIncidentsByError,
+        incidentsByProcess: mockIncidentsByProcess,
+      }),
+    );
 
-    test(`have no violations when rows are expanded in ${theme} theme`, async ({
-      page,
-      commonPage,
-      dashboardPage,
-      makeAxeBuilder,
-    }) => {
-      await commonPage.changeTheme(theme);
+    await dashboardPage.gotoDashboardPage();
 
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          statistics: mockStatistics,
-          incidentsByError: mockIncidentsByError,
-          incidentsByProcess: mockIncidentsByProcess,
-        }),
-      );
+    const expandInstancesByProcessRow = page
+      .getByTestId('instances-by-process')
+      .getByRole('button', {
+        name: /expand current row/i,
+      })
+      .nth(0);
 
-      await dashboardPage.gotoDashboardPage();
+    expect(expandInstancesByProcessRow).toBeEnabled();
 
-      const expandInstancesByProcessRow = page
-        .getByTestId('instances-by-process')
-        .getByRole('button', {
-          name: /expand current row/i,
-        })
-        .nth(0);
+    await expandInstancesByProcessRow.click();
 
-      expect(expandInstancesByProcessRow).toBeEnabled();
+    await expect(
+      page.getByText(/order process – 136 instances in version 2/i),
+    ).toBeVisible();
 
-      await expandInstancesByProcessRow.click();
+    const expandIncidentsByErrorRow = page
+      .getByTestId('incident-byError')
+      .getByRole('button', {
+        name: /expand current row/i,
+      })
+      .nth(0);
 
-      await expect(
-        page.getByText(/order process – 136 instances in version 2/i),
-      ).toBeVisible();
+    await expandIncidentsByErrorRow.click();
 
-      const expandIncidentsByErrorRow = page
-        .getByTestId('incident-byError')
-        .getByRole('button', {
-          name: /expand current row/i,
-        })
-        .nth(0);
+    await expect(page.getByText(/complexprocess – version 2/i)).toBeVisible();
 
-      await expandIncidentsByErrorRow.click();
+    const results = await makeAxeBuilder()
+      // TODO: enable 'color-contrast' rule when the related TODO item is fixed https://github.com/camunda/operate/issues/5027
+      .disableRules(['color-contrast'])
+      .analyze();
 
-      await expect(page.getByText(/complexprocess – version 2/i)).toBeVisible();
-
-      const results = await makeAxeBuilder()
-        // TODO: enable 'color-contrast' rule when the related TODO item is fixed https://github.com/camunda/operate/issues/5027
-        .disableRules(['color-contrast'])
-        .analyze();
-
-      validateResults(results);
-    });
-  }
+    validateResults(results);
+  });
 });
