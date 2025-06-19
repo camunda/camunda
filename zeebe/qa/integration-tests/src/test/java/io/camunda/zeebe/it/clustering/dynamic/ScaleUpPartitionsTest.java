@@ -21,6 +21,7 @@ import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Objects;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
@@ -94,6 +95,34 @@ public class ScaleUpPartitionsTest {
   }
 
   @Test
+  public void shouldStartProcessInstancesDeployedWhenScalingUp() {
+    // given
+    final var desiredPartitionCount = PARTITIONS_COUNT + 3;
+    cluster.awaitHealthyTopology();
+
+    deployProcessModel(camundaClient, JOB_TYPE, "baseProcess");
+    // when
+    scaleToPartitions(desiredPartitionCount);
+
+    final var processIds = new ArrayList<String>();
+    for (int i = 0; i < 10; i++) {
+      final var id = "processId-" + i;
+      processIds.add(id);
+      // do not wait for the deployment to be distributed to all partitions
+      final var deploymentKey = deployProcessModel(camundaClient, JOB_TYPE, id, false);
+      LOG.debug("Deployed process model with id: {}, key: {}", id, deploymentKey);
+    }
+
+    awaitScaleUpCompletion(desiredPartitionCount);
+
+    for (final var processId : processIds) {
+      createInstanceWithAJobOnAllPartitions(
+          camundaClient, JOB_TYPE, desiredPartitionCount, false, processId);
+    }
+
+    cluster.awaitHealthyTopology();
+  }
+
   private void awaitScaleUpCompletion(final int desiredPartitionCount) {
     Awaitility.await("until scaling is done")
         .timeout(Duration.ofMinutes(5))
