@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.scaling;
 
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.RoutingState;
@@ -15,6 +16,7 @@ import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
+@ExcludeAuthorizationCheck
 public class ScaleUpStatusProcessor implements TypedRecordProcessor<ScaleRecord> {
 
   private final Writers writers;
