@@ -55,8 +55,6 @@ public class JobWorkerElementMultiTenantTest {
                 config.getMultiTenancy().setEnabled(true);
               });
 
-  ;
-
   private static final String PROCESS_ID = "process";
   private static String tenantId;
   private static String username;
