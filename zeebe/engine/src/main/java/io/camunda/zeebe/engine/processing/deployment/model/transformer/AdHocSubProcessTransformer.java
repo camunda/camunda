@@ -64,6 +64,8 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
         executableAdHocSubProcess.getChildElements();
     setAdHocActivities(executableAdHocSubProcess, childElements);
 
+    setOutputCollection(executableAdHocSubProcess, element, context);
+
     setImplementationType(executableAdHocSubProcess, element);
 
     setJobWorkerProperties(executableAdHocSubProcess, element, context);
@@ -185,5 +187,22 @@ public final class AdHocSubProcessTransformer implements ModelElementTransformer
 
     final byte[] msgPack = MsgPackConverter.convertToMsgPack(adHocActivityDescription);
     executableAdHocSubProcess.setAdHocActivitiesDescription(BufferUtil.wrapArray(msgPack));
+  }
+
+  private void setOutputCollection(
+      final ExecutableAdHocSubProcess executableAdHocSubProcess,
+      final AdHocSubProcess element,
+      final TransformContext context) {
+    Optional.ofNullable(element.getSingleExtensionElement(ZeebeAdHoc.class))
+        .map(ZeebeAdHoc::getOutputCollection)
+        .filter(e -> !e.isEmpty())
+        .map(BufferUtil::wrapString)
+        .ifPresent(executableAdHocSubProcess::setOutputCollection);
+
+    Optional.ofNullable(element.getSingleExtensionElement(ZeebeAdHoc.class))
+        .map(ZeebeAdHoc::getOutputElement)
+        .filter(e -> !e.isEmpty())
+        .map(e -> context.getExpressionLanguage().parseExpression(e))
+        .ifPresent(executableAdHocSubProcess::setOutputElement);
   }
 }
