@@ -17,6 +17,7 @@ import static com.google.common.net.HttpHeaders.EXPIRES;
 import static com.google.common.net.HttpHeaders.PERMISSIONS_POLICY;
 import static com.google.common.net.HttpHeaders.PRAGMA;
 import static com.google.common.net.HttpHeaders.REFERRER_POLICY;
+import static com.google.common.net.HttpHeaders.STRICT_TRANSPORT_SECURITY;
 import static com.google.common.net.HttpHeaders.X_CONTENT_TYPE_OPTIONS;
 import static com.google.common.net.HttpHeaders.X_FRAME_OPTIONS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,6 +25,7 @@ import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.authentication.config.controllers.TestApiController;
 import io.camunda.security.configuration.headers.ContentSecurityPolicyConfig;
+import io.camunda.security.configuration.headers.PermissionsPolicyConfig;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -93,8 +95,12 @@ public class AbstractWebSecurityConfigTest {
                 List.of(ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY)),
             entry(REFERRER_POLICY, List.of("strict-origin-when-cross-origin")),
             entry(CROSS_ORIGIN_OPENER_POLICY, List.of("same-origin-allow-popups")),
-            entry(CROSS_ORIGIN_EMBEDDER_POLICY, List.of("require-corp")),
-            entry(CROSS_ORIGIN_RESOURCE_POLICY, List.of("same-origin")))
-        .doesNotContainKeys(CONTENT_SECURITY_POLICY_REPORT_ONLY, PERMISSIONS_POLICY);
+            entry(CROSS_ORIGIN_EMBEDDER_POLICY, List.of("unsafe-none")),
+            entry(CROSS_ORIGIN_RESOURCE_POLICY, List.of("same-site")),
+            entry(STRICT_TRANSPORT_SECURITY, List.of("max-age=31536000")),
+            entry(
+                PERMISSIONS_POLICY,
+                List.of(PermissionsPolicyConfig.DEFAULT_PERMISSIONS_POLICY_VALUE)))
+        .doesNotContainKeys(CONTENT_SECURITY_POLICY_REPORT_ONLY);
   }
 }

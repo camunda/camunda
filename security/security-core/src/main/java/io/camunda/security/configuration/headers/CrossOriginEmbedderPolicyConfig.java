@@ -19,8 +19,8 @@ import io.camunda.security.configuration.headers.values.CrossOriginEmbedderPolic
  *
  * <p>This header works in conjunction with Cross-Origin-Opener-Policy (COOP).
  *
- * <p>Default: REQUIRE_CORP - Requiring explicit opt-in for all cross-origin resources. This may
- * require coordination with third-party services to add appropriate CORP headers.
+ * <p>Default: UNSAFE_NONE - Allows the document to load cross-origin resources without giving
+ * explicit permission through the CORS protocol or the Cross-Origin-Resource-Policy header.
  *
  * @see <a
  *     href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Embedder-Policy">MDN:
@@ -31,15 +31,10 @@ public class CrossOriginEmbedderPolicyConfig {
   /**
    * The COEP policy value.
    *
-   * <p>Default: REQUIRE_CORP - This is the most secure setting, requiring all cross-origin
-   * resources to explicitly allow embedding. While this may require additional configuration for
-   * third-party resources, it provides important security benefits and enables advanced browser
-   * features.
-   *
-   * <p>UNSAFE_NONE would allow unrestricted cross-origin resource loading but is not recommended as
-   * it disables important security protections.
+   * <p>Default: UNSAFE_NONE - Allows the document to load cross-origin resources without giving
+   * explicit permission through the CORS protocol or the Cross-Origin-Resource-Policy header.
    */
-  private CrossOriginEmbedderPolicy value = CrossOriginEmbedderPolicy.REQUIRE_CORP;
+  private CrossOriginEmbedderPolicy value = CrossOriginEmbedderPolicy.UNSAFE_NONE;
 
   public CrossOriginEmbedderPolicy getValue() {
     return value;

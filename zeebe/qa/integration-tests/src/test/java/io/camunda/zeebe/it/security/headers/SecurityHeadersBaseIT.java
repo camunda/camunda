@@ -37,8 +37,8 @@ public abstract class SecurityHeadersBaseIT {
   protected static final String X_FRAME_OPTIONS_VALUE = "SAMEORIGIN";
   protected static final String REFERRER_POLICY_VALUE = "strict-origin-when-cross-origin";
   protected static final String CROSS_ORIGIN_OPENER_POLICY_VALUE = "same-origin-allow-popups";
-  protected static final String CROSS_ORIGIN_EMBEDDER_POLICY_VALUE = "require-corp";
-  protected static final String CROSS_ORIGIN_RESOURCE_POLICY_VALUE = "same-origin";
+  protected static final String CROSS_ORIGIN_EMBEDDER_POLICY_VALUE = "unsafe-none";
+  protected static final String CROSS_ORIGIN_RESOURCE_POLICY_VALUE = "same-site";
 
   // Common infrastructure
   @Container

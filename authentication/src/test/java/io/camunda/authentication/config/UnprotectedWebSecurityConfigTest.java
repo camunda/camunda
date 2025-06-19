@@ -17,18 +17,16 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 @SpringBootTest(
     classes = {WebSecurityConfigTestContext.class, WebSecurityConfig.class},
-    properties = {
-      "logging.level.org.springframework.security=DEBUG",
-      "camunda.security.authentication.unprotected-api=true"
-    })
+    properties = {"camunda.security.authentication.unprotected-api=true"})
 public class UnprotectedWebSecurityConfigTest extends AbstractWebSecurityConfigTest {
 
   @ParameterizedTest
   @MethodSource("getAllDummyEndpoints")
-  public void shouldAddSecurityHeadersOnAllApiAndWebappRequests(String endpoint) {
+  public void shouldAddSecurityHeadersOnAllApiAndWebappRequests(final String endpoint) {
 
     // when
-    final MvcTestResult testResult = mockMvcTester.get().uri(endpoint).exchange();
+    final MvcTestResult testResult =
+        mockMvcTester.get().uri("https://localhost" + endpoint).exchange();
 
     // then
     assertThat(testResult).hasStatusOk();

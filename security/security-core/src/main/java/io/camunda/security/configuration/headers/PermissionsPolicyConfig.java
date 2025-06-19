@@ -32,11 +32,60 @@ package io.camunda.security.configuration.headers;
  */
 public class PermissionsPolicyConfig {
 
+  public static final String DEFAULT_PERMISSIONS_POLICY_VALUE =
+      "accelerometer=(), "
+          + "ambient-light-sensor=(), "
+          + "attribution-reporting=(), "
+          + "autoplay=(), "
+          + "bluetooth=(), "
+          + "browsing-topics=(), "
+          + "camera=(), "
+          + "compute-pressure=(), "
+          + "cross-origin-isolated=(), "
+          + "deferred-fetch=(), "
+          + "deferred-fetch-minimal=(), "
+          + "display-capture=(), "
+          + "encrypted-media=(), "
+          + "fullscreen=(), "
+          + "gamepad=(), "
+          + "geolocation=(), "
+          + "gyroscope=(), "
+          + "hid=(), "
+          + "identity-credentials-get=(), "
+          + "idle-detection=(), "
+          + "language-detector=(), "
+          + "local-fonts=(), "
+          + "magnetometer=(), "
+          + "microphone=(), "
+          + "midi=(), "
+          + "otp-credentials=(), "
+          + "payment=(), "
+          + "picture-in-picture=(), "
+          + "publickey-credentials-create=(), "
+          + "publickey-credentials-get=(), "
+          + "screen-wake-lock=(), "
+          + "serial=(), "
+          + "speaker-selection=(), "
+          + "storage-access=(), "
+          + "summarizer=(), "
+          + "translator=(), "
+          + "usb=(), "
+          + "web-share=(), "
+          + "window-management=(), "
+          + "xr-spatial-tracking=()";
+
   /**
    * The Permissions Policy directives as a string.
    *
-   * <p>Default: null (no policy set) - This allows all features by default, letting applications
-   * selectively restrict features based on their needs.
+   * <p>Default: accelerometer=(), ambient-light-sensor=(), attribution-reporting=(), autoplay=(),
+   * bluetooth=(), browsing-topics=(), camera=(), compute-pressure=(), cross-origin-isolated=(),
+   * deferred-fetch=(), deferred-fetch-minimal=(), display-capture=(), encrypted-media=(),
+   * fullscreen=(), gamepad=(), geolocation=(), gyroscope=(), hid=(), identity-credentials-get=(),
+   * idle-detection=(), language-detector=(), local-fonts=(), magnetometer=(), microphone=(),
+   * midi=(), otp-credentials=(), payment=(), picture-in-picture=(),
+   * publickey-credentials-create=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(),
+   * speaker-selection=(), storage-access=(), summarizer=(), translator=(), usb=(), web-share=(),
+   * window-management=(), xr-spatial-tracking=() which disables all features by default.
    *
    * <p>Format: "directive1=allowlist directive2=allowlist ..."
    *
@@ -50,7 +99,7 @@ public class PermissionsPolicyConfig {
    *
    * <p>Example: "camera=() microphone=() geolocation=(self) payment=(self)"
    */
-  private String value;
+  private String value = DEFAULT_PERMISSIONS_POLICY_VALUE;
 
   public String getValue() {
     return value;

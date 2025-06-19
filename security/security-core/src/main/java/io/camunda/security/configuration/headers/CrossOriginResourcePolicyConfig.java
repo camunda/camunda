@@ -19,9 +19,7 @@ import io.camunda.security.configuration.headers.values.CrossOriginResourcePolic
  * <p>The header works by instructing browsers to block no-cors cross-origin requests to the
  * resource. It complements CORB (Cross-Origin Read Blocking) which browsers implement by default.
  *
- * <p>Default: SAME_ORIGIN - Only allows the resource to be loaded by the same origin, providing
- * strong protection against cross-origin attacks while maintaining functionality for same-origin
- * use cases.
+ * <p>Default: SAME_SITE - Only requests from the same Site can read the resource.
  *
  * @see <a
  *     href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Cross-Origin_Resource_Policy">MDN:
@@ -35,14 +33,12 @@ public class CrossOriginResourcePolicyConfig {
   /**
    * The CORP policy value.
    *
-   * <p>Default: SAME_ORIGIN - This default prevents cross-origin loading while allowing same-origin
-   * use. This is the recommended setting for most resources unless they are specifically intended
-   * to be embedded cross-origin.
+   * <p>Default: SAME_SITE - Only requests from the same Site can read the resource.
    *
-   * <p>Alternative values: - SAME_SITE: Allows loading from the same site (more permissive) -
-   * CROSS_ORIGIN: Allows loading from any origin (least secure)
+   * <p>Alternative values: - SAME_ORIGIN: Only requests from the same origin (i.e., scheme + host +
+   * port) can read the resource.
    */
-  private CrossOriginResourcePolicy value = CrossOriginResourcePolicy.SAME_ORIGIN;
+  private CrossOriginResourcePolicy value = CrossOriginResourcePolicy.SAME_SITE;
 
   public CrossOriginResourcePolicy getValue() {
     return value;

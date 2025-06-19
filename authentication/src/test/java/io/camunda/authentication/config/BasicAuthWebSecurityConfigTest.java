@@ -10,6 +10,7 @@ package io.camunda.authentication.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -34,7 +35,7 @@ public class BasicAuthWebSecurityConfigTest extends AbstractWebSecurityConfigTes
 
     // when
     final MvcTestResult testResult =
-        mockMvcTester.get().headers(basicAuthDemo()).uri(endpoint).exchange();
+        mockMvcTester.get().headers(basicAuthDemo()).uri("https://localhost" + endpoint).exchange();
 
     // then
     assertThat(testResult).hasStatusOk();
@@ -50,6 +51,8 @@ public class BasicAuthWebSecurityConfigTest extends AbstractWebSecurityConfigTes
   }
 
   private static String basicAuthentication(final String username, final String password) {
-    return "Basic " + Base64.getEncoder().encodeToString((username + ":" + password).getBytes());
+    return "Basic "
+        + Base64.getEncoder()
+            .encodeToString((username + ":" + password).getBytes(StandardCharsets.UTF_8));
   }
 }

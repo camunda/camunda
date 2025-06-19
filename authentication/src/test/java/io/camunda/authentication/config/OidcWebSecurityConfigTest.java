@@ -56,7 +56,6 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
       WebSecurityConfig.class
     },
     properties = {
-      "logging.level.org.springframework.security=DEBUG",
       "camunda.security.authentication.unprotected-api=false",
       "camunda.security.authentication.method=oidc",
       "camunda.security.authentication.oidc.client-id=example",
@@ -69,13 +68,13 @@ public class OidcWebSecurityConfigTest extends AbstractWebSecurityConfigTest {
 
   @ParameterizedTest
   @MethodSource("getAllDummyEndpoints")
-  public void shouldAddSecurityHeadersOnAllApiAndWebappRequests(String endpoint) {
+  public void shouldAddSecurityHeadersOnAllApiAndWebappRequests(final String endpoint) {
 
     // when
     final MvcTestResult testResult =
         mockMvcTester
             .get()
-            .uri(endpoint)
+            .uri("https://localhost" + endpoint)
             .with(SecurityMockMvcRequestPostProcessors.oidcLogin())
             .exchange();
 

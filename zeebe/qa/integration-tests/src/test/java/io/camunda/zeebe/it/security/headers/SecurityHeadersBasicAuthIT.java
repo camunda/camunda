@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.security.configuration.headers.ContentSecurityPolicyConfig;
+import io.camunda.security.configuration.headers.PermissionsPolicyConfig;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.it.util.AuthorizationsUtil;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -93,13 +94,15 @@ public class SecurityHeadersBasicAuthIT extends SecurityHeadersBaseIT {
             List.of(ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY));
     assertThat(headers).doesNotContainKey(CONTENT_SECURITY_POLICY_REPORT_ONLY);
     assertThat(headers).containsEntry(REFERRER_POLICY, List.of(REFERRER_POLICY_VALUE));
-    assertThat(headers).doesNotContainKey(PERMISSIONS_POLICY);
     assertThat(headers)
         .containsEntry(CROSS_ORIGIN_OPENER_POLICY, List.of(CROSS_ORIGIN_OPENER_POLICY_VALUE));
     assertThat(headers)
         .containsEntry(CROSS_ORIGIN_EMBEDDER_POLICY, List.of(CROSS_ORIGIN_EMBEDDER_POLICY_VALUE));
     assertThat(headers)
         .containsEntry(CROSS_ORIGIN_RESOURCE_POLICY, List.of(CROSS_ORIGIN_RESOURCE_POLICY_VALUE));
+    assertThat(headers)
+        .containsEntry(
+            PERMISSIONS_POLICY, List.of(PermissionsPolicyConfig.DEFAULT_PERMISSIONS_POLICY_VALUE));
   }
 
   private static String basicAuthentication() {

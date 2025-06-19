@@ -10,15 +10,15 @@ package io.camunda.security.configuration.headers;
 import io.camunda.security.configuration.headers.values.FrameOptionMode;
 
 /**
- * Configures X-Frame-Options header to prevent clickjacking attacks.
+ * Configures X-Frame-Options header to prevent clickjacking attacks. Disabled by default to avoid
+ * breaking functionality, such as PDF preview in the Tasklist.
  *
  * <p>The X-Frame-Options header indicates whether a browser should be allowed to render a page in a
  * frame, iframe, embed, or object. This prevents clickjacking attacks where malicious sites trick
  * users into clicking on hidden elements.
  *
- * <p>When enabled (default state) with SAMEORIGIN value, pages can only be displayed in frames on
- * the same origin. This allows legitimate same-origin framing while preventing cross-origin
- * clickjacking.
+ * <p>When enabled with SAMEORIGIN value, pages can only be displayed in frames on the same origin.
+ * This allows legitimate same-origin framing while preventing cross-origin clickjacking.
  *
  * <p>Note: Modern applications should also use Content-Security-Policy frame-ancestors directive
  * which provides more granular control and supersedes X-Frame-Options in supporting browsers.
@@ -34,9 +34,8 @@ public class FrameOptionsConfig {
   /**
    * Controls whether the X-Frame-Options header is sent.
    *
-   * <p>Default: true (enabled) - Clickjacking protection should remain enabled unless Camunda needs
-   * to be embedded in frames. Even then, proper restrictions should be applied rather than
-   * disabling entirely.
+   * <p>Default: false (disabled) - Disabled by default because it may interfere with frame-based
+   * content loading, such as PDF preview in the Tasklist.
    */
   private boolean enabled = true;
 

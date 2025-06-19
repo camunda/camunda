@@ -17,12 +17,14 @@ import static com.google.common.net.HttpHeaders.EXPIRES;
 import static com.google.common.net.HttpHeaders.PERMISSIONS_POLICY;
 import static com.google.common.net.HttpHeaders.PRAGMA;
 import static com.google.common.net.HttpHeaders.REFERRER_POLICY;
+import static com.google.common.net.HttpHeaders.STRICT_TRANSPORT_SECURITY;
 import static com.google.common.net.HttpHeaders.X_CONTENT_TYPE_OPTIONS;
 import static com.google.common.net.HttpHeaders.X_FRAME_OPTIONS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,7 +51,10 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
       "camunda.security.http-headers.permissions-policy.value=camera=*",
       "camunda.security.http-headers.cross-origin-opener-policy.value=UNSAFE_NONE",
       "camunda.security.http-headers.cross-origin-embedder-policy.value=UNSAFE_NONE",
-      "camunda.security.http-headers.cross-origin-resource-policy.value=CROSS_ORIGIN"
+      "camunda.security.http-headers.cross-origin-resource-policy.value=CROSS_ORIGIN",
+      "camunda.security.http-headers.hsts.max-age-in-seconds=5000000",
+      "camunda.security.http-headers.hsts.include-subdomains=true",
+      "camunda.security.http-headers.hsts.preload=true"
     })
 public class BasicAuthModifiedHeadersWebSecurityConfigTest extends AbstractWebSecurityConfigTest {
 
@@ -59,7 +64,7 @@ public class BasicAuthModifiedHeadersWebSecurityConfigTest extends AbstractWebSe
 
     // when
     final MvcTestResult testResult =
-        mockMvcTester.get().headers(basicAuthDemo()).uri(endpoint).exchange();
+        mockMvcTester.get().headers(basicAuthDemo()).uri("https://localhost" + endpoint).exchange();
 
     // then
     assertThat(testResult).hasStatusOk();
@@ -71,7 +76,10 @@ public class BasicAuthModifiedHeadersWebSecurityConfigTest extends AbstractWebSe
             entry(PERMISSIONS_POLICY, List.of("camera=*")),
             entry(CROSS_ORIGIN_OPENER_POLICY, List.of("unsafe-none")),
             entry(CROSS_ORIGIN_EMBEDDER_POLICY, List.of("unsafe-none")),
-            entry(CROSS_ORIGIN_RESOURCE_POLICY, List.of("cross-origin")))
+            entry(CROSS_ORIGIN_RESOURCE_POLICY, List.of("cross-origin")),
+            entry(
+                STRICT_TRANSPORT_SECURITY,
+                List.of("max-age=5000000 ; includeSubDomains ; preload")))
         .doesNotContainKeys(
             X_CONTENT_TYPE_OPTIONS,
             CACHE_CONTROL,
@@ -90,6 +98,8 @@ public class BasicAuthModifiedHeadersWebSecurityConfigTest extends AbstractWebSe
   }
 
   private static String basicAuthentication(final String username, final String password) {
-    return "Basic " + Base64.getEncoder().encodeToString(("demo:demo").getBytes());
+    return "Basic "
+        + Base64.getEncoder()
+            .encodeToString((username + ":" + password).getBytes(StandardCharsets.UTF_8));
   }
 }

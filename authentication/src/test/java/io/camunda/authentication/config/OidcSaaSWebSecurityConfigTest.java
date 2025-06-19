@@ -29,7 +29,6 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
       WebSecurityConfig.class
     },
     properties = {
-      "logging.level.org.springframework.security=DEBUG",
       "camunda.security.authentication.unprotected-api=false",
       "camunda.security.authentication.method=oidc",
       "camunda.security.authentication.oidc.client-id=example",
@@ -50,7 +49,7 @@ public class OidcSaaSWebSecurityConfigTest extends AbstractWebSecurityConfigTest
     final MvcTestResult testResult =
         mockMvcTester
             .get()
-            .uri(endpoint)
+            .uri("https://localhost" + endpoint)
             .with(SecurityMockMvcRequestPostProcessors.oidcLogin())
             .exchange();
 
