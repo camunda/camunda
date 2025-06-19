@@ -251,7 +251,8 @@ public final class EngineProcessors {
         typedRecordProcessors,
         writers,
         processingState,
-        routingInfo);
+        routingInfo,
+        config.isCommandDistributionPaused());
 
     UserProcessors.addUserProcessors(
         keyGenerator,
@@ -606,14 +607,16 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final ProcessingState processingState,
-      final RoutingInfo routingInfo) {
+      final RoutingInfo routingInfo,
+      final boolean isCommandDistributionPaused) {
 
     // periodically retries command distribution
     typedRecordProcessors.withListener(
         new CommandRedistributor(
             commandDistributionBehavior.withScheduledState(
                 scheduledTaskStateSupplier.get().getDistributionState()),
-            routingInfo));
+            routingInfo,
+            isCommandDistributionPaused));
 
     final var distributionState = processingState.getDistributionState();
     typedRecordProcessors.onCommand(
