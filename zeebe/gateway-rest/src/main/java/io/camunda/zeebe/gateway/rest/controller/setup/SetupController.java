@@ -26,6 +26,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @CamundaRestController
 @RequestMapping("/v2/setup")
 public class SetupController {
+
+  public static final String ADMIN_EXISTS_ERROR_MESSAGE =
+      "Expected to create an initial admin user, but found existing admin users. Please ask your admin to create a new user with the '%s' role."
+          .formatted(DefaultRole.ADMIN.getId());
   private final UserServices userServices;
   private final RoleServices roleServices;
 
@@ -37,11 +41,10 @@ public class SetupController {
   @CamundaPostMapping(path = "/user")
   public CompletableFuture<ResponseEntity<Object>> createAdminUser(
       @RequestBody final UserRequest request) {
-    if (roleServices.hasMembersOfType(DefaultRole.ADMIN.getId(), EntityType.USER)) {
-      final var exception =
-          new ForbiddenException(
-              "Expected to create an initial admin user, but found existing admin users. Please ask your admin to create a new user with the '%s' role."
-                  .formatted(DefaultRole.ADMIN.getId()));
+    if (roleServices
+        .withAuthentication(RequestMapper.getAnonymousAuthentication())
+        .hasMembersOfType(DefaultRole.ADMIN.getId(), EntityType.USER)) {
+      final var exception = new ForbiddenException(ADMIN_EXISTS_ERROR_MESSAGE);
       return RestErrorMapper.mapProblemToCompletedResponse(
           RestErrorMapper.mapForbiddenExceptionToProblem(exception));
     }

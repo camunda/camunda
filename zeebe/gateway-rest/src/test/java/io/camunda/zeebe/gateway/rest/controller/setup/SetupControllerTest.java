@@ -1,0 +1,382 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.gateway.rest.controller.setup;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+import io.camunda.service.RoleServices;
+import io.camunda.service.UserServices;
+import io.camunda.service.UserServices.UserDTO;
+import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
+import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns;
+import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.record.value.DefaultRole;
+import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.net.URI;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
+
+@WebMvcTest(SetupController.class)
+class SetupControllerTest extends RestControllerTest {
+  private static final String BASE_PATH = "/v2/setup";
+  private static final String USER_PATH = BASE_PATH + "/user";
+  @MockBean private UserServices userServices;
+  @MockBean private RoleServices roleServices;
+
+  @BeforeEach
+  void setup() {
+    when(userServices.withAuthentication(RequestMapper.getAnonymousAuthentication()))
+        .thenReturn(userServices);
+    when(roleServices.withAuthentication(RequestMapper.getAnonymousAuthentication()))
+        .thenReturn(roleServices);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"foo", "Foo", "foo@bar.baz", "f_oo@bar.baz", "foo123", "foo-"})
+  void createAdminUserShouldReturnCreated(final String username) {
+    final var dto = validCreateUserRequest(username);
+    final var userRecord =
+        new UserRecord()
+            .setUsername(dto.username())
+            .setName(dto.name())
+            .setEmail(dto.email())
+            .setPassword(dto.password());
+    whenNoAdminUserExists();
+    when(userServices.createInitialAdminUser(dto))
+        .thenReturn(CompletableFuture.completedFuture(userRecord));
+
+    // when
+    webClient
+        .post()
+        .uri(USER_PATH)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(dto)
+        .exchange()
+        .expectStatus()
+        .isCreated()
+        .expectBody()
+        .json(
+            """
+          {
+            "username": "%s",
+            "name": "%s",
+            "email": "%s"
+          }
+        """
+                .formatted(dto.username(), dto.name(), dto.email()));
+
+    // then
+    verify(userServices, times(1)).createInitialAdminUser(dto);
+  }
+
+  @Test
+  void createAdminUserShouldReturnForbiddenWhenAdminUserExists() {
+    final var dto = validCreateUserRequest(UUID.randomUUID().toString());
+    whenAdminUserExists();
+
+    // when then
+    final var expectedBody =
+        ProblemDetail.forStatusAndDetail(
+            HttpStatus.FORBIDDEN, SetupController.ADMIN_EXISTS_ERROR_MESSAGE);
+    expectedBody.setTitle("io.camunda.service.exception.ForbiddenException");
+    expectedBody.setInstance(URI.create(USER_PATH));
+
+    webClient
+        .post()
+        .uri(USER_PATH)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(dto)
+        .exchange()
+        .expectStatus()
+        .isForbidden()
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
+  }
+
+  @Test
+  void shouldRejectUserCreationWithMissingUsername() {
+    // given
+    final var request = validUserWithPasswordRequest().username(null);
+
+    // when then
+    assertRequestRejectedExceptionally(
+        request,
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No username provided.",
+              "instance": "%s"
+            }"""
+            .formatted(USER_PATH));
+    verifyNoInteractions(userServices);
+  }
+
+  @Test
+  void shouldRejectUserCreationWithBlankUsername() {
+    // given
+    final var request = validUserWithPasswordRequest().username("");
+
+    // when then
+    assertRequestRejectedExceptionally(
+        request,
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No username provided.",
+              "instance": "%s"
+            }"""
+            .formatted(USER_PATH));
+    verifyNoInteractions(userServices);
+  }
+
+  @Test
+  void shouldRejectUserCreationWithEmptyName() {
+    // given
+    final var request = validUserWithPasswordRequest().name(null);
+
+    // when then
+    assertRequestRejectedExceptionally(
+        request,
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No name provided.",
+              "instance": "%s"
+            }"""
+            .formatted(USER_PATH));
+    verifyNoInteractions(userServices);
+  }
+
+  @Test
+  void shouldRejectUserCreationWithBlankName() {
+    // given
+    final var request = validUserWithPasswordRequest().name("");
+
+    // when then
+    assertRequestRejectedExceptionally(
+        request,
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No name provided.",
+              "instance": "%s"
+            }"""
+            .formatted(USER_PATH));
+    verifyNoInteractions(userServices);
+  }
+
+  @Test
+  void shouldRejectUserCreationWithEmptyPassword() {
+    // given
+    final var request = validUserWithPasswordRequest().password(null);
+
+    // when then
+    assertRequestRejectedExceptionally(
+        request,
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No password provided.",
+              "instance": "%s"
+            }"""
+            .formatted(USER_PATH));
+    verifyNoInteractions(userServices);
+  }
+
+  @Test
+  void shouldRejectUserCreationWithBlankPassword() {
+    // given
+    final var request = validUserWithPasswordRequest().password("");
+
+    // when then
+    assertRequestRejectedExceptionally(
+        request,
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No password provided.",
+              "instance": "%s"
+            }"""
+            .formatted(USER_PATH));
+    verifyNoInteractions(userServices);
+  }
+
+  @Test
+  void shouldRejectUserCreationWithEmptyEmail() {
+    // given
+    final var request = validUserWithPasswordRequest().email(null);
+
+    // when then
+    assertRequestRejectedExceptionally(
+        request,
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No email provided.",
+              "instance": "%s"
+            }"""
+            .formatted(USER_PATH));
+    verifyNoInteractions(userServices);
+  }
+
+  @Test
+  void shouldRejectUserCreationWithBlankEmail() {
+    // given
+    final var request = validUserWithPasswordRequest().email("");
+
+    // when then
+    assertRequestRejectedExceptionally(
+        request,
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "No email provided.",
+              "instance": "%s"
+            }"""
+            .formatted(USER_PATH));
+    verifyNoInteractions(userServices);
+  }
+
+  @Test
+  void shouldRejectUserCreationWithInvalidEmail() {
+    // given
+    final var email = "invalid@email.reject";
+    final var request = validUserWithPasswordRequest().email(email);
+
+    // when then
+    assertRequestRejectedExceptionally(
+        request,
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The provided email '%s' is not valid.",
+              "instance": "%s"
+            }"""
+            .formatted(email, USER_PATH));
+    verifyNoInteractions(userServices);
+  }
+
+  @Test
+  void shouldRejectUserCreationWithTooLongUsername() {
+    // given
+    final var username = "x".repeat(257);
+    final var request = validUserWithPasswordRequest().username(username);
+
+    // when then
+    assertRequestRejectedExceptionally(
+        request,
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The provided username exceeds the limit of 256 characters.",
+              "instance": "%s"
+            }"""
+            .formatted(USER_PATH));
+    verifyNoInteractions(userServices);
+  }
+
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "foo~", "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=",
+        "foo+", "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'",
+        "foo<", "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
+      })
+  void shouldRejectUserCreationWithIllegalCharactersInUsername(final String username) {
+    // given
+    final var request = validUserWithPasswordRequest().username(username);
+
+    // when then
+    assertRequestRejectedExceptionally(
+        request,
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The provided username contains illegal characters. It must match the pattern '%s'.",
+              "instance": "%s"
+            }"""
+            .formatted(IdentifierPatterns.ID_PATTERN, USER_PATH));
+    verifyNoInteractions(userServices);
+  }
+
+  private void whenNoAdminUserExists() {
+    when(roleServices.hasMembersOfType(DefaultRole.ADMIN.getId(), EntityType.USER))
+        .thenReturn(false);
+  }
+
+  private void whenAdminUserExists() {
+    when(roleServices.hasMembersOfType(DefaultRole.ADMIN.getId(), EntityType.USER))
+        .thenReturn(true);
+  }
+
+  private UserDTO validCreateUserRequest(final String username) {
+    return new UserDTO(username, "Foo Bar", "bar@example.com", "zabraboof");
+  }
+
+  private UserRequest validUserWithPasswordRequest() {
+    return new UserRequest()
+        .username("foo")
+        .name("Foo Bar")
+        .email("bar@baz.com")
+        .password("zabraboof");
+  }
+
+  private void assertRequestRejectedExceptionally(
+      final UserRequest request, final String expectedError) {
+    webClient
+        .post()
+        .uri(USER_PATH)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .json(expectedError);
+  }
+}
