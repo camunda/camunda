@@ -62,7 +62,7 @@ test.describe('processes page', () => {
         }),
       );
 
-      await processesPage.navigateToProcesses({
+      await processesPage.gotoProcessesPage({
         searchParams: {
           active: 'true',
           incidents: 'true',
@@ -95,7 +95,7 @@ test.describe('processes page', () => {
         }),
       );
 
-      await processesPage.navigateToProcesses({
+      await processesPage.gotoProcessesPage({
         searchParams: {
           active: 'true',
           incidents: 'true',
@@ -130,7 +130,7 @@ test.describe('processes page', () => {
         }),
       );
 
-      await processesPage.navigateToProcesses({
+      await processesPage.gotoProcessesPage({
         searchParams: {
           active: 'true',
           incidents: 'true',
@@ -175,7 +175,7 @@ test.describe('processes page', () => {
         }),
       );
 
-      await processesPage.navigateToProcesses({
+      await processesPage.gotoProcessesPage({
         searchParams: {
           active: 'true',
           incidents: 'true',
@@ -219,7 +219,7 @@ test.describe('processes page', () => {
         }),
       );
 
-      await processesPage.navigateToProcesses({
+      await processesPage.gotoProcessesPage({
         searchParams: {
           active: 'true',
           incidents: 'true',
@@ -264,7 +264,7 @@ test.describe('processes page', () => {
         }),
       );
 
-      await processesPage.navigateToProcesses({
+      await processesPage.gotoProcessesPage({
         searchParams: {
           active: 'true',
           incidents: 'true',
@@ -300,7 +300,7 @@ test.describe('processes page', () => {
         }),
       );
 
-      await processesPage.navigateToProcesses({
+      await processesPage.gotoProcessesPage({
         searchParams: {
           active: 'true',
           incidents: 'true',
@@ -334,7 +334,7 @@ test.describe('processes page', () => {
         }),
       );
 
-      await processesPage.navigateToProcesses({
+      await processesPage.gotoProcessesPage({
         searchParams: {
           active: 'true',
           incidents: 'true',
@@ -375,7 +375,7 @@ test.describe('processes page', () => {
         }),
       );
 
-      await processesPage.navigateToProcesses({
+      await processesPage.gotoProcessesPage({
         searchParams: {
           active: 'true',
           incidents: 'true',

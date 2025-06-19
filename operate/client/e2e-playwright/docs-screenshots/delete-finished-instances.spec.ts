@@ -48,7 +48,7 @@ test.describe('delete finished instances', () => {
       }),
     );
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         completed: 'true',
         canceled: 'true',
@@ -110,7 +110,7 @@ test.describe('delete finished instances', () => {
       }),
     );
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         completed: 'true',
         canceled: 'true',
@@ -173,7 +173,7 @@ test.describe('delete finished instances', () => {
       }),
     );
 
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: '2551799813954282',
       options: {waitUntil: 'networkidle'},
     });

@@ -31,7 +31,7 @@ test.describe('self managed platform deployment', () => {
       }),
     );
 
-    await dashboardPage.navigateToDashboard({waitUntil: 'networkidle'});
+    await dashboardPage.gotoDashboardPage({waitUntil: 'networkidle'});
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/self-managed-platform-deployment/operate-dashboard-no-processes.png',
@@ -48,7 +48,7 @@ test.describe('self managed platform deployment', () => {
       }),
     );
 
-    await dashboardPage.navigateToDashboard({waitUntil: 'networkidle'});
+    await dashboardPage.gotoDashboardPage({waitUntil: 'networkidle'});
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/self-managed-platform-deployment/operate-introduction.png',

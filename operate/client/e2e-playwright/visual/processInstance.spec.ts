@@ -49,7 +49,7 @@ test.describe('process instance page', () => {
         }),
       );
 
-      await processInstancePage.navigateToProcessInstance({
+      await processInstancePage.gotoProcessInstancePage({
         id: runningInstance.detail.id,
       });
 
@@ -80,12 +80,12 @@ test.describe('process instance page', () => {
         }),
       );
 
-      await processInstancePage.navigateToProcessInstance({
+      await processInstancePage.gotoProcessInstancePage({
         id: runningInstance.detail.id,
       });
       await processInstancePage.resetZoomButton.click();
-
       await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
+
       await expect(page).toHaveScreenshot();
     });
 
@@ -111,7 +111,7 @@ test.describe('process instance page', () => {
         }),
       );
 
-      await processInstancePage.navigateToProcessInstance({
+      await processInstancePage.gotoProcessInstancePage({
         id: runningInstance.detail.id,
       });
       await processInstancePage.resetZoomButton.click();
@@ -144,7 +144,7 @@ test.describe('process instance page', () => {
         }),
       );
 
-      await processInstancePage.navigateToProcessInstance({
+      await processInstancePage.gotoProcessInstancePage({
         id: runningInstance.detail.id,
       });
       await processInstancePage.resetZoomButton.click();
@@ -182,7 +182,7 @@ test.describe('process instance page', () => {
         }),
       );
 
-      await processInstancePage.navigateToProcessInstance({
+      await processInstancePage.gotoProcessInstancePage({
         id: instanceWithIncident.detail.id,
       });
 
@@ -220,7 +220,7 @@ test.describe('process instance page', () => {
         }),
       );
 
-      await processInstancePage.navigateToProcessInstance({
+      await processInstancePage.gotoProcessInstancePage({
         id: completedInstance.detail.id,
       });
       await processInstancePage.resetZoomButton.click();
@@ -256,7 +256,7 @@ test.describe('process instance page', () => {
         }),
       );
 
-      await processInstancePage.navigateToProcessInstance({
+      await processInstancePage.gotoProcessInstancePage({
         id: compensationProcessInstance.detail.id,
       });
       await processInstancePage.resetZoomButton.click();

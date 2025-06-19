@@ -52,7 +52,7 @@ test.describe('delete resource definitions', () => {
 
     await page.setViewportSize({width: 1650, height: 900});
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         incidents: 'true',
@@ -73,7 +73,7 @@ test.describe('delete resource definitions', () => {
 
     await commonPage.deleteArrows();
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         process: 'orderProcess',
         version: '1',
@@ -136,7 +136,7 @@ test.describe('delete resource definitions', () => {
 
     await page.setViewportSize({width: 1650, height: 900});
 
-    await decisionsPage.navigateToDecisions({
+    await decisionsPage.gotoDecisionsPage({
       searchParams: {
         evaluated: 'true',
         failed: 'true',
@@ -155,7 +155,7 @@ test.describe('delete resource definitions', () => {
 
     await commonPage.deleteArrows();
 
-    await decisionsPage.navigateToDecisions({
+    await decisionsPage.gotoDecisionsPage({
       searchParams: {
         evaluated: 'true',
         failed: 'true',

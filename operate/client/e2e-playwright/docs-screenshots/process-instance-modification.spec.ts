@@ -43,7 +43,7 @@ test.describe('process instance modification', () => {
       }),
     );
 
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: '2251799813888430',
       options: {waitUntil: 'networkidle'},
     });
@@ -147,7 +147,7 @@ test.describe('process instance modification', () => {
       }),
     );
 
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: '2251799813888430',
       options: {waitUntil: 'networkidle'},
     });
@@ -411,7 +411,7 @@ test.describe('process instance modification', () => {
       }),
     );
 
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: '2251799813888430',
       options: {waitUntil: 'networkidle'},
     });

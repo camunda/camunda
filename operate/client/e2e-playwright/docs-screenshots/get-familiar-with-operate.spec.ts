@@ -45,7 +45,7 @@ test.describe('get familiar with operate', () => {
       }),
     );
 
-    await dashboardPage.navigateToDashboard({waitUntil: 'networkidle'});
+    await dashboardPage.gotoDashboardPage({waitUntil: 'networkidle'});
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/get-familiar-with-operate/operate-introduction.png',
@@ -69,7 +69,7 @@ test.describe('get familiar with operate', () => {
       }),
     );
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         incidents: 'true',
@@ -129,7 +129,7 @@ test.describe('get familiar with operate', () => {
       }),
     );
 
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: '225179981395430',
     });
 

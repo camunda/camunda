@@ -8,10 +8,9 @@
 
 import {expect} from '@playwright/test';
 import {loginTest as test} from '../test-fixtures';
-import {Paths} from 'modules/Routes';
 
 test.beforeEach(async ({loginPage}) => {
-  await loginPage.navigateToLogin();
+  await loginPage.gotoLoginPage();
 });
 
 test.describe('login page', () => {
@@ -28,7 +27,7 @@ test.describe('login page', () => {
     await expect(
       page.getByRole('alert').getByText('Username and password do not match'),
     ).toBeVisible();
-    await expect(page).toHaveURL(`.${Paths.login()}`);
+    await expect(page).toHaveURL('/operate/login');
   });
 
   test('Log in with valid user account', async ({loginPage, page}) => {
@@ -48,13 +47,13 @@ test.describe('login page', () => {
 
     await expect(page).toHaveURL('../operate'); // dashboard url, we need to do this because baseURL contains a slash at the end as expected by playwright
     await commonPage.logout();
-    await expect(page).toHaveURL(`.${Paths.login()}`);
+    await expect(page).toHaveURL('/operate/login');
   });
 
   test('Redirect to initial page after login', async ({loginPage, page}) => {
-    await expect(page).toHaveURL(`.${Paths.login()}`);
-    await page.goto(`.${Paths.processes()}?active=true&incidents=true`);
-    await expect(page).toHaveURL(`.${Paths.login()}`);
+    await expect(page).toHaveURL('/operate/login');
+    await page.goto(`.${'/operate/processes'}?active=true&incidents=true`);
+    await expect(page).toHaveURL('/operate/login');
 
     await loginPage.login({
       username: 'demo',
@@ -62,7 +61,7 @@ test.describe('login page', () => {
     });
 
     await expect(page).toHaveURL(
-      `.${Paths.processes()}?active=true&incidents=true`,
+      `.${'/operate/processes'}?active=true&incidents=true`,
     );
   });
 });

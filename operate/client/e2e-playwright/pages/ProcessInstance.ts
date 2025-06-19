@@ -7,9 +7,7 @@
  */
 
 import {Page, Locator} from '@playwright/test';
-import {Paths} from 'modules/Routes';
 import {Diagram} from './components/Diagram';
-import {relativizePath} from './utils/relativizePath';
 
 export class ProcessInstance {
   private page: Page;
@@ -102,14 +100,14 @@ export class ProcessInstance {
       .click();
   }
 
-  async navigateToProcessInstance({
+  async gotoProcessInstancePage({
     id,
     options,
   }: {
     id: string;
     options?: Parameters<Page['goto']>[1];
   }) {
-    await this.page.goto(relativizePath(Paths.processInstance(id)), options);
+    await this.page.goto(`/operate/processes/${id}`, options);
   }
 
   async getNthTreeNodeTestId(n: number) {

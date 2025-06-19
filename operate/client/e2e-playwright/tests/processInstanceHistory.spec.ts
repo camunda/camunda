@@ -75,7 +75,7 @@ test.describe('Process Instance History', () => {
     const processInstanceKey =
       initialData.manyFlowNodeInstancesProcessInstance.processInstanceKey;
 
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: processInstanceKey,
     });
 
@@ -169,7 +169,7 @@ test.describe('Process Instance History', () => {
       );
     });
 
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: processInstanceKey,
     });
 

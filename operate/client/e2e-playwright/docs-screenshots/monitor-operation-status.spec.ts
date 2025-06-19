@@ -63,7 +63,7 @@ test.describe('process instance migration', () => {
       }),
     );
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         incidents: 'false',
@@ -85,7 +85,7 @@ test.describe('process instance migration', () => {
 
     await commonPage.deleteArrows();
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         incidents: 'false',

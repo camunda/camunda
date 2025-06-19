@@ -7,7 +7,6 @@
  */
 
 import {Page, Locator} from '@playwright/test';
-import {Paths} from 'modules/Routes';
 
 export class Dashboard {
   private page: Page;
@@ -18,7 +17,7 @@ export class Dashboard {
     this.metricPanel = page.getByTestId('metric-panel');
   }
 
-  async navigateToDashboard(options?: Parameters<Page['goto']>[1]) {
-    await this.page.goto(Paths.dashboard(), options);
+  async gotoDashboardPage(options?: Parameters<Page['goto']>[1]) {
+    await this.page.goto('/operate', options);
   }
 }

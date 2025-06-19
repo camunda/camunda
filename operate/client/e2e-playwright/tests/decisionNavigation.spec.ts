@@ -67,7 +67,7 @@ test.beforeAll(async ({request}) => {
 });
 
 test.beforeEach(async ({dashboardPage}) => {
-  dashboardPage.navigateToDashboard();
+  dashboardPage.gotoDashboardPage();
 });
 
 test.describe('Decision Navigation', () => {

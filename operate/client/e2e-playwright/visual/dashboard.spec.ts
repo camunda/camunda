@@ -47,7 +47,7 @@ test.describe('dashboard page', () => {
         }),
       );
 
-      await dashboardPage.navigateToDashboard({waitUntil: 'networkidle'});
+      await dashboardPage.gotoDashboardPage({waitUntil: 'networkidle'});
 
       await expect(page).toHaveScreenshot();
     });
@@ -57,7 +57,7 @@ test.describe('dashboard page', () => {
 
       await page.route(URL_API_PATTERN, mockResponses({}));
 
-      await dashboardPage.navigateToDashboard({waitUntil: 'networkidle'});
+      await dashboardPage.gotoDashboardPage({waitUntil: 'networkidle'});
 
       await expect(page).toHaveScreenshot();
     });
@@ -78,7 +78,7 @@ test.describe('dashboard page', () => {
         }),
       );
 
-      await dashboardPage.navigateToDashboard({waitUntil: 'networkidle'});
+      await dashboardPage.gotoDashboardPage({waitUntil: 'networkidle'});
 
       await expect(page).toHaveScreenshot();
     });
@@ -99,7 +99,7 @@ test.describe('dashboard page', () => {
         }),
       );
 
-      await dashboardPage.navigateToDashboard({waitUntil: 'networkidle'});
+      await dashboardPage.gotoDashboardPage({waitUntil: 'networkidle'});
 
       const expandInstancesByProcessRow = page
         .getByTestId('instances-by-process')

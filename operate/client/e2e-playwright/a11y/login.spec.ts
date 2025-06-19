@@ -6,22 +6,36 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '../test-fixtures';
-import {Paths} from 'modules/Routes';
+import {loginTest as test} from '../test-fixtures';
 import {validateResults} from './validateResults';
+import {clientConfigMock} from '../mocks/clientConfig';
+import {expect} from '@playwright/test';
+
+test.beforeEach(async ({context}) => {
+  await context.route('**/client-config.js', (route) =>
+    route.fulfill({
+      status: 200,
+      headers: {
+        'Content-Type': 'text/javascript;charset=UTF-8',
+      },
+      body: clientConfigMock,
+    }),
+  );
+});
 
 test.describe('login', () => {
   for (const theme of ['light', 'dark']) {
     test(`have no violations in ${theme} theme`, async ({
       page,
       commonPage,
+      loginPage,
       makeAxeBuilder,
     }) => {
       await commonPage.changeTheme(theme);
 
-      await page.goto(Paths.login(), {
-        waitUntil: 'networkidle',
-      });
+      await loginPage.gotoLoginPage();
+
+      await expect(page.getByRole('heading', {name: 'Operate'})).toBeVisible();
 
       const results = await makeAxeBuilder().analyze();
 

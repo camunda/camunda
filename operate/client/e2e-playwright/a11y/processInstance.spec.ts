@@ -14,6 +14,19 @@ import {
 } from '../mocks/processInstance';
 import {validateResults} from './validateResults';
 import {URL_API_PATTERN} from '../constants';
+import {clientConfigMock} from '../mocks/clientConfig';
+
+test.beforeEach(async ({context}) => {
+  await context.route('**/client-config.js', (route) =>
+    route.fulfill({
+      status: 200,
+      headers: {
+        'Content-Type': 'text/javascript;charset=UTF-8',
+      },
+      body: clientConfigMock,
+    }),
+  );
+});
 
 test.describe('process detail', () => {
   for (const theme of ['light', 'dark']) {
@@ -41,7 +54,7 @@ test.describe('process detail', () => {
         }),
       );
 
-      await processInstancePage.navigateToProcessInstance({
+      await processInstancePage.gotoProcessInstancePage({
         id: '1',
         options: {
           waitUntil: 'networkidle',
@@ -89,7 +102,7 @@ test.describe('process detail', () => {
         }),
       );
 
-      await processInstancePage.navigateToProcessInstance({
+      await processInstancePage.gotoProcessInstancePage({
         id: '1',
         options: {
           waitUntil: 'networkidle',
@@ -157,7 +170,7 @@ test.describe('process detail', () => {
         }),
       );
 
-      await processInstancePage.navigateToProcessInstance({
+      await processInstancePage.gotoProcessInstancePage({
         id: '1',
         options: {
           waitUntil: 'networkidle',

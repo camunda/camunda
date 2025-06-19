@@ -48,7 +48,7 @@ test.describe('Decision Instances', () => {
       decision2Version2,
     ] = decisions;
 
-    await decisionsPage.navigateToDecisions({
+    await decisionsPage.gotoDecisionsPage({
       searchParams: {
         evaluated: 'true',
         failed: 'true',

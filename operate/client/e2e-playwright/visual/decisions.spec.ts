@@ -57,7 +57,7 @@ test.describe('decisions page', () => {
         }),
       );
 
-      await decisionsPage.navigateToDecisions({
+      await decisionsPage.gotoDecisionsPage({
         searchParams: {
           evaluated: 'true',
           failed: 'true',
@@ -90,7 +90,7 @@ test.describe('decisions page', () => {
         }),
       );
 
-      await decisionsPage.navigateToDecisions({
+      await decisionsPage.gotoDecisionsPage({
         searchParams: {
           evaluated: 'true',
           failed: 'true',
@@ -125,7 +125,7 @@ test.describe('decisions page', () => {
         }),
       );
 
-      await decisionsPage.navigateToDecisions({
+      await decisionsPage.gotoDecisionsPage({
         searchParams: {
           evaluated: 'true',
           failed: 'true',
@@ -165,7 +165,7 @@ test.describe('decisions page', () => {
         }),
       );
 
-      await decisionsPage.navigateToDecisions({
+      await decisionsPage.gotoDecisionsPage({
         searchParams: {
           evaluated: 'true',
           failed: 'true',
@@ -205,7 +205,7 @@ test.describe('decisions page', () => {
         }),
       );
 
-      await decisionsPage.navigateToDecisions({
+      await decisionsPage.gotoDecisionsPage({
         searchParams: {
           evaluated: 'true',
           failed: 'true',

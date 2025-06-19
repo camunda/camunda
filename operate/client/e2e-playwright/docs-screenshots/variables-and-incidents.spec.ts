@@ -82,7 +82,7 @@ test.describe('variables and incidents', () => {
       }),
     );
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         incidents: 'true',
@@ -118,7 +118,7 @@ test.describe('variables and incidents', () => {
       }),
     );
 
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: '2251799813725328',
       options: {waitUntil: 'networkidle'},
     });
@@ -200,7 +200,7 @@ test.describe('variables and incidents', () => {
       }),
     );
 
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: '2251799813725328',
       options: {waitUntil: 'networkidle'},
     });
@@ -265,7 +265,7 @@ test.describe('variables and incidents', () => {
       }),
     );
 
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: '2251799813725328',
       options: {waitUntil: 'networkidle'},
     });
@@ -292,7 +292,7 @@ test.describe('variables and incidents', () => {
       }),
     );
 
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: '2251799813725328',
       options: {waitUntil: 'networkidle'},
     });

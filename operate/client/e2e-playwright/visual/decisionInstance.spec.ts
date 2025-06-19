@@ -8,7 +8,6 @@
 
 import {expect} from '@playwright/test';
 import {test} from '../test-fixtures';
-import {Paths} from 'modules/Routes';
 import {
   mockEvaluatedDecisionInstance,
   mockEvaluatedDecisionInstanceWithoutPanels,
@@ -40,40 +39,26 @@ test.beforeEach(async ({context}) => {
 test.describe('decision instance page', () => {
   for (const theme of ['light', 'dark']) {
     //TODO: enable when https://github.com/camunda/operate/issues/3344 is implemented
-    test.skip(`error page - ${theme}`, async ({page, commonPage}) => {
+    test.skip(`error page - ${theme}`, async ({
+      page,
+      commonPage,
+      decisionInstancePage,
+    }) => {
       await commonPage.changeTheme(theme);
 
       await page.route(URL_API_PATTERN, mockResponses({}));
 
-      await page.goto(Paths.decisionInstance('1'), {
-        waitUntil: 'networkidle',
+      await decisionInstancePage.gotoDecisionInstance({
+        decisionInstanceKey: '1',
       });
 
       await expect(page).toHaveScreenshot();
     });
 
-    test(`evaluated - ${theme}`, async ({page, commonPage}) => {
-      await commonPage.changeTheme(theme);
-
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          decisionInstanceDetail: mockEvaluatedDecisionInstance,
-          drdData: mockEvaluatedDrdData,
-          xml: mockEvaluatedXml,
-        }),
-      );
-
-      await page.goto(Paths.decisionInstance('1'), {
-        waitUntil: 'networkidle',
-      });
-
-      await expect(page).toHaveScreenshot();
-    });
-
-    test(`evaluated (drd panel maximised) - ${theme}`, async ({
+    test(`evaluated - ${theme}`, async ({
       page,
       commonPage,
+      decisionInstancePage,
     }) => {
       await commonPage.changeTheme(theme);
 
@@ -86,8 +71,31 @@ test.describe('decision instance page', () => {
         }),
       );
 
-      await page.goto(Paths.decisionInstance('1'), {
-        waitUntil: 'networkidle',
+      await decisionInstancePage.gotoDecisionInstance({
+        decisionInstanceKey: '1',
+      });
+
+      await expect(page).toHaveScreenshot();
+    });
+
+    test(`evaluated (drd panel maximised) - ${theme}`, async ({
+      page,
+      commonPage,
+      decisionInstancePage,
+    }) => {
+      await commonPage.changeTheme(theme);
+
+      await page.route(
+        URL_API_PATTERN,
+        mockResponses({
+          decisionInstanceDetail: mockEvaluatedDecisionInstance,
+          drdData: mockEvaluatedDrdData,
+          xml: mockEvaluatedXml,
+        }),
+      );
+
+      await decisionInstancePage.gotoDecisionInstance({
+        decisionInstanceKey: '1',
       });
 
       await page
@@ -101,6 +109,7 @@ test.describe('decision instance page', () => {
     test(`evaluated (without input output panel) - ${theme}`, async ({
       page,
       commonPage,
+      decisionInstancePage,
     }) => {
       await commonPage.changeTheme(theme);
 
@@ -113,8 +122,8 @@ test.describe('decision instance page', () => {
         }),
       );
 
-      await page.goto(Paths.decisionInstance('1'), {
-        waitUntil: 'networkidle',
+      await decisionInstancePage.gotoDecisionInstance({
+        decisionInstanceKey: '1',
       });
 
       // wait for monaco-editor to be fully rendered
@@ -139,8 +148,8 @@ test.describe('decision instance page', () => {
         }),
       );
 
-      await page.goto(Paths.decisionInstance('1'), {
-        waitUntil: 'networkidle',
+      await decisionInstancePage.gotoDecisionInstance({
+        decisionInstanceKey: '1',
       });
 
       // wait for monaco-editor to be fully rendered
@@ -154,28 +163,10 @@ test.describe('decision instance page', () => {
       await expect(page).toHaveScreenshot();
     });
 
-    test(`failed - ${theme}`, async ({page, commonPage}) => {
-      await commonPage.changeTheme(theme);
-
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          decisionInstanceDetail: mockFailedDecisionInstance,
-          drdData: mockFailedDrdData,
-          xml: mockFailedXml,
-        }),
-      );
-
-      await page.goto(Paths.decisionInstance('1'), {
-        waitUntil: 'networkidle',
-      });
-
-      await expect(page).toHaveScreenshot();
-    });
-
-    test(`failed (result tab selected) - ${theme}`, async ({
+    test(`failed - ${theme}`, async ({
       page,
       commonPage,
+      decisionInstancePage,
     }) => {
       await commonPage.changeTheme(theme);
 
@@ -188,8 +179,31 @@ test.describe('decision instance page', () => {
         }),
       );
 
-      await page.goto(Paths.decisionInstance('1'), {
-        waitUntil: 'networkidle',
+      await decisionInstancePage.gotoDecisionInstance({
+        decisionInstanceKey: '1',
+      });
+
+      await expect(page).toHaveScreenshot();
+    });
+
+    test(`failed (result tab selected) - ${theme}`, async ({
+      page,
+      commonPage,
+      decisionInstancePage,
+    }) => {
+      await commonPage.changeTheme(theme);
+
+      await page.route(
+        URL_API_PATTERN,
+        mockResponses({
+          decisionInstanceDetail: mockFailedDecisionInstance,
+          drdData: mockFailedDrdData,
+          xml: mockFailedXml,
+        }),
+      );
+
+      await decisionInstancePage.gotoDecisionInstance({
+        decisionInstanceKey: '1',
       });
 
       await page

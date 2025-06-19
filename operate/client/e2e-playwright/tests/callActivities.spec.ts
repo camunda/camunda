@@ -42,7 +42,7 @@ test.describe('Call Activities', () => {
 
     const {instanceHeader, diagram, instanceHistory} = processInstancePage;
 
-    processInstancePage.navigateToProcessInstance({id: processInstanceKey});
+    processInstancePage.gotoProcessInstancePage({id: processInstanceKey});
 
     await expect(page.getByTestId('instance-header-skeleton')).toBeHidden();
 

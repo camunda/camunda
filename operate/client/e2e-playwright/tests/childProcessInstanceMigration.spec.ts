@@ -40,7 +40,7 @@ test.beforeAll(async ({request}) => {
 });
 
 test.beforeEach(async ({processesPage}) => {
-  await processesPage.navigateToProcesses({searchParams: {active: 'true'}});
+  await processesPage.gotoProcessesPage({searchParams: {active: 'true'}});
 });
 
 // TODO: Unskip after https://github.com/camunda/camunda/issues/24084 is fixed
@@ -101,7 +101,7 @@ test.describe.skip('Child Process Instance Migration @roundtrip', () => {
     ).toBeVisible();
 
     // Select child process and version before going into migration
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         process: childBpmnProcessId,

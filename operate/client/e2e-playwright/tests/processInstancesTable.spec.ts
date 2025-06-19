@@ -83,7 +83,7 @@ test.beforeAll(async ({request}) => {
 });
 
 test.beforeEach(async ({page, dashboardPage}) => {
-  await dashboardPage.navigateToDashboard();
+  await dashboardPage.gotoDashboardPage();
   await page.getByRole('link', {name: /processes/i}).click();
 });
 

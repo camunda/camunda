@@ -62,7 +62,7 @@ test.describe('Decision Instance', () => {
   });
 
   test('Switching between decisions', async ({decisionInstancePage}) => {
-    await decisionInstancePage.navigateToDecisionInstance({
+    await decisionInstancePage.gotoDecisionInstance({
       decisionInstanceKey: `${decisionInstanceKey}-1`,
     });
 

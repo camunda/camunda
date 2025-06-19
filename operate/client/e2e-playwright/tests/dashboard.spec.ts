@@ -71,7 +71,7 @@ test.beforeAll(async ({request}) => {
 });
 
 test.beforeEach(({dashboardPage}) => {
-  dashboardPage.navigateToDashboard();
+  dashboardPage.gotoDashboardPage();
 });
 
 test.describe('Dashboard', () => {
@@ -120,7 +120,7 @@ test.describe('Dashboard', () => {
       }),
     ).toBeVisible();
 
-    await dashboardPage.navigateToDashboard();
+    await dashboardPage.gotoDashboardPage();
 
     await page.getByTestId('incident-instances-link').click();
 
@@ -163,7 +163,7 @@ test.describe('Dashboard', () => {
       }),
     ).toBeVisible();
 
-    await dashboardPage.navigateToDashboard();
+    await dashboardPage.gotoDashboardPage();
 
     // select incident type b from the incidents list
     await page

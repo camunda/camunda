@@ -19,15 +19,28 @@ import {
   mockEvaluatedDrdDataWithoutPanels,
   mockEvaluatedXmlWithoutPanels,
 } from '../mocks/decisionInstance.mocks';
-import {Paths} from 'modules/Routes';
 import {validateResults} from './validateResults';
 import {URL_API_PATTERN} from '../constants';
+import {clientConfigMock} from '../mocks/clientConfig';
+
+test.beforeEach(async ({context}) => {
+  await context.route('**/client-config.js', (route) =>
+    route.fulfill({
+      status: 200,
+      headers: {
+        'Content-Type': 'text/javascript;charset=UTF-8',
+      },
+      body: clientConfigMock,
+    }),
+  );
+});
 
 test.describe('decision detail', () => {
   for (const theme of ['light', 'dark']) {
     test(`have no violations for evaluated decision in ${theme} theme`, async ({
       page,
       commonPage,
+      decisionInstancePage,
       makeAxeBuilder,
     }) => {
       await commonPage.changeTheme(theme);
@@ -41,8 +54,8 @@ test.describe('decision detail', () => {
         }),
       );
 
-      await page.goto(Paths.decisionInstance('1'), {
-        waitUntil: 'networkidle',
+      await decisionInstancePage.gotoDecisionInstance({
+        decisionInstanceKey: '1',
       });
 
       const results = await makeAxeBuilder()
@@ -55,6 +68,7 @@ test.describe('decision detail', () => {
     test(`have no violations for an incident in ${theme} theme`, async ({
       page,
       commonPage,
+      decisionInstancePage,
       makeAxeBuilder,
     }) => {
       await commonPage.changeTheme(theme);
@@ -68,8 +82,8 @@ test.describe('decision detail', () => {
         }),
       );
 
-      await page.goto(Paths.decisionInstance('1'), {
-        waitUntil: 'networkidle',
+      await decisionInstancePage.gotoDecisionInstance({
+        decisionInstanceKey: '1',
       });
 
       const results = await makeAxeBuilder()
@@ -82,6 +96,7 @@ test.describe('decision detail', () => {
     test(`have no violations for a decision without input output panels in ${theme} theme`, async ({
       page,
       commonPage,
+      decisionInstancePage,
       makeAxeBuilder,
     }) => {
       await commonPage.changeTheme(theme);
@@ -95,8 +110,8 @@ test.describe('decision detail', () => {
         }),
       );
 
-      await page.goto(Paths.decisionInstance('1'), {
-        waitUntil: 'networkidle',
+      await decisionInstancePage.gotoDecisionInstance({
+        decisionInstanceKey: '1',
       });
 
       const results = await makeAxeBuilder()

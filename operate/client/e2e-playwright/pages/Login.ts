@@ -7,8 +7,6 @@
  */
 
 import {Page, Locator} from '@playwright/test';
-import {Paths} from 'modules/Routes';
-import {relativizePath} from './utils/relativizePath';
 
 export class Login {
   private page: Page;
@@ -45,7 +43,7 @@ export class Login {
     await this.clickLoginButton();
   }
 
-  async navigateToLogin() {
-    await this.page.goto(relativizePath(Paths.login()));
+  async gotoLoginPage() {
+    await this.page.goto('/operate/login');
   }
 }

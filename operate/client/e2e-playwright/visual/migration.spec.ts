@@ -60,7 +60,7 @@ test.describe('migration view', () => {
         }),
       );
 
-      await processesPage.navigateToProcesses({
+      await processesPage.gotoProcessesPage({
         searchParams: {
           active: 'true',
           incidents: 'true',

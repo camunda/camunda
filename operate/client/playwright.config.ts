@@ -6,38 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {devices, PlaywrightTestConfig} from '@playwright/test';
+import {devices, defineConfig} from '@playwright/test';
 
 const IS_CI = Boolean(process.env.CI);
 const IS_E2E = Boolean(process.env.IS_E2E);
-const IS_A11Y = Boolean(process.env.IS_A11Y);
-const IS_SCREENSHOT_GENERATOR = Boolean(process.env.IS_SCREENSHOT_GENERATOR);
-
-const getPort = () => {
-  if (IS_A11Y || IS_SCREENSHOT_GENERATOR) {
-    return 3000;
-  }
-
-  if (IS_E2E) {
-    return IS_CI ? 8080 : 3001;
-  }
-
-  return 8081;
-};
-
-const getBasePath = () => {
-  const isLocalVisualRegression =
-    !IS_CI && !IS_E2E && !IS_A11Y && !IS_SCREENSHOT_GENERATOR;
-
-  const path = (IS_CI && !IS_E2E) || isLocalVisualRegression ? '' : '/operate/';
-
-  return path;
-};
 
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
-const config: PlaywrightTestConfig = {
+const config = defineConfig({
   testDir: './e2e-playwright',
   timeout: 30 * 1000,
   expect: {
@@ -50,34 +27,38 @@ const config: PlaywrightTestConfig = {
   projects: [
     {
       name: 'setup',
-      testMatch: IS_E2E ? /e2e.setup\.ts/ : /visual.setup\.ts/,
+      testMatch: /e2e.setup\.ts/,
     },
     {
       name: 'visual',
       testMatch: 'visual/**/*.spec.ts',
       use: {...devices['Desktop Chrome']},
+    },
+    {
+      name: 'a11y',
+      testMatch: 'a11y/**/*.spec.ts',
+      use: {...devices['Desktop Chrome']},
+    },
+    {
+      name: 'screenshot-generator',
+      testMatch: 'docs-screenshots/**/*.spec.ts',
+      use: {...devices['Desktop Firefox']},
+    },
+    {
+      name: 'e2e',
+      testMatch: 'tests/**/*.spec.ts',
+      use: {...devices['Desktop Chrome']},
       dependencies: ['setup'],
     },
-    IS_SCREENSHOT_GENERATOR
-      ? {
-          name: 'firefox',
-          use: {...devices['Desktop Firefox']},
-          dependencies: ['setup'],
-        }
-      : {
-          name: 'chromium',
-          use: {...devices['Desktop Chrome']},
-          dependencies: ['setup'],
-        },
   ],
   outputDir: 'test-results/',
   use: {
     actionTimeout: 0,
-    baseURL: `http://localhost:${getPort()}${getBasePath()}`,
+    baseURL: `http://localhost:${IS_CI && IS_E2E ? 8080 : 8081}/operate`,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
   },
-};
+});
 
 export default config;

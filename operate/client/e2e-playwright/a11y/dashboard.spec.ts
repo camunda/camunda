@@ -14,9 +14,21 @@ import {
   mockStatistics,
   mockResponses,
 } from '../mocks/dashboard.mocks';
-import {Paths} from 'modules/Routes';
 import {validateResults} from './validateResults';
 import {URL_API_PATTERN} from '../constants';
+import {clientConfigMock} from '../mocks/clientConfig';
+
+test.beforeEach(async ({context}) => {
+  await context.route('**/client-config.js', (route) =>
+    route.fulfill({
+      status: 200,
+      headers: {
+        'Content-Type': 'text/javascript;charset=UTF-8',
+      },
+      body: clientConfigMock,
+    }),
+  );
+});
 
 test.describe('dashboard', () => {
   for (const theme of ['light', 'dark']) {
@@ -37,7 +49,7 @@ test.describe('dashboard', () => {
         }),
       );
 
-      await dashboardPage.navigateToDashboard({waitUntil: 'networkidle'});
+      await dashboardPage.gotoDashboardPage({waitUntil: 'networkidle'});
 
       const results = await makeAxeBuilder().analyze();
 
@@ -47,6 +59,7 @@ test.describe('dashboard', () => {
     test(`have no violations when rows are expanded in ${theme} theme`, async ({
       page,
       commonPage,
+      dashboardPage,
       makeAxeBuilder,
     }) => {
       await commonPage.changeTheme(theme);
@@ -60,9 +73,7 @@ test.describe('dashboard', () => {
         }),
       );
 
-      await page.goto(Paths.dashboard(), {
-        waitUntil: 'networkidle',
-      });
+      await dashboardPage.gotoDashboardPage();
 
       const expandInstancesByProcessRow = page
         .getByTestId('instances-by-process')

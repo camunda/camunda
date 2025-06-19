@@ -20,11 +20,8 @@ import {DecisionInstance} from './pages/DecisionInstance';
 
 type Fixture = {
   makeAxeBuilder: () => AxeBuilder;
-  resetData: () => Promise<void>;
   commonPage: Common;
   loginPage: Login;
-  dashboardPage: Dashboard;
-  processInstancePage: ProcessInstance;
 };
 
 const loginTest = base.extend<Fixture>({
@@ -33,6 +30,10 @@ const loginTest = base.extend<Fixture>({
   },
   loginPage: async ({page}, use) => {
     await use(new Login(page));
+  },
+  makeAxeBuilder: async ({page}, use) => {
+    const makeAxeBuilder = () => new AxeBuilder({page});
+    await use(makeAxeBuilder);
   },
 });
 
@@ -48,6 +49,7 @@ const test = base.extend<
     decisionInstancePage: DecisionInstance;
     commonPage: Common;
     migrationView: MigrationView;
+    loginPage: Login;
   },
   {workerStorageState: string}
 >({
