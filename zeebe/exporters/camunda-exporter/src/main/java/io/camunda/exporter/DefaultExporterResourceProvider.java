@@ -111,6 +111,8 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -154,7 +156,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(FormIndex.class).getFullQualifiedName()),
             new CaffeineCacheStatsCounter(NAMESPACE, "form", meterRegistry));
 
-    exportHandlers =
+    exportHandlers = new HashSet<>();
+    exportHandlers.addAll(
         Set.of(
             new RoleCreateUpdateHandler(
                 indexDescriptors.get(RoleIndex.class).getFullQualifiedName()),
@@ -274,8 +277,6 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
             new BatchOperationLifecycleManagementHandler(
                 indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
-            new BatchOperationChunkCreatedItemHandler(
-                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
             new BatchOperationChunkCreatedHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
             new ProcessInstanceCancellationOperationHandler(
@@ -285,7 +286,13 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new ProcessInstanceModificationOperationHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
             new ResolveIncidentOperationHandler(
-                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()));
+                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName())));
+
+    if (configuration.getBatchOperation().isExportItemsOnCreation()) {
+      exportHandlers.add(
+          new BatchOperationChunkCreatedItemHandler(
+              indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()));
+    }
 
     indicesWithCustomErrorHandlers =
         Map.of(
@@ -317,7 +324,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   @Override
   public Set<ExportHandler<?, ?>> getExportHandlers() {
     // Register all handlers here
-    return exportHandlers;
+    return Collections.unmodifiableSet(exportHandlers);
   }
 
   @Override
