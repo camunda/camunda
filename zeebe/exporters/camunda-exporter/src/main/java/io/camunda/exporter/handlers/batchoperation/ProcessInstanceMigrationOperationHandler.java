@@ -26,6 +26,11 @@ public class ProcessInstanceMigrationOperationHandler
   }
 
   @Override
+  long getProcessInstanceKey(final Record<ProcessInstanceMigrationRecordValue> record) {
+    return record.getValue().getProcessInstanceKey();
+  }
+
+  @Override
   boolean isCompleted(final Record<ProcessInstanceMigrationRecordValue> record) {
     return record.getIntent().equals(ProcessInstanceMigrationIntent.MIGRATED);
   }

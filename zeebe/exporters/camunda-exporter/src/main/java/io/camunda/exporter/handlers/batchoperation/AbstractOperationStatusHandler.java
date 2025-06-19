@@ -56,6 +56,11 @@ public abstract class AbstractOperationStatusHandler<R extends RecordValue>
 
   @Override
   public void updateEntity(final Record<R> record, final OperationEntity entity) {
+    entity
+        .setBatchOperationId(String.valueOf(record.getOperationReference()))
+        .setItemKey(getItemKey(record))
+        .setProcessInstanceKey(getProcessInstanceKey(record));
+
     if (isCompleted(record)) {
       entity.setState(OperationState.COMPLETED);
       entity.setCompletedDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
@@ -70,11 +75,14 @@ public abstract class AbstractOperationStatusHandler<R extends RecordValue>
   public void flush(final OperationEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
     final Map<String, Object> updateFields = new HashMap<>();
+    updateFields.put(OperationTemplate.BATCH_OPERATION_ID, entity.getBatchOperationId());
+    updateFields.put(OperationTemplate.PROCESS_INSTANCE_KEY, entity.getProcessInstanceKey());
+    updateFields.put(OperationTemplate.ITEM_KEY, entity.getItemKey());
     updateFields.put(OperationTemplate.STATE, entity.getState());
     updateFields.put(OperationTemplate.COMPLETED_DATE, entity.getCompletedDate());
     updateFields.put(OperationTemplate.ERROR_MSG, entity.getErrorMessage());
 
-    batchRequest.update(indexName, entity.getId(), updateFields);
+    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
     LOGGER.trace("Updated operation {} with fields {}", entity.getId(), updateFields);
   }
 
@@ -84,6 +92,8 @@ public abstract class AbstractOperationStatusHandler<R extends RecordValue>
   }
 
   abstract long getItemKey(Record<R> record);
+
+  abstract long getProcessInstanceKey(Record<R> record);
 
   /** Checks if the batch operation item is completed */
   abstract boolean isCompleted(Record<R> record);

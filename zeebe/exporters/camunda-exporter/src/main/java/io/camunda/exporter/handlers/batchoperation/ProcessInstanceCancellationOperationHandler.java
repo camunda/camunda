@@ -28,6 +28,11 @@ public class ProcessInstanceCancellationOperationHandler
   }
 
   @Override
+  long getProcessInstanceKey(final Record<ProcessInstanceRecordValue> record) {
+    return record.getValue().getProcessInstanceKey();
+  }
+
+  @Override
   boolean isCompleted(final Record<ProcessInstanceRecordValue> record) {
     return record.getValueType() == ValueType.PROCESS_INSTANCE
         && record.getValue().getBpmnElementType() == BpmnElementType.PROCESS
