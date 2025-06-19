@@ -24,6 +24,12 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
   private boolean forcePathStyleAccess = false;
   private String compression;
 
+  /** Default from `SdkHttpConfigurationOption.MAX_CONNECTIONS` */
+  private int maxConcurrentConnections = 50;
+
+  /** Default from `SdkHttpConfigurationOption.DEFAULT_CONNECTION_ACQUIRE_TIMEOUT` */
+  private Duration connectionAcquisitionTimeout = Duration.ofSeconds(45);
+
   private String basePath;
 
   public String getBucketName() {
@@ -88,21 +94,37 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
 
   public void setCompression(final String algorithm) {
     if (Objects.equals(algorithm, "none")) {
-      this.compression = null;
+      compression = null;
     } else {
-      this.compression = algorithm;
+      compression = algorithm;
     }
-  }
-
-  public void setBasePath(final String basePath) {
-    this.basePath = basePath;
   }
 
   public String getBasePath() {
     return basePath;
   }
 
-  public static S3BackupConfig toStoreConfig(S3BackupStoreConfig config) {
+  public void setBasePath(final String basePath) {
+    this.basePath = basePath;
+  }
+
+  public int getMaxConcurrentConnections() {
+    return maxConcurrentConnections;
+  }
+
+  public void setMaxConcurrentConnections(final int maxConcurrentConnections) {
+    this.maxConcurrentConnections = maxConcurrentConnections;
+  }
+
+  public Duration getConnectionAcquisitionTimeout() {
+    return connectionAcquisitionTimeout;
+  }
+
+  public void setConnectionAcquisitionTimeout(final Duration connectionAcquisitionTimeout) {
+    this.connectionAcquisitionTimeout = connectionAcquisitionTimeout;
+  }
+
+  public static S3BackupConfig toStoreConfig(final S3BackupStoreConfig config) {
     final var builder =
         new Builder()
             .withBucketName(config.getBucketName())
@@ -111,7 +133,9 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
             .withApiCallTimeout(config.getApiCallTimeout())
             .forcePathStyleAccess(config.isForcePathStyleAccess())
             .withCompressionAlgorithm(config.getCompression())
-            .withBasePath(config.getBasePath());
+            .withBasePath(config.getBasePath())
+            .withMaxConcurrentConnections(config.getMaxConcurrentConnections())
+            .withConnectionAcquisitionTimeout(config.getConnectionAcquisitionTimeout());
     if (config.getAccessKey() != null && config.getSecretKey() != null) {
       builder.withCredentials(config.getAccessKey(), config.getSecretKey());
     }
@@ -129,6 +153,10 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     result = 31 * result + (forcePathStyleAccess ? 1 : 0);
     result = 31 * result + (compression != null ? compression.hashCode() : 0);
     result = 31 * result + (basePath != null ? basePath.hashCode() : 0);
+    result = 31 * result + maxConcurrentConnections;
+    result =
+        31 * result
+            + (connectionAcquisitionTimeout != null ? connectionAcquisitionTimeout.hashCode() : 0);
     return result;
   }
 
@@ -167,6 +195,12 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
     if (!Objects.equals(basePath, that.basePath)) {
       return false;
     }
+    if (maxConcurrentConnections != that.maxConcurrentConnections) {
+      return false;
+    }
+    if (!Objects.equals(connectionAcquisitionTimeout, that.connectionAcquisitionTimeout)) {
+      return false;
+    }
     return Objects.equals(apiCallTimeout, that.apiCallTimeout);
   }
 
@@ -196,6 +230,10 @@ public class S3BackupStoreConfig implements ConfigurationEntry {
         + compression
         + ", basePath="
         + basePath
+        + ", maxConcurrentConnections="
+        + maxConcurrentConnections
+        + ", connectionAcquisitionTimeout="
+        + connectionAcquisitionTimeout
         + '}';
   }
 }
