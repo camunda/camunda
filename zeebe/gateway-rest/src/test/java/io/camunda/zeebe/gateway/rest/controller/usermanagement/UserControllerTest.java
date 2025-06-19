@@ -29,13 +29,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.stubbing.Answer;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 @WebMvcTest(UserController.class)
 public class UserControllerTest extends RestControllerTest {
@@ -43,14 +41,10 @@ public class UserControllerTest extends RestControllerTest {
   private static final String USER_BASE_URL = "/v2/users";
 
   @MockBean private UserServices userServices;
-  @MockBean private PasswordEncoder passwordEncoder;
 
   @BeforeEach
   void setup() {
     when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
-    when(passwordEncoder.encode(any()))
-        .thenAnswer(
-            (Answer<String>) invocationOnMock -> invocationOnMock.getArgument(0).toString());
   }
 
   @ParameterizedTest
