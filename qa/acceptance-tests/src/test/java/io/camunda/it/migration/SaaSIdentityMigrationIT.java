@@ -257,10 +257,10 @@ public class SaaSIdentityMigrationIT {
               final var migratedAuthorizations =
                   authorizations.items().stream()
                       .map(AuthorizationResponse::ownerId)
-                      .filter(id -> ROLE_IDS.contains(id) || CLIENT_IDS.contains(id))
+                      .filter(ROLE_IDS::contains)
                       .toList();
               assertThat(migratedAuthorizations.size())
-                  .isEqualTo(ROLE_PERMISSIONS.size() + CLIENT_PERMISSIONS.size());
+                  .isEqualTo(ROLE_PERMISSIONS.size());
             });
 
     // then
@@ -400,111 +400,7 @@ public class SaaSIdentityMigrationIT {
                 OwnerType.ROLE,
                 "*",
                 ResourceType.DECISION_REQUIREMENTS_DEFINITION,
-                Set.of(PermissionType.READ)),
-            // Client permissions
-            tuple(
-                ZEEBE_CLIENT_ID,
-                OwnerType.CLIENT,
-                "*",
-                ResourceType.MESSAGE,
-                Set.of(PermissionType.CREATE)),
-            tuple(
-                ZEEBE_CLIENT_ID,
-                OwnerType.CLIENT,
-                "*",
-                ResourceType.SYSTEM,
-                Set.of(PermissionType.READ, PermissionType.UPDATE)),
-            tuple(
-                ZEEBE_CLIENT_ID,
-                OwnerType.CLIENT,
-                "*",
-                ResourceType.RESOURCE,
-                Set.of(
-                    PermissionType.CREATE,
-                    PermissionType.DELETE_FORM,
-                    PermissionType.DELETE_PROCESS,
-                    PermissionType.DELETE_DRD,
-                    PermissionType.DELETE_RESOURCE)),
-            tuple(
-                ZEEBE_CLIENT_ID,
-                OwnerType.CLIENT,
-                "*",
-                ResourceType.PROCESS_DEFINITION,
-                Set.of(
-                    PermissionType.UPDATE_PROCESS_INSTANCE,
-                    PermissionType.UPDATE_USER_TASK,
-                    PermissionType.CREATE_PROCESS_INSTANCE,
-                    PermissionType.DELETE_PROCESS_INSTANCE)),
-            tuple(
-                ZEEBE_CLIENT_ID,
-                OwnerType.CLIENT,
-                "*",
-                ResourceType.DECISION_DEFINITION,
-                Set.of(
-                    PermissionType.CREATE_DECISION_INSTANCE,
-                    PermissionType.DELETE_DECISION_INSTANCE)),
-            tuple(
-                ZEEBE_CLIENT_ID,
-                OwnerType.CLIENT,
-                "*",
-                ResourceType.DECISION_REQUIREMENTS_DEFINITION,
-                Set.of(PermissionType.UPDATE, PermissionType.DELETE)),
-            tuple(
-                OPERATE_CLIENT_ID,
-                OwnerType.CLIENT,
-                "*",
-                ResourceType.MESSAGE,
-                Set.of(PermissionType.READ)),
-            tuple(
-                OPERATE_CLIENT_ID,
-                OwnerType.CLIENT,
-                "*",
-                ResourceType.BATCH_OPERATION,
-                Set.of(PermissionType.READ, PermissionType.CREATE, PermissionType.UPDATE)),
-            tuple(
-                OPERATE_CLIENT_ID,
-                OwnerType.CLIENT,
-                "*",
-                ResourceType.RESOURCE,
-                Set.of(PermissionType.READ)),
-            tuple(
-                OPERATE_CLIENT_ID,
-                OwnerType.CLIENT,
-                "*",
-                ResourceType.PROCESS_DEFINITION,
-                Set.of(
-                    PermissionType.READ_PROCESS_DEFINITION,
-                    PermissionType.READ_PROCESS_INSTANCE,
-                    PermissionType.DELETE_PROCESS_INSTANCE)),
-            tuple(
-                OPERATE_CLIENT_ID,
-                OwnerType.CLIENT,
-                "*",
-                ResourceType.DECISION_DEFINITION,
-                Set.of(
-                    PermissionType.READ_DECISION_DEFINITION,
-                    PermissionType.READ_DECISION_INSTANCE)),
-            tuple(
-                OPERATE_CLIENT_ID,
-                OwnerType.CLIENT,
-                "*",
-                ResourceType.DECISION_REQUIREMENTS_DEFINITION,
-                Set.of(PermissionType.READ)),
-            tuple(
-                TASKLIST_CLIENT_ID,
-                OwnerType.CLIENT,
-                "*",
-                ResourceType.RESOURCE,
-                Set.of(PermissionType.READ)),
-            tuple(
-                TASKLIST_CLIENT_ID,
-                OwnerType.CLIENT,
-                "*",
-                ResourceType.PROCESS_DEFINITION,
-                Set.of(
-                    PermissionType.READ_PROCESS_DEFINITION,
-                    PermissionType.READ_USER_TASK,
-                    PermissionType.UPDATE_USER_TASK)));
+                Set.of(PermissionType.READ)));
   }
 
   @Test
