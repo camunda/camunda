@@ -1,12 +1,11 @@
 ---
 
-name: Core Application – Automated E2E Test Request
-about: Create a test case for the automated Core Application E2E test suite based on a user flow.
+name: C8 Orchestration Cluster – Automated E2E Test Request
+about: Create a test case for the automated Core C8 Orchestration Cluster E2E test suite based on a user flow.
 title: "E2E - [Module or Area Name] - [Short scenario description]"
-labels: ["kind/test-case", "qa/core-application-e2e-test-suite"]
-assignees: ''
-
----
+labels: ["kind/test-case", "qa/c8-orchestration-cluster-e2e-test-suite"]
+assignees: ""
+-------------
 
 ### Description
 
