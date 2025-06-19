@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedItemHandler;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -21,6 +22,7 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -56,6 +58,52 @@ public class DefaultExporterResourceProviderTest {
                         isValidIndexTemplateDescriptorName(
                             descriptor, config.getConnect().getIndexPrefix()))
                     .isTrue());
+  }
+
+  @Test
+  void shouldExportPendingBatchOperationItemsWhenConfigIsTrue() {
+    // given
+    final var config = new ExporterConfiguration();
+    config.getBatchOperation().setExportItemsOnCreation(true);
+
+    // when
+    final var provider = new DefaultExporterResourceProvider();
+    provider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new SimpleMeterRegistry(),
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
+
+    // then
+    assertThat(
+            provider.getExportHandlers().stream()
+                .filter(BatchOperationChunkCreatedItemHandler.class::isInstance)
+                .toList())
+        .hasSize(1);
+  }
+
+  @Test
+  void shouldNotExportPendingBatchOperationItemsWhenConfigIsFalse() {
+    // given
+    final var config = new ExporterConfiguration();
+    config.getBatchOperation().setExportItemsOnCreation(false);
+
+    // when
+    final var provider = new DefaultExporterResourceProvider();
+    provider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new SimpleMeterRegistry(),
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
+
+    // then
+    assertThat(
+            provider.getExportHandlers().stream()
+                .filter(BatchOperationChunkCreatedItemHandler.class::isInstance)
+                .toList())
+        .isEmpty();
   }
 
   static Stream<ExporterConfiguration> configProvider() {
