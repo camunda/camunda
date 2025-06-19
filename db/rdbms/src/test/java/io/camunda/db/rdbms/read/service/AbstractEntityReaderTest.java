@@ -9,7 +9,6 @@ package io.camunda.db.rdbms.read.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.read.domain.DbQueryPage;
 import io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPaginationFieldEntry;
@@ -19,14 +18,16 @@ import io.camunda.db.rdbms.read.domain.DbQuerySorting.SortingEntry;
 import io.camunda.db.rdbms.sql.columns.ProcessInstanceSearchColumn;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.search.sort.SortOrder;
 import java.util.List;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 class AbstractEntityReaderTest {
+  final AbstractEntityReader<ProcessInstanceEntity> reader = new ProcessInstanceReader(null);
 
   @Test
   void shouldConvertSort() {
@@ -62,36 +63,6 @@ class AbstractEntityReaderTest {
   }
 
   @Test
-  void shouldExtractSortValues() {
-    final var reader = new ProcessInstanceReader(null);
-
-    final var hit1 = Mockito.mock(ProcessInstanceEntity.class);
-    when(hit1.processInstanceKey()).thenReturn(1L);
-    when(hit1.processDefinitionName()).thenReturn("foo");
-    final var hit2 = Mockito.mock(ProcessInstanceEntity.class);
-    when(hit2.processInstanceKey()).thenReturn(2L);
-    when(hit2.processDefinitionName()).thenReturn("bar");
-    final var hit3 = Mockito.mock(ProcessInstanceEntity.class);
-    when(hit3.processInstanceKey()).thenReturn(3L);
-    when(hit3.processDefinitionName()).thenReturn("alice");
-    final var searchResult = List.of(hit1, hit2, hit3);
-
-    final DbQuerySorting<ProcessInstanceEntity> sorting =
-        DbQuerySorting.of(
-            b ->
-                b.addEntry(ProcessInstanceSearchColumn.PROCESS_DEFINITION_NAME, SortOrder.ASC)
-                    .addEntry(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
-
-    final var firstSortValues = reader.extractFirstSortValues(searchResult, sorting);
-    final var lastSortValues = reader.extractLastSortValues(searchResult, sorting);
-
-    assertThat(firstSortValues).hasSize(2);
-    assertThat(firstSortValues).containsExactly("foo", 1L);
-    assertThat(lastSortValues).hasSize(2);
-    assertThat(lastSortValues).containsExactly("alice", 3L);
-  }
-
-  @Test
   void convertWithValidSortAndPage() {
     final DbQuerySorting<ProcessInstanceEntity> sort =
         DbQuerySorting.of(
@@ -100,7 +71,7 @@ class AbstractEntityReaderTest {
                     .addEntry(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
     final SearchQueryPage page = new SearchQueryPage(0, 10, null, null);
 
-    final DbQueryPage result = AbstractEntityReader.convertPaging(sort, page);
+    final DbQueryPage result = reader.convertPaging(sort, page);
 
     assertThat(result.size()).isEqualTo(10);
     assertThat(result.from()).isEqualTo(0);
@@ -109,81 +80,90 @@ class AbstractEntityReaderTest {
 
   @Test
   void convertWithSearchAfter() {
+    final var entity = Instancio.create(ProcessInstanceEntity.class);
+
     final DbQuerySorting<ProcessInstanceEntity> sort =
         DbQuerySorting.of(
             b ->
                 b.addEntry(ProcessInstanceSearchColumn.PROCESS_DEFINITION_ID, SortOrder.ASC)
-                    .addEntry(ProcessInstanceSearchColumn.PROCESS_DEFINITION_NAME, SortOrder.DESC)
+                    .addEntry(ProcessInstanceSearchColumn.START_DATE, SortOrder.DESC)
                     .addEntry(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
-    final SearchQueryPage page =
-        new SearchQueryPage(0, 10, new Object[] {"test-process-id", "Test Process", 42L}, null);
 
-    final DbQueryPage result = AbstractEntityReader.convertPaging(sort, page);
+    final SearchQueryResult result = reader.buildSearchQueryResult(1L, List.of(entity), sort);
 
-    assertThat(result.size()).isEqualTo(10);
-    assertThat(result.from()).isEqualTo(0);
-    assertThat(result.keySetPagination()).hasSize(3);
-    final var sorting0 = result.keySetPagination().getFirst();
+    final SearchQueryPage page = new SearchQueryPage(0, 10, result.endCursor(), null);
+
+    final DbQueryPage dbPage = reader.convertPaging(sort, page);
+
+    assertThat(dbPage.size()).isEqualTo(10);
+    assertThat(dbPage.from()).isEqualTo(0);
+    assertThat(dbPage.keySetPagination()).hasSize(3);
+    final var sorting0 = dbPage.keySetPagination().getFirst();
     assertThat(sorting0.entries())
         .containsExactly(
             new KeySetPaginationFieldEntry(
-                "PROCESS_DEFINITION_ID", Operator.GREATER, "test-process-id"));
+                "PROCESS_DEFINITION_ID", Operator.GREATER, entity.processDefinitionId()));
 
-    final var sorting1 = result.keySetPagination().get(1);
+    final var sorting1 = dbPage.keySetPagination().get(1);
     assertThat(sorting1.entries())
         .containsExactly(
             new KeySetPaginationFieldEntry(
-                "PROCESS_DEFINITION_ID", Operator.EQUALS, "test-process-id"),
-            new KeySetPaginationFieldEntry(
-                "PROCESS_DEFINITION_NAME", Operator.LOWER, "Test Process"));
+                "PROCESS_DEFINITION_ID", Operator.EQUALS, entity.processDefinitionId()),
+            new KeySetPaginationFieldEntry("START_DATE", Operator.LOWER, entity.startDate()));
 
-    final var sorting2 = result.keySetPagination().get(2);
+    final var sorting2 = dbPage.keySetPagination().get(2);
     assertThat(sorting2.entries())
         .containsExactly(
             new KeySetPaginationFieldEntry(
-                "PROCESS_DEFINITION_ID", Operator.EQUALS, "test-process-id"),
+                "PROCESS_DEFINITION_ID", Operator.EQUALS, entity.processDefinitionId()),
+            new KeySetPaginationFieldEntry("START_DATE", Operator.EQUALS, entity.startDate()),
             new KeySetPaginationFieldEntry(
-                "PROCESS_DEFINITION_NAME", Operator.EQUALS, "Test Process"),
-            new KeySetPaginationFieldEntry("PROCESS_INSTANCE_KEY", Operator.GREATER, 42L));
+                "PROCESS_INSTANCE_KEY", Operator.GREATER, entity.processInstanceKey()));
   }
 
   @Test
   void convertWithSearchBefore() {
+    final var entity = Instancio.create(ProcessInstanceEntity.class);
+
     final DbQuerySorting<ProcessInstanceEntity> sort =
         DbQuerySorting.of(
             b ->
                 b.addEntry(ProcessInstanceSearchColumn.PROCESS_DEFINITION_ID, SortOrder.ASC)
-                    .addEntry(ProcessInstanceSearchColumn.PROCESS_DEFINITION_NAME, SortOrder.DESC)
+                    .addEntry(
+                        ProcessInstanceSearchColumn.PROCESS_DEFINITION_VERSION, SortOrder.DESC)
                     .addEntry(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
-    final SearchQueryPage page =
-        new SearchQueryPage(0, 10, null, new Object[] {"test-process-id", "Test Process", 42L});
 
-    final DbQueryPage result = AbstractEntityReader.convertPaging(sort, page);
+    final SearchQueryResult result = reader.buildSearchQueryResult(1L, List.of(entity), sort);
 
-    assertThat(result.size()).isEqualTo(10);
-    assertThat(result.from()).isEqualTo(0);
-    assertThat(result.keySetPagination()).hasSize(3);
-    final var sorting0 = result.keySetPagination().getFirst();
+    final SearchQueryPage page = new SearchQueryPage(0, 10, null, result.startCursor());
+
+    final DbQueryPage dbPage = reader.convertPaging(sort, page);
+
+    assertThat(dbPage.size()).isEqualTo(10);
+    assertThat(dbPage.from()).isEqualTo(0);
+    assertThat(dbPage.keySetPagination()).hasSize(3);
+    final var sorting0 = dbPage.keySetPagination().getFirst();
     assertThat(sorting0.entries())
         .containsExactly(
             new KeySetPaginationFieldEntry(
-                "PROCESS_DEFINITION_ID", Operator.LOWER, "test-process-id"));
+                "PROCESS_DEFINITION_ID", Operator.LOWER, entity.processDefinitionId()));
 
-    final var sorting1 = result.keySetPagination().get(1);
+    final var sorting1 = dbPage.keySetPagination().get(1);
     assertThat(sorting1.entries())
         .containsExactly(
             new KeySetPaginationFieldEntry(
-                "PROCESS_DEFINITION_ID", Operator.EQUALS, "test-process-id"),
+                "PROCESS_DEFINITION_ID", Operator.EQUALS, entity.processDefinitionId()),
             new KeySetPaginationFieldEntry(
-                "PROCESS_DEFINITION_NAME", Operator.GREATER, "Test Process"));
+                "PROCESS_DEFINITION_VERSION", Operator.GREATER, entity.processDefinitionVersion()));
 
-    final var sorting2 = result.keySetPagination().get(2);
+    final var sorting2 = dbPage.keySetPagination().get(2);
     assertThat(sorting2.entries())
         .containsExactly(
             new KeySetPaginationFieldEntry(
-                "PROCESS_DEFINITION_ID", Operator.EQUALS, "test-process-id"),
+                "PROCESS_DEFINITION_ID", Operator.EQUALS, entity.processDefinitionId()),
             new KeySetPaginationFieldEntry(
-                "PROCESS_DEFINITION_NAME", Operator.EQUALS, "Test Process"),
-            new KeySetPaginationFieldEntry("PROCESS_INSTANCE_KEY", Operator.LOWER, 42L));
+                "PROCESS_DEFINITION_VERSION", Operator.EQUALS, entity.processDefinitionVersion()),
+            new KeySetPaginationFieldEntry(
+                "PROCESS_INSTANCE_KEY", Operator.LOWER, entity.processInstanceKey()));
   }
 }

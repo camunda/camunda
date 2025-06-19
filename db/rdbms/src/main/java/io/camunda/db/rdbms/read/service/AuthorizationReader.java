@@ -26,7 +26,7 @@ public class AuthorizationReader extends AbstractEntityReader<AuthorizationEntit
   private final AuthorizationMapper authorizationMapper;
 
   public AuthorizationReader(final AuthorizationMapper authorizationMapper) {
-    super(AuthorizationSearchColumn::findByProperty);
+    super(AuthorizationSearchColumn.values());
     this.authorizationMapper = authorizationMapper;
   }
 

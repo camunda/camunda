@@ -25,7 +25,7 @@ public class BatchOperationReader extends AbstractEntityReader<BatchOperationEnt
   private final BatchOperationMapper batchOperationMapper;
 
   public BatchOperationReader(final BatchOperationMapper batchOperationMapper) {
-    super(BatchOperationSearchColumn::findByProperty);
+    super(BatchOperationSearchColumn.values());
     this.batchOperationMapper = batchOperationMapper;
   }
 

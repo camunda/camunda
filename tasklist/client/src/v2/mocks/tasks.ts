@@ -46,8 +46,8 @@ function getQueryTasksResponseMock(
     items: tasks,
     page: {
       totalItems,
-      firstSortValues: [0, 1],
-      lastSortValues: [2, 3],
+      startCursor: "startCursor",
+      endCursor: "endCursor",
     },
   };
 }

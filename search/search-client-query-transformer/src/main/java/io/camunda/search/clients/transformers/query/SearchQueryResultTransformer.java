@@ -51,8 +51,8 @@ public final class SearchQueryResultTransformer<T, R> {
 
     return new Builder<R>()
         .total(value.totalHits())
-        .firstSortValues(firstSortValues)
-        .lastSortValues(lastSortValues)
+        .startCursor(Cursor.encode(firstSortValues))
+        .endCursor(Cursor.encode(lastSortValues))
         .items(items.stream().map(documentToEntityMapper::apply).toList())
         .build();
   }

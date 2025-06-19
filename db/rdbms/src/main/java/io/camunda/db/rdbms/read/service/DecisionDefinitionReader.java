@@ -24,7 +24,7 @@ public class DecisionDefinitionReader extends AbstractEntityReader<DecisionDefin
   private final DecisionDefinitionMapper decisionDefinitionMapper;
 
   public DecisionDefinitionReader(final DecisionDefinitionMapper decisionDefinitionMapper) {
-    super(DecisionDefinitionSearchColumn::findByProperty);
+    super(DecisionDefinitionSearchColumn.values());
     this.decisionDefinitionMapper = decisionDefinitionMapper;
   }
 

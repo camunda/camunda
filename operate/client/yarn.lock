@@ -3408,10 +3408,10 @@
   resolved "https://registry.yarnpkg.com/@ungap/structured-clone/-/structured-clone-1.2.0.tgz#756641adb587851b5ccb3e095daf27ae581c8406"
   integrity sha512-zuVdFrMJiuCDQUMCzQaD6KL28MjnqqN8XnAqiEq9PNm/hCPTSGfrXCOfwj1ow4LFb/tNymJPwsNbVePc1xFqrQ==
 
-"@vzeta/camunda-api-zod-schemas@0.0.2-beta.55":
-  version "0.0.2-beta.55"
-  resolved "https://registry.yarnpkg.com/@vzeta/camunda-api-zod-schemas/-/camunda-api-zod-schemas-0.0.2-beta.55.tgz#f7125a778208524aab4a7227ef85c2bb10e702be"
-  integrity sha512-U1n9hdy/kxSGO9FFYq9MP0+TccstIIwz2myp+NUbHZLO9+SDcl9EajfxbgPsNtFsWt3reE4gKSxh760ivCFWMw==
+"@vzeta/camunda-api-zod-schemas@0.0.2-beta.58":
+  version "0.0.2-beta.58"
+  resolved "https://registry.yarnpkg.com/@vzeta/camunda-api-zod-schemas/-/camunda-api-zod-schemas-0.0.2-beta.58.tgz#0c9e8ad991c9a1b122b979c15687521730ecf453"
+  integrity sha512-oBUvKycBzh8rxs406He7wDVZeddKDOpfUkM+85258AJ2vGh7asanVhks6Ec9iv182uJe5ZZ/mVs1T8bhGVgHTQ==
 
 "@webassemblyjs/ast@1.12.1", "@webassemblyjs/ast@^1.12.1":
   version "1.12.1"

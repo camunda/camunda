@@ -27,8 +27,8 @@ function getCollectionResponse<Item>(items: Item[]) {
     items,
     page: {
       totalItems: items.length,
-      firstSortValues: [0],
-      lastSortValues: [1],
+      startCursor: "<startCursor>",
+      endCursor: "<endCursor>",
     },
   };
 }

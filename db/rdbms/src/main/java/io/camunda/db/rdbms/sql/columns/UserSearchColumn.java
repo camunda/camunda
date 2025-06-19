@@ -8,52 +8,26 @@
 package io.camunda.db.rdbms.sql.columns;
 
 import io.camunda.search.entities.UserEntity;
-import java.util.function.Function;
 
 public enum UserSearchColumn implements SearchColumn<UserEntity> {
-  USER_KEY("userKey", UserEntity::userKey),
-  USERNAME("username", UserEntity::username),
-  NAME("name", UserEntity::name),
-  EMAIL("email", UserEntity::email);
+  USER_KEY("userKey"),
+  USERNAME("username"),
+  NAME("name"),
+  EMAIL("email");
 
   private final String property;
-  private final Function<UserEntity, Object> propertyReader;
-  private final Function<Object, Object> sortOptionConverter;
 
-  UserSearchColumn(final String property, final Function<UserEntity, Object> propertyReader) {
-    this(property, propertyReader, Function.identity());
-  }
-
-  UserSearchColumn(
-      final String property,
-      final Function<UserEntity, Object> propertyReader,
-      final Function<Object, Object> sortOptionConverter) {
+  UserSearchColumn(final String property) {
     this.property = property;
-    this.propertyReader = propertyReader;
-    this.sortOptionConverter = sortOptionConverter;
   }
 
   @Override
-  public Object getPropertyValue(final UserEntity entity) {
-    return propertyReader.apply(entity);
+  public String property() {
+    return property;
   }
 
   @Override
-  public Object convertSortOption(final Object object) {
-    if (object == null) {
-      return null;
-    }
-
-    return sortOptionConverter.apply(object);
-  }
-
-  public static UserSearchColumn findByProperty(final String property) {
-    for (final UserSearchColumn column : UserSearchColumn.values()) {
-      if (column.property.equals(property)) {
-        return column;
-      }
-    }
-
-    return null;
+  public Class<UserEntity> getEntityClass() {
+    return UserEntity.class;
   }
 }

@@ -24,7 +24,6 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -504,7 +503,7 @@ class UserTaskSearchTest {
     final var resultAfter =
         camundaClient
             .newUserTaskSearchRequest()
-            .page(p -> p.searchAfter(Collections.singletonList(key)))
+            .page(p -> p.after(result.page().endCursor()))
             .send()
             .join();
 
@@ -514,7 +513,7 @@ class UserTaskSearchTest {
     final var resultBefore =
         camundaClient
             .newUserTaskSearchRequest()
-            .page(p -> p.searchBefore(Collections.singletonList(keyAfter)))
+            .page(p -> p.before(resultAfter.page().startCursor()))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
@@ -534,30 +533,6 @@ class UserTaskSearchTest {
     assertThat(firstItem.getCreationDate()).isLessThan(result.items().get(1).getCreationDate());
     assertThat(result.items().get(1).getCreationDate())
         .isLessThan(result.items().get(2).getCreationDate());
-
-    // Assert First and Last Sort Value matches the first and last item
-    // We need to make use of toString, such the test work with ES/OS
-    final List<String> firstSortValues =
-        result.page().firstSortValues().stream().map(Object::toString).toList();
-    String creationDateMillis = convertDateIfNeeded(firstSortValues.getFirst());
-    String userTaskKey = firstSortValues.getLast();
-
-    assertThat(creationDateMillis)
-        .isEqualTo(
-            Long.toString(
-                OffsetDateTime.parse(firstItem.getCreationDate()).toInstant().toEpochMilli()));
-    assertThat(userTaskKey).isEqualTo(Long.toString(firstItem.getUserTaskKey()));
-
-    final List<String> lastSortValues =
-        result.page().lastSortValues().stream().map(Object::toString).toList();
-    creationDateMillis = convertDateIfNeeded(lastSortValues.getFirst());
-    userTaskKey = lastSortValues.getLast();
-
-    assertThat(creationDateMillis)
-        .isEqualTo(
-            Long.toString(
-                OffsetDateTime.parse(lastItem.getCreationDate()).toInstant().toEpochMilli()));
-    assertThat(userTaskKey).isEqualTo(Long.toString(lastItem.getUserTaskKey()));
   }
 
   @Test

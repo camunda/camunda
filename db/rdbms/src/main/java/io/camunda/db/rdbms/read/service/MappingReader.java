@@ -24,7 +24,7 @@ public class MappingReader extends AbstractEntityReader<MappingEntity> {
   private final MappingMapper mappingMapper;
 
   public MappingReader(final MappingMapper mappingMapper) {
-    super(MappingSearchColumn::findByProperty);
+    super(MappingSearchColumn.values());
     this.mappingMapper = mappingMapper;
   }
 

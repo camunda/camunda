@@ -177,31 +177,26 @@ public class DecisionRequirementsIT {
     final var searchResult =
         decisionRequirementsReader.search(
             DecisionRequirementsQuery.of(
+                b -> b.filter(f -> f.tenantIds("search-after-123456")).sort(sort)));
+
+    final var firstPage =
+        decisionRequirementsReader.search(
+            DecisionRequirementsQuery.of(
                 b ->
                     b.filter(f -> f.tenantIds("search-after-123456"))
                         .sort(sort)
-                        .page(p -> p.from(0).size(20))));
+                        .page(p -> p.size(15))));
 
-    final var instanceAfter = searchResult.items().get(9);
     final var nextPage =
         decisionRequirementsReader.search(
             DecisionRequirementsQuery.of(
                 b ->
                     b.filter(f -> f.tenantIds("search-after-123456"))
                         .sort(sort)
-                        .page(
-                            p ->
-                                p.size(5)
-                                    .searchAfter(
-                                        new Object[] {
-                                          instanceAfter.name(),
-                                          instanceAfter.version(),
-                                          instanceAfter.tenantId(),
-                                          instanceAfter.decisionRequirementsKey()
-                                        }))));
+                        .page(p -> p.size(5).after(firstPage.endCursor()))));
 
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
-    assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(10, 15));
+    assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
   }
 }

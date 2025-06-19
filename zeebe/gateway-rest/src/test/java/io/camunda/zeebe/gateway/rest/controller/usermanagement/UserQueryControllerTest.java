@@ -51,10 +51,8 @@ public class UserQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": ["f"],
-                  "lastSortValues": [
-                      "v"
-                  ]
+                  "startCursor": "f",
+                  "endCursor": "v"
               }
           }""";
   private static final String USERS_SEARCH_URL = "/v2/users/search";
@@ -63,8 +61,8 @@ public class UserQueryControllerTest extends RestControllerTest {
       new Builder<UserEntity>()
           .total(1L)
           .items(List.of(new UserEntity(1L, "username1", "name1", "email1", "password1")))
-          .firstSortValues(new Object[] {"f"})
-          .lastSortValues(new Object[] {"v"})
+          .startCursor("f")
+          .endCursor("v")
           .build();
 
   @MockBean UserServices userServices;
@@ -302,8 +300,8 @@ public class UserQueryControllerTest extends RestControllerTest {
             """
                 {
                     "page": {
-                        "searchAfter": ["a"],
-                        "searchBefore": ["b"]
+                        "after": "a",
+                        "before": "b"
                     }
                 }""",
             String.format(
@@ -312,7 +310,7 @@ public class UserQueryControllerTest extends RestControllerTest {
                       "type": "about:blank",
                       "title": "INVALID_ARGUMENT",
                       "status": 400,
-                      "detail": "Both searchAfter and searchBefore cannot be set at the same time.",
+                      "detail": "Both after and before cannot be set at the same time.",
                       "instance": "%s"
                     }""",
                 USERS_SEARCH_URL)));

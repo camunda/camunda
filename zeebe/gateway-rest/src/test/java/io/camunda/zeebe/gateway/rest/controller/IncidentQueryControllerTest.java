@@ -57,10 +57,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": ["f"],
-                  "lastSortValues": [
-                      "v"
-                  ]
+                  "startCursor": "f",
+                  "endCursor": "v"
               }
           }""";
 
@@ -82,8 +80,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                       IncidentState.ACTIVE,
                       101L,
                       "tenantId")))
-          .firstSortValues(new Object[] {"f"})
-          .lastSortValues(new Object[] {"v"})
+          .startCursor("f")
+          .endCursor("v")
           .build();
 
   static final String EXPECTED_GET_RESPONSE =

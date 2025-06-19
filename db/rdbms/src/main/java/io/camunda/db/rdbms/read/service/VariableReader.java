@@ -27,7 +27,7 @@ public class VariableReader extends AbstractEntityReader<VariableEntity> {
   private final VariableMapper variableMapper;
 
   public VariableReader(final VariableMapper variableMapper) {
-    super(VariableSearchColumn::findByProperty);
+    super(VariableSearchColumn.values());
     this.variableMapper = variableMapper;
   }
 

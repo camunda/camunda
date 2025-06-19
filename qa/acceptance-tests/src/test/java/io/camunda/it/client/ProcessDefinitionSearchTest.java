@@ -19,7 +19,6 @@ import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -96,7 +95,7 @@ public class ProcessDefinitionSearchTest {
         camundaClient
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.processDefinitionKey().desc())
-            .page(p -> p.limit(1).searchAfter(firstPage.page().lastSortValues()))
+            .page(p -> p.limit(1).after(firstPage.page().endCursor()))
             .send()
             .join();
 
@@ -131,7 +130,7 @@ public class ProcessDefinitionSearchTest {
         camundaClient
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.processDefinitionId().desc())
-            .page(p -> p.limit(1).searchAfter(firstPage.page().lastSortValues()))
+            .page(p -> p.limit(1).after(firstPage.page().endCursor()))
             .send()
             .join();
 
@@ -160,7 +159,7 @@ public class ProcessDefinitionSearchTest {
         camundaClient
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.processDefinitionId().desc())
-            .page(p -> p.limit(1).searchAfter(firstPage.page().lastSortValues()))
+            .page(p -> p.limit(1).after(firstPage.page().endCursor()))
             .send()
             .join();
     // when
@@ -168,7 +167,7 @@ public class ProcessDefinitionSearchTest {
         camundaClient
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.processDefinitionId().desc())
-            .page(p -> p.limit(2).searchBefore(secondPage.page().firstSortValues()))
+            .page(p -> p.limit(2).before(secondPage.page().startCursor()))
             .send()
             .join();
 
@@ -550,17 +549,17 @@ public class ProcessDefinitionSearchTest {
     final var resultAfter =
         camundaClient
             .newProcessDefinitionSearchRequest()
-            .page(p -> p.searchAfter(Collections.singletonList(key)))
+            .page(p -> p.after(result.page().endCursor()))
             .send()
             .join();
 
-    assertThat(resultAfter.items().size()).isEqualTo(3);
-    final var keyAfter = resultAfter.items().getFirst().getProcessDefinitionKey();
+    assertThat(resultAfter.items().size()).isEqualTo(2);
+
     // apply searchBefore
     final var resultBefore =
         camundaClient
             .newProcessDefinitionSearchRequest()
-            .page(p -> p.searchBefore(Collections.singletonList(keyAfter)))
+            .page(p -> p.before(resultAfter.page().startCursor()))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(2);

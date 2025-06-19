@@ -26,7 +26,7 @@ public class ProcessInstanceReader extends AbstractEntityReader<ProcessInstanceE
   private final ProcessInstanceMapper processInstanceMapper;
 
   public ProcessInstanceReader(final ProcessInstanceMapper processInstanceMapper) {
-    super(ProcessInstanceSearchColumn::findByProperty);
+    super(ProcessInstanceSearchColumn.values());
     this.processInstanceMapper = processInstanceMapper;
   }
 

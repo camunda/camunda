@@ -100,8 +100,8 @@ function getQueryVariablesResponseMock(
     items: variables,
     page: {
       totalItems,
-      firstSortValues: [0, 1],
-      lastSortValues: [2, 3],
+      startCursor: "startCursor",
+      endCursor: "endCursor",
     },
   };
 }

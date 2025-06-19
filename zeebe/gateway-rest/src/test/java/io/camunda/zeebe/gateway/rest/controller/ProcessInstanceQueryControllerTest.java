@@ -109,10 +109,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": ["f"],
-                  "lastSortValues": [
-                      "v"
-                  ]
+                  "startCursor": "f",
+                  "endCursor": "v"
               }
           }
           """;
@@ -132,8 +130,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
       new Builder<ProcessInstanceEntity>()
           .total(1L)
           .items(List.of(PROCESS_INSTANCE_ENTITY))
-          .firstSortValues(new Object[] {"f"})
-          .lastSortValues(new Object[] {"v"})
+          .startCursor("f")
+          .endCursor("v")
           .build();
 
   @MockBean ProcessInstanceServices processInstanceServices;
@@ -456,8 +454,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         """
             {
                 "page": {
-                    "searchAfter": ["a"],
-                    "searchBefore": ["b"]
+                    "after": "a",
+                    "before": "b"
                 }
             }""";
     final var expectedResponse =
@@ -467,7 +465,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "INVALID_ARGUMENT",
                   "status": 400,
-                  "detail": "Both searchAfter and searchBefore cannot be set at the same time.",
+                  "detail": "Both after and before cannot be set at the same time.",
                   "instance": "%s"
                 }""",
             PROCESS_INSTANCES_SEARCH_URL);

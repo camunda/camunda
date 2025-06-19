@@ -8,65 +8,38 @@
 package io.camunda.db.rdbms.sql.columns;
 
 import io.camunda.search.entities.UserTaskEntity;
-import java.util.function.Function;
 
 public enum UserTaskSearchColumn implements SearchColumn<UserTaskEntity> {
-  USER_TASK_KEY("userKey", UserTaskEntity::userTaskKey),
-  CREATION_DATE("creationDate", UserTaskEntity::creationDate),
-  DUE_DATE("dueDate", UserTaskEntity::dueDate),
-  FOLLOW_UP_DATE("followUpDate", UserTaskEntity::followUpDate),
-  COMPLETION_DATE("completionDate", UserTaskEntity::completionDate),
-  ELEMENT_ID("elementId", UserTaskEntity::elementId),
-  NAME("name", UserTaskEntity::name),
-  ELEMENT_INSTANCE_KEY("elementInstanceKey", UserTaskEntity::elementInstanceKey),
-  TENANT_ID("tenantId", UserTaskEntity::tenantId),
-  ASSIGNEE("assignee", UserTaskEntity::assignee),
-  FORM_KEY("formKey", UserTaskEntity::formKey),
-  PROCESS_DEFINITION_ID("processDefinitionId", UserTaskEntity::processDefinitionId),
-  PROCESS_DEFINITION_KEY("processDefinitionKey", UserTaskEntity::processDefinitionKey),
-  PROCESS_DEFINITION_VERSION("processDefinitionVersion", UserTaskEntity::processDefinitionVersion),
-  PROCESS_INSTANCE_KEY("processInstanceKey", UserTaskEntity::processInstanceKey),
-  PRIORITY("priority", UserTaskEntity::priority);
+  USER_TASK_KEY("userTaskKey"),
+  CREATION_DATE("creationDate"),
+  DUE_DATE("dueDate"),
+  FOLLOW_UP_DATE("followUpDate"),
+  COMPLETION_DATE("completionDate"),
+  ELEMENT_ID("elementId"),
+  NAME("name"),
+  ELEMENT_INSTANCE_KEY("elementInstanceKey"),
+  TENANT_ID("tenantId"),
+  ASSIGNEE("assignee"),
+  FORM_KEY("formKey"),
+  PROCESS_DEFINITION_ID("processDefinitionId"),
+  PROCESS_DEFINITION_KEY("processDefinitionKey"),
+  PROCESS_DEFINITION_VERSION("processDefinitionVersion"),
+  PROCESS_INSTANCE_KEY("processInstanceKey"),
+  PRIORITY("priority");
 
   private final String property;
-  private final Function<UserTaskEntity, Object> propertyReader;
-  private final Function<Object, Object> sortOptionConverter;
 
-  UserTaskSearchColumn(
-      final String property, final Function<UserTaskEntity, Object> propertyReader) {
-    this(property, propertyReader, Function.identity());
-  }
-
-  UserTaskSearchColumn(
-      final String property,
-      final Function<UserTaskEntity, Object> propertyReader,
-      final Function<Object, Object> sortOptionConverter) {
+  UserTaskSearchColumn(final String property) {
     this.property = property;
-    this.propertyReader = propertyReader;
-    this.sortOptionConverter = sortOptionConverter;
   }
 
   @Override
-  public Object getPropertyValue(final UserTaskEntity entity) {
-    return propertyReader.apply(entity);
+  public String property() {
+    return property;
   }
 
   @Override
-  public Object convertSortOption(final Object object) {
-    if (object == null) {
-      return null;
-    }
-
-    return sortOptionConverter.apply(object);
-  }
-
-  public static UserTaskSearchColumn findByProperty(final String property) {
-    for (final UserTaskSearchColumn column : UserTaskSearchColumn.values()) {
-      if (column.property.equals(property)) {
-        return column;
-      }
-    }
-
-    return null;
+  public Class<UserTaskEntity> getEntityClass() {
+    return UserTaskEntity.class;
   }
 }

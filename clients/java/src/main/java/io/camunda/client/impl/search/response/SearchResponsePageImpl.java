@@ -16,21 +16,18 @@
 package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.response.SearchResponsePage;
-import java.util.List;
 
 public class SearchResponsePageImpl implements SearchResponsePage {
 
   private final long totalItems;
-  private final List<Object> firstSortValues;
-  private final List<Object> lastSortValues;
+  private final String startCursor;
+  private final String endCursor;
 
   public SearchResponsePageImpl(
-      final long totalItems,
-      final List<Object> firstSortValues,
-      final List<Object> lastSortValues) {
+      final long totalItems, final String startCursor, final String endCursor) {
     this.totalItems = totalItems;
-    this.firstSortValues = firstSortValues;
-    this.lastSortValues = lastSortValues;
+    this.startCursor = startCursor;
+    this.endCursor = endCursor;
   }
 
   @Override
@@ -39,12 +36,12 @@ public class SearchResponsePageImpl implements SearchResponsePage {
   }
 
   @Override
-  public List<Object> firstSortValues() {
-    return firstSortValues;
+  public String startCursor() {
+    return startCursor;
   }
 
   @Override
-  public List<Object> lastSortValues() {
-    return lastSortValues;
+  public String endCursor() {
+    return endCursor;
   }
 }

@@ -36,8 +36,8 @@ function getQueryProcessDefinitionsResponseMock(
     items: processDefinitions,
     page: {
       totalItems,
-      firstSortValues: [0, 1],
-      lastSortValues: [2, 3],
+      startCursor: "startCursor",
+      endCursor: "endCursor",
     },
   };
 }

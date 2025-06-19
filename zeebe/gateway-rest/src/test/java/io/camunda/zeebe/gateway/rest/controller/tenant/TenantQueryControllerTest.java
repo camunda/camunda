@@ -95,8 +95,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
          ],
          "page": {
            "totalItems": %s,
-           "firstSortValues": ["f"],
-           "lastSortValues": ["v"]
+           "startCursor": "f",
+           "endCursor": "v"
          }
        }
       """;
@@ -135,8 +135,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
          ],
          "page": {
            "totalItems": %s,
-           "firstSortValues": ["f"],
-           "lastSortValues": ["v"]
+           "startCursor": "f",
+           "endCursor": "v"
          }
        }
       """;
@@ -170,8 +170,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
          ],
          "page": {
            "totalItems": %s,
-           "firstSortValues": ["f"],
-           "lastSortValues": ["v"]
+           "startCursor": "f",
+           "endCursor": "v"
          }
        }
       """;
@@ -203,8 +203,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
          ],
          "page": {
            "totalItems": %s,
-           "firstSortValues": ["f"],
-           "lastSortValues": ["v"]
+           "startCursor": "f",
+           "endCursor": "v"
          }
        }
       """;
@@ -308,8 +308,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .thenReturn(
             new SearchQueryResult.Builder<TenantEntity>()
                 .total(3)
-                .firstSortValues(new Object[] {"f"})
-                .lastSortValues(new Object[] {"v"})
+                .startCursor("f")
+                .endCursor("v")
                 .items(TENANT_ENTITIES)
                 .build());
 
@@ -339,8 +339,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
             new SearchQueryResult.Builder<TenantEntity>()
                 .total(TENANT_ENTITIES.size())
                 .items(TENANT_ENTITIES)
-                .firstSortValues(new Object[] {"f"})
-                .lastSortValues(new Object[] {"v"})
+                .startCursor("f")
+                .endCursor("v")
                 .build());
 
     // when / then
@@ -378,8 +378,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
             new SearchQueryResult.Builder<MappingEntity>()
                 .total(MAPPING_ENTITIES.size())
                 .items(MAPPING_ENTITIES)
-                .firstSortValues(new Object[] {"f"})
-                .lastSortValues(new Object[] {"v"})
+                .startCursor("f")
+                .endCursor("v")
                 .build());
 
     // when / then
@@ -411,8 +411,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
             new SearchQueryResult.Builder<MappingEntity>()
                 .total(MAPPING_ENTITIES.size())
                 .items(MAPPING_ENTITIES)
-                .firstSortValues(new Object[] {"f"})
-                .lastSortValues(new Object[] {"v"})
+                .startCursor("f")
+                .endCursor("v")
                 .build());
 
     // when / then
@@ -443,8 +443,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
             new SearchQueryResult.Builder<GroupEntity>()
                 .total(GROUP_ENTITIES.size())
                 .items(GROUP_ENTITIES)
-                .firstSortValues(new Object[] {"f"})
-                .lastSortValues(new Object[] {"v"})
+                .startCursor("f")
+                .endCursor("v")
                 .build());
 
     // when / then
@@ -476,8 +476,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
             new SearchQueryResult.Builder<GroupEntity>()
                 .total(GROUP_ENTITIES.size())
                 .items(GROUP_ENTITIES)
-                .firstSortValues(new Object[] {"f"})
-                .lastSortValues(new Object[] {"v"})
+                .startCursor("f")
+                .endCursor("v")
                 .build());
 
     // when / then
@@ -508,8 +508,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
             new SearchQueryResult.Builder<RoleEntity>()
                 .total(ROLE_ENTITIES.size())
                 .items(ROLE_ENTITIES)
-                .firstSortValues(new Object[] {"f"})
-                .lastSortValues(new Object[] {"v"})
+                .startCursor("f")
+                .endCursor("v")
                 .build());
 
     // when / then
@@ -541,8 +541,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
             new SearchQueryResult.Builder<RoleEntity>()
                 .total(ROLE_ENTITIES.size())
                 .items(ROLE_ENTITIES)
-                .firstSortValues(new Object[] {"f"})
-                .lastSortValues(new Object[] {"v"})
+                .startCursor("f")
+                .endCursor("v")
                 .build());
 
     // when / then
@@ -616,7 +616,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .json(
             // language=json
             """
-                {"items":[{"clientId":"client1"},{"clientId":"client2"},{"clientId":"client3"}],"page":{"totalItems":3,"firstSortValues":[],"lastSortValues":[]}}
+                {"items":[{"clientId":"client1"},{"clientId":"client2"},{"clientId":"client3"}],"page":{"totalItems":3}}
             """);
   }
 
@@ -649,7 +649,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .json(
             // language=json
             """
-                {"items":[{"username":"user1"},{"username":"user2"},{"username":"user3"}],"page":{"totalItems":3,"firstSortValues":[],"lastSortValues":[]}}
+                {"items":[{"username":"user1"},{"username":"user2"},{"username":"user3"}],"page":{"totalItems":3}}
             """);
   }
 
@@ -722,8 +722,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
             """
                 {
                     "page": {
-                        "searchAfter": ["a"],
-                        "searchBefore": ["b"]
+                        "after": "a",
+                        "before": "b"
                     }
                 }""",
             String.format(
@@ -732,7 +732,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
                       "type": "about:blank",
                       "title": "INVALID_ARGUMENT",
                       "status": 400,
-                      "detail": "Both searchAfter and searchBefore cannot be set at the same time.",
+                      "detail": "Both after and before cannot be set at the same time.",
                       "instance": "%s"
                     }""",
                 SEARCH_TENANT_URL)));

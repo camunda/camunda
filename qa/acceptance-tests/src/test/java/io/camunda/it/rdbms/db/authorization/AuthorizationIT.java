@@ -192,31 +192,26 @@ public class AuthorizationIT {
         AuthorizationSort.of(s -> s.ownerType().asc().resourceType().desc().ownerId().asc());
     final var searchResult =
         authorizationReader.search(
-            AuthorizationQuery.of(
-                b -> b.filter(f -> f.ownerType("ITEST")).sort(sort).page(p -> p.from(0).size(20))));
+            AuthorizationQuery.of(b -> b.filter(f -> f.ownerType("ITEST")).sort(sort)));
 
-    final var instanceAfter = searchResult.items().get(9);
+    final var firstPage =
+        authorizationReader.search(
+            AuthorizationQuery.of(
+                b -> b.filter(f -> f.ownerType("ITEST")).sort(sort).page(p -> p.size(15))));
+
     final var nextPage =
         authorizationReader.search(
             AuthorizationQuery.of(
                 b ->
                     b.filter(f -> f.ownerType("ITEST"))
                         .sort(sort)
-                        .page(
-                            p ->
-                                p.size(5)
-                                    .searchAfter(
-                                        new Object[] {
-                                          instanceAfter.ownerType(),
-                                          instanceAfter.resourceType(),
-                                          instanceAfter.ownerId()
-                                        }))));
+                        .page(p -> p.after(firstPage.endCursor()))));
 
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
     assertThat(nextPage.items())
         .usingRecursiveComparison()
-        .isEqualTo(searchResult.items().subList(10, 15));
+        .isEqualTo(searchResult.items().subList(15, 20));
   }
 
   private static void compareAuthorizations(

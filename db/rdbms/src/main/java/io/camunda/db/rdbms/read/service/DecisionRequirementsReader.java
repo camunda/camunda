@@ -24,7 +24,7 @@ public class DecisionRequirementsReader extends AbstractEntityReader<DecisionReq
   private final DecisionRequirementsMapper decisionRequirementsMapper;
 
   public DecisionRequirementsReader(final DecisionRequirementsMapper decisionRequirementsMapper) {
-    super(DecisionRequirementsSearchColumn::findByProperty);
+    super(DecisionRequirementsSearchColumn.values());
     this.decisionRequirementsMapper = decisionRequirementsMapper;
   }
 

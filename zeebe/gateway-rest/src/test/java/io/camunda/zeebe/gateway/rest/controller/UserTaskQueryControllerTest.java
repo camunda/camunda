@@ -85,10 +85,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": ["f"],
-                  "lastSortValues": [
-                      "v"
-                  ]
+                  "startCursor": "f",
+                  "endCursor": "v"
               }
           }""";
 
@@ -117,8 +115,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         ],
         "page": {
           "totalItems": 2,
-          "firstSortValues": ["0"],
-          "lastSortValues": ["1"]
+          "startCursor": "0",
+          "endCursor": "1"
         }
       }
       """;
@@ -191,8 +189,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       Collections.emptyMap(), // customHeaders
                       50 // priority
                       )))
-          .firstSortValues(new Object[] {"f"})
-          .lastSortValues(new Object[] {"v"})
+          .startCursor("f")
+          .endCursor("v")
           .build();
 
   private static final SearchQueryResult<VariableEntity> SEARCH_VAR_QUERY_RESULT =
@@ -203,8 +201,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                   new VariableEntity(0L, "name", "value", null, false, 1L, 2L, "bpid", "<default>"),
                   new VariableEntity(
                       1L, "name2", "value", "valueLong", true, 1L, 2L, "bpid", "<default>")))
-          .firstSortValues(new Object[] {"0"})
-          .lastSortValues(new Object[] {"1"})
+          .startCursor("0")
+          .endCursor("1")
           .build();
 
   @MockBean UserTaskServices userTaskServices;
@@ -653,8 +651,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         """
             {
                 "page": {
-                    "searchAfter": ["a"],
-                    "searchBefore": ["b"]
+                    "after": "a",
+                    "before": "b"
                 }
             }""";
     final var expectedResponse =
@@ -664,7 +662,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "INVALID_ARGUMENT",
                   "status": 400,
-                  "detail": "Both searchAfter and searchBefore cannot be set at the same time.",
+                  "detail": "Both after and before cannot be set at the same time.",
                   "instance": "%s"
                 }""",
             USER_TASKS_SEARCH_URL);

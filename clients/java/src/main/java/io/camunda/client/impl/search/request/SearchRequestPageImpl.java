@@ -17,7 +17,6 @@ package io.camunda.client.impl.search.request;
 
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.protocol.rest.SearchQueryPageRequest;
-import java.util.List;
 
 public class SearchRequestPageImpl
     extends TypedSearchRequestPropertyProvider<SearchQueryPageRequest>
@@ -42,14 +41,14 @@ public class SearchRequestPageImpl
   }
 
   @Override
-  public SearchRequestPage searchBefore(final List<Object> values) {
-    page.setSearchBefore(values);
+  public SearchRequestPage before(final String cursor) {
+    page.before(cursor);
     return this;
   }
 
   @Override
-  public SearchRequestPage searchAfter(final List<Object> values) {
-    page.setSearchAfter(values);
+  public SearchRequestPage after(final String cursor) {
+    page.after(cursor);
     return this;
   }
 

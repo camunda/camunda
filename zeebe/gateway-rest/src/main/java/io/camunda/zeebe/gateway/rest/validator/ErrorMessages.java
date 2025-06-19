@@ -21,9 +21,9 @@ public final class ErrorMessages {
   public static final String ERROR_SORT_FIELD_MUST_NOT_BE_NULL = "Sort field must not be null";
   public static final String ERROR_UNKNOWN_SORT_BY = "Unknown sortBy: %s";
   public static final String ERROR_SEARCH_BEFORE_AND_AFTER =
-      "Both searchAfter and searchBefore cannot be set at the same time";
+      "Both after and before cannot be set at the same time";
   public static final String ERROR_SEARCH_BEFORE_AND_AFTER_AND_FROM =
-      "Both searchAfter/searchBefore and from cannot be set at the same time";
+      "Both after/before and from cannot be set at the same time";
   public static final String ERROR_MESSAGE_AT_LEAST_ONE_FIELD = "At least one of %s is required";
   public static final String ERROR_MESSAGE_INVALID_TENANT =
       "Expected to handle request %s with tenant identifier '%s', but %s";

@@ -189,26 +189,22 @@ public class GroupIT {
             GroupQuery.of(
                 b -> b.filter(f -> f.name("Alice Doe")).sort(sort).page(p -> p.from(0).size(20))));
 
-    final var instanceAfter = searchResult.items().get(9);
+    final var firstPage =
+        groupReader.search(
+            GroupQuery.of(
+                b -> b.filter(f -> f.name("Alice Doe")).sort(sort).page(p -> p.size(15))));
+
     final var nextPage =
         groupReader.search(
             GroupQuery.of(
                 b ->
                     b.filter(f -> f.name("Alice Doe"))
                         .sort(sort)
-                        .page(
-                            p ->
-                                p.size(5)
-                                    .searchAfter(
-                                        new Object[] {
-                                          instanceAfter.name(),
-                                          instanceAfter.groupId(),
-                                          instanceAfter.groupKey()
-                                        }))));
+                        .page(p -> p.size(5).after(firstPage.endCursor()))));
 
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
-    assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(10, 15));
+    assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
   }
 
   @TestTemplate

@@ -8,52 +8,26 @@
 package io.camunda.db.rdbms.sql.columns;
 
 import io.camunda.search.entities.RoleEntity;
-import java.util.function.Function;
 
 public enum RoleSearchColumn implements SearchColumn<RoleEntity> {
-  ROLE_KEY("roleKey", RoleEntity::roleKey),
-  ROLE_ID("roleId", RoleEntity::roleId),
-  NAME("name", RoleEntity::name),
-  DESCRIPTION("description", RoleEntity::description);
+  ROLE_KEY("roleKey"),
+  ROLE_ID("roleId"),
+  NAME("name"),
+  DESCRIPTION("description");
 
   private final String property;
-  private final Function<RoleEntity, Object> propertyReader;
-  private final Function<Object, Object> sortOptionConverter;
 
-  RoleSearchColumn(final String property, final Function<RoleEntity, Object> propertyReader) {
-    this(property, propertyReader, Function.identity());
-  }
-
-  RoleSearchColumn(
-      final String property,
-      final Function<RoleEntity, Object> propertyReader,
-      final Function<Object, Object> sortOptionConverter) {
+  RoleSearchColumn(final String property) {
     this.property = property;
-    this.propertyReader = propertyReader;
-    this.sortOptionConverter = sortOptionConverter;
   }
 
   @Override
-  public Object getPropertyValue(final RoleEntity entity) {
-    return propertyReader.apply(entity);
+  public String property() {
+    return property;
   }
 
   @Override
-  public Object convertSortOption(final Object object) {
-    if (object == null) {
-      return null;
-    }
-
-    return sortOptionConverter.apply(object);
-  }
-
-  public static RoleSearchColumn findByProperty(final String property) {
-    for (final RoleSearchColumn column : RoleSearchColumn.values()) {
-      if (column.property.equals(property)) {
-        return column;
-      }
-    }
-
-    return null;
+  public Class<RoleEntity> getEntityClass() {
+    return RoleEntity.class;
   }
 }
