@@ -90,7 +90,6 @@ public class MarkPartitionBootstrappedProcessor
             .withKey(scalingKey)
             .inQueue(DistributionQueue.SCALING)
             .distribute(command);
-        distributionBehavior.startDistributingForPartition(bootstrappedPartition);
       }
     }
   }

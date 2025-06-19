@@ -114,6 +114,7 @@ public class CommandDistributionScalingTest {
         .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any());
     verifyNoMoreInteractions(mockInterpartitionCommandSender);
     assertThat(distributionState.hasPendingDistribution(key, 3)).isTrue();
+    assertThat(distributionState.hasRetriableDistribution(key, 3)).isTrue();
   }
 
   @Test
@@ -160,6 +161,7 @@ public class CommandDistributionScalingTest {
 
     assertThat(distributionState.hasPendingDistribution(key, 2)).isTrue();
     assertThat(distributionState.hasPendingDistribution(key, 3)).isTrue();
+    assertThat(distributionState.hasRetriableDistribution(key, 3)).isTrue();
     assertThat(distributionState.hasPendingDistribution(otherKey, 2)).isTrue();
     assertThat(distributionState.hasPendingDistribution(otherKey, 3)).isTrue();
   }
