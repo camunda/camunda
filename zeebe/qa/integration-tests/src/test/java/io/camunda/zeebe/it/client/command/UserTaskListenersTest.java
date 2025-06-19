@@ -894,6 +894,60 @@ public class UserTaskListenersTest {
         });
   }
 
+  @Test
+  void shouldRejectTaskUpdateRequestWhenUserTaskIsCanceledDuringTransition() {
+    // given
+    final var userTaskKey =
+        resourcesHelper.createSingleUserTask(
+            t ->
+                t.zeebeTaskListener(l -> l.updating().type("my_updating_listener"))
+                    .zeebeTaskListener(l -> l.canceling().type("my_canceling_listener")));
+
+    final JobHandler completeListenerJobHandler =
+        (jobClient, job) -> client.newCompleteCommand(job).send().join();
+    client.newWorker().jobType("my_canceling_listener").handler(completeListenerJobHandler).open();
+
+    final var createdUserTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withRecordKey(userTaskKey)
+            .getFirst()
+            .getValue();
+    final long processInstanceKey = createdUserTask.getProcessInstanceKey();
+
+    // trigger task update and wait for UPDATING event
+    final var updateUserTaskFuture =
+        client.newUserTaskUpdateCommand(userTaskKey).candidateUsers("frodo", "samwise").send();
+    RecordingExporter.userTaskRecords(UserTaskIntent.UPDATING).withRecordKey(userTaskKey).await();
+
+    // when: cancel the process instance
+    final var cancelProcessInstanceFuture =
+        client.newCancelInstanceCommand(processInstanceKey).send();
+
+    // then: update request was rejected
+    assertThatExceptionOfType(ProblemException.class)
+        .isThrownBy(updateUserTaskFuture::join)
+        .extracting(ProblemException::details)
+        .satisfies(
+            details -> {
+              assertThat(details.getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
+              assertThat(details.getTitle()).isEqualTo(RejectionType.INVALID_STATE.name());
+              assertThat(details.getDetail())
+                  .isEqualTo(
+                      "Command 'UPDATE' rejected with code 'INVALID_STATE': "
+                          + "user task was canceled during ongoing transition");
+            });
+
+    // then: wait for successful process cancellation
+    assertThatCode(cancelProcessInstanceFuture::join).doesNotThrowAnyException();
+
+    ZeebeAssertHelper.assertUserTaskCanceled(
+        userTaskKey,
+        userTask ->
+            assertThat(userTask)
+                .describedAs("Canceled user task should match the originally created one")
+                .isEqualTo(createdUserTask));
+  }
+
   private void waitForJobRetriesToBeExhausted(final RecordingJobHandler recordingHandler) {
     await("until all retries are exhausted")
         .untilAsserted(
