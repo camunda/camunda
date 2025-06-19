@@ -26,6 +26,9 @@ public class StaticEntities {
   public static final String OPERATE_CLIENT_ID = "Operate";
   public static final String TASKLIST_CLIENT_ID = "Tasklist";
 
+  public static final String IDENTITY_PROCESS_DEFINITION_RESOURCE_TYPE = "process-definition";
+  public static final String IDENTITY_DECISION_DEFINITION_RESOURCE_TYPE = "decision-definition";
+
   public static final Set<String> ROLE_IDS =
       Set.of(DEVELOPER_ROLE_ID, OPERATIONS_ENGINEER_ROLE_ID, TASK_USER_ROLE_ID, VISITOR_ROLE_ID);
   public static final Set<String> CLIENT_IDS =

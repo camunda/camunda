@@ -507,6 +507,115 @@ public class SaaSIdentityMigrationIT {
                     PermissionType.UPDATE_USER_TASK)));
   }
 
+  @Test
+  public void canMigrateAuthorizations()
+      throws URISyntaxException, IOException, InterruptedException {
+    // when
+    createAuthorizations();
+
+    migration.start();
+    final var restAddress = client.getConfiguration().getRestAddress().toString();
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var authorizations = searchAuthorizations(restAddress);
+              final var migratedAuthorizations =
+                  authorizations.items().stream()
+                      .map(AuthorizationResponse::ownerId)
+                      .filter(id -> List.of("user0@email.com", "user1@email.com").contains(id))
+                      .toList();
+              assertThat(migratedAuthorizations.size()).isEqualTo(2);
+            });
+
+    // then
+    assertThat(migration.getExitCode()).isEqualTo(0);
+
+    final var authorizations = searchAuthorizations(restAddress);
+    assertThat(authorizations.items())
+        .extracting(
+            AuthorizationResponse::ownerId,
+            AuthorizationResponse::ownerType,
+            AuthorizationResponse::resourceId,
+            AuthorizationResponse::resourceType,
+            AuthorizationResponse::permissionTypes)
+        .contains(
+            tuple(
+                "user0@email.com",
+                OwnerType.USER,
+                "my-test-resource",
+                ResourceType.PROCESS_DEFINITION,
+                Set.of(
+                    PermissionType.READ_PROCESS_DEFINITION,
+                    PermissionType.READ_PROCESS_INSTANCE,
+                    PermissionType.UPDATE_PROCESS_INSTANCE,
+                    PermissionType.CREATE_PROCESS_INSTANCE,
+                    PermissionType.DELETE_PROCESS_INSTANCE)),
+            tuple(
+                "user1@email.com",
+                OwnerType.USER,
+                "another-test-resource",
+                ResourceType.DECISION_DEFINITION,
+                Set.of(
+                    PermissionType.READ_DECISION_DEFINITION,
+                    PermissionType.READ_DECISION_INSTANCE,
+                    PermissionType.DELETE_DECISION_INSTANCE)));
+  }
+
+  private void createAuthorizations() throws IOException, InterruptedException, URISyntaxException {
+    final HttpRequest request1 =
+        HttpRequest.newBuilder()
+            .uri(new URI("%s%s".formatted(externalIdentityUrl(IDENTITY), "/api/authorizations")))
+            .PUT(
+                HttpRequest.BodyPublishers.ofString(
+                    """
+                    {
+                       "entityId": "user0",
+                       "entityType": "USER",
+                       "resourceKey": "my-test-resource",
+                       "resourceType": "process-definition",
+                       "permissions":[
+                          "READ",
+                          "DELETE",
+                          "UPDATE_PROCESS_INSTANCE",
+                          "DELETE_PROCESS_INSTANCE",
+                          "START_PROCESS_INSTANCE"
+                       ],
+                       "organizationId": "org123"
+                    }
+                    """))
+            .header("Content-Type", "application/json")
+            .header("Authorization", "Bearer %s".formatted(TOKEN))
+            .build();
+
+    final HttpRequest request2 =
+        HttpRequest.newBuilder()
+            .uri(new URI("%s%s".formatted(externalIdentityUrl(IDENTITY), "/api/authorizations")))
+            .PUT(
+                HttpRequest.BodyPublishers.ofString(
+                    """
+                    {
+                       "entityId": "user1",
+                       "entityType": "USER",
+                       "resourceKey": "another-test-resource",
+                       "resourceType": "decision-definition",
+                       "permissions":[
+                          "READ",
+                          "DELETE"
+                       ],
+                       "organizationId": "org123"
+                    }
+                    """))
+            .header("Content-Type", "application/json")
+            .header("Authorization", "Bearer %s".formatted(TOKEN))
+            .build();
+
+    HTTP_CLIENT.send(request1, HttpResponse.BodyHandlers.ofString());
+    HTTP_CLIENT.send(request2, HttpResponse.BodyHandlers.ofString());
+  }
+
   private void createGroups() throws IOException, InterruptedException, URISyntaxException {
     final var groupsNames = List.of("groupA", "groupB", "groupC");
     for (final String groupName : groupsNames) {
