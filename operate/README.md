@@ -138,15 +138,6 @@ make start-e2e
 
 To rerun (and clean up data), press Ctrl+C and run the same command again.
 
-### Start Development Server
-
-To start dev server and connect it to E2E related backend:
-
-```
-cd client
-yarn start:e2e
-```
-
 ### Run Tests
 
 ```
