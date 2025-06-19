@@ -12,8 +12,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.entities.RoleMemberEntity;
-import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.RoleServices;
 import jakarta.servlet.FilterChain;
@@ -38,7 +36,7 @@ class AdminUserCheckFilterTest {
     // given
     final var securityConfig = new SecurityConfiguration();
     securityConfig.getAuthentication().setUnprotectedApi(false);
-    when(roleServices.searchMembers(any())).thenReturn(SearchQueryResult.empty());
+    when(roleServices.hasMembersOfType(any(), any())).thenReturn(false);
     when(request.getContextPath()).thenReturn("localhost:8080");
     final AdminUserCheckFilter adminUserCheckFilter =
         new AdminUserCheckFilter(securityConfig, roleServices);
@@ -74,8 +72,7 @@ class AdminUserCheckFilterTest {
     // given
     final var securityConfig = new SecurityConfiguration();
     securityConfig.getAuthentication().setUnprotectedApi(false);
-    when(roleServices.searchMembers(any()))
-        .thenReturn(new SearchQueryResult.Builder<RoleMemberEntity>().total(1).build());
+    when(roleServices.hasMembersOfType(any(), any())).thenReturn(true);
     final AdminUserCheckFilter adminUserCheckFilter =
         new AdminUserCheckFilter(securityConfig, roleServices);
 
