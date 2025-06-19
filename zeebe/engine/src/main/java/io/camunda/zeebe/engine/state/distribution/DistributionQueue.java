@@ -13,6 +13,7 @@ public enum DistributionQueue {
   SCALING("SCALING"),
   BATCH_OPERATION("BATCH_OPERATION");
 
+  private static final DistributionQueue[] VALUES = DistributionQueue.values();
   private final String queueId;
 
   DistributionQueue(final String queueId) {
@@ -21,5 +22,9 @@ public enum DistributionQueue {
 
   public String getQueueId() {
     return queueId;
+  }
+
+  public static DistributionQueue[] getValues() {
+    return VALUES;
   }
 }

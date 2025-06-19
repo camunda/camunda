@@ -120,6 +120,18 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
             });
   }
 
+  public void startDistributingForPartition(final int partitionId) {
+    for (final var queue : DistributionQueue.getValues()) {
+      final var nextInQueue =
+          distributionState.getNextQueuedDistributionKey(queue.getQueueId(), partitionId);
+      if (nextInQueue.isPresent()
+          && distributionState.hasRetriableDistribution(nextInQueue.get(), partitionId)) {
+        return;
+      }
+      distributeNextInQueue(queue.getQueueId(), partitionId);
+    }
+  }
+
   /**
    * Starts a new command distribution request.
    *
