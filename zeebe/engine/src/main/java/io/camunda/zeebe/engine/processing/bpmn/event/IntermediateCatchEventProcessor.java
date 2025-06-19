@@ -73,7 +73,14 @@ public class IntermediateCatchEventProcessor
       final ExecutableCatchEventElement element, final BpmnElementContext context) {
     return stateTransitionBehavior
         .transitionToCompleted(element, context)
-        .thenDo(completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
+        .thenDo(
+            completed ->
+                stateTransitionBehavior
+                    .suspendProcessInstanceIfNeeded(element, completed)
+                    .ifRight(
+                        notSuspended ->
+                            stateTransitionBehavior.takeOutgoingSequenceFlows(
+                                element, notSuspended)));
   }
 
   @Override

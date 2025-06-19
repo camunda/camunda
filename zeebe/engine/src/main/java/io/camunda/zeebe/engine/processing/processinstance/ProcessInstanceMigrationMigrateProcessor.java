@@ -154,6 +154,8 @@ public class ProcessInstanceMigrationMigrateProcessor
       return;
     }
 
+    requireProcessInstanceNotInSuspendedState(processInstance);
+
     requireNonDuplicateSourceElementIds(mappingInstructions, processInstanceKey);
 
     final DeployedProcess targetProcessDefinition =

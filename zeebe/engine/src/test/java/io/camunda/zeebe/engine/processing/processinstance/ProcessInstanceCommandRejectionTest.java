@@ -572,7 +572,9 @@ public final class ProcessInstanceCommandRejectionTest {
             "Expected element instance to be in state '%s' or one of '%s' but was '%s'.",
             ProcessInstanceIntent.ELEMENT_ACTIVATING,
             List.of(
-                ProcessInstanceIntent.ELEMENT_ACTIVATED, ProcessInstanceIntent.ELEMENT_COMPLETING),
+                ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                ProcessInstanceIntent.ELEMENT_COMPLETING,
+                ProcessInstanceIntent.ELEMENT_SUSPENDED),
             ProcessInstanceIntent.ELEMENT_TERMINATING));
   }
 

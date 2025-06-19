@@ -254,6 +254,9 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessInstanceIntent.ANCESTOR_MIGRATED,
         new ProcessInstanceAncestorMigratedApplier(elementInstanceState));
+    register(
+        ProcessInstanceIntent.ELEMENT_SUSPENDED,
+        new ProcessInstanceElementSuspendedApplier(elementInstanceState));
   }
 
   private void registerProcessInstanceCreationAppliers(final MutableProcessingState state) {
@@ -262,7 +265,13 @@ public final class EventAppliers implements EventApplier {
 
     register(
         ProcessInstanceCreationIntent.CREATED,
+        1,
         new ProcessInstanceCreationCreatedApplier(processState, elementInstanceState));
+
+    register(
+        ProcessInstanceCreationIntent.CREATED,
+        2,
+        new ProcessInstanceCreationCreatedApplierV2(processState, elementInstanceState));
   }
 
   private void registerProcessInstanceModificationAppliers(final MutableProcessingState state) {
