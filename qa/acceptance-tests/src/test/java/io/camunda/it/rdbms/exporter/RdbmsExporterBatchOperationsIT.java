@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.search.query.SearchQueryBuilders;
@@ -32,6 +33,7 @@ import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -60,11 +62,17 @@ class RdbmsExporterBatchOperationsIT {
 
   @BeforeEach
   void setUp() {
+    setup(true);
+  }
+
+  private void setup(final boolean exportPendingItems) {
     exporter = new RdbmsExporterWrapper(rdbmsService);
     exporter.configure(
         new ExporterContext(
             null,
-            new ExporterConfiguration("foo", Map.of("maxQueueSize", 0)),
+            new ExporterConfiguration(
+                "foo",
+                Map.of("maxQueueSize", 0, "exportPendingBatchOperationItems", exportPendingItems)),
             1,
             Mockito.mock(MeterRegistry.class, Mockito.RETURNS_DEEP_STUBS),
             null));
@@ -129,13 +137,7 @@ class RdbmsExporterBatchOperationsIT {
     assertThat(batchOperation.state()).isEqualTo(BatchOperationState.CANCELED);
 
     // and the items should be canceled
-    final var batchOperationItems =
-        rdbmsService
-            .getBatchOperationItemReader()
-            .search(
-                SearchQueryBuilders.batchOperationItemQuery(
-                    q -> q.filter(f -> f.batchOperationIds(Long.toString(batchOperationKey)))))
-            .items();
+    final var batchOperationItems = getItems(batchOperationKey);
     assertThat(batchOperationItems).hasSize(3);
     assertThat(
             batchOperationItems.stream()
@@ -214,6 +216,37 @@ class RdbmsExporterBatchOperationsIT {
   }
 
   @Test
+  public void shouldMonitorCancelProcessInstanceBatchOperationNoExportPendingItems() {
+    setup(false);
+    // given
+    final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
+    final var batchOperationKey = batchOperationCreatedRecord.getKey();
+    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+    final var processInstanceKey = 1L;
+    final var canceledProcessRecord =
+        getCanceledProcessRecord(processInstanceKey, batchOperationKey, 3L);
+
+    // when
+    exporter.export(batchOperationCreatedRecord);
+    exporter.export(batchOperationChunkRecord);
+    exporter.export(canceledProcessRecord);
+
+    // then
+    final var batchOperation =
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
+    assertThat(batchOperation).isNotNull();
+    assertThat(batchOperation.operationsTotalCount()).isEqualTo(3);
+    assertThat(batchOperation.operationsCompletedCount()).isEqualTo(1);
+    assertThat(batchOperation.operationsFailedCount()).isEqualTo(0);
+    assertThat(batchOperation.state()).isEqualTo(BatchOperationState.ACTIVE);
+
+    // and the items should be completed
+    final var batchOperationItems = getItems(batchOperationKey);
+    assertThat(batchOperationItems).hasSize(1);
+    assertThat(batchOperationItems.getFirst().state()).isEqualTo(BatchOperationItemState.COMPLETED);
+  }
+
+  @Test
   public void shouldMonitorFailedCancelProcessInstanceBatchOperation() {
     // given
     final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
@@ -236,6 +269,37 @@ class RdbmsExporterBatchOperationsIT {
     assertThat(batchOperation.operationsCompletedCount()).isEqualTo(0);
     assertThat(batchOperation.operationsFailedCount()).isEqualTo(1);
     assertThat(batchOperation.state()).isEqualTo(BatchOperationState.ACTIVE);
+  }
+
+  @Test
+  public void shouldMonitorFailedCancelProcessInstanceBatchOperationNoExportPendingItems() {
+    setup(false);
+    // given
+    final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
+    final var batchOperationKey = batchOperationCreatedRecord.getKey();
+    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+    final var processInstanceKey = 1L;
+    final var rejectedCancelProcessRecord =
+        getRejectedCancelProcessRecord(processInstanceKey, batchOperationKey, 3L);
+
+    // when
+    exporter.export(batchOperationCreatedRecord);
+    exporter.export(batchOperationChunkRecord);
+    exporter.export(rejectedCancelProcessRecord);
+
+    // then
+    final var batchOperation =
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
+    assertThat(batchOperation).isNotNull();
+    assertThat(batchOperation.operationsTotalCount()).isEqualTo(3);
+    assertThat(batchOperation.operationsCompletedCount()).isEqualTo(0);
+    assertThat(batchOperation.operationsFailedCount()).isEqualTo(1);
+    assertThat(batchOperation.state()).isEqualTo(BatchOperationState.ACTIVE);
+
+    // and the items should be completed
+    final var batchOperationItems = getItems(batchOperationKey);
+    assertThat(batchOperationItems).hasSize(1);
+    assertThat(batchOperationItems.getFirst().state()).isEqualTo(BatchOperationItemState.FAILED);
   }
 
   @Test
@@ -387,5 +451,14 @@ class RdbmsExporterBatchOperationsIT {
     assertThat(batchOperation.operationsCompletedCount()).isEqualTo(0);
     assertThat(batchOperation.operationsFailedCount()).isEqualTo(1);
     assertThat(batchOperation.state()).isEqualTo(BatchOperationState.ACTIVE);
+  }
+
+  private List<BatchOperationItemEntity> getItems(final long batchOperationKey) {
+    return rdbmsService
+        .getBatchOperationItemReader()
+        .search(
+            SearchQueryBuilders.batchOperationItemQuery(
+                q -> q.filter(f -> f.batchOperationIds(Long.toString(batchOperationKey)))))
+        .items();
   }
 }
