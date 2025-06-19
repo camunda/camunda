@@ -23,7 +23,11 @@ public final class UserClient {
   }
 
   public UserCreationClient newUser(final String username) {
-    return new UserCreationClient(writer, username);
+    return new UserCreationClient(writer, username, UserIntent.CREATE);
+  }
+
+  public UserCreationClient newInitialAdminUser(final String username) {
+    return new UserCreationClient(writer, username, UserIntent.CREATE_INITIAL_ADMIN);
   }
 
   public UpdateUserClient updateUser() {
@@ -46,22 +50,26 @@ public final class UserClient {
                 .withIntent(UserIntent.CREATED)
                 .withSourceRecordPosition(position)
                 .getFirst();
+    private final Function<Long, Record<UserRecordValue>> rejectionSupplier;
 
-    private static final Function<Long, Record<UserRecordValue>> REJECTION_SUPPLIER =
-        (position) ->
-            RecordingExporter.userRecords()
-                .onlyCommandRejections()
-                .withIntent(UserIntent.CREATE)
-                .withSourceRecordPosition(position)
-                .getFirst();
     private final CommandWriter writer;
+    private final UserIntent intent;
     private final UserRecord userCreationRecord;
     private Function<Long, Record<UserRecordValue>> expectation = SUCCESS_SUPPLIER;
 
-    public UserCreationClient(final CommandWriter writer, final String username) {
+    public UserCreationClient(
+        final CommandWriter writer, final String username, final UserIntent intent) {
       this.writer = writer;
+      this.intent = intent;
       userCreationRecord = new UserRecord();
       userCreationRecord.setUsername(username);
+      rejectionSupplier =
+          (position) ->
+              RecordingExporter.userRecords()
+                  .onlyCommandRejections()
+                  .withIntent(intent)
+                  .withSourceRecordPosition(position)
+                  .getFirst();
     }
 
     public UserCreationClient withUsername(final String username) {
@@ -85,17 +93,17 @@ public final class UserClient {
     }
 
     public Record<UserRecordValue> create() {
-      final long position = writer.writeCommand(UserIntent.CREATE, userCreationRecord);
+      final long position = writer.writeCommand(intent, userCreationRecord);
       return expectation.apply(position);
     }
 
     public Record<UserRecordValue> create(final String username) {
-      final long position = writer.writeCommand(UserIntent.CREATE, username, userCreationRecord);
+      final long position = writer.writeCommand(intent, username, userCreationRecord);
       return expectation.apply(position);
     }
 
     public UserCreationClient expectRejection() {
-      expectation = REJECTION_SUPPLIER;
+      expectation = rejectionSupplier;
       return this;
     }
   }

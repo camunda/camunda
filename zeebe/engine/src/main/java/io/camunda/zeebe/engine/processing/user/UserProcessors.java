@@ -39,6 +39,11 @@ public class UserProcessors {
             ValueType.USER,
             UserIntent.DELETE,
             new UserDeleteProcessor(
-                keyGenerator, processingState, writers, distributionBehavior, authCheckBehavior));
+                keyGenerator, processingState, writers, distributionBehavior, authCheckBehavior))
+        .onCommand(
+            ValueType.USER,
+            UserIntent.CREATE_INITIAL_ADMIN,
+            new UserCreateAdminProcessor(
+                keyGenerator, processingState, writers, authCheckBehavior));
   }
 }

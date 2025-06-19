@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 
 public final class DbMembershipState implements MutableMembershipState {
   private final EntityKeyAndRelationKey entityKeyAndRelationKey = new EntityKeyAndRelationKey();
@@ -90,10 +91,24 @@ public final class DbMembershipState implements MutableMembershipState {
       final RelationType relationType,
       final String relationId,
       final BiConsumer<EntityType, String> visitor) {
+    forEachMember(
+        relationType,
+        relationId,
+        (key, value) -> {
+          visitor.accept(key, value);
+          return true; // continue iteration
+        });
+  }
+
+  @Override
+  public void forEachMember(
+      final RelationType relationType,
+      final String relationId,
+      final BiFunction<EntityType, String, Boolean> visitor) {
     entitiesByRelation.whileEqualPrefix(
         new RelationKey(relationType, relationId),
         (key, value) -> {
-          visitor.accept(key.entity().type(), key.entity().id());
+          return visitor.apply(key.entity().type(), key.entity().id());
         });
   }
 
