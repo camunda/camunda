@@ -290,7 +290,7 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
   }
 
   @Test
-  void shouldGetDefaultAuthorizedTenantIdsIfUserKeyIsNotPresent() {
+  void shouldGetEmptyTenantIdsListIfUserKeyIsNotPresent() {
     // given
     final var command = mock(TypedRecord.class);
 
@@ -299,11 +299,11 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
         authorizationCheckBehavior.getAuthorizedTenantIds(command).getAuthorizedTenantIds();
 
     // then
-    assertThat(authorizedTenantIds).containsOnly(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    assertThat(authorizedTenantIds).isEmpty();
   }
 
   @Test
-  void shouldGetDefaultAuthorizedTenantIdsIfUserIsNotPresent() {
+  void shouldGetEmptyTenantIdListIfUserIsNotPresent() {
     // given
     final var command = mockCommand("not-exists");
 
@@ -311,14 +311,13 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
     final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
 
     // then
-    assertThat(authorizedTenantIds.getAuthorizedTenantIds())
-        .containsOnly(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    assertThat(authorizedTenantIds.getAuthorizedTenantIds()).isEmpty();
     assertThat(authorizedTenantIds.isAuthorizedForTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER))
-        .isTrue();
+        .isFalse();
     assertThat(
             authorizedTenantIds.isAuthorizedForTenantIds(
                 List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER)))
-        .isTrue();
+        .isFalse();
     assertThat(authorizedTenantIds.isAuthorizedForTenantId("not-authorized")).isFalse();
   }
 
@@ -438,7 +437,7 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
   }
 
   @Test
-  void shouldGetDefaultAuthorizedTenantForMapping() {
+  void shouldGetEmptyListForTenantForMapping() {
     // given
     final var claimName = UUID.randomUUID().toString();
     final var claimValue = UUID.randomUUID().toString();
@@ -448,8 +447,7 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
     // when
     // then
     assertThat(authorizationCheckBehavior.getAuthorizedTenantIds(command).getAuthorizedTenantIds())
-        .singleElement()
-        .isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        .isEmpty();
   }
 
   @Test
