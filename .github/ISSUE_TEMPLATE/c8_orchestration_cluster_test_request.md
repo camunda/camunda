@@ -5,7 +5,7 @@ about: Create a test case for the automated Core C8 Orchestration Cluster E2E te
 title: "E2E - [Module or Area Name] - [Short scenario description]"
 labels: ["kind/test-case", "qa/c8-orchestration-cluster-e2e-test-suite"]
 assignees: ""
--------------
+---
 
 ### Description
 
