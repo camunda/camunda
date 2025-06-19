@@ -8,6 +8,7 @@
 package io.camunda.search.clients.aggregator;
 
 import io.camunda.search.clients.query.SearchQuery;
+import java.util.List;
 
 public final class SearchAggregatorBuilders {
 
@@ -43,6 +44,16 @@ public final class SearchAggregatorBuilders {
       final String name, final String field, final Class<T> documentClass) {
     final SearchTopHitsAggregator.Builder<T> builder = topHits();
     return builder.name(name).field(field).documentClass(documentClass).build();
+  }
+
+  public static SearchCompositeAggregator.Builder composite() {
+    return new SearchCompositeAggregator.Builder();
+  }
+
+  public static SearchCompositeAggregator composite(
+      final String name, final List<SearchAggregator> sources) {
+    final SearchCompositeAggregator.Builder builder = composite();
+    return builder.name(name).sources(sources).build();
   }
 
   public static SearchFilterAggregator.Builder filter() {
