@@ -197,7 +197,7 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   @Deprecated
   OWNER_TYPE_BY_OWNER_KEY(95, ColumnFamilyScope.GLOBAL),
 
-  ROUTING(96),
+  ROUTING(96, ColumnFamilyScope.GLOBAL),
 
   QUEUED_DISTRIBUTION(97),
   RETRIABLE_DISTRIBUTION(98),
@@ -240,7 +240,7 @@ public enum ZbColumnFamilies implements EnumValue, ScopedColumnFamily {
   USER_TASK_INITIAL_ASSIGNEE(121),
 
   USAGE_METRICS(122),
-  BOOTSTRAPPED_AT(123);
+  BOOTSTRAPPED_AT(123, ColumnFamilyScope.GLOBAL);
 
   private final int value;
   private final ColumnFamilyScope columnFamilyScope;
