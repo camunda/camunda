@@ -11,6 +11,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
+import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.index.GroupIndex.GROUP_ID;
@@ -31,6 +32,9 @@ public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> 
 
   @Override
   public SearchQuery toSearchQuery(final GroupFilter filter) {
+    if (filter.memberIdsByType() != null && !filter.memberIdsByType().isEmpty()) {
+      return createMultipleMemberTypeQuery(filter);
+    }
 
     return and(
         filter.groupKey() == null ? null : term(KEY, filter.groupKey()),
@@ -60,5 +64,18 @@ public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> 
             : hasChildQuery(
                 IdentityJoinRelationshipType.MEMBER.getType(),
                 term(GroupIndex.MEMBER_TYPE, filter.childMemberType().name())));
+  }
+
+  private SearchQuery createMultipleMemberTypeQuery(final GroupFilter filter) {
+    return or(
+        filter.memberIdsByType().entrySet().stream()
+            .map(
+                entry ->
+                    hasChildQuery(
+                        IdentityJoinRelationshipType.MEMBER.getType(),
+                        and(
+                            term(GroupIndex.MEMBER_TYPE, entry.getKey().name()),
+                            stringTerms(GroupIndex.MEMBER_ID, entry.getValue()))))
+            .toList());
   }
 }

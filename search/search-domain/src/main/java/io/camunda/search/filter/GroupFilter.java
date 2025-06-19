@@ -9,6 +9,7 @@ package io.camunda.search.filter;
 
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.Map;
 import java.util.Set;
 
 public record GroupFilter(
@@ -22,7 +23,8 @@ public record GroupFilter(
     String tenantId,
     Set<String> groupIds,
     EntityType childMemberType,
-    String roleId)
+    String roleId,
+    Map<EntityType, Set<String>> memberIdsByType)
     implements FilterBase {
 
   public Builder toBuilder() {
@@ -37,7 +39,8 @@ public record GroupFilter(
         .tenantId(tenantId)
         .groupIds(groupIds)
         .childMemberType(childMemberType)
-        .roleId(roleId);
+        .roleId(roleId)
+        .memberIdsByType(memberIdsByType);
   }
 
   public static final class Builder implements ObjectBuilder<GroupFilter> {
@@ -52,6 +55,7 @@ public record GroupFilter(
     private Set<String> groupIds;
     private EntityType childMemberType;
     private String roleId;
+    private Map<EntityType, Set<String>> memberIdsByType;
 
     public Builder groupKey(final Long value) {
       groupKey = value;
@@ -112,6 +116,11 @@ public record GroupFilter(
       return this;
     }
 
+    public Builder memberIdsByType(final Map<EntityType, Set<String>> value) {
+      memberIdsByType = value;
+      return this;
+    }
+
     @Override
     public GroupFilter build() {
       return new GroupFilter(
@@ -125,7 +134,8 @@ public record GroupFilter(
           tenantId,
           groupIds,
           childMemberType,
-          roleId);
+          roleId,
+          memberIdsByType);
     }
   }
 }
