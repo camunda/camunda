@@ -13,6 +13,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
@@ -30,6 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Answers;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
@@ -43,12 +46,17 @@ class SetupControllerTest extends RestControllerTest {
   @MockBean private UserServices userServices;
   @MockBean private RoleServices roleServices;
 
+  @MockBean(answer = Answers.RETURNS_DEEP_STUBS)
+  private SecurityConfiguration securityConfiguration;
+
   @BeforeEach
   void setup() {
     when(userServices.withAuthentication(RequestMapper.getAnonymousAuthentication()))
         .thenReturn(userServices);
     when(roleServices.withAuthentication(RequestMapper.getAnonymousAuthentication()))
         .thenReturn(roleServices);
+    when(securityConfiguration.getAuthentication().getMethod())
+        .thenReturn(AuthenticationMethod.BASIC);
   }
 
   @ParameterizedTest
@@ -88,6 +96,32 @@ class SetupControllerTest extends RestControllerTest {
 
     // then
     verify(userServices, times(1)).createInitialAdminUser(dto);
+  }
+
+  @Test
+  void createAdminUserShouldReturnForbiddenWhenAuthenticationIsNotBasicAuth() {
+    final var dto = validCreateUserRequest(UUID.randomUUID().toString());
+    when(securityConfiguration.getAuthentication().getMethod())
+        .thenReturn(AuthenticationMethod.OIDC);
+
+    // when then
+    final var expectedBody =
+        ProblemDetail.forStatusAndDetail(
+            HttpStatus.FORBIDDEN, SetupController.WRONG_AUTHENTICATION_METHOD_ERROR_MESSAGE);
+    expectedBody.setTitle("io.camunda.service.exception.ForbiddenException");
+    expectedBody.setInstance(URI.create(USER_PATH));
+
+    webClient
+        .post()
+        .uri(USER_PATH)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(dto)
+        .exchange()
+        .expectStatus()
+        .isForbidden()
+        .expectBody(ProblemDetail.class)
+        .isEqualTo(expectedBody);
   }
 
   @Test
