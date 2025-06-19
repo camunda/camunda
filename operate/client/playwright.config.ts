@@ -45,12 +45,18 @@ const config: PlaywrightTestConfig = {
   },
   forbidOnly: IS_CI,
   retries: 0,
-  workers: IS_SCREENSHOT_GENERATOR ? 8 : 1,
+  workers: IS_E2E ? 1 : undefined,
   reporter: 'html',
   projects: [
     {
       name: 'setup',
       testMatch: IS_E2E ? /e2e.setup\.ts/ : /visual.setup\.ts/,
+    },
+    {
+      name: 'visual',
+      testMatch: /visual\/.*\.spec\.ts/,
+      use: {...devices['Desktop Chrome']},
+      dependencies: ['setup'],
     },
     IS_SCREENSHOT_GENERATOR
       ? {
