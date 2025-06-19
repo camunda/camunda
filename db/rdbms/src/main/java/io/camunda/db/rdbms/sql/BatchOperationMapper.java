@@ -29,9 +29,9 @@ public interface BatchOperationMapper {
 
   void incrementOperationsTotalCount(BatchOperationUpdateTotalCountDto dto);
 
-  void incrementFailedOperationsCount(BatchOperationUpdateCountsDto dto);
+  void incrementFailedOperationsCount(String batchOperationId);
 
-  void incrementCompletedOperationsCount(BatchOperationUpdateCountsDto dto);
+  void incrementCompletedOperationsCount(String batchOperationId);
 
   Long count(BatchOperationDbQuery query);
 
