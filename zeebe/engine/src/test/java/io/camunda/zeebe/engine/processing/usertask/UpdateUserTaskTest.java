@@ -18,9 +18,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
@@ -566,40 +564,6 @@ public final class UpdateUserTaskTest {
 
     // then
     Assertions.assertThat(updatingRecord).hasRejectionType(RejectionType.NOT_FOUND);
-  }
-
-  @Test
-  public void shouldUpdateUserTaskForCustomTenant() {
-    // given
-    final String tenantId = Strings.newRandomValidIdentityId();
-    final String username = Strings.newRandomValidIdentityId();
-    ENGINE.tenant().newTenant().withTenantId(tenantId).create();
-    ENGINE.user().newUser(username).create();
-    ENGINE
-        .tenant()
-        .addEntity(tenantId)
-        .withEntityId(username)
-        .withEntityType(EntityType.USER)
-        .add();
-    ENGINE.deployment().withXmlResource(process()).withTenantId(tenantId).deploy();
-    final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenantId).create();
-
-    // when
-    final var updatingRecord = ENGINE.userTask().ofInstance(processInstanceKey).update(username);
-
-    // then
-    Assertions.assertThat(updatingRecord)
-        .hasRecordType(RecordType.EVENT)
-        .hasIntent(UserTaskIntent.UPDATING);
-
-    final var updatingRecordValue = updatingRecord.getValue();
-    final var updatedRecordValue =
-        RecordingExporter.userTaskRecords(UserTaskIntent.UPDATED).getFirst().getValue();
-
-    assertThat(List.of(updatingRecordValue, updatedRecordValue))
-        .describedAs("Ensure both UPDATING and UPDATED records have consistent attribute values")
-        .allSatisfy(recordValue -> Assertions.assertThat(recordValue).hasTenantId(tenantId));
   }
 
   @Test

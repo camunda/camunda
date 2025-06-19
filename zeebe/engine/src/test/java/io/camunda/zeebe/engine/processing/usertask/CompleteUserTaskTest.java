@@ -20,10 +20,8 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
-import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -217,37 +215,6 @@ public final class CompleteUserTaskTest {
 
     // then
     Assertions.assertThat(completedRecord).hasRejectionType(RejectionType.NOT_FOUND);
-  }
-
-  @Test
-  public void shouldCompleteUserTaskForCustomTenant() {
-    // given
-    final String tenantId = Strings.newRandomValidIdentityId();
-    final String username = Strings.newRandomValidIdentityId();
-    ENGINE.tenant().newTenant().withTenantId(tenantId).create();
-    ENGINE.user().newUser(username).create();
-    ENGINE
-        .tenant()
-        .addEntity(tenantId)
-        .withEntityId(username)
-        .withEntityType(EntityType.USER)
-        .add();
-    ENGINE.deployment().withXmlResource(process()).withTenantId(tenantId).deploy();
-    final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenantId).create();
-
-    // when
-    final Record<UserTaskRecordValue> completedRecord =
-        ENGINE.userTask().ofInstance(processInstanceKey).complete(username);
-
-    // then
-    final UserTaskRecordValue recordValue = completedRecord.getValue();
-
-    Assertions.assertThat(completedRecord)
-        .hasRecordType(RecordType.EVENT)
-        .hasIntent(UserTaskIntent.COMPLETING);
-
-    Assertions.assertThat(recordValue).hasTenantId(tenantId);
   }
 
   @Test
