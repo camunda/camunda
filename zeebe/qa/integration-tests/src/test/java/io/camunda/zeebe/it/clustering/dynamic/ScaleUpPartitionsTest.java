@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.clustering.dynamic;
 
+import static io.camunda.zeebe.it.clustering.dynamic.Utils.DEFAULT_PROCESS_ID;
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.createInstanceWithAJobOnAllPartitions;
 import static io.camunda.zeebe.it.clustering.dynamic.Utils.deployProcessModel;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,6 +39,7 @@ public class ScaleUpPartitionsTest {
 
   private static final int PARTITIONS_COUNT = 3;
   private static final String JOB_TYPE = "job";
+  private static final String PROCESS_ID = DEFAULT_PROCESS_ID;
   @AutoClose CamundaClient camundaClient;
 
   private ClusterActuator clusterActuator;
@@ -53,7 +55,13 @@ public class ScaleUpPartitionsTest {
           .withBrokerConfig(
               b ->
                   b.withBrokerConfig(
-                      bb -> bb.getExperimental().getFeatures().setEnablePartitionScaling(true)))
+                      bb -> {
+                        bb.getExperimental().getFeatures().setEnablePartitionScaling(true);
+                        bb.getCluster()
+                            .getMembership()
+                            .setSyncInterval(Duration.ofSeconds(1))
+                            .setGossipInterval(Duration.ofSeconds(1));
+                      }))
           .build();
 
   @BeforeEach
@@ -81,14 +89,14 @@ public class ScaleUpPartitionsTest {
     cluster.awaitHealthyTopology();
 
     // when
-    deployProcessModel(camundaClient, JOB_TYPE, "processId");
+    deployProcessModel(camundaClient, JOB_TYPE, PROCESS_ID);
 
     scaleToPartitions(desiredPartitionCount);
     awaitScaleUpCompletion(desiredPartitionCount);
 
     for (int i = 0; i < 20; i++) {
       createInstanceWithAJobOnAllPartitions(
-          camundaClient, JOB_TYPE, desiredPartitionCount, false, "processId");
+          camundaClient, JOB_TYPE, desiredPartitionCount, false, PROCESS_ID);
     }
 
     cluster.awaitHealthyTopology();
@@ -112,9 +120,10 @@ public class ScaleUpPartitionsTest {
       final var deploymentKey = deployProcessModel(camundaClient, JOB_TYPE, id, false);
       LOG.debug("Deployed process model with id: {}, key: {}", id, deploymentKey);
     }
-
+    
     awaitScaleUpCompletion(desiredPartitionCount);
 
+    //then
     for (final var processId : processIds) {
       createInstanceWithAJobOnAllPartitions(
           camundaClient, JOB_TYPE, desiredPartitionCount, false, processId);
@@ -124,6 +133,29 @@ public class ScaleUpPartitionsTest {
   }
 
   @Test
+  public void shouldScaleUpMultipleTimes() {
+    //given
+    final var firstScaleUp = PARTITIONS_COUNT + 1;
+    final var secondScaleUp = firstScaleUp + 1;
+
+    cluster.awaitHealthyTopology();
+
+    // Scale up to first partition count
+    scaleToPartitions(firstScaleUp);
+    awaitScaleUpCompletion(firstScaleUp);
+
+    createInstanceWithAJobOnAllPartitions(camundaClient, JOB_TYPE, firstScaleUp, true, PROCESS_ID);
+
+    //when
+    // Scale up to second partition count
+    scaleToPartitions(secondScaleUp);
+    awaitScaleUpCompletion(secondScaleUp);
+
+    //then
+    createInstanceWithAJobOnAllPartitions(
+        camundaClient, JOB_TYPE, secondScaleUp, false, PROCESS_ID);
+    cluster.awaitHealthyTopology();
+  }
   private void awaitScaleUpCompletion(final int desiredPartitionCount) {
     Awaitility.await("until scaling is done")
         .timeout(Duration.ofMinutes(5))
