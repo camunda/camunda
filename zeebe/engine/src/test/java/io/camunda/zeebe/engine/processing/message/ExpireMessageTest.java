@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.RecordAssert;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -36,7 +37,9 @@ import org.junit.Test;
 
 public final class ExpireMessageTest {
 
-  @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
+  @ClassRule
+  public static final EngineRule ENGINE_RULE =
+      EngineRule.singlePartition().withFeatureFlags(ff -> ff.setEnableMessageBodyOnExpired(true));
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -77,6 +80,7 @@ public final class ExpireMessageTest {
     final List<Long> listOfExpiredMessageKeys =
         RecordingExporter.messageRecords()
             .withIntent(MessageIntent.EXPIRED)
+            .limit(2)
             .flatMapToLong(v -> LongStream.of(v.getKey()))
             .boxed()
             .collect(Collectors.toList());
@@ -211,6 +215,11 @@ public final class ExpireMessageTest {
     messageBatchRecord.addMessageKey(firstMessageKey).addMessageKey(secondMessageKey);
     ENGINE_RULE.writeRecords(RecordToWrite.command().messageBatch(messageBatchRecord));
 
+    ENGINE_RULE
+        .signal()
+        .withSignalName("test-speedup-helper")
+        .broadcast(); // to limit records to speed up assertion
+
     // then
     final Record<MessageBatchRecordValue> expireBatchMessageCommand =
         RecordingExporter.messageBatchRecords().withIntent(MessageBatchIntent.EXPIRE).getFirst();
@@ -219,7 +228,11 @@ public final class ExpireMessageTest {
         .hasMessageKeys(List.of(firstMessageKey, secondMessageKey));
 
     final List<Long> listOfExpiredMessageKeys =
-        RecordingExporter.messageRecords()
+        RecordingExporter.records()
+            // Speed up assertion. Otherwise, it waits 5 seconds for more EXPIRED records.
+            .between(
+                r -> r.getIntent() == MessageBatchIntent.EXPIRE,
+                r -> r.getIntent() == SignalIntent.BROADCAST)
             .withIntent(MessageIntent.EXPIRED)
             .withSourceRecordPosition(
                 expireBatchMessageCommand.getPosition()) // only filter by the batch
