@@ -15,16 +15,14 @@
  */
 package io.camunda.spring.client.jobhandling.result;
 
-import io.camunda.spring.client.bean.MethodInfo;
+import io.camunda.client.api.command.CreateDocumentCommandStep1;
+import io.camunda.client.api.command.CreateDocumentCommandStep1.CreateDocumentCommandStep2;
+import io.camunda.spring.client.jobhandling.DocumentContext;
+import java.util.function.Function;
 
-public interface ResultProcessorStrategy {
+public interface ResultDocumentContextBuilder {
+  DocumentContext build();
 
-  @Deprecated
-  default ResultProcessor createProcessor(final Class<?> resultType) {
-    return new ResultProcessor() {};
-  }
-
-  default ResultProcessor createProcessor(final MethodInfo methodInfo) {
-    return createProcessor(methodInfo.getReturnType());
-  }
+  ResultDocumentContextBuilder addDocument(
+      Function<CreateDocumentCommandStep1, CreateDocumentCommandStep2> documentBuilder);
 }

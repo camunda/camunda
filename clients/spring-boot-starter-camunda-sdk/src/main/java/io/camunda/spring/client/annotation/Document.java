@@ -13,18 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.spring.client.jobhandling.result;
+package io.camunda.spring.client.annotation;
 
-import io.camunda.spring.client.bean.MethodInfo;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import org.springframework.core.annotation.AliasFor;
 
-public interface ResultProcessorStrategy {
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Document {
+  @AliasFor("value")
+  String name() default "";
 
-  @Deprecated
-  default ResultProcessor createProcessor(final Class<?> resultType) {
-    return new ResultProcessor() {};
-  }
+  @AliasFor("name")
+  String value() default "";
 
-  default ResultProcessor createProcessor(final MethodInfo methodInfo) {
-    return createProcessor(methodInfo.getReturnType());
-  }
+  boolean optional() default true;
 }
