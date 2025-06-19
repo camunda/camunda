@@ -18,6 +18,7 @@ import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateRequest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
@@ -63,7 +64,8 @@ public final class TenantRequestValidator {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted(propertyName));
     } else if (id.length() > MAX_LENGTH) {
       violations.add(ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(propertyName, MAX_LENGTH));
-    } else if (!ID_PATTERN.matcher(id).matches()) {
+    } else if (!ID_PATTERN.matcher(id).matches()
+        && !TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(id)) {
       violations.add(ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted(propertyName, ID_REGEX));
     }
   }
