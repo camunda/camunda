@@ -517,7 +517,7 @@ public class SaaSIdentityMigrationIT {
     final var restAddress = client.getConfiguration().getRestAddress().toString();
 
     Awaitility.await()
-        .atMost(Duration.ofHours(5))
+        .atMost(Duration.ofSeconds(5))
         .ignoreExceptions()
         .untilAsserted(
             () -> {

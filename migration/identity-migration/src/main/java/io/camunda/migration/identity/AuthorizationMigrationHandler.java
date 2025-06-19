@@ -44,7 +44,6 @@ public class AuthorizationMigrationHandler extends MigrationHandler<Authorizatio
 
   @Override
   protected List<Authorization> fetchBatch(final int page) {
-    // The authorizations are fetched without pagination
     return List.of();
   }
 
