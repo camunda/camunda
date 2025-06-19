@@ -47,6 +47,7 @@ public class StaticConsoleRoleMigrationHandler extends MigrationHandler<NoopDTO>
         role -> {
           try {
             roleServices.createRole(role).join();
+            logger.debug("Migrated role: {}", role);
           } catch (final Exception e) {
             if (!isConflictError(e)) {
               throw new MigrationException("Failed to migrate role with ID: " + role.roleId(), e);
@@ -76,6 +77,8 @@ public class StaticConsoleRoleMigrationHandler extends MigrationHandler<NoopDTO>
 
                         try {
                           roleServices.addMember(request).join();
+                          logger.debug(
+                              "Assigned role '{}' to user '{}'", effectiveRole.getName(), email);
                         } catch (final Exception e) {
                           if (!isConflictError(e)) {
                             throw new MigrationException(

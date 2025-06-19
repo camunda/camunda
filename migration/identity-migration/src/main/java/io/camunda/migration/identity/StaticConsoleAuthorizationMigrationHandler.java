@@ -53,6 +53,11 @@ public class StaticConsoleAuthorizationMigrationHandler extends MigrationHandler
         request -> {
           try {
             authorizationServices.createAuthorization(request).join();
+            logger.debug(
+                "Migrated {} permission with owner ID: {} and resource type: {}",
+                entity,
+                request.ownerId(),
+                request.resourceType());
           } catch (final Exception e) {
             if (!isConflictError(e)) {
               throw new MigrationException(
