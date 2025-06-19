@@ -24,11 +24,15 @@ import io.camunda.zeebe.snapshots.SnapshotCopyUtil;
 import io.camunda.zeebe.snapshots.SnapshotTransferUtil;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotMetadata;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
+import io.camunda.zeebe.snapshots.impl.SnapshotMetrics;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferService.TakeSnapshot;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -45,6 +49,8 @@ public class SnapshotTransferTest {
   FileBasedSnapshotStore receiverSnapshotStore;
   private SnapshotTransferImpl snapshotTransfer;
   private TakeSnapshot takeSnapshotMock;
+  @AutoClose private MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  private final SnapshotMetrics snapshotMetrics = new SnapshotMetrics(meterRegistry);
 
   @BeforeEach
   public void beforeEach() throws Exception {
@@ -75,6 +81,7 @@ public class SnapshotTransferTest {
                         1,
                         SnapshotCopyUtil::copyAllFiles,
                         control)),
+            snapshotMetrics,
             receiverSnapshotStore);
     actorScheduler.submitActor(snapshotTransfer);
     actorScheduler.workUntilDone();
@@ -110,6 +117,8 @@ public class SnapshotTransferTest {
               assertThat(snapshot.isBootstrap()).isTrue();
               assertThat(snapshot.files()).isNotEmpty();
             });
+    assertThat(snapshotMetrics.getTransferDuration(true).mean(TimeUnit.MILLISECONDS))
+        .isGreaterThan(0.1D);
     verify((SnapshotTransferServiceImpl) snapshotTransfer.snapshotTransferService())
         .withReservation(any(), any());
   }

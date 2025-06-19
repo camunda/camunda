@@ -165,6 +165,10 @@ public final class FileBasedSnapshotStore extends Actor
     return snapshotStore.restore(snapshot);
   }
 
+  public SnapshotMetrics getSnapshotMetrics() {
+    return snapshotStore.getSnapshotMetrics();
+  }
+
   @Override
   public String toString() {
     return "FileBasedSnapshotStore{"

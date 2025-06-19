@@ -18,6 +18,7 @@ import io.camunda.zeebe.snapshots.TestChecksumProvider;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -34,6 +35,7 @@ import java.util.zip.CRC32C;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.rules.TemporaryFolder;
 
 public class FileBasedSnapshotStoreTest {
@@ -51,6 +53,7 @@ public class FileBasedSnapshotStoreTest {
   private Path pendingSnapshotsDir;
   private FileBasedSnapshotStore snapshotStore;
   private Path rootDirectory;
+  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @Before
   public void before() throws IOException {
@@ -60,6 +63,12 @@ public class FileBasedSnapshotStoreTest {
     snapshotStore = createStore(rootDirectory);
   }
 
+  @AfterEach
+  public void after() {
+    meterRegistry.clear();
+    meterRegistry.close();
+  }
+
   @Test
   public void shouldCreateDirectoriesIfNotExist() {
     // given
@@ -67,7 +76,7 @@ public class FileBasedSnapshotStoreTest {
 
     // when
     final var store =
-        new FileBasedSnapshotStore(0, 1, root, snapshotPath -> Map.of(), new SimpleMeterRegistry());
+        new FileBasedSnapshotStore(0, 1, root, snapshotPath -> Map.of(), meterRegistry);
 
     // then
     assertThat(root.resolve(FileBasedSnapshotStoreImpl.SNAPSHOTS_DIRECTORY)).exists().isDirectory();
@@ -568,7 +577,7 @@ public class FileBasedSnapshotStoreTest {
 
   private FileBasedSnapshotStore createStore(final Path root) {
     final var store =
-        new FileBasedSnapshotStore(0, 1, root, snapshotPath -> Map.of(), new SimpleMeterRegistry());
+        new FileBasedSnapshotStore(0, 1, root, snapshotPath -> Map.of(), meterRegistry);
     scheduler.submitActor(store).join();
 
     return store;

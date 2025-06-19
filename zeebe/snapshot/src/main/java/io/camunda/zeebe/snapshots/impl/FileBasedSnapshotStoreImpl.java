@@ -423,21 +423,20 @@ public final class FileBasedSnapshotStoreImpl {
 
   private void observeSnapshotSize(
       final FileBasedSnapshot persistedSnapshot, final boolean isBootstrap) {
-    // TODO add isBootstrap to metrics
     try (final var contents = Files.newDirectoryStream(persistedSnapshot.getPath())) {
       var totalSize = 0L;
       var totalCount = 0L;
       for (final var path : contents) {
         if (Files.isRegularFile(path)) {
           final var size = Files.size(path);
-          snapshotMetrics.observeSnapshotFileSize(size);
+          snapshotMetrics.observeSnapshotFileSize(size, isBootstrap);
           totalSize += size;
           totalCount++;
         }
       }
 
-      snapshotMetrics.observeSnapshotSize(totalSize);
-      snapshotMetrics.observeSnapshotChunkCount(totalCount);
+      snapshotMetrics.observeSnapshotSize(totalSize, isBootstrap);
+      snapshotMetrics.observeSnapshotChunkCount(totalCount, isBootstrap);
     } catch (final IOException e) {
       LOGGER.warn("Failed to observe size for snapshot {}", persistedSnapshot, e);
     }
@@ -507,7 +506,7 @@ public final class FileBasedSnapshotStoreImpl {
       return currentPersistedSnapshot;
     }
 
-    try (final var ignored = snapshotMetrics.startPersistTimer()) {
+    try (final var ignored = snapshotMetrics.startPersistTimer(isBootstrap)) {
       // it's important to persist the checksum file only after the move is finished, since we use
       // it as a marker file to guarantee the move was complete and not partial
       final var checksumPath =
@@ -547,7 +546,7 @@ public final class FileBasedSnapshotStoreImpl {
           newPersistedSnapshot.getId(),
           newPersistedSnapshot.isBootstrap());
 
-      snapshotMetrics.incrementSnapshotCount();
+      snapshotMetrics.incrementSnapshotCount(isBootstrap);
       observeSnapshotSize(newPersistedSnapshot, isBootstrap);
 
       if (!isBootstrap) {
