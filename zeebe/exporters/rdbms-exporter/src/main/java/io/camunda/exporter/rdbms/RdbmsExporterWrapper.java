@@ -8,6 +8,7 @@
 package io.camunda.exporter.rdbms;
 
 import static io.camunda.db.rdbms.write.RdbmsWriterConfig.DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE;
+import static io.camunda.db.rdbms.write.RdbmsWriterConfig.DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriter;
@@ -86,6 +87,8 @@ public class RdbmsExporterWrapper implements Exporter {
                 .minHistoryCleanupInterval(readMinHistoryCleanupInterval(context))
                 .maxHistoryCleanupInterval(readMaxHistoryCleanupInterval(context))
                 .batchOperationItemInsertBlockSize(readBatchOperationItemInsertBlockSize(context))
+                .exportBatchOperationItemsOnCreation(
+                    readExportBatchOperationItemsOnCreation(context))
                 .build());
 
     final var builder =
@@ -164,6 +167,13 @@ public class RdbmsExporterWrapper implements Exporter {
         DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE);
   }
 
+  private boolean readExportBatchOperationItemsOnCreation(final Context context) {
+    return readBoolean(
+        context,
+        "exportBatchOperationItemsOnCreation",
+        DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION);
+  }
+
   private Duration readDuration(
       final Context context, final String property, final Duration defaultValue) {
     final var arguments = context.getConfiguration().getArguments();
@@ -183,10 +193,11 @@ public class RdbmsExporterWrapper implements Exporter {
     }
   }
 
-  private long readLong(final Context context, final String property, final long defaultValue) {
+  private boolean readBoolean(
+      final Context context, final String property, final boolean defaultValue) {
     final var arguments = context.getConfiguration().getArguments();
     if (arguments != null && arguments.containsKey(property)) {
-      return (Long) arguments.get(property);
+      return (Boolean) arguments.get(property);
     } else {
       return defaultValue;
     }
