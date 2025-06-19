@@ -76,7 +76,7 @@ final class BackupUploadIT {
             .forcePathStyleAccess(false)
             .withCompressionAlgorithm(null)
             .withConnectionAcquisitionTimeout(connectionAcquisitionTimeout)
-            .withParallelUploadsLimit(parallelUploadsLimit)
+            .withMaxConcurrentConnections(parallelUploadsLimit)
             .build();
 
     final S3AsyncClient asyncClient = S3BackupStore.buildClient(backupConfig);
