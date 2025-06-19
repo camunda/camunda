@@ -111,12 +111,14 @@ import org.opensearch.client.opensearch.indices.rollover.RolloverConditions;
 import org.opensearch.client.opensearch.snapshot.CreateSnapshotRequest;
 import org.opensearch.client.opensearch.snapshot.CreateSnapshotResponse;
 import org.opensearch.client.opensearch.snapshot.GetRepositoryRequest;
+import org.opensearch.client.opensearch.snapshot.GetRepositoryResponse;
 import org.opensearch.client.opensearch.snapshot.GetSnapshotRequest;
 import org.opensearch.client.opensearch.snapshot.GetSnapshotResponse;
 import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 import org.opensearch.client.opensearch.tasks.ListRequest;
 import org.opensearch.client.opensearch.tasks.ListResponse;
 import org.opensearch.client.opensearch.tasks.Status;
+import org.opensearch.client.transport.endpoints.SimpleEndpoint;
 import org.springframework.context.ApplicationContext;
 
 @Slf4j
@@ -421,7 +423,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   @Override
-  public void refresh(String indexPattern) {
+  public void refresh(final String indexPattern) {
     getRichOpenSearchClient().index().refresh(indexPattern);
   }
 
@@ -437,7 +439,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   @Override
-  public List<String> addPrefixesToIndices(String... indexes) {
+  public List<String> addPrefixesToIndices(final String... indexes) {
     return List.of();
   }
 
@@ -560,7 +562,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       } else {
         log.warn("There was an error deleting all indexes.");
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.warn("There was an error deleting all indexes.", e);
     }
   }
@@ -569,7 +571,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     return openSearchClient.indices().exists(existsRequest).value();
   }
 
-  public <R> ScrollResponse<R> scroll(final ScrollRequest scrollRequest, Class<R> entityClass)
+  public <R> ScrollResponse<R> scroll(final ScrollRequest scrollRequest, final Class<R> entityClass)
       throws IOException {
     return richOpenSearchClient.doc().scroll(scrollRequest, entityClass);
   }
@@ -905,7 +907,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
         .build();
   }
 
-  public final RolloverResponse rollover(RolloverRequest rolloverRequest) throws IOException {
+  public final RolloverResponse rollover(final RolloverRequest rolloverRequest) throws IOException {
     return openSearchClient.indices().rollover(rolloverRequest);
   }
 
@@ -1050,7 +1052,16 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
 
   public void verifyRepositoryExists(final GetRepositoryRequest getRepositoriesRequest)
       throws IOException, OpenSearchException {
-    openSearchClient.snapshot().getRepository(getRepositoriesRequest);
+    final SimpleEndpoint<GetRepositoryRequest, Object> endpoint =
+        ((SimpleEndpoint<GetRepositoryRequest, GetRepositoryResponse>)
+                (GetRepositoryRequest._ENDPOINT))
+            .withResponseDeserializer(null);
+
+    openSearchAsyncClient
+        ._transport()
+        .performRequestAsync(
+            getRepositoriesRequest, endpoint, openSearchAsyncClient._transportOptions())
+        .join();
   }
 
   public GetSnapshotResponse getSnapshots(final GetSnapshotRequest getSnapshotRequest)
