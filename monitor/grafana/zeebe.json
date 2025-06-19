@@ -23828,7 +23828,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "zeebe_snapshot_size_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\", bootstrap=\"true\"}",
+              "expr": "zeebe_snapshot_size_bytes{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=\"1\", bootstrap=\"true\"}",
               "legendFormat": "{{pod}} p{{partition}}",
               "range": true,
               "refId": "A"
@@ -23911,7 +23911,7 @@
                 "uid": "${DS_PROMETHEUS}"
               },
               "editorMode": "code",
-              "expr": "sum(increase(zeebe_snapshot_transfer_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\", bootstrap=\"true\"}[$__rate_interval])) by (le)",
+              "expr": "sum(increase(zeebe_snapshot_transfer_duration_seconds_bucket{cluster=~\"$cluster\", namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"1\", bootstrap=\"true\"}[$__rate_interval])) by (le)",
               "format": "heatmap",
               "interval": "",
               "legendFormat": "{{le}}",
