@@ -21,6 +21,7 @@ import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Objects;
@@ -120,10 +121,10 @@ public class ScaleUpPartitionsTest {
       final var deploymentKey = deployProcessModel(camundaClient, JOB_TYPE, id, false);
       LOG.debug("Deployed process model with id: {}, key: {}", id, deploymentKey);
     }
-    
+
     awaitScaleUpCompletion(desiredPartitionCount);
 
-    //then
+    // then
     for (final var processId : processIds) {
       createInstanceWithAJobOnAllPartitions(
           camundaClient, JOB_TYPE, desiredPartitionCount, false, processId);
@@ -134,7 +135,7 @@ public class ScaleUpPartitionsTest {
 
   @Test
   public void shouldScaleUpMultipleTimes() {
-    //given
+    // given
     final var firstScaleUp = PARTITIONS_COUNT + 1;
     final var secondScaleUp = firstScaleUp + 1;
 
@@ -146,16 +147,47 @@ public class ScaleUpPartitionsTest {
 
     createInstanceWithAJobOnAllPartitions(camundaClient, JOB_TYPE, firstScaleUp, true, PROCESS_ID);
 
-    //when
+    // when
     // Scale up to second partition count
     scaleToPartitions(secondScaleUp);
     awaitScaleUpCompletion(secondScaleUp);
 
-    //then
+    // then
     createInstanceWithAJobOnAllPartitions(
         camundaClient, JOB_TYPE, secondScaleUp, false, PROCESS_ID);
     cluster.awaitHealthyTopology();
   }
+
+  @Test
+  public void shouldDeleteBootstrapSnapshotWhenScalingIsDone() {
+    cluster.awaitHealthyTopology();
+    deployProcessModel(camundaClient, JOB_TYPE, PROCESS_ID);
+    final var targetPartitionCount = PARTITIONS_COUNT + 1;
+
+    final var partition1Leader = cluster.leaderForPartition(1);
+
+    final var directory = Path.of(partition1Leader.brokerConfig().getData().getDirectory());
+    final var bootstrapSnapshotDirectory =
+        directory.resolve("raft-partition/partitions/1/bootstrap-snapshots/1-1-0-0-0");
+    scaleToPartitions(targetPartitionCount);
+    Awaitility.await("until snapshot is created")
+        // to limit flakyness, the folder is checked every millisecond
+        .pollInterval(Duration.ofMillis(1))
+        .untilAsserted(
+            () -> {
+              assertThat(bootstrapSnapshotDirectory).exists();
+            });
+    awaitScaleUpCompletion(targetPartitionCount);
+
+    Awaitility.await("until snapshot is created")
+        // to limit flakyness, the folder is checked every millisecond
+        .pollInterval(Duration.ofMillis(1))
+        .untilAsserted(
+            () -> {
+              assertThat(bootstrapSnapshotDirectory).doesNotExist();
+            });
+  }
+
   private void awaitScaleUpCompletion(final int desiredPartitionCount) {
     Awaitility.await("until scaling is done")
         .timeout(Duration.ofMinutes(5))
