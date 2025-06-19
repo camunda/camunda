@@ -44,6 +44,7 @@ import io.camunda.exporter.tasks.BackgroundTaskManagerFactory;
 import io.camunda.search.schema.MappingSource;
 import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.SearchEngineClient;
+import io.camunda.search.schema.config.SchemaManagerConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
@@ -267,6 +268,8 @@ public class CamundaExporter implements Exporter {
   }
 
   private SchemaManager createSchemaManager() {
+    final var schemaManagerConfiguration = new SchemaManagerConfiguration();
+    schemaManagerConfiguration.setCreateSchema(configuration.isCreateSchema());
     return new SchemaManager(
         searchEngineClient,
         provider.getIndexDescriptors(),
@@ -275,7 +278,8 @@ public class CamundaExporter implements Exporter {
             b ->
                 b.connect(configuration.getConnect())
                     .index(configuration.getIndex())
-                    .retention(configuration.getHistory().getRetention())),
+                    .retention(configuration.getHistory().getRetention())
+                    .schemaManager(schemaManagerConfiguration)),
         clientAdapter.objectMapper());
   }
 
