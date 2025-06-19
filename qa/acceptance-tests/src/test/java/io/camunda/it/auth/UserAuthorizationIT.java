@@ -13,8 +13,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.CreateUserResponse;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
+import io.camunda.it.util.TestHelper;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
@@ -23,8 +25,11 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -69,6 +74,26 @@ class UserAuthorizationIT {
   @UserDefinition
   private static final TestUser USER_1 = new TestUser(FIRST_USER, DEFAULT_PASSWORD, List.of());
 
+  private static CamundaClient camundaClient;
+
+  private List<String> createdUsers = new ArrayList<>();
+
+  @AfterEach
+  void awaitExpectedUsers() {
+    if (!createdUsers.isEmpty()) {
+      Objects.requireNonNull(camundaClient);
+
+      // some tests create/delete users, so we ensure that after each test
+      // run, only the expected users exist; this includes waiting for propagation
+      // to the secondary storage, i.e. if a test deletes a user, this must
+      // be reflected in Elasticsearch before the next test is executed.
+      TestHelper.waitUntilExactUsersExist(
+          camundaClient, "demo", ADMIN, RESTRICTED, RESTRICTED_WITH_READ, FIRST_USER);
+
+      createdUsers.clear();
+    }
+  }
+
   @Test
   void searchShouldReturnAuthorizedUsers(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient userClient) {
@@ -98,14 +123,17 @@ class UserAuthorizationIT {
   void shouldDeleteUserIfAuthorized(@Authenticated(ADMIN) final CamundaClient adminClient) {
     final String username = "username";
 
-    adminClient
-        .newUserCreateCommand()
-        .username(username)
-        .name("name")
-        .password("password")
-        .email("email@email.com")
-        .send()
-        .join();
+    final CreateUserResponse createUserResponse =
+        adminClient
+            .newUserCreateCommand()
+            .username(username)
+            .name("name")
+            .password("password")
+            .email("email@email.com")
+            .send()
+            .join();
+
+    createdUsers.add(createUserResponse.getUsername());
 
     assertThatNoException()
         .isThrownBy(() -> adminClient.newDeleteUserCommand(username).send().join());

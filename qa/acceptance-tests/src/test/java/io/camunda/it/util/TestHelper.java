@@ -608,6 +608,20 @@ public final class TestHelper {
             });
   }
 
+  public static void waitUntilExactUsersExist(
+      final CamundaClient camundaClient, final String... usernames) {
+    await("should wait until the expected users are in the secondary storage.")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () -> {
+              final var result = camundaClient.newUsersSearchRequest().send().join();
+              final var users = result.items();
+              assertThat(users)
+                  .extracting(u -> u.getUsername())
+                  .containsExactlyInAnyOrder(usernames);
+            });
+  }
+
   public static <T, U extends Comparable<U>> void assertSorted(
       final SearchResponse<T> resultAsc,
       final SearchResponse<T> resultDesc,
