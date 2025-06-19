@@ -17,6 +17,7 @@ import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.auth.OidcPrincipalLoader;
@@ -116,14 +117,20 @@ public class CamundaOAuthPrincipalService {
     if (StringUtils.hasText(groupsClaim)) {
       groups = new HashSet<>(oidcGroupsLoader.load(claims));
     } else {
-      // TODO: Get groups for username and clientId https://github.com/camunda/camunda/issues/26572
       groups =
-          groupServices.getGroupsByMemberIds(mappingIds, MAPPING).stream()
+          groupServices
+              .findAll(
+                  GroupQuery.of(
+                      groupQuery ->
+                          groupQuery.filter(
+                              groupFilter -> groupFilter.memberIdsByType(ownerTypeToIds))))
+              .stream()
               .map(GroupEntity::groupId)
               .collect(Collectors.toSet());
-      if (!groups.isEmpty()) {
-        ownerTypeToIds.put(GROUP, groups);
-      }
+    }
+
+    if (!groups.isEmpty()) {
+      ownerTypeToIds.put(GROUP, groups);
     }
 
     final var roles =
