@@ -51,10 +51,9 @@ test.describe('process instance page', () => {
 
       await processInstancePage.navigateToProcessInstance({
         id: runningInstance.detail.id,
-        options: {
-          waitUntil: 'networkidle',
-        },
       });
+
+      await processInstancePage.resetZoomButton.click();
 
       await expect(page).toHaveScreenshot();
     });
@@ -83,11 +82,10 @@ test.describe('process instance page', () => {
 
       await processInstancePage.navigateToProcessInstance({
         id: runningInstance.detail.id,
-        options: {
-          waitUntil: 'networkidle',
-        },
       });
+      await processInstancePage.resetZoomButton.click();
 
+      await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
       await expect(page).toHaveScreenshot();
     });
 
@@ -115,12 +113,12 @@ test.describe('process instance page', () => {
 
       await processInstancePage.navigateToProcessInstance({
         id: runningInstance.detail.id,
-        options: {
-          waitUntil: 'networkidle',
-        },
       });
+      await processInstancePage.resetZoomButton.click();
+      await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
 
       await processInstancePage.addVariableButton.click();
+
       await expect(page).toHaveScreenshot();
     });
 
@@ -148,10 +146,9 @@ test.describe('process instance page', () => {
 
       await processInstancePage.navigateToProcessInstance({
         id: runningInstance.detail.id,
-        options: {
-          waitUntil: 'networkidle',
-        },
       });
+      await processInstancePage.resetZoomButton.click();
+      await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
 
       await page
         .getByRole('button', {
@@ -187,16 +184,10 @@ test.describe('process instance page', () => {
 
       await processInstancePage.navigateToProcessInstance({
         id: instanceWithIncident.detail.id,
-        options: {
-          waitUntil: 'networkidle',
-        },
       });
 
-      await page
-        .getByRole('button', {
-          name: /reset diagram zoom/i,
-        })
-        .click();
+      await processInstancePage.resetZoomButton.click();
+      await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
 
       await page
         .getByRole('button', {
@@ -231,10 +222,9 @@ test.describe('process instance page', () => {
 
       await processInstancePage.navigateToProcessInstance({
         id: completedInstance.detail.id,
-        options: {
-          waitUntil: 'networkidle',
-        },
       });
+      await processInstancePage.resetZoomButton.click();
+      await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
 
       await expect(processInstancePage.executionCountToggleOn).toBeEnabled();
       await processInstancePage.executionCountToggleOn.click({force: true});
@@ -268,10 +258,9 @@ test.describe('process instance page', () => {
 
       await processInstancePage.navigateToProcessInstance({
         id: compensationProcessInstance.detail.id,
-        options: {
-          waitUntil: 'networkidle',
-        },
       });
+      await processInstancePage.resetZoomButton.click();
+      await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
 
       await processInstancePage.executionCountToggleOn.click({force: true});
 
