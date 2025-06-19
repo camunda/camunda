@@ -54,6 +54,8 @@ public class BatchOperationChunkExportHandler
         Long.toString(batchOperationId),
         value.getItemKey(),
         value.getProcessInstanceKey(),
-        BatchOperationItemState.ACTIVE);
+        BatchOperationItemState.ACTIVE,
+        null,
+        null);
   }
 }

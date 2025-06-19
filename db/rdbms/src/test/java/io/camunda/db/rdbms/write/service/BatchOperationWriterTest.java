@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
+import java.time.OffsetDateTime;
 import java.util.stream.LongStream;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -38,7 +39,10 @@ class BatchOperationWriterTest {
             "42",
             LongStream.range(0, 25)
                 .boxed()
-                .map(i -> new BatchOperationItemDbModel("42", i, i, BatchOperationItemState.ACTIVE))
+                .map(
+                    i ->
+                        new BatchOperationItemDbModel(
+                            "42", i, i, BatchOperationItemState.ACTIVE, OffsetDateTime.now(), null))
                 .toList());
 
     // when

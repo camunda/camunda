@@ -34,6 +34,11 @@ public class ProcessInstanceCancellationBatchOperationExportHandler
   }
 
   @Override
+  long getProcessInstanceKey(final Record<ProcessInstanceRecordValue> record) {
+    return record.getValue().getProcessInstanceKey();
+  }
+
+  @Override
   boolean isCompleted(final Record<ProcessInstanceRecordValue> record) {
     return record.getValue().getBpmnElementType() == BpmnElementType.PROCESS
         && record.getIntent().equals(ProcessInstanceIntent.ELEMENT_TERMINATED);

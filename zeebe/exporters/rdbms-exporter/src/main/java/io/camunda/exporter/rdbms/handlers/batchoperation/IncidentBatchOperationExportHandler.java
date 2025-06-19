@@ -27,6 +27,11 @@ public class IncidentBatchOperationExportHandler
   }
 
   @Override
+  long getProcessInstanceKey(final Record<IncidentRecordValue> record) {
+    return record.getValue().getProcessInstanceKey();
+  }
+
+  @Override
   boolean isCompleted(final Record<IncidentRecordValue> record) {
     return record.getIntent().equals(IncidentIntent.RESOLVED);
   }

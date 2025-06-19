@@ -9,6 +9,7 @@ package io.camunda.exporter.rdbms.handlers.batchoperation;
 
 import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperationReferenceNullValue;
 
+import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
@@ -36,22 +37,28 @@ public abstract class RdbmsBatchOperationStatusExportHandler<T extends RecordVal
   public void export(final Record<T> record) {
     if (isCompleted(record)) {
       batchOperationWriter.updateItem(
-          String.valueOf(record.getBatchOperationReference()),
-          getItemKey(record),
-          BatchOperationItemState.COMPLETED,
-          DateUtil.toOffsetDateTime(record.getTimestamp()),
-          null);
+          new BatchOperationItemDbModel(
+              String.valueOf(record.getBatchOperationReference()),
+              getItemKey(record),
+              getProcessInstanceKey(record),
+              BatchOperationItemState.COMPLETED,
+              DateUtil.toOffsetDateTime(record.getTimestamp()),
+              null));
     } else if (isFailed(record)) {
       batchOperationWriter.updateItem(
-          String.valueOf(record.getBatchOperationReference()),
-          getItemKey(record),
-          BatchOperationItemState.FAILED,
-          DateUtil.toOffsetDateTime(record.getTimestamp()),
-          String.format(ERROR_MSG, record.getRejectionType(), record.getRejectionReason()));
+          new BatchOperationItemDbModel(
+              String.valueOf(record.getBatchOperationReference()),
+              getItemKey(record),
+              getProcessInstanceKey(record),
+              BatchOperationItemState.FAILED,
+              DateUtil.toOffsetDateTime(record.getTimestamp()),
+              String.format(ERROR_MSG, record.getRejectionType(), record.getRejectionReason())));
     }
   }
 
   abstract long getItemKey(Record<T> record);
+
+  abstract long getProcessInstanceKey(Record<T> record);
 
   /** Checks if the batch operation item is completed */
   abstract boolean isCompleted(Record<T> record);
