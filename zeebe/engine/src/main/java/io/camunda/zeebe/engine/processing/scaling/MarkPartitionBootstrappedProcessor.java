@@ -27,6 +27,8 @@ import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.Either.Left;
+import io.camunda.zeebe.util.Either.Right;
 import io.camunda.zeebe.util.collection.Tuple;
 
 @ExcludeAuthorizationCheck
@@ -68,26 +70,29 @@ public class MarkPartitionBootstrappedProcessor
   public void processNewCommand(final TypedRecord<ScaleRecord> command) {
     final var scaleUp = command.getValue();
 
-    final var rejection = validate(command);
-    if (rejection.isLeft()) {
-      final var tuple = rejection.getLeft();
-      rejectWith(command, tuple.getLeft(), tuple.getRight());
-      return;
-    }
-    final var partitionId = rejection.get();
-    final var scalingKey = keyGenerator.nextKey();
-    final var wasAlreadyBootstrapped = areAllPartitionsBootstrapped();
-    stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.PARTITION_BOOTSTRAPPED, scaleUp);
-    responseWriter.writeEventOnCommand(
-        scalingKey, ScaleIntent.PARTITION_BOOTSTRAPPED, scaleUp, command);
+    switch (validate(command)) {
+      case Left(final var tuple) -> {
+        rejectWith(command, tuple.getLeft(), tuple.getRight());
+      }
+      case Right(final var bootstrappedPartition) -> {
+        final var scalingKey = keyGenerator.nextKey();
+        final var wasAlreadyBootstrapped = areAllPartitionsBootstrapped();
+        stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.PARTITION_BOOTSTRAPPED, scaleUp);
+        responseWriter.writeEventOnCommand(
+            scalingKey, ScaleIntent.PARTITION_BOOTSTRAPPED, scaleUp, command);
 
-    // now the PARTITION_BOOTSTRAPPED event has been applied to the state, let's check if
-    // it was the last partition missing.
-    if (!wasAlreadyBootstrapped && areAllPartitionsBootstrapped()) {
-      stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.SCALED_UP, scaleUp);
+        // now the PARTITION_BOOTSTRAPPED event has been applied to the state, let's check if
+        // it was the last partition missing.
+        if (!wasAlreadyBootstrapped && areAllPartitionsBootstrapped()) {
+          stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.SCALED_UP, scaleUp);
+        }
+        distributionBehavior
+            .withKey(scalingKey)
+            .inQueue(DistributionQueue.SCALING)
+            .distribute(command);
+        distributionBehavior.startDistributingForPartition(bootstrappedPartition);
+      }
     }
-    distributionBehavior.withKey(scalingKey).inQueue(DistributionQueue.SCALING).distribute(command);
-    distributionBehavior.startDistributingForPartition(partitionId);
   }
 
   @Override
