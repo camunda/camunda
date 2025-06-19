@@ -36,6 +36,8 @@ import java.util.stream.Collectors;
 
 public class SearchAggregationResultTransformer<T>
     implements SearchTransfomer<Map<String, Aggregate>, Map<String, AggregationResult>> {
+
+  private static final String COMPOSITE_KEY_DELIMITER = "__";
   private final ElasticsearchTransformers transformers;
   private final List<SearchAggregator> aggregators;
 
@@ -120,7 +122,7 @@ public class SearchAggregationResultTransformer<T>
                   case final CompositeBucket b ->
                       b.key().values().stream()
                           .map(FieldValue::stringValue)
-                          .collect(Collectors.joining(", "));
+                          .collect(Collectors.joining(COMPOSITE_KEY_DELIMITER));
                   default ->
                       throw new IllegalStateException(
                           "Unsupported bucket type: " + bucket.getClass());
