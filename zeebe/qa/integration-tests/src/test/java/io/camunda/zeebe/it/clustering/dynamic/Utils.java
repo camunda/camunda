@@ -95,6 +95,14 @@ final class Utils {
 
   static long deployProcessModel(
       final CamundaClient camundaClient, final String jobType, final String processId) {
+    return deployProcessModel(camundaClient, jobType, processId, true);
+  }
+
+  static long deployProcessModel(
+      final CamundaClient camundaClient,
+      final String jobType,
+      final String processId,
+      final boolean waitDeployment) {
     final var process =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
@@ -108,22 +116,25 @@ final class Utils {
             .send()
             .join()
             .getKey();
-    new ZeebeResourcesHelper(camundaClient).waitUntilDeploymentIsDone(deploymentKey);
+    if (waitDeployment) {
+      new ZeebeResourcesHelper(camundaClient).waitUntilDeploymentIsDone(deploymentKey);
+    }
     return deploymentKey;
   }
 
   static List<Long> createInstanceWithAJobOnAllPartitions(
       final CamundaClient camundaClient, final String jobType, final int partitionsCount) {
-    return createInstanceWithAJobOnAllPartitions(camundaClient, jobType, partitionsCount, true);
+    return createInstanceWithAJobOnAllPartitions(
+        camundaClient, jobType, partitionsCount, true, "processId");
   }
 
   static List<Long> createInstanceWithAJobOnAllPartitions(
       final CamundaClient camundaClient,
       final String jobType,
       final int partitionsCount,
-      final boolean deployProcess) {
+      final boolean deployProcess,
+      final String processId) {
 
-    final var processId = "processId";
     if (deployProcess) {
       deployProcessModel(camundaClient, jobType, processId);
     }
@@ -131,8 +142,8 @@ final class Utils {
     Awaitility.await("Process instances are created in all partitions")
         // Might throw exception when a partition has not yet received deployment distribution
         .ignoreExceptions()
-        .timeout(Duration.ofSeconds(30))
-        .until(
+        .timeout(Duration.ofSeconds(60))
+        .untilAsserted(
             () -> {
               final var result =
                   camundaClient
@@ -143,11 +154,14 @@ final class Utils {
                       .join();
               createdProcessInstances.add(result.getProcessInstanceKey());
               // repeat until all partitions have atleast one process instance
-              return createdProcessInstances.stream()
+              final var partitions =
+                  createdProcessInstances.stream()
                       .map(Protocol::decodePartitionId)
                       .distinct()
-                      .count()
-                  == partitionsCount;
+                      .toList();
+              assertThat(partitions)
+                  .containsExactlyInAnyOrderElementsOf(
+                      IntStream.rangeClosed(1, partitionsCount).boxed().toList());
             });
 
     return createdProcessInstances;

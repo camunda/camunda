@@ -198,11 +198,6 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
 
     getMetrics().addPendingDistribution(partition);
 
-    if (routingInfo.isPartitionScaling(partition)) {
-      // If the partition is currently being scaled up, we don't want to distribute the command yet.
-      return;
-    }
-
     final var canDistributeImmediately =
         distributionQueue
             .flatMap(queue -> distributionState.getNextQueuedDistributionKey(queue, partition))
@@ -213,7 +208,11 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
     // If there are, we skip distributing immediately and wait the preceding distribution to be
     // acknowledged which then triggers this distribution.
     if (canDistributeImmediately) {
-      startDistributing(partition, distributionRecord, distributionKey);
+      startDistributing(
+          partition,
+          distributionRecord,
+          distributionKey,
+          !routingInfo.isPartitionScaling(partition));
     }
   }
 
@@ -237,7 +236,8 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
                 startDistributing(
                     partition,
                     distributionState.getCommandDistributionRecord(nextDistributionKey, partition),
-                    nextDistributionKey));
+                    nextDistributionKey,
+                    true));
   }
 
   private void continueAfterQueue(final String queue) {
@@ -259,7 +259,8 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
   private void startDistributing(
       final int partition,
       final CommandDistributionRecord distributionRecord,
-      final long distributionKey) {
+      final long distributionKey,
+      final boolean executeSideEffect) {
     final var valueType = distributionRecord.getValueType();
     final var intent = distributionRecord.getIntent();
     final var queueId = distributionRecord.getQueueId();
@@ -279,20 +280,23 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
 
     getMetrics().addInflightDistribution(partition);
 
-    // This getter makes a hard copy of the command value, which we need to send the command to the
-    // other partition in a side effect. It does not appear to be possible to reuse a single
-    // instance for distributing to all partitions in the form of a method parameter, but it's not
-    // fully clear why that leads to problems. We suspect that it's because the command value is a
-    // mutable object, and it is somehow modified before the side effect is executed. Instead, we
-    // have to copy this value for every partition.
-    final var commandValue = distributionRecord.getCommandValue();
+    if (executeSideEffect) {
+      // This getter makes a hard copy of the command value, which we need to send the command to
+      // the
+      // other partition in a side effect. It does not appear to be possible to reuse a single
+      // instance for distributing to all partitions in the form of a method parameter, but it's not
+      // fully clear why that leads to problems. We suspect that it's because the command value is a
+      // mutable object, and it is somehow modified before the side effect is executed. Instead, we
+      // have to copy this value for every partition.
+      final var commandValue = distributionRecord.getCommandValue();
 
-    sideEffectWriter.appendSideEffect(
-        () -> {
-          interPartitionCommandSender.sendCommand(
-              partition, valueType, intent, distributionKey, commandValue);
-          return true;
-        });
+      sideEffectWriter.appendSideEffect(
+          () -> {
+            interPartitionCommandSender.sendCommand(
+                partition, valueType, intent, distributionKey, commandValue);
+            return true;
+          });
+    }
   }
 
   /**

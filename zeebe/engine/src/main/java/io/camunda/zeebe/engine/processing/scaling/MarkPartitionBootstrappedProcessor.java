@@ -26,8 +26,10 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.Either.Left;
+import io.camunda.zeebe.util.Either.Right;
 import io.camunda.zeebe.util.collection.Tuple;
-import java.util.Optional;
 
 @ExcludeAuthorizationCheck
 public class MarkPartitionBootstrappedProcessor
@@ -68,23 +70,28 @@ public class MarkPartitionBootstrappedProcessor
   public void processNewCommand(final TypedRecord<ScaleRecord> command) {
     final var scaleUp = command.getValue();
 
-    final var rejection = validate(command);
-    if (rejection.isPresent()) {
-      rejectWith(command, rejection.get().getLeft(), rejection.get().getRight());
-      return;
-    }
-    final var scalingKey = keyGenerator.nextKey();
-    final var wasAlreadyBootstrapped = areAllPartitionsBootstrapped();
-    stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.PARTITION_BOOTSTRAPPED, scaleUp);
-    responseWriter.writeEventOnCommand(
-        scalingKey, ScaleIntent.PARTITION_BOOTSTRAPPED, scaleUp, command);
+    switch (validate(command)) {
+      case Left(final var tuple) -> {
+        rejectWith(command, tuple.getLeft(), tuple.getRight());
+      }
+      case Right(final var bootstrappedPartition) -> {
+        final var scalingKey = keyGenerator.nextKey();
+        final var wasAlreadyBootstrapped = areAllPartitionsBootstrapped();
+        stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.PARTITION_BOOTSTRAPPED, scaleUp);
+        responseWriter.writeEventOnCommand(
+            scalingKey, ScaleIntent.PARTITION_BOOTSTRAPPED, scaleUp, command);
 
-    // now the PARTITION_BOOTSTRAPPED event has been applied to the state, let's check if
-    // it was the last partition missing.
-    if (!wasAlreadyBootstrapped && areAllPartitionsBootstrapped()) {
-      stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.SCALED_UP, scaleUp);
+        // now the PARTITION_BOOTSTRAPPED event has been applied to the state, let's check if
+        // it was the last partition missing.
+        if (!wasAlreadyBootstrapped && areAllPartitionsBootstrapped()) {
+          stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.SCALED_UP, scaleUp);
+        }
+        distributionBehavior
+            .withKey(scalingKey)
+            .inQueue(DistributionQueue.SCALING)
+            .distribute(command);
+      }
     }
-    distributionBehavior.withKey(scalingKey).inQueue(DistributionQueue.SCALING).distribute(command);
   }
 
   @Override
@@ -116,28 +123,29 @@ public class MarkPartitionBootstrappedProcessor
         });
   }
 
-  private Optional<Tuple<RejectionType, String>> validate(final TypedRecord<ScaleRecord> command) {
+  private Either<Tuple<RejectionType, String>, Integer> validate(
+      final TypedRecord<ScaleRecord> command) {
     final var scaleUp = command.getValue();
     if (scaleUp.getRedistributedPartitions().size() != 1) {
       final var reason =
           "Only one partition can be marked as bootstrapped at a time. The redistributed partitions are %s."
               .formatted(scaleUp.getRedistributedPartitions());
-      return Optional.of(new Tuple<>(RejectionType.INVALID_ARGUMENT, reason));
+      return Either.left(new Tuple<>(RejectionType.INVALID_ARGUMENT, reason));
     }
     final var partition = scaleUp.getRedistributedPartitions().getFirst();
     if (partition > routingState.desiredPartitions().size()) {
       final var reason =
           "The redistributed partitions do not match the desired partitions. The redistributed partition is %s, the desired partitions are %s."
               .formatted(partition, routingState.desiredPartitions());
-      return Optional.of(new Tuple<>(RejectionType.INVALID_STATE, reason));
+      return Either.left(new Tuple<>(RejectionType.INVALID_STATE, reason));
     }
     if (!routingState.desiredPartitions().contains(partition)
         && !routingState.currentPartitions().contains(partition)) {
       final var reason = "Partition %d is not a valid partition.".formatted(partition);
-      return Optional.of(new Tuple<>(RejectionType.INVALID_ARGUMENT, reason));
+      return Either.left(new Tuple<>(RejectionType.INVALID_ARGUMENT, reason));
     }
 
-    return Optional.empty();
+    return Either.right(scaleUp.getRedistributedPartitions().getFirst());
   }
 
   private boolean areAllPartitionsBootstrapped() {
