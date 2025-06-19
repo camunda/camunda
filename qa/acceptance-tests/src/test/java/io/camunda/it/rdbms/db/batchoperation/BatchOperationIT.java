@@ -12,6 +12,7 @@ import static io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures.createAndSa
 import static io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures.createAndSaveRandomBatchOperations;
 import static io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures.createSaveReturnRandomBatchOperationItems;
 import static io.camunda.it.rdbms.db.fixtures.BatchOperationFixtures.insertBatchOperationsItems;
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.NOW;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringId;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextStringKey;
@@ -38,7 +39,6 @@ import io.camunda.search.sort.BatchOperationItemSort;
 import io.camunda.search.sort.BatchOperationSort;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -50,8 +50,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class BatchOperationIT {
-  public static final OffsetDateTime NOW = OffsetDateTime.now();
-
   @TestTemplate
   public void shouldReturnTrueForExists(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -125,18 +123,20 @@ public class BatchOperationIT {
                     .operationsTotalCount(0)
                     .operationsCompletedCount(0));
 
-    final List<Long> items =
+    final var items =
         createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationId(), 2);
 
     // when
     writer
         .getBatchOperationWriter()
         .updateItem(
-            batchOperation.batchOperationId(),
-            items.getFirst(),
-            BatchOperationItemState.COMPLETED,
-            NOW,
-            null);
+            new BatchOperationItemDbModel(
+                batchOperation.batchOperationId(),
+                items.getFirst().itemKey(),
+                items.getFirst().processInstanceKey(),
+                BatchOperationItemState.COMPLETED,
+                NOW,
+                null));
     writer.flush();
 
     // then
@@ -156,7 +156,7 @@ public class BatchOperationIT {
     assertThat(updatedItems).hasSize(2);
     final var firstItem =
         updatedItems.stream()
-            .filter(i -> Objects.equals(i.itemKey(), items.getFirst()))
+            .filter(i -> Objects.equals(i.itemKey(), items.getFirst().itemKey()))
             .findFirst()
             .get();
     assertThat(firstItem.state()).isEqualTo(BatchOperationItemState.COMPLETED);
@@ -166,7 +166,7 @@ public class BatchOperationIT {
 
     final var lastItem =
         updatedItems.stream()
-            .filter(i -> Objects.equals(i.itemKey(), items.getLast()))
+            .filter(i -> Objects.equals(i.itemKey(), items.getLast().itemKey()))
             .findFirst()
             .get();
     assertThat(lastItem.state()).isEqualTo(BatchOperationItemState.ACTIVE);
@@ -187,18 +187,20 @@ public class BatchOperationIT {
                     .operationsTotalCount(0)
                     .operationsFailedCount(0));
 
-    final List<Long> items =
+    final var items =
         createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationId(), 2);
 
     // when
     writer
         .getBatchOperationWriter()
         .updateItem(
-            batchOperation.batchOperationId(),
-            items.getFirst(),
-            BatchOperationItemState.FAILED,
-            NOW,
-            "error");
+            new BatchOperationItemDbModel(
+                batchOperation.batchOperationId(),
+                items.getFirst().itemKey(),
+                items.getFirst().processInstanceKey(),
+                BatchOperationItemState.FAILED,
+                NOW,
+                "error"));
     writer.flush();
 
     // then
@@ -218,9 +220,9 @@ public class BatchOperationIT {
     assertThat(updatedItems).hasSize(2);
     final var firstItem =
         updatedItems.stream()
-            .filter(i -> Objects.equals(i.itemKey(), items.getFirst()))
+            .filter(i -> Objects.equals(i.itemKey(), items.getFirst().itemKey()))
             .findFirst()
-            .get();
+            .orElseThrow();
     assertThat(firstItem.state()).isEqualTo(BatchOperationItemState.FAILED);
     assertThat(firstItem.processedDate())
         .isCloseTo(NOW, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
@@ -228,9 +230,9 @@ public class BatchOperationIT {
 
     final var lastItem =
         updatedItems.stream()
-            .filter(i -> Objects.equals(i.itemKey(), items.getLast()))
+            .filter(i -> Objects.equals(i.itemKey(), items.getLast().itemKey()))
             .findFirst()
-            .get();
+            .orElseThrow();
     assertThat(lastItem.state()).isEqualTo(BatchOperationItemState.ACTIVE);
   }
 
@@ -250,11 +252,13 @@ public class BatchOperationIT {
     writer
         .getBatchOperationWriter()
         .updateItem(
-            batchOperation.batchOperationId(),
-            items.getFirst(),
-            BatchOperationItemState.COMPLETED,
-            NOW,
-            null);
+            new BatchOperationItemDbModel(
+                batchOperation.batchOperationId(),
+                items.getFirst().itemKey(),
+                items.getFirst().processInstanceKey(),
+                BatchOperationItemState.COMPLETED,
+                NOW,
+                null));
 
     // when
     final OffsetDateTime endDate = OffsetDateTime.now();
