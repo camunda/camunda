@@ -161,7 +161,7 @@ public class ProcessDefinitionStatisticsFilterImpl
   @Override
   public ProcessDefinitionStatisticsFilter variables(
       final List<Consumer<VariableValueFilter>> variableValueFilters) {
-    filter.setVariables(VariableFilterMapper.toVariableValueFilterRequest(variableValueFilters));
+    filter.setVariables(VariableFilterMapper.toVariableValueFilterProperty(variableValueFilters));
     return this;
   }
 
@@ -169,7 +169,7 @@ public class ProcessDefinitionStatisticsFilterImpl
   public ProcessDefinitionStatisticsFilter variables(
       final Map<String, Object> variableValueFilters) {
     if (variableValueFilters != null && !variableValueFilters.isEmpty()) {
-      filter.setVariables(VariableFilterMapper.toVariableValueFilterRequest(variableValueFilters));
+      filter.setVariables(VariableFilterMapper.toVariableValueFilterProperty(variableValueFilters));
     }
     return this;
   }

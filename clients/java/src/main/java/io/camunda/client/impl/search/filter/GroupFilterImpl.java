@@ -17,15 +17,15 @@ package io.camunda.client.impl.search.filter;
 
 import io.camunda.client.api.search.filter.GroupFilter;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
-import io.camunda.client.protocol.rest.GroupFilterRequest;
 
-public class GroupFilterImpl extends TypedSearchRequestPropertyProvider<GroupFilterRequest>
+public class GroupFilterImpl
+    extends TypedSearchRequestPropertyProvider<io.camunda.client.protocol.rest.GroupFilter>
     implements GroupFilter {
 
-  private final GroupFilterRequest filter;
+  private final io.camunda.client.protocol.rest.GroupFilter filter;
 
   public GroupFilterImpl() {
-    filter = new GroupFilterRequest();
+    filter = new io.camunda.client.protocol.rest.GroupFilter();
   }
 
   @Override
@@ -41,7 +41,7 @@ public class GroupFilterImpl extends TypedSearchRequestPropertyProvider<GroupFil
   }
 
   @Override
-  protected GroupFilterRequest getSearchRequestProperty() {
+  protected io.camunda.client.protocol.rest.GroupFilter getSearchRequestProperty() {
     return filter;
   }
 }

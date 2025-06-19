@@ -30,7 +30,7 @@ import io.camunda.client.protocol.rest.ProcessDefinitionStatisticsFilter;
 import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.client.protocol.rest.ProcessInstanceStateFilterProperty;
 import io.camunda.client.protocol.rest.StringFilterProperty;
-import io.camunda.client.protocol.rest.VariableValueFilterRequest;
+import io.camunda.client.protocol.rest.VariableValueFilterProperty;
 import io.camunda.client.util.ClientRestTest;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -65,10 +65,12 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
     final Map<String, Object> variablesMap = new LinkedHashMap<>();
     variablesMap.put("n1", "v1");
     variablesMap.put("n2", "v2");
-    final List<VariableValueFilterRequest> variables =
+    final List<VariableValueFilterProperty> variables =
         Arrays.asList(
-            new VariableValueFilterRequest().name("n1").value(new StringFilterProperty().$eq("v1")),
-            new VariableValueFilterRequest()
+            new VariableValueFilterProperty()
+                .name("n1")
+                .value(new StringFilterProperty().$eq("v1")),
+            new VariableValueFilterProperty()
                 .name("n2")
                 .value(new StringFilterProperty().$eq("v2")));
     client
@@ -183,10 +185,12 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
     final Map<String, Object> variablesMap = new LinkedHashMap<>();
     variablesMap.put("n1", "v1");
     variablesMap.put("n2", "v2");
-    final List<VariableValueFilterRequest> variables =
+    final List<VariableValueFilterProperty> variables =
         Arrays.asList(
-            new VariableValueFilterRequest().name("n1").value(new StringFilterProperty().$eq("v1")),
-            new VariableValueFilterRequest()
+            new VariableValueFilterProperty()
+                .name("n1")
+                .value(new StringFilterProperty().$eq("v1")),
+            new VariableValueFilterProperty()
                 .name("n2")
                 .value(new StringFilterProperty().$eq("v2")));
 

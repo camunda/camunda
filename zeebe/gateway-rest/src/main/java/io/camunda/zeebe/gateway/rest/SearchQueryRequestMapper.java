@@ -18,19 +18,29 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
-import io.camunda.search.filter.*;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.BatchOperationFilter;
 import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.DecisionRequirementsFilter;
+import io.camunda.search.filter.FilterBase;
+import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.FlowNodeInstanceFilter;
+import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.filter.IncidentFilter;
+import io.camunda.search.filter.MappingFilter;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceFilter.Builder;
+import io.camunda.search.filter.RoleFilter;
+import io.camunda.search.filter.TenantFilter;
+import io.camunda.search.filter.UsageMetricsFilter;
+import io.camunda.search.filter.UserFilter;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
+import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.BatchOperationItemQuery;
@@ -570,8 +580,7 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::variableSearchQuery);
   }
 
-  private static VariableFilter toUserTaskVariableFilter(
-      final UserTaskVariableFilterRequest filter) {
+  private static VariableFilter toUserTaskVariableFilter(final UserTaskVariableFilter filter) {
     if (filter == null) {
       return FilterBuilders.variable().build();
     }
@@ -905,7 +914,8 @@ public final class SearchQueryRequestMapper {
     return validationErrors.isEmpty() ? Either.right(builder) : Either.left(validationErrors);
   }
 
-  private static TenantFilter toTenantFilter(final TenantFilterRequest filter) {
+  private static TenantFilter toTenantFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.TenantFilter filter) {
     final var builder = FilterBuilders.tenant();
     if (filter != null) {
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantId);
@@ -914,7 +924,8 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
-  private static GroupFilter toGroupFilter(final GroupFilterRequest filter) {
+  private static GroupFilter toGroupFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.GroupFilter filter) {
     final var builder = FilterBuilders.group();
     if (filter != null) {
       ofNullable(filter.getGroupId()).ifPresent(builder::groupId);
@@ -923,7 +934,8 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
-  private static RoleFilter toRoleFilter(final RoleFilterRequest filter) {
+  private static RoleFilter toRoleFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.RoleFilter filter) {
     final var builder = FilterBuilders.role();
     if (filter != null) {
       ofNullable(filter.getRoleId()).ifPresent(builder::roleId);
@@ -932,7 +944,8 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
-  private static MappingFilter toMappingFilter(final MappingFilterRequest filter) {
+  private static MappingFilter toMappingFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.MappingFilter filter) {
     final var builder = FilterBuilders.mapping();
     if (filter != null) {
       ofNullable(filter.getClaimName()).ifPresent(builder::claimName);
@@ -1092,7 +1105,8 @@ public final class SearchQueryRequestMapper {
         : Either.left(validationErrors);
   }
 
-  private static UserFilter toUserFilter(final UserFilterRequest filter) {
+  private static UserFilter toUserFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.UserFilter filter) {
 
     final var builder = FilterBuilders.user();
     if (filter != null) {
@@ -1480,7 +1494,7 @@ public final class SearchQueryRequestMapper {
   }
 
   private static Either<List<String>, List<VariableValueFilter>> toVariableValueFilters(
-      final List<VariableValueFilterRequest> filters) {
+      final List<VariableValueFilterProperty> filters) {
     if (CollectionUtils.isEmpty(filters)) {
       return Either.right(List.of());
     }
