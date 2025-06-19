@@ -1,0 +1,586 @@
+[INFO] Scanning for projects...
+[INFO] Inspecting build with total of 1 modules...
+[INFO] Not installing Nexus Staging features:
+[INFO]  * Preexisting staging related goal bindings found in 1 modules.
+[INFO] ------------------------------------------------------------------------
+[INFO] Detecting the operating system and CPU architecture
+[INFO] ------------------------------------------------------------------------
+[INFO] os.detected.name: osx
+[INFO] os.detected.arch: aarch_64
+[INFO] os.detected.bitness: 64
+[INFO] os.detected.version: 15.5
+[INFO] os.detected.version.major: 15
+[INFO] os.detected.version.minor: 5
+[INFO] os.detected.classifier: osx-aarch_64
+[INFO] 
+[INFO] ----------------< io.camunda:camunda-process-test-java >----------------
+[INFO] Building Camunda Process Test Java 8.8.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- dependency:3.8.1:tree (default-cli) @ camunda-process-test-java ---
+[INFO] io.camunda:camunda-process-test-java:jar:8.8.0-SNAPSHOT
+[INFO] +- io.camunda:camunda-qa-util:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  +- io.camunda:camunda-authentication:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- org.springframework.session:spring-session-core:jar:3.4.3:compile
+[INFO] |  |  +- org.springframework.security:spring-security-config:jar:6.5.1:compile
+[INFO] |  |  +- org.springframework.security:spring-security-core:jar:6.5.1:compile
+[INFO] |  |  +- org.springframework.security:spring-security-web:jar:6.5.1:compile
+[INFO] |  |  +- jakarta.servlet:jakarta.servlet-api:jar:6.0.0:compile
+[INFO] |  |  +- io.camunda:camunda-service:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  |  +- io.camunda:document-api:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  |  \- org.camunda.bpm:camunda-license-check:jar:2.10.0:compile
+[INFO] |  |  +- io.camunda:camunda-search-client:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- org.springframework.security:spring-security-oauth2-client:jar:6.5.1:compile
+[INFO] |  |  +- org.springframework.security:spring-security-oauth2-core:jar:6.5.1:compile
+[INFO] |  |  +- com.nimbusds:oauth2-oidc-sdk:jar:11.26:compile
+[INFO] |  |  |  +- com.github.stephenc.jcip:jcip-annotations:jar:1.0-1:compile
+[INFO] |  |  |  +- com.nimbusds:content-type:jar:2.3:compile
+[INFO] |  |  |  +- net.minidev:json-smart:jar:2.5.2:compile
+[INFO] |  |  |  |  \- net.minidev:accessors-smart:jar:2.5.2:compile
+[INFO] |  |  |  \- com.nimbusds:lang-tag:jar:1.7:compile
+[INFO] |  |  +- org.springframework:spring-aop:jar:6.2.6:compile
+[INFO] |  |  +- org.springframework.security:spring-security-oauth2-resource-server:jar:6.5.1:compile
+[INFO] |  |  +- org.springframework.boot:spring-boot-autoconfigure:jar:3.4.5:compile
+[INFO] |  |  \- org.springframework.security:spring-security-oauth2-jose:jar:6.5.1:compile
+[INFO] |  +- io.camunda:camunda-security-protocol:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  +- io.camunda:zeebe-gateway:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:zeebe-atomix-utils:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  |  \- com.esotericsoftware:minlog:jar:1.3.1:compile
+[INFO] |  |  +- io.camunda:zeebe-scheduler:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:zeebe-protocol:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:zeebe-protocol-impl:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  |  \- io.camunda:zeebe-msgpack-core:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:zeebe-msgpack-value:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:zeebe-broker-client:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:zeebe-cluster-config:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.micrometer:micrometer-commons:jar:1.15.1:compile
+[INFO] |  |  \- io.micrometer:micrometer-core:jar:1.15.1:compile
+[INFO] |  |     +- org.hdrhistogram:HdrHistogram:jar:2.2.2:compile
+[INFO] |  |     \- org.latencyutils:LatencyUtils:jar:2.0.3:runtime
+[INFO] |  +- com.fasterxml.jackson.core:jackson-annotations:jar:2.19.1:compile
+[INFO] |  +- com.fasterxml.jackson.datatype:jackson-datatype-jsr310:jar:2.19.1:compile
+[INFO] |  +- io.camunda:camunda-zeebe:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:camunda-schema-manager:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:camunda-search-client-rdbms:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:zeebe-gateway-grpc:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  |  +- io.grpc:grpc-services:jar:1.73.0:compile
+[INFO] |  |  |  |  \- com.google.protobuf:protobuf-java-util:jar:4.31.1:compile
+[INFO] |  |  |  \- com.google.api.grpc:proto-google-common-protos:jar:2.58.2:compile
+[INFO] |  |  +- io.camunda:zeebe-restore:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:zeebe-gateway-rest:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  |  \- commons-validator:commons-validator:jar:1.9.0:compile
+[INFO] |  |  |     +- commons-beanutils:commons-beanutils:jar:1.11.0:compile
+[INFO] |  |  |     +- commons-digester:commons-digester:jar:2.1:compile
+[INFO] |  |  |     \- commons-collections:commons-collections:jar:20040616:compile
+[INFO] |  |  +- io.camunda:zeebe-logstreams:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:rdbms-exporter:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda.migration:migration-api:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda.migration:process-migration:jar:8.8.0-SNAPSHOT:runtime
+[INFO] |  |  +- io.camunda:camunda-db-rdbms:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:camunda-db-rdbms-schema:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:zeebe-backup:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:zeebe-backup-store-azure:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  |  +- io.camunda:zeebe-backup-store-common:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  |  +- com.azure:azure-storage-blob:jar:12.30.0:compile
+[INFO] |  |  |  |  +- com.azure:azure-xml:jar:1.2.0:compile
+[INFO] |  |  |  |  +- com.azure:azure-core-http-netty:jar:1.15.11:compile
+[INFO] |  |  |  |  |  +- io.netty:netty-transport-native-kqueue:jar:osx-x86_64:4.1.119.Final:compile
+[INFO] |  |  |  |  |  |  \- io.netty:netty-transport-classes-kqueue:jar:4.1.119.Final:compile
+[INFO] |  |  |  |  |  \- io.projectreactor.netty:reactor-netty-http:jar:1.2.5:compile
+[INFO] |  |  |  |  |     +- io.netty:netty-resolver-dns-native-macos:jar:osx-x86_64:4.1.119.Final:compile
+[INFO] |  |  |  |  |     |  \- io.netty:netty-resolver-dns-classes-macos:jar:4.1.119.Final:compile
+[INFO] |  |  |  |  |     \- io.projectreactor.netty:reactor-netty-core:jar:1.2.5:compile
+[INFO] |  |  |  |  \- com.azure:azure-storage-internal-avro:jar:12.15.0:compile
+[INFO] |  |  |  +- com.azure:azure-core:jar:1.55.3:compile
+[INFO] |  |  |  |  +- com.azure:azure-json:jar:1.5.0:compile
+[INFO] |  |  |  |  \- io.projectreactor:reactor-core:jar:3.7.5:compile
+[INFO] |  |  |  +- com.azure:azure-storage-common:jar:12.29.0:compile
+[INFO] |  |  |  \- com.azure:azure-identity:jar:1.16.1:compile
+[INFO] |  |  |     +- com.microsoft.azure:msal4j:jar:1.20.1:compile
+[INFO] |  |  |     +- com.microsoft.azure:msal4j-persistence-extension:jar:1.3.0:compile
+[INFO] |  |  |     \- net.java.dev.jna:jna-platform:jar:5.17.0:compile
+[INFO] |  |  +- io.camunda:zeebe-backup-store-filesystem:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:zeebe-backup-store-s3:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  |  +- com.github.luben:zstd-jni:jar:1.5.7-3:compile
+[INFO] |  |  |  +- software.amazon.awssdk:s3:jar:2.31.65:compile
+[INFO] |  |  |  |  +- software.amazon.awssdk:aws-xml-protocol:jar:2.31.65:compile
+[INFO] |  |  |  |  \- software.amazon.awssdk:arns:jar:2.31.65:compile
+[INFO] |  |  |  +- software.amazon.awssdk:aws-core:jar:2.31.65:compile
+[INFO] |  |  |  \- software.amazon.awssdk:netty-nio-client:jar:2.31.65:compile
+[INFO] |  |  +- io.camunda:zeebe-backup-store-gcs:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  |  +- com.google.cloud:google-cloud-core:jar:2.57.0:compile
+[INFO] |  |  |  |  +- com.google.auto.value:auto-value-annotations:jar:1.11.0:compile
+[INFO] |  |  |  |  +- com.google.api.grpc:proto-google-iam-v1:jar:1.53.0:compile
+[INFO] |  |  |  |  +- org.threeten:threetenbp:jar:1.7.0:compile
+[INFO] |  |  |  |  +- com.google.api:api-common:jar:2.50.0:compile
+[INFO] |  |  |  |  +- com.google.auth:google-auth-library-credentials:jar:1.36.0:compile
+[INFO] |  |  |  |  +- com.google.auth:google-auth-library-oauth2-http:jar:1.36.0:compile
+[INFO] |  |  |  |  +- com.google.http-client:google-http-client:jar:1.47.0:compile
+[INFO] |  |  |  |  \- com.google.http-client:google-http-client-gson:jar:1.47.0:compile
+[INFO] |  |  |  +- com.google.cloud:google-cloud-storage:jar:2.53.0:compile
+[INFO] |  |  |  |  +- io.opencensus:opencensus-contrib-http-util:jar:0.31.1:compile
+[INFO] |  |  |  |  +- com.google.http-client:google-http-client-jackson2:jar:1.47.0:compile
+[INFO] |  |  |  |  +- com.google.api-client:google-api-client:jar:2.7.2:compile
+[INFO] |  |  |  |  +- com.google.oauth-client:google-oauth-client:jar:1.39.0:compile
+[INFO] |  |  |  |  +- com.google.http-client:google-http-client-apache-v2:jar:1.47.0:compile
+[INFO] |  |  |  |  +- com.google.apis:google-api-services-storage:jar:v1-rev20250524-2.0.0:compile
+[INFO] |  |  |  |  +- com.google.cloud:google-cloud-core-http:jar:2.57.0:compile
+[INFO] |  |  |  |  +- com.google.http-client:google-http-client-appengine:jar:1.47.0:compile
+[INFO] |  |  |  |  +- com.google.api:gax-httpjson:jar:2.67.0:compile
+[INFO] |  |  |  |  +- com.google.cloud:google-cloud-core-grpc:jar:2.57.0:compile
+[INFO] |  |  |  |  +- com.google.api:gax-grpc:jar:2.67.0:compile
+[INFO] |  |  |  |  +- io.grpc:grpc-inprocess:jar:1.73.0:compile
+[INFO] |  |  |  |  +- io.grpc:grpc-alts:jar:1.73.0:compile
+[INFO] |  |  |  |  +- io.grpc:grpc-grpclb:jar:1.73.0:compile
+[INFO] |  |  |  |  +- org.conscrypt:conscrypt-openjdk-uber:jar:2.5.2:compile
+[INFO] |  |  |  |  +- io.grpc:grpc-auth:jar:1.73.0:compile
+[INFO] |  |  |  |  +- javax.annotation:javax.annotation-api:jar:1.3.2:compile
+[INFO] |  |  |  |  +- io.opencensus:opencensus-api:jar:0.31.1:compile
+[INFO] |  |  |  |  +- com.google.api.grpc:proto-google-cloud-storage-v2:jar:2.53.0:compile
+[INFO] |  |  |  |  +- com.google.api.grpc:grpc-google-cloud-storage-v2:jar:2.53.0:compile
+[INFO] |  |  |  |  +- com.google.api.grpc:gapic-google-cloud-storage-v2:jar:2.53.0:compile
+[INFO] |  |  |  |  +- io.opentelemetry:opentelemetry-sdk:jar:1.43.0:compile
+[INFO] |  |  |  |  +- io.opentelemetry:opentelemetry-sdk-trace:jar:1.43.0:compile
+[INFO] |  |  |  |  |  \- io.opentelemetry:opentelemetry-api-incubator:jar:1.43.0-alpha:runtime
+[INFO] |  |  |  |  +- io.opentelemetry:opentelemetry-sdk-logs:jar:1.43.0:compile
+[INFO] |  |  |  |  +- io.grpc:grpc-opentelemetry:jar:1.73.0:compile
+[INFO] |  |  |  |  +- io.opentelemetry:opentelemetry-sdk-metrics:jar:1.43.0:compile
+[INFO] |  |  |  |  +- io.opentelemetry:opentelemetry-sdk-common:jar:1.43.0:compile
+[INFO] |  |  |  |  +- io.opentelemetry:opentelemetry-sdk-extension-autoconfigure-spi:jar:1.43.0:compile
+[INFO] |  |  |  |  +- io.opentelemetry.semconv:opentelemetry-semconv:jar:1.29.0-alpha:compile
+[INFO] |  |  |  |  +- com.google.cloud.opentelemetry:exporter-metrics:jar:0.33.0:compile
+[INFO] |  |  |  |  +- com.google.cloud:google-cloud-monitoring:jar:3.65.0:compile
+[INFO] |  |  |  |  +- com.google.api.grpc:proto-google-cloud-monitoring-v3:jar:3.65.0:compile
+[INFO] |  |  |  |  +- com.google.cloud.opentelemetry:shared-resourcemapping:jar:0.33.0:runtime
+[INFO] |  |  |  |  +- io.opentelemetry.contrib:opentelemetry-gcp-resources:jar:1.37.0-alpha:compile
+[INFO] |  |  |  |  +- com.google.cloud.opentelemetry:detector-resources-support:jar:0.33.0:runtime
+[INFO] |  |  |  |  +- io.grpc:grpc-netty-shaded:jar:1.73.0:runtime
+[INFO] |  |  |  |  +- io.grpc:grpc-googleapis:jar:1.73.0:runtime
+[INFO] |  |  |  |  +- io.grpc:grpc-xds:jar:1.73.0:runtime
+[INFO] |  |  |  |  +- com.google.re2j:re2j:jar:1.8:runtime
+[INFO] |  |  |  |  \- io.grpc:grpc-rls:jar:1.73.0:runtime
+[INFO] |  |  |  \- com.google.api:gax:jar:2.67.0:compile
+[INFO] |  |  +- io.camunda:identity-webjar:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:operate-data-generator:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:operate-importer:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  |  +- io.camunda:operate-importer-common:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  |  +- io.camunda:operate-importer-8_7:jar:8.8.0-SNAPSHOT:runtime
+[INFO] |  |  |  \- org.elasticsearch:elasticsearch-core:jar:7.17.28:compile
+[INFO] |  |  +- io.camunda:tasklist-webapp:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  |  +- io.camunda:tasklist-webjar:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  |  +- io.camunda:tasklist-els-schema:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  |  \- io.camunda:tasklist-mvc-auth-commons:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:tasklist-importer:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  |  +- io.camunda:tasklist-importer-common:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  |  \- io.camunda:tasklist-importer-870:jar:8.8.0-SNAPSHOT:runtime
+[INFO] |  |  +- io.camunda:tasklist-data-generator:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:webapps-common:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- org.mybatis:mybatis:jar:3.5.19:compile
+[INFO] |  |  +- org.mybatis:mybatis-spring:jar:3.0.5:compile
+[INFO] |  |  +- org.liquibase:liquibase-core:jar:4.32.0:compile
+[INFO] |  |  |  +- com.opencsv:opencsv:jar:5.11:compile
+[INFO] |  |  |  +- javax.xml.bind:jaxb-api:jar:2.3.1:compile
+[INFO] |  |  |  \- org.apache.commons:commons-text:jar:1.13.1:compile
+[INFO] |  |  +- org.postgresql:postgresql:jar:42.7.7:compile
+[INFO] |  |  |  \- org.checkerframework:checker-qual:jar:3.49.4:compile
+[INFO] |  |  +- org.mariadb.jdbc:mariadb-java-client:jar:3.4.2:compile
+[INFO] |  |  |  \- com.github.waffle:waffle-jna:jar:3.3.0:compile
+[INFO] |  |  |     \- org.slf4j:jcl-over-slf4j:jar:2.0.17:compile
+[INFO] |  |  +- com.oracle.database.jdbc:ojdbc8:jar:23.5.0.24.07:compile
+[INFO] |  |  +- com.h2database:h2:jar:2.3.232:compile
+[INFO] |  |  +- io.camunda:identity-sdk:jar:8.8.0-alpha3:compile
+[INFO] |  |  |  +- com.auth0:jwks-rsa:jar:0.22.1:compile
+[INFO] |  |  |  \- org.ehcache:ehcache:jar:3.10.8:compile
+[INFO] |  |  |     \- javax.cache:cache-api:jar:1.1.1:compile
+[INFO] |  |  +- io.camunda:identity-spring-boot-autoconfigure:jar:8.8.0-alpha3:compile
+[INFO] |  |  +- io.camunda:camunda-security-services:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:document-store:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- org.springframework.boot:spring-boot-actuator:jar:3.4.5:compile
+[INFO] |  |  +- org.springframework.security:spring-security-crypto:jar:6.5.1:compile
+[INFO] |  |  +- io.camunda:zeebe-transport:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- org.springframework.boot:spring-boot-starter-web:jar:3.4.5:compile
+[INFO] |  |  |  +- org.springframework.boot:spring-boot-starter:jar:3.4.5:compile
+[INFO] |  |  |  +- org.springframework.boot:spring-boot-starter-json:jar:3.4.5:compile
+[INFO] |  |  |  |  \- com.fasterxml.jackson.module:jackson-module-parameter-names:jar:2.19.1:compile
+[INFO] |  |  |  \- org.springframework.boot:spring-boot-starter-tomcat:jar:3.4.5:compile
+[INFO] |  |  |     \- org.apache.tomcat.embed:tomcat-embed-websocket:jar:10.1.40:compile
+[INFO] |  |  +- org.springframework.boot:spring-boot-starter-data-jdbc:jar:3.4.5:compile
+[INFO] |  |  |  +- org.springframework.boot:spring-boot-starter-jdbc:jar:3.4.5:compile
+[INFO] |  |  |  |  +- com.zaxxer:HikariCP:jar:5.1.0:compile
+[INFO] |  |  |  |  \- org.springframework:spring-jdbc:jar:6.2.6:compile
+[INFO] |  |  |  \- org.springframework.data:spring-data-jdbc:jar:3.4.5:compile
+[INFO] |  |  |     +- org.springframework.data:spring-data-relational:jar:3.4.5:compile
+[INFO] |  |  |     \- org.springframework.data:spring-data-commons:jar:3.4.5:compile
+[INFO] |  |  +- io.micrometer:micrometer-registry-prometheus:jar:1.15.1:compile
+[INFO] |  |  |  +- io.prometheus:prometheus-metrics-core:jar:1.3.6:compile
+[INFO] |  |  |  |  +- io.prometheus:prometheus-metrics-model:jar:1.3.6:compile
+[INFO] |  |  |  |  \- io.prometheus:prometheus-metrics-config:jar:1.3.6:compile
+[INFO] |  |  |  +- io.prometheus:prometheus-metrics-tracer-common:jar:1.3.6:compile
+[INFO] |  |  |  \- io.prometheus:prometheus-metrics-exposition-formats:jar:1.3.6:runtime
+[INFO] |  |  |     \- io.prometheus:prometheus-metrics-exposition-textformats:jar:1.3.6:runtime
+[INFO] |  |  +- io.micrometer:micrometer-registry-otlp:jar:1.15.1:runtime
+[INFO] |  |  |  \- io.opentelemetry.proto:opentelemetry-proto:jar:1.5.0-alpha:runtime
+[INFO] |  |  +- org.springframework.boot:spring-boot-actuator-autoconfigure:jar:3.4.5:compile
+[INFO] |  |  +- org.springframework:spring-webmvc:jar:6.2.6:compile
+[INFO] |  |  +- org.apache.tomcat.embed:tomcat-embed-core:jar:10.1.40:compile
+[INFO] |  |  +- jakarta.annotation:jakarta.annotation-api:jar:3.0.0:compile
+[INFO] |  |  +- io.netty:netty-buffer:jar:4.1.119.Final:compile
+[INFO] |  |  +- jakarta.validation:jakarta.validation-api:jar:3.1.1:compile
+[INFO] |  |  +- org.openapitools:jackson-databind-nullable:jar:0.2.6:compile
+[INFO] |  |  +- io.netty:netty-transport:jar:4.1.119.Final:compile
+[INFO] |  |  +- org.bouncycastle:bcpkix-jdk18on:jar:1.81:runtime
+[INFO] |  |  |  \- org.bouncycastle:bcutil-jdk18on:jar:1.81:runtime
+[INFO] |  |  \- org.bouncycastle:bcprov-jdk18on:jar:1.81:runtime
+[INFO] |  +- io.camunda:zeebe-broker:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- com.netflix.concurrency-limits:concurrency-limits-core:jar:0.5.3:compile
+[INFO] |  |  +- io.camunda:zeebe-db:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  |  \- org.rocksdb:rocksdbjni:jar:9.11.2:compile
+[INFO] |  |  +- io.camunda:zeebe-exporter-api:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:zeebe-stream-platform:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:zeebe-snapshots:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:zeebe-workflow-engine:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  |  +- io.camunda:zeebe-expression-language:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  |  |  +- io.camunda:zeebe-feel-integration:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  |  |  \- org.scala-lang:scala-library:jar:2.13.16:compile
+[INFO] |  |  |  +- io.camunda:zeebe-dmn:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  |  +- org.camunda.bpm.extension.dmn.scala:dmn-engine:jar:1.10.1:compile
+[INFO] |  |  |  +- com.cronutils:cron-utils:jar:9.2.1:compile
+[INFO] |  |  |  \- org.camunda.feel:feel-engine:jar:1.19.3:compile
+[INFO] |  |  |     +- com.lihaoyi:fastparse_2.13:jar:3.1.1:compile
+[INFO] |  |  |     |  +- com.lihaoyi:sourcecode_2.13:jar:0.4.0:compile
+[INFO] |  |  |     |  \- com.lihaoyi:geny_2.13:jar:1.1.0:compile
+[INFO] |  |  |     \- com.fasterxml.uuid:java-uuid-generator:jar:5.1.0:compile
+[INFO] |  |  \- io.camunda:zeebe-journal:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  +- io.camunda:zeebe-util:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- com.github.ben-manes.caffeine:caffeine:jar:3.2.1:compile
+[INFO] |  |  +- io.github.resilience4j:resilience4j-retry:jar:2.3.0:compile
+[INFO] |  |  \- io.github.resilience4j:resilience4j-core:jar:2.3.0:compile
+[INFO] |  |     \- org.jetbrains.kotlin:kotlin-stdlib-jdk8:jar:1.9.25:compile
+[INFO] |  |        +- org.jetbrains.kotlin:kotlin-stdlib:jar:1.9.25:compile
+[INFO] |  |        \- org.jetbrains.kotlin:kotlin-stdlib-jdk7:jar:1.9.25:compile
+[INFO] |  +- io.camunda:zeebe-atomix-cluster:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.netty:netty-codec:jar:4.1.119.Final:compile
+[INFO] |  |  +- io.netty:netty-transport-classes-epoll:jar:4.1.119.Final:compile
+[INFO] |  |  +- io.netty:netty-transport-native-epoll:jar:linux-x86_64:4.1.119.Final:compile
+[INFO] |  |  +- com.esotericsoftware:kryo:jar:5.6.2:compile
+[INFO] |  |  |  \- com.esotericsoftware:reflectasm:jar:1.11.9:compile
+[INFO] |  |  +- io.netty:netty-codec-dns:jar:4.1.119.Final:compile
+[INFO] |  |  +- io.netty:netty-resolver-dns:jar:4.1.119.Final:compile
+[INFO] |  |  \- io.netty:netty-resolver:jar:4.1.119.Final:compile
+[INFO] |  +- io.camunda:zeebe-test-util:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- org.msgpack:msgpack-core:jar:0.9.9:compile
+[INFO] |  |  +- org.msgpack:jackson-dataformat-msgpack:jar:0.9.9:compile
+[INFO] |  |  +- org.yaml:snakeyaml:jar:2.4:compile
+[INFO] |  |  +- org.elasticsearch.client:elasticsearch-rest-client:jar:8.16.4:compile
+[INFO] |  |  +- org.opensearch:opensearch-testcontainers:jar:2.1.3:compile
+[INFO] |  |  +- org.opensearch.client:opensearch-rest-client:jar:2.14.0:compile
+[INFO] |  |  \- org.openjdk.jmh:jmh-core:jar:1.37:compile
+[INFO] |  |     +- net.sf.jopt-simple:jopt-simple:jar:5.0.4:compile
+[INFO] |  |     \- org.apache.commons:commons-math3:jar:3.6.1:compile
+[INFO] |  +- org.springframework:spring-context:jar:6.2.6:compile
+[INFO] |  |  +- org.springframework:spring-expression:jar:6.2.6:compile
+[INFO] |  |  \- io.micrometer:micrometer-observation:jar:1.15.1:compile
+[INFO] |  +- org.springframework:spring-core:jar:6.2.6:compile
+[INFO] |  |  \- org.springframework:spring-jcl:jar:6.2.6:compile
+[INFO] |  +- org.springframework.boot:spring-boot:jar:3.4.5:compile
+[INFO] |  +- io.camunda:operate-webapp:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:operate-schema:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:operate-webjar:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- io.camunda:operate-mvc-auth-commons:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  |  \- com.google.guava:guava-annotations:jar:r03:runtime
+[INFO] |  |  +- io.camunda:identity-spring-boot-starter:jar:8.8.0-alpha3:compile
+[INFO] |  |  +- org.springframework.boot:spring-boot-starter-log4j2:jar:3.4.5:compile
+[INFO] |  |  |  \- org.apache.logging.log4j:log4j-jul:jar:2.24.3:compile
+[INFO] |  |  +- org.springframework.boot:spring-boot-starter-validation:jar:3.4.5:compile
+[INFO] |  |  |  +- org.apache.tomcat.embed:tomcat-embed-el:jar:10.1.40:compile
+[INFO] |  |  |  \- org.hibernate.validator:hibernate-validator:jar:8.0.2.Final:compile
+[INFO] |  |  |     \- com.fasterxml:classmate:jar:1.7.0:compile
+[INFO] |  |  +- org.springframework.boot:spring-boot-starter-security:jar:3.4.5:compile
+[INFO] |  |  +- org.springframework.boot:spring-boot-starter-thymeleaf:jar:3.4.5:compile
+[INFO] |  |  |  \- org.thymeleaf:thymeleaf-spring6:jar:3.1.3.RELEASE:compile
+[INFO] |  |  +- org.springframework.boot:spring-boot-starter-actuator:jar:3.4.5:compile
+[INFO] |  |  |  \- io.micrometer:micrometer-jakarta9:jar:1.15.1:compile
+[INFO] |  |  +- org.springframework.boot:spring-boot-starter-oauth2-resource-server:jar:3.4.5:compile
+[INFO] |  |  +- org.springframework.security:spring-security-ldap:jar:6.5.1:compile
+[INFO] |  |  |  \- org.springframework:spring-tx:jar:6.2.6:compile
+[INFO] |  |  +- org.springframework.ldap:spring-ldap-core:jar:3.2.12:compile
+[INFO] |  |  +- org.springdoc:springdoc-openapi-starter-webmvc-ui:jar:2.8.9:compile
+[INFO] |  |  |  +- org.springdoc:springdoc-openapi-starter-webmvc-api:jar:2.8.9:compile
+[INFO] |  |  |  +- org.webjars:swagger-ui:jar:5.21.0:compile
+[INFO] |  |  |  \- org.webjars:webjars-locator-lite:jar:1.0.1:compile
+[INFO] |  |  +- org.springdoc:springdoc-openapi-starter-common:jar:2.8.9:compile
+[INFO] |  |  |  \- io.swagger.core.v3:swagger-core-jakarta:jar:2.2.30:compile
+[INFO] |  |  +- org.thymeleaf:thymeleaf:jar:3.1.3.RELEASE:compile
+[INFO] |  |  |  +- ognl:ognl:jar:3.3.4:compile
+[INFO] |  |  |  |  \- org.javassist:javassist:jar:3.30.2-GA:compile
+[INFO] |  |  |  +- org.attoparser:attoparser:jar:2.0.7.RELEASE:compile
+[INFO] |  |  |  \- org.unbescape:unbescape:jar:1.1.6.RELEASE:compile
+[INFO] |  |  +- org.elasticsearch.client:elasticsearch-rest-high-level-client:jar:7.17.28:compile
+[INFO] |  |  |  +- org.elasticsearch.plugin:mapper-extras-client:jar:7.17.28:compile
+[INFO] |  |  |  +- org.elasticsearch.plugin:aggs-matrix-stats-client:jar:7.17.28:compile
+[INFO] |  |  |  +- org.elasticsearch.plugin:rank-eval-client:jar:7.17.28:compile
+[INFO] |  |  |  \- org.elasticsearch.plugin:lang-mustache-client:jar:7.17.28:compile
+[INFO] |  |  |     \- com.github.spullara.mustache.java:compiler:jar:0.9.6:compile
+[INFO] |  |  +- org.elasticsearch:elasticsearch-x-content:jar:7.17.28:compile
+[INFO] |  |  |  \- com.fasterxml.jackson.dataformat:jackson-dataformat-smile:jar:2.19.1:compile
+[INFO] |  |  +- org.apache.lucene:lucene-join:jar:8.11.3:compile
+[INFO] |  |  +- org.apache.lucene:lucene-core:jar:8.11.3:compile
+[INFO] |  |  +- org.elasticsearch:elasticsearch:jar:7.17.28:compile
+[INFO] |  |  |  +- org.elasticsearch:elasticsearch-secure-sm:jar:7.17.28:compile
+[INFO] |  |  |  +- org.elasticsearch:elasticsearch-geo:jar:7.17.28:compile
+[INFO] |  |  |  +- org.elasticsearch:elasticsearch-lz4:jar:7.17.28:compile
+[INFO] |  |  |  |  \- org.lz4:lz4-java:jar:1.8.0:compile
+[INFO] |  |  |  +- org.apache.lucene:lucene-analyzers-common:jar:8.11.3:compile
+[INFO] |  |  |  +- org.apache.lucene:lucene-backward-codecs:jar:8.11.3:compile
+[INFO] |  |  |  +- org.apache.lucene:lucene-grouping:jar:8.11.3:compile
+[INFO] |  |  |  +- org.apache.lucene:lucene-highlighter:jar:8.11.3:compile
+[INFO] |  |  |  +- org.apache.lucene:lucene-memory:jar:8.11.3:compile
+[INFO] |  |  |  +- org.apache.lucene:lucene-misc:jar:8.11.3:compile
+[INFO] |  |  |  +- org.apache.lucene:lucene-queries:jar:8.11.3:compile
+[INFO] |  |  |  +- org.apache.lucene:lucene-queryparser:jar:8.11.3:compile
+[INFO] |  |  |  +- org.apache.lucene:lucene-sandbox:jar:8.11.3:compile
+[INFO] |  |  |  +- org.apache.lucene:lucene-spatial3d:jar:8.11.3:compile
+[INFO] |  |  |  +- org.apache.lucene:lucene-suggest:jar:8.11.3:compile
+[INFO] |  |  |  +- org.elasticsearch:elasticsearch-cli:jar:7.17.28:compile
+[INFO] |  |  |  +- com.carrotsearch:hppc:jar:0.8.1:compile
+[INFO] |  |  |  +- com.tdunning:t-digest:jar:3.2:compile
+[INFO] |  |  |  \- org.elasticsearch:elasticsearch-plugin-classloader:jar:7.17.28:runtime
+[INFO] |  |  +- org.elasticsearch.plugin:parent-join-client:jar:7.17.28:compile
+[INFO] |  |  +- org.glassfish:jakarta.json:jar:2.0.1:compile
+[INFO] |  |  +- io.swagger.core.v3:swagger-models-jakarta:jar:2.2.33:compile
+[INFO] |  |  +- jakarta.json:jakarta.json-api:jar:2.1.3:compile
+[INFO] |  |  +- org.apache.commons:commons-collections4:jar:4.5.0:compile
+[INFO] |  |  +- org.apache.httpcomponents:httpcore:jar:4.4.16:compile
+[INFO] |  |  +- com.auth0:auth0:jar:1.45.1:compile
+[INFO] |  |  |  +- com.squareup.okhttp3:okhttp:jar:4.11.0:runtime
+[INFO] |  |  |  +- com.squareup.okio:okio:jar:3.5.0:runtime
+[INFO] |  |  |  |  \- com.squareup.okio:okio-jvm:jar:3.13.0:runtime
+[INFO] |  |  |  \- com.squareup.okhttp3:logging-interceptor:jar:4.11.0:runtime
+[INFO] |  |  +- software.amazon.awssdk:sts:jar:2.31.65:compile
+[INFO] |  |  |  +- software.amazon.awssdk:aws-query-protocol:jar:2.31.65:compile
+[INFO] |  |  |  +- software.amazon.awssdk:protocol-core:jar:2.31.65:compile
+[INFO] |  |  |  +- software.amazon.awssdk:http-auth:jar:2.31.65:compile
+[INFO] |  |  |  +- software.amazon.awssdk:identity-spi:jar:2.31.65:compile
+[INFO] |  |  |  +- software.amazon.awssdk:endpoints-spi:jar:2.31.65:compile
+[INFO] |  |  |  \- software.amazon.awssdk:retries-spi:jar:2.31.65:compile
+[INFO] |  |  \- com.nimbusds:nimbus-jose-jwt:jar:10.3:compile
+[INFO] |  +- io.camunda:operate-common:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- software.amazon.awssdk:auth:jar:2.31.65:compile
+[INFO] |  |  |  +- software.amazon.awssdk:http-auth-aws-eventstream:jar:2.31.65:compile
+[INFO] |  |  |  \- software.amazon.eventstream:eventstream:jar:1.0.1:compile
+[INFO] |  |  +- software.amazon.awssdk:aws-crt-client:jar:2.31.65:compile
+[INFO] |  |  |  +- software.amazon.awssdk.crt:aws-crt:jar:0.38.1:compile
+[INFO] |  |  |  \- software.amazon.awssdk:crt-core:jar:2.31.65:compile
+[INFO] |  |  +- com.amazonaws:aws-java-sdk-sts:jar:1.12.787:compile
+[INFO] |  |  |  \- com.amazonaws:jmespath-java:jar:1.12.787:compile
+[INFO] |  |  +- org.apache.httpcomponents:httpclient:jar:4.5.14:compile
+[INFO] |  |  +- org.apache.httpcomponents:httpasyncclient:jar:4.1.5:compile
+[INFO] |  |  \- net.jodah:failsafe:jar:2.4.4:compile
+[INFO] |  +- io.camunda:webapps-schema:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  +- io.camunda:webapps-backup:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  +- io.camunda:zeebe-elasticsearch-exporter:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  \- org.apache.httpcomponents:httpcore-nio:jar:4.4.16:compile
+[INFO] |  +- io.camunda:camunda-exporter:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  \- io.camunda:zeebe-exporter-common:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  +- io.camunda:camunda-security-core:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- com.jayway.jsonpath:json-path:jar:2.9.0:compile
+[INFO] |  |  \- net.jcip:jcip-annotations:jar:1.0:provided
+[INFO] |  +- io.github.openfeign:feign-core:jar:13.6:compile
+[INFO] |  +- com.fasterxml.jackson.datatype:jackson-datatype-jdk8:jar:2.19.1:compile
+[INFO] |  +- io.github.openfeign:feign-jackson:jar:13.6:compile
+[INFO] |  +- org.agrona:agrona:jar:1.23.1:compile
+[INFO] |  +- io.camunda:zeebe-opensearch-exporter:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  +- software.amazon.awssdk:http-auth-spi:jar:2.31.65:compile
+[INFO] |  |  +- software.amazon.awssdk:http-auth-aws:jar:2.31.65:compile
+[INFO] |  |  |  +- software.amazon.awssdk:checksums-spi:jar:2.31.65:compile
+[INFO] |  |  |  \- software.amazon.awssdk:checksums:jar:2.31.65:compile
+[INFO] |  |  \- io.github.acm19:aws-request-signing-apache-interceptor:jar:3.0.0:compile
+[INFO] |  +- io.camunda:camunda-search-client-connect:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  \- io.camunda:camunda-search-client-plugin:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  +- org.opensearch.client:opensearch-java:jar:2.19.0:compile
+[INFO] |  |  +- commons-logging:commons-logging:jar:1.3.5:compile
+[INFO] |  |  +- org.eclipse.parsson:parsson:jar:1.1.7:compile
+[INFO] |  |  +- jakarta.json.bind:jakarta.json.bind-api:jar:3.0.1:runtime
+[INFO] |  |  \- org.eclipse:yasson:jar:3.0.4:runtime
+[INFO] |  +- com.github.dasniko:testcontainers-keycloak:jar:3.7.0:compile
+[INFO] |  |  +- org.jboss.shrinkwrap:shrinkwrap-api:jar:2.0.0-beta-2:compile
+[INFO] |  |  \- org.jboss.shrinkwrap:shrinkwrap-impl-base:jar:2.0.0-beta-2:compile
+[INFO] |  |     \- org.jboss.shrinkwrap:shrinkwrap-spi:jar:2.0.0-beta-2:compile
+[INFO] |  +- org.keycloak:keycloak-admin-client:jar:26.0.5:compile
+[INFO] |  |  +- org.eclipse.microprofile.openapi:microprofile-openapi-api:jar:3.1.1:compile
+[INFO] |  |  +- org.jboss.resteasy:resteasy-client:jar:6.2.9.Final:compile
+[INFO] |  |  |  +- org.jboss.resteasy:resteasy-client-api:jar:6.2.9.Final:compile
+[INFO] |  |  |  +- org.jboss.resteasy:resteasy-core-spi:jar:6.2.9.Final:compile
+[INFO] |  |  |  \- org.jboss.resteasy:resteasy-core:jar:6.2.9.Final:compile
+[INFO] |  |  |     +- org.jboss:jandex:jar:2.4.5.Final:compile
+[INFO] |  |  |     +- jakarta.activation:jakarta.activation-api:jar:2.1.3:compile
+[INFO] |  |  |     +- org.eclipse.angus:angus-activation:jar:2.0.2:compile
+[INFO] |  |  |     \- com.ibm.async:asyncutil:jar:0.1.0:compile
+[INFO] |  |  +- org.jboss.resteasy:resteasy-multipart-provider:jar:6.2.9.Final:compile
+[INFO] |  |  |  +- jakarta.mail:jakarta.mail-api:jar:2.1.3:compile
+[INFO] |  |  |  +- org.eclipse.angus:angus-mail:jar:2.0.3:compile
+[INFO] |  |  |  +- org.apache.james:apache-mime4j-dom:jar:0.8.11:compile
+[INFO] |  |  |  |  \- org.apache.james:apache-mime4j-core:jar:0.8.11:compile
+[INFO] |  |  |  \- org.apache.james:apache-mime4j-storage:jar:0.8.11:compile
+[INFO] |  |  +- org.jboss.resteasy:resteasy-jackson2-provider:jar:6.2.9.Final:compile
+[INFO] |  |  |  +- com.fasterxml.jackson.jakarta.rs:jackson-jakarta-rs-base:jar:2.19.1:compile
+[INFO] |  |  |  +- com.fasterxml.jackson.jakarta.rs:jackson-jakarta-rs-json-provider:jar:2.19.1:compile
+[INFO] |  |  |  +- com.fasterxml.jackson.module:jackson-module-jakarta-xmlbind-annotations:jar:2.19.1:compile
+[INFO] |  |  |  \- com.github.java-json-tools:json-patch:jar:1.13:compile
+[INFO] |  |  |     +- com.github.java-json-tools:msg-simple:jar:1.2:compile
+[INFO] |  |  |     |  \- com.github.java-json-tools:btf:jar:1.3:compile
+[INFO] |  |  |     \- com.github.java-json-tools:jackson-coreutils:jar:2.0:compile
+[INFO] |  |  \- org.jboss.resteasy:resteasy-jaxb-provider:jar:6.2.9.Final:compile
+[INFO] |  |     +- jakarta.xml.bind:jakarta.xml.bind-api:jar:4.0.2:compile
+[INFO] |  |     +- org.glassfish.jaxb:codemodel:jar:4.0.5:compile
+[INFO] |  |     +- org.glassfish.jaxb:jaxb-core:jar:4.0.5:compile
+[INFO] |  |     +- org.glassfish.jaxb:jaxb-jxc:jar:4.0.5:compile
+[INFO] |  |     +- org.glassfish.jaxb:jaxb-runtime:jar:4.0.5:compile
+[INFO] |  |     +- org.glassfish.jaxb:txw2:jar:4.0.5:compile
+[INFO] |  |     +- org.glassfish.jaxb:jaxb-xjc:jar:4.0.5:compile
+[INFO] |  |     +- org.glassfish.jaxb:xsom:jar:4.0.5:compile
+[INFO] |  |     +- com.sun.istack:istack-commons-runtime:jar:4.1.2:compile
+[INFO] |  |     +- com.sun.istack:istack-commons-tools:jar:4.1.2:compile
+[INFO] |  |     +- com.sun.xml.bind.external:relaxng-datatype:jar:4.0.3:compile
+[INFO] |  |     \- com.sun.xml.bind.external:rngom:jar:4.0.3:compile
+[INFO] |  +- org.keycloak:keycloak-client-common-synced:jar:26.0.5:compile
+[INFO] |  |  +- org.jboss.logging:jboss-logging:jar:3.6.1.Final:compile
+[INFO] |  |  \- org.jboss.logging:commons-logging-jboss-logging:jar:1.0.0.Final:runtime
+[INFO] |  +- jakarta.ws.rs:jakarta.ws.rs-api:jar:3.1.0:compile
+[INFO] |  +- software.amazon.awssdk:apache-client:jar:2.31.65:compile
+[INFO] |  |  +- software.amazon.awssdk:metrics-spi:jar:2.31.65:compile
+[INFO] |  |  +- software.amazon.awssdk:utils:jar:2.31.65:compile
+[INFO] |  |  +- software.amazon.awssdk:annotations:jar:2.31.65:compile
+[INFO] |  |  \- commons-codec:commons-codec:jar:1.18.0:compile
+[INFO] |  +- software.amazon.awssdk:http-client-spi:jar:2.31.65:compile
+[INFO] |  |  \- org.reactivestreams:reactive-streams:jar:1.0.4:compile
+[INFO] |  +- software.amazon.awssdk:regions:jar:2.31.65:compile
+[INFO] |  |  +- software.amazon.awssdk:sdk-core:jar:2.31.65:compile
+[INFO] |  |  |  \- software.amazon.awssdk:retries:jar:2.31.65:compile
+[INFO] |  |  +- software.amazon.awssdk:profiles:jar:2.31.65:compile
+[INFO] |  |  \- software.amazon.awssdk:json-utils:jar:2.31.65:compile
+[INFO] |  |     \- software.amazon.awssdk:third-party-jackson-core:jar:2.31.65:compile
+[INFO] |  \- com.amazonaws:aws-java-sdk-core:jar:1.12.787:compile
+[INFO] |     +- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:jar:2.19.1:compile
+[INFO] |     \- joda-time:joda-time:jar:2.14.0:compile
+[INFO] +- io.camunda:zeebe-qa-util:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  +- co.elastic.clients:elasticsearch-java:jar:8.16.4:compile
+[INFO] |  |  \- io.opentelemetry:opentelemetry-api:jar:1.43.0:compile
+[INFO] |  |     \- io.opentelemetry:opentelemetry-context:jar:1.43.0:compile
+[INFO] |  +- io.camunda:camunda-search-client-elasticsearch:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  +- io.camunda:camunda-search-client-query-transformer:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  +- io.camunda:camunda-search-domain:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  +- io.zeebe:zeebe-test-container:jar:3.6.5:compile
+[INFO] |  |  +- io.camunda:zeebe-client-java:jar:8.4.5:compile
+[INFO] |  |  +- io.camunda:zeebe-protocol-jackson:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  \- io.github.openfeign:feign-slf4j:jar:13.6:compile
+[INFO] |  +- io.github.openfeign:feign-httpclient:jar:13.6:compile
+[INFO] |  +- org.testcontainers:toxiproxy:jar:1.20.6:compile
+[INFO] |  +- eu.rekawek.toxiproxy:toxiproxy-java:jar:2.1.7:compile
+[INFO] |  |  \- com.google.code.gson:gson:jar:2.13.1:compile
+[INFO] |  +- org.springframework:spring-beans:jar:6.2.6:compile
+[INFO] |  +- org.springframework:spring-web:jar:6.2.6:compile
+[INFO] |  +- io.swagger.core.v3:swagger-annotations-jakarta:jar:2.2.33:compile
+[INFO] |  +- com.google.guava:guava:jar:33.4.8-jre:compile
+[INFO] |  |  +- com.google.guava:failureaccess:jar:1.0.3:compile
+[INFO] |  |  +- com.google.guava:listenablefuture:jar:9999.0-empty-to-avoid-conflict-with-guava:compile
+[INFO] |  |  +- org.jspecify:jspecify:jar:1.0.0:compile
+[INFO] |  |  +- com.google.errorprone:error_prone_annotations:jar:2.38.0:provided
+[INFO] |  |  \- com.google.j2objc:j2objc-annotations:jar:3.0.0:compile
+[INFO] |  +- io.camunda:camunda-search-client-opensearch:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  +- io.camunda:tasklist-common:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  \- io.camunda.migration:identity-migration:jar:8.8.0-SNAPSHOT:compile
+[INFO] |     \- io.camunda:zeebe-auth:jar:8.8.0-SNAPSHOT:compile
+[INFO] +- org.testcontainers:testcontainers:jar:1.20.6:compile
+[INFO] |  +- junit:junit:jar:4.13.2:compile
+[INFO] |  |  \- org.hamcrest:hamcrest-core:jar:3.0:compile
+[INFO] |  +- org.apache.commons:commons-compress:jar:1.27.1:compile
+[INFO] |  |  \- commons-io:commons-io:jar:2.19.0:compile
+[INFO] |  +- org.rnorth.duct-tape:duct-tape:jar:1.0.8:compile
+[INFO] |  |  \- org.jetbrains:annotations:jar:26.0.2:compile
+[INFO] |  +- com.github.docker-java:docker-java-api:jar:3.5.1:compile
+[INFO] |  \- com.github.docker-java:docker-java-transport-zerodep:jar:3.4.1:compile
+[INFO] |     +- com.github.docker-java:docker-java-transport:jar:3.4.1:compile
+[INFO] |     \- net.java.dev.jna:jna:jar:5.17.0:compile
+[INFO] +- org.testcontainers:elasticsearch:jar:1.21.1:compile
+[INFO] +- org.junit.jupiter:junit-jupiter-api:jar:5.13.1:compile
+[INFO] |  +- org.opentest4j:opentest4j:jar:1.3.0:compile
+[INFO] |  \- org.apiguardian:apiguardian-api:jar:1.1.2:compile
+[INFO] +- org.junit.platform:junit-platform-commons:jar:1.13.1:compile
+[INFO] +- org.slf4j:slf4j-api:jar:2.0.17:compile
+[INFO] +- io.camunda:camunda-client-java:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  +- com.google.code.findbugs:jsr305:jar:3.0.2:compile
+[INFO] |  +- io.camunda:zeebe-gateway-protocol-impl:jar:8.8.0-SNAPSHOT:compile
+[INFO] |  |  \- io.grpc:grpc-protobuf:jar:1.73.0:compile
+[INFO] |  |     \- io.grpc:grpc-protobuf-lite:jar:1.73.0:runtime
+[INFO] |  +- io.grpc:grpc-stub:jar:1.73.0:compile
+[INFO] |  |  \- org.codehaus.mojo:animal-sniffer-annotations:jar:1.24:compile
+[INFO] |  +- io.grpc:grpc-core:jar:1.73.0:compile
+[INFO] |  |  +- com.google.android:annotations:jar:4.1.1.4:runtime
+[INFO] |  |  +- io.perfmark:perfmark-api:jar:0.27.0:runtime
+[INFO] |  |  \- io.grpc:grpc-context:jar:1.73.0:compile
+[INFO] |  +- io.grpc:grpc-api:jar:1.73.0:compile
+[INFO] |  +- io.grpc:grpc-netty:jar:1.73.0:compile
+[INFO] |  |  +- io.netty:netty-codec-http2:jar:4.1.119.Final:compile
+[INFO] |  |  |  \- io.netty:netty-codec-http:jar:4.1.119.Final:compile
+[INFO] |  |  +- io.netty:netty-handler-proxy:jar:4.1.119.Final:compile
+[INFO] |  |  |  \- io.netty:netty-codec-socks:jar:4.1.119.Final:compile
+[INFO] |  |  \- io.netty:netty-transport-native-unix-common:jar:4.1.119.Final:compile
+[INFO] |  +- io.grpc:grpc-util:jar:1.73.0:runtime
+[INFO] |  +- com.google.protobuf:protobuf-java:jar:4.31.1:compile
+[INFO] |  +- io.netty:netty-tcnative-boringssl-static:jar:2.0.70.Final:compile
+[INFO] |  |  +- io.netty:netty-tcnative-classes:jar:2.0.70.Final:compile
+[INFO] |  |  +- io.netty:netty-tcnative-boringssl-static:jar:linux-x86_64:2.0.70.Final:compile
+[INFO] |  |  +- io.netty:netty-tcnative-boringssl-static:jar:linux-aarch_64:2.0.70.Final:compile
+[INFO] |  |  +- io.netty:netty-tcnative-boringssl-static:jar:osx-x86_64:2.0.70.Final:compile
+[INFO] |  |  +- io.netty:netty-tcnative-boringssl-static:jar:osx-aarch_64:2.0.70.Final:compile
+[INFO] |  |  \- io.netty:netty-tcnative-boringssl-static:jar:windows-x86_64:2.0.70.Final:compile
+[INFO] |  +- io.netty:netty-handler:jar:4.1.119.Final:compile
+[INFO] |  +- io.netty:netty-common:jar:4.1.119.Final:compile
+[INFO] |  +- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:jar:2.19.1:compile
+[INFO] |  \- com.auth0:java-jwt:jar:4.5.0:compile
+[INFO] +- org.assertj:assertj-core:jar:3.27.3:compile
+[INFO] |  \- net.bytebuddy:byte-buddy:jar:1.17.6:compile
+[INFO] +- org.awaitility:awaitility:jar:4.3.0:compile
+[INFO] |  \- org.hamcrest:hamcrest:jar:3.0:compile
+[INFO] +- org.apache.httpcomponents.client5:httpclient5:jar:5.5:compile
+[INFO] |  \- org.apache.httpcomponents.core5:httpcore5-h2:jar:5.3.4:compile
+[INFO] +- org.apache.httpcomponents.core5:httpcore5:jar:5.3.4:compile
+[INFO] +- com.fasterxml.jackson.core:jackson-core:jar:2.19.1:compile
+[INFO] +- com.fasterxml.jackson.core:jackson-databind:jar:2.19.1:compile
+[INFO] +- org.apache.commons:commons-lang3:jar:3.17.0:compile
+[INFO] +- io.camunda:zeebe-bpmn-model:jar:8.8.0-SNAPSHOT:compile
+[INFO] +- org.camunda.bpm.model:camunda-dmn-model:jar:7.22.0:compile
+[INFO] +- org.camunda.bpm.model:camunda-xml-model:jar:7.22.0:compile
+[INFO] +- org.junit.jupiter:junit-jupiter-params:jar:5.13.1:test
+[INFO] +- org.junit.jupiter:junit-jupiter-engine:jar:5.13.1:test
+[INFO] |  \- org.junit.platform:junit-platform-engine:jar:1.13.1:test
+[INFO] +- org.mockito:mockito-core:jar:5.18.0:test
+[INFO] |  +- net.bytebuddy:byte-buddy-agent:jar:1.17.6:test
+[INFO] |  \- org.objenesis:objenesis:jar:3.4:compile
+[INFO] +- org.mockito:mockito-junit-jupiter:jar:5.18.0:test
+[INFO] +- org.apache.logging.log4j:log4j-core:jar:2.24.3:test
+[INFO] |  \- org.apache.logging.log4j:log4j-api:jar:2.24.3:compile
+[INFO] +- org.apache.logging.log4j:log4j-slf4j2-impl:jar:2.24.3:test
+[INFO] +- org.testcontainers:junit-jupiter:jar:1.20.6:test
+[INFO] \- io.camunda:zeebe-build-tools:jar:8.8.0-SNAPSHOT:test
+[INFO]    +- org.apache.maven.surefire:surefire-extensions-api:jar:3.5.3:test
+[INFO]    |  \- org.apache.maven.surefire:surefire-shared-utils:jar:3.5.3:test
+[INFO]    \- org.apache.maven.surefire:maven-surefire-common:jar:3.5.3:test
+[INFO]       +- org.apache.maven.surefire:surefire-api:jar:3.5.3:test
+[INFO]       +- org.apache.maven.surefire:surefire-logger-api:jar:3.5.3:test
+[INFO]       +- org.apache.maven.surefire:surefire-booter:jar:3.5.3:test
+[INFO]       |  \- org.apache.maven.surefire:surefire-extensions-spi:jar:3.5.3:test
+[INFO]       +- org.apache.maven.resolver:maven-resolver-util:jar:1.4.1:test
+[INFO]       |  \- org.apache.maven.resolver:maven-resolver-api:jar:1.4.1:test
+[INFO]       +- org.apache.maven.shared:maven-common-artifact-filters:jar:3.4.0:test
+[INFO]       \- org.codehaus.plexus:plexus-java:jar:1.4.0:test
+[INFO]          +- org.ow2.asm:asm:jar:9.7.1:compile
+[INFO]          \- com.thoughtworks.qdox:qdox:jar:2.2.0:test
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  1.272 s
+[INFO] Finished at: 2025-06-19T09:46:11+02:00
+[INFO] ------------------------------------------------------------------------

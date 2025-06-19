@@ -224,7 +224,8 @@ public class CamundaProcessTestRuntimeBuilder {
   public CamundaProcessTestRuntime build() {
     switch (runtimeMode) {
       case MANAGED:
-        return new CamundaProcessTestContainerRuntime(this, containerFactory);
+        return new CamundaProcessTestEmbeddedRuntime(this);
+      //        return new CamundaProcessTestContainerRuntime(this, containerFactory);
       case REMOTE:
         return new CamundaProcessTestRemoteRuntime(this);
       default:

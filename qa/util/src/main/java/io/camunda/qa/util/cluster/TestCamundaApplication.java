@@ -116,9 +116,10 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     withBean("config", brokerProperties, BrokerBasedProperties.class)
         .withBean("security-config", securityConfig, CamundaSecurityProperties.class)
         .withAdditionalProfile(Profile.BROKER)
-        .withAdditionalProfile(Profile.OPERATE)
-        .withAdditionalProfile(Profile.TASKLIST)
-        .withAdditionalProfile(Profile.IDENTITY)
+        .withAdditionalProfile("consolidated-auth")
+        //        .withAdditionalProfile(Profile.OPERATE)
+        //        .withAdditionalProfile(Profile.TASKLIST)
+        //        .withAdditionalProfile(Profile.IDENTITY)
         .withAdditionalInitializer(new WebappsConfigurationInitializer());
   }
 

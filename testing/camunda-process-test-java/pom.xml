@@ -23,6 +23,28 @@
   <dependencies>
 
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-qa-util</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>io.zeebe</groupId>
+          <artifactId>zeebe-test-container</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-qa-util</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>io.zeebe</groupId>
+          <artifactId>zeebe-test-container</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers</artifactId>
     </dependency>

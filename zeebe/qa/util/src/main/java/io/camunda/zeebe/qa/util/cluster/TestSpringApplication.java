@@ -63,7 +63,7 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     additionalInitializers.add(new ContextOverrideInitializer(beans, propertyOverrides));
     additionalInitializers.add(new HealthConfigurationInitializer());
     this.additionalProfiles = new ArrayList<>(additionalProfiles);
-    this.additionalProfiles.add(Profile.TEST.getId());
+    //    this.additionalProfiles.add(Profile.TEST.getId());
 
     // randomize ports to allow multiple concurrent instances
     overridePropertyIfAbsent("server.port", SocketUtil.getNextAddress().getPort());

@@ -38,11 +38,11 @@ import org.awaitility.core.ConditionTimeoutException;
 
 public class CamundaManagementClient {
 
-  private static final String CLOCK_ENDPOINT = "/actuator/clock";
-  private static final String CLOCK_ADD_ENDPOINT = "/actuator/clock/add";
+  private static final String CLOCK_ENDPOINT = "actuator/clock";
+  private static final String CLOCK_ADD_ENDPOINT = "actuator/clock/add";
 
-  private static final String TOPOLOGY_ENDPOINT = "/v2/topology";
-  private static final String CLUSTER_PURGE_ENDPOINT = "/actuator/cluster/purge";
+  private static final String TOPOLOGY_ENDPOINT = "v2/topology";
+  private static final String CLUSTER_PURGE_ENDPOINT = "actuator/cluster/purge";
 
   private final ObjectMapper objectMapper =
       new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
