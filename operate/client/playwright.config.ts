@@ -54,7 +54,7 @@ const config: PlaywrightTestConfig = {
     },
     {
       name: 'visual',
-      testMatch: /visual\/.*\.spec\.ts/,
+      testMatch: 'visual/**/*.spec.ts',
       use: {...devices['Desktop Chrome']},
       dependencies: ['setup'],
     },
