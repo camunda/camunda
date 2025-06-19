@@ -1,3 +1,7 @@
+# description: Workflow for running CI tests for Optimize. Runs integration tests, schema integrity tests, database upgrade tests, and deploys a SNAPSHOT of Optimize on a push to main
+# test location: /optimize/qa/schema-integrity-tests, /optimize/backend/src/it/java, optimize/upgrade/src/test/java/io/camunda/optimize/upgrade
+# type: CI
+# owner: @camunda/core-features
 name: Optimize CI
 on:
   pull_request:

@@ -1,3 +1,7 @@
+# description: This is a Workflow for running end to end FE tests on Tasklist. Starts an instance of Tasklist and uses that instance to run tests on
+# test location: /tasklist/client/e2e
+# type: CI
+# owner: @camunda/core-features
 ---
 name: Tasklist E2E Tests
 on:

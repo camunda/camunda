@@ -1,4 +1,7 @@
-
+# description: Builds an Optimize docker image and a production .tar.gz, runs tests, and then deploys to artifactory and pushes to docker hub
+# called by: optiimize-ci.yml
+# type: CI
+# owner: @camunda/core-features
 name: Optimize Deploy Artifacts
 on:
   workflow_call:

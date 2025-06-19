@@ -1,3 +1,7 @@
+# description: Runs end to end testbench tests on specified generation, branch, and cluster
+# type: CI
+# called by: zeebe-weekly-e2e.yml
+# owner @camunda/core-features
 name: Run Zeebe E2E Tests
 
 on:

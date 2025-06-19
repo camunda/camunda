@@ -1,6 +1,6 @@
-# This workflow runs our acceptance tests, triggered by our engineering process automation cluster. It runs the test suite against the
-# given branch.
-#
+# description: This workflow runs our acceptance tests, triggered by our engineering process automation cluster. It runs the test suite against the given branch.
+# type: CI
+# owner @camunda/core-features
 name: Zeebe Repo dispatch QA tests
 
 on:

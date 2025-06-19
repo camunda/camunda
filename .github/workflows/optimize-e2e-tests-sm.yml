@@ -1,4 +1,8 @@
-name: Optimize e2e tests sm
+# description: This is a Workflow for running end to end FE tests on Optimize in Self-Managed mode. Starts an instance of Optimize and uses that instance to run tests on
+# test location: /optimize/client/e2e/sm-tests
+# type: CI
+# owner: @camunda/core-features
+name: Optimize E2E Self-Managed
 
 on:
   pull_request:
@@ -37,7 +41,7 @@ permissions:
 
 jobs:
   e2e-tests-sm:
-    name: E2E tests sm
+    name: E2E Self-Managed
     runs-on: ubuntu-latest
     timeout-minutes: 120
 

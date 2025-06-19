@@ -1,5 +1,7 @@
-# This GitHub Actions workflow that is triggered on push to `main` and `stable/**` branch or on any pull request creation
-# and invokes `ci-build-reusable` and `ci-test-reusable` workflows.
+# description: Workflow for running CI tests for Tasklist. Runs a build and Integration Tests
+# test location: /tasklist
+# type: CI
+# owner: @camunda/core-features
 ---
 name: Tasklist CI
 on:

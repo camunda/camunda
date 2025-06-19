@@ -8,7 +8,7 @@
 # in dry-run mode (no changes or artifacts are pushed).
 #
 # This dry-run scheduled workflow is designed to provide an assurance check that the release process will execute as expected when performed live.
-
+# type: Release
 
 name: Operate Release dry-run scheduled
 

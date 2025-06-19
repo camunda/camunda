@@ -1,3 +1,7 @@
+# description: Runs Integration tests on different versions of AWS OS
+# test location: /zeebe/exporters/opensearch-exporter, /search/search-client-connect, /zeebe/exporters/camunda-exporter, /qa/acceptance-tests
+# type: CI
+# owner: @camunda/core-features, @camunda/data-layer
 name: AWS OpenSearch Manual/Scheduled Run Integration Tests
 
 on:

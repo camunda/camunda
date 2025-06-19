@@ -1,6 +1,7 @@
 # description: Runs integration tests CI tests owned by Core Features
 # test location: operate/qa/integration-tests
-# owner: Core Features
+# type: CI
+# owner: @camunda/core-features
 name: "[Legacy] Operate"
 on:
   workflow_dispatch:

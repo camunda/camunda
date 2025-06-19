@@ -1,7 +1,8 @@
+# description: Runs End to End tests on the Core Applications (ie, Tasklist, Operate) This workflow is run manually
+# type: CI
+# owner: @camunda/qa-engineering
 ---
 name: Core Application E2E Tests On Demand
-
-# owner: @camunda/qa-engineering
 
 on:
   workflow_dispatch:

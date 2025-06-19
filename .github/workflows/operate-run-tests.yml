@@ -1,7 +1,8 @@
 # description: Reuseable workflow that executes the passed maven command
 # called by: operate-test-importer.yml, operate-test-backup-restore.yml
 # test location: operate
-# owner: Data Layer
+# type: CI
+# owner: @camunda/data-layer
 ---
 name: Operate Run Tests
 env:

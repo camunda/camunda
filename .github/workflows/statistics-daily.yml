@@ -1,7 +1,7 @@
+# type: CI Helper
+# owner: @camunda/monorepo-devops-team
 ---
 name: Statistics Daily
-
-# owner: @camunda/monorepo-devops-team
 
 on:
   schedule:
