@@ -86,7 +86,7 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
                 "Excluding distribution {} for partition {} as it is currently scaling up.",
                 distributionKey,
                 record.getPartitionId());
-            return false;
+            return true;
           }
 
           final var retriable = RetriableDistribution.from(distributionKey, record);
