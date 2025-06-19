@@ -7,6 +7,8 @@
  */
 package io.camunda.application;
 
+import static io.camunda.zeebe.protocol.impl.record.RecordMetadata.CURRENT_BROKER_VERSION;
+
 import io.camunda.application.StandaloneSchemaManager.SchemaManagerConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.sources.DefaultObjectMapperConfiguration;
 import io.camunda.application.listeners.ApplicationErrorListener;
@@ -16,7 +18,6 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration;
-import io.camunda.zeebe.util.VersionUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -128,7 +129,7 @@ public class StandaloneSchemaManager implements CommandLineRunner {
               .instantiate(ElasticsearchExporterConfiguration.class);
 
       new io.camunda.zeebe.exporter.SchemaManager(elasticsearchConfig)
-          .createSchema(VersionUtil.getVersionLowerCase());
+          .createSchema(CURRENT_BROKER_VERSION.toString());
       operateUserDetailsService.initializeUsers();
     } catch (final Exception e) {
       LOG.error("Failed to create/update schemas", e);
