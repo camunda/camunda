@@ -15,6 +15,7 @@ import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.camunda.zeebe.util.VersionUtil;
 import org.junit.jupiter.api.Test;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.containers.Network;
@@ -35,7 +36,9 @@ final class FaultToleranceIT {
   @Test
   void shouldExportEvenIfOpensearchNotInitiallyReachable() {
     // given
-    final var record = factory.generateRecord(ValueType.VARIABLE);
+    final var record =
+        factory.generateRecord(
+            ValueType.VARIABLE, r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
     config.bulk.size = 1; // force flushing after a single record
     config.index.variable = true;
     config.index.createTemplate = true;
