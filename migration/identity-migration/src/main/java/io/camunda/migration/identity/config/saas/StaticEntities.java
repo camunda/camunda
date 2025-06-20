@@ -123,7 +123,6 @@ public class StaticEntities {
                   PermissionType.READ_USER_TASK,
                   PermissionType.UPDATE_USER_TASK,
                   PermissionType.CREATE_PROCESS_INSTANCE)),
-          // TODO: add document permissions once implemented
           // VISITOR
           new CreateAuthorizationRequest(
               VISITOR_ROLE_ID,
@@ -158,116 +157,120 @@ public class StaticEntities {
               AuthorizationOwnerType.ROLE,
               "*",
               AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
-              Set.of(PermissionType.READ))
-          // TODO: add document permissions once implemented
-          );
+              Set.of(PermissionType.READ)));
 
-  public static final List<CreateAuthorizationRequest> CLIENT_PERMISSIONS =
-      List.of(
-          // ZEEBE
-          new CreateAuthorizationRequest(
-              ZEEBE_CLIENT_ID,
-              AuthorizationOwnerType.CLIENT,
-              "*",
-              AuthorizationResourceType.MESSAGE,
-              Set.of(PermissionType.CREATE)),
-          new CreateAuthorizationRequest(
-              ZEEBE_CLIENT_ID,
-              AuthorizationOwnerType.CLIENT,
-              "*",
-              AuthorizationResourceType.SYSTEM,
-              AuthorizationResourceType.SYSTEM.getSupportedPermissionTypes()),
-          new CreateAuthorizationRequest(
-              ZEEBE_CLIENT_ID,
-              AuthorizationOwnerType.CLIENT,
-              "*",
-              AuthorizationResourceType.RESOURCE,
-              Set.of(
-                  PermissionType.CREATE,
-                  PermissionType.DELETE_FORM,
-                  PermissionType.DELETE_PROCESS,
-                  PermissionType.DELETE_DRD,
-                  PermissionType.DELETE_RESOURCE)),
-          new CreateAuthorizationRequest(
-              ZEEBE_CLIENT_ID,
-              AuthorizationOwnerType.CLIENT,
-              "*",
-              AuthorizationResourceType.PROCESS_DEFINITION,
-              Set.of(
-                  PermissionType.UPDATE_PROCESS_INSTANCE,
-                  PermissionType.UPDATE_USER_TASK,
-                  PermissionType.CREATE_PROCESS_INSTANCE,
-                  PermissionType.DELETE_PROCESS_INSTANCE)),
-          new CreateAuthorizationRequest(
-              ZEEBE_CLIENT_ID,
-              AuthorizationOwnerType.CLIENT,
-              "*",
-              AuthorizationResourceType.DECISION_DEFINITION,
-              Set.of(
-                  PermissionType.CREATE_DECISION_INSTANCE,
-                  PermissionType.DELETE_DECISION_INSTANCE)),
-          new CreateAuthorizationRequest(
-              ZEEBE_CLIENT_ID,
-              AuthorizationOwnerType.CLIENT,
-              "*",
-              AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
-              Set.of(PermissionType.UPDATE, PermissionType.DELETE)),
-          // OPERATE
-          new CreateAuthorizationRequest(
-              OPERATE_CLIENT_ID,
-              AuthorizationOwnerType.CLIENT,
-              "*",
-              AuthorizationResourceType.MESSAGE,
-              Set.of(PermissionType.READ)),
-          new CreateAuthorizationRequest(
-              OPERATE_CLIENT_ID,
-              AuthorizationOwnerType.CLIENT,
-              "*",
-              AuthorizationResourceType.BATCH_OPERATION,
-              Set.of(PermissionType.READ, PermissionType.CREATE, PermissionType.UPDATE)),
-          new CreateAuthorizationRequest(
-              OPERATE_CLIENT_ID,
-              AuthorizationOwnerType.CLIENT,
-              "*",
-              AuthorizationResourceType.RESOURCE,
-              Set.of(PermissionType.READ)),
-          new CreateAuthorizationRequest(
-              OPERATE_CLIENT_ID,
-              AuthorizationOwnerType.CLIENT,
-              "*",
-              AuthorizationResourceType.PROCESS_DEFINITION,
-              Set.of(
-                  PermissionType.READ_PROCESS_DEFINITION,
-                  PermissionType.READ_PROCESS_INSTANCE,
-                  PermissionType.DELETE_PROCESS_INSTANCE)),
-          new CreateAuthorizationRequest(
-              OPERATE_CLIENT_ID,
-              AuthorizationOwnerType.CLIENT,
-              "*",
-              AuthorizationResourceType.DECISION_DEFINITION,
-              Set.of(
-                  PermissionType.READ_DECISION_DEFINITION, PermissionType.READ_DECISION_INSTANCE)),
-          new CreateAuthorizationRequest(
-              OPERATE_CLIENT_ID,
-              AuthorizationOwnerType.CLIENT,
-              "*",
-              AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
-              Set.of(PermissionType.READ)),
-          // TASKLIST
-          new CreateAuthorizationRequest(
-              TASKLIST_CLIENT_ID,
-              AuthorizationOwnerType.CLIENT,
-              "*",
-              AuthorizationResourceType.RESOURCE,
-              Set.of(PermissionType.READ)),
-          new CreateAuthorizationRequest(
-              TASKLIST_CLIENT_ID,
-              AuthorizationOwnerType.CLIENT,
-              "*",
-              AuthorizationResourceType.PROCESS_DEFINITION,
-              Set.of(
-                  // TODO: add document permissions once implemented
-                  PermissionType.READ_PROCESS_DEFINITION,
-                  PermissionType.READ_USER_TASK,
-                  PermissionType.UPDATE_USER_TASK)));
+  public static final List<CreateAuthorizationRequest> getZeebeClientPermissions(
+      final String clientId) {
+    return List.of(
+        new CreateAuthorizationRequest(
+            clientId,
+            AuthorizationOwnerType.CLIENT,
+            "*",
+            AuthorizationResourceType.MESSAGE,
+            Set.of(PermissionType.CREATE)),
+        new CreateAuthorizationRequest(
+            clientId,
+            AuthorizationOwnerType.CLIENT,
+            "*",
+            AuthorizationResourceType.SYSTEM,
+            AuthorizationResourceType.SYSTEM.getSupportedPermissionTypes()),
+        new CreateAuthorizationRequest(
+            clientId,
+            AuthorizationOwnerType.CLIENT,
+            "*",
+            AuthorizationResourceType.RESOURCE,
+            Set.of(
+                PermissionType.CREATE,
+                PermissionType.DELETE_FORM,
+                PermissionType.DELETE_PROCESS,
+                PermissionType.DELETE_DRD,
+                PermissionType.DELETE_RESOURCE)),
+        new CreateAuthorizationRequest(
+            clientId,
+            AuthorizationOwnerType.CLIENT,
+            "*",
+            AuthorizationResourceType.PROCESS_DEFINITION,
+            Set.of(
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                PermissionType.UPDATE_USER_TASK,
+                PermissionType.CREATE_PROCESS_INSTANCE,
+                PermissionType.DELETE_PROCESS_INSTANCE)),
+        new CreateAuthorizationRequest(
+            clientId,
+            AuthorizationOwnerType.CLIENT,
+            "*",
+            AuthorizationResourceType.DECISION_DEFINITION,
+            Set.of(
+                PermissionType.CREATE_DECISION_INSTANCE, PermissionType.DELETE_DECISION_INSTANCE)),
+        new CreateAuthorizationRequest(
+            clientId,
+            AuthorizationOwnerType.CLIENT,
+            "*",
+            AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
+            Set.of(PermissionType.UPDATE, PermissionType.DELETE)));
+  }
+
+  public static final List<CreateAuthorizationRequest> getOperateClientPermissions(
+      final String clientId) {
+    return List.of(
+        new CreateAuthorizationRequest(
+            clientId,
+            AuthorizationOwnerType.CLIENT,
+            "*",
+            AuthorizationResourceType.MESSAGE,
+            Set.of(PermissionType.READ)),
+        new CreateAuthorizationRequest(
+            clientId,
+            AuthorizationOwnerType.CLIENT,
+            "*",
+            AuthorizationResourceType.BATCH_OPERATION,
+            Set.of(PermissionType.READ, PermissionType.CREATE, PermissionType.UPDATE)),
+        new CreateAuthorizationRequest(
+            clientId,
+            AuthorizationOwnerType.CLIENT,
+            "*",
+            AuthorizationResourceType.RESOURCE,
+            Set.of(PermissionType.READ)),
+        new CreateAuthorizationRequest(
+            clientId,
+            AuthorizationOwnerType.CLIENT,
+            "*",
+            AuthorizationResourceType.PROCESS_DEFINITION,
+            Set.of(
+                PermissionType.READ_PROCESS_DEFINITION,
+                PermissionType.READ_PROCESS_INSTANCE,
+                PermissionType.DELETE_PROCESS_INSTANCE)),
+        new CreateAuthorizationRequest(
+            clientId,
+            AuthorizationOwnerType.CLIENT,
+            "*",
+            AuthorizationResourceType.DECISION_DEFINITION,
+            Set.of(PermissionType.READ_DECISION_DEFINITION, PermissionType.READ_DECISION_INSTANCE)),
+        new CreateAuthorizationRequest(
+            clientId,
+            AuthorizationOwnerType.CLIENT,
+            "*",
+            AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
+            Set.of(PermissionType.READ)));
+  }
+
+  public static final List<CreateAuthorizationRequest> getTasklistClientPermissions(
+      final String ownerId) {
+    return List.of(
+        new CreateAuthorizationRequest(
+            ownerId,
+            AuthorizationOwnerType.CLIENT,
+            "*",
+            AuthorizationResourceType.RESOURCE,
+            Set.of(PermissionType.READ)),
+        new CreateAuthorizationRequest(
+            ownerId,
+            AuthorizationOwnerType.CLIENT,
+            "*",
+            AuthorizationResourceType.PROCESS_DEFINITION,
+            Set.of(
+                PermissionType.READ_PROCESS_DEFINITION,
+                PermissionType.READ_USER_TASK,
+                PermissionType.UPDATE_USER_TASK)));
+  }
 }
