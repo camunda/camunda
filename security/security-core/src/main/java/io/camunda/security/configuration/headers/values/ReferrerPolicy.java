@@ -5,13 +5,15 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication;
+package io.camunda.security.configuration.headers.values;
 
-import io.camunda.authentication.entity.OAuthContext;
-import java.util.Map;
-import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
-
-public interface CamundaOAuthPrincipalService {
-  OAuthContext loadOAuthContext(final Map<String, Object> claims)
-      throws OAuth2AuthenticationException;
+public enum ReferrerPolicy {
+  NO_REFERRER,
+  NO_REFERRER_WHEN_DOWNGRADE,
+  SAME_ORIGIN,
+  ORIGIN,
+  STRICT_ORIGIN,
+  ORIGIN_WHEN_CROSS_ORIGIN,
+  STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
+  UNSAFE_URL
 }

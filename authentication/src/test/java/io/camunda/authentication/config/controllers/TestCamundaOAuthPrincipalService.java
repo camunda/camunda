@@ -5,13 +5,16 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication;
+package io.camunda.authentication.config.controllers;
 
+import io.camunda.authentication.CamundaOAuthPrincipalService;
 import io.camunda.authentication.entity.OAuthContext;
 import java.util.Map;
-import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 
-public interface CamundaOAuthPrincipalService {
-  OAuthContext loadOAuthContext(final Map<String, Object> claims)
-      throws OAuth2AuthenticationException;
+public class TestCamundaOAuthPrincipalService implements CamundaOAuthPrincipalService {
+
+  @Override
+  public OAuthContext loadOAuthContext(Map<String, Object> claims) {
+    return new OAuthContext(null, null);
+  }
 }
