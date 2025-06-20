@@ -18,17 +18,12 @@ import static io.camunda.it.migration.IdentityMigrationTestUtil.CAMUNDA_IDENTITY
 import static io.camunda.it.migration.IdentityMigrationTestUtil.IDENTITY_CLIENT;
 import static io.camunda.it.migration.IdentityMigrationTestUtil.IDENTITY_CLIENT_SECRET;
 import static io.camunda.it.migration.IdentityMigrationTestUtil.externalIdentityUrl;
-import static io.camunda.migration.identity.config.saas.StaticEntities.CLIENT_IDS;
-import static io.camunda.migration.identity.config.saas.StaticEntities.CLIENT_PERMISSIONS;
 import static io.camunda.migration.identity.config.saas.StaticEntities.DEVELOPER_ROLE_ID;
-import static io.camunda.migration.identity.config.saas.StaticEntities.OPERATE_CLIENT_ID;
 import static io.camunda.migration.identity.config.saas.StaticEntities.OPERATIONS_ENGINEER_ROLE_ID;
 import static io.camunda.migration.identity.config.saas.StaticEntities.ROLE_IDS;
 import static io.camunda.migration.identity.config.saas.StaticEntities.ROLE_PERMISSIONS;
-import static io.camunda.migration.identity.config.saas.StaticEntities.TASKLIST_CLIENT_ID;
 import static io.camunda.migration.identity.config.saas.StaticEntities.TASK_USER_ROLE_ID;
 import static io.camunda.migration.identity.config.saas.StaticEntities.VISITOR_ROLE_ID;
-import static io.camunda.migration.identity.config.saas.StaticEntities.ZEEBE_CLIENT_ID;
 import static io.camunda.zeebe.qa.util.cluster.TestZeebePort.CLUSTER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -259,8 +254,7 @@ public class SaaSIdentityMigrationIT {
                       .map(AuthorizationResponse::ownerId)
                       .filter(ROLE_IDS::contains)
                       .toList();
-              assertThat(migratedAuthorizations.size())
-                  .isEqualTo(ROLE_PERMISSIONS.size());
+              assertThat(migratedAuthorizations.size()).isEqualTo(ROLE_PERMISSIONS.size());
             });
 
     // then
@@ -460,6 +454,102 @@ public class SaaSIdentityMigrationIT {
                     PermissionType.DELETE_DECISION_INSTANCE)));
   }
 
+  @Test
+  public void canMigrateClients() throws IOException, URISyntaxException, InterruptedException {
+    // when
+    migration.start();
+    final var restAddress = client.getConfiguration().getRestAddress().toString();
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(10))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var authorizations =
+                  searchAuthorizations(restAddress).items().stream()
+                      .map(AuthorizationResponse::ownerType)
+                      .filter(OwnerType.CLIENT::equals)
+                      .toList();
+              assertThat(authorizations.size()).isEqualTo(9);
+            });
+
+    // then
+    assertThat(migration.getExitCode()).isEqualTo(0);
+
+    final var authorizations = searchAuthorizations(restAddress);
+    assertThat(authorizations.items())
+        .extracting(
+            AuthorizationResponse::ownerId,
+            AuthorizationResponse::ownerType,
+            AuthorizationResponse::resourceType,
+            AuthorizationResponse::permissionTypes)
+        .contains(
+            tuple(
+                "client123",
+                OwnerType.CLIENT,
+                ResourceType.MESSAGE,
+                Set.of(PermissionType.CREATE, PermissionType.READ)),
+            tuple(
+                "client123",
+                OwnerType.CLIENT,
+                ResourceType.SYSTEM,
+                Set.of(PermissionType.UPDATE, PermissionType.READ)),
+            tuple(
+                "client123",
+                OwnerType.CLIENT,
+                ResourceType.RESOURCE,
+                Set.of(
+                    PermissionType.CREATE,
+                    PermissionType.DELETE_FORM,
+                    PermissionType.DELETE_PROCESS,
+                    PermissionType.DELETE_DRD,
+                    PermissionType.DELETE_RESOURCE,
+                    PermissionType.READ)),
+            tuple(
+                "client123",
+                OwnerType.CLIENT,
+                ResourceType.PROCESS_DEFINITION,
+                Set.of(
+                    PermissionType.UPDATE_PROCESS_INSTANCE,
+                    PermissionType.UPDATE_USER_TASK,
+                    PermissionType.CREATE_PROCESS_INSTANCE,
+                    PermissionType.DELETE_PROCESS_INSTANCE,
+                    PermissionType.READ_PROCESS_DEFINITION,
+                    PermissionType.READ_PROCESS_INSTANCE)),
+            tuple(
+                "client123",
+                OwnerType.CLIENT,
+                ResourceType.DECISION_DEFINITION,
+                Set.of(
+                    PermissionType.CREATE_DECISION_INSTANCE,
+                    PermissionType.DELETE_DECISION_INSTANCE,
+                    PermissionType.READ_DECISION_DEFINITION,
+                    PermissionType.READ_DECISION_INSTANCE)),
+            tuple(
+                "client123",
+                OwnerType.CLIENT,
+                ResourceType.DECISION_REQUIREMENTS_DEFINITION,
+                Set.of(PermissionType.UPDATE, PermissionType.DELETE, PermissionType.READ)),
+            tuple(
+                "client123",
+                OwnerType.CLIENT,
+                ResourceType.BATCH_OPERATION,
+                Set.of(PermissionType.READ, PermissionType.CREATE, PermissionType.UPDATE)),
+            tuple(
+                "tasklist-client",
+                OwnerType.CLIENT,
+                ResourceType.RESOURCE,
+                Set.of(PermissionType.READ)),
+            tuple(
+                "tasklist-client",
+                OwnerType.CLIENT,
+                ResourceType.PROCESS_DEFINITION,
+                Set.of(
+                    PermissionType.READ_PROCESS_DEFINITION,
+                    PermissionType.READ_USER_TASK,
+                    PermissionType.UPDATE_USER_TASK)));
+  }
+
   private void createAuthorizations() throws IOException, InterruptedException, URISyntaxException {
     final HttpRequest request1 =
         HttpRequest.newBuilder()
@@ -636,7 +726,12 @@ public class SaaSIdentityMigrationIT {
               "name": "console-client",
               "clientId": "client123",
               "permissions": ["Operate", "Zeebe"]
-            }
+            },
+            {
+              "name": "Tasklist",
+              "clientId": "tasklist-client",
+              "permissions": ["Tasklist"]
+             }
           ]
         }
         """;
