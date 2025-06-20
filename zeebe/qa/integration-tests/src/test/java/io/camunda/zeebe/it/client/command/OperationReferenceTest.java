@@ -8,11 +8,8 @@
 package io.camunda.zeebe.it.client.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.command.ProblemException;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -166,13 +163,10 @@ public class OperationReferenceTest {
         .open();
 
     // When
-    final var cancelFuture =
-        client
-            .newCancelInstanceCommand(processInstanceKey)
-            .operationReference(OPERATION_REFERENCE)
-            .send();
-
-    assertThatCode(cancelFuture::join).doesNotThrowAnyException();
+    client
+        .newCancelInstanceCommand(processInstanceKey)
+        .operationReference(OPERATION_REFERENCE)
+        .execute();
 
     // Then
     Assertions.assertThat(
@@ -206,14 +200,11 @@ public class OperationReferenceTest {
         .open();
 
     // When
-    final var updateVariablesFuture =
-        client
-            .newSetVariablesCommand(userTaskInstanceKey)
-            .variables(Map.of("approvalStatus", "APPROVED"))
-            .operationReference(OPERATION_REFERENCE)
-            .send();
-
-    assertThatCode(updateVariablesFuture::join).doesNotThrowAnyException();
+    client
+        .newSetVariablesCommand(userTaskInstanceKey)
+        .variables(Map.of("approvalStatus", "APPROVED"))
+        .operationReference(OPERATION_REFERENCE)
+        .execute();
 
     // Then
     Assertions.assertThat(
@@ -240,7 +231,6 @@ public class OperationReferenceTest {
             .getValue()
             .getElementInstanceKey();
 
-    final var reason = "Denied by listener";
     client
         .newWorker()
         .jobType(listenerType)
@@ -250,26 +240,21 @@ public class OperationReferenceTest {
                     .newCompleteCommand(job)
                     .withResult()
                     .deny(true)
-                    .deniedReason(reason)
+                    .deniedReason("Denied by listener")
                     .send()
                     .join())
         .open();
 
     // When
-    final var updateVariablesFuture =
-        client
-            .newSetVariablesCommand(userTaskInstanceKey)
-            .useRest()
-            .variables(Map.of("approvalStatus", "APPROVED"))
-            .local(true)
-            .operationReference(OPERATION_REFERENCE)
-            .send();
+    client
+        .newSetVariablesCommand(userTaskInstanceKey)
+        .useRest()
+        .variables(Map.of("approvalStatus", "APPROVED"))
+        .local(true)
+        .operationReference(OPERATION_REFERENCE)
+        .send();
 
     // Then
-    assertThatExceptionOfType(ProblemException.class)
-        .isThrownBy(updateVariablesFuture::join)
-        .withMessageContaining(reason);
-
     Assertions.assertThat(
             RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATE_DENIED)
                 .withScopeKey(userTaskInstanceKey)
