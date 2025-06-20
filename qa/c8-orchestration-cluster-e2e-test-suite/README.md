@@ -153,7 +153,7 @@ This test suite follows the **Page Object Model (POM)** pattern for reusability 
 
 - Results posted to Slack channel `#c8-orchestration-cluster-e2e-test-results` with TestRail links
 
-- Failures are reviewed by the DRI
+- Failures are reviewed by the `qa-automated-release-manager`
 
 ---
 
@@ -171,7 +171,7 @@ We welcome contributions! To contribute:
 
 - Follow the POM pattern
 - Test cases must involve at least one core component
-- Reviewer must be the DRI and a product team developer
+- Reviewer must be the someone from the Test Automation Team and a product team developer
 
 ### Project Board
 
