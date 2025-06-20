@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTask;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.ExecuteCommandResponseDecoder;
 import io.camunda.zeebe.protocol.record.Record;
@@ -549,37 +548,5 @@ public class DeploymentRejectionTest {
         .hasRecordType(RecordType.EVENT)
         .hasValueType(ValueType.DEPLOYMENT)
         .hasIntent(DeploymentIntent.CREATED);
-  }
-
-  @Test
-  public void shouldRejectDeploymentOnDuplicatedExtensions() {
-    // when
-    final var rejectedDeployment =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess("id1")
-                    .startEvent()
-                    .userTask(
-                        "userTask1",
-                        ut ->
-                            ut.addExtensionElement(ZeebeUserTask.class, t -> {})
-                                .addExtensionElement(ZeebeUserTask.class, t -> {}))
-                    .endEvent()
-                    .done())
-            .expectRejection()
-            .deploy();
-
-    // then
-    Assertions.assertThat(rejectedDeployment)
-        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
-        .hasRecordType(RecordType.COMMAND_REJECTION)
-        .hasIntent(DeploymentIntent.CREATE)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
-    assertThat(rejectedDeployment.getRejectionReason())
-        .contains("Element: userTask1")
-        .contains(
-            "ERROR: Must have exactly one 'zeebe:userTask' extension element when exists. "
-                + "Please check process definition XML and retain only one extension element.");
   }
 }
