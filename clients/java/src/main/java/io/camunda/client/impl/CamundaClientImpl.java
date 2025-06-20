@@ -128,6 +128,7 @@ import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
 import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
 import io.camunda.client.api.search.request.GroupsByRoleSearchRequest;
+import io.camunda.client.api.search.request.IncidentByProcessInstanceKeySearchRequest;
 import io.camunda.client.api.search.request.IncidentSearchRequest;
 import io.camunda.client.api.search.request.MappingsByRoleSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
@@ -239,6 +240,7 @@ import io.camunda.client.impl.search.request.DecisionRequirementsSearchRequestIm
 import io.camunda.client.impl.search.request.ElementInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.GroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.GroupsByRoleSearchRequestImpl;
+import io.camunda.client.impl.search.request.IncidentByProcessInstanceKeySearchRequestImpl;
 import io.camunda.client.impl.search.request.IncidentSearchRequestImpl;
 import io.camunda.client.impl.search.request.MappingsByGroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.MappingsByRoleSearchRequestImpl;
@@ -1203,6 +1205,13 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public RolesByGroupSearchRequest newRolesByGroupSearchRequest(final String groupId) {
     return new RolesByGroupSearchRequestImpl(httpClient, jsonMapper, groupId);
+  }
+
+  @Override
+  public IncidentByProcessInstanceKeySearchRequest newIncidentSearchByProcessInstanceKey(
+      final long processInstanceKey) {
+    return new IncidentByProcessInstanceKeySearchRequestImpl(
+        httpClient, jsonMapper, processInstanceKey);
   }
 
   @Override
