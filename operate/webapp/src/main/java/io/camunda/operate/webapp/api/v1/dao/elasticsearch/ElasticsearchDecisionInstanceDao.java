@@ -192,7 +192,8 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
             .setDecisionVersion((Integer) searchHitAsMap.get(DecisionInstance.DECISION_VERSION))
             .setDecisionType(
                 DecisionType.fromString(
-                    (String) searchHitAsMap.get(DecisionInstance.DECISION_TYPE)));
+                    (String) searchHitAsMap.get(DecisionInstance.DECISION_TYPE)))
+            .setResult((String) searchHitAsMap.get(DecisionInstance.RESULT));
 
     final String evaluationFailureMessage =
         (String) searchHitAsMap.get(DecisionInstance.EVALUATION_FAILURE_MESSAGE);
@@ -203,7 +204,6 @@ public class ElasticsearchDecisionInstanceDao extends ElasticsearchDao<DecisionI
     } else {
       decisionInstance.setEvaluationFailure(evaluationFailureMessage);
     }
-
     return decisionInstance;
   }
 }
