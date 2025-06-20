@@ -129,8 +129,6 @@ public class BackupServiceImpl implements BackupService {
     final var missingIndicesList = new ArrayList<String>();
     for (final var indices : backupPriorities.indicesSplitBySnapshot().toList()) {
       final var foundIndices = repository.checkAllIndicesExist(indices.allIndices());
-      final var missingNonRequiredIndices =
-          indices.skippableIndices().stream().filter(idx -> !foundIndices.contains(idx)).toList();
       final var missingRequiredIndices =
           indices.requiredIndices().stream().filter(idx -> !foundIndices.contains(idx)).toList();
       if (!missingRequiredIndices.isEmpty()) {
@@ -142,7 +140,7 @@ public class BackupServiceImpl implements BackupService {
       }
       // skip this part if there is no index, but they are not required
       if (!foundIndices.isEmpty()) {
-        list.add(indices.removeSkippableIndices(missingNonRequiredIndices));
+        list.add(indices);
       }
     }
     if (!missingIndicesList.isEmpty()) {

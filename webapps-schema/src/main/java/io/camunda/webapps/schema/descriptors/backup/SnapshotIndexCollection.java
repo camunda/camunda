@@ -35,15 +35,6 @@ public record SnapshotIndexCollection(List<String> requiredIndices, List<String>
         Collections.unmodifiableList(required), Collections.unmodifiableList(skippable));
   }
 
-  public SnapshotIndexCollection removeSkippableIndices(final Collection<String> indicesToRemove) {
-    if (indicesToRemove.isEmpty()) {
-      return this;
-    }
-    return new SnapshotIndexCollection(
-        requiredIndices,
-        skippableIndices.stream().filter(idx -> !indicesToRemove.contains(idx)).toList());
-  }
-
   public List<String> allIndices() {
     return Stream.concat(requiredIndices.stream(), skippableIndices.stream())
         .collect(Collectors.toList());

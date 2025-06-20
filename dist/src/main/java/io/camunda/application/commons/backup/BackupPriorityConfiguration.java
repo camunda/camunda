@@ -108,9 +108,12 @@ public class BackupPriorityConfiguration {
   @Bean
   public BackupPriorities backupPriorities() {
     final var indexPrefix = getIndexPrefix();
-
     final boolean isElasticsearch = getIsElasticsearch();
+    return getBackupPriorities(indexPrefix, isElasticsearch);
+  }
 
+  public static BackupPriorities getBackupPriorities(
+      final String indexPrefix, final boolean isElasticsearch) {
     final List<Prio1Backup> prio1 =
         List.of(
             // OPERATE

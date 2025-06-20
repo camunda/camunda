@@ -77,4 +77,20 @@ public class GetBackupStateResponseDetailDto {
         && Objects.equals(startTime, that.startTime)
         && Arrays.equals(failures, that.failures);
   }
+
+  @Override
+  public String toString() {
+    return "GetBackupStateResponseDetailDto{"
+        + "snapshotName='"
+        + snapshotName
+        + '\''
+        + ", state='"
+        + state
+        + '\''
+        + ", startTime="
+        + startTime
+        + ", failures="
+        + Arrays.toString(failures)
+        + '}';
+  }
 }
