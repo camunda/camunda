@@ -344,8 +344,9 @@ public final class BpmnUserTaskBehavior {
   }
 
   private void rejectOngoingRequestsForUserTaskBeforeCancellation(final UserTaskRecord userTask) {
+    final long userTaskElementInstanceKey = userTask.getElementInstanceKey();
     asyncRequestState
-        .findAllRequestsByScopeKey(userTask.getElementInstanceKey())
+        .findAllRequestsByScopeKey(userTaskElementInstanceKey)
         .forEach(
             request -> {
               switch (request.valueType()) {
@@ -361,7 +362,7 @@ public final class BpmnUserTaskBehavior {
                         request.requestStreamId());
                 case VARIABLE_DOCUMENT ->
                     variableState
-                        .findVariableDocumentState(userTask.getElementInstanceKey())
+                        .findVariableDocumentState(userTaskElementInstanceKey)
                         .ifPresent(
                             variableDocument -> {
                               responseWriter.writeRejection(
@@ -374,9 +375,15 @@ public final class BpmnUserTaskBehavior {
                                   request.requestId(),
                                   request.requestStreamId());
                             });
-                default -> {
-                  // TODO: log warning
-                }
+                default ->
+                    LOGGER.debug(
+                        "No rejection logic implemented for ongoing request with valueType={} and intent={} "
+                            + "triggered against user task (key={}, elementInstanceKey={}). "
+                            + "Async request metadata will be cleaned up, but the request will not be explicitly rejected.",
+                        request.valueType(),
+                        request.intent(),
+                        userTask.getUserTaskKey(),
+                        userTaskElementInstanceKey);
               }
 
               stateWriter.appendFollowUpEvent(
