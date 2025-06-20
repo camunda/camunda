@@ -18,7 +18,7 @@
 import React from 'react';
 import {Field, useForm} from 'react-final-form';
 import {Checkbox as CarbonCheckbox, Stack} from '@carbon/react';
-import {Icon} from '@carbon/react/icons';
+import {CarbonIconType as Icon} from '@carbon/react/icons';
 import {Checkbox} from 'modules/components/Checkbox';
 import {Group} from './styled';
 

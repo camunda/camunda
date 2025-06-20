@@ -15,8 +15,12 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {Error, Tools, RetryFailed} from '@carbon/react/icons';
-import {Icon} from 'carbon-components-react';
+import {
+  CarbonIconType as Icon,
+  Error,
+  Tools,
+  RetryFailed,
+} from '@carbon/react/icons';
 import {Button, ButtonSize} from '@carbon/react';
 
 type ItemProps = {
@@ -33,7 +37,7 @@ type ItemProps = {
 const TYPE_DETAILS: Readonly<
   Record<
     ItemProps['type'],
-    {icon?: typeof Icon; testId: string; isDangerous?: boolean; label?: string}
+    {icon?: Icon; testId: string; isDangerous?: boolean; label?: string}
   >
 > = {
   RESOLVE_INCIDENT: {icon: RetryFailed, testId: 'retry-operation'},
