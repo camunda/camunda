@@ -906,6 +906,7 @@ public class SchemaManagerIT {
             newPrefix + "-operate-batch-operation-1.0.0_",
             newPrefix + "-operate-decision-8.3.0_",
             newPrefix + "-operate-decision-instance-8.3.0_",
+            newPrefix + "-camunda-authorized-clients-8.8.0_",
             newPrefix + "-operate-decision-requirements-8.3.0_",
             newPrefix + "-operate-event-8.3.0_",
             newPrefix + "-operate-flownode-instance-8.3.1_",
