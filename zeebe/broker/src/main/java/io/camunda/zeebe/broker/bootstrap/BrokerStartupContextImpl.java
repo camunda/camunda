@@ -15,6 +15,7 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -81,6 +82,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private JobStreamService jobStreamService;
   private ClusterConfigurationService clusterConfigurationService;
   private SnapshotApiRequestHandler snapshotApiRequestHandler;
+  private UnifiedConfiguration unifiedConfiguration;
 
   public BrokerStartupContextImpl(
       final BrokerInfo brokerInfo,
@@ -99,7 +101,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
-      final SearchClientsProxy searchClientsProxy) {
+      final SearchClientsProxy searchClientsProxy,
+      final UnifiedConfiguration unifiedConfiguration) {
 
     this.brokerInfo = requireNonNull(brokerInfo);
     this.configuration = requireNonNull(configuration);
@@ -117,6 +120,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
     this.searchClientsProxy = searchClientsProxy;
+    this.unifiedConfiguration = unifiedConfiguration;
     partitionListeners.addAll(additionalPartitionListeners);
   }
 
@@ -135,7 +139,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final SecurityConfiguration securityConfiguration,
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
-      final JwtDecoder jwtDecoder) {
+      final JwtDecoder jwtDecoder,
+      final UnifiedConfiguration unifiedConfiguration) {
 
     this(
         brokerInfo,
@@ -154,7 +159,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
         userServices,
         passwordEncoder,
         jwtDecoder,
-        null);
+        null,
+        unifiedConfiguration);
   }
 
   @Override
@@ -401,5 +407,14 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   public void setSnapshotApiRequestHandler(
       final SnapshotApiRequestHandler snapshotApiRequestHandler) {
     this.snapshotApiRequestHandler = snapshotApiRequestHandler;
+  }
+
+  public UnifiedConfiguration getUnifiedConfiguration() {
+    return unifiedConfiguration;
+  }
+
+  @Override
+  public void setUnifiedConfiguration(final UnifiedConfiguration unifiedConfiguration) {
+    this.unifiedConfiguration = unifiedConfiguration;
   }
 }

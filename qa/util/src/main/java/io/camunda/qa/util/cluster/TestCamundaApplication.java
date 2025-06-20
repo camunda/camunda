@@ -25,6 +25,7 @@ import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.tasklist.TasklistModuleConfiguration;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -41,6 +42,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,6 +60,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TestCamundaApplication.class);
   private final BrokerBasedProperties brokerProperties;
+  private final UnifiedConfiguration unifiedConfiguration;
   private final CamundaSecurityProperties securityConfig;
 
   public TestCamundaApplication() {
@@ -69,6 +72,8 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
         WebappsModuleConfiguration.class,
         BrokerModuleConfiguration.class,
         IndexTemplateDescriptorsConfigurator.class);
+
+    unifiedConfiguration = new UnifiedConfiguration();
 
     brokerProperties = new BrokerBasedProperties();
 
@@ -240,8 +245,9 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
    * started, but likely has no effect until it's restarted.
    */
   @Override
-  public TestCamundaApplication withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
-    modifier.accept(brokerProperties);
+  public TestCamundaApplication withBrokerConfig(
+      final BiConsumer<BrokerBasedProperties, UnifiedConfiguration> modifier) {
+    modifier.accept(brokerProperties, unifiedConfiguration);
     return this;
   }
 
@@ -259,6 +265,11 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
   @Override
   public BrokerBasedProperties brokerConfig() {
     return brokerProperties;
+  }
+
+  @Override
+  public UnifiedConfiguration getUnifiedConfiguration() {
+    return unifiedConfiguration;
   }
 
   @Override

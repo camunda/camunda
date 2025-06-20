@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.backup.s3.S3BackupConfig;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
@@ -94,7 +95,8 @@ class BackupMultiPartitionTest {
           .withBrokerConfig(b -> b.withBrokerConfig(this::configureBackupStore))
           .build();
 
-  private void configureBackupStore(final BrokerCfg config) {
+  private void configureBackupStore(
+      final BrokerCfg config, final UnifiedConfiguration _unifiedConfiguration) {
 
     final var backupConfig = config.getData().getBackup();
     backupConfig.setStore(BackupStoreType.S3);
@@ -231,7 +233,9 @@ class BackupMultiPartitionTest {
   }
 
   private void deleteAndRestore(final TestStandaloneBroker broker, final int backupId) {
-    try (final var restore = new TestRestoreApp(broker.brokerConfig()).withBackupId(backupId)) {
+    try (final var restore =
+        new TestRestoreApp(broker.brokerConfig(),  broker.brokerConfig().getUnifiedConfiguration())
+            .withBackupId(backupId)) {
       FileUtil.deleteFolderIfExists(broker.bean(WorkingDirectory.class).path());
       restore.start();
     } catch (final IOException e) {

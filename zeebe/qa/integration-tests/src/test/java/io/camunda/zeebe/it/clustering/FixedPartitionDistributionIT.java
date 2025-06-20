@@ -60,7 +60,8 @@ final class FixedPartitionDistributionIT {
 
   private void configureBroker(final TestStandaloneBroker broker) {
     broker.withBrokerConfig(
-        cfg -> {
+        (cfg, unifiedConfiguration) -> {
+          // TODO: Migrate this portion of cfg to unified configuration
           cfg.getCluster().getRaft().setEnablePriorityElection(false);
 
           final var partitioning = cfg.getExperimental().getPartitioning();

@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.partitioning;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl.PartitionAlreadyExistsException;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -21,10 +22,12 @@ import org.junit.Test;
 
 public final class PartitionBootstrapTest {
 
+  UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
+
   @Rule
   public final EmbeddedBrokerRule brokerRule =
       new EmbeddedBrokerRule(
-          brokerCfg -> {
+          unifiedConfiguration, brokerCfg -> {
             final var clusterCfg = brokerCfg.getCluster();
             clusterCfg.setClusterSize(1);
             clusterCfg.setNodeId(0);

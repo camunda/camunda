@@ -10,6 +10,7 @@ package io.camunda.zeebe.it.client.command;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.it.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.it.util.GrpcClientRule;
@@ -30,8 +31,10 @@ import org.springframework.util.unit.DataSize;
 
 public final class CallActivityTest {
 
+  private static final UnifiedConfiguration UNIFIED_CONFIGURATION = new UnifiedConfiguration();
   private static final EmbeddedBrokerRule BROKER_RULE =
       new EmbeddedBrokerRule(
+          UNIFIED_CONFIGURATION,
           cfg -> {
             cfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(100));
             cfg.getProcessing().setMaxCommandsInBatch(1);

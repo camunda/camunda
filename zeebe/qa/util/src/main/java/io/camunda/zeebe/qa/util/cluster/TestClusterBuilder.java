@@ -338,7 +338,7 @@ public final class TestClusterBuilder {
     final TestStandaloneBroker broker =
         new TestStandaloneBroker()
             .withBrokerConfig(
-                cfg -> {
+                (cfg, unifiedConfiguration) -> {
                   final var cluster = cfg.getCluster();
                   cluster.setNodeId(index);
                   cluster.setPartitionsCount(partitionsCount);
@@ -346,7 +346,7 @@ public final class TestClusterBuilder {
                   cluster.setClusterSize(brokersCount);
                   cluster.setClusterName(name);
                 })
-            .withBrokerConfig(cfg -> cfg.getGateway().setEnable(useEmbeddedGateway))
+            .withBrokerConfig((cfg, unifiedConfiguration) -> cfg.getGateway().setEnable(useEmbeddedGateway))
             .withRecordingExporter(useRecordingExporter);
     return broker;
   }

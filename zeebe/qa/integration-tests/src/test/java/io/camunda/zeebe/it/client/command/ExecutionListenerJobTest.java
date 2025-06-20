@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.it.util.RecordingJobHandler;
@@ -30,7 +31,9 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class ExecutionListenerJobTest {
-  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
+  private static final UnifiedConfiguration UNIFIED_CONFIGURATION = new UnifiedConfiguration();
+  private static final EmbeddedBrokerRule BROKER_RULE =
+      new EmbeddedBrokerRule(UNIFIED_CONFIGURATION);
   private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
 
   @ClassRule

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
@@ -50,7 +51,8 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
             brokerStartupContext.getMeterRegistry(),
             brokerStartupContext.getBrokerClient(),
             brokerStartupContext.getSecurityConfiguration(),
-            brokerStartupContext.getSearchClientsProxy());
+            brokerStartupContext.getSearchClientsProxy(),
+            brokerStartupContext.getUnifiedConfiguration());
     concurrencyControl.run(
         () -> {
           try {

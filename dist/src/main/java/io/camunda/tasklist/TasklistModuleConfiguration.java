@@ -27,7 +27,10 @@ import org.springframework.context.annotation.Profile;
  */
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(
-    basePackages = "io.camunda.tasklist",
+    basePackages = {
+        "io.camunda.tasklist",
+        "io.camunda.unifiedconfig"
+    },
     excludeFilters = {
       @ComponentScan.Filter(
           type = FilterType.REGEX,

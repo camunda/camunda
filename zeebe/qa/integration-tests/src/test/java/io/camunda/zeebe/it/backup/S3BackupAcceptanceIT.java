@@ -107,7 +107,7 @@ final class S3BackupAcceptanceIT implements BackupAcceptance {
 
   private void configureBroker(final TestStandaloneBroker broker) {
     broker.withBrokerConfig(
-        cfg -> {
+        (cfg, _unifiedConfiguration) -> {
           final var backup = cfg.getData().getBackup();
           final var s3 = backup.getS3();
 

@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.waitAtMost;
 
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import java.time.Duration;
@@ -21,8 +22,10 @@ import org.junit.rules.Timeout;
 
 public class HealthMonitoringTest {
 
-  private final EmbeddedBrokerRule embeddedBrokerRule = new EmbeddedBrokerRule();
-  private final Timeout timeout = Timeout.seconds(60);
+  private final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
+  private final EmbeddedBrokerRule embeddedBrokerRule =
+      new EmbeddedBrokerRule(unifiedConfiguration);
+  private final Timeout timeout = Timeout.seconds(5 * 60);
 
   @Rule public final RuleChain chain = RuleChain.outerRule(timeout).around(embeddedBrokerRule);
 

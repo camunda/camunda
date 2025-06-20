@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.partitions;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
@@ -133,6 +134,10 @@ public interface PartitionTransitionContext extends PartitionContext {
   BackupStore getBackupStore();
 
   void setBackupStore(BackupStore backupStore);
+
+  UnifiedConfiguration getUnifiedConfiguration();
+
+  void setUnifiedConfiguration(UnifiedConfiguration unifiedConfiguration);
 
   /**
    * Returns a meter registry which already has some common tags for the partition (so you can omit

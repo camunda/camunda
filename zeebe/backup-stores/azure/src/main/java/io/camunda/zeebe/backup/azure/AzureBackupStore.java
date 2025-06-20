@@ -12,6 +12,7 @@ import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.common.StorageSharedKeyCredential;
+import io.camunda.unifiedconfig.AzureStore;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
@@ -52,64 +53,65 @@ public final class AzureBackupStore implements BackupStore {
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
 
-  AzureBackupStore(final AzureBackupConfig config) {
-    this(config, buildClient(config));
+  public AzureBackupStore(final AzureStore azureStoreConfig) {
+    this(azureStoreConfig, buildClient(azureStoreConfig));
   }
 
-  AzureBackupStore(final AzureBackupConfig config, final BlobServiceClient client) {
+  public AzureBackupStore(final AzureStore azureStoreConfig, final BlobServiceClient client) {
     executor = Executors.newVirtualThreadPerTaskExecutor();
-    final BlobContainerClient blobContainerClient = getContainerClient(client, config);
+    final BlobContainerClient blobContainerClient = getContainerClient(client, azureStoreConfig);
 
-    fileSetManager = new FileSetManager(blobContainerClient, isCreateContainer(config));
-    manifestManager = new ManifestManager(blobContainerClient, isCreateContainer(config));
+    fileSetManager = new FileSetManager(blobContainerClient, isCreateContainer(azureStoreConfig));
+    manifestManager = new ManifestManager(blobContainerClient, isCreateContainer(azureStoreConfig));
   }
 
-  public static BlobServiceClient buildClient(final AzureBackupConfig config) {
+  public static BlobServiceClient buildClient(final AzureStore azureStoreConfig) {
     // BlobServiceClientBuilder has their own validations, for building the client
-    if (config.sasTokenConfig() != null) {
+    if (azureStoreConfig.getSasTokenType() != null && azureStoreConfig.getSasToken() != null) {
       return new BlobServiceClientBuilder()
-          .sasToken(config.sasTokenConfig().value())
-          .endpoint(config.endpoint())
+          .sasToken(azureStoreConfig.getSasToken())
+          .endpoint(azureStoreConfig.getEndpoint())
           .buildClient();
-    } else if (config.connectionString() != null) {
+    } else if (azureStoreConfig.getConnectionString() != null) {
       return new BlobServiceClientBuilder()
-          .connectionString(config.connectionString())
+          .connectionString(azureStoreConfig.getConnectionString())
           .buildClient();
-    } else if (config.accountName() != null || config.accountKey() != null) {
+    } else if (azureStoreConfig.getAccountName() != null || azureStoreConfig.getAccountKey() != null) {
       final var credential =
           new StorageSharedKeyCredential(
               Objects.requireNonNull(
-                  config.accountName(),
+                  azureStoreConfig.getAccountName(),
                   "Account key is specified but no account name was provided."),
               Objects.requireNonNull(
-                  config.accountKey(),
+                  azureStoreConfig.getAccountKey(),
                   "Account name is specified but no account key was provided."));
       return new BlobServiceClientBuilder()
-          .endpoint(config.endpoint())
+          .endpoint(azureStoreConfig.getEndpoint())
           .credential(credential)
           .buildClient();
     } else {
       LOG.info(
           "No connection string, sas token or account credentials are configured, using DefaultAzureCredentialBuilder for authentication.");
       return new BlobServiceClientBuilder()
-          .endpoint(config.endpoint())
+          .endpoint(azureStoreConfig.getEndpoint())
           .credential(new DefaultAzureCredentialBuilder().build())
           .buildClient();
     }
   }
 
   BlobContainerClient getContainerClient(
-      final BlobServiceClient client, final AzureBackupConfig config) {
+      final BlobServiceClient client,
+      final AzureStore azureStoreConfig) {
     final BlobContainerClient blobContainerClient =
-        client.getBlobContainerClient(config.containerName());
+        client.getBlobContainerClient(azureStoreConfig.getContainerName());
 
-    if (!config.createContainer()) {
+    if (!azureStoreConfig.isCreateContainer()) {
       LOG.debug(
           "Setting up Azure Store with existing container: {}",
           blobContainerClient.getBlobContainerName());
       // (delegation and service) sas token don't have the permissions to list containers,
       //  we trust that the user has created the container beforehand.
-      if ((config.sasTokenConfig() == null || config.sasTokenConfig().type().isAccount())
+      if ((azureStoreConfig.getSasTokenType() == null || "account".equals(azureStoreConfig.getSasTokenType()))
           && !blobContainerClient.exists()) {
         throw new ContainerDoesNotExist(
             ("The container %s does not exist. Please create it before using "
@@ -227,40 +229,44 @@ public final class AzureBackupStore implements BackupStore {
         });
   }
 
-  public static void validateConfig(final AzureBackupConfig config) {
-    if (config.sasTokenConfig() != null && !config.sasTokenConfig().type().isAccount()) {
+  public static void validateConfig(final AzureStore azureStoreConfig) {
+    if (azureStoreConfig.getSasTokenType() != null &&
+        !"account".equals(azureStoreConfig.getSasToken())) {
       LOG.info(
           "User delegation or service SAS tokens are enabled, which do "
               + "not have permissions to access/create containers. The "
               + "creation and checks of the container existence will be skipped.");
     }
     if (moreThanOneNonNull(
-        config.accountKey(), config.connectionString(), config.sasTokenConfig())) {
+        azureStoreConfig.getAccountKey(),
+        azureStoreConfig.getConnectionString(),
+        azureStoreConfig.getSasToken())) {
       LOG.warn(
           "More than one authentication method is configured, if present account SAS token will be used, "
               + "followed by connection string, and then account name with account key.");
     }
-    if (config.connectionString() == null && config.endpoint() == null) {
+    if (azureStoreConfig.getConnectionString() == null && azureStoreConfig.getEndpoint() == null) {
       throw new IllegalArgumentException("Connection string or endpoint is required");
     }
-    if (config.accountKey() != null && config.accountName() == null) {
+    if (azureStoreConfig.getAccountKey() != null && azureStoreConfig.getAccountName() == null) {
       throw new IllegalArgumentException("Account key is specified but account name is missing");
     }
-    if (config.accountName() != null && config.accountKey() == null) {
+    if (azureStoreConfig.getAccountName() != null && azureStoreConfig.getAccountKey() == null) {
       throw new IllegalArgumentException("Account name is specified but account key is missing");
     }
-    if (config.containerName() == null) {
+    if (azureStoreConfig.getContainerName() == null) {
       throw new IllegalArgumentException("Container name cannot be null.");
     }
   }
 
-  private boolean isCreateContainer(final AzureBackupConfig config) {
+  private boolean isCreateContainer(final AzureStore azureStoreConfig) {
     // if sas token is enabled, and its of the type delegation or service, then we don't create the
     // container.
-    if (config.sasTokenConfig() != null && !config.sasTokenConfig().type().isAccount()) {
+    if (azureStoreConfig.getSasTokenType() != null &&
+        !"account".equals(azureStoreConfig.getSasTokenType())) {
       return false;
     } else {
-      return config.createContainer();
+      return azureStoreConfig.isCreateContainer();
     }
   }
 
@@ -277,7 +283,7 @@ public final class AzureBackupStore implements BackupStore {
     return false;
   }
 
-  public static BackupStore of(final AzureBackupConfig storeConfig) {
-    return new AzureBackupStore(storeConfig).logging(LOG, Level.INFO);
+  public static BackupStore of(final AzureStore azureStoreConfig) {
+    return new AzureBackupStore(azureStoreConfig).logging(LOG, Level.INFO);
   }
 }

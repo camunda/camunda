@@ -14,6 +14,7 @@ import io.atomix.primitive.partition.impl.DefaultPartitionManagementService;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -78,6 +79,7 @@ public final class PartitionManagerImpl
   private final ClusterConfigurationService clusterConfigurationService;
   private final MeterRegistry brokerMeterRegistry;
   private final PartitionScalingChangeExecutor scalingExecutor;
+  private final UnifiedConfiguration unifiedConfiguration;
 
   public PartitionManagerImpl(
       final ConcurrencyControl concurrencyControl,
@@ -98,7 +100,8 @@ public final class PartitionManagerImpl
       final MeterRegistry meterRegistry,
       final BrokerClient brokerClient,
       final SecurityConfiguration securityConfig,
-      final SearchClientsProxy searchClientsProxy) {
+      final SearchClientsProxy searchClientsProxy,
+      final UnifiedConfiguration unifiedConfiguration) {
     this.brokerCfg = brokerCfg;
     this.concurrencyControl = concurrencyControl;
     this.actorSchedulingService = actorSchedulingService;
@@ -106,6 +109,7 @@ public final class PartitionManagerImpl
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.brokerClient = brokerClient;
     this.snapshotApiRequestHandler = snapshotApiRequestHandler;
+    this.unifiedConfiguration = unifiedConfiguration;
     scalingExecutor = new BrokerClientPartitionScalingExecutor(brokerClient, concurrencyControl);
     final var featureFlags = brokerCfg.getExperimental().getFeatures().toFeatureFlags();
     this.clusterConfigurationService = clusterConfigurationService;
@@ -133,7 +137,8 @@ public final class PartitionManagerImpl
             topologyManager,
             featureFlags,
             securityConfig,
-            searchClientsProxy);
+            searchClientsProxy,
+            unifiedConfiguration);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());

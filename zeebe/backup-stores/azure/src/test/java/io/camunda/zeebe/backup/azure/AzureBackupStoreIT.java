@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.camunda.unifiedconfig.AzureStore;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.azure.util.AzuriteContainer;
@@ -49,18 +50,16 @@ public class AzureBackupStoreIT implements BackupStoreTestKit {
           .registerModule(new JavaTimeModule())
           .disable(WRITE_DATES_AS_TIMESTAMPS)
           .setSerializationInclusion(Include.NON_ABSENT);
-  public AzureBackupConfig azureBackupConfig;
+  public AzureStore azureStoreConfig;
   public AzureBackupStore azureBackupStore;
   public final String containerName = UUID.randomUUID().toString();
 
   @BeforeEach
   public void setUpBlobClient() {
-    azureBackupConfig =
-        new AzureBackupConfig.Builder()
-            .withConnectionString(AZURITE_CONTAINER.getConnectString())
-            .withContainerName(containerName)
-            .build();
-    azureBackupStore = new AzureBackupStore(azureBackupConfig);
+    azureStoreConfig = new AzureStore();
+    azureStoreConfig.setContainerName(containerName);
+    azureStoreConfig.setConnectionString(AZURITE_CONTAINER.getConnectString());
+    azureBackupStore = new AzureBackupStore(azureStoreConfig);
   }
 
   @Override
@@ -147,10 +146,10 @@ public class AzureBackupStoreIT implements BackupStoreTestKit {
   BlobClient buildBlobClient(final Manifest manifest) {
     final BlobServiceClient blobServiceClient =
         new BlobServiceClientBuilder()
-            .connectionString(azureBackupConfig.connectionString())
+            .connectionString(azureStoreConfig.getConnectionString())
             .buildClient();
     final BlobContainerClient blobContainerClient =
-        blobServiceClient.getBlobContainerClient(azureBackupConfig.containerName());
+        blobServiceClient.getBlobContainerClient(azureStoreConfig.getContainerName());
     blobContainerClient.createIfNotExists();
     return blobContainerClient.getBlobClient(ManifestManager.manifestPath(manifest));
   }

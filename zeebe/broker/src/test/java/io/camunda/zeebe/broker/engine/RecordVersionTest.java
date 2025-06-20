@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.engine;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -35,7 +36,9 @@ public final class RecordVersionTest {
   private static final String EXPECTED_VERSION =
       VersionUtil.getVersion().replaceAll("-SNAPSHOT", "");
 
-  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
+  private static final UnifiedConfiguration UNIFIED_CONFIGURATION = new UnifiedConfiguration();
+  private static final EmbeddedBrokerRule BROKER_RULE =
+      new EmbeddedBrokerRule(UNIFIED_CONFIGURATION);
   private static final CommandApiRule API_RULE = new CommandApiRule(BROKER_RULE::getAtomixCluster);
   @ClassRule public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(API_RULE);
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();

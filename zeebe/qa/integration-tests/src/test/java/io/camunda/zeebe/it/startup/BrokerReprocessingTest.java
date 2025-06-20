@@ -16,6 +16,7 @@ import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.it.util.GrpcClientRule;
@@ -100,7 +101,9 @@ public final class BrokerReprocessingTest {
   @Parameter(1)
   public String name;
 
-  public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
+  public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(unifiedConfiguration);
+
   public final GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
   @Rule public ExpectedException exception = ExpectedException.none();
