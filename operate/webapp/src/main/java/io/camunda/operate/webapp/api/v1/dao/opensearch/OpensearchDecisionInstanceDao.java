@@ -166,7 +166,8 @@ public class OpensearchDecisionInstanceDao
           .setDecisionDefinitionId(internalResult.decisionDefinitionId())
           .setDecisionName(internalResult.decisionName())
           .setDecisionVersion(internalResult.decisionVersion())
-          .setDecisionType(internalResult.decisionType());
+          .setDecisionType(internalResult.decisionType())
+          .setResult(internalResult.result());
 
       if (StringUtils.isNotEmpty(internalResult.evaluationDate())) {
         apiResult.setEvaluationDate(
