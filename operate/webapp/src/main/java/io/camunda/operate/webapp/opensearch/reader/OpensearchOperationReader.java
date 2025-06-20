@@ -9,8 +9,10 @@ package io.camunda.operate.webapp.opensearch.reader;
 
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.constantScore;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.exists;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.longTerms;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.lte;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.not;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.or;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.sortOptions;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
@@ -20,6 +22,7 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBu
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.BATCH_OPERATION_ID;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.ID;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.INCIDENT_KEY;
+import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.ITEM_KEY;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.PROCESS_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.SCOPE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.OperationTemplate.TYPE;
@@ -81,13 +84,16 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
   public List<OperationEntity> acquireOperations(final int batchSize) {
     final Query query =
         constantScore(
-            or(
-                term(OperationTemplate.STATE, SCHEDULED_OPERATION),
-                and(
-                    term(OperationTemplate.STATE, LOCKED_OPERATION),
-                    lte(
-                        OperationTemplate.LOCK_EXPIRATION_TIME,
-                        dateTimeFormatter.format(OffsetDateTime.now())))));
+            and(
+                // filter for operations that are legacy (i.e. do not have the property ITEM_KEY)
+                not(exists(ITEM_KEY)),
+                or(
+                    term(OperationTemplate.STATE, SCHEDULED_OPERATION),
+                    and(
+                        term(OperationTemplate.STATE, LOCKED_OPERATION),
+                        lte(
+                            OperationTemplate.LOCK_EXPIRATION_TIME,
+                            dateTimeFormatter.format(OffsetDateTime.now()))))));
 
     final var searchRequestBuilder =
         searchRequestBuilder(operationTemplate, ONLY_RUNTIME)
