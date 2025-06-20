@@ -14,9 +14,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.configuration.AuthenticationConfiguration;
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
@@ -28,6 +25,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration;
 import io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -42,6 +40,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 
@@ -51,6 +50,7 @@ public class GroupControllerTest {
 
   @Nested
   @WebMvcTest(GroupController.class)
+  @Import(ApiFiltersConfiguration.class)
   @TestPropertySource(properties = "camunda.security.authentication.oidc.groupsClaim=g1")
   public class InternalGroupsDisabledTest extends RestControllerTest {
 
@@ -60,19 +60,9 @@ public class GroupControllerTest {
           "type": "about:blank",
           "status": 403,
           "title": "Access issue",
-          "detail": "Due to security configuration, groups's endpoints are not accessible",
+          "detail": "Due to security configuration, %s endpoint is not accessible",
           "instance": "%s"
         }""";
-    @MockBean private SecurityConfiguration securityConfiguration;
-    @MockBean private AuthenticationConfiguration authenticationConfiguration;
-    @MockBean private OidcAuthenticationConfiguration oidcConfiguration;
-
-    @BeforeEach
-    public void setup() {
-      when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfiguration);
-      when(authenticationConfiguration.getOidc()).thenReturn(oidcConfiguration);
-      when(oidcConfiguration.getGroupsClaim()).thenReturn("g1");
-    }
 
     @Test
     void shouldReturnErrorOnCreate() {
@@ -92,7 +82,7 @@ public class GroupControllerTest {
           .expectStatus()
           .isForbidden()
           .expectBody()
-          .json(FORBIDDEN_MESSAGE.formatted(GROUP_BASE_URL));
+          .json(FORBIDDEN_MESSAGE.formatted(GROUP_BASE_URL, GROUP_BASE_URL));
     }
 
     @Test
@@ -102,11 +92,11 @@ public class GroupControllerTest {
       final var groupId = "111";
       final var groupName = "updatedName";
       final var description = "updatedDescription";
-
+      final var uri = GROUP_BASE_URL + "/" + groupId;
       // when
       webClient
           .put()
-          .uri("%s/%s".formatted(GROUP_BASE_URL, groupId))
+          .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .contentType(MediaType.APPLICATION_JSON)
           .bodyValue(new GroupUpdateRequest().name(groupName).description(description))
@@ -114,24 +104,24 @@ public class GroupControllerTest {
           .expectStatus()
           .isForbidden()
           .expectBody()
-          .json(FORBIDDEN_MESSAGE.formatted("%s/%s".formatted(GROUP_BASE_URL, groupId)));
+          .json(FORBIDDEN_MESSAGE.formatted(uri, uri));
     }
 
     @Test
     void shouldReturnErrorOnDelete() {
       // given
       final String groupId = "111";
-
+      final var uri = GROUP_BASE_URL + "/" + groupId;
       // when
       webClient
           .delete()
-          .uri("%s/%s".formatted(GROUP_BASE_URL, groupId))
+          .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .exchange()
           .expectStatus()
           .isForbidden()
           .expectBody()
-          .json(FORBIDDEN_MESSAGE.formatted("%s/%s".formatted(GROUP_BASE_URL, groupId)));
+          .json(FORBIDDEN_MESSAGE.formatted(uri, uri));
     }
 
     @Test
@@ -139,19 +129,18 @@ public class GroupControllerTest {
       // given
       final String groupId = "111";
       final String username = "222";
+      final var uri = "%s/%s/users/%s".formatted(GROUP_BASE_URL, groupId, username);
 
       // when
       webClient
           .put()
-          .uri("%s/%s/users/%s".formatted(GROUP_BASE_URL, groupId, username))
+          .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .exchange()
           .expectStatus()
           .isForbidden()
           .expectBody()
-          .json(
-              FORBIDDEN_MESSAGE.formatted(
-                  "%s/%s/users/%s".formatted(GROUP_BASE_URL, groupId, username)));
+          .json(FORBIDDEN_MESSAGE.formatted(uri, uri));
     }
 
     @Test
@@ -159,19 +148,17 @@ public class GroupControllerTest {
       // given
       final var groupId = Strings.newRandomValidIdentityId();
       final var mappingId = Strings.newRandomValidIdentityId();
-
+      final var uri = "%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId);
       // when
       webClient
           .put()
-          .uri("%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId))
+          .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .exchange()
           .expectStatus()
           .isForbidden()
           .expectBody()
-          .json(
-              FORBIDDEN_MESSAGE.formatted(
-                  "%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId)));
+          .json(FORBIDDEN_MESSAGE.formatted(uri, uri));
     }
 
     @Test
@@ -179,19 +166,17 @@ public class GroupControllerTest {
       // given
       final String groupId = "111";
       final String username = "222";
-
+      final var uri = "%s/%s/users/%s".formatted(GROUP_BASE_URL, groupId, username);
       // when
       webClient
           .delete()
-          .uri("%s/%s/users/%s".formatted(GROUP_BASE_URL, groupId, username))
+          .uri(uri)
           .accept(MediaType.APPLICATION_JSON)
           .exchange()
           .expectStatus()
           .isForbidden()
           .expectBody()
-          .json(
-              FORBIDDEN_MESSAGE.formatted(
-                  "%s/%s/users/%s".formatted(GROUP_BASE_URL, groupId, username)));
+          .json(FORBIDDEN_MESSAGE.formatted(uri, uri));
     }
 
     @Test
@@ -200,20 +185,18 @@ public class GroupControllerTest {
       final var groupId = Strings.newRandomValidIdentityId();
       final var mappingId = Strings.newRandomValidIdentityId();
 
-      final var path = "%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId);
+      final var uri = "%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId);
 
       // when
       webClient
           .delete()
-          .uri(path)
+          .uri(uri)
           .accept(MediaType.APPLICATION_PROBLEM_JSON)
           .exchange()
           .expectStatus()
           .isForbidden()
           .expectBody()
-          .json(
-              FORBIDDEN_MESSAGE.formatted(
-                  "%s/%s/mapping-rules/%s".formatted(GROUP_BASE_URL, groupId, mappingId)));
+          .json(FORBIDDEN_MESSAGE.formatted(uri, uri));
     }
   }
 
