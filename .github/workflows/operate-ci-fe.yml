@@ -84,7 +84,7 @@ jobs:
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
     container:
-      image: mcr.microsoft.com/playwright:v1.51.1
+      image: mcr.microsoft.com/playwright:v1.53.1
       options: --user 1001:1000
     defaults:
       run:
@@ -129,7 +129,7 @@ jobs:
     timeout-minutes: 10
     permissions: { } # GITHUB_TOKEN unused in this job
     container:
-      image: mcr.microsoft.com/playwright:v1.51.1
+      image: mcr.microsoft.com/playwright:v1.53.1
       options: --user 1001:1000
     defaults:
       run:
