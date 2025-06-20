@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -262,6 +263,12 @@ public class TenantClient {
       return expectation.apply(position);
     }
 
+    public Record<TenantRecordValue> add(final AuthInfo authorization) {
+      final long position =
+          writer.writeCommand(TenantIntent.ADD_ENTITY, tenantRecord, authorization);
+      return expectation.apply(position);
+    }
+
     public TenantAddEntityClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
@@ -307,6 +314,12 @@ public class TenantClient {
 
     public Record<TenantRecordValue> remove() {
       final long position = writer.writeCommand(TenantIntent.REMOVE_ENTITY, tenantRecord);
+      return expectation.apply(position);
+    }
+
+    public Record<TenantRecordValue> remove(final AuthInfo authorization) {
+      final long position =
+          writer.writeCommand(TenantIntent.REMOVE_ENTITY, tenantRecord, authorization);
       return expectation.apply(position);
     }
 

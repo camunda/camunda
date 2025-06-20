@@ -512,6 +512,7 @@ public final class EndpointManager {
         Context.current().call(AuthenticationHandler.GROUPS_CLAIMS::get);
     if (groupsClaims != null) {
       claims.put(Authorization.USER_GROUPS_CLAIMS, groupsClaims);
+      claims.put(Authorization.GROUPS_CLAIM_ENABLED, true);
     }
 
     brokerRequest.setAuthorization(claims);
