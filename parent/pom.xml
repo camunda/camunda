@@ -89,6 +89,7 @@
     <version.scala>2.13.16</version.scala>
     <version.slf4j>2.0.17</version.slf4j>
     <version.snakeyaml>2.4</version.snakeyaml>
+    <version.tomcat>10.1.42</version.tomcat>
     <version.javax>1.3.2</version.javax>
     <version.wiremock>3.13.1</version.wiremock>
     <version.conscrypt>2.5.2</version.conscrypt>
@@ -1078,6 +1079,30 @@
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-bom</artifactId>
         <version>${version.log4j}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.tomcat</groupId>
+        <artifactId>tomcat-annotations-api</artifactId>
+        <version>${version.tomcat}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.tomcat.embed</groupId>
+        <artifactId>tomcat-embed-core</artifactId>
+        <version>${version.tomcat}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.tomcat.embed</groupId>
+        <artifactId>tomcat-embed-websocket</artifactId>
+        <version>${version.tomcat}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
