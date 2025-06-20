@@ -11,6 +11,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -19,6 +21,8 @@ import org.slf4j.LoggerFactory;
 public final class DateOfArchivedDocumentsUtil {
   private static final Logger LOGGER = LoggerFactory.getLogger(DateOfArchivedDocumentsUtil.class);
   private static final Pattern TEMPORAL_PATTERN = Pattern.compile("(\\d+)" + "([smhdwMy])");
+  private static final String DATE_PATTERN = "yyyy-mm-dd";
+  private static final String DATE_AND_HOUR_PATTERN = "yyyy-mm-dd-HH";
 
   public static String calculateDateOfArchiveIndexForBatch(
       final String dateOfArchiveBatch,
@@ -67,6 +71,45 @@ public final class DateOfArchivedDocumentsUtil {
     return dateOfMostRecentArchiveIndex;
   }
 
+  public static CompletableFuture<String> getLastHistoricalArchiverDate(
+      final CompletableFuture<List<String>> listOfIndexes) {
+    final DateTimeFormatter formatterWithHour = DateTimeFormatter.ofPattern(DATE_AND_HOUR_PATTERN);
+    final DateTimeFormatter formatterWithoutHour = DateTimeFormatter.ofPattern(DATE_PATTERN);
+    final LocalDateTime[] latest = {null};
+    final String[] latestDate = {null};
+    final Pattern indexDatePattern = Pattern.compile("_(\\d{4}-\\d{2}-\\d{2}(?:-\\d{2})?)");
+
+    return listOfIndexes
+        .thenApply(
+            indexes ->
+                // we want to filter out zeebe records since the
+                // rollover interval does not apply to these.
+                indexes.stream().filter(index -> !index.contains("zeebe-record")).toList())
+        .thenApply(
+            indexes -> {
+              for (final String index : indexes) {
+                final Matcher matcher = indexDatePattern.matcher(index);
+                if (matcher.find()) {
+                  final String dateStr = matcher.group(1);
+                  final LocalDateTime dateTime;
+
+                  if (dateStr.length() == 13) { // e.g., 2025-06-16-10
+                    dateTime = LocalDateTime.parse(dateStr, formatterWithHour);
+                  } else { // e.g., 2025-06-16
+                    dateTime = LocalDate.parse(dateStr, formatterWithoutHour).atStartOfDay();
+                  }
+
+                  if (latest[0] == null || dateTime.isAfter(latest[0])) {
+                    latest[0] = dateTime;
+                    latestDate[0] = dateStr;
+                  }
+                }
+              }
+              // if no date historical index exists we want to return null
+              return latestDate[0];
+            });
+  }
+
   private static Temp parseTemporalAmount(final String input) throws IllegalArgumentException {
     final Matcher matcher = TEMPORAL_PATTERN.matcher(input);
 
@@ -88,8 +131,8 @@ public final class DateOfArchivedDocumentsUtil {
 
   private static LocalDateTime parseFlexibleDateTime(final String dateStr, final String pattern) {
     try {
-      if ("date".equals(pattern) || "yyyy-MM-dd".equals(pattern)) {
-        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+      if ("date".equals(pattern) || DATE_PATTERN.equals(pattern)) {
+        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_PATTERN);
         return LocalDate.parse(dateStr, formatter).atStartOfDay();
       } else {
         final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);

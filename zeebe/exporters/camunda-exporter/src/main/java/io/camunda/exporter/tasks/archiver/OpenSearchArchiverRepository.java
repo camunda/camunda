@@ -19,15 +19,11 @@ import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.WillCloseWhenClosed;
 import org.opensearch.client.json.JsonData;
@@ -252,7 +248,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     try {
       dateFuture =
           (lastHistoricalArchiverDate == null)
-              ? fetchLastHistoricalArchiverDate()
+              ? DateOfArchivedDocumentsUtil.getLastHistoricalArchiverDate(
+                  fetchIndexMatchingIndexes(ALL_INDICES_PATTERN))
               : CompletableFuture.completedFuture(lastHistoricalArchiverDate);
     } catch (final IOException e) {
       return CompletableFuture.failedFuture(new ExporterException("Failed to fetch indexes:", e));
@@ -342,44 +339,6 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .sort(sort -> sort.field(field -> field.field(sortField).order(SortOrder.Asc)))
         .size(config.getRolloverBatchSize())
         .build();
-  }
-
-  private CompletableFuture<String> fetchLastHistoricalArchiverDate() throws IOException {
-    final DateTimeFormatter formatterWithHour = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH");
-    final DateTimeFormatter formatterWithoutHour = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    final LocalDateTime[] latest = {null};
-    final String[] latestDate = {null};
-    final Pattern indexDatePattern = Pattern.compile("_(\\d{4}-\\d{2}-\\d{2}(?:-\\d{2})?)");
-
-    return fetchIndexMatchingIndexes(ALL_INDICES_PATTERN)
-        .thenApply(
-            indexes ->
-                // we want to filter out zeebe records since the
-                // rollover interval does not apply to these.
-                indexes.stream().filter(index -> !index.contains("zeebe-record")).toList())
-        .thenApply(
-            indexes -> {
-              for (final String index : indexes) {
-                final Matcher matcher = indexDatePattern.matcher(index);
-                if (matcher.find()) {
-                  final String dateStr = matcher.group(1);
-                  final LocalDateTime dateTime;
-
-                  if (dateStr.length() == 13) { // e.g., 2025-06-16-10
-                    dateTime = LocalDateTime.parse(dateStr, formatterWithHour);
-                  } else { // e.g., 2025-06-16
-                    dateTime = LocalDate.parse(dateStr, formatterWithoutHour).atStartOfDay();
-                  }
-
-                  if (latest[0] == null || dateTime.isAfter(latest[0])) {
-                    latest[0] = dateTime;
-                    latestDate[0] = dateStr;
-                  }
-                }
-              }
-              // if no date historical index exists we want to return null
-              return latestDate[0];
-            });
   }
 
   private record AddPolicyRequestBody(@JsonProperty("policy_id") String policyId) {}
