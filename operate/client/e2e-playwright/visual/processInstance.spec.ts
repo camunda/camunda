@@ -47,6 +47,7 @@ test.describe('process instance page', () => {
     });
 
     await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
 
     await expect(page).toHaveScreenshot();
   });
@@ -71,6 +72,7 @@ test.describe('process instance page', () => {
       id: runningInstance.detail.id,
     });
     await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
     await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
 
     await expect(page).toHaveScreenshot();
@@ -96,6 +98,7 @@ test.describe('process instance page', () => {
       id: runningInstance.detail.id,
     });
     await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
     await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
 
     await processInstancePage.addVariableButton.click();
@@ -123,6 +126,7 @@ test.describe('process instance page', () => {
       id: runningInstance.detail.id,
     });
     await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
     await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
 
     await page
@@ -156,6 +160,7 @@ test.describe('process instance page', () => {
     });
 
     await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
     await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
 
     await page
@@ -187,6 +192,7 @@ test.describe('process instance page', () => {
       id: completedInstance.detail.id,
     });
     await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
     await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
 
     await expect(processInstancePage.executionCountToggleOn).toBeEnabled();
@@ -217,6 +223,7 @@ test.describe('process instance page', () => {
       id: compensationProcessInstance.detail.id,
     });
     await processInstancePage.resetZoomButton.click();
+    await page.waitForTimeout(500);
     await expect(page.getByTestId(/^state-overlay/)).toHaveText('1');
 
     await processInstancePage.executionCountToggleOn.click({force: true});

@@ -62,6 +62,18 @@ test.describe('decision instance page', () => {
       decisionInstanceKey: '1',
     });
 
+    await expect(
+      page
+        .getByTestId('decision-instance-variables-panel')
+        .getByRole('cell', {name: 'Invoice Amount'}),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('heading', {name: 'Invoice Business Decisions'}),
+    ).toBeVisible();
+    await expect(
+      page.getByTestId('decision-viewer').getByText('Invoice Category'),
+    ).toBeVisible();
+
     await expect(page).toHaveScreenshot();
   });
 
