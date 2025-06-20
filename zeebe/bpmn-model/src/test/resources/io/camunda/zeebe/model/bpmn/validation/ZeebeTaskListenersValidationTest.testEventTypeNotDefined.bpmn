@@ -3,10 +3,10 @@
   xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
   xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
   xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
-  exporter="Zeebe BPMN Model" exporterVersion="8.6.0-SNAPSHOT"
+  exporter="Zeebe BPMN Model" exporterVersion="8.6-SNAPSHOT"
   id="definitions_10a4983c-bfa8-45a3-a23e-4c3a54e5f3c1"
   xmlns:modeler="http://camunda.org/schema/modeler/1.0" modeler:executionPlatform="Camunda Cloud"
-  modeler:executionPlatformVersion="8.6.0-SNAPSHOT"
+  modeler:executionPlatformVersion="8.6-SNAPSHOT"
   targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL"
   xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL">
   <process id="process_bce8fd3e-9715-4483-895f-18faf5e179bb" isExecutable="true">
