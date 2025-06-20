@@ -83,20 +83,6 @@ public record S3BackupConfig(
     }
   }
 
-  record Credentials(String accessKey, String secretKey) {
-    @Override
-    public String toString() {
-      return "Credentials{"
-          + "accessKey='"
-          + accessKey
-          + '\''
-          + ", secretKey='"
-          + "<redacted>"
-          + '\''
-          + '}';
-    }
-  }
-
   public static class Builder {
 
     private String bucketName;
@@ -154,8 +140,8 @@ public record S3BackupConfig(
       return this;
     }
 
-    public Builder withParallelUploadsLimit(final Integer parallelUploadsLimit) {
-      maxConcurrentConnections = parallelUploadsLimit;
+    public Builder withMaxConcurrentConnections(final Integer maxConcurrentConnections) {
+      this.maxConcurrentConnections = maxConcurrentConnections;
       return this;
     }
 
@@ -176,6 +162,20 @@ public record S3BackupConfig(
           Optional.ofNullable(basePath),
           maxConcurrentConnections,
           connectionAcquisitionTimeout);
+    }
+  }
+
+  record Credentials(String accessKey, String secretKey) {
+    @Override
+    public String toString() {
+      return "Credentials{"
+          + "accessKey='"
+          + accessKey
+          + '\''
+          + ", secretKey='"
+          + "<redacted>"
+          + '\''
+          + '}';
     }
   }
 }
