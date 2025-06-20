@@ -11,12 +11,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
+import java.util.Map;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 
@@ -52,14 +56,12 @@ public class OperationReferenceTest {
         .join();
 
     // Then
-    assertThat(
+    Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.CANCEL)
                 .withRecordKey(processInstanceKey)
-                .limit(1)
-                .getFirst()
-                .getOperationReference())
+                .getFirst())
         .describedAs("Should contain client operationReference")
-        .isEqualTo(OPERATION_REFERENCE);
+        .hasOperationReference(OPERATION_REFERENCE);
   }
 
   @Test
@@ -81,7 +83,6 @@ public class OperationReferenceTest {
     final var cancelCommand =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.CANCEL)
             .withRecordKey(processInstanceKey)
-            .limit(1)
             .getFirst();
 
     final var followUpRecords =
@@ -95,7 +96,7 @@ public class OperationReferenceTest {
     assertThat(followUpRecords)
         .hasSizeGreaterThan(0)
         .describedAs("Should contain client operationReference")
-        .allMatch(r -> r.getOperationReference() == OPERATION_REFERENCE);
+        .allSatisfy(r -> Assertions.assertThat(r).hasOperationReference(OPERATION_REFERENCE));
   }
 
   @Test
@@ -110,14 +111,12 @@ public class OperationReferenceTest {
     client.newCancelInstanceCommand(processInstanceKey).send().join();
 
     // Then
-    assertThat(
+    Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.CANCEL)
                 .withRecordKey(processInstanceKey)
-                .limit(1)
-                .getFirst()
-                .getOperationReference())
+                .getFirst())
         .describedAs("Should contain -1 operationReference")
-        .isEqualTo(-1);
+        .hasOperationReference(-1);
   }
 
   @Test
@@ -132,13 +131,135 @@ public class OperationReferenceTest {
     client.newCancelInstanceCommand(processInstanceKey).operationReference(-1).send().join();
 
     // Then
-    assertThat(
+    Assertions.assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.CANCEL)
                 .withRecordKey(processInstanceKey)
-                .limit(1)
-                .getFirst()
-                .getOperationReference())
+                .getFirst())
         .describedAs("Should contain client operationReference")
-        .isEqualTo(-1);
+        .hasOperationReference(-1);
+  }
+
+  @Test
+  void shouldPreserveOperationRefOnElementTerminatedAfterCancelingUserTaskWithCancelingListeners() {
+    // Given
+    final var helper = new ZeebeResourcesHelper(client);
+    final var listenerType = "canceling_listener";
+
+    final var userTaskKey =
+        helper.createSingleUserTask(
+            t -> t.zeebeTaskListener(l -> l.canceling().type(listenerType)));
+
+    final var processInstanceKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withRecordKey(userTaskKey)
+            .getFirst()
+            .getValue()
+            .getProcessInstanceKey();
+
+    client
+        .newWorker()
+        .jobType(listenerType)
+        .handler((jobClient, job) -> jobClient.newCompleteCommand(job).withResult().send().join())
+        .open();
+
+    // When
+    client
+        .newCancelInstanceCommand(processInstanceKey)
+        .operationReference(OPERATION_REFERENCE)
+        .execute();
+
+    // Then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                .withRecordKey(processInstanceKey)
+                .getFirst())
+        .describedAs("PI:ELEMENT_TERMINATED should carry client operationReference")
+        .hasOperationReference(OPERATION_REFERENCE);
+  }
+
+  @Test
+  void shouldPreserveOperationReferenceOnVariableUpdatedEventAfterUpdatingUserTaskWithListeners() {
+    // Given
+    final var helper = new ZeebeResourcesHelper(client);
+    final var listenerType = "updating_listener";
+
+    final var userTaskKey =
+        helper.createSingleUserTask(t -> t.zeebeTaskListener(l -> l.updating().type(listenerType)));
+
+    final var userTaskInstanceKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withRecordKey(userTaskKey)
+            .getFirst()
+            .getValue()
+            .getElementInstanceKey();
+
+    client
+        .newWorker()
+        .jobType(listenerType)
+        .handler((jobClient, job) -> jobClient.newCompleteCommand(job).withResult().send().join())
+        .open();
+
+    // When
+    client
+        .newSetVariablesCommand(userTaskInstanceKey)
+        .variables(Map.of("approvalStatus", "APPROVED"))
+        .operationReference(OPERATION_REFERENCE)
+        .execute();
+
+    // Then
+    Assertions.assertThat(
+            RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATED)
+                .withScopeKey(userTaskInstanceKey)
+                .getFirst())
+        .describedAs("VARIABLE_DOCUMENT:UPDATED should carry client operationReference")
+        .hasOperationReference(OPERATION_REFERENCE);
+  }
+
+  @Test
+  void shouldPreserveOperationRefOnVariableUpdateDeniedEventAfterDenialByUpdatingTaskListener() {
+    // Given
+    final var helper = new ZeebeResourcesHelper(client);
+    final var listenerType = "updating_listener_with_denial";
+
+    final var userTaskKey =
+        helper.createSingleUserTask(t -> t.zeebeTaskListener(l -> l.updating().type(listenerType)));
+
+    final var userTaskInstanceKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withRecordKey(userTaskKey)
+            .getFirst()
+            .getValue()
+            .getElementInstanceKey();
+
+    client
+        .newWorker()
+        .jobType(listenerType)
+        .handler(
+            (jobClient, job) ->
+                jobClient
+                    .newCompleteCommand(job)
+                    .withResult()
+                    .deny(true)
+                    .deniedReason("Denied by listener")
+                    .send()
+                    .join())
+        .open();
+
+    // When
+    client
+        .newSetVariablesCommand(userTaskInstanceKey)
+        .useRest()
+        .variables(Map.of("approvalStatus", "APPROVED"))
+        .local(true)
+        .operationReference(OPERATION_REFERENCE)
+        .send();
+
+    // Then
+    Assertions.assertThat(
+            RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATE_DENIED)
+                .withScopeKey(userTaskInstanceKey)
+                .getFirst())
+        .describedAs("VARIABLE_DOCUMENT:UPDATE_DENIED should carry client operationReference")
+        .hasOperationReference(OPERATION_REFERENCE);
   }
 }

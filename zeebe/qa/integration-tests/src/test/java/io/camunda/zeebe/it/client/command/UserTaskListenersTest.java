@@ -33,7 +33,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -43,7 +42,6 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.hc.core5.http.HttpStatus;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -385,122 +383,6 @@ public class UserTaskListenersTest {
     // and: verify the expected sequence of User Task intents
     assertUserTaskIntentsSequence(
         UserTaskIntent.UPDATING, UserTaskIntent.DENY_TASK_LISTENER, UserTaskIntent.UPDATE_DENIED);
-  }
-
-  @Test
-  void shouldPreserveOperationReferenceOnVariableUpdateDeniedEventAfterListenerDenial() {
-    // given
-    final int operationReference = 456;
-    final var listenerType = "updating_listener_with_denial";
-    final var userTaskKey =
-        resourcesHelper.createSingleUserTask(
-            t -> t.zeebeTaskListener(l -> l.updating().type(listenerType)));
-    final var userTaskInstanceKey =
-        RecordingExporter.userTaskRecords()
-            .withRecordKey(userTaskKey)
-            .getFirst()
-            .getValue()
-            .getElementInstanceKey();
-
-    final JobHandler completeJobWithDenialHandler =
-        (jobClient, job) ->
-            client
-                .newCompleteCommand(job)
-                .withResult()
-                .deny(true)
-                .deniedReason("Reason to deny lifecycle transition")
-                .send()
-                .join();
-    client.newWorker().jobType(listenerType).handler(completeJobWithDenialHandler).open();
-
-    // when: triggering variable update with 'operationReference'
-    final var updateVariablesFuture =
-        client
-            .newSetVariablesCommand(userTaskInstanceKey)
-            .useRest()
-            .variables(Map.of("approvalStatus", "APPROVED"))
-            .local(true)
-            .operationReference(operationReference)
-            .send();
-
-    // then: TL job should be successfully completed with the result "denied" set correctly
-    ZeebeAssertHelper.assertJobCompleted(
-        listenerType,
-        userTaskListener -> {
-          assertThat(userTaskListener.getResult().isDenied()).isTrue();
-          assertThat(userTaskListener.getResult().getDeniedReason())
-              .isEqualTo("Reason to deny lifecycle transition");
-        });
-
-    // and: verify the rejection and rejection reason
-    final var rejectionReason =
-        String.format(
-            "Command 'UPDATE' rejected with code 'INVALID_STATE': Variable update for user task instance with key '%s' was denied by Task Listener. "
-                + "Reason to deny: 'Reason to deny lifecycle transition'",
-            userTaskInstanceKey);
-    assertThatExceptionOfType(ProblemException.class)
-        .isThrownBy(updateVariablesFuture::join)
-        .satisfies(
-            ex -> {
-              assertThat(ex.details().getTitle()).isEqualTo(RejectionType.INVALID_STATE.name());
-              assertThat(ex.details().getDetail()).isEqualTo(rejectionReason);
-              assertThat(ex.details().getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
-            });
-
-    // and: expected user task transition sequence
-    assertUserTaskIntentsSequence(
-        UserTaskIntent.UPDATING, UserTaskIntent.DENY_TASK_LISTENER, UserTaskIntent.UPDATE_DENIED);
-
-    // and: the UPDATE_DENIED VariableDocument event should carry the original operationReference
-    assertThat(
-            RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATE_DENIED)
-                .withScopeKey(userTaskInstanceKey)
-                .getFirst())
-        .describedAs(
-            "The VariableDocument.UPDATE_DENIED record should preserve the original 'operationReference'")
-        .hasOperationReference(operationReference);
-  }
-
-  @Test
-  void shouldPreserveOperationReferenceOnVariableUpdatedEventAfterHandlingUpdatingTaskListeners() {
-    // given
-    final int operationReference = 111;
-    final var listenerType = "updating_listener";
-    final var userTaskKey =
-        resourcesHelper.createSingleUserTask(
-            t -> t.zeebeTaskListener(l -> l.updating().type(listenerType)));
-    final var userTaskInstanceKey =
-        RecordingExporter.userTaskRecords()
-            .withRecordKey(userTaskKey)
-            .getFirst()
-            .getValue()
-            .getElementInstanceKey();
-
-    final JobHandler completeJob =
-        (jobClient, job) -> client.newCompleteCommand(job).withResult().send().join();
-    client.newWorker().jobType(listenerType).handler(completeJob).open();
-
-    // when: updating variables to trigger an update transition
-    final var updateVariablesFuture =
-        client
-            .newSetVariablesCommand(userTaskInstanceKey)
-            .variables(Map.of("approvalStatus", "APPROVED"))
-            .operationReference(operationReference)
-            .send();
-
-    ZeebeAssertHelper.assertJobCompleted(listenerType);
-    assertThatCode(updateVariablesFuture::join).doesNotThrowAnyException();
-
-    assertUserTaskIntentsSequence(
-        UserTaskIntent.UPDATING, UserTaskIntent.COMPLETE_TASK_LISTENER, UserTaskIntent.UPDATED);
-
-    assertThat(
-            RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATED)
-                .withScopeKey(userTaskInstanceKey)
-                .getFirst())
-        .describedAs(
-            "VARIABLE_DOCUMENT:UPDATED record should preserve the original 'operationReference'")
-        .hasOperationReference(operationReference);
   }
 
   @Test

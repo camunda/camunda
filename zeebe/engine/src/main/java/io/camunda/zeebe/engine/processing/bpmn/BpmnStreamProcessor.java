@@ -81,7 +81,9 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             processEngineMetrics,
             this::getContainerProcessor,
             writers);
-    processors = new BpmnElementProcessors(bpmnBehaviors, stateTransitionBehavior, config);
+    processors =
+        new BpmnElementProcessors(
+            bpmnBehaviors, stateTransitionBehavior, processingState.getAsyncRequestState(), config);
     stateBehavior = bpmnBehaviors.stateBehavior();
     jobBehavior = bpmnBehaviors.jobBehavior();
     eventTriggerBehavior = bpmnBehaviors.eventTriggerBehavior();

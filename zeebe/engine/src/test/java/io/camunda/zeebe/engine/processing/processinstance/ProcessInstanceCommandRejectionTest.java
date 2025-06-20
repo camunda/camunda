@@ -540,7 +540,7 @@ public final class ProcessInstanceCommandRejectionTest {
   }
 
   @Test
-  public void shouldRejectTerminateIfElementIsTerminating() {
+  public void shouldRejectCancelIfProcessInstanceIsAlreadyCanceling() {
     // given
     final var processInstanceKey =
         createProcessInstance(
@@ -560,20 +560,16 @@ public final class ProcessInstanceCommandRejectionTest {
 
     // then
     final var rejectedCommand =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.TERMINATE_ELEMENT)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementType(BpmnElementType.PROCESS)
-            .skip(1) // the process was already terminated once
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.CANCEL)
+            .withRecordKey(processInstanceKey)
+            .skip(1) // the process was already canceled once
             .getFirst();
 
     assertThatCommandIsRejected(
         rejectedCommand,
         String.format(
-            "Expected element instance to be in state '%s' or one of '%s' but was '%s'.",
-            ProcessInstanceIntent.ELEMENT_ACTIVATING,
-            List.of(
-                ProcessInstanceIntent.ELEMENT_ACTIVATED, ProcessInstanceIntent.ELEMENT_COMPLETING),
-            ProcessInstanceIntent.ELEMENT_TERMINATING));
+            "Expected to cancel a process instance with key '%d', but a cancel request is already in progress",
+            processInstanceKey));
   }
 
   @Test
