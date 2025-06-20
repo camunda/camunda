@@ -45,7 +45,8 @@ public class StaticConsoleRoleAuthorizationMigrationHandler extends MigrationHan
             if (!isConflictError(e)) {
               throw new MigrationException(
                   String.format(
-                      "Failed to migrate role permission with owner ID: %s and resource type: %s  ", request.ownerId(), request.resourceType()),
+                      "Failed to migrate role permission with owner ID: %s and resource type: %s  ",
+                      request.ownerId(), request.resourceType()),
                   e);
             }
           }
