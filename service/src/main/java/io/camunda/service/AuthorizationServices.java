@@ -98,6 +98,13 @@ public class AuthorizationServices
       // needed for frontend side checks
       return List.of("*");
     }
+
+    if (ownerIds == null || ownerIds.isEmpty()) {
+      // if no ownerIds are provided, we return an empty list to be defensive, we can't work out
+      // which applications the user has access to if we don't know the ownerIds
+      return List.of();
+    }
+
     return getAuthorizedResources(
         ownerIds, PermissionType.ACCESS, AuthorizationResourceType.APPLICATION);
   }
