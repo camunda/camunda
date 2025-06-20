@@ -113,7 +113,7 @@ final class FileSetManager {
       return config.compressionAlgorithm().isPresent()
           && Files.size(filePath) > COMPRESSION_SIZE_THRESHOLD;
     } catch (final IOException e) {
-      LOG.warn("Failed to determine if file should be compressed, assuming no: {}", filePath);
+      LOG.warn("Failed to determine if file should be compressed, assuming no: {}", filePath, e);
       return false;
     }
   }
