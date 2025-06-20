@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
+import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
@@ -60,6 +61,7 @@ public final class BpmnUserTaskBehavior {
   private final BpmnStateBehavior stateBehavior;
   private final FormState formState;
   private final UserTaskState userTaskState;
+  private final VariableState variableState;
   private final AsyncRequestState asyncRequestState;
   private final InstantSource clock;
 
@@ -70,6 +72,7 @@ public final class BpmnUserTaskBehavior {
       final BpmnStateBehavior stateBehavior,
       final FormState formState,
       final UserTaskState userTaskState,
+      final VariableState variableState,
       final AsyncRequestState asyncRequestState,
       final InstantSource clock) {
     this.keyGenerator = keyGenerator;
@@ -79,6 +82,7 @@ public final class BpmnUserTaskBehavior {
     this.stateBehavior = stateBehavior;
     this.formState = formState;
     this.userTaskState = userTaskState;
+    this.variableState = variableState;
     this.asyncRequestState = asyncRequestState;
     this.clock = clock;
   }
@@ -355,9 +359,21 @@ public final class BpmnUserTaskBehavior {
                         "user task was canceled during ongoing transition",
                         request.requestId(),
                         request.requestStreamId());
-                case VARIABLE_DOCUMENT -> {
-                  // TODO: write response with rejection for `VARIABLE_DOCUMENT:UPDATE` request
-                }
+                case VARIABLE_DOCUMENT ->
+                    variableState
+                        .findVariableDocumentState(userTask.getElementInstanceKey())
+                        .ifPresent(
+                            variableDocument -> {
+                              responseWriter.writeRejection(
+                                  variableDocument.getKey(),
+                                  request.intent(),
+                                  variableDocument.getRecord(),
+                                  ValueType.VARIABLE_DOCUMENT,
+                                  RejectionType.INVALID_STATE,
+                                  "user task was canceled during handling task variables update",
+                                  request.requestId(),
+                                  request.requestStreamId());
+                            });
                 default -> {
                   // TODO: log warning
                 }
