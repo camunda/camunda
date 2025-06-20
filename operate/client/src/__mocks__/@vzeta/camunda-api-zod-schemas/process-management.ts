@@ -6,10 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED = false;
-const IS_PROCESS_INSTANCE_V2_ENABLED = false;
-
-export {
-  IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED,
-  IS_PROCESS_INSTANCE_V2_ENABLED,
+export const endpoints = {
+  queryVariables: {
+    method: 'POST',
+    getUrl: () => `/v2/variables/search`,
+  },
+  getVariable: {
+    method: 'GET',
+    getUrl: ({variableKey}: {variableKey: string}) =>
+      `/v2/variables/${variableKey}`,
+  },
 };

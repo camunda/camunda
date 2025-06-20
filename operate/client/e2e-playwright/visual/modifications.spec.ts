@@ -48,6 +48,7 @@ test.describe('modifications', () => {
           sequenceFlows: runningInstance.sequenceFlows,
           sequenceFlowsV2: runningInstance.sequenceFlowsV2,
           variables: runningInstance.variables,
+          variablesV2: runningInstance.variablesV2,
           xml: runningInstance.xml,
         }),
       );
@@ -86,6 +87,7 @@ test.describe('modifications', () => {
           sequenceFlows: runningInstance.sequenceFlows,
           sequenceFlowsV2: runningInstance.sequenceFlowsV2,
           variables: runningInstance.variables,
+          variablesV2: runningInstance.variablesV2,
           xml: runningInstance.xml,
         }),
       );
@@ -132,6 +134,7 @@ test.describe('modifications', () => {
           sequenceFlows: instanceWithIncident.sequenceFlows,
           sequenceFlowsV2: instanceWithIncident.sequenceFlowsV2,
           variables: instanceWithIncident.variables,
+          variablesV2: instanceWithIncident.variablesV2,
           xml: instanceWithIncident.xml,
           incidents: instanceWithIncident.incidents,
           metaData: instanceWithIncident.metaData,
@@ -202,6 +205,7 @@ test.describe('modifications', () => {
           sequenceFlows: instanceWithIncident.sequenceFlows,
           sequenceFlowsV2: instanceWithIncident.sequenceFlowsV2,
           variables: instanceWithIncident.variables,
+          variablesV2: instanceWithIncident.variablesV2,
           xml: instanceWithIncident.xml,
           incidents: instanceWithIncident.incidents,
           metaData: instanceWithIncident.metaData,

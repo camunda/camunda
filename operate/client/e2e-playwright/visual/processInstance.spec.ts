@@ -56,6 +56,7 @@ test.describe('process instance page', () => {
         },
       });
 
+      await expect(processInstancePage.variablesTableSpinner).not.toBeVisible();
       await expect(page).toHaveScreenshot();
     });
 
@@ -77,6 +78,7 @@ test.describe('process instance page', () => {
           sequenceFlows: runningInstance.sequenceFlows,
           sequenceFlowsV2: runningInstance.sequenceFlowsV2,
           variables: runningInstance.variables,
+          variablesV2: runningInstance.variablesV2,
           xml: runningInstance.xml,
         }),
       );
@@ -109,6 +111,7 @@ test.describe('process instance page', () => {
           sequenceFlows: runningInstance.sequenceFlows,
           sequenceFlowsV2: runningInstance.sequenceFlowsV2,
           variables: runningInstance.variables,
+          variablesV2: runningInstance.variablesV2,
           xml: runningInstance.xml,
         }),
       );
@@ -142,6 +145,7 @@ test.describe('process instance page', () => {
           sequenceFlows: runningInstance.sequenceFlows,
           sequenceFlowsV2: runningInstance.sequenceFlowsV2,
           variables: runningInstance.variables,
+          variablesV2: runningInstance.variablesV2,
           xml: runningInstance.xml,
         }),
       );
@@ -180,6 +184,7 @@ test.describe('process instance page', () => {
           sequenceFlows: instanceWithIncident.sequenceFlows,
           sequenceFlowsV2: instanceWithIncident.sequenceFlowsV2,
           variables: instanceWithIncident.variables,
+          variablesV2: instanceWithIncident.variablesV2,
           xml: instanceWithIncident.xml,
           incidents: instanceWithIncident.incidents,
         }),
@@ -225,6 +230,7 @@ test.describe('process instance page', () => {
           sequenceFlows: completedInstance.sequenceFlows,
           sequenceFlowsV2: completedInstance.sequenceFlowsV2,
           variables: completedInstance.variables,
+          variablesV2: completedInstance.variablesV2,
           xml: completedInstance.xml,
         }),
       );
@@ -262,6 +268,7 @@ test.describe('process instance page', () => {
           sequenceFlows: compensationProcessInstance.sequenceFlows,
           sequenceFlowsV2: compensationProcessInstance.sequenceFlowsV2,
           variables: compensationProcessInstance.variables,
+          variablesV2: compensationProcessInstance.variablesV2,
           xml: compensationProcessInstance.xml,
         }),
       );

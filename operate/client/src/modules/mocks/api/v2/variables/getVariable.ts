@@ -6,10 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED = false;
-const IS_PROCESS_INSTANCE_V2_ENABLED = false;
+import {mockGetRequest} from '../../mockRequest';
+import {Variable} from '@vzeta/camunda-api-zod-schemas/process-management';
 
-export {
-  IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED,
-  IS_PROCESS_INSTANCE_V2_ENABLED,
-};
+const mockGetVariable = (contextPath = '') =>
+  mockGetRequest<Variable>(`${contextPath}/v2/variables/:variableKey`);
+
+export {mockGetVariable};
