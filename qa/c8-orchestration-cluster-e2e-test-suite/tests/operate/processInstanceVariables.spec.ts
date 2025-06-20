@@ -46,40 +46,46 @@ test.describe('Process Instance Variables', () => {
   }) => {
     test.slow();
 
-    await operateHomePage.clickProcessesTab();
-    await operateProcessesPage.filterByProcessName(
-      'variable scrolling process',
-    );
-    await operateProcessesPage.clickProcessInstanceLink();
-    await expect(operateProcessInstancePage.addVariableButton).toBeEnabled();
-
-    // open process instance page, after clicking the edit variable button see that save variable button is disabled.
-    await operateProcessInstancePage.clickEditVariableButton('aa');
-    await operateProcessInstancePage.clickVariableValueInput();
-    await operateProcessInstancePage.clearVariableValueInput();
-    await operateProcessInstancePage.fillVariableValueInput(
-      '"editedTestValue"',
-    );
-
-    // click save variable button and see that both edit variable spinner and operation spinner are displayed.
-    await expect(operateProcessInstancePage.saveVariableButton).toBeEnabled({
-      timeout: 30000,
-    });
-    await operateProcessInstancePage.saveVariableButton.click();
-    await expect(operateProcessInstancePage.variableSpinner).toBeVisible();
-    await expect(operateProcessInstancePage.operationSpinner).toBeVisible();
-
-    // see that spinners both disappear after save variable operation completes.
-    await expect(operateProcessInstancePage.variableSpinner).toBeHidden({
-      timeout: 60000,
-    });
-    await expect(operateProcessInstancePage.operationSpinner).toBeHidden({
-      timeout: 60000,
+    await test.step('Navigate to Processes tab and open the process instance', async () => {
+      await operateHomePage.clickProcessesTab();
+      await operateProcessesPage.filterByProcessName(
+        'variable scrolling process',
+      );
+      await operateProcessesPage.clickProcessInstanceLink();
+      await expect(operateProcessInstancePage.addVariableButton).toBeEnabled();
     });
 
-    // refresh the page and see the variable is still there.
-    await page.reload();
-    await expect(page.getByText('editedtestvalue')).toBeVisible();
+    await test.step('Click edit variable button and verify Save Variable button is enabled', async () => {
+      await operateProcessInstancePage.clickEditVariableButton('aa');
+      await operateProcessInstancePage.clickVariableValueInput();
+      await operateProcessInstancePage.clearVariableValueInput();
+      await operateProcessInstancePage.fillVariableValueInput(
+        '"editedTestValue"',
+      );
+      await expect(operateProcessInstancePage.saveVariableButton).toBeEnabled({
+        timeout: 30000,
+      });
+    });
+
+    await test.step('Click Save Variable button and verify that both edit variable spinner and operation spinner are displayed', async () => {
+      await operateProcessInstancePage.saveVariableButton.click();
+      await expect(operateProcessInstancePage.variableSpinner).toBeVisible();
+      await expect(operateProcessInstancePage.operationSpinner).toBeVisible();
+    });
+
+    await test.step('Verify that both spinners disappear after saving the variable', async () => {
+      await expect(operateProcessInstancePage.variableSpinner).toBeHidden({
+        timeout: 60000,
+      });
+      await expect(operateProcessInstancePage.operationSpinner).toBeHidden({
+        timeout: 60000,
+      });
+    });
+
+    await test.step('Refresh the page and verify the variable is still there', async () => {
+      await page.reload();
+      await expect(page.getByText('editedtestvalue')).toBeVisible();
+    });
   });
 
   test('Add variables', async ({
@@ -91,61 +97,66 @@ test.describe('Process Instance Variables', () => {
   }) => {
     test.slow();
 
-    await operateHomePage.clickProcessesTab();
-    await operateProcessesPage.filterByProcessName(
-      'simple service task process',
-    );
-    await operateProcessesPage.clickProcessInstanceLink();
-    await expect(operateProcessInstancePage.addVariableButton).toBeEnabled();
-
-    // add a new variable
-    await operateProcessInstancePage.clickAddVariableButton();
-    await operateProcessInstancePage.fillNewVariable(
-      'secondTestKey',
-      '"secondTestValue"',
-    );
-
-    await expect(operateProcessInstancePage.saveVariableButton).toBeEnabled();
-
-    // click save variable button and see that both variable spinner and toast displayed.
-    await operateProcessInstancePage.clickSaveVariableButton();
-    await expect(operateProcessInstancePage.variableSpinner).toBeVisible();
-    await expect(operateProcessInstancePage.variableAddedBanner).toBeVisible({
-      timeout: 60000,
+    await test.step('Navigate to Processes tab and open the process instance', async () => {
+      await operateHomePage.clickProcessesTab();
+      await operateProcessesPage.filterByProcessName(
+        'simple service task process',
+      );
+      await operateProcessesPage.clickProcessInstanceLink();
+      await expect(operateProcessInstancePage.addVariableButton).toBeEnabled();
     });
 
-    // see that spinners both disappear after save variable operation completes
-    await expect(operateProcessInstancePage.variableSpinner).toBeHidden({
-      timeout: 60000,
+    await test.step('Add a new variable', async () => {
+      await operateProcessInstancePage.clickAddVariableButton();
+      await operateProcessInstancePage.fillNewVariable(
+        'secondTestKey',
+        '"secondTestValue"',
+      );
+      await expect(operateProcessInstancePage.saveVariableButton).toBeEnabled();
     });
 
-    // refresh the page and see the variable is still there.
-    await page.reload();
-    await expect(page.getByText('secondTestKey', {exact: true})).toBeVisible();
-    await expect(page.getByText('"secondTestValue"')).toBeVisible();
+    await test.step('Click Save Variable button and verify that variable spinner and toast are displayed', async () => {
+      await operateProcessInstancePage.clickSaveVariableButton();
+      await expect(operateProcessInstancePage.variableSpinner).toBeVisible();
+      await expect(operateProcessInstancePage.variableAddedBanner).toBeVisible({
+        timeout: 60000,
+      });
+    });
 
-    // get process instance key
-    const processInstanceKey =
-      await operateProcessInstancePage.getProcessInstanceKey();
+    await test.step('Verify that the spinner disappears after saving the variable', async () => {
+      await expect(operateProcessInstancePage.variableSpinner).toBeHidden({
+        timeout: 60000,
+      });
+    });
 
-    // go to instance page, filter and find the instance by added variable
-    await operateHomePage.clickProcessesTab();
+    await test.step('Refresh the page and verify the variable is still there', async () => {
+      await page.reload();
+      await expect(
+        page.getByText('secondTestKey', {exact: true}),
+      ).toBeVisible();
+      await expect(page.getByText('"secondTestValue"')).toBeVisible();
+    });
 
-    await operateFiltersPanelPage.displayOptionalFilter(
-      'Process Instance Key(s)',
-    );
-    await operateFiltersPanelPage.displayOptionalFilter('Variable');
+    await test.step('Get the process instance key, navigate to Instances tab, and search using the added variable', async () => {
+      const processInstanceKey =
+        await operateProcessInstancePage.getProcessInstanceKey();
 
-    await operateFiltersPanelPage.fillVariableNameFilter('secondTestKey');
+      await operateHomePage.clickProcessesTab();
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Process Instance Key(s)',
+      );
+      await operateFiltersPanelPage.displayOptionalFilter('Variable');
+      await operateFiltersPanelPage.fillVariableNameFilter('secondTestKey');
+      await operateFiltersPanelPage.fillVariableValueFilter(
+        '"secondTestValue"',
+      );
+      await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
+        processInstanceKey,
+      );
 
-    await operateFiltersPanelPage.fillVariableValueFilter('"secondTestValue"');
-    await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
-      processInstanceKey,
-    );
-
-    await expect(page.getByText('1 result')).toBeVisible();
-
-    await operateProcessesPage.assertProcessInstanceLink(processInstanceKey);
+      await expect(page.getByText('1 result')).toBeVisible();
+      await operateProcessesPage.assertProcessInstanceLink(processInstanceKey);
+    });
   });
 
   test('Infinite scrolling', async ({
@@ -154,65 +165,55 @@ test.describe('Process Instance Variables', () => {
     operateProcessesPage,
     operateProcessInstancePage,
   }) => {
-    await operateHomePage.clickProcessesTab();
-    await operateProcessesPage.filterByProcessName(
-      'variable scrolling process',
-    );
-    await operateProcessesPage.clickProcessInstanceLink();
+    await test.step('Navigate to Processes tab and open the process instance', async () => {
+      await operateHomePage.clickProcessesTab();
+      await operateProcessesPage.filterByProcessName(
+        'variable scrolling process',
+      );
+      await operateProcessesPage.clickProcessInstanceLink();
+    });
 
-    await expect(operateProcessInstancePage.variablesList).toBeVisible();
+    await test.step('Scroll through variables and verify row count increases progressively', async () => {
+      await expect(operateProcessInstancePage.variablesList).toBeVisible();
+      await expect(
+        operateProcessInstancePage.variablesList.getByRole('row'),
+      ).toHaveCount(51);
 
-    await expect(
-      operateProcessInstancePage.variablesList.getByRole('row'),
-    ).toHaveCount(51);
+      await expect(page.getByText('aa', {exact: true})).toBeVisible();
+      await expect(page.getByText('bx', {exact: true})).toBeVisible();
 
-    await expect(page.getByText('aa', {exact: true})).toBeVisible();
-    await expect(page.getByText('bx', {exact: true})).toBeVisible();
+      await page.getByText('bx', {exact: true}).scrollIntoViewIfNeeded();
+      await expect(
+        operateProcessInstancePage.variablesList.getByRole('row'),
+      ).toHaveCount(101);
 
-    await page.getByText('bx', {exact: true}).scrollIntoViewIfNeeded();
+      await expect(page.getByText('dv', {exact: true})).toBeVisible();
+      await page.getByText('dv', {exact: true}).scrollIntoViewIfNeeded();
+      await expect(
+        operateProcessInstancePage.variablesList.getByRole('row'),
+      ).toHaveCount(151);
 
-    await expect(
-      operateProcessInstancePage.variablesList.getByRole('row'),
-    ).toHaveCount(101);
+      await expect(page.getByText('ft', {exact: true})).toBeVisible();
+      await page.getByText('ft', {exact: true}).scrollIntoViewIfNeeded();
+      await expect(
+        operateProcessInstancePage.variablesList.getByRole('row'),
+      ).toHaveCount(201);
 
-    await expect(page.getByText('aa', {exact: true})).toBeVisible();
-    await expect(page.getByText('dv', {exact: true})).toBeVisible();
+      await expect(page.getByText('hr', {exact: true})).toBeVisible();
+      await page.getByText('hr', {exact: true}).scrollIntoViewIfNeeded();
 
-    await page.getByText('dv', {exact: true}).scrollIntoViewIfNeeded();
+      await expect(page.getByText('aa', {exact: true})).toBeHidden();
+      await expect(page.getByText('by', {exact: true})).toBeVisible();
+      await expect(page.getByText('jp', {exact: true})).toBeVisible();
 
-    await expect(
-      operateProcessInstancePage.variablesList.getByRole('row'),
-    ).toHaveCount(151);
+      await page.getByText('by', {exact: true}).scrollIntoViewIfNeeded();
+      await expect(
+        operateProcessInstancePage.variablesList.getByRole('row'),
+      ).toHaveCount(201);
 
-    await expect(page.getByText('aa', {exact: true})).toBeVisible();
-    await expect(page.getByText('ft', {exact: true})).toBeVisible();
-
-    await page.getByText('ft', {exact: true}).scrollIntoViewIfNeeded();
-
-    await expect(
-      operateProcessInstancePage.variablesList.getByRole('row'),
-    ).toHaveCount(201);
-
-    await expect(page.getByText('aa', {exact: true})).toBeVisible();
-    await expect(page.getByText('hr', {exact: true})).toBeVisible();
-
-    await page.getByText('hr', {exact: true}).scrollIntoViewIfNeeded();
-
-    await expect(
-      operateProcessInstancePage.variablesList.getByRole('row'),
-    ).toHaveCount(201);
-
-    await expect(page.getByText('aa', {exact: true})).toBeHidden();
-    await expect(page.getByText('by', {exact: true})).toBeVisible();
-    await expect(page.getByText('jp', {exact: true})).toBeVisible();
-
-    await page.getByText('by', {exact: true}).scrollIntoViewIfNeeded();
-    await expect(
-      operateProcessInstancePage.variablesList.getByRole('row'),
-    ).toHaveCount(201);
-
-    await expect(page.getByText('jp', {exact: true})).toBeHidden();
-    await expect(page.getByText('aa', {exact: true})).toBeVisible();
-    await expect(page.getByText('by', {exact: true})).toBeVisible();
+      await expect(page.getByText('jp', {exact: true})).toBeHidden();
+      await expect(page.getByText('aa', {exact: true})).toBeVisible();
+      await expect(page.getByText('by', {exact: true})).toBeVisible();
+    });
   });
 });
