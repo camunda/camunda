@@ -31,7 +31,7 @@ public class CamundaProcessTestExtensionIT {
 
   @RegisterExtension
   private CamundaProcessTestExtension extension =
-      new CamundaProcessTestExtension().withCamundaVersion("8.7.0-SNAPSHOT");
+      new CamundaProcessTestExtension().withCamundaVersion("8.7-SNAPSHOT");
 
   // to be injected
   private ZeebeClient client;
