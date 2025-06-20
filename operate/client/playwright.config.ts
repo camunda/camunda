@@ -19,11 +19,24 @@ const config = defineConfig({
   timeout: 30 * 1000,
   expect: {
     timeout: 15 * 1000,
+    toHaveScreenshot: {threshold: 0.1},
   },
+  fullyParallel: !IS_E2E,
   forbidOnly: IS_CI,
-  retries: 0,
-  workers: IS_E2E ? 1 : undefined,
-  reporter: 'html',
+  retries: IS_CI ? 2 : 0,
+  workers: IS_CI || IS_E2E ? 1 : undefined,
+  reporter: IS_CI
+    ? [
+        ['github'],
+        ['html'],
+        [
+          'junit',
+          {
+            outputFile: 'results.xml',
+          },
+        ],
+      ]
+    : 'html',
   projects: [
     {
       name: 'setup',
