@@ -86,6 +86,30 @@ public class AuthorizationServiceTest {
   }
 
   @Test
+  public void noAuthorizedApplicationsWhenOwnerIdsIsEmpty() {
+    // given
+    securityConfiguration.getAuthorizations().setEnabled(true);
+
+    // when
+    final var authorizedApplications = services.getAuthorizedApplications(Set.of());
+
+    // then
+    assertThat(authorizedApplications).isEmpty();
+  }
+
+  @Test
+  public void noAuthorizedApplicationsWhenOwnerIdsIsNull() {
+    // given
+    securityConfiguration.getAuthorizations().setEnabled(true);
+
+    // when
+    final var authorizedApplications = services.getAuthorizedApplications(null);
+
+    // then
+    assertThat(authorizedApplications).isEmpty();
+  }
+
+  @Test
   public void shouldReturnSingleAuthorizationForGet() {
     // given
     final var entity = mock(AuthorizationEntity.class);

@@ -17,6 +17,7 @@ import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.auth.OidcPrincipalLoader;
@@ -34,7 +35,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -86,7 +86,7 @@ public class CamundaOAuthPrincipalService {
     final var username = principals.username();
     final var clientId = principals.clientId();
 
-    final var principalIdentifiers = new HashMap<EntityType, Set<String>>();
+    final var ownerTypeToIds = new HashMap<EntityType, Set<String>>();
 
     if (username == null && clientId == null) {
       throw new OAuth2AuthenticationException(
@@ -96,12 +96,12 @@ public class CamundaOAuthPrincipalService {
     }
     if (username != null) {
       authContextBuilder.withUsername(username);
-      principalIdentifiers.put(USER, Set.of(username));
+      ownerTypeToIds.put(USER, Set.of(username));
     }
 
     if (clientId != null) {
       authContextBuilder.withClientId(clientId);
-      principalIdentifiers.put(CLIENT, Set.of(clientId));
+      ownerTypeToIds.put(CLIENT, Set.of(clientId));
     }
 
     final var mappings = mappingServices.getMatchingMappings(claims);
@@ -110,20 +110,25 @@ public class CamundaOAuthPrincipalService {
     if (mappingIds.isEmpty()) {
       LOG.debug("No mappings found for these claims: {}", claims);
     } else {
-      principalIdentifiers.put(MAPPING, mappingIds);
+      ownerTypeToIds.put(MAPPING, mappingIds);
     }
 
     final Set<String> groups;
     if (StringUtils.hasText(groupsClaim)) {
       groups = new HashSet<>(oidcGroupsLoader.load(claims));
     } else {
-      // TODO: Get groups for username and clientId https://github.com/camunda/camunda/issues/26572
       groups =
-          groupServices.getGroupsByMemberIds(mappingIds, MAPPING).stream()
+          groupServices
+              .findAll(
+                  GroupQuery.of(
+                      groupQuery ->
+                          groupQuery.filter(
+                              groupFilter -> groupFilter.memberIdsByType(ownerTypeToIds))))
+              .stream()
               .map(GroupEntity::groupId)
               .collect(Collectors.toSet());
       if (!groups.isEmpty()) {
-        principalIdentifiers.put(GROUP, groups);
+        ownerTypeToIds.put(GROUP, groups);
       }
     }
 
@@ -131,9 +136,11 @@ public class CamundaOAuthPrincipalService {
         roleServices.findAll(
             RoleQuery.of(
                 roleQuery ->
-                    roleQuery.filter(
-                        roleFilter -> roleFilter.memberIdsByType(principalIdentifiers))));
+                    roleQuery.filter(roleFilter -> roleFilter.memberIdsByType(ownerTypeToIds))));
     final var roleIds = roles.stream().map(RoleEntity::roleId).collect(Collectors.toSet());
+    if (!roleIds.isEmpty()) {
+      ownerTypeToIds.put(EntityType.ROLE, roleIds);
+    }
 
     // TODO: Get tenants for username and clientId https://github.com/camunda/camunda/issues/26572
     final var tenants =
@@ -141,11 +148,12 @@ public class CamundaOAuthPrincipalService {
             .map(TenantDTO::fromEntity)
             .toList();
 
+    final var ownerIds =
+        ownerTypeToIds.values().stream().flatMap(Set::stream).collect(Collectors.toSet());
+    final var authorizedApplications = authorizationServices.getAuthorizedApplications(ownerIds);
+
     authContextBuilder
-        .withAuthorizedApplications(
-            authorizationServices.getAuthorizedApplications(
-                Stream.concat(roles.stream().map(RoleEntity::roleId), mappingIds.stream())
-                    .collect(Collectors.toSet())))
+        .withAuthorizedApplications(authorizedApplications)
         .withTenants(tenants)
         .withGroups(groups.stream().toList())
         .withRoles(roles);

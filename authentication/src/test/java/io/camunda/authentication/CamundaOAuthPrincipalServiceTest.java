@@ -18,6 +18,7 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
@@ -238,7 +239,8 @@ public class CamundaOAuthPrincipalServiceTest {
           .thenReturn(List.of(tenantT1, groupTenant));
 
       when(authorizationServices.getAuthorizedApplications(
-              Set.of("test-id", "test-id-2", "roleR1", "roleGroup")))
+              Set.of(
+                  "foo@camunda.test", "test-id", "test-id-2", "roleR1", "roleGroup", "group-g1")))
           .thenReturn(List.of("*"));
 
       // when
@@ -266,7 +268,18 @@ public class CamundaOAuthPrincipalServiceTest {
 
       when(mappingServices.getMatchingMappings(claims)).thenReturn(Stream.of(mapping1, mapping2));
 
-      when(groupServices.getGroupsByMemberIds(Set.of("map-1", "map-2"), EntityType.MAPPING))
+      final var expectedGroupQuery =
+          GroupQuery.of(
+              groupQuery ->
+                  groupQuery.filter(
+                      groupFilter ->
+                          groupFilter.memberIdsByType(
+                              Map.of(
+                                  EntityType.MAPPING,
+                                  Set.of("map-1", "map-2"),
+                                  EntityType.USER,
+                                  Set.of("scooby-doo")))));
+      when(groupServices.findAll(expectedGroupQuery))
           .thenReturn(List.of(new GroupEntity(1L, "group-g1", "G1", "Group G1")));
 
       final var tenantEntity1 = new TenantEntity(100L, "t1", "Tenant One", "First Tenant");
@@ -292,7 +305,8 @@ public class CamundaOAuthPrincipalServiceTest {
                                   Set.of("scooby-doo")))));
       when(roleServices.findAll(expectedQuery)).thenReturn(List.of(roleR1));
 
-      when(authorizationServices.getAuthorizedApplications(Set.of("map-1", "map-2", "roleR1")))
+      when(authorizationServices.getAuthorizedApplications(
+              Set.of("scooby-doo", "group-g1", "map-1", "map-2", "roleR1")))
           .thenReturn(List.of("app-1", "app-2"));
 
       // when
