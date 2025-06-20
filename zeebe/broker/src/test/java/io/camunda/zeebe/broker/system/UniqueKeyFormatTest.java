@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system;
 import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
@@ -23,7 +24,8 @@ import org.junit.rules.RuleChain;
 
 public final class UniqueKeyFormatTest {
 
-  public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(setPartitionCount(3));
+  public final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
+  public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(unifiedConfiguration, setPartitionCount(3));
   public final CommandApiRule apiRule = new CommandApiRule(brokerRule::getAtomixCluster);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);

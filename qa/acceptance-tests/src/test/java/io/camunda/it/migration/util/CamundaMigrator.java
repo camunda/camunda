@@ -138,7 +138,8 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
             .withAuthenticatedAccess()
             .withAdditionalProfile(Profile.PROCESS_MIGRATION)
             .withBrokerConfig(
-                cfg -> {
+                (cfg, _unifiedConfiguration) -> {
+                  // TODO: migrate experimental and gateway to the unified configuration
                   cfg.getExperimental().setVersionCheckRestrictionEnabled(false);
                   cfg.getGateway().setEnable(true);
                 })

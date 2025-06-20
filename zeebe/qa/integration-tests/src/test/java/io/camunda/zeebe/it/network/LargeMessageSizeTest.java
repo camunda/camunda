@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
@@ -46,8 +47,12 @@ public final class LargeMessageSizeTest {
 
   private static final String LARGE_TEXT = "x".repeat((int) (LARGE_SIZE - METADATA_SIZE));
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+
+  private final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
   private final EmbeddedBrokerRule brokerRule =
-      new EmbeddedBrokerRule(b -> b.getNetwork().setMaxMessageSize(MAX_MESSAGE_SIZE));
+      new EmbeddedBrokerRule(
+          unifiedConfiguration, b -> b.getNetwork().setMaxMessageSize(MAX_MESSAGE_SIZE));
+
   private final GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
   private String jobType;

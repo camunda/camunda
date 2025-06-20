@@ -14,6 +14,8 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
+import io.camunda.unifiedconfig.Backup;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
@@ -22,12 +24,9 @@ import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
-import io.camunda.zeebe.broker.system.configuration.DataCfg;
-import io.camunda.zeebe.broker.system.configuration.DiskCfg.FreeSpaceCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
-import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
@@ -62,7 +61,10 @@ public final class SystemContext {
       "Expected to have an append batch size maximum which is non negative and smaller then '%d', but was '%s'.";
 
   private final Duration shutdownTimeout;
-  private final BrokerCfg brokerCfg;
+
+  private final BrokerCfg brokerCfg; // this disappears eventually
+  private final UnifiedConfiguration unifiedConfiguration;
+
   private final IdentityConfiguration identityConfiguration;
   private Map<String, String> diagnosticContext;
   private final ActorScheduler scheduler;
@@ -78,6 +80,7 @@ public final class SystemContext {
   public SystemContext(
       final Duration shutdownTimeout,
       final BrokerCfg brokerCfg,
+      final UnifiedConfiguration unifiedConfiguration,
       final IdentityConfiguration identityConfiguration,
       final ActorScheduler scheduler,
       final AtomixCluster cluster,
@@ -90,6 +93,7 @@ public final class SystemContext {
       final SearchClientsProxy searchClientsProxy) {
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
+    this.unifiedConfiguration = unifiedConfiguration;
     this.identityConfiguration = identityConfiguration;
     this.scheduler = scheduler;
     this.cluster = cluster;
@@ -106,6 +110,7 @@ public final class SystemContext {
   @VisibleForTesting
   public SystemContext(
       final BrokerCfg brokerCfg,
+      final UnifiedConfiguration config,
       final ActorScheduler scheduler,
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
@@ -116,6 +121,7 @@ public final class SystemContext {
     this(
         DEFAULT_SHUTDOWN_TIMEOUT,
         brokerCfg,
+        config,
         null,
         scheduler,
         cluster,
@@ -128,22 +134,20 @@ public final class SystemContext {
         null);
   }
 
+  BrokerCfg _brokerCfg;
+
   private void initSystemContext() {
     validateConfiguration();
 
-    final var cluster = brokerCfg.getCluster();
-    final String brokerId = String.format("Broker-%d", cluster.getNodeId());
+    final String brokerId = String.format("Broker-%d", unifiedConfiguration.getCluster().getNodeId());
 
     diagnosticContext = Collections.singletonMap(BROKER_ID_LOG_PROPERTY, brokerId);
   }
 
   private void validateConfiguration() {
-    final ClusterCfg cluster = brokerCfg.getCluster();
-
-    validateDataConfig(brokerCfg.getData());
-
-    validClusterConfigs(cluster);
-    validateExperimentalConfigs(cluster, brokerCfg.getExperimental());
+    validateDataConfig(unifiedConfiguration);
+    validClusterConfigs(unifiedConfiguration);
+    validateExperimentalConfigs(brokerCfg.getCluster(), brokerCfg.getExperimental());
 
     validateExporters(brokerCfg.getExporters());
 
@@ -153,28 +157,26 @@ public final class SystemContext {
     }
   }
 
-  private void validClusterConfigs(final ClusterCfg cluster) {
-    final var gossiper = cluster.getConfigManager().gossip();
-
+  private void validClusterConfigs(final UnifiedConfiguration unifiedConfiguration) {
     final var errors = new ArrayList<String>(0);
 
-    if (!gossiper.syncDelay().isPositive()) {
+    if (!unifiedConfiguration.getCluster().getGossipSyncDelay().isPositive()) {
       errors.add(
           String.format(
               "syncDelay must be positive: configured value = %d ms",
-              gossiper.syncDelay().toMillis()));
+              unifiedConfiguration.getCluster().getGossipSyncDelay().toMillis()));
     }
-    if (!gossiper.syncRequestTimeout().isPositive()) {
+    if (!unifiedConfiguration.getCluster().getGossipSyncRequestTimeout().isPositive()) {
       errors.add(
           String.format(
               "syncRequestTimeout must be positive: configured value = %d ms",
-              gossiper.syncRequestTimeout().toMillis()));
+              unifiedConfiguration.getCluster().getGossipSyncRequestTimeout().toMillis()));
     }
-    if (gossiper.gossipFanout() < 2) {
+    if (unifiedConfiguration.getCluster().getGossipFanout() < 2) {
       errors.add(
           String.format(
               "gossipFanout must be greater than 1: configured value = %d",
-              gossiper.gossipFanout()));
+              unifiedConfiguration.getCluster().getGossipFanout()));
     }
 
     if (!errors.isEmpty()) {
@@ -212,43 +214,45 @@ public final class SystemContext {
     }
   }
 
-  private void validateDataConfig(final DataCfg dataCfg) {
-    final var snapshotPeriod = dataCfg.getSnapshotPeriod();
+  private void validateDataConfig(final UnifiedConfiguration config) {
+    final var snapshotPeriod = config.getCluster().getSnapshotPeriod();
     if (snapshotPeriod.isNegative() || snapshotPeriod.minus(MINIMUM_SNAPSHOT_PERIOD).isNegative()) {
       throw new IllegalArgumentException(String.format(SNAPSHOT_PERIOD_ERROR_MSG, snapshotPeriod));
     }
 
-    if (dataCfg.getDisk().isEnableMonitoring()) {
+    if (config.getCluster().getDiskMonitoringEnabled()) {
       try {
-        final FreeSpaceCfg freeSpaceCfg = dataCfg.getDisk().getFreeSpace();
-        final var processingFreeSpace = freeSpaceCfg.getProcessing().toBytes();
-        final var replicationFreeSpace = freeSpaceCfg.getReplication().toBytes();
+        final var processingFreeSpace = config.getCluster().getDiskFreeSpaceProcessing().toBytes();
+        final var replicationFreeSpace = config.getCluster().getDiskFreeSpaceReplication().toBytes();
         if (processingFreeSpace <= replicationFreeSpace) {
           throw new IllegalArgumentException(
-              "Minimum free space for processing (%d) must be greater than minimum free space for replication (%d). Configured values are %s"
-                  .formatted(processingFreeSpace, replicationFreeSpace, freeSpaceCfg));
+              "Minimum free space for processing (%d) must be greater than minimum free space for replication (%d)."
+                  .formatted(processingFreeSpace, replicationFreeSpace));
         }
       } catch (final Exception e) {
         throw new InvalidConfigurationException("Failed to parse disk monitoring configuration", e);
       }
     }
 
-    validateBackupCfg(dataCfg.getBackup());
+    validateBackupCfg(config, brokerCfg.getData().getBackup());
   }
 
-  private void validateBackupCfg(final BackupStoreCfg backup) {
+  private void validateBackupCfg(final UnifiedConfiguration config, BackupStoreCfg backup) {
     try {
-      switch (backup.getStore()) {
-        case NONE -> LOG.warn("No backup store is configured. Backups will not be taken");
-        case S3 -> S3BackupStore.validateConfig(S3BackupStoreConfig.toStoreConfig(backup.getS3()));
-        case GCS ->
-            GcsBackupStore.validateConfig(GcsBackupStoreConfig.toStoreConfig(backup.getGcs()));
-        case AZURE ->
-            AzureBackupStore.validateConfig(
-                AzureBackupStoreConfig.toStoreConfig(backup.getAzure()));
-        case FILESYSTEM ->
+      switch (config.getCamunda().getData().getBackup().getStoreType()) {
+        case Backup.STORE_TYPE_NONE -> LOG.warn("No backup store is configured. Backups will not be taken");
+        case Backup.STORE_TYPE_S3 ->
+            S3BackupStore.validateConfig(
+                S3BackupStoreConfig.toStoreConfig(backup.getS3()));
+        case Backup.STORE_TYPE_GCS ->
+            GcsBackupStore.validateConfig(
+                GcsBackupStoreConfig.toStoreConfig(backup.getGcs()));
+        case Backup.STORE_TYPE_AZURE ->
+            AzureBackupStore.validateConfig(config.getCamunda().getData().getBackup().getAzure());
+        case Backup.STORE_TYPE_FILESYSTEM ->
             FilesystemBackupStore.validateConfig(
-                FilesystemBackupStoreConfig.toStoreConfig(backup.getFilesystem()));
+                FilesystemBackupStoreConfig.toStoreConfig(
+                    backup.getFilesystem()));
         default ->
             throw new UnsupportedOperationException(
                 "Does not support validating configuration of backup store %s"
@@ -386,5 +390,9 @@ public final class SystemContext {
 
   public SearchClientsProxy getSearchClientsProxy() {
     return searchClientsProxy;
+  }
+
+  public UnifiedConfiguration getUnifiedConfiguration() {
+    return unifiedConfiguration;
   }
 }

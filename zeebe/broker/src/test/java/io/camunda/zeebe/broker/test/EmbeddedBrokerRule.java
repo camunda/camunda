@@ -17,6 +17,7 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setInterna
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.client.CamundaClient;
 import io.camunda.security.configuration.SecurityConfigurations;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -73,7 +74,10 @@ public final class EmbeddedBrokerRule extends ExternalResource {
       new RecordingExporterTestWatcher();
   protected final Supplier<InputStream> configSupplier;
   protected final Consumer<BrokerCfg>[] configurators;
+
+  protected UnifiedConfiguration config;
   protected BrokerCfg brokerCfg;
+
   protected Broker broker;
   protected final ControlledActorClock controlledActorClock = new ControlledActorClock();
   protected final SpringBrokerBridge springBrokerBridge = new SpringBrokerBridge();
@@ -86,25 +90,33 @@ public final class EmbeddedBrokerRule extends ExternalResource {
   private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   @SafeVarargs
-  public EmbeddedBrokerRule(final Consumer<BrokerCfg>... configurators) {
-    this(DEFAULT_CONFIG_FILE, configurators);
+  public EmbeddedBrokerRule(
+      final UnifiedConfiguration config,
+      final Consumer<BrokerCfg>... configurators) {
+    this(DEFAULT_CONFIG_FILE, config, configurators);
   }
 
   @SafeVarargs
   public EmbeddedBrokerRule(
-      final String configFileClasspathLocation, final Consumer<BrokerCfg>... configurators) {
+      final String configFileClasspathLocation,
+      final UnifiedConfiguration config,
+      final Consumer<BrokerCfg>... configurators) {
     this(
         () ->
             EmbeddedBrokerRule.class
                 .getClassLoader()
                 .getResourceAsStream(configFileClasspathLocation),
+        config,
         configurators);
   }
 
   @SafeVarargs
   public EmbeddedBrokerRule(
-      final Supplier<InputStream> configSupplier, final Consumer<BrokerCfg>... configurators) {
+      final Supplier<InputStream> configSupplier,
+      final UnifiedConfiguration config,
+      final Consumer<BrokerCfg>... configurators) {
     this.configSupplier = configSupplier;
+    this.config = config;
     this.configurators = configurators;
   }
 
@@ -241,6 +253,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
     systemContext =
         new SystemContext(
             brokerCfg,
+            config,
             scheduler,
             atomixCluster,
             TestBrokerClientFactory.createBrokerClient(atomixCluster, scheduler),

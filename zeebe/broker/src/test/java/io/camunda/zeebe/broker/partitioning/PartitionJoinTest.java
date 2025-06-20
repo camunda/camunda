@@ -11,6 +11,7 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddres
 
 import io.atomix.cluster.MemberId;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.system.SystemContext;
@@ -108,9 +109,11 @@ final class PartitionJoinTest {
     final var actorScheduler = TestActorSchedulerFactory.ofBrokerConfig(brokerCfg);
     final var brokerClient =
         TestBrokerClientFactory.createBrokerClient(atomixCluster, actorScheduler);
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     final var systemContext =
         new SystemContext(
             brokerCfg,
+            unifiedConfiguration,
             actorScheduler,
             atomixCluster,
             brokerClient,

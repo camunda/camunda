@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.backup;
 
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -45,7 +46,9 @@ final class S3RestoreAcceptanceIT implements RestoreAcceptance {
   }
 
   @Override
-  public void configureBackupStore(final BrokerCfg cfg) {
+  public void configureBackupStore(
+      final BrokerCfg cfg,
+      final UnifiedConfiguration _unifiedConfiguration) {
     final var backup = cfg.getData().getBackup();
     backup.setStore(BackupStoreType.S3);
 

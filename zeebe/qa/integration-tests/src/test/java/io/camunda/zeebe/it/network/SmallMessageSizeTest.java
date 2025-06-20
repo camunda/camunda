@@ -9,6 +9,7 @@ package io.camunda.zeebe.it.network;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -31,8 +32,10 @@ public class SmallMessageSizeTest {
   private static final String LARGE_TEXT =
       "x".repeat((int) (MAX_MESSAGE_SIZE.toBytes() / VARIABLE_COUNT));
 
+  private static final UnifiedConfiguration UNIFIED_CONFIGURATION = new UnifiedConfiguration();
   private static final EmbeddedBrokerRule BROKER_RULE =
       new EmbeddedBrokerRule(
+          UNIFIED_CONFIGURATION,
           b -> {
             b.getNetwork().setMaxMessageSize(MAX_MESSAGE_SIZE);
             b.getGateway().getLongPolling().setEnabled(false);

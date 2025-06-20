@@ -101,7 +101,8 @@ final class DynamicClusterConfigurationServiceTest {
   private void configureDynamicClusterTopology(
       final MemberId memberId, final TestStandaloneBroker broker) {
     broker.withBrokerConfig(
-        b -> {
+        (b, unifiedConfiguration) -> {
+          // TODO: Migrate partition count to unified configuration
           if (!memberId.id().equals("0")) {
             // not coordinator. Give wrong configuration to verify that it is overwritten by dynamic
             // cluster topology. Note that this would not work in production because the engine

@@ -88,7 +88,7 @@ final class GcsBackupAcceptanceIT implements BackupAcceptance {
 
   private void configureBroker(final TestStandaloneBroker broker) {
     broker.withBrokerConfig(
-        cfg -> {
+        (cfg, _unifiedConfiguration) -> {
           final var backup = cfg.getData().getBackup();
           backup.setStore(BackupStoreType.GCS);
 

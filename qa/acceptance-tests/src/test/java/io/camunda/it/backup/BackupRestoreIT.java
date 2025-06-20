@@ -19,6 +19,9 @@ import io.camunda.qa.util.cluster.HistoryBackupClient;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbConfigurator;
 import io.camunda.search.connect.configuration.DatabaseType;
+import io.camunda.unifiedconfig.AzureStore;
+import io.camunda.unifiedconfig.Backup;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.Metadata;
@@ -228,18 +231,22 @@ public class BackupRestoreIT {
     generator.verifyAllExported(ProcessInstanceState.COMPLETED);
   }
 
-  private void configureZeebeBackupStore(final BrokerCfg cfg) {
-    final var backup = cfg.getData().getBackup();
-    final var azure = backup.getAzure();
+  private void configureZeebeBackupStore(
+      final BrokerCfg _cfg,
+      final UnifiedConfiguration unifiedConfiguration) {
+    final Backup backupConfig = unifiedConfiguration.getCamunda().getData().getBackup();
+    final AzureStore azureStoreConfig = backupConfig.getAzure();
 
-    backup.setStore(BackupStoreType.AZURE);
-    azure.setBasePath(containerName);
-    azure.setConnectionString(AZURITE_CONTAINER.getConnectString());
+    backupConfig.setStoreType(Backup.STORE_TYPE_AZURE);
+    azureStoreConfig.setBasePath(containerName);
+    azureStoreConfig.setConnectionString(AZURITE_CONTAINER.getConnectString());
   }
 
   private void restoreZeebe() {
-    try (final var restoreApp =
-        new TestRestoreApp(testStandaloneApplication.brokerConfig()).withBackupId(BACKUP_ID)) {
+    try (final var restoreApp = new TestRestoreApp(
+        testStandaloneApplication.brokerConfig(),
+        testStandaloneApplication.getUnifiedConfiguration())
+        .withBackupId(BACKUP_ID)) {
       assertThatNoException().isThrownBy(restoreApp::start);
     }
   }

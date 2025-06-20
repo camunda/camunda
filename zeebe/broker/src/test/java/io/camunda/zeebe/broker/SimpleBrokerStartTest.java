@@ -15,6 +15,7 @@ import static org.mockito.Mockito.mock;
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
@@ -58,6 +59,7 @@ public final class SimpleBrokerStartTest {
     final var brokerCfg = new BrokerCfg();
     brokerCfg.getData().setSnapshotPeriod(Duration.ofMillis(1));
     brokerCfg.init(newTemporaryFolder.getAbsolutePath());
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
 
     // when
 
@@ -67,6 +69,7 @@ public final class SimpleBrokerStartTest {
               final var systemContext =
                   new SystemContext(
                       brokerCfg,
+                      unifiedConfiguration,
                       mock(ActorScheduler.class),
                       mock(AtomixCluster.class),
                       mock(BrokerClient.class),
@@ -85,6 +88,7 @@ public final class SimpleBrokerStartTest {
   public void shouldCallPartitionListenerAfterStart() throws Exception {
     // given
     final var brokerCfg = new BrokerCfg();
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     assignSocketAddresses(brokerCfg);
     brokerCfg.init(newTemporaryFolder.getAbsolutePath());
 
@@ -96,6 +100,7 @@ public final class SimpleBrokerStartTest {
     final var systemContext =
         new SystemContext(
             brokerCfg,
+            unifiedConfiguration,
             actorScheduler,
             atomixCluster,
             brokerClient,

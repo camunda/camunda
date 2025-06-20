@@ -10,6 +10,7 @@ package io.camunda.zeebe.it.health;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.it.util.GrpcClientRule;
@@ -33,8 +34,10 @@ import org.springframework.util.unit.DataSize;
 
 public class DiskSpaceRecoveryTest {
   private final Timeout testTimeout = Timeout.seconds(120);
+  private final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
   private final EmbeddedBrokerRule embeddedBrokerRule =
       new EmbeddedBrokerRule(
+          unifiedConfiguration,
           cfg -> {
             cfg.getData().setDiskUsageMonitoringInterval(Duration.ofSeconds(1));
           });

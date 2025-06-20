@@ -254,7 +254,7 @@ public class CamundaMultiDBExtension
     final var application = applicationUnderTest.application();
     multiDbConfigurator = new MultiDbConfigurator(application);
     application
-        .withBrokerConfig(cfg -> cfg.getGateway().setEnable(true))
+        .withBrokerConfig((cfg, _unifiedConfiguration) -> cfg.getGateway().setEnable(true))
         .withExporter(
             "recordingExporter", cfg -> cfg.setClassName(RecordingExporter.class.getName()));
   }

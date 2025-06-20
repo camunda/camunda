@@ -27,8 +27,9 @@ final class ClusterEndpointResponseIT {
   static void initTestStandaloneBroker() {
     broker =
         new TestStandaloneBroker()
-            .withBrokerConfig(
-                cfg -> cfg.getExperimental().getFeatures().setEnablePartitionScaling(true));
+            .withBrokerConfig((cfg, _unifiedConfiguration) ->
+                // TODO: migrate experimental to unified configuration
+                cfg.getExperimental().getFeatures().setEnablePartitionScaling(true));
   }
 
   @Test

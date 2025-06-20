@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
@@ -40,6 +41,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 class EmbeddedGatewayServiceStepTest {
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
   private static final BrokerCfg TEST_BROKER_CONFIG = new BrokerCfg();
+  private static final UnifiedConfiguration TEST_UNIFIED_CONFIGURATION = new UnifiedConfiguration();
   private static final Duration TIME_OUT = Duration.ofSeconds(10);
   private static final Duration TEST_SHUTDOWN_TIMEOUT = Duration.ofSeconds(10);
 
@@ -88,7 +90,8 @@ class EmbeddedGatewayServiceStepTest {
               new SecurityConfiguration(),
               mock(UserServices.class),
               mock(PasswordEncoder.class),
-              mock(JwtDecoder.class));
+              mock(JwtDecoder.class),
+              TEST_UNIFIED_CONFIGURATION);
 
       final var port = SocketUtil.getNextAddress().getPort();
       final var commandApiCfg = TEST_BROKER_CONFIG.getGateway().getNetwork();
@@ -161,7 +164,8 @@ class EmbeddedGatewayServiceStepTest {
               new SecurityConfiguration(),
               mock(UserServices.class),
               mock(PasswordEncoder.class),
-              mock(JwtDecoder.class));
+              mock(JwtDecoder.class),
+              TEST_UNIFIED_CONFIGURATION);
 
       testBrokerStartupContext.setEmbeddedGatewayService(mockEmbeddedGatewayService);
       shutdownFuture = CONCURRENCY_CONTROL.createFuture();

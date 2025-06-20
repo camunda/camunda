@@ -38,6 +38,7 @@ import io.camunda.client.api.response.BrokerInfo;
 import io.camunda.client.api.response.Topology;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.SecurityConfigurations;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -340,6 +341,7 @@ public class ClusteringRule extends ExternalResource {
   private Broker createBroker(final int nodeId) {
     final var brokerBase = getBrokerBase(nodeId);
     final var brokerCfg = getBrokerCfg(nodeId);
+    final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
     final var brokerSpringConfig = getBrokerConfiguration(brokerBase, brokerCfg);
     final var meterRegistry = new SimpleMeterRegistry();
     brokerCfg.init(brokerBase.getAbsolutePath());
@@ -373,6 +375,7 @@ public class ClusteringRule extends ExternalResource {
         new SystemContext(
             brokerSpringConfig.shutdownTimeout(),
             brokerCfg,
+            unifiedConfiguration,
             null,
             scheduler,
             atomixCluster,

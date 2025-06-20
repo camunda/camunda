@@ -11,6 +11,7 @@ import static io.camunda.client.impl.util.DataSizeUtil.ONE_KB;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -28,8 +29,10 @@ public final class CancelProcessInstanceInBatchesTest {
 
   private static final int AMOUNT_OF_ELEMENT_INSTANCES = 100;
   private static final int MAX_MESSAGE_SIZE_KB = 32;
+  private static final UnifiedConfiguration UNIFIED_CONFIGURATION = new UnifiedConfiguration();
   private static final EmbeddedBrokerRule BROKER_RULE =
       new EmbeddedBrokerRule(
+          UNIFIED_CONFIGURATION,
           cfg -> {
             cfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(MAX_MESSAGE_SIZE_KB));
             cfg.getGateway()

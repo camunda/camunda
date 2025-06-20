@@ -19,6 +19,7 @@ import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberConfig;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
@@ -53,6 +54,7 @@ class PartitionManagerStepTest {
   public static final Duration TEST_SHUTDOWN_TIMEOUT = Duration.ofSeconds(10);
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
   private static final BrokerCfg TEST_BROKER_CONFIG = new BrokerCfg();
+  private static final UnifiedConfiguration TEST_UNIFIED_CONFIGURATION = new UnifiedConfiguration();
   private static final Duration TIME_OUT = Duration.ofSeconds(10);
 
   static {
@@ -100,7 +102,8 @@ class PartitionManagerStepTest {
               new SecurityConfiguration(),
               mock(UserServices.class),
               mock(PasswordEncoder.class),
-              mock(JwtDecoder.class));
+              mock(JwtDecoder.class),
+              TEST_UNIFIED_CONFIGURATION);
       testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
       testBrokerStartupContext.setAdminApiService(mock(AdminApiRequestHandler.class));
       testBrokerStartupContext.setBrokerAdminService(mock(BrokerAdminServiceImpl.class));
@@ -202,7 +205,8 @@ class PartitionManagerStepTest {
               new SecurityConfiguration(),
               mock(UserServices.class),
               mock(PasswordEncoder.class),
-              mock(JwtDecoder.class));
+              mock(JwtDecoder.class),
+              TEST_UNIFIED_CONFIGURATION);
 
       testBrokerStartupContext.setPartitionManager(mockPartitionManager);
       final ClusterConfigurationService mockClusterTopology =

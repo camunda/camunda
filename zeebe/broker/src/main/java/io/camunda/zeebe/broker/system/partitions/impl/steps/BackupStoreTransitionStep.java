@@ -8,12 +8,13 @@
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.atomix.raft.RaftServer.Role;
+import io.camunda.unifiedconfig.Backup;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
-import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
@@ -30,6 +31,8 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
   public ActorFuture<Void> prepareTransition(
       final PartitionTransitionContext context, final long term, final Role targetRole) {
     final BackupStore backupStore = context.getBackupStore();
+    final UnifiedConfiguration unifiedConfiguration = context.getUnifiedConfiguration();
+
     if (backupStore != null && shouldCloseOnTransition(context.getCurrentRole(), targetRole)) {
       final ActorFuture<Void> closed = context.getConcurrencyControl().createFuture();
       backupStore
@@ -54,21 +57,31 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
 
     if (shouldInstallOnTransition(context.getCurrentRole(), targetRole)
         || (context.getBackupStore() == null && targetRole != Role.INACTIVE)) {
+      final UnifiedConfiguration unifiedConfiguration = context.getUnifiedConfiguration();
       final var backupCfg = context.getBrokerCfg().getData().getBackup();
-      switch (backupCfg.getStore()) {
-        case NONE -> {
-          // No backup store is installed. BackupManager can handle this case
-          context.setBackupStore(null);
-          installed.complete(null);
+
+      // TODO: code can be cleaner once backupCfg is completely migrated into the
+      //  Unified Configuration.
+      Backup backupConfig = unifiedConfiguration.getCamunda().getData().getBackup();
+      if (backupConfig.getStoreType() != null &&
+          Backup.STORE_TYPE_AZURE.equals(backupConfig.getStoreType())) {
+        installAzureStore(context, backupConfig, installed);
+      } else {
+        // TODO: As part of the Unified Configuration EPIC, all of these cases should be handled
+        //  using the new configuration classes instead of the legacy backupCfg.
+        switch (backupCfg.getStore()) {
+          case NONE -> {
+            // No backup store is installed. BackupManager can handle this case
+            context.setBackupStore(null);
+            installed.complete(null);
+          }
+          case S3 -> installS3Store(context, backupCfg, installed);
+          case GCS -> installGcsStore(context, backupCfg, installed);
+          case FILESYSTEM -> installFilesystemStore(context, backupCfg, installed);
+          default -> installed.completeExceptionally(
+              new IllegalArgumentException(
+                  "Unknown backup store type %s".formatted(backupCfg.getStore())));
         }
-        case S3 -> installS3Store(context, backupCfg, installed);
-        case GCS -> installGcsStore(context, backupCfg, installed);
-        case AZURE -> installAzureStore(context, backupCfg, installed);
-        case FILESYSTEM -> installFilesystemStore(context, backupCfg, installed);
-        default ->
-            installed.completeExceptionally(
-                new IllegalArgumentException(
-                    "Unknown backup store type %s".formatted(backupCfg.getStore())));
       }
     } else {
       installed.complete(null);
@@ -112,12 +125,10 @@ public final class BackupStoreTransitionStep implements PartitionTransitionStep 
 
   private static void installAzureStore(
       final PartitionTransitionContext context,
-      final BackupStoreCfg backupCfg,
+      final Backup backupConfig,
       final ActorFuture<Void> installed) {
     try {
-      final var brokerAzureConfig = backupCfg.getAzure();
-      final var storeAzureConfig = AzureBackupStoreConfig.toStoreConfig(brokerAzureConfig);
-      final var azureStore = AzureBackupStore.of(storeAzureConfig);
+      final var azureStore = AzureBackupStore.of(backupConfig.getAzure());
       context.setBackupStore(azureStore);
       installed.complete(null);
     } catch (final Exception error) {

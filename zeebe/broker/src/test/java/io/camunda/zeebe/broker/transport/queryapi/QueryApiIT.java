@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
@@ -42,8 +43,9 @@ import org.junit.rules.RuleChain;
 public final class QueryApiIT {
 
   public final ActorSchedulerRule actor = new ActorSchedulerRule();
+  public final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
   public final EmbeddedBrokerRule broker =
-      new EmbeddedBrokerRule(cfg -> cfg.getExperimental().getQueryApi().setEnabled(true));
+      new EmbeddedBrokerRule(unifiedConfiguration, cfg -> cfg.getExperimental().getQueryApi().setEnabled(true));
   public final CommandApiRule command = new CommandApiRule(broker::getAtomixCluster);
 
   @Rule

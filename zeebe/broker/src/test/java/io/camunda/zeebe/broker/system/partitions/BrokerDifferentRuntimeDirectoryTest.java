@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.partitions;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -17,9 +18,12 @@ import org.junit.Test;
 public class BrokerDifferentRuntimeDirectoryTest {
   private static final String STATE = "state";
 
+  UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
+
   @Rule
   public final EmbeddedBrokerRule brokerRule =
       new EmbeddedBrokerRule(
+          unifiedConfiguration,
           cfg -> {
             cfg.getCluster().setPartitionsCount(2);
             cfg.getData().setRuntimeDirectory(STATE);

@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system;
 
 import static org.assertj.core.api.AssertionsForClassTypes.fail;
 
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -17,13 +18,15 @@ import org.junit.Test;
 
 public final class EmbeddedGatewayTest {
 
+  UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
+
   @Rule
   public final EmbeddedBrokerRule brokerWithEnabledGateway =
-      new EmbeddedBrokerRule(cfg -> cfg.getGateway().setEnable(true));
+      new EmbeddedBrokerRule(unifiedConfiguration, cfg -> cfg.getGateway().setEnable(true));
 
   @Rule
   public final EmbeddedBrokerRule brokerWithDisabledGateway =
-      new EmbeddedBrokerRule(cfg -> cfg.getGateway().setEnable(false));
+      new EmbeddedBrokerRule(unifiedConfiguration, cfg -> cfg.getGateway().setEnable(false));
 
   @Test
   public void shouldConfigureGateway() {

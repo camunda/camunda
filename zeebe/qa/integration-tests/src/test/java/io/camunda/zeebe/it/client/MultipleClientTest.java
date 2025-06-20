@@ -10,6 +10,7 @@ package io.camunda.zeebe.it.client;
 import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.it.util.RecordingJobHandler;
@@ -19,7 +20,8 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 public final class MultipleClientTest {
-  public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
+  public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(unifiedConfiguration);
 
   public final GrpcClientRule client1 = new GrpcClientRule(brokerRule);
   public final GrpcClientRule client2 = new GrpcClientRule(brokerRule);

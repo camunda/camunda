@@ -70,7 +70,10 @@ final class AdvertisedAddressTest {
         .values()
         .forEach(
             b ->
-                b.withBrokerConfig(cfg -> cfg.getCluster().setInitialContactPoints(contactPoints)));
+                b.withBrokerConfig((cfg, _unifiedConfiguration) -> {
+                  // TODO: migrate the rest of cluster to unified configuration
+                  cfg.getCluster().setInitialContactPoints(contactPoints);
+                }));
     cluster
         .gateways()
         .values()
@@ -136,7 +139,8 @@ final class AdvertisedAddressTest {
         PROXY_REGISTRY.getOrCreateHostProxy(broker.mappedPort(TestZeebePort.CLUSTER));
 
     broker.withBrokerConfig(
-        cfg -> {
+        (cfg, _unifiedConfiguration) -> {
+          // TODO: migrate network to unified configuration
           final var network = cfg.getNetwork();
           network.getInternalApi().setAdvertisedHost(TOXIPROXY.getHost());
           network

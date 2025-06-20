@@ -52,7 +52,8 @@ public class ClusterMultiplePartitionsBatchOperationIT {
       new TestStandaloneBroker()
           .withUnauthenticatedAccess()
           .withBrokerConfig(
-              b -> {
+              (b, _unifiedConfiguration) -> {
+                // TODO: migrate the rest of cluster to the unified configuration
                 final var cluster = b.getCluster();
                 cluster.setPartitionsCount(3);
                 b.setCluster(cluster);

@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
@@ -44,6 +45,7 @@ class ApiMessagingServiceStepTest {
   public static final Duration TEST_SHUTDOWN_TIMEOUT = Duration.ofSeconds(10);
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
   private static final BrokerCfg TEST_BROKER_CONFIG = new BrokerCfg();
+  private static final UnifiedConfiguration UNIFIED_CONFIGURATION = new UnifiedConfiguration();
   private static final BrokerInfo TEST_BROKER_INFO = new BrokerInfo(0, "localhost");
   private static final Duration TIME_OUT = Duration.ofSeconds(10);
 
@@ -77,7 +79,8 @@ class ApiMessagingServiceStepTest {
             new SecurityConfiguration(),
             mock(UserServices.class),
             mock(PasswordEncoder.class),
-            mock(JwtDecoder.class));
+            mock(JwtDecoder.class),
+            UNIFIED_CONFIGURATION);
     testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
   }
 

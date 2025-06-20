@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.exporter;
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.unifiedconfig.UnifiedConfiguration;
 import io.camunda.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
@@ -31,8 +32,10 @@ public final class ExporterManagerPartitionTest {
   private static final int PARTITIONS = 3;
   private static final String TEST_EXPORTER_ID = "test-exporter";
 
+  public final UnifiedConfiguration unifiedConfiguration = new UnifiedConfiguration();
   public final EmbeddedBrokerRule brokerRule =
       new EmbeddedBrokerRule(
+          unifiedConfiguration,
           brokerCfg -> {
             brokerCfg.getCluster().setPartitionsCount(PARTITIONS);
 
