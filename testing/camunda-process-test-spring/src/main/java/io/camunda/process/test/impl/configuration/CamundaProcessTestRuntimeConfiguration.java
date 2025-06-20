@@ -30,9 +30,10 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "io.camunda.process.test")
 public class CamundaProcessTestRuntimeConfiguration {
 
-  private String camundaVersion = CamundaProcessTestRuntimeDefaults.CAMUNDA_VERSION;
   private String camundaDockerImageName =
       CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME;
+  private String camundaDockerImageVersion =
+      CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_VERSION;
   private Map<String, String> camundaEnvVars = Collections.emptyMap();
   private List<Integer> camundaExposedPorts = Collections.emptyList();
 
@@ -48,12 +49,46 @@ public class CamundaProcessTestRuntimeConfiguration {
 
   @NestedConfigurationProperty private RemoteConfiguration remote = new RemoteConfiguration();
 
+  /**
+   * Gets the Camunda docker image version.
+   *
+   * @return the camunda docker image version
+   * @deprecated use getCamundaDockerImageVersion
+   * @since 8.8.0
+   */
+  @Deprecated
   public String getCamundaVersion() {
-    return camundaVersion;
+    return camundaDockerImageVersion;
   }
 
-  public void setCamundaVersion(final String camundaVersion) {
-    this.camundaVersion = camundaVersion;
+  /**
+   * Sets the Camunda docker image version.
+   *
+   * @param camundaDockerImageVersion the Camunda docker image version to set
+   * @deprecated use setCamundaDockerImageVersion
+   * @since 8.8.0
+   */
+  @Deprecated
+  public void setCamundaVersion(final String camundaDockerImageVersion) {
+    this.camundaDockerImageVersion = camundaDockerImageVersion;
+  }
+
+  /**
+   * Gets the Camunda docker image version.
+   *
+   * @return the camunda docker image version
+   */
+  public String getCamundaDockerImageVersion() {
+    return camundaDockerImageVersion;
+  }
+
+  /**
+   * Sets the Camunda docker image version.
+   *
+   * @param camundaDockerImageVersion the Camunda docker image version to set
+   */
+  public void setCamundaDockerImageVersion(final String camundaDockerImageVersion) {
+    this.camundaDockerImageVersion = camundaDockerImageVersion;
   }
 
   public String getCamundaDockerImageName() {
