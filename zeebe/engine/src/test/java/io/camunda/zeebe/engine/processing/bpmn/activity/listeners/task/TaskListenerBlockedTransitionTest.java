@@ -725,11 +725,7 @@ public class TaskListenerBlockedTransitionTest {
         AsyncRequestIntent.RECEIVED,
         UserTaskIntent.ASSIGNING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
-        // In case the user task is canceled during the ongoing transition,
-        // we should write a rejection for the original async request
-        // and write `AsyncRequestIntent.PROCESSED` event to cleanup the state.
-        // This will be implemented in the scope of a separate issue:
-        //  - https://github.com/camunda/camunda/issues/33024
+        AsyncRequestIntent.PROCESSED,
         UserTaskIntent.CANCELING,
         UserTaskIntent.CANCELED);
   }
@@ -770,6 +766,7 @@ public class TaskListenerBlockedTransitionTest {
         AsyncRequestIntent.RECEIVED,
         UserTaskIntent.ASSIGNING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
+        AsyncRequestIntent.PROCESSED,
         UserTaskIntent.CANCELING,
         UserTaskIntent.CANCELED);
   }
