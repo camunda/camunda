@@ -12,6 +12,7 @@ import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnProtectedApi;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
+import io.camunda.authentication.csrf.CsrfProtectionRequestMatcher;
 import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
@@ -23,12 +24,17 @@ import io.camunda.service.GroupServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
+import org.springframework.boot.actuate.logging.LoggersEndpoint;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -41,9 +47,11 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -56,6 +64,10 @@ import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -63,24 +75,17 @@ import org.springframework.security.web.access.intercept.AuthorizationFilter;
 @Profile("consolidated-auth")
 public class WebSecurityConfig {
   public static final String SESSION_COOKIE = "camunda-session";
-
-  private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
-  // Used for chains that grant unauthenticated access, always comes first.
-  private static final int ORDER_UNPROTECTED = 0;
-  // Used for chains that protect the APIs or Webapp paths.
-  private static final int ORDER_WEBAPP_API = 1;
-  // Intended for a "catch-all-unhandled"-chain protecting all resources by default
-  private static final int ORDER_UNHANDLED = 2;
-  private static final String LOGIN_URL = "/login";
-  private static final String LOGOUT_URL = "/logout";
-  private static final Set<String> API_PATHS = Set.of("/api/**", "/v1/**", "/v2/**");
-  private static final Set<String> UNPROTECTED_API_PATHS =
+  public static final String X_CSRF_TOKEN = "X-CSRF-TOKEN";
+  public static final String LOGIN_URL = "/login";
+  public static final String LOGOUT_URL = "/logout";
+  public static final Set<String> API_PATHS = Set.of("/api/**", "/v1/**", "/v2/**");
+  public static final Set<String> UNPROTECTED_API_PATHS =
       Set.of(
           // these v2 endpoints are public
           "/v2/license",
           // deprecated Tasklist v1 Public Endpoints
           "/v1/external/process/**");
-  private static final Set<String> WEBAPP_PATHS =
+  public static final Set<String> WEBAPP_PATHS =
       Set.of(
           "/login/**",
           "/logout",
@@ -100,7 +105,7 @@ public class WebSecurityConfig {
           "/decisions/*",
           "/instances",
           "/instances/*");
-  private static final Set<String> UNPROTECTED_PATHS =
+  public static final Set<String> UNPROTECTED_PATHS =
       Set.of(
           // endpoint for failure forwarding
           "/error",
@@ -117,6 +122,13 @@ public class WebSecurityConfig {
           // deprecated Tasklist v1 Public Endpoints
           "/new/**",
           "/favicon.ico");
+  private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
+  // Used for chains that grant unauthenticated access, always comes first.
+  private static final int ORDER_UNPROTECTED = 0;
+  // Used for chains that protect the APIs or Webapp paths.
+  private static final int ORDER_WEBAPP_API = 1;
+  // Intended for a "catch-all-unhandled"-chain protecting all resources by default
+  private static final int ORDER_UNHANDLED = 2;
 
   @Bean
   @ConditionalOnMissingBean(MethodSecurityExpressionHandler.class)
@@ -144,21 +156,30 @@ public class WebSecurityConfig {
   @Bean
   @ConditionalOnUnprotectedApi
   @Order(ORDER_UNPROTECTED)
-  public SecurityFilterChain unprotectedApiAuthSecurityFilterChain(final HttpSecurity httpSecurity)
+  public SecurityFilterChain unprotectedApiAuthSecurityFilterChain(
+      final HttpSecurity httpSecurity,
+      final SecurityConfiguration securityConfiguration,
+      final AuthFailureHandler authFailureHandler,
+      final CookieCsrfTokenRepository csrfTokenRepository)
       throws Exception {
     LOG.warn(
         "The API is unprotected. Please disable {} for any deployment.",
         AuthenticationProperties.API_UNPROTECTED);
-    return httpSecurity
-        .securityMatcher(API_PATHS.toArray(String[]::new))
-        .authorizeHttpRequests(
-            (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().permitAll())
-        .headers(WebSecurityConfig::setupStrictTransportSecurity)
-        .csrf(AbstractHttpConfigurer::disable)
-        .cors(AbstractHttpConfigurer::disable)
-        .formLogin(AbstractHttpConfigurer::disable)
-        .anonymous(AbstractHttpConfigurer::disable)
-        .build();
+    final var filterChainBuilder =
+        httpSecurity
+            .securityMatcher(API_PATHS.toArray(String[]::new))
+            .authorizeHttpRequests(
+                (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().permitAll())
+            .headers(WebSecurityConfig::setupStrictTransportSecurity)
+            .cors(AbstractHttpConfigurer::disable)
+            .formLogin(AbstractHttpConfigurer::disable)
+            .anonymous(AbstractHttpConfigurer::disable)
+            .exceptionHandling(
+                exceptionHandling -> exceptionHandling.accessDeniedHandler(authFailureHandler));
+
+    applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
+
+    return filterChainBuilder.build();
   }
 
   @Bean
@@ -196,6 +217,72 @@ public class WebSecurityConfig {
                 .preload(true));
   }
 
+  @Bean
+  public CookieCsrfTokenRepository cookieCsrfTokenRepository() {
+    final CookieCsrfTokenRepository repository = new CookieCsrfTokenRepository();
+    repository.setHeaderName(X_CSRF_TOKEN);
+    repository.setCookieCustomizer(cc -> cc.httpOnly(true).secure(true));
+    repository.setCookieName(X_CSRF_TOKEN);
+    return repository;
+  }
+
+  private static void configureCsrf(
+      final CookieCsrfTokenRepository repository,
+      final CsrfConfigurer<HttpSecurity> csrf,
+      final SecurityConfiguration securityConfiguration) {
+    csrf.csrfTokenRepository(repository)
+        .requireCsrfProtectionMatcher(new CsrfProtectionRequestMatcher(securityConfiguration))
+        .ignoringRequestMatchers(EndpointRequest.to(LoggersEndpoint.class));
+  }
+
+  private static OncePerRequestFilter csrfHeaderFilter() {
+    return new OncePerRequestFilter() {
+
+      @Override
+      protected void doFilterInternal(
+          final HttpServletRequest request,
+          final HttpServletResponse response,
+          final FilterChain filterChain)
+          throws ServletException, IOException {
+        filterChain.doFilter(request, addCsrfTokenWhenAvailable(request, response));
+      }
+    };
+  }
+
+  private static HttpServletResponse addCsrfTokenWhenAvailable(
+      final HttpServletRequest request, final HttpServletResponse response) {
+    if (shouldAddCsrf(request)) {
+      final CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+      if (token != null) {
+        response.setHeader(X_CSRF_TOKEN, token.getToken());
+      }
+    }
+    return response;
+  }
+
+  private static boolean shouldAddCsrf(final HttpServletRequest request) {
+    final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    final String path = request.getRequestURI();
+    final String method = request.getMethod();
+    return (auth != null && auth.isAuthenticated())
+        && (path == null || !path.contains(LOGOUT_URL))
+        && ("GET".equalsIgnoreCase(method) || (path != null && (path.contains(LOGIN_URL))));
+  }
+
+  private static void applyCsrfConfiguration(
+      final HttpSecurity httpSecurity,
+      final SecurityConfiguration securityConfiguration,
+      final CookieCsrfTokenRepository csrfTokenRepository)
+      throws Exception {
+    httpSecurity.csrf(
+        securityConfiguration.getCsrf().isEnabled()
+            ? csrf -> configureCsrf(csrfTokenRepository, csrf, securityConfiguration)
+            : AbstractHttpConfigurer::disable);
+    if (securityConfiguration.getCsrf().isEnabled()) {
+      httpSecurity.addFilterAfter(csrfHeaderFilter(), CsrfFilter.class);
+    }
+  }
+
   @Configuration
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.BASIC)
   public static class BasicConfiguration {
@@ -214,36 +301,43 @@ public class WebSecurityConfig {
     @Order(ORDER_WEBAPP_API)
     @ConditionalOnProtectedApi
     public SecurityFilterChain httpBasicApiAuthSecurityFilterChain(
-        final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
+        final HttpSecurity httpSecurity,
+        final AuthFailureHandler authFailureHandler,
+        final SecurityConfiguration securityConfiguration,
+        final CookieCsrfTokenRepository csrfTokenRepository)
         throws Exception {
       LOG.info("The API is protected by HTTP Basic authentication.");
-      return httpSecurity
-          .securityMatcher(API_PATHS.toArray(String[]::new))
-          .authorizeHttpRequests(
-              (authorizeHttpRequests) ->
-                  authorizeHttpRequests
-                      .requestMatchers(UNPROTECTED_API_PATHS.toArray(String[]::new))
-                      .permitAll()
-                      .anyRequest()
-                      .authenticated())
-          .headers(WebSecurityConfig::setupStrictTransportSecurity)
-          .csrf(AbstractHttpConfigurer::disable)
-          .cors(AbstractHttpConfigurer::disable)
-          .formLogin(AbstractHttpConfigurer::disable)
-          .anonymous(AbstractHttpConfigurer::disable)
-          .httpBasic(Customizer.withDefaults())
-          .exceptionHandling(
-              // this prevents the usage of the default BasicAuthenticationEntryPoint returning
-              // a WWW-Authenticate header that causes browsers to prompt for basic login
-              exceptionHandling ->
-                  exceptionHandling
-                      .authenticationEntryPoint(authFailureHandler)
-                      .accessDeniedHandler(authFailureHandler))
-          // do not create a session on api authentication, that's to be done on webapp login only
-          .sessionManagement(
-              (sessionManagement) ->
-                  sessionManagement.sessionCreationPolicy(SessionCreationPolicy.NEVER))
-          .build();
+      final var filterChainBuilder =
+          httpSecurity
+              .securityMatcher(API_PATHS.toArray(String[]::new))
+              .authorizeHttpRequests(
+                  (authorizeHttpRequests) ->
+                      authorizeHttpRequests
+                          .requestMatchers(UNPROTECTED_API_PATHS.toArray(String[]::new))
+                          .permitAll()
+                          .anyRequest()
+                          .authenticated())
+              .headers(WebSecurityConfig::setupStrictTransportSecurity)
+              .cors(AbstractHttpConfigurer::disable)
+              .formLogin(AbstractHttpConfigurer::disable)
+              .anonymous(AbstractHttpConfigurer::disable)
+              .httpBasic(Customizer.withDefaults())
+              .exceptionHandling(
+                  // this prevents the usage of the default BasicAuthenticationEntryPoint returning
+                  // a WWW-Authenticate header that causes browsers to prompt for basic login
+                  exceptionHandling ->
+                      exceptionHandling
+                          .authenticationEntryPoint(authFailureHandler)
+                          .accessDeniedHandler(authFailureHandler))
+              // do not create a session on api authentication, that's to be done on webapp login
+              // only
+              .sessionManagement(
+                  (sessionManagement) ->
+                      sessionManagement.sessionCreationPolicy(SessionCreationPolicy.NEVER));
+
+      applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
+
+      return filterChainBuilder.build();
     }
 
     @Bean
@@ -251,42 +345,48 @@ public class WebSecurityConfig {
     public SecurityFilterChain httpBasicWebappAuthSecurityFilterChain(
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
+        final CookieCsrfTokenRepository csrfTokenRepository,
         final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter,
         final SecurityConfiguration securityConfiguration,
         final RoleServices roleServices)
         throws Exception {
       LOG.info("Web Applications Login/Logout is setup.");
-      return httpSecurity
-          .securityMatcher(WEBAPP_PATHS.toArray(String[]::new))
-          // webapps are accessible without any authentication required
-          .authorizeHttpRequests(
-              (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().permitAll())
-          .csrf(AbstractHttpConfigurer::disable)
-          .cors(AbstractHttpConfigurer::disable)
-          .anonymous(AbstractHttpConfigurer::disable)
-          // http basic auth is possible to obtain a session
-          .httpBasic(Customizer.withDefaults())
-          // login/logout is still possible to obtain a session
-          // the session grants access to the API as well, via #httpBasicApiAuthSecurityFilterChain
-          .formLogin(
-              formLogin ->
-                  formLogin
-                      .loginPage(LOGIN_URL)
-                      .loginProcessingUrl(LOGIN_URL)
-                      .failureHandler(authFailureHandler)
-                      .successHandler(WebSecurityConfig::noContentSuccessHandler))
-          .logout(
-              (logout) ->
-                  logout
-                      .logoutUrl(LOGOUT_URL)
-                      .logoutSuccessHandler(WebSecurityConfig::noContentSuccessHandler)
-                      .deleteCookies(SESSION_COOKIE))
-          .exceptionHandling(
-              exceptionHandling ->
-                  exceptionHandling
-                      .authenticationEntryPoint(authFailureHandler)
-                      .accessDeniedHandler(authFailureHandler))
-          .addFilterAfter(webApplicationAuthorizationCheckFilter, AuthorizationFilter.class)
+      final var filterChainBuilder =
+          httpSecurity
+              .securityMatcher(WEBAPP_PATHS.toArray(String[]::new))
+              // webapps are accessible without any authentication required
+              .authorizeHttpRequests(
+                  (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().permitAll())
+              .cors(AbstractHttpConfigurer::disable)
+              .anonymous(AbstractHttpConfigurer::disable)
+              // http basic auth is possible to obtain a session
+              .httpBasic(Customizer.withDefaults())
+              // login/logout is still possible to obtain a session
+              // the session grants access to the API as well, via
+              // #httpBasicApiAuthSecurityFilterChain
+              .formLogin(
+                  formLogin ->
+                      formLogin
+                          .loginPage(LOGIN_URL)
+                          .loginProcessingUrl(LOGIN_URL)
+                          .failureHandler(authFailureHandler)
+                          .successHandler(WebSecurityConfig::noContentSuccessHandler))
+              .logout(
+                  (logout) ->
+                      logout
+                          .logoutUrl(LOGOUT_URL)
+                          .logoutSuccessHandler(WebSecurityConfig::noContentSuccessHandler)
+                          .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN))
+              .exceptionHandling(
+                  exceptionHandling ->
+                      exceptionHandling
+                          .authenticationEntryPoint(authFailureHandler)
+                          .accessDeniedHandler(authFailureHandler))
+              .addFilterAfter(webApplicationAuthorizationCheckFilter, AuthorizationFilter.class);
+
+      applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
+
+      return filterChainBuilder
           .addFilterBefore(
               new AdminUserCheckFilter(securityConfiguration, roleServices),
               AuthorizationFilter.class)
@@ -355,33 +455,40 @@ public class WebSecurityConfig {
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
         final JwtDecoder jwtDecoder,
-        final CamundaJwtAuthenticationConverter converter)
+        final CamundaJwtAuthenticationConverter converter,
+        final SecurityConfiguration securityConfiguration,
+        final CookieCsrfTokenRepository csrfTokenRepository)
         throws Exception {
-      return httpSecurity
-          .securityMatcher(API_PATHS.toArray(new String[0]))
-          .authorizeHttpRequests(
-              (authorizeHttpRequests) ->
-                  authorizeHttpRequests
-                      .requestMatchers(UNPROTECTED_API_PATHS.toArray(String[]::new))
-                      .permitAll()
-                      .anyRequest()
-                      .authenticated())
-          .headers(WebSecurityConfig::setupStrictTransportSecurity)
-          .exceptionHandling(
-              (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
-          .csrf(AbstractHttpConfigurer::disable)
-          .cors(AbstractHttpConfigurer::disable)
-          .formLogin(AbstractHttpConfigurer::disable)
-          .anonymous(AbstractHttpConfigurer::disable)
-          .oauth2ResourceServer(
-              oauth2 ->
-                  oauth2.jwt(
-                      jwtConfigurer ->
-                          jwtConfigurer.decoder(jwtDecoder).jwtAuthenticationConverter(converter)))
-          .oauth2Login(AbstractHttpConfigurer::disable)
-          .oidcLogout(AbstractHttpConfigurer::disable)
-          .logout(AbstractHttpConfigurer::disable)
-          .build();
+      final var filterChainBuilder =
+          httpSecurity
+              .securityMatcher(API_PATHS.toArray(new String[0]))
+              .authorizeHttpRequests(
+                  (authorizeHttpRequests) ->
+                      authorizeHttpRequests
+                          .requestMatchers(UNPROTECTED_API_PATHS.toArray(String[]::new))
+                          .permitAll()
+                          .anyRequest()
+                          .authenticated())
+              .headers(WebSecurityConfig::setupStrictTransportSecurity)
+              .exceptionHandling(
+                  (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
+              .cors(AbstractHttpConfigurer::disable)
+              .formLogin(AbstractHttpConfigurer::disable)
+              .anonymous(AbstractHttpConfigurer::disable)
+              .oauth2ResourceServer(
+                  oauth2 ->
+                      oauth2.jwt(
+                          jwtConfigurer ->
+                              jwtConfigurer
+                                  .decoder(jwtDecoder)
+                                  .jwtAuthenticationConverter(converter)))
+              .oauth2Login(AbstractHttpConfigurer::disable)
+              .oidcLogout(AbstractHttpConfigurer::disable)
+              .logout(AbstractHttpConfigurer::disable);
+
+      applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
+
+      return filterChainBuilder.build();
     }
 
     @Bean
@@ -392,46 +499,53 @@ public class WebSecurityConfig {
         final ClientRegistrationRepository clientRegistrationRepository,
         final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter,
         final JwtDecoder jwtDecoder,
-        final CamundaJwtAuthenticationConverter converter)
+        final CamundaJwtAuthenticationConverter converter,
+        final SecurityConfiguration securityConfiguration,
+        final CookieCsrfTokenRepository csrfTokenRepository)
         throws Exception {
-      return httpSecurity
-          .securityMatcher(WEBAPP_PATHS.toArray(new String[0]))
-          .authorizeHttpRequests(
-              (authorizeHttpRequests) ->
-                  authorizeHttpRequests
-                      .requestMatchers(UNPROTECTED_PATHS.toArray(String[]::new))
-                      .permitAll()
-                      .anyRequest()
-                      .authenticated())
-          .headers(WebSecurityConfig::setupStrictTransportSecurity)
-          .exceptionHandling(
-              (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
-          .csrf(AbstractHttpConfigurer::disable)
-          .cors(AbstractHttpConfigurer::disable)
-          .formLogin(AbstractHttpConfigurer::disable)
-          .anonymous(AbstractHttpConfigurer::disable)
-          .oauth2ResourceServer(
-              oauth2 ->
-                  oauth2.jwt(
-                      jwtConfigurer ->
-                          jwtConfigurer.decoder(jwtDecoder).jwtAuthenticationConverter(converter)))
-          .oauth2Login(
-              oauthLoginConfigurer -> {
-                oauthLoginConfigurer
-                    .clientRegistrationRepository(clientRegistrationRepository)
-                    .redirectionEndpoint(
-                        redirectionEndpointConfig ->
-                            redirectionEndpointConfig.baseUri("/sso-callback"));
-              })
-          .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
-          .logout(
-              (logout) ->
-                  logout
-                      .logoutUrl(LOGOUT_URL)
-                      .logoutSuccessHandler(WebSecurityConfig::noContentSuccessHandler)
-                      .deleteCookies())
-          .addFilterAfter(webApplicationAuthorizationCheckFilter, AuthorizationFilter.class)
-          .build();
+      final var filterChainBuilder =
+          httpSecurity
+              .securityMatcher(WEBAPP_PATHS.toArray(new String[0]))
+              .authorizeHttpRequests(
+                  (authorizeHttpRequests) ->
+                      authorizeHttpRequests
+                          .requestMatchers(UNPROTECTED_PATHS.toArray(String[]::new))
+                          .permitAll()
+                          .anyRequest()
+                          .authenticated())
+              .headers(WebSecurityConfig::setupStrictTransportSecurity)
+              .exceptionHandling(
+                  (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
+              .cors(AbstractHttpConfigurer::disable)
+              .formLogin(AbstractHttpConfigurer::disable)
+              .anonymous(AbstractHttpConfigurer::disable)
+              .oauth2ResourceServer(
+                  oauth2 ->
+                      oauth2.jwt(
+                          jwtConfigurer ->
+                              jwtConfigurer
+                                  .decoder(jwtDecoder)
+                                  .jwtAuthenticationConverter(converter)))
+              .oauth2Login(
+                  oauthLoginConfigurer -> {
+                    oauthLoginConfigurer
+                        .clientRegistrationRepository(clientRegistrationRepository)
+                        .redirectionEndpoint(
+                            redirectionEndpointConfig ->
+                                redirectionEndpointConfig.baseUri("/sso-callback"));
+                  })
+              .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
+              .logout(
+                  (logout) ->
+                      logout
+                          .logoutUrl(LOGOUT_URL)
+                          .logoutSuccessHandler(WebSecurityConfig::noContentSuccessHandler)
+                          .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN))
+              .addFilterAfter(webApplicationAuthorizationCheckFilter, AuthorizationFilter.class);
+
+      applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
+
+      return filterChainBuilder.build();
     }
   }
 }
