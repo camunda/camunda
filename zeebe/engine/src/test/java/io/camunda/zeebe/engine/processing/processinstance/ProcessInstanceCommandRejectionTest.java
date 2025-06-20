@@ -649,12 +649,6 @@ public final class ProcessInstanceCommandRejectionTest {
             .withProcessInstanceKey(command.getValue().getProcessInstanceKey())
             .getFirst();
 
-    System.out.println(
-        "DMK: source record position: "
-            + rejection.getSourceRecordPosition()
-            + ", position: "
-            + rejection.getPosition());
-
     Assertions.assertThat(rejection)
         .hasIntent(command.getIntent())
         .hasSourceRecordPosition(command.getPosition())
