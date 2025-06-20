@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '../test-fixtures';
+import {test} from '../visual-fixtures';
 import {expect} from '@playwright/test';
 
 import {mockResponses as mockProcessesResponses} from '../mocks/processes.mocks';

@@ -7,7 +7,7 @@
  */
 
 import {setup} from './processes.mocks';
-import {test} from '../test-fixtures';
+import {test} from '../e2e-fixtures';
 import {expect} from '@playwright/test';
 import {convertToQueryString} from '../utils/convertToQueryString';
 import {zeebeGrpcApi} from '../api/zeebe-grpc';

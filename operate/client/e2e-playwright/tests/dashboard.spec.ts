@@ -8,7 +8,7 @@
 
 import {config} from '../config';
 import {setup} from './dashboard.mocks';
-import {test} from '../test-fixtures';
+import {test} from '../e2e-fixtures';
 import {expect} from '@playwright/test';
 import {SETUP_WAITING_TIME} from './constants';
 

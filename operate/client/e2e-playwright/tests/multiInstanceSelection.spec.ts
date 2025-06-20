@@ -8,7 +8,7 @@
 
 import {expect} from '@playwright/test';
 import {config} from '../config';
-import {test} from '../test-fixtures';
+import {test} from '../e2e-fixtures';
 import {SETUP_WAITING_TIME} from './constants';
 import {setup} from './multiInstanceSelection.mocks';
 

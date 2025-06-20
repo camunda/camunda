@@ -8,7 +8,7 @@
 
 import {DATE_REGEX, SETUP_WAITING_TIME} from './constants';
 import {createDemoInstances} from './operations.mocks';
-import {test} from '../test-fixtures';
+import {test} from '../e2e-fixtures';
 import {expect} from '@playwright/test';
 import {config} from '../config';
 import {ENDPOINTS} from './api/endpoints';

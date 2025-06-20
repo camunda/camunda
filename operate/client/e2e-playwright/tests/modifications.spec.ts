@@ -7,7 +7,7 @@
  */
 
 import {setup} from './modifications.mocks';
-import {test} from '../test-fixtures';
+import {test} from '../e2e-fixtures';
 import {expect} from '@playwright/test';
 import {config} from '../config';
 import {SETUP_WAITING_TIME} from './constants';

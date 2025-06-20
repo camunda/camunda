@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {loginTest as test} from '../test-fixtures';
+import {test} from '../visual-fixtures';
 import {validateResults} from './validateResults';
 import {clientConfigMock} from '../mocks/clientConfig';
 import {expect} from '@playwright/test';

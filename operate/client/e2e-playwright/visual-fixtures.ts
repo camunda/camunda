@@ -11,20 +11,31 @@ import AxeBuilder from '@axe-core/playwright';
 import {Common} from './pages/Common';
 import {Login} from './pages/Login';
 import {Processes} from './pages/Processes/Processes';
-import fs from 'fs';
 import {Dashboard} from './pages/Dashboard';
 import {ProcessInstance} from './pages/ProcessInstance';
 import {Decisions} from './pages/Decisions';
 import {MigrationView} from './pages/Processes/MigrationView';
 import {DecisionInstance} from './pages/DecisionInstance';
 
-type Fixture = {
+type LoginFixture = {
   makeAxeBuilder: () => AxeBuilder;
   commonPage: Common;
   loginPage: Login;
 };
 
-const loginTest = base.extend<Fixture>({
+type VisualFixture = {
+  makeAxeBuilder: () => AxeBuilder;
+  processesPage: Processes;
+  dashboardPage: Dashboard;
+  processInstancePage: ProcessInstance;
+  decisionsPage: Decisions;
+  decisionInstancePage: DecisionInstance;
+  commonPage: Common;
+  migrationView: MigrationView;
+  loginPage: Login;
+};
+
+const loginTest = base.extend<LoginFixture>({
   commonPage: async ({page}, use) => {
     await use(new Common(page));
   },
@@ -37,61 +48,7 @@ const loginTest = base.extend<Fixture>({
   },
 });
 
-const authFile = 'playwright/.auth/user.json';
-
-const test = base.extend<
-  {
-    makeAxeBuilder: () => AxeBuilder;
-    processesPage: Processes;
-    dashboardPage: Dashboard;
-    processInstancePage: ProcessInstance;
-    decisionsPage: Decisions;
-    decisionInstancePage: DecisionInstance;
-    commonPage: Common;
-    migrationView: MigrationView;
-    loginPage: Login;
-  },
-  {workerStorageState: string}
->({
-  storageState: ({workerStorageState}, use) => use(workerStorageState),
-
-  workerStorageState: [
-    async (
-      {browser},
-      use,
-      {
-        project: {
-          use: {baseURL},
-        },
-      },
-    ) => {
-      if (fs.existsSync(authFile)) {
-        await use(authFile);
-        return;
-      }
-
-      // when using a baseURL containing domain + basePath, playwright expects a slash at the end of the baseURL when navigating and validating Urls
-      // https://playwright.dev/docs/api/class-browser#browser-new-context-option-base-url
-      // removing the slash here, as the used goto(url) below does not work with double slashes
-      if (baseURL && baseURL.endsWith('/')) {
-        baseURL = baseURL.slice(0, -1);
-      }
-
-      // Important: make sure we authenticate in a clean environment by unsetting storage state.
-      const page = await browser.newPage({storageState: undefined});
-      await page.goto(`${baseURL}/login`);
-      await page.getByLabel(/^username$/i).fill('demo');
-      await page.getByLabel(/^password$/i).fill('demo');
-      await page.getByRole('button', {name: 'Login'}).click();
-
-      await page.waitForURL(`${baseURL}`);
-
-      await page.context().storageState({path: authFile});
-      await page.close();
-      await use(authFile);
-    },
-    {scope: 'worker'},
-  ],
+const test = base.extend<VisualFixture>({
   makeAxeBuilder: async ({page}, use) => {
     const makeAxeBuilder = () => new AxeBuilder({page});
     await use(makeAxeBuilder);
@@ -116,6 +73,9 @@ const test = base.extend<
   },
   migrationView: async ({page}, use) => {
     await use(new MigrationView(page));
+  },
+  loginPage: async ({page}, use) => {
+    await use(new Login(page));
   },
 });
 
