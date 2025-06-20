@@ -111,7 +111,7 @@ jobs:
         uses: ./.github/actions/build-platform-docker
         with:
           repository: camunda/tasklist
-          version: 8.7.0-SNAPSHOT
+          version: 8.7-SNAPSHOT
           push: true
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: tasklist.Dockerfile
