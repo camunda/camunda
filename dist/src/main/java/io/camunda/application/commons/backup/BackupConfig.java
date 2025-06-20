@@ -9,39 +9,31 @@ package io.camunda.application.commons.backup;
 
 import static io.camunda.application.commons.backup.ConfigValidation.*;
 
-import io.camunda.application.commons.conditions.WebappEnabledCondition;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.BackupRepositoryPropsRecord;
+import io.camunda.webapps.profiles.ProfileWebApp;
 import java.util.LinkedHashMap;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Configuration
-@Conditional(WebappEnabledCondition.class)
+@Conditional(WebappBackupEnabledCondition.class)
 public class BackupConfig {
 
   public static String differentRepoNameFormat =
       "Expected the same repository in operate and tasklist backup config: given backup repositories are %s";
 
-  final OperateProperties operateProperties;
-  final TasklistProperties tasklistProperties;
-
-  public BackupConfig(
+  @Bean
+  @ProfileWebApp
+  public BackupRepositoryProps backupRepositoryProps(
       @Autowired(required = false) final OperateProperties operateProperties,
       @Autowired(required = false) final TasklistProperties tasklistProperties) {
-    this.operateProperties = operateProperties;
-    this.tasklistProperties = tasklistProperties;
-  }
-
-  @Bean
-  public BackupRepositoryProps backupRepositoryProps(final Environment environment) {
     final var operateBackup =
         Optional.ofNullable(operateProperties).map(c -> props(c.getVersion(), c.getBackup()));
     final var tasklistBackup =

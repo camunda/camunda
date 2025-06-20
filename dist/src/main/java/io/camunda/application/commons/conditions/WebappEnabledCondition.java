@@ -23,7 +23,12 @@ public class WebappEnabledCondition implements Condition {
         return webappEnabled(app, context.getEnvironment());
       }
     }
-    return context.getEnvironment().matchesProfiles("identity");
+    // Currently, WebappEnabledCondition is only used to enable backup functionality in the webapps.
+    // The backup functionality still solely depends on the Tasklist and Operate configuration.
+    // We need to re-assess when to enable this condition for other webapps, such as Identity, after
+    // migrating to generic configurations.
+    // return context.getEnvironment().matchesProfiles("identity");
+    return false;
   }
 
   private boolean webappEnabled(final String app, final Environment environment) {

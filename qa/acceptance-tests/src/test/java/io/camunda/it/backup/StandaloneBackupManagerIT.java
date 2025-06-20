@@ -13,24 +13,18 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.application.Profile;
-import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
+import io.camunda.client.api.search.response.ProcessInstance;
+import io.camunda.exporter.CamundaExporter;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
-import io.camunda.qa.util.cluster.TestRestOperateClient.ProcessInstanceResult;
 import io.camunda.qa.util.cluster.TestStandaloneBackupManager;
 import io.camunda.qa.util.cluster.TestStandaloneSchemaManager;
-import io.camunda.search.clients.core.SearchQueryHit;
-import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
-import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.webapps.backup.Metadata;
-import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import java.io.IOException;
-import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,7 +44,7 @@ import org.testcontainers.utility.DockerImageName;
 
 @ZeebeIntegration
 @Testcontainers
-final class StandaloneBackupManagerTest {
+final class StandaloneBackupManagerIT {
 
   public static final String ADMIN_USER = "camunda-admin";
   public static final String ADMIN_PASSWORD = "admin123";
@@ -62,104 +56,62 @@ final class StandaloneBackupManagerTest {
   public static final String APP_ROLE_DEFINITION =
       // language=yaml
       """
-      camunda_app_role:
-        indices:
-          - names: ['zeebe-*', 'operate-*', 'tasklist-*']
-            privileges: ['manage', 'read', 'write']
-      """;
-
-  private static final String TEST_USER_NAME = "foo";
-  private static final String TEST_USER_PASSWORD = "bar";
+          camunda_app_role:
+            indices:
+              - names: ['zeebe-*', 'operate-*', 'tasklist-*', 'camunda-*']
+                privileges: ['manage', 'read', 'write']
+          """;
 
   private static final String REPOSITORY_NAME = "els-test";
 
   private static final long BACKUP_ID = 12345L;
-  public static final String ZEEBE_SNAPSHOT_NAME = "camunda_zeebe_records_backup_" + BACKUP_ID;
-  public static final String TASKLIST_SNAPSHOT_NAME_PREFIX =
-      io.camunda.tasklist.webapp.es.backup.Metadata.buildSnapshotNamePrefix(BACKUP_ID);
-  public static final String OPERATE_SNAPSHOT_NAME_PREFIX =
-      Metadata.buildSnapshotNamePrefix(BACKUP_ID);
+  public static final String SNAPSHOT_NAME_PREFIX =
+      new WebappsSnapshotNameProvider().getSnapshotNamePrefix(BACKUP_ID);
 
   // Configure the backup manager for testing
   @TestZeebe(autoStart = false)
   final TestStandaloneBackupManager backupManager =
       new TestStandaloneBackupManager()
-          .withProperty("camunda.operate.elasticsearch.username", ADMIN_USER)
-          .withProperty("camunda.operate.elasticsearch.password", ADMIN_PASSWORD)
-          .withProperty("camunda.operate.elasticsearch.healthCheckEnabled", "false")
-          .withProperty("camunda.operate.backup.repositoryName", "els-test")
-          .withProperty("camunda.tasklist.elasticsearch.username", ADMIN_USER)
-          .withProperty("camunda.tasklist.database", "elasticsearch")
-          .withProperty("camunda.tasklist.elasticsearch.username", ADMIN_USER)
-          .withProperty("camunda.tasklist.elasticsearch.password", ADMIN_PASSWORD)
-          .withProperty("camunda.tasklist.elasticsearch.healthCheckEnabled", "false")
-          .withProperty("camunda.tasklist.backup.repositoryName", "els-test");
+          .withProperty("camunda.database.username", ADMIN_USER)
+          .withProperty("camunda.database.password", ADMIN_PASSWORD)
+          .withProperty("camunda.backup.webapps.repositoryName", "els-test");
 
   // Configure the schema manager to create indices and templates in test setup
   @TestZeebe(autoStart = false)
   final TestStandaloneSchemaManager schemaManager =
       new TestStandaloneSchemaManager()
-          .withProperty(
-              "zeebe.broker.exporters.elasticsearch.className",
-              "io.camunda.zeebe.exporter.ElasticsearchExporter")
-          .withProperty("zeebe.broker.exporters.elasticsearch.args.index.createTemplate", "true")
-          .withProperty("zeebe.broker.exporters.elasticsearch.args.retention.enabled", "true")
-          .withProperty(
-              "zeebe.broker.exporters.elasticsearch.args.authentication.username", ADMIN_USER)
-          .withProperty(
-              "zeebe.broker.exporters.elasticsearch.args.authentication.password", ADMIN_PASSWORD)
-          .withProperty("camunda.operate.elasticsearch.healthCheckEnabled", "false")
-          .withProperty("camunda.operate.elasticsearch.username", ADMIN_USER)
-          .withProperty("camunda.operate.elasticsearch.password", ADMIN_PASSWORD)
-          .withProperty("camunda.operate.archiver.ilmEnabled", "true")
-          .withProperty("camunda.tasklist.database", "elasticsearch")
-          .withProperty("camunda.tasklist.elasticsearch.username", ADMIN_USER)
-          .withProperty("camunda.tasklist.elasticsearch.password", ADMIN_PASSWORD)
-          .withProperty("camunda.tasklist.elasticsearch.healthCheckEnabled", "false")
-          .withProperty("camunda.tasklist.archiver.ilmEnabled", "true");
+          .withProperty("camunda.database.username", ADMIN_USER)
+          .withProperty("camunda.database.password", ADMIN_PASSWORD)
+          .withProperty("camunda.database.retention.enabled", "true");
 
   // Configure the Camunda single application with restricted access to the Elasticsearch
   @TestZeebe(autoStart = false)
   final TestCamundaApplication camunda =
       new TestCamundaApplication()
-          .withAdditionalProfile(Profile.DEFAULT_AUTH_PROFILE)
-          .withProperty("camunda.operate.migration.migrationEnabled", false)
-          .withProperty("camunda.tasklist.migration.migrationEnabled", false)
+          .withAdditionalProfile(Profile.CONSOLIDATED_AUTH)
+          .withCreateSchema(false)
           .withProperty("camunda.database.username", APP_USER)
           .withProperty("camunda.database.password", APP_PASSWORD)
-          .withBrokerConfig(
+          .withProperty("camunda.operate.elasticsearch.username", APP_USER)
+          .withProperty("camunda.operate.elasticsearch.password", APP_PASSWORD)
+          .withProperty("camunda.operate.zeebeelasticsearch.username", APP_USER)
+          .withProperty("camunda.operate.zeebeelasticsearch.password", APP_PASSWORD)
+          .withProperty("camunda.operate.elasticsearch.healthCheckEnabled", "false")
+          .withProperty("camunda.tasklist.elasticsearch.username", APP_USER)
+          .withProperty("camunda.tasklist.elasticsearch.password", APP_PASSWORD)
+          .withProperty("camunda.tasklist.zeebeelasticsearch.username", APP_USER)
+          .withProperty("camunda.tasklist.zeebeelasticsearch.password", APP_PASSWORD)
+          .withProperty("camunda.tasklist.elasticsearch.healthCheckEnabled", "false")
+          .withExporter(
+              CamundaExporter.class.getSimpleName(),
               cfg -> {
-                cfg.getExporters()
-                    .computeIfAbsent("elasticsearch", __ -> new ExporterCfg())
-                    .setArgs(
-                        Map.of(
-                            "index",
-                            Map.of("createTemplate", false),
-                            "retention",
-                            Map.of("enabled", false, "managePolicy", false),
-                            "authentication",
-                            Map.of("username", APP_USER, "password", APP_PASSWORD)));
-              })
-          .withOperateConfig(
-              cfg -> {
-                cfg.getElasticsearch().setCreateSchema(false);
-                cfg.getElasticsearch().setHealthCheckEnabled(false);
-                cfg.getElasticsearch().setUsername(APP_USER);
-                cfg.getElasticsearch().setPassword(APP_PASSWORD);
-                cfg.getZeebeElasticsearch().setUsername(APP_USER);
-                cfg.getZeebeElasticsearch().setPassword(APP_PASSWORD);
-                cfg.getArchiver().setIlmEnabled(true);
-              })
-          .withTasklistConfig(
-              cfg -> {
-                cfg.getElasticsearch().setCreateSchema(false);
-                cfg.getElasticsearch().setHealthCheckEnabled(false);
-                cfg.getElasticsearch().setUsername(APP_USER);
-                cfg.getElasticsearch().setPassword(APP_PASSWORD);
-                cfg.getZeebeElasticsearch().setUsername(APP_USER);
-                cfg.getZeebeElasticsearch().setPassword(APP_PASSWORD);
-                cfg.getArchiver().setIlmEnabled(true);
-                cfg.getArchiver().setIlmManagePolicy(false);
+                cfg.setClassName(CamundaExporter.class.getName());
+                cfg.setArgs(
+                    Map.of(
+                        "connect",
+                        Map.of("username", APP_USER, "password", APP_PASSWORD),
+                        "createSchema",
+                        false));
               });
 
   @Container
@@ -191,24 +143,39 @@ final class StandaloneBackupManagerTest {
 
   @BeforeEach
   void setup() throws IOException, InterruptedException {
-    // setup ES users
-    es.execInContainer("elasticsearch-users", "useradd", APP_USER, "-p", APP_PASSWORD);
+    // setup ES admin user
     es.execInContainer("elasticsearch-users", "useradd", ADMIN_USER, "-p", ADMIN_PASSWORD);
     es.execInContainer("elasticsearch-users", "roles", ADMIN_USER, "-a", ADMIN_ROLE);
-    es.execInContainer("elasticsearch-users", "roles", APP_USER, "-a", APP_ROLE);
-    // Connect to ES
-    schemaManager.withProperty(
-        "zeebe.broker.exporters.elasticsearch.args.url", "http://" + es.getHttpHostAddress());
-    schemaManager.withProperty(
-        "camunda.operate.elasticsearch.url", "http://" + es.getHttpHostAddress());
-    schemaManager.withProperty(
-        "camunda.tasklist.elasticsearch.url", "http://" + es.getHttpHostAddress());
-    backupManager.withProperty(
-        "camunda.operate.elasticsearch.url", "http://" + es.getHttpHostAddress());
-    backupManager.withProperty(
-        "camunda.tasklist.elasticsearch.url", "http://" + es.getHttpHostAddress());
 
     adminElasticsearchClient = createAdminElasticsearchClient("http://" + es.getHttpHostAddress());
+
+    // create app user with APP_ROLE role
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofSeconds(1))
+        .ignoreExceptions()
+        .until(
+            () ->
+                adminElasticsearchClient
+                    .security()
+                    .putUser(r -> r.username(APP_USER).password(APP_PASSWORD).roles(APP_ROLE))
+                    .created());
+
+    // Connect to ES in Standalone Schema Manager
+    schemaManager.withProperty("camunda.database.url", "http://" + es.getHttpHostAddress());
+    // Connect to ES in Camunda
+    camunda
+        .withProperty("camunda.database.url", "http://" + es.getHttpHostAddress())
+        .withProperty("camunda.operate.elasticsearch.url", "http://" + es.getHttpHostAddress())
+        .withProperty("camunda.operate.zeebeelasticsearch.url", "http://" + es.getHttpHostAddress())
+        .withProperty("camunda.tasklist.elasticsearch.url", "http://" + es.getHttpHostAddress())
+        .withProperty(
+            "camunda.tasklist.zeebeelasticsearch.url", "http://" + es.getHttpHostAddress())
+        .updateExporterArgs(
+            CamundaExporter.class.getSimpleName(),
+            args -> ((Map) args.get("connect")).put("url", "http://" + es.getHttpHostAddress()));
+    // Connect to ES in Backup Manager
+    backupManager.withProperty("camunda.database.url", "http://" + es.getHttpHostAddress());
   }
 
   @Test
@@ -229,14 +196,9 @@ final class StandaloneBackupManagerTest {
     // WHEN
     // Start the backup process with a specific backup ID
     backupManager.withBackupId(BACKUP_ID).start();
-    // manually backup zeebe indices
-    backupZeebeIndices();
 
-    final List<String> snapshots = new ArrayList<>();
     // Wait for snapshots to be completed
-    snapshots.addAll(waitForSnapshotsToBeCompleted(OPERATE_SNAPSHOT_NAME_PREFIX, 6));
-    snapshots.addAll(waitForSnapshotsToBeCompleted(TASKLIST_SNAPSHOT_NAME_PREFIX, 6));
-    snapshots.addAll(waitForSnapshotsToBeCompleted(ZEEBE_SNAPSHOT_NAME, 1));
+    final List<String> snapshots = waitForSnapshotsToBeCompleted(SNAPSHOT_NAME_PREFIX, 7);
     // Update the current state by completing the user task and the process instance
     completeUserTask(userTaskKey);
     // Assert that the state is updated: process instance is completed
@@ -257,26 +219,7 @@ final class StandaloneBackupManagerTest {
     assertThatDataIsPresent(processInstanceKey, isRunningProcessInstance());
   }
 
-  /**
-   * As documented in
-   * https://docs.camunda.io/docs/self-managed/operational-guides/backup-restore/backup-and-restore/#backup-process
-   */
-  private void backupZeebeIndices() throws IOException {
-    adminElasticsearchClient
-        .snapshot()
-        .create(
-            r ->
-                r.repository(REPOSITORY_NAME)
-                    .snapshot(ZEEBE_SNAPSHOT_NAME)
-                    .indices("zeebe-record*")
-                    .featureStates("none"));
-  }
-
   private long generateData() {
-    // creating a user for webapps authentication
-    try (final var operateClient = camunda.newOperateClient()) {
-      operateClient.createUser(TEST_USER_NAME, TEST_USER_PASSWORD);
-    }
     // creating a process instance with user task
     final long processInstanceKey;
     try (final var zeebeClient = camunda.newClientBuilder().build()) {
@@ -288,7 +231,7 @@ final class StandaloneBackupManagerTest {
                   .startEvent()
                   .userTask("user-task")
                   .zeebeUserTask()
-                  .zeebeAssignee(TEST_USER_NAME)
+                  .zeebeAssignee("demo")
                   .endEvent()
                   .done(),
               "process-with-user-task.bpmn")
@@ -337,39 +280,25 @@ final class StandaloneBackupManagerTest {
    */
   private long assertThatDataIsPresent(
       final long processInstanceKey, final Predicate<ProcessInstance> processInstanceCheck) {
-    try (final var operateClient = camunda.newOperateClient()) {
+    final var userTaskKey = new AtomicReference<Long>();
+    try (final var camundaClient = camunda.newClientBuilder().build()) {
       Awaitility.await("should find a process instance")
           .atMost(ofSeconds(30))
           .ignoreExceptions()
           .untilAsserted(
               () -> {
-                final var result =
-                    operateClient
-                        .withAuthentication(TEST_USER_NAME, TEST_USER_PASSWORD)
-                        .getProcessInstanceWith(processInstanceKey);
-                EitherAssert.assertThat(result)
-                    .right()
-                    .isNotNull()
-                    .extracting(ProcessInstanceResult::total)
-                    .isEqualTo(1L);
-                final var processInstance = result.get().processInstances().getFirst();
+                final var processInstance =
+                    camundaClient.newProcessInstanceGetRequest(processInstanceKey).execute();
                 assertThat(processInstance).matches(processInstanceCheck);
               });
-    }
-    final var userTaskKey = new AtomicReference<Long>();
-    try (final var tasklistClient = camunda.newTasklistClient()) {
       Awaitility.await("should find a user task")
           .atMost(ofSeconds(30))
           .ignoreExceptions()
           .untilAsserted(
               () -> {
-                final List<SearchQueryHit<TaskEntity>> hits =
-                    tasklistClient
-                        .withAuthentication(TEST_USER_NAME, TEST_USER_PASSWORD)
-                        .searchUserTasks(SearchQueryBuilders.query().build())
-                        .hits();
+                final var hits = camundaClient.newUserTaskSearchRequest().execute().items();
                 assertThat(hits).hasSize(1);
-                userTaskKey.set(hits.get(0).source().getKey());
+                userTaskKey.set(hits.get(0).getUserTaskKey());
               });
     }
     return userTaskKey.get();
@@ -378,7 +307,7 @@ final class StandaloneBackupManagerTest {
   private void deleteIndices() throws IOException {
     adminElasticsearchClient
         .indices()
-        .delete(r -> r.index("operate*", "tasklist*", "zeebe*").ignoreUnavailable(true));
+        .delete(r -> r.index("operate*", "tasklist*", "camunda*").ignoreUnavailable(true));
     Awaitility.await("should delete indices")
         .atMost(ofSeconds(30))
         .pollDelay(ofSeconds(2))
@@ -389,7 +318,7 @@ final class StandaloneBackupManagerTest {
                             .indices()
                             .exists(
                                 r ->
-                                    r.index("operate*", "tasklist*", "zeebe*")
+                                    r.index("operate*", "tasklist*", "camunda*")
                                         .allowNoIndices(false))
                             .value())
                     .isFalse());
@@ -427,12 +356,8 @@ final class StandaloneBackupManagerTest {
   }
 
   private void completeUserTask(final long userTaskKey) {
-    try (final var tasklistClient = camunda.newTasklistClient()) {
-      assertThat(
-              tasklistClient
-                  .withAuthentication(TEST_USER_NAME, TEST_USER_PASSWORD)
-                  .completeUserTask(userTaskKey))
-          .returns(200, HttpResponse::statusCode);
+    try (final var camundaClient = camunda.newClientBuilder().build()) {
+      camundaClient.newUserTaskCompleteCommand(userTaskKey).execute();
     }
   }
 

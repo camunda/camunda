@@ -17,7 +17,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.core.env.Environment;
 
 @ExtendWith(MockitoExtension.class)
 public class BackupConfigTest {
@@ -51,8 +50,7 @@ public class BackupConfigTest {
     operateProperties.getBackup().setRepositoryName("repo-1").setSnapshotTimeout(17);
     tasklistProperties.getBackup().setRepositoryName("repo-2");
     assertThatThrownBy(
-            () ->
-                new BackupConfig(operateProperties, tasklistProperties).backupRepositoryProps(null))
+            () -> new BackupConfig().backupRepositoryProps(operateProperties, tasklistProperties))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining(BackupConfig.differentRepoNameFormat.formatted(""))
         .hasMessageContaining("operate=Optional[repo-1]")
@@ -68,22 +66,15 @@ public class BackupConfigTest {
 
   private BackupRepositoryProps checkRepo(
       final OperateProperties operateProperties, final TasklistProperties tasklistProperties) {
-    return checkRepo(operateProperties, tasklistProperties, null);
-  }
-
-  private BackupRepositoryProps checkRepo(
-      final OperateProperties operateProperties,
-      final TasklistProperties tasklistProperties,
-      final Environment environment) {
-    final var config = new BackupConfig(operateProperties, tasklistProperties);
-    final var props = config.backupRepositoryProps(environment);
+    final var config = new BackupConfig();
+    final var props = config.backupRepositoryProps(operateProperties, tasklistProperties);
     assertThat(props.repositoryName()).isEqualTo("repo-1");
     return props;
   }
 
   @Test
   public void shouldReturnEmptyInstanceIfNoConfiguration() {
-    assertThat(new BackupConfig(null, null).backupRepositoryProps(null))
+    assertThat(new BackupConfig().backupRepositoryProps(operateProperties, tasklistProperties))
         .isEqualTo(BackupRepositoryProps.EMPTY);
   }
 }

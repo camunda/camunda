@@ -7,68 +7,71 @@
  */
 package io.camunda.application;
 
-import io.camunda.application.StandaloneSchemaManager.SchemaManagerConfiguration.BrokerBasedProperties;
-import io.camunda.operate.webapp.backup.BackupService;
-import io.camunda.tasklist.webapp.es.backup.BackupManager;
-import io.camunda.tasklist.webapp.management.dto.BackupStateDto;
-import io.camunda.tasklist.webapp.management.dto.TakeBackupRequestDto;
+import static io.camunda.application.commons.backup.WebappBackupEnabledCondition.BACKUP_WEBAPPS_ENABLED;
+import static java.util.Optional.ofNullable;
+
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import io.camunda.application.StandaloneBackupManager.BackupManagerConfiguration.BackupWebappsProperties;
+import io.camunda.application.commons.backup.BackupPriorityConfiguration;
+import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.connect.es.ElasticsearchConnector;
+import io.camunda.webapps.backup.BackupRepository;
+import io.camunda.webapps.backup.BackupService;
+import io.camunda.webapps.backup.BackupStateDto;
+import io.camunda.webapps.backup.TakeBackupRequestDto;
+import io.camunda.webapps.backup.repository.BackupRepositoryProps;
+import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
+import io.camunda.webapps.backup.repository.elasticsearch.ElasticsearchBackupRepository;
+import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
+import io.camunda.zeebe.util.VersionUtil;
 import java.util.Arrays;
 import java.util.EnumSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.ExitCodeExceptionMapper;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
-import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 /**
- * Backup Operate and Tasklist indices for ElasticSearch by running this standalone application.
+ * Backup Camunda, Operate and Tasklist indices for ElasticSearch by running this standalone
+ * application.
  *
  * <p>Example properties:
  *
  * <pre>
- * camunda.operate.elasticsearch.indexPrefix=operate
- * camunda.operate.elasticsearch.clusterName=elasticsearch
- * camunda.operate.elasticsearch.url=https://localhost:9200
- * camunda.operate.elasticsearch.ssl.selfSigned=true
- * camunda.operate.elasticsearch.ssl.verifyHostname=false
- * camunda.operate.elasticsearch.ssl.certificatePath=C:/.../config/certs/http_ca.crt
- * camunda.operate.elasticsearch.username=camunda-admin
- * camunda.operate.elasticsearch.password=camunda123
+ * camunda.database.indexPrefix=operate
+ * camunda.database.clusterName=elasticsearch
+ * camunda.database.url=https://localhost:9200
+ * camunda.database.security.selfSigned=true
+ * camunda.database.security.verifyHostname=false
+ * camunda.database.security.certificatePath=C:/.../config/certs/http_ca.crt
+ * camunda.database.username=camunda-admin
+ * camunda.database.password=camunda123
  *
- * camunda.operate.backup.repositoryName=els-test
- *
- * camunda.tasklist.elasticsearch.indexPrefix=tasklist
- * camunda.tasklist.elasticsearch.clusterName=elasticsearch
- * camunda.tasklist.elasticsearch.url=https://localhost:9200
- * camunda.tasklist.elasticsearch.ssl.selfSigned=true
- * camunda.tasklist.elasticsearch.ssl.verifyHostname=false
- * camunda.tasklist.elasticsearch.ssl.certificatePath=C:/.../config/certs/http_ca.crt
- * camunda.tasklist.elasticsearch.username=camunda-admin
- * camunda.tasklist.elasticsearch.password=camunda123
- *
- * camunda.tasklist.backup.repositoryName=els-test
- *
+ * camunda.backup.webapps.repositoryName=els-test
+ * *
  * </pre>
  *
  * All of those properties can also be handed over via environment variables, e.g.
- * `CAMUNDA_OPERATE_ELASTICSEARCH_INDEXPREFIX`
+ * `CAMUNDA_DATABASE_INDEXPREFIX`
  */
+@SpringBootConfiguration(proxyBeanMethods = false)
 public class StandaloneBackupManager implements CommandLineRunner {
 
   private static final Logger LOG = LoggerFactory.getLogger(StandaloneBackupManager.class);
-  private final BackupManager tasklistBackupManager;
-  private final BackupService operateBackupManager;
+  private final BackupService backupService;
 
-  public StandaloneBackupManager(
-      final BackupManager tasklistBackupManager, final BackupService operateBackupManager) {
-    this.tasklistBackupManager = tasklistBackupManager;
-    this.operateBackupManager = operateBackupManager;
+  public StandaloneBackupManager(final BackupService backupService) {
+    this.backupService = backupService;
   }
 
   public static void main(final String[] args) throws Exception {
@@ -84,16 +87,13 @@ public class StandaloneBackupManager implements CommandLineRunner {
     MainSupport.putSystemPropertyIfAbsent(
         "spring.banner.location", "classpath:/assets/camunda_banner.txt");
 
-    LOG.info("Creating a backup for Operate and Tasklist elasticsearch indices ...");
+    LOG.info("Creating a backup for Camunda, Operate and Tasklist elasticsearch indices ...");
 
     MainSupport.createDefaultApplicationBuilder()
         .web(WebApplicationType.NONE)
         .logStartupInfo(true)
-        .sources(
-            BackupManagerConfiguration.class,
-            StandaloneBackupManager.class,
-            io.camunda.tasklist.JacksonConfig.class,
-            io.camunda.operate.JacksonConfig.class)
+        .sources(BackupManagerConfiguration.class, StandaloneBackupManager.class)
+        .properties(BACKUP_WEBAPPS_ENABLED + "=true")
         .addCommandLineProperties(true)
         .run(args);
 
@@ -118,26 +118,10 @@ public class StandaloneBackupManager implements CommandLineRunner {
     }
 
     try {
-      // Operate
-      final var operateTakeBackupRequestDto =
-          new io.camunda.operate.webapp.management.dto.TakeBackupRequestDto();
-      operateTakeBackupRequestDto.setBackupId(backupId);
-      final var operateBackupResponse =
-          operateBackupManager.takeBackup(operateTakeBackupRequestDto);
-
-      LOG.info(
-          "Triggered ES snapshots for Operate indices: {}",
-          operateBackupResponse.getScheduledSnapshots());
-
-      // Tasklist
-      final var tasklistTakeBackupRequestDto = new TakeBackupRequestDto();
-      tasklistTakeBackupRequestDto.setBackupId(backupId);
-      final var tasklistBackupResponse =
-          tasklistBackupManager.takeBackup(tasklistTakeBackupRequestDto);
-
-      LOG.info(
-          "Triggered ES snapshots for Tasklist indices: {}",
-          tasklistBackupResponse.getScheduledSnapshots());
+      final var takeBackupRequestDto = new TakeBackupRequestDto();
+      takeBackupRequestDto.setBackupId(backupId);
+      final var backupResponse = backupService.takeBackup(takeBackupRequestDto);
+      LOG.info("Triggered ES snapshots: {}", backupResponse.getScheduledSnapshots());
     } catch (final Exception e) {
       LOG.error("Expected to trigger ES snapshots for backupId {}, but failed", backupId, e);
       throw e;
@@ -149,29 +133,18 @@ public class StandaloneBackupManager implements CommandLineRunner {
       // we need to sleep here already otherwise the getBackupState fails, as it can't
       // handle empty snapshot responses...
       Thread.sleep(5 * 1_000);
-      final var operateBackup = operateBackupManager.getBackupState(backupId);
-      final var operateBackupState = operateBackup.getState();
-      final var tasklistBackup = tasklistBackupManager.getBackupState(backupId);
-      final var tasklistBackupState = tasklistBackup.getState();
+      final var backup = backupService.getBackupState(backupId);
+      final var backupState = backup.getState();
 
       LOG.info("Snapshot observation:");
-      LOG.info("Operate indices snapshot is {}. Details: [{}]", operateBackupState, operateBackup);
-      LOG.info(
-          "Tasklist indices snapshot is {}. Details: [{}]", tasklistBackupState, tasklistBackup);
+      LOG.info("Indices snapshot is {}. Details: [{}]", backupState, backup);
 
-      if (isCompletedBackup(operateBackupState, tasklistBackupState)) {
+      if (isCompletedBackup(backupState)) {
         isBackupInProgress = false;
-      } else if (isFailedBackup(operateBackupState, tasklistBackupState)) {
+      } else if (isFailedBackup(backupState)) {
         final var failureReason = new StringBuilder();
-        if (operateBackup.getFailureReason() != null
-            && !operateBackup.getFailureReason().isEmpty()) {
-          failureReason.append(
-              " Operate indices backup failure: %s.".formatted(operateBackup.getFailureReason()));
-        }
-        if (tasklistBackup.getFailureReason() != null
-            && !tasklistBackup.getFailureReason().isEmpty()) {
-          failureReason.append(
-              " Tasklist indices backup failure: %s.".formatted(tasklistBackup.getFailureReason()));
+        if (backup.getFailureReason() != null && !backup.getFailureReason().isEmpty()) {
+          failureReason.append(" Indices backup failure: %s.".formatted(backup.getFailureReason()));
         }
         throw new IllegalStateException(
             "Backup with id:[%d] failed.%s".formatted(backupId, failureReason));
@@ -181,55 +154,96 @@ public class StandaloneBackupManager implements CommandLineRunner {
     LOG.info("Backup with id:[{}] is completed!", backupId);
   }
 
-  private boolean isCompletedBackup(
-      final io.camunda.operate.webapp.management.dto.BackupStateDto operateBackupState,
-      final BackupStateDto tasklistBackupState) {
-    return operateBackupState == io.camunda.operate.webapp.management.dto.BackupStateDto.COMPLETED
-        && tasklistBackupState == BackupStateDto.COMPLETED;
+  private boolean isCompletedBackup(final BackupStateDto backupStateDto) {
+    return backupStateDto == BackupStateDto.COMPLETED;
   }
 
-  private boolean isFailedBackup(
-      final io.camunda.operate.webapp.management.dto.BackupStateDto operateBackupState,
-      final BackupStateDto tasklistBackupState) {
-    return EnumSet.of(
-                io.camunda.operate.webapp.management.dto.BackupStateDto.FAILED,
-                io.camunda.operate.webapp.management.dto.BackupStateDto.INCOMPATIBLE)
-            .contains(operateBackupState)
-        || EnumSet.of(BackupStateDto.FAILED, BackupStateDto.INCOMPATIBLE)
-            .contains(tasklistBackupState);
+  private boolean isFailedBackup(final BackupStateDto backupStateDto) {
+    return EnumSet.of(BackupStateDto.FAILED, BackupStateDto.INCOMPATIBLE).contains(backupStateDto);
   }
 
-  @SpringBootConfiguration
-  @EnableConfigurationProperties(BrokerBasedProperties.class)
-  @ConfigurationPropertiesScan
+  @EnableConfigurationProperties({
+    SearchEngineConnectProperties.class,
+    BackupWebappsProperties.class,
+  })
   @ComponentScan(
-      // CAUTION: basePackageClasses makes Spring scan the entire package of the specified
-      // classes, including sub-packages.
-      basePackageClasses = {
-        io.camunda.tasklist.schema.indices.IndexDescriptor.class,
-        io.camunda.tasklist.schema.templates.TemplateDescriptor.class,
-        io.camunda.operate.schema.indices.IndexDescriptor.class,
-        io.camunda.operate.schema.templates.TemplateDescriptor.class,
-        // Backup services from Operate / Tasklist - to be used to create backups
-        io.camunda.operate.webapp.backup.BackupService.class,
-        io.camunda.operate.webapp.elasticsearch.backup.ElasticsearchBackupRepository.class,
-        io.camunda.tasklist.webapp.es.backup.BackupManager.class,
-        // Containing the properties/configurations for Operate/Tasklist
-        io.camunda.operate.property.OperateProperties.class,
-        io.camunda.tasklist.property.TasklistProperties.class,
-        io.camunda.operate.conditions.DatabaseInfo.class,
-        // To set up the right clients, that have to be used by other components
-        io.camunda.operate.connect.ElasticsearchConnector
-            .class, // we need this to find the right clients for Operate
-        io.camunda.tasklist.connect.ElasticsearchConnector.class,
-        // Object mapper used by other components
-        io.camunda.application.commons.sources.DefaultObjectMapperConfiguration.class,
-      },
+      basePackages = "io.camunda.application.commons.backup",
       nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
   public static class BackupManagerConfiguration {
+
     @Bean
     public ExitCodeExceptionMapper exitCodeExceptionMapper() {
       return ex -> 1;
+    }
+
+    @Bean
+    public ElasticsearchClient elasticsearchClient(
+        final ConnectConfiguration connectConfiguration) {
+      return new ElasticsearchConnector(connectConfiguration).createClient();
+    }
+
+    @Bean
+    public BackupRepository backupRepository(
+        final ElasticsearchClient elasticsearchClient,
+        final BackupRepositoryProps backupRepositoryProps,
+        @Qualifier("backupThreadPoolExecutor")
+            final ThreadPoolTaskExecutor threadPoolTaskExecutor) {
+      return new ElasticsearchBackupRepository(
+          elasticsearchClient,
+          backupRepositoryProps,
+          new WebappsSnapshotNameProvider(),
+          threadPoolTaskExecutor);
+    }
+
+    @Bean
+    public BackupPriorities backupPrioritiesForStandaloneBackup(
+        final ConnectConfiguration connectConfiguration) {
+      return BackupPriorityConfiguration.getBackupPriorities(
+          connectConfiguration.getIndexPrefix(),
+          connectConfiguration.getTypeEnum().isElasticSearch());
+    }
+
+    @ConfigurationProperties("camunda.backup.webapps")
+    public static final class BackupWebappsProperties implements BackupRepositoryProps {
+
+      private String repositoryName;
+
+      private int snapshotTimeout;
+
+      private Long incompleteCheckTimeoutInSeconds;
+
+      @Override
+      public String version() {
+        return VersionUtil.getVersion();
+      }
+
+      @Override
+      public String repositoryName() {
+        return repositoryName;
+      }
+
+      @Override
+      public int snapshotTimeout() {
+        return snapshotTimeout;
+      }
+
+      @Override
+      public Long incompleteCheckTimeoutInSeconds() {
+        return ofNullable(incompleteCheckTimeoutInSeconds)
+            .orElseGet(BackupRepositoryProps.EMPTY::incompleteCheckTimeoutInSeconds);
+      }
+
+      public void setRepositoryName(final String repositoryName) {
+        this.repositoryName = repositoryName;
+      }
+
+      public void setSnapshotTimeout(final int snapshotTimeout) {
+        this.snapshotTimeout = snapshotTimeout;
+      }
+
+      public void setIncompleteCheckTimeoutInSeconds(final Long incompleteCheckTimeoutInSeconds) {
+        this.incompleteCheckTimeoutInSeconds = incompleteCheckTimeoutInSeconds;
+      }
     }
   }
 }
