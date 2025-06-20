@@ -68,7 +68,7 @@ public interface MicrometerJobWorkerMetricsBuilder {
     JOB_ACTIVATED {
       @Override
       public String asString() {
-        return "zeebe.client.worker.job.activated";
+        return "camunda.client.worker.job.activated";
       }
     },
 
@@ -76,7 +76,7 @@ public interface MicrometerJobWorkerMetricsBuilder {
     JOB_HANDLED {
       @Override
       public String asString() {
-        return "zeebe.client.worker.job.handled";
+        return "camunda.client.worker.job.handled";
       }
     }
   }
