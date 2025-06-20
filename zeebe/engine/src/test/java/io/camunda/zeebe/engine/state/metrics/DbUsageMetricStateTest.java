@@ -25,16 +25,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(ProcessingStateExtension.class)
 public class DbUsageMetricStateTest {
+
   private ZeebeDb<ZbColumnFamilies> zeebeDb;
   private TransactionContext transactionContext;
-
   private InstantSource mockClock;
   private MutableUsageMetricState state;
 
   @BeforeEach
   void beforeEach() {
     mockClock = mock(InstantSource.class);
-    state = new DbUsageMetricState(zeebeDb, transactionContext, mockClock, Duration.ofSeconds(1));
+    state = new DbUsageMetricState(zeebeDb, transactionContext, Duration.ofSeconds(1));
   }
 
   @Test
@@ -78,7 +78,7 @@ public class DbUsageMetricStateTest {
   }
 
   @Test
-  public void shouldDeleteActiveBucket() {
+  public void shouldResetActiveBucket() {
     // given
     final var eventTime = InstantSource.system().millis();
     when(mockClock.millis()).thenReturn(eventTime);
@@ -88,7 +88,7 @@ public class DbUsageMetricStateTest {
         .containsExactlyInAnyOrderEntriesOf(Map.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 1L));
 
     // when
-    state.deleteActiveBucket();
+    state.resetActiveBucket(1L);
 
     // then
     final var actual = state.getActiveBucket();
