@@ -2148,10 +2148,10 @@
     loupe "^3.1.3"
     tinyrainbow "^2.0.0"
 
-"@vzeta/camunda-api-zod-schemas@0.0.2-beta.58":
-  version "0.0.2-beta.58"
-  resolved "https://registry.yarnpkg.com/@vzeta/camunda-api-zod-schemas/-/camunda-api-zod-schemas-0.0.2-beta.58.tgz#0c9e8ad991c9a1b122b979c15687521730ecf453"
-  integrity sha512-oBUvKycBzh8rxs406He7wDVZeddKDOpfUkM+85258AJ2vGh7asanVhks6Ec9iv182uJe5ZZ/mVs1T8bhGVgHTQ==
+"@vzeta/camunda-api-zod-schemas@1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@vzeta/camunda-api-zod-schemas/-/camunda-api-zod-schemas-1.1.0.tgz#9bfb059098c3b48ddb0ccc4db357f07448a1b6d7"
+  integrity sha512-O4hv4YxcROvMuvG6pGl38q/v0bvd47mTKPG9QXQP8mnAkByzLKe8iAsPOv3u28SlxT7kncUkNmX45FeOtVsuPA==
 
 "@vzeta/rollup-plugin-sbom@2.0.0":
   version "2.0.0"
