@@ -49,7 +49,7 @@ public final class ExtensionElementsDuplicationValidator<
     final ExtensionElements extensionElements = element.getExtensionElements();
 
     if (extensionElements != null
-        && extensionElements.getChildElementsByType(extensionElement).size() != 1) {
+        && extensionElements.getChildElementsByType(extensionElement).size() > 1) {
 
       validationResultCollector.addError(
           0,
