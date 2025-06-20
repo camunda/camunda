@@ -18,9 +18,7 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
@@ -266,48 +264,6 @@ public class ClaimUserTaskTest {
 
     // then
     Assertions.assertThat(claimingRecord).hasRejectionType(RejectionType.NOT_FOUND);
-  }
-
-  @Test
-  public void shouldClaimUserTaskForCustomTenant() {
-    // given
-    final String tenantId = Strings.newRandomValidIdentityId();
-    final String username = Strings.newRandomValidIdentityId();
-    ENGINE.tenant().newTenant().withTenantId(tenantId).create();
-    ENGINE.user().newUser(username).create();
-    ENGINE
-        .tenant()
-        .addEntity(tenantId)
-        .withEntityId(username)
-        .withEntityType(EntityType.USER)
-        .add();
-    ENGINE.deployment().withXmlResource(process()).withTenantId(tenantId).deploy();
-    final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenantId).create();
-
-    // when
-    final var claimingRecord =
-        ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("foo").claim(username);
-
-    // then
-    Assertions.assertThat(claimingRecord)
-        .hasRecordType(RecordType.EVENT)
-        .hasIntent(UserTaskIntent.CLAIMING);
-
-    final var claimingRecordValue = claimingRecord.getValue();
-    final var assignedRecordValue =
-        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED).getFirst().getValue();
-
-    assertThat(List.of(claimingRecordValue, assignedRecordValue))
-        .describedAs(
-            "Ensure CLAIMING and ASSIGNED records have consistent attribute values "
-                + "as dependent applications will rely on them to update user task data internally")
-        .allSatisfy(
-            recordValue ->
-                Assertions.assertThat(recordValue)
-                    .hasAction(DEFAULT_ACTION)
-                    .hasAssignee("foo")
-                    .hasTenantId(tenantId));
   }
 
   @Test

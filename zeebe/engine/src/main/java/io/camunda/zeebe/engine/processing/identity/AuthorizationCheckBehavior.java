@@ -446,26 +446,22 @@ public final class AuthorizationCheckBehavior {
       return AuthorizedTenants.ANONYMOUS;
     }
 
+    if (!multiTenancyEnabled) {
+      return AuthorizedTenants.DEFAULT_TENANTS;
+    }
+
     final var username = getUsername(command);
     if (username.isPresent()) {
       final var tenantIds =
           getAuthorizedTenantIds(command, EntityType.USER, username.get()).toList();
-      if (tenantIds.isEmpty()) {
-        return AuthorizedTenants.DEFAULT_TENANTS;
-      } else {
-        return new AuthenticatedAuthorizedTenants(tenantIds);
-      }
+      return new AuthenticatedAuthorizedTenants(tenantIds);
     }
 
     final var clientId = getClientId(command);
     if (clientId.isPresent()) {
       final var tenantIds =
           getAuthorizedTenantIds(command, EntityType.CLIENT, clientId.get()).toList();
-      if (tenantIds.isEmpty()) {
-        return AuthorizedTenants.DEFAULT_TENANTS;
-      } else {
-        return new AuthenticatedAuthorizedTenants(tenantIds);
-      }
+      return new AuthenticatedAuthorizedTenants(tenantIds);
     }
 
     final var tenantsOfMapping =
@@ -474,10 +470,7 @@ public final class AuthorizationCheckBehavior {
                 mapping ->
                     getAuthorizedTenantIds(command, EntityType.MAPPING, mapping.getMappingId()))
             .collect(Collectors.toSet());
-
-    return tenantsOfMapping.isEmpty()
-        ? AuthorizedTenants.DEFAULT_TENANTS
-        : new AuthenticatedAuthorizedTenants(tenantsOfMapping);
+    return new AuthenticatedAuthorizedTenants(tenantsOfMapping);
   }
 
   private Stream<PersistedMapping> getPersistedMappings(final AuthorizationRequest request) {

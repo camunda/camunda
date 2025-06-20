@@ -29,7 +29,6 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -55,7 +54,7 @@ public final class JobThrowErrorTest {
   public static void setUp() {
     tenantId = UUID.randomUUID().toString();
     username = UUID.randomUUID().toString();
-    final var user = ENGINE.user().newUser(username).create().getValue();
+    ENGINE.user().newUser(username).create().getValue();
     ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     ENGINE
         .tenant()
@@ -70,7 +69,7 @@ public final class JobThrowErrorTest {
         .withPermissions(PermissionType.UPDATE_PROCESS_INSTANCE)
         .withResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
         .withResourceId(PROCESS_ID)
-        .withOwnerId(user.getUsername())
+        .withOwnerId(username)
         .withOwnerType(AuthorizationOwnerType.USER)
         .create();
   }
@@ -473,45 +472,5 @@ public final class JobThrowErrorTest {
             + expectedJobMessage
             + "', but it was not caught. No error events are available in the scope.";
     assertThat(incident.getValue().getErrorMessage()).isEqualTo(expectedIncidentMessage);
-  }
-
-  @Test
-  public void shouldThrowErrorForCustomTenant() {
-    // given
-    final var job = ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
-
-    // when
-    final Record<JobRecordValue> result =
-        ENGINE
-            .job()
-            .withKey(job.getKey())
-            .withErrorCode("error")
-            .withErrorMessage("error-message")
-            .throwError(username);
-
-    // then
-    Assertions.assertThat(result).hasRecordType(RecordType.EVENT).hasIntent(ERROR_THROWN);
-    Assertions.assertThat(result.getValue()).hasErrorCode("error").hasErrorMessage("error-message");
-    Assertions.assertThat(result.getValue()).hasTenantId(tenantId);
-  }
-
-  @Test
-  public void shouldRejectIfTenantIsUnauthorized() {
-    // given
-    final String falseTenantId = "foo";
-    final var job = ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
-    ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(username);
-
-    // when
-    final Record<JobRecordValue> result =
-        ENGINE
-            .job()
-            .withKey(job.getKey())
-            .withErrorCode("error")
-            .withAuthorizedTenantIds(falseTenantId)
-            .throwError();
-
-    // then
-    Assertions.assertThat(result).hasRejectionType(RejectionType.NOT_FOUND);
   }
 }
