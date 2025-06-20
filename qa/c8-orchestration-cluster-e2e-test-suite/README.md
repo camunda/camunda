@@ -1,6 +1,6 @@
-# Camunda Core Application E2E Test Suite – Developer Guide
+# Camunda C8 Orchestration Cluster E2E Test Suite – Developer Guide
 
-This repository contains the end-to-end test suite for Camunda's core components, built with [Playwright](https://playwright.dev/). It automates UI and API testing across core apps.
+This repository contains the end-to-end test suite for Camunda's C8 orchestration cluster, built with [Playwright](https://playwright.dev/). It automates UI and API testing across orchestration cluster apps.
 Follow the steps below to get started and run the tests locally.
 
 ---
@@ -44,7 +44,7 @@ git clone https://github.com/camunda/camunda.git
 
 ### 2. Install Dependencies
 
-Navigate to the `core-application-e2e-test-suite` directory and install the required dependencies:
+Navigate to the `c8-orchestration-cluster-e2e-test-suite` directory and install the required dependencies:
 
 ```bash
 npm install
@@ -55,7 +55,7 @@ npx playwright install
 
 ### 3. Configure Environment Variables
 
-Create a `.env` file inside `core-application-e2e-test-suite`.  
+Create a `.env` file inside `c8-orchestration-cluster-e2e-test-suite`.  
 This file configures test parameters, including application URLs and credentials.
 **Note**: Do not commit the `.env` file to GitHub to avoid exposing sensitive information.
 
@@ -77,7 +77,7 @@ ZEEBE_REST_ADDRESS=http://localhost:8089
 
 For running tests locally, ensure you have an active instance. To set it up:
 
-1. Open a terminal in the `config` folder inside the `core-application-e2e-test-suite` directory.
+1. Open a terminal in the `config` folder inside the `c8-orchestration-cluster-e2e-test-suite` directory.
 2. Run:
 
 ```bash
@@ -115,8 +115,8 @@ npx playwright show-report html-report
 
 Reports and artifacts:
 
-- `qa/core-application-e2e-test-suite/html-report`: Latest HTML report
-- `qa/core-application-e2e-test-suite/test-results/`: Traces and screenshots
+- `qa/c8-orchestration-cluster-e2e-test-suite/html-report`: Latest HTML report
+- `qa/c8-orchestration-cluster-e2e-test-suite/test-results/`: Traces and screenshots
 
 ---
 
@@ -124,10 +124,10 @@ Reports and artifacts:
 
 This test suite follows the **Page Object Model (POM)** pattern for reusability and maintainability.
 
-- Page objects: `qa/core-application-e2e-test-suite/pages`
-- Test specs: `qa/core-application-e2e-test-suite/tests`
-- Utilities/fixtures: `qa/core-application-e2e-test-suite/utils`
-- Test data: `qa/core-application-e2e-test-suite/resources`
+- Page objects: `qa/c8-orchestration-cluster-e2e-test-suite/pages`
+- Test specs: `qa/c8-orchestration-cluster-e2e-test-suite/tests`
+- Utilities/fixtures: `qa/c8-orchestration-cluster-e2e-test-suite/utils`
+- Test data: `qa/c8-orchestration-cluster-e2e-test-suite/resources`
 
 ---
 
@@ -135,9 +135,9 @@ This test suite follows the **Page Object Model (POM)** pattern for reusability 
 
 ### Running the On-Demand Workflow
 
-- `core-application-e2e-tests-on-demand.yml`: Manually triggered for ad hoc testing
+- `c8-orchestration-cluster-e2e-tests-on-demand.yml`: Manually triggered for ad hoc testing
 
-1. Go to [Core Application E2E Tests On Demand](https://github.com/camunda/camunda/actions/workflows/core-application-e2e-tests-on-demand.yml)
+1. Go to [C8 Orchestration Cluster E2E Tests On Demand](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml)
 2. Click **"Run workflow"**
 3. Choose the desired branch (e.g., `main`, `stable/8.6`, `stable/8.7`)
 4. Click **"Run workflow"**
@@ -146,12 +146,12 @@ This test suite follows the **Page Object Model (POM)** pattern for reusability 
 
 ### Automated Nightly Test Runs
 
-- `core-application-e2e-tests-nightly.yml`: Runs nightly across all monorepo versions
+- `c8-orchestration-cluster-e2e-tests-nightly.yml`: Runs nightly across all monorepo versions
   Nightly tests ensure continuous stability
 
-- All nightly test runs can be accessed from [Core Application E2E Tests Nightly](https://github.com/camunda/camunda/actions/workflows/core-application-e2e-tests-nightly.yml)
+- All nightly test runs can be accessed from [C8 Orchestration Cluster E2E Tests Nightly](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-nightly.yml)
 
-- Results posted to Slack channel `#core-application-e2e-test-results` with TestRail links
+- Results posted to Slack channel `#c8-orchestration-cluster-e2e-test-results` with TestRail links
 
 - Failures are reviewed by the DRI
 
@@ -175,7 +175,7 @@ We welcome contributions! To contribute:
 
 ### Project Board
 
-We track progress via the [Core Application E2E Tests Project Board](https://github.com/orgs/camunda/projects/178/views/1):
+We track progress via the [C8 Orchestration Cluster E2E Tests Project Board](https://github.com/orgs/camunda/projects/178/views/1):
 
 - View test case statuses
 - See who's assigned to what
@@ -185,7 +185,7 @@ We track progress via the [Core Application E2E Tests Project Board](https://git
 
 ### TestRail Integration
 
-If a PR modifies any test or page file, link the corresponding [TestRail test case suite](https://camunda.testrail.com/index.php?/suites/view/15143) in the PR description.
+If a PR modifies any test or page file, link the corresponding [TestRail test case suite](https://camunda.testrail.com/index.php?/suites/view/17050) in the PR description.
 
 Need TestRail access? Contact the QA team.
 
@@ -196,10 +196,10 @@ Need TestRail access? Contact the QA team.
 If you want to suggest a new test case without submitting code:
 
 1. Go to the [Issues tab](https://github.com/camunda/camunda/issues) inside [camunda Repo](https://github.com/camunda/camunda).
-2. Click **"New Issue"** and select **"Core Application – Automated E2E Test Request"**
+2. Click **"New Issue"** and select **"C8 Orchestration Cluster – Automated E2E Test Request"**
 3. Fill in all required fields
 
 ---
 
-Thank you for using the Core Application End-to-End Test Suite.  
+Thank you for using the C8 Orchestration Cluster End-to-End Test Suite.  
 Happy testing! 🚀 For help, reach out to the DRI.
