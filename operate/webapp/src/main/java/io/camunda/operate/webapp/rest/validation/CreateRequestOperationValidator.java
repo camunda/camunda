@@ -37,20 +37,34 @@ public class CreateRequestOperationValidator {
 
   public void validate(final CreateOperationRequestDto request, final String processInstanceId) {
     if (request.getOperationType() == null) {
-      throw new InvalidRequestException("Operation type must be defined.");
+      throw new InvalidRequestException(
+          String.format(
+              "Operation type must be defined for operation on processInstanceId=%s.",
+              processInstanceId));
     }
 
     if (isVariableOperation(request) && isRequiredVariableOperationFieldMissing(request)) {
       throw new InvalidRequestException(
-          "ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
+          String.format(
+              "ScopeId, variable name, and variable value must be defined for %s operation on processInstanceId=%s.",
+              request.getOperationType(), processInstanceId));
     }
 
     if (request.getOperationType().equals(ADD_VARIABLE)) {
-      if (variableAlreadyExists(request, processInstanceId)
-          || hasNonFailedAddVariableOperation(request, processInstanceId)) {
+      if (variableAlreadyExists(request, processInstanceId)) {
         throw new InvalidRequestException(
             String.format(
-                "Variable with the name \"%s\" already exists.", request.getVariableName()));
+                "Cannot add variable \"%s\" in scope \"%s\" of processInstanceId=%s: "
+                    + "a variable with this name already exists.",
+                request.getVariableName(), request.getVariableScopeId(), processInstanceId));
+      }
+
+      if (hasNonFailedAddVariableOperation(request, processInstanceId)) {
+        throw new InvalidRequestException(
+            String.format(
+                "Cannot add variable \"%s\" in scope \"%s\" of processInstanceId=%s: "
+                    + "an ADD_VARIABLE operation for this variable already exists.",
+                request.getVariableName(), request.getVariableScopeId(), processInstanceId));
       }
     }
   }
