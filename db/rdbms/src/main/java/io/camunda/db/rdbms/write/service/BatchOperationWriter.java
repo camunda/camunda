@@ -14,6 +14,7 @@ import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemsDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationUpdateCountsDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationUpdateDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationUpdateTotalCountDto;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
@@ -22,6 +23,7 @@ import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.slf4j.Logger;
@@ -35,10 +37,15 @@ public class BatchOperationWriter {
 
   private final BatchOperationReader reader;
 
+  private final int itemInsertBlockSize;
+
   public BatchOperationWriter(
-      final BatchOperationReader reader, final ExecutionQueue executionQueue) {
+      final BatchOperationReader reader,
+      final ExecutionQueue executionQueue,
+      final RdbmsWriterConfig config) {
     this.reader = reader;
     this.executionQueue = executionQueue;
+    itemInsertBlockSize = config.batchOperationItemInsertBlockSize();
   }
 
   public void createIfNotAlreadyExists(final BatchOperationDbModel batchOperation) {
@@ -157,13 +164,19 @@ public class BatchOperationWriter {
             new BatchOperationItemStatusUpdateDto(batchOperationId, oldState, newState)));
   }
 
-  private void insertItems(final BatchOperationItemsDto items) {
-    executionQueue.executeInQueue(
-        new QueueItem(
-            ContextType.BATCH_OPERATION,
-            WriteStatementType.INSERT,
-            items.batchOperationId(),
-            "io.camunda.db.rdbms.sql.BatchOperationMapper.insertItems",
-            items));
+  @VisibleForTesting
+  void insertItems(final BatchOperationItemsDto items) {
+    final var itemList = items.items();
+
+    for (int i = 0; i < itemList.size(); i += itemInsertBlockSize) {
+      final var block = itemList.subList(i, Math.min(i + itemInsertBlockSize, itemList.size()));
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.BATCH_OPERATION,
+              WriteStatementType.INSERT,
+              items.batchOperationId(),
+              "io.camunda.db.rdbms.sql.BatchOperationMapper.insertItems",
+              new BatchOperationItemsDto(items.batchOperationId(), block)));
+    }
   }
 }

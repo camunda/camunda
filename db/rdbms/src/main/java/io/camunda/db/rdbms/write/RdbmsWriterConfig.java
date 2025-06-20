@@ -16,13 +16,15 @@ public record RdbmsWriterConfig(
     Duration defaultHistoryTTL,
     Duration minHistoryCleanupInterval,
     Duration maxHistoryCleanupInterval,
-    int historyCleanupBatchSize) {
+    int historyCleanupBatchSize,
+    int batchOperationItemInsertBlockSize) {
 
   public static final int DEFAULT_QUEUE_SIZE = -1;
   public static final Duration DEFAULT_HISTORY_TTL = Duration.ofDays(30);
   public static final Duration DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL = Duration.ofMinutes(1);
   public static final Duration DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL = Duration.ofMinutes(60);
   public static final int DEFAULT_HISTORY_CLEANUP_BATCH_SIZE = 1000;
+  public static final int DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE = 10000;
 
   public static Builder builder() {
     return new Builder();
@@ -36,34 +38,40 @@ public record RdbmsWriterConfig(
     private Duration minHistoryCleanupInterval = DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL;
     private Duration maxHistoryCleanupInterval = DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL;
     private int historyCleanupBatchSize = DEFAULT_HISTORY_CLEANUP_BATCH_SIZE;
+    private int batchOperationItemInsertBlockSize = DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE;
 
-    public Builder partitionId(int partitionId) {
+    public Builder partitionId(final int partitionId) {
       this.partitionId = partitionId;
       return this;
     }
 
-    public Builder maxQueueSize(int maxQueueSize) {
+    public Builder maxQueueSize(final int maxQueueSize) {
       this.maxQueueSize = maxQueueSize;
       return this;
     }
 
-    public Builder defaultHistoryTTL(Duration defaultHistoryTTL) {
+    public Builder defaultHistoryTTL(final Duration defaultHistoryTTL) {
       this.defaultHistoryTTL = defaultHistoryTTL;
       return this;
     }
 
-    public Builder minHistoryCleanupInterval(Duration minHistoryCleanupInterval) {
+    public Builder minHistoryCleanupInterval(final Duration minHistoryCleanupInterval) {
       this.minHistoryCleanupInterval = minHistoryCleanupInterval;
       return this;
     }
 
-    public Builder maxHistoryCleanupInterval(Duration maxHistoryCleanupInterval) {
+    public Builder maxHistoryCleanupInterval(final Duration maxHistoryCleanupInterval) {
       this.maxHistoryCleanupInterval = maxHistoryCleanupInterval;
       return this;
     }
 
-    public Builder historyCleanupBatchSize(int historyCleanupBatchSize) {
+    public Builder historyCleanupBatchSize(final int historyCleanupBatchSize) {
       this.historyCleanupBatchSize = historyCleanupBatchSize;
+      return this;
+    }
+
+    public Builder batchOperationItemInsertBlockSize(final int batchOperationItemInsertBlockSize) {
+      this.batchOperationItemInsertBlockSize = batchOperationItemInsertBlockSize;
       return this;
     }
 
@@ -75,7 +83,8 @@ public record RdbmsWriterConfig(
           defaultHistoryTTL,
           minHistoryCleanupInterval,
           maxHistoryCleanupInterval,
-          historyCleanupBatchSize);
+          historyCleanupBatchSize,
+          batchOperationItemInsertBlockSize);
     }
   }
 }
