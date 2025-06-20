@@ -53,7 +53,7 @@ public class CreateRequestOperationValidatorTest {
     // when - then
     assertThatThrownBy(() -> underTest.validate(request, "123"))
         .isInstanceOf(InvalidRequestException.class)
-        .hasMessage("Operation type must be defined.");
+        .hasMessage("Operation type must be defined for operation on processInstanceId=123.");
   }
 
   private static Stream<Arguments> invalidAddOrUpdateVariableOperation() {
@@ -82,7 +82,9 @@ public class CreateRequestOperationValidatorTest {
     // when - then
     assertThatThrownBy(() -> underTest.validate(request, "123"))
         .isInstanceOf(InvalidRequestException.class)
-        .hasMessage("ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
+        .hasMessage(
+            "ScopeId, variable name, and variable value must be defined for %s operation on processInstanceId=123.",
+            type);
   }
 
   @Test
@@ -100,7 +102,9 @@ public class CreateRequestOperationValidatorTest {
     // when - then
     assertThatThrownBy(() -> underTest.validate(request, "123"))
         .isInstanceOf(InvalidRequestException.class)
-        .hasMessage("Variable with the name \"name\" already exists.");
+        .hasMessage(
+            "Cannot add variable \"name\" in scope \"scope\" of processInstanceId=123: "
+                + "a variable with this name already exists.");
 
     // shouldn't query for operations
     verifyNoInteractions(mockOperationReader);
@@ -131,7 +135,9 @@ public class CreateRequestOperationValidatorTest {
     // when - then
     assertThatThrownBy(() -> underTest.validate(request, "123"))
         .isInstanceOf(InvalidRequestException.class)
-        .hasMessage("Variable with the name \"name\" already exists.");
+        .hasMessage(
+            "Cannot add variable \"name\" in scope \"scope\" of processInstanceId=123: "
+                + "an ADD_VARIABLE operation for this variable already exists.");
   }
 
   @Test
