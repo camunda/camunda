@@ -52,7 +52,12 @@ public class IdentityIndexController {
             "VITE_IS_OIDC",
             String.valueOf(
                 AuthenticationMethod.OIDC.equals(
-                    securityConfiguration.getAuthentication().getMethod())));
+                    securityConfiguration.getAuthentication().getMethod())),
+            "VITE_INTERNAL_GROUPS_ENABLED",
+            String.valueOf(
+                securityConfiguration.getAuthentication().getOidc() == null
+                    || securityConfiguration.getAuthentication().getOidc().getGroupsClaim()
+                        == null));
 
     model.addAttribute("clientConfig", clientConfigMap);
     setContentSecurePolicyHeader(response, envJsNonce);

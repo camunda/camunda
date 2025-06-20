@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 
+import io.camunda.authentication.ConditionalOnInternalGroupsEnabled;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.RoleQuery;
@@ -49,6 +50,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
 @RequestMapping("/v2/groups")
+@ConditionalOnInternalGroupsEnabled
 public class GroupController {
 
   private final GroupServices groupServices;
