@@ -7,12 +7,10 @@
  */
 package io.camunda.application.commons.backup;
 
-import io.camunda.application.commons.conditions.WebappEnabledCondition;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupServiceImpl;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
-import io.camunda.webapps.profiles.ProfileWebApp;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
@@ -23,8 +21,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Configuration
-@Conditional(WebappEnabledCondition.class)
-@ProfileWebApp
+@Conditional(WebappBackupEnabledCondition.class)
 public class HistoryBackupComponent {
 
   private final ThreadPoolTaskExecutor threadPoolTaskExecutor;

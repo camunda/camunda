@@ -7,6 +7,8 @@
  */
 package io.camunda.qa.util.cluster;
 
+import static io.camunda.application.commons.backup.WebappBackupEnabledCondition.BACKUP_WEBAPPS_ENABLED;
+
 import io.atomix.cluster.MemberId;
 import io.camunda.application.StandaloneBackupManager;
 import io.camunda.application.StandaloneBackupManager.BackupManagerConfiguration;
@@ -22,11 +24,8 @@ public class TestStandaloneBackupManager
   private Long backupId;
 
   public TestStandaloneBackupManager() {
-    super(
-        BackupManagerConfiguration.class,
-        StandaloneBackupManager.class,
-        io.camunda.tasklist.JacksonConfig.class,
-        io.camunda.operate.JacksonConfig.class);
+    super(BackupManagerConfiguration.class, StandaloneBackupManager.class);
+    withProperty(BACKUP_WEBAPPS_ENABLED, true);
   }
 
   @Override
