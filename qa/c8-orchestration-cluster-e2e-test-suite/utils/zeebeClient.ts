@@ -21,6 +21,18 @@ const c8 = new Camunda8({
   CAMUNDA_BASIC_AUTH_PASSWORD: process.env.CAMUNDA_BASIC_AUTH_PASSWORD,
   ZEEBE_REST_ADDRESS: process.env.ZEEBE_REST_ADDRESS,
 });
+
+function generateManyVariables(): Record<string, string> {
+  const variables: Record<string, string> = {};
+  const alphabet = 'abcdefghijklmnopqrstuvwxyz'.split('');
+  alphabet.forEach((letter1) => {
+    alphabet.forEach((letter2) => {
+      variables[`${letter1}${letter2}`] = `${letter1}${letter2}`;
+    });
+  });
+  return variables;
+}
+
 const zeebe = c8.getCamundaRestClient();
 const deploy = async (processFilePaths: string[]) => {
   try {
@@ -47,4 +59,4 @@ const createInstances = async (
   }
 };
 
-export {deploy, createInstances};
+export {deploy, createInstances, generateManyVariables};
