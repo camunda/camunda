@@ -15,6 +15,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
+import io.camunda.it.util.TestHelper;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
@@ -24,7 +25,9 @@ import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
+import java.util.Objects;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -68,6 +71,20 @@ class UserAuthorizationIT {
 
   @UserDefinition
   private static final TestUser USER_1 = new TestUser(FIRST_USER, DEFAULT_PASSWORD, List.of());
+
+  private static CamundaClient camundaClient;
+
+  @AfterEach
+  void awaitExpectedUsers() {
+    Objects.requireNonNull(camundaClient);
+
+    // some tests create/delete users, so we ensure that after each test
+    // run, only the expected users exist; this includes waiting for propagation
+    // to the secondary storage, i.e. if a test deletes a user, this must
+    // be reflected in Elasticsearch before the next test is executed.
+    TestHelper.waitUntilExactUsersExist(
+        camundaClient, "demo", ADMIN, RESTRICTED, RESTRICTED_WITH_READ, FIRST_USER);
+  }
 
   @Test
   void searchShouldReturnAuthorizedUsers(
