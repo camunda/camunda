@@ -52,9 +52,6 @@ test.describe('process detail', () => {
 
     await processInstancePage.gotoProcessInstancePage({
       id: '1',
-      options: {
-        waitUntil: 'networkidle',
-      },
     });
 
     // TODO: Enable 'aria-required-parent' and 'list' rules when https://github.com/carbon-design-system/carbon/issues/14944 is implemented and necessary changes are made in our code base.
@@ -97,9 +94,6 @@ test.describe('process detail', () => {
 
     await processInstancePage.gotoProcessInstancePage({
       id: '1',
-      options: {
-        waitUntil: 'networkidle',
-      },
     });
 
     // TODO: Enable 'aria-required-parent' and 'list' rules when https://github.com/carbon-design-system/carbon/issues/14944 is implemented and necessary changes are made in our code base.
@@ -162,9 +156,6 @@ test.describe('process detail', () => {
 
     await processInstancePage.gotoProcessInstancePage({
       id: '1',
-      options: {
-        waitUntil: 'networkidle',
-      },
     });
 
     await page.getByRole('button', {name: /modify instance/i}).click();

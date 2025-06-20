@@ -46,7 +46,6 @@ test.describe('selections and operations', () => {
         active: 'true',
         incidents: 'true',
       },
-      options: {waitUntil: 'networkidle'},
     });
 
     await filtersPanel.selectProcess('Order process');
@@ -95,7 +94,6 @@ test.describe('selections and operations', () => {
         active: 'true',
         incidents: 'true',
       },
-      options: {waitUntil: 'networkidle'},
     });
 
     await filtersPanel.selectProcess('Order process');

@@ -45,7 +45,6 @@ test.describe('process instance modification', () => {
 
     await processInstancePage.gotoProcessInstancePage({
       id: '2251799813888430',
-      options: {waitUntil: 'networkidle'},
     });
 
     const modifyInstanceButton = await page.getByRole('button', {
@@ -149,7 +148,6 @@ test.describe('process instance modification', () => {
 
     await processInstancePage.gotoProcessInstancePage({
       id: '2251799813888430',
-      options: {waitUntil: 'networkidle'},
     });
 
     await page
@@ -413,7 +411,6 @@ test.describe('process instance modification', () => {
 
     await processInstancePage.gotoProcessInstancePage({
       id: '2251799813888430',
-      options: {waitUntil: 'networkidle'},
     });
 
     await page

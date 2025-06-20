@@ -64,9 +64,6 @@ test.describe('processes page', () => {
         active: 'true',
         incidents: 'true',
       },
-      options: {
-        waitUntil: 'networkidle',
-      },
     });
 
     await expect(page).toHaveScreenshot();
@@ -97,12 +94,12 @@ test.describe('processes page', () => {
         process: 'bigVarProcess',
         version: '1',
       },
-      options: {
-        waitUntil: 'networkidle',
-      },
     });
 
-    await expect(processesPage.diagram.diagramSpinner).not.toBeVisible();
+    await expect(page.getByText('Data could not be fetched')).toHaveCount(2);
+    await expect(
+      page.getByText('Operations could not be fetched'),
+    ).toBeVisible();
     await expect(page).toHaveScreenshot();
   });
 
@@ -130,9 +127,6 @@ test.describe('processes page', () => {
         canceled: 'true',
         process: 'eventSubprocessProcess',
         version: '1',
-      },
-      options: {
-        waitUntil: 'networkidle',
       },
     });
 
@@ -174,9 +168,6 @@ test.describe('processes page', () => {
         process: 'eventSubprocessProcess',
         version: '1',
       },
-      options: {
-        waitUntil: 'networkidle',
-      },
     });
 
     await expect(page).toHaveScreenshot();
@@ -211,9 +202,6 @@ test.describe('processes page', () => {
       searchParams: {
         active: 'true',
         incidents: 'true',
-      },
-      options: {
-        waitUntil: 'networkidle',
       },
     });
 
@@ -255,9 +243,6 @@ test.describe('processes page', () => {
         active: 'true',
         incidents: 'true',
       },
-      options: {
-        waitUntil: 'networkidle',
-      },
     });
 
     await filtersPanel.displayOptionalFilter('Parent Process Instance Key');
@@ -284,9 +269,6 @@ test.describe('processes page', () => {
       searchParams: {
         active: 'true',
         incidents: 'true',
-      },
-      options: {
-        waitUntil: 'networkidle',
       },
     });
 
@@ -316,10 +298,6 @@ test.describe('processes page', () => {
         active: 'true',
         incidents: 'true',
         batchOperationId: 'bf547ac3-9a35-45b9-ab06-b80b43785153',
-      },
-
-      options: {
-        waitUntil: 'networkidle',
       },
     });
 
@@ -354,10 +332,6 @@ test.describe('processes page', () => {
         active: 'true',
         incidents: 'true',
         batchOperationId: 'bf547ac3-9a35-45b9-ab06-b80b43785153',
-      },
-
-      options: {
-        waitUntil: 'networkidle',
       },
     });
 

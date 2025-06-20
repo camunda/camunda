@@ -44,7 +44,7 @@ test.describe('dashboard page', () => {
       }),
     );
 
-    await dashboardPage.gotoDashboardPage({waitUntil: 'networkidle'});
+    await dashboardPage.gotoDashboardPage();
 
     await expect(page).toHaveScreenshot();
   });
@@ -52,7 +52,12 @@ test.describe('dashboard page', () => {
   test('error page', async ({page, dashboardPage}) => {
     await page.route(URL_API_PATTERN, mockResponses({}));
 
-    await dashboardPage.gotoDashboardPage({waitUntil: 'networkidle'});
+    await dashboardPage.gotoDashboardPage();
+
+    await expect(page.getByText('Data could not be fetched')).toHaveCount(2);
+    await expect(
+      page.getByText('Process statistics could not be fetched'),
+    ).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });
@@ -67,7 +72,7 @@ test.describe('dashboard page', () => {
       }),
     );
 
-    await dashboardPage.gotoDashboardPage({waitUntil: 'networkidle'});
+    await dashboardPage.gotoDashboardPage();
 
     await expect(page).toHaveScreenshot();
   });
@@ -82,7 +87,7 @@ test.describe('dashboard page', () => {
       }),
     );
 
-    await dashboardPage.gotoDashboardPage({waitUntil: 'networkidle'});
+    await dashboardPage.gotoDashboardPage();
 
     const expandInstancesByProcessRow = page
       .getByTestId('instances-by-process')

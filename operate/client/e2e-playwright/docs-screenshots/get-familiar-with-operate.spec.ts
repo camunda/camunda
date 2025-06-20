@@ -45,7 +45,7 @@ test.describe('get familiar with operate', () => {
       }),
     );
 
-    await dashboardPage.gotoDashboardPage({waitUntil: 'networkidle'});
+    await dashboardPage.gotoDashboardPage();
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/get-familiar-with-operate/operate-introduction.png',
@@ -74,7 +74,6 @@ test.describe('get familiar with operate', () => {
         active: 'true',
         incidents: 'true',
       },
-      options: {waitUntil: 'networkidle'},
     });
 
     await filtersPanel.selectProcess('Order process');

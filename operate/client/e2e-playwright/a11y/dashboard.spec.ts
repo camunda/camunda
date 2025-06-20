@@ -41,7 +41,7 @@ test.describe('dashboard', () => {
       }),
     );
 
-    await dashboardPage.gotoDashboardPage({waitUntil: 'networkidle'});
+    await dashboardPage.gotoDashboardPage();
 
     const results = await makeAxeBuilder().analyze();
 

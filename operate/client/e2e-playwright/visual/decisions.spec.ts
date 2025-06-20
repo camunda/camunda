@@ -59,9 +59,6 @@ test.describe('decisions page', () => {
         evaluated: 'true',
         failed: 'true',
       },
-      options: {
-        waitUntil: 'networkidle',
-      },
     });
 
     await expect(page).toHaveScreenshot();
@@ -92,9 +89,6 @@ test.describe('decisions page', () => {
         name: 'invoiceClassification',
         version: '2',
       },
-      options: {
-        waitUntil: 'networkidle',
-      },
     });
 
     await expect(decisionsPage.fetchErrorMessage).toBeVisible();
@@ -120,9 +114,6 @@ test.describe('decisions page', () => {
         failed: 'true',
         name: 'invoiceClassification',
         version: '2',
-      },
-      options: {
-        waitUntil: 'networkidle',
       },
     });
 
@@ -159,9 +150,6 @@ test.describe('decisions page', () => {
         name: 'invoiceClassification',
         version: '2',
       },
-      options: {
-        waitUntil: 'networkidle',
-      },
     });
 
     await expect(page).toHaveScreenshot();
@@ -193,9 +181,6 @@ test.describe('decisions page', () => {
         failed: 'true',
         name: 'invoiceClassification',
         version: '2',
-      },
-      options: {
-        waitUntil: 'networkidle',
       },
     });
 

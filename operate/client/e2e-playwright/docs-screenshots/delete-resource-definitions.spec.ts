@@ -59,9 +59,6 @@ test.describe('delete resource definitions', () => {
         canceled: 'true',
         completed: 'true',
       },
-      options: {
-        waitUntil: 'networkidle',
-      },
     });
 
     await commonPage.addLeftArrow(filtersPanel.processNameFilter);
@@ -81,9 +78,6 @@ test.describe('delete resource definitions', () => {
         incidents: 'true',
         canceled: 'true',
         completed: 'true',
-      },
-      options: {
-        waitUntil: 'networkidle',
       },
     });
 
@@ -141,9 +135,6 @@ test.describe('delete resource definitions', () => {
         evaluated: 'true',
         failed: 'true',
       },
-      options: {
-        waitUntil: 'networkidle',
-      },
     });
 
     await commonPage.addLeftArrow(decisionsPage.decisionNameFilter);
@@ -161,9 +152,6 @@ test.describe('delete resource definitions', () => {
         failed: 'true',
         name: 'invoiceClassification',
         version: '2',
-      },
-      options: {
-        waitUntil: 'networkidle',
       },
     });
 

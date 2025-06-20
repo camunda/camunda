@@ -46,7 +46,6 @@ test.describe('processes', () => {
 
     await processesPage.gotoProcessesPage({
       searchParams: {active: 'true', incidents: 'true'},
-      options: {waitUntil: 'networkidle'},
     });
 
     const results = await makeAxeBuilder().analyze();

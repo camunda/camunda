@@ -70,9 +70,6 @@ test.describe('process instance migration', () => {
         canceled: 'false',
         completed: 'false',
       },
-      options: {
-        waitUntil: 'networkidle',
-      },
     });
 
     await commonPage.addRightArrow(
@@ -92,9 +89,6 @@ test.describe('process instance migration', () => {
         canceled: 'false',
         completed: 'false',
         operationId: '653ed5e6-49ed-4675-85bf-2c54a94d8180',
-      },
-      options: {
-        waitUntil: 'networkidle',
       },
     });
 

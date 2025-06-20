@@ -66,9 +66,6 @@ test.describe('process instance migration', () => {
         canceled: 'false',
         completed: 'false',
       },
-      options: {
-        waitUntil: 'networkidle',
-      },
     });
 
     await commonPage.addLeftArrow(filtersPanel.processNameFilter);
@@ -88,9 +85,6 @@ test.describe('process instance migration', () => {
         incidents: 'false',
         canceled: 'false',
         completed: 'false',
-      },
-      options: {
-        waitUntil: 'networkidle',
       },
     });
 

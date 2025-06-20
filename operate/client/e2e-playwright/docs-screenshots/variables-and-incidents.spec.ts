@@ -89,7 +89,6 @@ test.describe('variables and incidents', () => {
         process: 'order-process',
         version: '1',
       },
-      options: {waitUntil: 'networkidle'},
     });
 
     await page.screenshot({
@@ -120,7 +119,6 @@ test.describe('variables and incidents', () => {
 
     await processInstancePage.gotoProcessInstancePage({
       id: '2251799813725328',
-      options: {waitUntil: 'networkidle'},
     });
 
     await expect(
@@ -202,7 +200,6 @@ test.describe('variables and incidents', () => {
 
     await processInstancePage.gotoProcessInstancePage({
       id: '2251799813725328',
-      options: {waitUntil: 'networkidle'},
     });
 
     await expect(
@@ -267,7 +264,6 @@ test.describe('variables and incidents', () => {
 
     await processInstancePage.gotoProcessInstancePage({
       id: '2251799813725328',
-      options: {waitUntil: 'networkidle'},
     });
 
     await page.screenshot({
@@ -294,7 +290,6 @@ test.describe('variables and incidents', () => {
 
     await processInstancePage.gotoProcessInstancePage({
       id: '2251799813725328',
-      options: {waitUntil: 'networkidle'},
     });
 
     await page.screenshot({

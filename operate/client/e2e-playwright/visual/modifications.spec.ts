@@ -47,9 +47,6 @@ test.describe('modifications', () => {
 
     await processInstancePage.gotoProcessInstancePage({
       id: runningInstance.detail.id,
-      options: {
-        waitUntil: 'networkidle',
-      },
     });
 
     await page
@@ -79,9 +76,6 @@ test.describe('modifications', () => {
 
     await processInstancePage.gotoProcessInstancePage({
       id: runningInstance.detail.id,
-      options: {
-        waitUntil: 'networkidle',
-      },
     });
 
     await page
@@ -124,9 +118,6 @@ test.describe('modifications', () => {
 
     await processInstancePage.gotoProcessInstancePage({
       id: instanceWithIncident.detail.id,
-      options: {
-        waitUntil: 'networkidle',
-      },
     });
 
     await page
@@ -189,9 +180,6 @@ test.describe('modifications', () => {
 
     await processInstancePage.gotoProcessInstancePage({
       id: instanceWithIncident.detail.id,
-      options: {
-        waitUntil: 'networkidle',
-      },
     });
 
     await page

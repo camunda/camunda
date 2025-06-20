@@ -60,9 +60,6 @@ test.describe('migration view', () => {
         process: 'LotsOfTasks',
         version: '1',
       },
-      options: {
-        waitUntil: 'networkidle',
-      },
     });
 
     await processesPage.getNthProcessInstanceCheckbox(0).click();

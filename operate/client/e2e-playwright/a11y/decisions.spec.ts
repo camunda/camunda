@@ -43,7 +43,6 @@ test.describe('decisions', () => {
 
     await decisionsPage.gotoDecisionsPage({
       searchParams: {evaluated: 'true', failed: 'true'},
-      options: {waitUntil: 'networkidle'},
     });
 
     const results = await makeAxeBuilder().analyze();
@@ -72,9 +71,6 @@ test.describe('decisions', () => {
         failed: 'true',
         name: 'invoiceClassification',
         version: '2',
-      },
-      options: {
-        waitUntil: 'networkidle',
       },
     });
 

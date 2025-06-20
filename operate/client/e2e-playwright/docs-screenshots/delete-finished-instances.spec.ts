@@ -53,7 +53,6 @@ test.describe('delete finished instances', () => {
         completed: 'true',
         canceled: 'true',
       },
-      options: {waitUntil: 'networkidle'},
     });
 
     await filtersPanel.selectProcess('Order process');
@@ -115,7 +114,6 @@ test.describe('delete finished instances', () => {
         completed: 'true',
         canceled: 'true',
       },
-      options: {waitUntil: 'networkidle'},
     });
 
     await filtersPanel.selectProcess('Order process');
@@ -175,7 +173,6 @@ test.describe('delete finished instances', () => {
 
     await processInstancePage.gotoProcessInstancePage({
       id: '2551799813954282',
-      options: {waitUntil: 'networkidle'},
     });
 
     const deleteInstanceButton = await page.getByRole('button', {
