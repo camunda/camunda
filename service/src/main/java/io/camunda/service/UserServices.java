@@ -23,6 +23,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserDeleteRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.apache.commons.lang3.StringUtils;
@@ -63,6 +64,16 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
     final String encodedPassword = passwordEncoder.encode(request.password());
     return sendBrokerRequest(
         new BrokerUserCreateRequest()
+            .setUsername(request.username())
+            .setName(request.name())
+            .setEmail(request.email())
+            .setPassword(encodedPassword));
+  }
+
+  public CompletableFuture<UserRecord> createInitialAdminUser(final UserDTO request) {
+    final String encodedPassword = passwordEncoder.encode(request.password());
+    return sendBrokerRequest(
+        new BrokerUserCreateRequest(UserIntent.CREATE_INITIAL_ADMIN)
             .setUsername(request.username())
             .setName(request.name())
             .setEmail(request.email())

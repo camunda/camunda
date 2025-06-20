@@ -19,7 +19,11 @@ public class BrokerUserCreateRequest extends BrokerExecuteCommand<UserRecord> {
   private final UserRecord requestDto = new UserRecord();
 
   public BrokerUserCreateRequest() {
-    super(ValueType.USER, UserIntent.CREATE);
+    this(UserIntent.CREATE);
+  }
+
+  public BrokerUserCreateRequest(final UserIntent intent) {
+    super(ValueType.USER, intent);
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 

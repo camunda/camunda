@@ -43,7 +43,7 @@ public class UserProcessors {
         .onCommand(
             ValueType.USER,
             UserIntent.CREATE_INITIAL_ADMIN,
-            new UserCreateAdminProcessor(
+            new UserCreateInitialAdminProcessor(
                 keyGenerator, processingState, writers, authCheckBehavior));
   }
 }

@@ -308,6 +308,7 @@ public final class EventAppliers implements EventApplier {
     register(UserIntent.CREATED, new UserCreatedApplier(state.getUserState()));
     register(UserIntent.UPDATED, new UserUpdatedApplier(state.getUserState()));
     register(UserIntent.DELETED, new UserDeletedApplier(state));
+    register(UserIntent.INITIAL_ADMIN_CREATED, NOOP_EVENT_APPLIER);
   }
 
   private void registerMessageSubscriptionAppliers(final MutableProcessingState state) {

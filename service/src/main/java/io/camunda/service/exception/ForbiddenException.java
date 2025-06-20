@@ -19,4 +19,8 @@ public class ForbiddenException extends RuntimeException {
         UNAUTHORIZED_ERROR_MESSAGE.formatted(
             authorization.permissionType(), authorization.resourceType()));
   }
+
+  public ForbiddenException(final String message) {
+    super(message);
+  }
 }

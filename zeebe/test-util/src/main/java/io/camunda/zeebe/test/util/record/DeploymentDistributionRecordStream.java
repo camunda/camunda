@@ -26,6 +26,7 @@ public final class DeploymentDistributionRecordStream
     return new DeploymentDistributionRecordStream(wrappedStream);
   }
 
+  @Override
   public DeploymentDistributionRecordStream withPartitionId(final int partitionId) {
     return valueFilter(v -> v.getPartitionId() == partitionId);
   }

@@ -44,18 +44,24 @@ public final class UserClient {
 
   public static class UserCreationClient {
 
-    private static final Function<Long, Record<UserRecordValue>> SUCCESS_SUPPLIER =
-        (position) ->
-            RecordingExporter.userRecords()
-                .withIntent(UserIntent.CREATED)
-                .withSourceRecordPosition(position)
-                .getFirst();
-    private final Function<Long, Record<UserRecordValue>> rejectionSupplier;
-
     private final CommandWriter writer;
     private final UserIntent intent;
+
+    private final Function<Long, Record<UserRecordValue>> successSupplier =
+        (position) ->
+            RecordingExporter.userRecords()
+                .withIntent(this::getSuccessEventIntent)
+                .withSourceRecordPosition(position)
+                .getFirst();
+    private Function<Long, Record<UserRecordValue>> expectation = successSupplier;
+    private final Function<Long, Record<UserRecordValue>> rejectionSupplier =
+        (position) ->
+            RecordingExporter.userRecords()
+                .onlyCommandRejections()
+                .withIntent(this::getCommandIntent)
+                .withSourceRecordPosition(position)
+                .getFirst();
     private final UserRecord userCreationRecord;
-    private Function<Long, Record<UserRecordValue>> expectation = SUCCESS_SUPPLIER;
 
     public UserCreationClient(
         final CommandWriter writer, final String username, final UserIntent intent) {
@@ -63,13 +69,14 @@ public final class UserClient {
       this.intent = intent;
       userCreationRecord = new UserRecord();
       userCreationRecord.setUsername(username);
-      rejectionSupplier =
-          (position) ->
-              RecordingExporter.userRecords()
-                  .onlyCommandRejections()
-                  .withIntent(intent)
-                  .withSourceRecordPosition(position)
-                  .getFirst();
+    }
+
+    public UserIntent getCommandIntent() {
+      return intent;
+    }
+
+    public UserIntent getSuccessEventIntent() {
+      return intent == UserIntent.CREATE ? UserIntent.CREATED : UserIntent.INITIAL_ADMIN_CREATED;
     }
 
     public UserCreationClient withUsername(final String username) {

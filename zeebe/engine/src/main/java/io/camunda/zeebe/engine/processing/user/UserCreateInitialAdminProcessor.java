@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -34,7 +35,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class UserCreateAdminProcessor implements TypedRecordProcessor<UserRecord> {
+public class UserCreateInitialAdminProcessor implements TypedRecordProcessor<UserRecord> {
   public static final String USER_ALREADY_EXISTS_ERROR_MESSAGE =
       "Expected to create user with username '%s', but a user with this username already exists";
   public static final String ADMIN_ROLE_NOT_FOUND_ERROR_MESSAGE =
@@ -50,8 +51,9 @@ public class UserCreateAdminProcessor implements TypedRecordProcessor<UserRecord
   private final TypedResponseWriter responseWriter;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final MembershipState membershipState;
+  private final StateWriter stateWriter;
 
-  public UserCreateAdminProcessor(
+  public UserCreateInitialAdminProcessor(
       final KeyGenerator keyGenerator,
       final ProcessingState processingState,
       final Writers writers,
@@ -63,6 +65,7 @@ public class UserCreateAdminProcessor implements TypedRecordProcessor<UserRecord
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    stateWriter = writers.state();
     this.authCheckBehavior = authCheckBehavior;
   }
 
@@ -87,54 +90,52 @@ public class UserCreateAdminProcessor implements TypedRecordProcessor<UserRecord
                       .setRoleId(adminRoleId)
                       .setEntityId(record.getUsername())
                       .setEntityType(EntityType.USER));
+              stateWriter.appendFollowUpEvent(key, UserIntent.INITIAL_ADMIN_CREATED, record);
+              responseWriter.writeEventOnCommand(
+                  key, UserIntent.INITIAL_ADMIN_CREATED, record, command);
             },
-            rejection -> {
-              rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-              responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+            message -> {
+              // For this command we always want to reject with FORBIDDEN
+              rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, message);
+              responseWriter.writeRejectionOnCommand(command, RejectionType.FORBIDDEN, message);
             });
   }
 
-  private Either<Rejection, Void> checkUserCreateAuthorization(
-      final TypedRecord<UserRecord> command) {
+  private Either<String, Void> checkUserCreateAuthorization(final TypedRecord<UserRecord> command) {
     final var authRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.USER, PermissionType.CREATE);
-    return authCheckBehavior.isAuthorized(authRequest);
+    return authCheckBehavior.isAuthorized(authRequest).mapLeft(Rejection::reason);
   }
 
-  private Either<Rejection, Void> checkRoleUpdateAuthorization(
-      final TypedRecord<UserRecord> command) {
+  private Either<String, Void> checkRoleUpdateAuthorization(final TypedRecord<UserRecord> command) {
     final var authRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.ROLE, PermissionType.UPDATE);
-    return authCheckBehavior.isAuthorized(authRequest);
+    return authCheckBehavior.isAuthorized(authRequest).mapLeft(Rejection::reason);
   }
 
-  private Either<Rejection, Void> checkUserDoesNotExist(final String username) {
+  private Either<String, Void> checkUserDoesNotExist(final String username) {
     return userState
         .getUser(username)
         .map(
             user -> {
               final var message = USER_ALREADY_EXISTS_ERROR_MESSAGE.formatted(user.getUsername());
-              return Either.<Rejection, Void>left(
-                  new Rejection(RejectionType.ALREADY_EXISTS, message));
+              return Either.<String, Void>left(message);
             })
         .orElseGet(() -> Either.right(null));
   }
 
-  private Either<Rejection, Void> checkAdminRoleExists(final String adminRoleId) {
+  private Either<String, Void> checkAdminRoleExists(final String adminRoleId) {
     return roleState
         .getRole(adminRoleId)
-        .map(
-            adminRole -> {
-              return Either.<Rejection, Void>right(null);
-            })
+        .map(adminRole -> Either.<String, Void>right(null))
         .orElseGet(
             () -> {
               final var message = ADMIN_ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(adminRoleId);
-              return Either.left(new Rejection(RejectionType.NOT_FOUND, message));
+              return Either.left(message);
             });
   }
 
-  private Either<Rejection, Void> checkAdminRoleHasNoUsers(final String adminRoleId) {
+  private Either<String, Void> checkAdminRoleHasNoUsers(final String adminRoleId) {
     final AtomicBoolean hasUsers = new AtomicBoolean(false);
     membershipState.forEachMember(
         RelationType.ROLE,
@@ -150,7 +151,7 @@ public class UserCreateAdminProcessor implements TypedRecordProcessor<UserRecord
 
     if (hasUsers.get()) {
       final var message = ADMIN_ROLE_HAS_USERS_ERROR_MESSAGE.formatted(adminRoleId);
-      return Either.left(new Rejection(RejectionType.ALREADY_EXISTS, message));
+      return Either.left(message);
     } else {
       return Either.right(null);
     }
