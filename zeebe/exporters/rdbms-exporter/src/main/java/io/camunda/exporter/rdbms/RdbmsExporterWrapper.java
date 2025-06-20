@@ -60,6 +60,7 @@ public class RdbmsExporterWrapper implements Exporter {
   private static final int DEFAULT_MAX_QUEUE_SIZE = 1000;
   private static final int DEFAULT_CLEANUP_BATCH_SIZE = 1000;
   private static final long DEFAULT_MAX_CACHE_SIZE = 10_000;
+  private static final boolean DEFAULT_EXPORT_PENDING_BATCH_OPERATION_ITEMS = true;
   private final RdbmsService rdbmsService;
 
   private RdbmsExporter exporter;
@@ -83,6 +84,7 @@ public class RdbmsExporterWrapper implements Exporter {
                 .defaultHistoryTTL(readHistoryTTL(context))
                 .minHistoryCleanupInterval(readMinHistoryCleanupInterval(context))
                 .maxHistoryCleanupInterval(readMaxHistoryCleanupInterval(context))
+                .exportPendingBatchOperationItems(readExportPendingBatchOperationItems(context))
                 .build());
 
     final var builder =
@@ -154,6 +156,11 @@ public class RdbmsExporterWrapper implements Exporter {
     return readInt(context, "historyCleanupBatchSize", DEFAULT_CLEANUP_BATCH_SIZE);
   }
 
+  private boolean readExportPendingBatchOperationItems(final Context context) {
+    return readBoolean(
+        context, "exportPendingBatchOperationItems", DEFAULT_EXPORT_PENDING_BATCH_OPERATION_ITEMS);
+  }
+
   private Duration readDuration(
       final Context context, final String property, final Duration defaultValue) {
     final var arguments = context.getConfiguration().getArguments();
@@ -173,10 +180,11 @@ public class RdbmsExporterWrapper implements Exporter {
     }
   }
 
-  private long readLong(final Context context, final String property, final long defaultValue) {
+  private boolean readBoolean(
+      final Context context, final String property, final boolean defaultValue) {
     final var arguments = context.getConfiguration().getArguments();
     if (arguments != null && arguments.containsKey(property)) {
-      return (Long) arguments.get(property);
+      return (Boolean) arguments.get(property);
     } else {
       return defaultValue;
     }

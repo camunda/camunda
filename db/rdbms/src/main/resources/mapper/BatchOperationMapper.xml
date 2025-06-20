@@ -54,10 +54,10 @@
 
   <insert id="insertItems"
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemsDto">
-    INSERT INTO ${prefix}BATCH_OPERATION_ITEM (BATCH_OPERATION_ID, ITEM_KEY, PROCESS_INSTANCE_KEY)
+    INSERT INTO ${prefix}BATCH_OPERATION_ITEM (BATCH_OPERATION_ID, ITEM_KEY, PROCESS_INSTANCE_KEY, STATE)
     VALUES
     <foreach collection="items" item="item" separator=",">
-      (#{batchOperationId}, #{item.itemKey}, #{item.processInstanceKey})
+      (#{batchOperationId}, #{item.itemKey}, #{item.processInstanceKey}, #{item.state})
     </foreach>
   </insert>
 
@@ -95,29 +95,17 @@
   </update>
 
   <update id="incrementFailedOperationsCount"
-    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationUpdateCountsDto">
+    parameterType="java.lang.String">
     UPDATE ${prefix}BATCH_OPERATION t
     SET OPERATIONS_FAILED_COUNT = OPERATIONS_FAILED_COUNT + 1
-    WHERE BATCH_OPERATION_ID = #{batchOperationId}
-    AND EXISTS(
-      SELECT 1
-      FROM ${prefix}BATCH_OPERATION_ITEM i
-      WHERE i.BATCH_OPERATION_ID = t.BATCH_OPERATION_ID
-      AND i.ITEM_KEY = #{itemKey}
-    )
+    WHERE BATCH_OPERATION_ID = #{id}
   </update>
 
   <update id="incrementCompletedOperationsCount"
-    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationUpdateCountsDto">
+    parameterType="java.lang.String">
     UPDATE ${prefix}BATCH_OPERATION t
     SET OPERATIONS_COMPLETED_COUNT = OPERATIONS_COMPLETED_COUNT + 1
-    WHERE BATCH_OPERATION_ID = #{batchOperationId}
-      AND EXISTS(
-      SELECT 1
-      FROM ${prefix}BATCH_OPERATION_ITEM i
-      WHERE i.BATCH_OPERATION_ID = t.BATCH_OPERATION_ID
-        AND i.ITEM_KEY = #{itemKey}
-    )
+    WHERE BATCH_OPERATION_ID = #{id}
   </update>
 
   <select id="count" resultType="java.lang.Long">
