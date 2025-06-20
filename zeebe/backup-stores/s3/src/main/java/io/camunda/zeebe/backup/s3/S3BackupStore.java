@@ -405,7 +405,7 @@ public final class S3BackupStore implements BackupStore {
             .connectionAcquisitionTimeout(config.connectionAcquisitionTimeout())
             .build());
 
-    builder.overrideConfiguration(cfg -> cfg.retryPolicy(RetryMode.ADAPTIVE));
+    builder.overrideConfiguration(cfg -> cfg.retryStrategy(RetryMode.ADAPTIVE_V2));
     builder.forcePathStyle(config.forcePathStyleAccess());
     config.endpoint().ifPresent(endpoint -> builder.endpointOverride(URI.create(endpoint)));
     config.region().ifPresent(region -> builder.region(Region.of(region)));
