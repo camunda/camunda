@@ -75,8 +75,8 @@ final class BackupStoreComponent {
     return GcsBackupStore.of(storeConfig);
   }
 
-  private static AzureBackupStore buildAzureBackupStore(final AzureStore azureStoreConfig) {
-    return new AzureBackupStore.of(azureStoreConfig);
+  private static BackupStore buildAzureBackupStore(final AzureStore azureStoreConfig) {
+    return AzureBackupStore.of(azureStoreConfig);
   }
 
   private static BackupStore buildFilesystemBackupStore(final BackupStoreCfg backupStoreCfg) {
