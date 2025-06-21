@@ -10,7 +10,7 @@ import {useQuery, UseQueryResult} from '@tanstack/react-query';
 import {
   QueryVariablesRequestBody,
   QueryVariablesResponseBody,
-} from '@vzeta/camunda-api-zod-schemas/process-management';
+} from '@vzeta/camunda-api-zod-schemas';
 import {RequestError} from 'modules/request';
 import {searchVariables} from 'modules/api/v2/variables/searchVariables';
 

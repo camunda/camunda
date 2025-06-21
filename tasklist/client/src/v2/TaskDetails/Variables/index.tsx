@@ -15,8 +15,7 @@ import {match, Pattern} from 'ts-pattern';
 import {Button, Heading, type InlineLoadingProps, Layer} from '@carbon/react';
 import {Information, Add} from '@carbon/react/icons';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
-import type {UserTask} from '@vzeta/camunda-api-zod-schemas/tasklist';
-import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/identity';
+import type {UserTask, CurrentUser} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {
   ScrollableContent,
   TaskDetailsContainer,

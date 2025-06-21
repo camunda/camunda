@@ -9,7 +9,7 @@
 import {
   endpoints,
   GetProcessInstanceCallHierarchyResponseBody,
-} from '@vzeta/camunda-api-zod-schemas/operate';
+} from '@vzeta/camunda-api-zod-schemas';
 import {RequestResult, requestWithThrow} from 'modules/request';
 
 const fetchCallHierarchy = async (

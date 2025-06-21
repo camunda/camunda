@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/identity';
+import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 const currentUser: CurrentUser = {
   userId: 'demo',

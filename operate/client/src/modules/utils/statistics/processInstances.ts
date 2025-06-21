@@ -7,7 +7,7 @@
  */
 
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
-import {ProcessDefinitionStatistic} from '@vzeta/camunda-api-zod-schemas/operate';
+import {ProcessDefinitionStatistic} from '@vzeta/camunda-api-zod-schemas';
 
 function getInstancesCount(
   data: ProcessDefinitionStatistic[],

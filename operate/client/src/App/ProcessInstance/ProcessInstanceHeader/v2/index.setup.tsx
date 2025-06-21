@@ -17,7 +17,7 @@ import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas/operate';
+import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 
 const mockOperationCreated = createBatchOperation();
 

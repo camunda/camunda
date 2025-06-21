@@ -9,46 +9,44 @@
 import {useMemo} from 'react';
 import {useSearchParams} from 'react-router-dom';
 import {z} from 'zod';
-import {queryUserTasksRequestBodySchema} from '@vzeta/camunda-api-zod-schemas/tasklist';
-import {querySortOrderSchema} from '@vzeta/camunda-api-zod-schemas';
+import {
+  queryUserTasksRequestBodySchema,
+  querySortOrderSchema,
+} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 const apiFiltersSchema = queryUserTasksRequestBodySchema.shape.filter
   .unwrap()
   .omit({
     localVariables: true,
     processInstanceVariables: true,
+    candidateGroup: true,
+    candidateUser: true,
+    processInstanceKey: true,
+    processDefinitionKey: true,
+    userTaskKey: true,
+    creationDate: true,
+    dueDate: true,
+    followUpDate: true,
+    completionDate: true,
   });
 
-const filtersSchema = z
-  .object({
-    filter: z.string().default('all-open'),
-    sortBy: z
-      .enum(['creation', 'follow-up', 'due', 'completion', 'priority'])
-      .default('creation'),
-    sortOrder: querySortOrderSchema.default('desc'),
-    candidateGroup: z.string().optional(),
-    candidateUser: z.string().optional(),
-    processInstanceKey: z.string().optional(),
-    processDefinitionKey: z.string().optional(),
-    userTaskKey: z.string().optional(),
-    dueDateFrom: z.coerce.date().optional(),
-    dueDateTo: z.coerce.date().optional(),
-    followUpDateFrom: z.coerce.date().optional(),
-    followUpDateTo: z.coerce.date().optional(),
-  })
-  .merge(
-    apiFiltersSchema.omit({
-      candidateGroup: true,
-      candidateUser: true,
-      processInstanceKey: true,
-      processDefinitionKey: true,
-      userTaskKey: true,
-      creationDate: true,
-      dueDate: true,
-      followUpDate: true,
-      completionDate: true,
-    }),
-  );
+const filtersSchema = z.object({
+  filter: z.string().default('all-open'),
+  sortBy: z
+    .enum(['creation', 'follow-up', 'due', 'completion', 'priority'])
+    .default('creation'),
+  sortOrder: querySortOrderSchema.default('desc'),
+  candidateGroup: z.string().optional(),
+  candidateUser: z.string().optional(),
+  processInstanceKey: z.string().optional(),
+  processDefinitionKey: z.string().optional(),
+  userTaskKey: z.string().optional(),
+  dueDateFrom: z.coerce.date().optional(),
+  dueDateTo: z.coerce.date().optional(),
+  followUpDateFrom: z.coerce.date().optional(),
+  followUpDateTo: z.coerce.date().optional(),
+  ...apiFiltersSchema.shape,
+});
 
 const numberFiltersSchema = z
   .object({

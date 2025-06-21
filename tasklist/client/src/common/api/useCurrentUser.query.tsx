@@ -9,7 +9,7 @@
 import {useQuery} from '@tanstack/react-query';
 import {commonApi} from 'common/api';
 import {type RequestError, request} from 'common/api/request';
-import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/identity';
+import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 function useCurrentUser() {
   return useQuery<CurrentUser, RequestError | Error>({

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {ProcessDefinitionStatistic} from '@vzeta/camunda-api-zod-schemas/operate';
+import {ProcessDefinitionStatistic} from '@vzeta/camunda-api-zod-schemas';
 import {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {isProcessEndEvent} from 'modules/bpmn-js/utils/isProcessEndEvent';
 import {modificationsStore} from 'modules/stores/modifications';

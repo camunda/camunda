@@ -9,7 +9,7 @@
 import {
   GetProcessDefinitionStatisticsRequestBody,
   GetProcessDefinitionStatisticsResponseBody,
-} from '@vzeta/camunda-api-zod-schemas/operate';
+} from '@vzeta/camunda-api-zod-schemas';
 import {OverlayData} from 'modules/bpmn-js/BpmnJS';
 import {
   ACTIVE_BADGE,

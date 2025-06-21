@@ -6,21 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import zod, {ZodSchema} from 'zod';
+import {z} from 'zod';
 
-const TASK_OPENED_REF = zod.object({
-  by: zod.enum(['user', 'auto-select']),
-  position: zod.number(),
-  filter: zod.string(),
-  sorting: zod.enum(['creation', 'follow-up', 'due', 'completion', 'priority']),
+const TASK_OPENED_REF = z.object({
+  by: z.enum(['user', 'auto-select']),
+  position: z.number(),
+  filter: z.string(),
+  sorting: z.enum(['creation', 'follow-up', 'due', 'completion', 'priority']),
 });
 
-const TASK_EMPTY_PAGE_OPENED_REF = zod.object({
-  by: zod.enum(['os-notification']),
+const TASK_EMPTY_PAGE_OPENED_REF = z.object({
+  by: z.enum(['os-notification']),
 });
 
-type TaskOpenedRef = zod.infer<typeof TASK_OPENED_REF>;
-type TaskEmptyPageOpenedRef = zod.infer<typeof TASK_EMPTY_PAGE_OPENED_REF>;
+type TaskOpenedRef = z.infer<typeof TASK_OPENED_REF>;
+type TaskEmptyPageOpenedRef = z.infer<typeof TASK_EMPTY_PAGE_OPENED_REF>;
 
 const TASK_OPENED_PREFIX = 'task-opened';
 const TASK_EMPTY_PAGE_OPENED_PREFIX = 'task-empty-page-opened';
@@ -32,7 +32,7 @@ function encodeRefTagData<T extends object>(data: T): string {
 function decodeRefTagData<T>(
   str: string | null,
   prefix: string,
-  schema: ZodSchema<T>,
+  schema: z.ZodSchema<T>,
 ): T | null {
   if (!str) {
     return null;

@@ -6,12 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {GetJobsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
+import type {QueryJobsResponseBody} from '@vzeta/camunda-api-zod-schemas';
 import {RequestHandler, rest} from 'msw';
 
 const mockEndpoints = [
-  rest.post('/v2/jobs/search', async (req, res, ctx) => {
-    const mockResponse: GetJobsResponseBody = {
+  rest.post('/v2/jobs/search', async (_, res, ctx) => {
+    const mockResponse: QueryJobsResponseBody = {
       items: [
         {
           jobKey: '2251799813916032',

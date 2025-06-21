@@ -8,7 +8,7 @@
 
 import {fetchProcessSequenceFlows} from 'modules/api/v2/processInstances/sequenceFlows';
 import {skipToken, useQuery, UseQueryResult} from '@tanstack/react-query';
-import {GetProcessSequenceFlowsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
+import {GetProcessInstanceSequenceFlowsResponseBody} from '@vzeta/camunda-api-zod-schemas';
 import {RequestError} from 'modules/request';
 
 const SEQUENCE_FLOWS_QUERY_KEY = 'processSequenceFlows';
@@ -18,7 +18,7 @@ function getQueryKey(processInstanceKey?: string) {
 }
 
 const processedSequenceFlowsParser = (
-  sequenceFlowsResponse: GetProcessSequenceFlowsResponseBody,
+  sequenceFlowsResponse: GetProcessInstanceSequenceFlowsResponseBody,
 ) => {
   return sequenceFlowsResponse.items
     .map((sequenceFlow) => sequenceFlow.elementId)
