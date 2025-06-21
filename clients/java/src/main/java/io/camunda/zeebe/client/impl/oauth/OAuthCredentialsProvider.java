@@ -71,7 +71,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
       JSON_MAPPER.readerFor(ZeebeClientCredentials.class);
   private static final Logger LOG = LoggerFactory.getLogger(OAuthCredentialsProvider.class);
   private final URL authorizationServerUrl;
-  private final String payload;
+  private final OAuthCredentialsProviderBuilder builder;
   private final String clientId;
   private final OAuthCredentialsCache credentialsCache;
   private final Duration connectionTimeout;
@@ -79,8 +79,8 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
 
   OAuthCredentialsProvider(final OAuthCredentialsProviderBuilder builder) {
     authorizationServerUrl = builder.getAuthorizationServer();
+    this.builder = builder;
     clientId = builder.getClientId();
-    payload = createParams(builder);
     credentialsCache = new OAuthCredentialsCache(builder.getCredentialsCache());
     connectionTimeout = builder.getConnectTimeout();
     readTimeout = builder.getReadTimeout();
@@ -224,6 +224,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     connection.setRequestProperty("User-Agent", "zeebe-client-java/" + VersionUtil.getVersion());
 
     try (final OutputStream os = connection.getOutputStream()) {
+      final String payload = createParams(builder);
       final byte[] input = payload.getBytes(StandardCharsets.UTF_8);
       os.write(input, 0, input.length);
     }
