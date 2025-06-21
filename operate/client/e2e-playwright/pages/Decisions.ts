@@ -7,10 +7,8 @@
  */
 
 import {Page, Locator} from '@playwright/test';
-import {Paths} from 'modules/Routes';
 import {convertToQueryString} from '../utils/convertToQueryString';
 import {DeleteResourceModal} from './components/DeleteResourceModal';
-import {relativizePath} from './utils/relativizePath';
 
 type OptionalFilter =
   | 'Process Instance Key'
@@ -80,7 +78,7 @@ export class Decisions {
       .click();
   }
 
-  async navigateToDecisions({
+  async gotoDecisionsPage({
     searchParams,
     options,
   }: {
@@ -88,14 +86,12 @@ export class Decisions {
     options?: Parameters<Page['goto']>[1];
   }) {
     if (searchParams === undefined) {
-      await this.page.goto(relativizePath(Paths.decisions()));
+      await this.page.goto('/operate/decisions');
       return;
     }
 
     await this.page.goto(
-      relativizePath(
-        `${Paths.decisions()}?${convertToQueryString(searchParams)}`,
-      ),
+      `/operate/decisions?${convertToQueryString(searchParams)}`,
       options,
     );
   }

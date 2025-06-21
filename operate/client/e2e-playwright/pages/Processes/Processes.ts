@@ -8,13 +8,11 @@
 
 import {Page, Locator} from '@playwright/test';
 import {convertToQueryString} from '../../utils/convertToQueryString';
-import {Paths} from 'modules/Routes';
 import {DeleteResourceModal} from '../components/DeleteResourceModal';
 import MigrationModal from '../components/MigrationModal';
 import MoveModificationModal from '../components/MoveModificationModal';
 import {Diagram} from '../components/Diagram';
 import {FiltersPanel} from './FiltersPanel';
-import {relativizePath} from '../utils/relativizePath';
 
 export class Processes {
   private page: Page;
@@ -56,7 +54,7 @@ export class Processes {
     });
   }
 
-  async navigateToProcesses({
+  async gotoProcessesPage({
     searchParams,
     options,
   }: {
@@ -64,14 +62,12 @@ export class Processes {
     options?: Parameters<Page['goto']>[1];
   }) {
     if (searchParams === undefined) {
-      await this.page.goto(relativizePath(Paths.processes()));
+      await this.page.goto('/operate/processes');
       return;
     }
 
     await this.page.goto(
-      relativizePath(
-        `${Paths.processes()}?${convertToQueryString(searchParams)}`,
-      ),
+      `/operate/processes?${convertToQueryString(searchParams)}`,
       options,
     );
   }

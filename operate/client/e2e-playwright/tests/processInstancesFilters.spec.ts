@@ -7,7 +7,7 @@
  */
 
 import {setup} from './processInstancesFilters.mocks';
-import {test} from '../test-fixtures';
+import {test} from '../e2e-fixtures';
 import {expect} from '@playwright/test';
 import {SETUP_WAITING_TIME} from './constants';
 import {config} from '../config';
@@ -33,7 +33,7 @@ test.beforeAll(async ({request}) => {
 });
 
 test.beforeEach(async ({page, dashboardPage}) => {
-  await dashboardPage.navigateToDashboard();
+  await dashboardPage.gotoDashboardPage();
   await page.getByRole('link', {name: /processes/i}).click();
 });
 

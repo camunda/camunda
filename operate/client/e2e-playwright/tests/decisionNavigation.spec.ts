@@ -7,7 +7,7 @@
  */
 
 import {setup} from './decisionNavigation.mocks';
-import {test} from '../test-fixtures';
+import {test} from '../e2e-fixtures';
 import {SETUP_WAITING_TIME} from './constants';
 import {expect} from '@playwright/test';
 import {config} from '../config';
@@ -67,7 +67,7 @@ test.beforeAll(async ({request}) => {
 });
 
 test.beforeEach(async ({dashboardPage}) => {
-  dashboardPage.navigateToDashboard();
+  dashboardPage.gotoDashboardPage();
 });
 
 test.describe('Decision Navigation', () => {

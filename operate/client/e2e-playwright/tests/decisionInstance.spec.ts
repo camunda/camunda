@@ -7,7 +7,7 @@
  */
 
 import {setup} from './decisionInstance.mocks';
-import {test} from '../test-fixtures';
+import {test} from '../e2e-fixtures';
 import {SETUP_WAITING_TIME} from './constants';
 import {expect} from '@playwright/test';
 import {config} from '../config';
@@ -62,7 +62,7 @@ test.describe('Decision Instance', () => {
   });
 
   test('Switching between decisions', async ({decisionInstancePage}) => {
-    await decisionInstancePage.navigateToDecisionInstance({
+    await decisionInstancePage.gotoDecisionInstance({
       decisionInstanceKey: `${decisionInstanceKey}-1`,
     });
 

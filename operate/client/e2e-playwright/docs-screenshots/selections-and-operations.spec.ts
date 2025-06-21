@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '../test-fixtures';
+import {test} from '../visual-fixtures';
 
 import {
   mockBatchOperations,
@@ -41,12 +41,11 @@ test.describe('selections and operations', () => {
       }),
     );
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         incidents: 'true',
       },
-      options: {waitUntil: 'networkidle'},
     });
 
     await filtersPanel.selectProcess('Order process');
@@ -90,12 +89,11 @@ test.describe('selections and operations', () => {
       }),
     );
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         incidents: 'true',
       },
-      options: {waitUntil: 'networkidle'},
     });
 
     await filtersPanel.selectProcess('Order process');

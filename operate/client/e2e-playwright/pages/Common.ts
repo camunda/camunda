@@ -52,15 +52,6 @@ export class Common {
     return this.page.getByRole('button', {name: /expand operations/i}).click();
   }
 
-  changeTheme(theme: string) {
-    return this.page.addInitScript((theme) => {
-      window.localStorage.setItem(
-        'sharedState',
-        JSON.stringify({theme: theme}),
-      );
-    }, theme);
-  }
-
   disableModalAnimation() {
     return this.page.addStyleTag({
       content: `
@@ -236,6 +227,7 @@ export class Common {
       canLogout: true,
       isLoginDelegated: false,
       contextPath: '',
+      baseName: '/operate',
       organizationId: null,
       clusterId: null,
       stage: null,

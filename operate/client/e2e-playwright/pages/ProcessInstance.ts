@@ -7,9 +7,7 @@
  */
 
 import {Page, Locator} from '@playwright/test';
-import {Paths} from 'modules/Routes';
 import {Diagram} from './components/Diagram';
-import {relativizePath} from './utils/relativizePath';
 
 export class ProcessInstance {
   private page: Page;
@@ -33,6 +31,7 @@ export class ProcessInstance {
   readonly metadataModal: Locator;
   readonly modifyInstanceButton: Locator;
   readonly listenerTypeFilter: Locator;
+  readonly resetZoomButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -62,6 +61,9 @@ export class ProcessInstance {
     this.metadataModal = this.page.getByRole('dialog', {name: /metadata/i});
     this.modifyInstanceButton = page.getByTestId('enter-modification-mode');
     this.listenerTypeFilter = page.getByTestId('listener-type-filter');
+    this.resetZoomButton = page.getByRole('button', {
+      name: 'Reset diagram zoom',
+    });
   }
 
   getEditVariableFieldSelector(variableName: string) {
@@ -98,14 +100,14 @@ export class ProcessInstance {
       .click();
   }
 
-  async navigateToProcessInstance({
+  async gotoProcessInstancePage({
     id,
     options,
   }: {
     id: string;
     options?: Parameters<Page['goto']>[1];
   }) {
-    await this.page.goto(relativizePath(Paths.processInstance(id)), options);
+    await this.page.goto(`/operate/processes/${id}`, options);
   }
 
   async getNthTreeNodeTestId(n: number) {

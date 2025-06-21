@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '../test-fixtures';
+import {test} from '../visual-fixtures';
 
 import {
   mockGroupedProcesses,
@@ -52,15 +52,12 @@ test.describe('delete resource definitions', () => {
 
     await page.setViewportSize({width: 1650, height: 900});
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         incidents: 'true',
         canceled: 'true',
         completed: 'true',
-      },
-      options: {
-        waitUntil: 'networkidle',
       },
     });
 
@@ -73,7 +70,7 @@ test.describe('delete resource definitions', () => {
 
     await commonPage.deleteArrows();
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         process: 'orderProcess',
         version: '1',
@@ -81,9 +78,6 @@ test.describe('delete resource definitions', () => {
         incidents: 'true',
         canceled: 'true',
         completed: 'true',
-      },
-      options: {
-        waitUntil: 'networkidle',
       },
     });
 
@@ -136,13 +130,10 @@ test.describe('delete resource definitions', () => {
 
     await page.setViewportSize({width: 1650, height: 900});
 
-    await decisionsPage.navigateToDecisions({
+    await decisionsPage.gotoDecisionsPage({
       searchParams: {
         evaluated: 'true',
         failed: 'true',
-      },
-      options: {
-        waitUntil: 'networkidle',
       },
     });
 
@@ -155,15 +146,12 @@ test.describe('delete resource definitions', () => {
 
     await commonPage.deleteArrows();
 
-    await decisionsPage.navigateToDecisions({
+    await decisionsPage.gotoDecisionsPage({
       searchParams: {
         evaluated: 'true',
         failed: 'true',
         name: 'invoiceClassification',
         version: '2',
-      },
-      options: {
-        waitUntil: 'networkidle',
       },
     });
 

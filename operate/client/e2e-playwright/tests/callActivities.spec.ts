@@ -7,7 +7,7 @@
  */
 
 import {setup} from './callActivities.mocks';
-import {test} from '../test-fixtures';
+import {test} from '../e2e-fixtures';
 import {expect} from '@playwright/test';
 import {config} from '../config';
 import {SETUP_WAITING_TIME} from './constants';
@@ -42,7 +42,7 @@ test.describe('Call Activities', () => {
 
     const {instanceHeader, diagram, instanceHistory} = processInstancePage;
 
-    processInstancePage.navigateToProcessInstance({id: processInstanceKey});
+    processInstancePage.gotoProcessInstancePage({id: processInstanceKey});
 
     await expect(page.getByTestId('instance-header-skeleton')).toBeHidden();
 

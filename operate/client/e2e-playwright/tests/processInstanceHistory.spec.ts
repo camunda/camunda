@@ -7,7 +7,7 @@
  */
 
 import {setup} from './processInstanceHistory.mocks';
-import {test} from '../test-fixtures';
+import {test} from '../e2e-fixtures';
 import {expect} from '@playwright/test';
 import {config} from '../config';
 import {SETUP_WAITING_TIME_LONG} from './constants';
@@ -75,7 +75,7 @@ test.describe('Process Instance History', () => {
     const processInstanceKey =
       initialData.manyFlowNodeInstancesProcessInstance.processInstanceKey;
 
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: processInstanceKey,
     });
 
@@ -169,7 +169,7 @@ test.describe('Process Instance History', () => {
       );
     });
 
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: processInstanceKey,
     });
 

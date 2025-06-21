@@ -102,13 +102,13 @@ To run these locally you can follow the steps below:
 1. Inside the client folder run `yarn build:visual-regression`
 2. After the build is finished start the Docker container with `yarn start-visual-regression-docker`
 3. Inside the container, run `yarn start:visual-regression &`
-4. After that, run `yarn playwright visual`
+4. After that, run `yarn test:visual`
 
 After the tests run, test report is saved locally in operate/client/playwright-report. In case step 4 fails with `Failed to open browser on ...` , run the following command inside client folder to see the test results: `npx @playwright/test show-report playwright-report/`
 
 #### Updating screenshots
 
-If you made feature changes and want to purposely wants to update the UI baseline you can follow the steps before, but on step 4 you should run `yarn playwright visual --update-snapshots`. Beware the this will update all screenshots, so make sure you only have the changes you want to update in your branch.
+If you made feature changes and want to purposely wants to update the UI baseline you can follow the steps before, but on step 4 you should run `yarn test:visual --update-snapshots`. Beware the this will update all screenshots, so make sure you only have the changes you want to update in your branch.
 
 #### Inspecting failures in the CI
 
@@ -137,15 +137,6 @@ make start-e2e
 ```
 
 To rerun (and clean up data), press Ctrl+C and run the same command again.
-
-### Start Development Server
-
-To start dev server and connect it to E2E related backend:
-
-```
-cd client
-yarn start:e2e
-```
 
 ### Run Tests
 

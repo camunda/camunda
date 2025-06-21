@@ -7,7 +7,7 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from '../test-fixtures';
+import {test} from '../visual-fixtures';
 import {
   instanceWithIncident,
   mockResponses,
@@ -29,249 +29,213 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('modifications', () => {
-  for (const theme of ['light', 'dark']) {
-    test(`with helper modal - ${theme}`, async ({
-      page,
-      commonPage,
-      processInstancePage,
-    }) => {
-      await commonPage.changeTheme(theme);
+  test(`with helper modal`, async ({page, processInstancePage}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        processInstanceDetailV2: runningInstance.detailV2,
+        callHierarchy: runningInstance.callHierarchy,
+        flowNodeInstances: runningInstance.flowNodeInstances,
+        statisticsV2: runningInstance.statisticsV2,
+        sequenceFlows: runningInstance.sequenceFlows,
+        sequenceFlowsV2: runningInstance.sequenceFlowsV2,
+        variables: runningInstance.variables,
+        xml: runningInstance.xml,
+      }),
+    );
 
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          processInstanceDetail: runningInstance.detail,
-          processInstanceDetailV2: runningInstance.detailV2,
-          callHierarchy: runningInstance.callHierarchy,
-          flowNodeInstances: runningInstance.flowNodeInstances,
-          statisticsV2: runningInstance.statisticsV2,
-          sequenceFlows: runningInstance.sequenceFlows,
-          sequenceFlowsV2: runningInstance.sequenceFlowsV2,
-          variables: runningInstance.variables,
-          xml: runningInstance.xml,
-        }),
-      );
-
-      await processInstancePage.navigateToProcessInstance({
-        id: runningInstance.detail.id,
-        options: {
-          waitUntil: 'networkidle',
-        },
-      });
-
-      await page
-        .getByRole('button', {
-          name: /modify instance/i,
-        })
-        .click();
-
-      await expect(page).toHaveScreenshot();
+    await processInstancePage.gotoProcessInstancePage({
+      id: runningInstance.detail.id,
     });
 
-    test(`with add variable state - ${theme}`, async ({
-      page,
-      commonPage,
-      processInstancePage,
-    }) => {
-      await commonPage.changeTheme(theme);
+    await page
+      .getByRole('button', {
+        name: /modify instance/i,
+      })
+      .click();
 
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          processInstanceDetail: runningInstance.detail,
-          processInstanceDetailV2: runningInstance.detailV2,
-          callHierarchy: runningInstance.callHierarchy,
-          flowNodeInstances: runningInstance.flowNodeInstances,
-          statisticsV2: runningInstance.statisticsV2,
-          sequenceFlows: runningInstance.sequenceFlows,
-          sequenceFlowsV2: runningInstance.sequenceFlowsV2,
-          variables: runningInstance.variables,
-          xml: runningInstance.xml,
-        }),
-      );
+    await expect(page).toHaveScreenshot();
+  });
 
-      await processInstancePage.navigateToProcessInstance({
-        id: runningInstance.detail.id,
-        options: {
-          waitUntil: 'networkidle',
-        },
-      });
+  test(`with add variable state`, async ({page, processInstancePage}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: runningInstance.detail,
+        processInstanceDetailV2: runningInstance.detailV2,
+        callHierarchy: runningInstance.callHierarchy,
+        flowNodeInstances: runningInstance.flowNodeInstances,
+        statisticsV2: runningInstance.statisticsV2,
+        sequenceFlows: runningInstance.sequenceFlows,
+        sequenceFlowsV2: runningInstance.sequenceFlowsV2,
+        variables: runningInstance.variables,
+        xml: runningInstance.xml,
+      }),
+    );
 
-      await page
-        .getByRole('button', {
-          name: /modify instance/i,
-        })
-        .click();
-
-      await page
-        .getByRole('button', {
-          name: /continue/i,
-        })
-        .click();
-
-      await processInstancePage.addVariableButton.click();
-
-      await expect(page).toHaveScreenshot();
+    await processInstancePage.gotoProcessInstancePage({
+      id: runningInstance.detail.id,
     });
 
-    test(`diagram badges and flow node instance history panel - ${theme}`, async ({
-      page,
-      commonPage,
-      processInstancePage,
-    }) => {
-      await commonPage.changeTheme(theme);
+    await page
+      .getByRole('button', {
+        name: /modify instance/i,
+      })
+      .click();
 
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          processInstanceDetail: instanceWithIncident.detail,
-          processInstanceDetailV2: instanceWithIncident.detailV2,
-          callHierarchy: instanceWithIncident.callHierarchy,
-          flowNodeInstances: instanceWithIncident.flowNodeInstances,
-          statisticsV2: instanceWithIncident.statisticsV2,
-          sequenceFlows: instanceWithIncident.sequenceFlows,
-          sequenceFlowsV2: instanceWithIncident.sequenceFlowsV2,
-          variables: instanceWithIncident.variables,
-          xml: instanceWithIncident.xml,
-          incidents: instanceWithIncident.incidents,
-          metaData: instanceWithIncident.metaData,
-        }),
-      );
+    await page
+      .getByRole('button', {
+        name: /continue/i,
+      })
+      .click();
 
-      await processInstancePage.navigateToProcessInstance({
-        id: instanceWithIncident.detail.id,
-        options: {
-          waitUntil: 'networkidle',
-        },
-      });
+    await processInstancePage.addVariableButton.click();
 
-      await page
-        .getByRole('button', {
-          name: /modify instance/i,
-        })
-        .click();
+    await expect(page).toHaveScreenshot();
+  });
 
-      await page
-        .getByRole('button', {
-          name: /continue/i,
-        })
-        .click();
+  test(`diagram badges and flow node instance history panel`, async ({
+    page,
+    processInstancePage,
+  }) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: instanceWithIncident.detail,
+        processInstanceDetailV2: instanceWithIncident.detailV2,
+        callHierarchy: instanceWithIncident.callHierarchy,
+        flowNodeInstances: instanceWithIncident.flowNodeInstances,
+        statisticsV2: instanceWithIncident.statisticsV2,
+        sequenceFlows: instanceWithIncident.sequenceFlows,
+        sequenceFlowsV2: instanceWithIncident.sequenceFlowsV2,
+        variables: instanceWithIncident.variables,
+        xml: instanceWithIncident.xml,
+        incidents: instanceWithIncident.incidents,
+        metaData: instanceWithIncident.metaData,
+      }),
+    );
 
-      await page
-        .getByRole('button', {
-          name: /reset diagram zoom/i,
-        })
-        .click();
-
-      await processInstancePage.diagram.clickFlowNode('check payment');
-
-      await expect(page.getByTestId('dropdown-spinner')).not.toBeVisible();
-
-      await page
-        .getByTitle(
-          /move selected instance in this flow node to another target/i,
-        )
-        .click();
-
-      await processInstancePage.diagram.clickFlowNode('check order items');
-      await processInstancePage.diagram.clickFlowNode('check payment');
-      await page
-        .getByRole('button', {
-          name: /add single flow node instance/i,
-        })
-        .click();
-
-      await expect(page).toHaveScreenshot();
+    await processInstancePage.gotoProcessInstancePage({
+      id: instanceWithIncident.detail.id,
     });
 
-    test(`apply modifications summary modal - ${theme}`, async ({
-      page,
-      commonPage,
-      processInstancePage,
-    }) => {
-      await commonPage.changeTheme(theme);
+    await page
+      .getByRole('button', {
+        name: /modify instance/i,
+      })
+      .click();
 
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          processInstanceDetail: instanceWithIncident.detail,
-          processInstanceDetailV2: instanceWithIncident.detailV2,
-          callHierarchy: instanceWithIncident.callHierarchy,
-          flowNodeInstances: instanceWithIncident.flowNodeInstances,
-          statisticsV2: instanceWithIncident.statisticsV2,
-          sequenceFlows: instanceWithIncident.sequenceFlows,
-          sequenceFlowsV2: instanceWithIncident.sequenceFlowsV2,
-          variables: instanceWithIncident.variables,
-          xml: instanceWithIncident.xml,
-          incidents: instanceWithIncident.incidents,
-          metaData: instanceWithIncident.metaData,
-        }),
-      );
+    await page
+      .getByRole('button', {
+        name: /continue/i,
+      })
+      .click();
 
-      await processInstancePage.navigateToProcessInstance({
-        id: instanceWithIncident.detail.id,
-        options: {
-          waitUntil: 'networkidle',
-        },
-      });
+    await page
+      .getByRole('button', {
+        name: /reset diagram zoom/i,
+      })
+      .click();
 
-      await page
-        .getByRole('button', {
-          name: /modify instance/i,
-        })
-        .click();
+    await processInstancePage.diagram.clickFlowNode('check payment');
 
-      await page
-        .getByRole('button', {
-          name: /continue/i,
-        })
-        .click();
+    await expect(page.getByTestId('dropdown-spinner')).not.toBeVisible();
 
-      await processInstancePage.diagram.clickFlowNode('check payment');
+    await page
+      .getByTitle(/move selected instance in this flow node to another target/i)
+      .click();
 
-      await expect(page.getByTestId('dropdown-spinner')).not.toBeVisible();
+    await processInstancePage.diagram.clickFlowNode('check order items');
+    await processInstancePage.diagram.clickFlowNode('check payment');
+    await page
+      .getByRole('button', {
+        name: /add single flow node instance/i,
+      })
+      .click();
 
-      await page
-        .getByTitle(
-          /move selected instance in this flow node to another target/i,
-        )
-        .click();
+    await expect(page).toHaveScreenshot();
+  });
 
-      await processInstancePage.diagram.clickFlowNode('check order items');
+  test(`apply modifications summary modal`, async ({
+    page,
+    processInstancePage,
+  }) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        processInstanceDetail: instanceWithIncident.detail,
+        processInstanceDetailV2: instanceWithIncident.detailV2,
+        callHierarchy: instanceWithIncident.callHierarchy,
+        flowNodeInstances: instanceWithIncident.flowNodeInstances,
+        statisticsV2: instanceWithIncident.statisticsV2,
+        sequenceFlows: instanceWithIncident.sequenceFlows,
+        sequenceFlowsV2: instanceWithIncident.sequenceFlowsV2,
+        variables: instanceWithIncident.variables,
+        xml: instanceWithIncident.xml,
+        incidents: instanceWithIncident.incidents,
+        metaData: instanceWithIncident.metaData,
+      }),
+    );
 
-      const firstVariableValueInput = page
-        .getByRole('textbox', {
-          name: /value/i,
-        })
-        .nth(0);
-
-      await firstVariableValueInput.clear();
-      await firstVariableValueInput.fill('"test"');
-      await page.keyboard.press('Tab');
-
-      await page
-        .getByRole('button', {
-          name: /apply modifications/i,
-        })
-        .click();
-
-      await expect(
-        page.getByText(/planned modifications for process instance/i),
-      ).toBeVisible();
-
-      await expect(
-        page.getByRole('button', {
-          name: /delete flow node modification/i,
-        }),
-      ).toBeVisible();
-
-      await expect(
-        page.getByRole('button', {
-          name: /delete variable modification/i,
-        }),
-      ).toBeVisible();
-
-      await expect(page).toHaveScreenshot();
+    await processInstancePage.gotoProcessInstancePage({
+      id: instanceWithIncident.detail.id,
     });
-  }
+
+    await page
+      .getByRole('button', {
+        name: /modify instance/i,
+      })
+      .click();
+
+    await page
+      .getByRole('button', {
+        name: /continue/i,
+      })
+      .click();
+
+    await processInstancePage.diagram.clickFlowNode('check payment');
+
+    await expect(page.getByTestId('dropdown-spinner')).not.toBeVisible();
+
+    await page
+      .getByTitle(/move selected instance in this flow node to another target/i)
+      .click();
+
+    await processInstancePage.diagram.clickFlowNode('check order items');
+
+    const firstVariableValueInput = page
+      .getByRole('textbox', {
+        name: /value/i,
+      })
+      .nth(0);
+
+    await firstVariableValueInput.clear();
+    await firstVariableValueInput.fill('"test"');
+    await page.keyboard.press('Tab');
+
+    await page
+      .getByRole('button', {
+        name: /apply modifications/i,
+      })
+      .click();
+
+    await expect(
+      page.getByText(/planned modifications for process instance/i),
+    ).toBeVisible();
+
+    await expect(
+      page.getByRole('button', {
+        name: /delete flow node modification/i,
+      }),
+    ).toBeVisible();
+
+    await expect(
+      page.getByRole('button', {
+        name: /delete variable modification/i,
+      }),
+    ).toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
 });

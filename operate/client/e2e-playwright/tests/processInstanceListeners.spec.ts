@@ -7,7 +7,7 @@
  */
 
 import {setup} from './processInstanceListeners.mocks';
-import {test} from '../test-fixtures';
+import {test} from '../e2e-fixtures';
 import {expect} from '@playwright/test';
 import {SETUP_WAITING_TIME} from './constants';
 import {config} from '../config';
@@ -40,7 +40,7 @@ test.describe('Process Instance Listeners', () => {
   }) => {
     const processInstanceKey =
       initialData.processWithListenerInstance.processInstanceKey;
-    processInstancePage.navigateToProcessInstance({id: processInstanceKey});
+    processInstancePage.gotoProcessInstancePage({id: processInstanceKey});
 
     await expect(processInstancePage.listenersTabButton).toBeVisible();
 
@@ -58,7 +58,7 @@ test.describe('Process Instance Listeners', () => {
   test('Listeners data displayed', async ({page, processInstancePage}) => {
     const processInstanceKey =
       initialData.processWithListenerInstance.processInstanceKey;
-    processInstancePage.navigateToProcessInstance({id: processInstanceKey});
+    processInstancePage.gotoProcessInstancePage({id: processInstanceKey});
 
     await processInstancePage.instanceHistory
       .getByText(/service task b/i)
@@ -74,7 +74,7 @@ test.describe('Process Instance Listeners', () => {
   }) => {
     const processInstanceKey =
       initialData.processWithListenerInstance.processInstanceKey;
-    processInstancePage.navigateToProcessInstance({id: processInstanceKey});
+    processInstancePage.gotoProcessInstancePage({id: processInstanceKey});
 
     // select flow node in diagram, check amount of listeners and add a token to it
     await processInstancePage.diagram.clickFlowNode('Service Task B');
@@ -124,7 +124,7 @@ test.describe('Process Instance Listeners', () => {
   }) => {
     const processInstanceKey =
       initialData.userTaskProcessInstance.processInstanceKey;
-    processInstancePage.navigateToProcessInstance({id: processInstanceKey});
+    processInstancePage.gotoProcessInstancePage({id: processInstanceKey});
 
     const userTaskKeyRegex = new RegExp('\\d{16}');
     let userTaskKey = '';
@@ -202,7 +202,7 @@ test.describe('Process Instance Listeners', () => {
   }) => {
     const processInstanceKey =
       initialData.processWithListenerOnRootInstance.processInstanceKey;
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: processInstanceKey,
     });
 

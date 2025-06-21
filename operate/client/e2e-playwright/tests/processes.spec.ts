@@ -7,13 +7,12 @@
  */
 
 import {setup} from './processes.mocks';
-import {test} from '../test-fixtures';
+import {test} from '../e2e-fixtures';
 import {expect} from '@playwright/test';
 import {convertToQueryString} from '../utils/convertToQueryString';
 import {zeebeGrpcApi} from '../api/zeebe-grpc';
 import {config} from '../config';
 import {SETUP_WAITING_TIME} from './constants';
-import {Paths} from 'modules/Routes';
 
 const {deployProcesses} = zeebeGrpcApi;
 
@@ -92,7 +91,7 @@ test.beforeAll(async ({request}) => {
 });
 
 test.beforeEach(async ({page, dashboardPage}) => {
-  await dashboardPage.navigateToDashboard();
+  await dashboardPage.gotoDashboardPage();
   await page.getByRole('link', {name: /processes/i}).click();
 });
 
@@ -151,7 +150,7 @@ test.describe('Processes', () => {
     const instance = initialData.instanceWithoutAnIncident;
     const version = initialData.deployedProcess!.version.toString();
 
-    processesPage.navigateToProcesses({
+    processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         incidents: 'true',
@@ -173,7 +172,7 @@ test.describe('Processes', () => {
     ).toBeVisible();
 
     await expect(page).toHaveURL(
-      `.${Paths.processes()}?${convertToQueryString({
+      `.${'/operate/processes'}?${convertToQueryString({
         active: 'true',
         incidents: 'true',
         ids: instance.processInstanceKey,
@@ -197,7 +196,7 @@ test.describe('Processes', () => {
     await expect(page.getByRole('table').getByRole('row')).toHaveCount(2);
 
     await expect(page).toHaveURL(
-      `.${Paths.processes()}?${convertToQueryString({
+      `.${'/operate/processes'}?${convertToQueryString({
         active: 'true',
         incidents: 'true',
         ids: instance.processInstanceKey,
@@ -223,7 +222,7 @@ test.describe('Processes', () => {
     processesPage: {filtersPanel},
     page,
   }) => {
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         incidents: 'true',
@@ -257,7 +256,7 @@ test.describe('Processes', () => {
     page,
   }) => {
     test.slow();
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         incidents: 'true',

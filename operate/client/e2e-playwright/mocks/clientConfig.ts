@@ -10,7 +10,7 @@ const clientConfigMock = `window.clientConfig = ${JSON.stringify({
   isEnterprise: false,
   canLogout: true,
   contextPath: '',
-  baseName: '',
+  baseName: '/operate',
   organizationId: null,
   clusterId: null,
   mixpanelAPIHost: null,
