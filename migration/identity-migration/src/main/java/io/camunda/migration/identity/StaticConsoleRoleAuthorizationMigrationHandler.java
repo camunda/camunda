@@ -7,21 +7,19 @@
  */
 package io.camunda.migration.identity;
 
-import static io.camunda.migration.identity.config.saas.StaticEntities.CLIENT_PERMISSIONS;
 import static io.camunda.migration.identity.config.saas.StaticEntities.ROLE_PERMISSIONS;
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.dto.NoopDTO;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
-import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import java.util.List;
 
-public class StaticConsoleAuthorizationMigrationHandler extends MigrationHandler<NoopDTO> {
+public class StaticConsoleRoleAuthorizationMigrationHandler extends MigrationHandler<NoopDTO> {
 
   final AuthorizationServices authorizationServices;
 
-  public StaticConsoleAuthorizationMigrationHandler(
+  public StaticConsoleRoleAuthorizationMigrationHandler(
       final AuthorizationServices authorizationServices,
       final Authentication servicesAuthentication) {
     this.authorizationServices = authorizationServices.withAuthentication(servicesAuthentication);
@@ -35,35 +33,20 @@ public class StaticConsoleAuthorizationMigrationHandler extends MigrationHandler
 
   @Override
   protected void process(final List<NoopDTO> batch) {
-    createRoleAuthorizations();
-    createClientAuthorizations();
-  }
-
-  private void createRoleAuthorizations() {
-    createAuthorizations(ROLE_PERMISSIONS, "role");
-  }
-
-  private void createClientAuthorizations() {
-    createAuthorizations(CLIENT_PERMISSIONS, "client");
-  }
-
-  private void createAuthorizations(
-      final List<CreateAuthorizationRequest> requests, final String entity) {
-    requests.forEach(
+    ROLE_PERMISSIONS.forEach(
         request -> {
           try {
             authorizationServices.createAuthorization(request).join();
             logger.debug(
-                "Migrated {} permission with owner ID: {} and resource type: {}",
-                entity,
+                "Migrated role permission with owner ID: {} and resource type: {}",
                 request.ownerId(),
                 request.resourceType());
           } catch (final Exception e) {
             if (!isConflictError(e)) {
               throw new MigrationException(
                   String.format(
-                      "Failed to migrate %s permission with owner ID: %s and resource type: %s  ",
-                      entity, request.ownerId(), request.resourceType()),
+                      "Failed to migrate role permission with owner ID: %s and resource type: %s  ",
+                      request.ownerId(), request.resourceType()),
                   e);
             }
           }
