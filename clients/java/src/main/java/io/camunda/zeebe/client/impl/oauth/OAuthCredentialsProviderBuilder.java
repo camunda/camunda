@@ -48,6 +48,8 @@ public final class OAuthCredentialsProviderBuilder {
   private File credentialsCache;
   private Duration connectTimeout;
   private Duration readTimeout;
+  private String sslClientCertPath;
+  private String sslClientCertPassword;
 
   /** Client id to be used when requesting access token from OAuth authorization server. */
   public OAuthCredentialsProviderBuilder clientId(final String clientId) {
@@ -163,6 +165,40 @@ public final class OAuthCredentialsProviderBuilder {
     return readTimeout;
   }
 
+  /** Path to SSL client certificate for client assertion authentication */
+  public OAuthCredentialsProviderBuilder sslClientCertPath(final String sslClientCertPath) {
+    this.sslClientCertPath = sslClientCertPath;
+    return this;
+  }
+
+  /**
+   * @see OAuthCredentialsProviderBuilder#sslClientCertPath(String)
+   */
+  String getSslClientCertPath() {
+    return sslClientCertPath;
+  }
+
+  /** Password for SSL client certificate for client assertion authentication */
+  public OAuthCredentialsProviderBuilder sslClientCertPassword(final String sslClientCertPassword) {
+    this.sslClientCertPassword = sslClientCertPassword;
+    return this;
+  }
+
+  /**
+   * @see OAuthCredentialsProviderBuilder#sslClientCertPassword(String)
+   */
+  String getSslClientCertPassword() {
+    return sslClientCertPassword;
+  }
+
+  /** Check if SSL client certificate configuration is provided for client assertion */
+  boolean sslClientCertConfigurationProvided() {
+    return sslClientCertPassword != null
+        && !sslClientCertPassword.isEmpty()
+        && sslClientCertPath != null
+        && new java.io.File(sslClientCertPath).exists();
+  }
+
   /**
    * @return a new {@link OAuthCredentialsProvider} with the provided configuration options.
    */
@@ -183,6 +219,8 @@ public final class OAuthCredentialsProviderBuilder {
     final String envCachePath = Environment.system().get(OAUTH_ENV_CACHE_PATH);
     final String envReadTimeout = Environment.system().get(OAUTH_ENV_READ_TIMEOUT);
     final String envConnectTimeout = Environment.system().get(OAUTH_ENV_CONNECT_TIMEOUT);
+    final String envSslClientCertPath = Environment.system().get("OAUTH_SSL_CLIENT_CERT_PATH");
+    final String envSslClientCertPassword = Environment.system().get("OAUTH_SSL_CLIENT_CERT_PASSWORD");
 
     if (envClientId != null) {
       clientId = envClientId;
@@ -215,6 +253,14 @@ public final class OAuthCredentialsProviderBuilder {
     if (envReadTimeout != null) {
       readTimeout = Duration.ofMillis(Long.parseLong(envReadTimeout));
     }
+
+    if (envSslClientCertPath != null) {
+      sslClientCertPath = envSslClientCertPath;
+    }
+
+    if (envSslClientCertPassword != null) {
+      sslClientCertPassword = envSslClientCertPassword;
+    }
   }
 
   private void applyDefaults() {
@@ -241,7 +287,15 @@ public final class OAuthCredentialsProviderBuilder {
   private void validate() {
     try {
       Objects.requireNonNull(clientId, String.format(INVALID_ARGUMENT_MSG, "client id"));
-      Objects.requireNonNull(clientSecret, String.format(INVALID_ARGUMENT_MSG, "client secret"));
+      if (sslClientCertConfigurationProvided()) {
+        // Client assertion authentication - validate certificate
+        java.security.KeyStore keyStore = java.security.KeyStore.getInstance("PKCS12");
+        keyStore.load(
+            java.nio.file.Files.newInputStream(java.nio.file.Paths.get(sslClientCertPath)),
+            sslClientCertPassword.toCharArray());
+      } else {
+        Objects.requireNonNull(clientSecret, String.format(INVALID_ARGUMENT_MSG, "client secret"));
+      }
       Objects.requireNonNull(audience, String.format(INVALID_ARGUMENT_MSG, "audience"));
       Objects.requireNonNull(
           authorizationServerUrl, String.format(INVALID_ARGUMENT_MSG, "authorization server URL"));
