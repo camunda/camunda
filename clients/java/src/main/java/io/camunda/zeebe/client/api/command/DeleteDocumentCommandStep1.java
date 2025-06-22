@@ -20,7 +20,7 @@ import io.camunda.zeebe.client.api.response.DeleteDocumentResponse;
 /**
  * Command to delete a document from the document store.
  *
- * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ * @deprecated since 8.8 for removal in 8.10, replaced by {@link
  *     io.camunda.client.api.command.DeleteDocumentCommandStep1}
  */
 @Deprecated
