@@ -42,9 +42,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Thin abstraction layer on top of Apache's HTTP client to wire up the expected Camunda API
- * conventions, e.g. errors are always {@link io.camunda.client.protocol.rest.ProblemDetail},
- * content type is always JSON, etc.
+ * Thin abstraction layer on top of Apache's HTTP client to wire up the expected Orchestration
+ * Cluster API conventions, e.g. errors are always {@link
+ * io.camunda.client.protocol.rest.ProblemDetail}, content type is always JSON, etc.
  */
 public final class HttpClient implements AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(HttpClient.class);

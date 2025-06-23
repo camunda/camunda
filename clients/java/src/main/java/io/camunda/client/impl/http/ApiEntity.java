@@ -21,8 +21,8 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 
 /**
- * Represents a possible response entity from the Camunda REST API, either a successful response of
- * type {@link T}, or a {@link ProblemDetail} returned by the server.
+ * Represents a possible response entity from the Orchestration Cluster REST API, either a
+ * successful response of type {@link T}, or a {@link ProblemDetail} returned by the server.
  *
  * @param <T> the type of the successful response
  */
