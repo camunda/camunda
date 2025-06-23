@@ -310,6 +310,17 @@ public interface ProcessInstanceAssert {
   ProcessInstanceAssert hasVariableNames(String... variableNames);
 
   /**
+   * Verifies that the process instance has the given local variables. The verification fails if at
+   * least one variable doesn't exist.
+   *
+   * <p>The assertion waits until all variables exist.
+   *
+   * @param variableNames the variable names
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasLocalVariableNames(String... variableNames);
+
+  /**
    * Verifies that the process instance has the variable with the given value. The verification
    * fails if the variable doesn't exist or has a different value.
    *
@@ -322,6 +333,18 @@ public interface ProcessInstanceAssert {
   ProcessInstanceAssert hasVariable(String variableName, Object variableValue);
 
   /**
+   * Verifies that the process instance has the local variable with the given value. The
+   * verification fails if the variable doesn't exist or has a different value.
+   *
+   * <p>The assertion waits until the variable exists and has the given value.
+   *
+   * @param variableName the variable name
+   * @param variableValue the variable value
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasLocalVariable(final String variableName, final Object variableValue);
+
+  /**
    * Verifies that the process instance has the given variables. The verification fails if at least
    * one variable doesn't exist or has a different value.
    *
@@ -331,6 +354,17 @@ public interface ProcessInstanceAssert {
    * @return the assertion object
    */
   ProcessInstanceAssert hasVariables(Map<String, Object> variables);
+
+  /**
+   * Verifies that the process instance has the given local variables. The verification fails if at
+   * least one variable doesn't exist or has a different value.
+   *
+   * <p>The assertion waits until all variables exist and have the given value.
+   *
+   * @param variables the expected variables
+   * @return the assertion object
+   */
+  ProcessInstanceAssert hasLocalVariables(Map<String, Object> variables);
 
   /**
    * Verifies that the process instance has no active incidents. The verification fails if there is
