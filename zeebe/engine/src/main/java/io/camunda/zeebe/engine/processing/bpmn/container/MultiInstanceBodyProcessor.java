@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBeh
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.MultiInstanceOutputCollectionBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -65,6 +66,7 @@ public final class MultiInstanceBodyProcessor
   private final BpmnIncidentBehavior incidentBehavior;
   private final MultiInstanceOutputCollectionBehavior multiInstanceOutputCollectionBehavior;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
+  private final BpmnVariableMappingBehavior variableMappingBehavior;
 
   public MultiInstanceBodyProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -76,6 +78,7 @@ public final class MultiInstanceBodyProcessor
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     multiInstanceOutputCollectionBehavior = bpmnBehaviors.outputCollectionBehavior();
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
+    variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
   }
 
   @Override
@@ -175,6 +178,17 @@ public final class MultiInstanceBodyProcessor
             element, childContext, flowScopeContext);
     if (updatedOrFailure.isLeft()) {
       return updatedOrFailure;
+    }
+
+    // Apply output mappings after updating the output collection, but only if the inner activity
+    // has output mappings. This ensures that output mappings see the updated collection values
+    // while avoiding duplicate execution when no output mappings exist.
+    final var innerActivity = element.getInnerActivity();
+    if (innerActivity.getOutputMappings().isPresent()) {
+      final var outputMappingResult = variableMappingBehavior.applyOutputMappings(childContext, innerActivity);
+      if (outputMappingResult.isLeft()) {
+        return outputMappingResult;
+      }
     }
 
     // test that completion condition can be evaluated correctly
