@@ -214,7 +214,7 @@ final class FileSetManager {
     return path;
   }
 
-  private Path decompressFile(
+  private void decompressFile(
       final Path compressed, final Path decompressed, final String algorithm) {
     try (final var input = new BufferedInputStream(Files.newInputStream(compressed));
         final var output = new BufferedOutputStream(Files.newOutputStream(decompressed));
@@ -231,7 +231,6 @@ final class FileSetManager {
             Files.size(decompressed));
       }
       cleanupCompressedFile(compressed);
-      return decompressed;
     } catch (final IOException | CompressorException e) {
       throw new BackupCompressionFailed(
           "Failed to decompress from %s to %s using %s"
