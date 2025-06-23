@@ -16,16 +16,22 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
+import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.FormState;
+import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
+import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -50,10 +56,13 @@ public final class BpmnUserTaskBehavior {
   private final HeaderEncoder headerEncoder = new HeaderEncoder(LOGGER);
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
+  private final TypedResponseWriter responseWriter;
   private final ExpressionProcessor expressionBehavior;
   private final BpmnStateBehavior stateBehavior;
   private final FormState formState;
-  private final MutableUserTaskState userTaskState;
+  private final UserTaskState userTaskState;
+  private final VariableState variableState;
+  private final AsyncRequestState asyncRequestState;
   private final InstantSource clock;
 
   public BpmnUserTaskBehavior(
@@ -62,14 +71,19 @@ public final class BpmnUserTaskBehavior {
       final ExpressionProcessor expressionBehavior,
       final BpmnStateBehavior stateBehavior,
       final FormState formState,
-      final MutableUserTaskState userTaskState,
+      final UserTaskState userTaskState,
+      final VariableState variableState,
+      final AsyncRequestState asyncRequestState,
       final InstantSource clock) {
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
+    responseWriter = writers.response();
     this.expressionBehavior = expressionBehavior;
     this.stateBehavior = stateBehavior;
     this.formState = formState;
     this.userTaskState = userTaskState;
+    this.variableState = variableState;
+    this.asyncRequestState = asyncRequestState;
     this.clock = clock;
   }
 
@@ -323,8 +337,58 @@ public final class BpmnUserTaskBehavior {
       return Optional.empty();
     }
 
+    rejectOngoingRequestsForUserTaskBeforeCancellation(userTask);
+
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CANCELING, userTask);
     return Optional.of(userTask);
+  }
+
+  private void rejectOngoingRequestsForUserTaskBeforeCancellation(final UserTaskRecord userTask) {
+    final long userTaskElementInstanceKey = userTask.getElementInstanceKey();
+    asyncRequestState
+        .findAllRequestsByScopeKey(userTaskElementInstanceKey)
+        .forEach(
+            request -> {
+              switch (request.valueType()) {
+                case USER_TASK ->
+                    responseWriter.writeRejection(
+                        userTask.getUserTaskKey(),
+                        request.intent(),
+                        userTask,
+                        ValueType.USER_TASK,
+                        RejectionType.INVALID_STATE,
+                        "user task was canceled during ongoing transition",
+                        request.requestId(),
+                        request.requestStreamId());
+                case VARIABLE_DOCUMENT ->
+                    variableState
+                        .findVariableDocumentState(userTaskElementInstanceKey)
+                        .ifPresent(
+                            variableDocument -> {
+                              responseWriter.writeRejection(
+                                  variableDocument.getKey(),
+                                  request.intent(),
+                                  variableDocument.getRecord(),
+                                  ValueType.VARIABLE_DOCUMENT,
+                                  RejectionType.INVALID_STATE,
+                                  "user task was canceled during handling task variables update",
+                                  request.requestId(),
+                                  request.requestStreamId());
+                            });
+                default ->
+                    LOGGER.debug(
+                        "No rejection logic implemented for ongoing request with valueType={} and intent={} "
+                            + "triggered against user task (key={}, elementInstanceKey={}). "
+                            + "Async request metadata will be cleaned up, but the request will not be explicitly rejected.",
+                        request.valueType(),
+                        request.intent(),
+                        userTask.getUserTaskKey(),
+                        userTaskElementInstanceKey);
+              }
+
+              stateWriter.appendFollowUpEvent(
+                  request.requestId(), AsyncRequestIntent.PROCESSED, request.record());
+            });
   }
 
   public void userTaskCanceled(final UserTaskRecord userTaskRecord) {

@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.instance.UserTaskIntermediateStateValue;
@@ -44,9 +43,6 @@ public class UserTaskCancelingV2ApplierTest {
   /** Used for state assertions. */
   private UserTaskState userTaskState;
 
-  /** Used for request metadata assertions. */
-  private AsyncRequestState asyncRequestState;
-
   /** For setting up the state before testing the applier. */
   private AppliersTestSetupHelper testSetup;
 
@@ -54,7 +50,6 @@ public class UserTaskCancelingV2ApplierTest {
   public void setup() {
     userTaskCancelingApplier = new UserTaskCancelingV2Applier(processingState);
     userTaskState = processingState.getUserTaskState();
-    asyncRequestState = processingState.getAsyncRequestState();
     testSetup = new AppliersTestSetupHelper(processingState);
   }
 
@@ -113,15 +108,6 @@ public class UserTaskCancelingV2ApplierTest {
     testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATED, userTaskRecord);
 
     // simulate a `VariableDocument.UPDATE` triggering a user task update
-    final var asyncRequestRecord =
-        new AsyncRequestRecord()
-            .setScopeKey(elementInstanceKey)
-            .setIntent(VariableDocumentIntent.UPDATE)
-            .setValueType(ValueType.VARIABLE_DOCUMENT)
-            .setRequestId(new Random().nextLong())
-            .setRequestStreamId(new Random().nextInt())
-            .setOperationReference(new Random().nextLong());
-    testSetup.applyEventToState(asyncRequestKey, AsyncRequestIntent.RECEIVED, asyncRequestRecord);
     testSetup.applyEventToState(
         variableDocumentKey, VariableDocumentIntent.UPDATING, variableDocumentRecord);
     testSetup.applyEventToState(
@@ -133,13 +119,6 @@ public class UserTaskCancelingV2ApplierTest {
     assertThat(processingState.getVariableState().findVariableDocumentState(elementInstanceKey))
         .describedAs("Expected variable document state to exist before user task cancellation")
         .isPresent();
-    assertThat(
-            asyncRequestState.findRequest(
-                elementInstanceKey, ValueType.VARIABLE_DOCUMENT, VariableDocumentIntent.UPDATE))
-        .describedAs(
-            "Expected update variable document request metadata to exist before user task cancellation")
-        .hasValueSatisfying(
-            metadata -> assertThat(metadata.intent()).isEqualTo(VariableDocumentIntent.UPDATE));
     assertThat(userTaskState.getIntermediateState(userTaskKey))
         .describedAs("Expected 'update' intermediate state to be persisted before canceling")
         .satisfies(
@@ -206,11 +185,6 @@ public class UserTaskCancelingV2ApplierTest {
                 Assertions.assertThat(state.getRecord())
                     .describedAs("Expected record in intermediate to have previous transition data")
                     .hasAssignee("john"));
-    assertThat(
-            asyncRequestState.findRequest(
-                elementInstanceKey, ValueType.USER_TASK, UserTaskIntent.CLAIM))
-        .hasValueSatisfying(
-            metadata -> assertThat(metadata.intent()).isEqualTo(UserTaskIntent.CLAIM));
 
     // when
     userTaskCancelingApplier.applyState(userTaskKey, userTaskRecord);
@@ -223,10 +197,6 @@ public class UserTaskCancelingV2ApplierTest {
         .describedAs("Expected new intermediate state to be related to 'cancel' transition")
         .extracting(UserTaskIntermediateStateValue::getLifecycleState)
         .isEqualTo(LifecycleState.CANCELING);
-    assertThat(
-            asyncRequestState.findRequest(userTaskKey, ValueType.USER_TASK, UserTaskIntent.CLAIM))
-        .describedAs("Expected record request metadata to be removed on canceling")
-        .isEmpty();
   }
 
   @Test

@@ -42,6 +42,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.hc.core5.http.HttpStatus;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -892,6 +893,119 @@ public class UserTaskListenersTest {
               .describedAs("Only corrected attributes should be reported as changed")
               .containsExactly(UserTaskRecord.ASSIGNEE, UserTaskRecord.PRIORITY);
         });
+  }
+
+  @Test
+  void shouldRejectTaskUpdateRequestWhenUserTaskIsCanceledDuringTransition() {
+    // given
+    final var userTaskKey =
+        resourcesHelper.createSingleUserTask(
+            t ->
+                t.zeebeTaskListener(l -> l.updating().type("my_updating_listener"))
+                    .zeebeTaskListener(l -> l.canceling().type("my_canceling_listener")));
+
+    final JobHandler completeListenerJobHandler =
+        (jobClient, job) -> client.newCompleteCommand(job).send().join();
+    client.newWorker().jobType("my_canceling_listener").handler(completeListenerJobHandler).open();
+
+    final var createdUserTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withRecordKey(userTaskKey)
+            .getFirst()
+            .getValue();
+    final long processInstanceKey = createdUserTask.getProcessInstanceKey();
+
+    // trigger task update and wait for UPDATING event
+    final var updateUserTaskFuture =
+        client.newUserTaskUpdateCommand(userTaskKey).candidateUsers("frodo", "samwise").send();
+    RecordingExporter.userTaskRecords(UserTaskIntent.UPDATING).withRecordKey(userTaskKey).await();
+
+    // when: cancel the process instance
+    final var cancelProcessInstanceFuture =
+        client.newCancelInstanceCommand(processInstanceKey).send();
+
+    // then: update request was rejected
+    assertThatExceptionOfType(ProblemException.class)
+        .isThrownBy(updateUserTaskFuture::join)
+        .extracting(ProblemException::details)
+        .satisfies(
+            details -> {
+              assertThat(details.getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
+              assertThat(details.getTitle()).isEqualTo(RejectionType.INVALID_STATE.name());
+              assertThat(details.getDetail())
+                  .isEqualTo(
+                      "Command 'UPDATE' rejected with code 'INVALID_STATE': "
+                          + "user task was canceled during ongoing transition");
+            });
+
+    // then: wait for successful process cancellation
+    assertThatCode(cancelProcessInstanceFuture::join).doesNotThrowAnyException();
+
+    ZeebeAssertHelper.assertUserTaskCanceled(
+        userTaskKey,
+        userTask ->
+            assertThat(userTask)
+                .describedAs("Canceled user task should match the originally created one")
+                .isEqualTo(createdUserTask));
+  }
+
+  @Test
+  void shouldRejectVariableUpdateRequestWhenUserTaskIsCanceledDuringTransition() {
+    // given
+    final var userTaskKey =
+        resourcesHelper.createSingleUserTask(
+            t ->
+                t.zeebeTaskListener(l -> l.updating().type("my_updating_listener"))
+                    .zeebeTaskListener(l -> l.canceling().type("my_canceling_listener")));
+
+    final JobHandler completeListenerJobHandler =
+        (jobClient, job) -> client.newCompleteCommand(job).send().join();
+    client.newWorker().jobType("my_canceling_listener").handler(completeListenerJobHandler).open();
+
+    final var createdUserTask =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withRecordKey(userTaskKey)
+            .getFirst()
+            .getValue();
+    final long processInstanceKey = createdUserTask.getProcessInstanceKey();
+
+    // trigger task variables update and wait for task UPDATING event
+    final var updateTaskVariablesFuture =
+        client
+            .newSetVariablesCommand(createdUserTask.getElementInstanceKey())
+            .useRest()
+            .variables(Map.of("approvalStatus", "APPROVED"))
+            .local(true)
+            .send();
+    RecordingExporter.userTaskRecords(UserTaskIntent.UPDATING).withRecordKey(userTaskKey).await();
+
+    // when: cancel the process instance
+    final var cancelProcessInstanceFuture =
+        client.newCancelInstanceCommand(processInstanceKey).send();
+
+    // then: update task variables request was rejected
+    assertThatExceptionOfType(ProblemException.class)
+        .isThrownBy(updateTaskVariablesFuture::join)
+        .extracting(ProblemException::details)
+        .satisfies(
+            details -> {
+              assertThat(details.getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
+              assertThat(details.getTitle()).isEqualTo(RejectionType.INVALID_STATE.name());
+              assertThat(details.getDetail())
+                  .isEqualTo(
+                      "Command 'UPDATE' rejected with code 'INVALID_STATE': "
+                          + "user task was canceled during handling task variables update");
+            });
+
+    // then: wait for successful process cancellation
+    assertThatCode(cancelProcessInstanceFuture::join).doesNotThrowAnyException();
+
+    ZeebeAssertHelper.assertUserTaskCanceled(
+        userTaskKey,
+        userTask ->
+            assertThat(userTask)
+                .describedAs("Canceled user task should match the originally created one")
+                .isEqualTo(createdUserTask));
   }
 
   private void waitForJobRetriesToBeExhausted(final RecordingJobHandler recordingHandler) {
