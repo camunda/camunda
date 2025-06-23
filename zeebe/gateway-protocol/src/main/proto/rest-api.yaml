@@ -9029,7 +9029,7 @@ components:
           description: Total items matching the criteria.
           type: integer
           format: int64
-        hasMore:
+        hasMoreTotalItems:
           description: Has more items than default maximum total items ES/OS return.
           type: boolean
         startCursor:

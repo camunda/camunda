@@ -39,14 +39,14 @@ public final class SearchResponseTransformer<T>
 
     final var total = hits.total();
     final var totalHits = of(total);
-    final var hasMore = Objects.nonNull(total) && total.relation() == TotalHitsRelation.Gte;
+    final var hasMoreTotalItems = Objects.nonNull(total) && total.relation() == TotalHitsRelation.Gte;
 
     final var sourceHits = hits.hits();
     final var transformedHits = of(sourceHits);
     final var transformedAggregations = of(aggregations);
 
     return new SearchQueryResponse.Builder<T>()
-        .totalHits(totalHits, hasMore)
+        .totalHits(totalHits, hasMoreTotalItems)
         .scrollId(scrollId)
         .hits(transformedHits)
         .aggregations(transformedAggregations)

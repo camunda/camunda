@@ -449,7 +449,7 @@ public final class SearchQueryResponseMapper {
 
     return new SearchQueryPageResponse()
         .totalItems(result.total())
-        .hasMore(result.hasMore())
+        .hasMoreTotalItems(result.hasMoreTotalItems())
         .startCursor(result.startCursor())
         .endCursor(result.endCursor());
   }
