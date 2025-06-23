@@ -73,5 +73,10 @@ public class DocumentReferenceBatchResponseImpl implements DocumentReferenceBatc
     public String getDetail() {
       return failedDocumentDetail.getDetail();
     }
+
+    @Override
+    public String toString() {
+      return "FailedDocumentDetailImpl{" + "failedDocumentDetail=" + failedDocumentDetail + '}';
+    }
   }
 }
