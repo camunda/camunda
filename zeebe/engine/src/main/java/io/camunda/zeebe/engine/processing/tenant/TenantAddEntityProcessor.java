@@ -96,7 +96,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
 
     final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!isEntityPresent(entityId, entityType, isGroupsClaimEnabled(command))) {
+    if (!allowNonExistingEntity(command, entityType) && !isEntityPresent(entityId, entityType)) {
       createEntityNotExistRejectCommand(command, entityId, entityType, tenantId);
       return;
     }
@@ -134,13 +134,12 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
         .orElseGet(() -> Either.left(TENANT_NOT_FOUND_ERROR_MESSAGE.formatted(tenantId)));
   }
 
-  private boolean isEntityPresent(
-      final String entityId, final EntityType entityType, final boolean groupsClaimEnabled) {
+  private boolean isEntityPresent(final String entityId, final EntityType entityType) {
     return switch (entityType) {
       case USER -> true; // With simple mappings, any username can be assigned
       case CLIENT -> true; // With simple mappings, any client id can be assigned
       case MAPPING -> mappingState.get(entityId).isPresent();
-      case GROUP -> groupsClaimEnabled || groupState.get(entityId).isPresent();
+      case GROUP -> groupState.get(entityId).isPresent();
       case ROLE -> roleState.getRole(entityId).isPresent();
       default -> false;
     };
@@ -205,7 +204,12 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
         .distribute(command);
   }
 
-  private boolean isGroupsClaimEnabled(final TypedRecord<TenantRecord> command) {
-    return command.getAuthorizations().get(Authorization.USER_GROUPS_CLAIMS) != null;
+  private boolean allowNonExistingEntity(
+      final TypedRecord<TenantRecord> command, final EntityType entityType) {
+    return switch (entityType) {
+      case USER, CLIENT -> true; // With simple mappings, any username or client id can be assigned
+      case GROUP -> command.getAuthorizations().get(Authorization.USER_GROUPS_CLAIMS) != null;
+      default -> false;
+    };
   }
 }

@@ -7,17 +7,11 @@
  */
 package io.camunda.authentication;
 
-import static io.camunda.zeebe.protocol.record.value.EntityType.CLIENT;
-import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
-import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING;
-import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
-
 import io.camunda.authentication.entity.AuthenticationContext.AuthenticationContextBuilder;
 import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.RoleEntity;
-import io.camunda.search.query.RoleQuery;
 import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.auth.OidcPrincipalLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -29,7 +23,6 @@ import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -81,12 +74,45 @@ public class CamundaOAuthPrincipalService {
 
   public OAuthContext loadOAuthContext(final Map<String, Object> claims)
       throws OAuth2AuthenticationException {
-    final var authContextBuilder = new AuthenticationContextBuilder();
+    final var mappings = mappingServices.getMatchingMappings(claims);
+    final Set<String> mappingIds =
+        mappings.map(MappingEntity::mappingId).collect(Collectors.toSet());
+    if (mappingIds.isEmpty()) {
+      LOG.debug("No mappings found for these claims: {}", claims);
+    }
+
+    final Set<String> groups;
+    if (StringUtils.hasText(groupsClaim)) {
+      groups = new HashSet<>(oidcGroupsLoader.load(claims));
+    } else {
+      groups =
+          groupServices.getGroupsByMemberIds(mappingIds, EntityType.MAPPING).stream()
+              .map(GroupEntity::groupId)
+              .collect(Collectors.toSet());
+    }
+
+    final var roles = roleServices.getRolesByMappingsAndGroups(mappingIds, groups);
+    final var roleIds = roles.stream().map(RoleEntity::roleId).collect(Collectors.toSet());
+
+    final var tenants =
+        tenantServices.getTenantsByMappingsAndGroupsAndRoles(mappingIds, groups, roleIds).stream()
+            .map(TenantDTO::fromEntity)
+            .toList();
+
+    final var authContextBuilder =
+        new AuthenticationContextBuilder()
+            .withAuthorizedApplications(
+                authorizationServices.getAuthorizedApplications(
+                    Stream.concat(roles.stream().map(RoleEntity::roleId), mappingIds.stream())
+                        .collect(Collectors.toSet())))
+            .withTenants(tenants)
+            .withGroups(groups.stream().toList())
+            .withRoles(roles)
+            .withGroupsClaimEnabled(StringUtils.hasText(groupsClaim));
+
     final var principals = oidcPrincipalLoader.load(claims);
     final var username = principals.username();
     final var clientId = principals.clientId();
-
-    final var principalIdentifiers = new HashMap<EntityType, Set<String>>();
 
     if (username == null && clientId == null) {
       throw new OAuth2AuthenticationException(
@@ -96,59 +122,11 @@ public class CamundaOAuthPrincipalService {
     }
     if (username != null) {
       authContextBuilder.withUsername(username);
-      principalIdentifiers.put(USER, Set.of(username));
     }
 
     if (clientId != null) {
       authContextBuilder.withClientId(clientId);
-      principalIdentifiers.put(CLIENT, Set.of(clientId));
     }
-
-    final var mappings = mappingServices.getMatchingMappings(claims);
-    final Set<String> mappingIds =
-        mappings.map(MappingEntity::mappingId).collect(Collectors.toSet());
-    if (mappingIds.isEmpty()) {
-      LOG.debug("No mappings found for these claims: {}", claims);
-    } else {
-      principalIdentifiers.put(MAPPING, mappingIds);
-    }
-
-    final Set<String> groups;
-    if (StringUtils.hasText(groupsClaim)) {
-      groups = new HashSet<>(oidcGroupsLoader.load(claims));
-    } else {
-      // TODO: Get groups for username and clientId https://github.com/camunda/camunda/issues/26572
-      groups =
-          groupServices.getGroupsByMemberIds(mappingIds, MAPPING).stream()
-              .map(GroupEntity::groupId)
-              .collect(Collectors.toSet());
-      if (!groups.isEmpty()) {
-        principalIdentifiers.put(GROUP, groups);
-      }
-    }
-
-    final var roles =
-        roleServices.findAll(
-            RoleQuery.of(
-                roleQuery ->
-                    roleQuery.filter(
-                        roleFilter -> roleFilter.memberIdsByType(principalIdentifiers))));
-    final var roleIds = roles.stream().map(RoleEntity::roleId).collect(Collectors.toSet());
-
-    // TODO: Get tenants for username and clientId https://github.com/camunda/camunda/issues/26572
-    final var tenants =
-        tenantServices.getTenantsByMappingsAndGroupsAndRoles(mappingIds, groups, roleIds).stream()
-            .map(TenantDTO::fromEntity)
-            .toList();
-
-    authContextBuilder
-        .withAuthorizedApplications(
-            authorizationServices.getAuthorizedApplications(
-                Stream.concat(roles.stream().map(RoleEntity::roleId), mappingIds.stream())
-                    .collect(Collectors.toSet())))
-        .withTenants(tenants)
-        .withGroups(groups.stream().toList())
-        .withRoles(roles);
 
     return new OAuthContext(mappingIds, authContextBuilder.build());
   }

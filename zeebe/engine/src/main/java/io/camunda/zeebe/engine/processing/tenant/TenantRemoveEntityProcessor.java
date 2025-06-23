@@ -113,7 +113,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       final TypedRecord<TenantRecord> command, final String tenantId) {
     final var entityType = command.getValue().getEntityType();
     final var entityId = command.getValue().getEntityId();
-    if (!entityIsPresent(entityType, entityId, isGroupsClaimEnabled(command))) {
+    if (!allowNonExistingEntity(command, entityType) && !entityIsPresent(entityType, entityId)) {
       createEntityNotExistRejectCommand(command, entityId, entityType, tenantId);
       return false;
     }
@@ -124,17 +124,21 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
     return true;
   }
 
-  private boolean entityIsPresent(
-      final EntityType entityType, final String entityId, final boolean groupsClaimEnabled) {
+  private boolean entityIsPresent(final EntityType entityType, final String entityId) {
     return switch (entityType) {
-      case GROUP -> groupsClaimEnabled || groupState.get(entityId).isPresent();
+      case GROUP -> groupState.get(entityId).isPresent();
       case MAPPING -> mappingState.get(entityId).isPresent();
       default -> true;
     };
   }
 
-  private boolean isGroupsClaimEnabled(final TypedRecord<TenantRecord> command) {
-    return command.getAuthorizations().get(Authorization.USER_GROUPS_CLAIMS) != null;
+  private boolean allowNonExistingEntity(
+      final TypedRecord<TenantRecord> command, final EntityType entityType) {
+    return switch (entityType) {
+      case USER, CLIENT -> true; // With simple mappings, any username or client id can be assigned
+      case GROUP -> command.getAuthorizations().get(Authorization.USER_GROUPS_CLAIMS) != null;
+      default -> false;
+    };
   }
 
   private void createEntityNotExistRejectCommand(
