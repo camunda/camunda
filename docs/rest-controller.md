@@ -1,7 +1,6 @@
 # REST API controllers
 
-This document outlines the main steps to consider when building REST controllers in the Camunda 8
-REST API.
+This document outlines the main steps to consider when building REST controllers in the Orchestration Cluster REST API.
 
 It covers the whole end-to-end view from endpoint definition and implementation to client
 considerations and testing, touching on the following steps:
@@ -97,7 +96,7 @@ Refer to existing integration tests for setup.
 
 ## Documentation generation
 
-[The public reference documentation](https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/camunda-8-rest-api/) needs to be synchronized with [your specification changes](#openapi-extension).
+[The public reference documentation](https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/orchestration-cluster-rest-api/) needs to be synchronized with [your specification changes](#openapi-extension).
 
 ### Automatic synchronization
 
