@@ -15,14 +15,45 @@
  */
 package io.camunda.spring.client.jobhandling.result;
 
-import io.camunda.client.api.command.CreateDocumentCommandStep1;
-import io.camunda.client.api.command.CreateDocumentCommandStep1.CreateDocumentCommandStep2;
+import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
+import io.camunda.client.api.command.CreateDocumentBatchCommandStep1.CreateDocumentBatchCommandStep2;
+import io.camunda.client.api.worker.JobClient;
 import io.camunda.spring.client.jobhandling.DocumentContext;
 import java.util.function.Function;
 
+/**
+ * A builder to create a {@link DocumentContext} for a job worker result.
+ *
+ * <p>The {@link DefaultResultProcessor} will use the context to execute a {@link
+ * JobClient#newCreateDocumentBatchCommand()} and set the references as process variable.
+ */
 public interface ResultDocumentContextBuilder {
+
+  /**
+   * @return the {@link DocumentContext} that will be used for further processing
+   */
   DocumentContext build();
 
+  /**
+   * Applies a store id to the batch. See {@link
+   * io.camunda.client.api.command.CreateDocumentBatchCommandStep1#storeId(String)}.
+   *
+   * @param storeId the store id to save all documents in the batch to
+   * @return the context builder
+   */
+  ResultDocumentContextBuilder storeId(String storeId);
+
+  /**
+   * Adds a document to the batch using the provided function that is applied to the builder after
+   * {@link CreateDocumentBatchCommandStep1#addDocument()} and before {@link
+   * CreateDocumentBatchCommandStep2#done()}
+   *
+   * @param fileName the fileName to apply to the command builder
+   * @param documentBuilder the function to apply to the command builder, the {@link
+   *     CreateDocumentBatchCommandStep2#fileName(String)} can be omitted here
+   * @return the context builder
+   */
   ResultDocumentContextBuilder addDocument(
-      Function<CreateDocumentCommandStep1, CreateDocumentCommandStep2> documentBuilder);
+      String fileName,
+      Function<CreateDocumentBatchCommandStep2, CreateDocumentBatchCommandStep2> documentBuilder);
 }

@@ -15,6 +15,7 @@
  */
 package io.camunda.spring.client.jobhandling;
 
+import io.camunda.client.api.response.DocumentLinkResponse;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.spring.client.jobhandling.result.ResultDocumentContext;
@@ -23,20 +24,40 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
+/**
+ * A self-contained, fully functional context to handle a list of document references, can be
+ * injected to a job worker function or be used as part of a result
+ */
 public interface DocumentContext {
 
+  /**
+   * @return a list of {@link DocumentEntry} objects
+   */
   List<DocumentEntry> getDocuments();
 
+  /**
+   * @return a {@link ResultDocumentContextBuilder} to collect data for a document reference result
+   */
   static ResultDocumentContextBuilder result() {
     return new ResultDocumentContext();
   }
 
+  /** A self-contained, fully functional context of one entry in a {@link DocumentContext} */
   interface DocumentEntry {
 
+    /**
+     * @return the document reference of the entry
+     */
     DocumentReferenceResponse getDocumentReference();
 
+    /**
+     * @return the input stream of the referenced document, needs to be closed after usage
+     */
     InputStream getDocumentInputStream();
 
+    /**
+     * @return the bytes of the reference document
+     */
     default byte[] getDocumentBytes() {
       try (final InputStream in = getDocumentInputStream()) {
         return in.readAllBytes();
@@ -44,6 +65,11 @@ public interface DocumentContext {
         throw new RuntimeException("Error while handling document input stream", e);
       }
     }
+
+    /**
+     * @return a link to the referenced document
+     */
+    DocumentLinkResponse getDocumentLink();
 
     abstract class AbstractDocumentEntry implements DocumentEntry {
       protected final DocumentReferenceResponse documentReference;
@@ -63,6 +89,11 @@ public interface DocumentContext {
       @Override
       public InputStream getDocumentInputStream() {
         return jobClient.newDocumentContentGetRequest(documentReference).execute();
+      }
+
+      @Override
+      public DocumentLinkResponse getDocumentLink() {
+        return jobClient.newCreateDocumentLinkCommand(documentReference).execute();
       }
     }
   }
