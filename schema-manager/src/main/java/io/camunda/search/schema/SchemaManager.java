@@ -88,6 +88,11 @@ public class SchemaManager {
         schemaManagerMetrics);
   }
 
+  /**
+   * This method will retry with exponential backoff until the schema is successfully initialized.
+   * By default, retries are effectively unlimited to prevent pods from crashing when Elasticsearch
+   * is temporarily unavailable during startup.
+   */
   public void startup() {
     if (!config.schemaManager().isCreateSchema()) {
       LOG.info(
