@@ -94,12 +94,15 @@ final class FileSetManager {
       final var algorithm = config.compressionAlgorithm().orElseThrow();
       final var compressedFile = compressFile(filePath, algorithm);
       LOG.trace("Saving compressed file {}({}) in prefix {}", fileName, compressedFile, prefix);
-      client
-          .putObject(
-              put -> put.bucket(config.bucketName()).key(prefix + fileName),
-              AsyncRequestBody.fromFile(compressedFile))
-          .join();
-      cleanupCompressedFile(compressedFile);
+      try {
+        client
+            .putObject(
+                put -> put.bucket(config.bucketName()).key(prefix + fileName),
+                AsyncRequestBody.fromFile(compressedFile))
+            .join();
+      } finally {
+        cleanupCompressedFile(compressedFile);
+      }
       return FileSet.FileMetadata.withCompression(algorithm);
     } else {
       LOG.trace("Saving file {}({}) in prefix {}", fileName, filePath, prefix);
@@ -229,12 +232,13 @@ final class FileSetManager {
             Files.size(compressed),
             Files.size(decompressed));
       }
-      cleanupCompressedFile(compressed);
     } catch (final IOException | CompressorException e) {
       throw new BackupCompressionFailed(
           "Failed to decompress from %s to %s using %s"
               .formatted(compressed, decompressed, algorithm),
           e);
+    } finally {
+      cleanupCompressedFile(compressed);
     }
   }
 }
