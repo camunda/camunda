@@ -10,12 +10,12 @@ package io.camunda.operate.webapp.rest.validation;
 import static io.camunda.operate.entities.OperationType.ADD_VARIABLE;
 import static io.camunda.operate.entities.OperationType.UPDATE_VARIABLE;
 
+import io.camunda.operate.entities.OperationState;
+import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.reader.VariableReader;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
-import io.camunda.webapps.schema.entities.operation.OperationState;
-import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.EnumSet;
 import java.util.Set;
 import org.springframework.stereotype.Component;
