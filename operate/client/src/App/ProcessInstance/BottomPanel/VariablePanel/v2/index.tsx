@@ -6,29 +6,23 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useEffect, useState} from 'react';
+import {useEffect} from 'react';
 import {observer} from 'mobx-react';
 
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {variablesStore} from 'modules/stores/variables';
 import {TabView} from 'modules/components/TabView';
+import {processInstanceListenersStore} from 'modules/stores/processInstanceListeners';
 import {useProcessInstancePageParams} from '../../../useProcessInstancePageParams';
 import {InputOutputMappings} from '../InputOutputMappings';
 import {VariablesContent as VariablesContentV2} from './VariablesContent';
-import {Listeners} from './Listeners';
+import {Listeners} from '../Listeners';
 import {WarningFilled} from '../styled';
 import {init, startPolling} from 'modules/utils/variables';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
-import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 
-type Props = {
-  setListenerTabVisibility: React.Dispatch<React.SetStateAction<boolean>>;
-};
-
-const VariablePanel: React.FC<Props> = observer(function VariablePanel({
-  setListenerTabVisibility,
-}) {
+const VariablePanel = observer(function VariablePanel() {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const {data: processInstance} = useProcessInstance();
   const isRootNodeSelected = useIsRootNodeSelected();
@@ -37,38 +31,20 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
   const flowNodeInstanceId =
     flowNodeSelectionStore.state.selection?.flowNodeInstanceId;
 
-  const [listenerTypeFilter, setListenerTypeFilter] =
-    useState<ListenerEntity['listenerType']>();
+  const {
+    listenersFailureCount,
+    state,
+    fetchListeners,
+    reset,
+    setListenerTabVisibility,
+  } = processInstanceListenersStore;
+  const {listenerTypeFilter} = state;
 
   const shouldUseFlowNodeId = !flowNodeInstanceId && flowNodeId;
 
-  let jobsFilter = {};
-  if (shouldUseFlowNodeId) {
-    jobsFilter = {
-      processInstanceKey: {$eq: processInstanceId},
-      elementId: {$eq: flowNodeId},
-      ...(listenerTypeFilter && {kind: {$eq: listenerTypeFilter}}),
-    };
-  } else if (flowNodeInstanceId) {
-    jobsFilter = {
-      processInstanceKey: {$eq: processInstanceId},
-      elementId: {$eq: flowNodeInstanceId},
-      ...(listenerTypeFilter && {kind: {$eq: listenerTypeFilter}}),
-    };
-  }
-  const {
-    data: jobs,
-    fetchNextPage,
-    fetchPreviousPage,
-    hasNextPage,
-    hasPreviousPage,
-  } = useJobs({
-    payload: {filter: jobsFilter},
-    disabled: !shouldUseFlowNodeId && !flowNodeInstanceId,
-    select: (data) => data.pages?.flatMap((page) => page.items),
-  });
-
-  const hasFailedListeners = jobs?.some(({state}) => state === 'FAILED');
+  useEffect(() => {
+    reset();
+  }, [flowNodeId, flowNodeInstanceId, reset]);
 
   useEffect(() => {
     init(processInstance);
@@ -77,6 +53,35 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
       variablesStore.reset();
     };
   }, [processInstance]);
+
+  useEffect(() => {
+    if (shouldUseFlowNodeId) {
+      fetchListeners({
+        fetchType: 'initial',
+        processInstanceId: processInstanceId,
+        payload: {
+          flowNodeId,
+          ...(listenerTypeFilter && {listenerTypeFilter}),
+        },
+      });
+    } else if (flowNodeInstanceId) {
+      fetchListeners({
+        fetchType: 'initial',
+        processInstanceId: processInstanceId,
+        payload: {
+          flowNodeInstanceId,
+          ...(listenerTypeFilter && {listenerTypeFilter}),
+        },
+      });
+    }
+  }, [
+    fetchListeners,
+    processInstanceId,
+    flowNodeId,
+    flowNodeInstanceId,
+    shouldUseFlowNodeId,
+    listenerTypeFilter,
+  ]);
 
   return (
     <TabView
@@ -117,20 +122,11 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
         {
           id: 'listeners',
           testId: 'listeners-tab-button',
-          ...(hasFailedListeners && {
+          ...(listenersFailureCount && {
             labelIcon: <WarningFilled />,
           }),
           label: 'Listeners',
-          content: (
-            <Listeners
-              jobs={jobs}
-              setListenerTypeFilter={setListenerTypeFilter}
-              fetchNextPage={fetchNextPage}
-              fetchPreviousPage={fetchPreviousPage}
-              hasNextPage={hasNextPage}
-              hasPreviousPage={hasPreviousPage}
-            />
-          ),
+          content: <Listeners />,
           removePadding: true,
           onClick: () => {
             setListenerTabVisibility(true);

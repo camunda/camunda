@@ -158,9 +158,7 @@ describe('VariablePanel', () => {
         instanceMetadata: null,
       });
 
-      render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
-        wrapper: getWrapper(),
-      });
+      render(<VariablePanel />, {wrapper: getWrapper()});
 
       await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
 
@@ -193,9 +191,7 @@ describe('VariablePanel', () => {
         modificationsStore.enableModificationMode();
       }
 
-      render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
-        wrapper: getWrapper(),
-      });
+      render(<VariablePanel />, {wrapper: getWrapper()});
 
       await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
       expect(
@@ -232,9 +228,7 @@ describe('VariablePanel', () => {
         modificationsStore.enableModificationMode();
       }
 
-      render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
-        wrapper: getWrapper(),
-      });
+      render(<VariablePanel />, {wrapper: getWrapper()});
 
       await waitFor(() => expect(variablesStore.state.status).toBe('fetched'));
       expect(
