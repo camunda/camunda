@@ -6,7 +6,7 @@
   <parent>
     <groupId>org.camunda</groupId>
     <artifactId>camunda-release-parent</artifactId>
-    <version>3.9.1</version>
+    <version>4.0.0</version>
     <!-- do not remove empty tag - http://jira.codehaus.org/browse/MNG-4687 -->
     <relativePath></relativePath>
   </parent>
@@ -37,7 +37,6 @@
     <!-- release parent settings -->
     <nexus.snapshot.repository>https://artifacts.camunda.com/artifactory/zeebe-io-snapshots/</nexus.snapshot.repository>
     <nexus.release.repository>https://artifacts.camunda.com/artifactory/zeebe-io/</nexus.release.repository>
-    <nexus.sonatype.url>https://s01.oss.sonatype.org</nexus.sonatype.url>
 
     <!-- Zeebe Community License v1.1 header -->
     <license.header>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</license.header>
@@ -319,7 +318,7 @@
     </profile>
 
     <profile>
-      <id>sonatype-oss-release</id>
+      <id>central-sonatype-publish</id>
       <properties>
         <plugin.version.gpg>1.6</plugin.version.gpg>
       </properties>
