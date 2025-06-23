@@ -170,7 +170,7 @@ public class ElasticsearchDataStoreClientTest {
   }
 
   @Test
-  public void shouldHasMoreFieldFalse() throws IOException {
+  public void shouldHaveMoreTotalItemsFalse() throws IOException {
     // given
     final var searchRequestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
     final var searchResponse = createDefaultSearchResponse(TEST_HITS, HITS_RELATION);
@@ -186,11 +186,11 @@ public class ElasticsearchDataStoreClientTest {
 
     // then
     assertThat(response).isNotNull();
-    assertThat(response.hasMore()).isFalse();
+    assertThat(response.hasMoreTotalItems()).isFalse();
   }
 
   @Test
-  public void shouldHasMoreFieldTrue() throws IOException {
+  public void shouldHaveMoreTotalItemsTrue() throws IOException {
     // given
     final var searchResponse = createDefaultSearchResponse(CAPPED_HITS, CAPPED_HITS_RELATION);
     when(client.search((SearchRequest) any(), eq(TestDocument.class))).thenReturn(searchResponse);
@@ -204,7 +204,7 @@ public class ElasticsearchDataStoreClientTest {
 
     // then
     assertThat(response).isNotNull();
-    assertThat(response.hasMore()).isTrue();
+    assertThat(response.hasMoreTotalItems()).isTrue();
   }
 
   private SearchResponse<TestDocument> createDefaultSearchResponse(long totalHits,
