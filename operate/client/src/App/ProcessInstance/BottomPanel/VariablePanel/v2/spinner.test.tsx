@@ -161,10 +161,7 @@ describe('VariablePanel spinner', () => {
   });
 
   it('should display spinner for variables tab when switching between tabs', async () => {
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -193,9 +190,7 @@ describe('VariablePanel spinner', () => {
   });
 
   it('should display spinner on second variable fetch', async () => {
-    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
-      wrapper: getWrapper(),
-    });
+    render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -219,10 +214,7 @@ describe('VariablePanel spinner', () => {
   it('should not display spinner for variables tab when switching between tabs if scope does not exist', async () => {
     modificationsStore.enableModificationMode();
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
