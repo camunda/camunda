@@ -15,24 +15,59 @@
  */
 package io.camunda.spring.client.jobhandling.result;
 
-import io.camunda.client.api.command.CreateDocumentCommandStep1;
-import io.camunda.client.api.command.CreateDocumentCommandStep1.CreateDocumentCommandStep2;
+import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
+import io.camunda.client.api.command.CreateDocumentBatchCommandStep1.CreateDocumentBatchCommandStep2;
+import io.camunda.client.api.response.DocumentReferenceBatchResponse;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.spring.client.jobhandling.DocumentContext;
 import io.camunda.spring.client.jobhandling.DocumentContext.DocumentEntry.AbstractDocumentEntry;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ResultDocumentContext implements DocumentContext, ResultDocumentContextBuilder {
-  private final List<Function<CreateDocumentCommandStep1, CreateDocumentCommandStep2>>
-      documentBuilders = new ArrayList<>();
-  private final List<ResultDocumentEntry> documentEntries = new ArrayList<>();
+  private static final Logger LOG = LoggerFactory.getLogger(ResultDocumentContext.class);
+  private final Map<
+          String, Function<CreateDocumentBatchCommandStep2, CreateDocumentBatchCommandStep2>>
+      documentBuilders = new HashMap<>();
+  private String storeId;
+  private DocumentReferenceBatchResponse response;
+  private JobClient jobClient;
 
   @Override
   public List<DocumentEntry> getDocuments() {
-    return documentEntries.stream().map(DocumentEntry.class::cast).toList();
+    if (response == null) {
+      LOG.warn("Result document context has not been processed yet, returning empty list");
+      return List.of();
+    }
+    if (!response.isSuccessful()) {
+      LOG.warn(
+          "Result document context has been processed with failures, returning only successful documents {}",
+          response.getFailedDocuments());
+    }
+    return response.getCreatedDocuments().stream()
+        .map(
+            documentReferenceResponse ->
+                new ResultDocumentEntry(documentReferenceResponse, jobClient))
+        .map(DocumentEntry.class::cast)
+        .toList();
+  }
+
+  public Map<String, Function<CreateDocumentBatchCommandStep2, CreateDocumentBatchCommandStep2>>
+      getFailedDocumentBuilders() {
+    if (response == null) {
+      LOG.warn("Result document context has not been processed yet, returning empty map");
+      return Map.of();
+    }
+    return response.getFailedDocuments().stream()
+        .map(detail -> Map.entry(detail.getFileName(), documentBuilders.get(detail.getFileName())))
+        .filter(e -> e.getValue() != null)
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   @Override
@@ -41,24 +76,41 @@ public class ResultDocumentContext implements DocumentContext, ResultDocumentCon
   }
 
   @Override
-  public ResultDocumentContextBuilder addDocument(
-      final Function<CreateDocumentCommandStep1, CreateDocumentCommandStep2> documentBuilder) {
-    documentBuilders.add(documentBuilder);
+  public ResultDocumentContextBuilder storeId(final String storeId) {
+    this.storeId = storeId;
     return this;
   }
 
-  public void processDocumentBuilders(final JobClient jobClient) {
-    new ArrayList<>(documentBuilders)
-        .stream()
-            .map(
-                documentBuilder -> {
-                  final CreateDocumentCommandStep1 step1 = jobClient.newCreateDocumentCommand();
-                  final CreateDocumentCommandStep2 step2 = documentBuilder.apply(step1);
-                  final DocumentReferenceResponse response = step2.execute();
-                  documentBuilders.remove(documentBuilder);
-                  return response;
-                })
-            .forEach(ref -> documentEntries.add(new ResultDocumentEntry(ref, jobClient)));
+  @Override
+  public ResultDocumentContextBuilder addDocument(
+      final String fileName,
+      final Function<CreateDocumentBatchCommandStep2, CreateDocumentBatchCommandStep2>
+          documentBuilder) {
+    documentBuilders.put(fileName, documentBuilder);
+    return this;
+  }
+
+  public DocumentReferenceBatchResponse processDocumentBuilders(final JobClient jobClient) {
+    if (response != null) {
+      LOG.debug("Result document context has already been processed, returning previous response");
+    } else {
+      this.jobClient = jobClient;
+      final CreateDocumentBatchCommandStep1 documentBatchCommand =
+          jobClient.newCreateDocumentBatchCommand();
+      if (storeId != null) {
+        documentBatchCommand.storeId(storeId);
+      }
+      documentBuilders.forEach(
+          (fileName, documentBuilder) -> {
+            final CreateDocumentBatchCommandStep2 addDocumentCommand =
+                documentBatchCommand.addDocument();
+            addDocumentCommand.fileName(fileName);
+            documentBuilder.apply(addDocumentCommand);
+            addDocumentCommand.done();
+          });
+      response = documentBatchCommand.execute();
+    }
+    return response;
   }
 
   public static class ResultDocumentEntry extends AbstractDocumentEntry {

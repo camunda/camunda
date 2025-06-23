@@ -25,7 +25,8 @@ import org.junit.jupiter.api.Test;
 class DefaultResultProcessorStrategyTest {
 
   private final DefaultResultProcessorStrategy resultProcessorStrategy =
-      new DefaultResultProcessorStrategy(mock(CamundaClient.class));
+      new DefaultResultProcessorStrategy(
+          mock(CamundaClient.class), mock(DocumentResultProcessorFailureHandlingStrategy.class));
 
   @Test
   void createProcessorShouldReturnDefaultProcessor() throws NoSuchMethodException {
