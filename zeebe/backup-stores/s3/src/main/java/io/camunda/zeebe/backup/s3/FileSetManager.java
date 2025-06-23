@@ -55,7 +55,7 @@ final class FileSetManager {
     // This should prevent ConnectionAcquisitionTimeout for backups with many and/or large files
     // where we would otherwise occupy all connections, preventing some uploads from starting.
     concurrencyLimit = new Semaphore(Math.max(1, config.maxConcurrentConnections() / 2));
-    threadBuilder = Thread.ofVirtual().name("zeebe-backup-", 0);
+    threadBuilder = Thread.ofVirtual().name("zeebe-backup-s3", 0);
   }
 
   CompletableFuture<FileSet> save(final String prefix, final NamedFileSet files) {
