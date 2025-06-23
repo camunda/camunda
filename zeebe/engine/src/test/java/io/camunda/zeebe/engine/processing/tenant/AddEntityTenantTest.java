@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.junit.Rule;
@@ -195,7 +196,9 @@ public class AddEntityTenantTest {
             .addEntity(tenantId)
             .withEntityId(groupId)
             .withEntityType(entityType)
-            .add(AuthorizationUtil.getAuthInfoWithClaim(Authorization.GROUPS_CLAIM_ENABLED, true))
+            .add(
+                AuthorizationUtil.getAuthInfoWithClaim(
+                    Authorization.USER_GROUPS_CLAIMS, List.of("g1")))
             .getValue();
 
     // then assert that the entity was added correctly

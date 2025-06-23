@@ -629,7 +629,6 @@ public class RequestMapper {
         if (authenticationContext.groups() != null) {
           authenticationBuilder.groupIds(authenticationContext.groups());
           claims.put(Authorization.USER_GROUPS_CLAIMS, authenticationContext.groups());
-          claims.put(Authorization.GROUPS_CLAIM_ENABLED, true);
         }
 
         if (authenticationContext.username() != null) {

@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.UUID;
 import org.junit.Rule;
 import org.junit.Test;
@@ -278,7 +279,8 @@ public class RemoveEntityTenantTest {
             .withEntityType(EntityType.GROUP)
             .expectRejection()
             .remove(
-                AuthorizationUtil.getAuthInfoWithClaim(Authorization.GROUPS_CLAIM_ENABLED, true))
+                AuthorizationUtil.getAuthInfoWithClaim(
+                    Authorization.USER_GROUPS_CLAIMS, List.of("g1")))
             .getValue();
 
     assertThat(createdTenant).isNotNull().hasTenantId(tenantId);
