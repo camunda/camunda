@@ -626,8 +626,9 @@ public class RequestMapper {
         authenticationBuilder.tenants(
             authenticationContext.tenants().stream().map(TenantDTO::tenantId).toList());
 
-        if (authenticationContext.groups() != null) {
-          authenticationBuilder.groupIds(authenticationContext.groups());
+        authenticationBuilder.groupIds(authenticationContext.groups());
+
+        if (authenticationContext.groupsClaimEnabled()) {
           claims.put(Authorization.USER_GROUPS_CLAIMS, authenticationContext.groups());
         }
 

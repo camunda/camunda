@@ -107,7 +107,8 @@ public class CamundaOAuthPrincipalService {
                         .collect(Collectors.toSet())))
             .withTenants(tenants)
             .withGroups(groups.stream().toList())
-            .withRoles(roles);
+            .withRoles(roles)
+            .withGroupsClaimEnabled(StringUtils.hasText(groupsClaim));
 
     final var principals = oidcPrincipalLoader.load(claims);
     final var username = principals.username();

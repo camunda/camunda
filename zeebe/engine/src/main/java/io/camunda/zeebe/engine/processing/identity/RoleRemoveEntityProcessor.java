@@ -92,7 +92,7 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
 
     final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!isEntityPresent(entityId, entityType, isGroupsClaimEnabled(command))) {
+    if (!allowNonExistingEntity(command, entityType) && !isEntityPresent(entityId, entityType)) {
       final var errorMessage =
           ENTITY_NOT_FOUND_ERROR_MESSAGE.formatted(entityId, entityType, record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
@@ -139,16 +139,20 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
         record.getEntityType(), record.getEntityId(), RelationType.ROLE, record.getRoleId());
   }
 
-  private boolean isGroupsClaimEnabled(final TypedRecord<RoleRecord> command) {
-    return command.getAuthorizations().get(Authorization.USER_GROUPS_CLAIMS) != null;
+  private boolean allowNonExistingEntity(
+      final TypedRecord<RoleRecord> command, final EntityType entityType) {
+    return switch (entityType) {
+      case USER, CLIENT -> true; // With simple mappings, any username or client id can be assigned
+      case GROUP -> command.getAuthorizations().get(Authorization.USER_GROUPS_CLAIMS) != null;
+      default -> false;
+    };
   }
 
-  private boolean isEntityPresent(
-      final String entityId, final EntityType entityType, final boolean groupsClaimEnabled) {
+  private boolean isEntityPresent(final String entityId, final EntityType entityType) {
     return switch (entityType) {
       case USER, CLIENT -> true; // With simple mappings, any username or client id can be assigned
       case MAPPING -> mappingState.get(entityId).isPresent();
-      case GROUP -> groupsClaimEnabled || groupState.get(entityId).isPresent();
+      case GROUP -> groupState.get(entityId).isPresent();
       default -> false;
     };
   }
