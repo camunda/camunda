@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.webapp.rest.validation;
 
-import static io.camunda.webapps.schema.entities.operation.OperationType.ADD_VARIABLE;
-import static io.camunda.webapps.schema.entities.operation.OperationType.UPDATE_VARIABLE;
+import static io.camunda.operate.entities.OperationType.ADD_VARIABLE;
+import static io.camunda.operate.entities.OperationType.UPDATE_VARIABLE;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.verifyNoInteractions;
