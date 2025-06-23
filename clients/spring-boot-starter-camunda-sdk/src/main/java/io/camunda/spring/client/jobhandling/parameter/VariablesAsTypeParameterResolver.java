@@ -18,10 +18,10 @@ package io.camunda.spring.client.jobhandling.parameter;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
 
-public class VariablesAsTypeResolver implements ParameterResolver {
+public class VariablesAsTypeParameterResolver implements ParameterResolver {
   private final Class<?> variablesType;
 
-  public VariablesAsTypeResolver(final Class<?> variablesType) {
+  public VariablesAsTypeParameterResolver(final Class<?> variablesType) {
     this.variablesType = variablesType;
   }
 
