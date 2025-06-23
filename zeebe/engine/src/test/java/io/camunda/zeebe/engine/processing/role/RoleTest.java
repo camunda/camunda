@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.junit.Rule;
@@ -253,7 +254,9 @@ public class RoleTest {
             .addEntity(roleId)
             .withEntityId(groupId)
             .withEntityType(EntityType.GROUP)
-            .add(AuthorizationUtil.getAuthInfoWithClaim(Authorization.GROUPS_CLAIM_ENABLED, true))
+            .add(
+                AuthorizationUtil.getAuthInfoWithClaim(
+                    Authorization.USER_GROUPS_CLAIMS, List.of("g1")))
             .getValue();
 
     assertThat(updatedRole)
@@ -419,7 +422,9 @@ public class RoleTest {
         .addEntity(roleId)
         .withEntityId(groupId)
         .withEntityType(EntityType.GROUP)
-        .add(AuthorizationUtil.getAuthInfoWithClaim(Authorization.GROUPS_CLAIM_ENABLED, true));
+        .add(
+            AuthorizationUtil.getAuthInfoWithClaim(
+                Authorization.USER_GROUPS_CLAIMS, List.of("g1")));
     final var removedEntity =
         engine
             .role()
@@ -427,7 +432,8 @@ public class RoleTest {
             .withEntityId(groupId)
             .withEntityType(EntityType.GROUP)
             .remove(
-                AuthorizationUtil.getAuthInfoWithClaim(Authorization.GROUPS_CLAIM_ENABLED, true))
+                AuthorizationUtil.getAuthInfoWithClaim(
+                    Authorization.USER_GROUPS_CLAIMS, List.of("g1")))
             .getValue();
 
     assertThat(removedEntity)
