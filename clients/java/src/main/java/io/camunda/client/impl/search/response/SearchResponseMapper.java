@@ -149,7 +149,10 @@ public final class SearchResponseMapper {
   private static SearchResponsePage toSearchResponsePage(
       final SearchQueryPageResponse pageResponse) {
     return new SearchResponsePageImpl(
-        pageResponse.getTotalItems(), pageResponse.getStartCursor(), pageResponse.getEndCursor());
+        pageResponse.getTotalItems(),
+        Boolean.TRUE.equals(pageResponse.getHasMore()),
+        pageResponse.getStartCursor(),
+        pageResponse.getEndCursor());
   }
 
   public static SearchResponse<DecisionRequirements> toDecisionRequirementsSearchResponse(
@@ -311,8 +314,8 @@ public final class SearchResponseMapper {
   }
 
   public static List<ProcessInstanceCallHierarchyEntryResponse>
-      toProcessInstanceCallHierarchyEntryResponse(
-          final ProcessInstanceCallHierarchyEntry[] entries) {
+  toProcessInstanceCallHierarchyEntryResponse(
+      final ProcessInstanceCallHierarchyEntry[] entries) {
     return toSearchResponseInstances(
         Arrays.asList(entries), ProcessInstanceCallHierarchyEntryResponseImpl::new);
   }
