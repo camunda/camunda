@@ -35,9 +35,9 @@ public class SchemaManagerConfiguration {
 
     public static final Duration DEFAULT_MIN_RETRY_DELAY = Duration.ofMillis(500);
     public static final Duration DEFAULT_MAX_RETRY_DELAY = Duration.ofSeconds(10);
-    // Set to a very large number to effectively allow unlimited retries for schema initialization
+    // Set to Integer.MAX_VALUE to effectively allow unlimited retries for schema initialization
     // This prevents pods from crashing when Elasticsearch is temporarily unavailable during startup
-    public static final int DEFAULT_MAX_RETRIES = 1000000;
+    public static final int DEFAULT_MAX_RETRIES = Integer.MAX_VALUE;
 
     @Override
     public int defaultMaxRetries() {
