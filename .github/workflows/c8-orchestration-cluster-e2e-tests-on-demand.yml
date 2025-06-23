@@ -39,9 +39,9 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch }} # Use the branch selected by the user
 
-      - name: Start Tasklist and Operate
+      - name: Start Camunda
         run: |
-          DATABASE=elasticsearch docker compose up -d tasklist operate
+          DATABASE=elasticsearch docker compose up -d camunda
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: List running Docker containers
@@ -58,16 +58,13 @@ jobs:
               echo "Port 8080 is not open yet..."
             fi
 
-            if ! nc -zv localhost 8081; then
-              echo "Port 8081 is not open yet..."
-            fi
-
-            # Check if tasklist page is available (adjust the URL based on your service)
+            # Check if pages are available 
             tasklist_status=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
-            operate_status=$(curl -s -m 5 http://localhost:8081/operate || echo "Failed")
+            operate_status=$(curl -s -m 5 http://localhost:8080/operate || echo "Failed")
+            identity_status=$(curl -s -m 5 http://localhost:8080/identity || echo "Failed")
 
-            # Check if tasklist is up (you can adjust this condition based on actual response)
-            if [[ "$tasklist_status" != "Failed" ]] && [[ "$operate_status" != "Failed" ]]; then
+            # Check if services are up
+            if [[ "$tasklist_status" != "Failed" ]] && [[ "$operate_status" != "Failed" ]] && [[ "$identity_status" != "Failed" ]]; then
               echo "Services are ready!"
               ready=true
               break
@@ -76,6 +73,7 @@ jobs:
             echo "Waiting for services... ($i/90)"
             echo "Response from tasklist: $tasklist_status"
             echo "Response from operate: $operate_status"
+            echo "Response from identity: $identity_status"
             sleep 10
           done
 
@@ -89,8 +87,7 @@ jobs:
       - name: Print Docker logs before failing
         if: failure()
         run: |
-          docker compose logs tasklist
-          docker compose logs operate
+          docker compose logs camunda
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Setup Node.js
@@ -134,12 +131,11 @@ jobs:
         shell: bash
         env:
           LOCAL_TEST: "false"
-          CORE_APPLICATION_TASKLIST_URL: http://localhost:8080
-          CORE_APPLICATION_OPERATE_URL: http://localhost:8081
+          CORE_APPLICATION_URL: http://localhost:8080
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          ZEEBE_REST_ADDRESS: "http://localhost:8089"
+          ZEEBE_REST_ADDRESS: "http://localhost:8080"
         run: npm run test -- --project=chromium
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 

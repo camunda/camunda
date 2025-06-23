@@ -77,19 +77,29 @@ const test = base.extend<PlaywrightFixtures>({
   },
   resetData: async ({baseURL}, use) => {
     await use(async () => {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        Authorization: `${process.env.CAMUNDA_AUTH_STRATEGY} ${Buffer.from(
+          `${process.env.CAMUNDA_BASIC_AUTH_USERNAME}:${process.env.CAMUNDA_BASIC_AUTH_PASSWORD}`,
+        ).toString('base64')}`,
+      };
+
       const response = await fetch(
         `${baseURL}/v1/external/devUtil/recreateData`,
         {
           method: 'POST',
+          headers,
         },
       );
 
       if (!response.ok) {
         throw new Error(`Failed to reset data: ${response.statusText}`);
       }
+
       await sleep(1000);
     });
   },
+
   publicFormsPage: async ({page}, use) => {
     await use(new PublicFormsPage(page));
   },

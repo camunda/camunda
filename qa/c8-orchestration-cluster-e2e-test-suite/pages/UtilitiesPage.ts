@@ -14,17 +14,11 @@ export async function navigateToApp(
 ): Promise<void> {
   if (appName == 'operate') {
     await page.goto(
-      process.env.CORE_APPLICATION_OPERATE_URL +
-        '/' +
-        appName.toLowerCase() +
-        '/login',
+      process.env.CORE_APPLICATION_URL + '/' + appName.toLowerCase() + '/login',
     );
   } else if (appName == 'tasklist') {
     await page.goto(
-      process.env.CORE_APPLICATION_TASKLIST_URL +
-        '/' +
-        appName.toLowerCase() +
-        '/login',
+      process.env.CORE_APPLICATION_URL + '/' + appName.toLowerCase() + '/login',
     );
   }
 }

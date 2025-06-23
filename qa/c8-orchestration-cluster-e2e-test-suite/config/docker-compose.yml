@@ -95,56 +95,25 @@ services:
     networks:
       - zeebe_network
 
-  zeebe: &zeebe
-    container_name: zeebe-${DATABASE}
-    image: camunda/zeebe:SNAPSHOT
+  camunda:
+    container_name: camunda
+    image: camunda/camunda:SNAPSHOT
     environment:
-      - 'JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m'
-      #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
+      - 'JAVA_TOOL_OPTIONS=-Xms512m -Xmx1g'
+      - ZEEBE_BROKER_NETWORK_HOST=camunda
+      - SPRING_PROFILES_ACTIVE=e2e-test,consolidated-auth,tasklist,broker,operate,identity
+      - CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false
+      - CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true
+      - CAMUNDA_SECURITY_AUTHENTICATION_METHOD=BASIC
+      - CAMUNDA_SECURITY_MULTITENANCY_ENABLED=false
+      - CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo
     ports:
       - 26500:26500
-      - 9601:9600
-      - 8089:8080
-    depends_on:
-      - ${DATABASE}
-    networks:
-      - zeebe_network
-    env_file:
-      - envs/.env.database.${DATABASE}
-    restart: always
-
-  tasklist: &tasklist
-    container_name: tasklist-${DATABASE}
-    image: camunda/tasklist:SNAPSHOT
-    ports:
+      - 9600:9600
       - 8080:8080
-    environment:
-      - SPRING_PROFILES_ACTIVE=dev,consolidated-auth,e2e-test
-      - CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITY_ENABLED=true
     depends_on:
       - ${DATABASE}
-      - zeebe
-    env_file:
-      - envs/.env.database.${DATABASE}
     networks:
       - zeebe_network
-    volumes:
-      - ./config/custom.css:/usr/local/tasklist/config/custom.css
-    restart: always
-
-  operate: &operate
-    container_name: operate-${DATABASE}
-    image: camunda/operate:SNAPSHOT
-    ports:
-      - 8081:8080
-    environment:
-      - SPRING_PROFILES_ACTIVE=dev,consolidated-auth
-      - CAMUNDA_OPERATE_ZEEBE_COMPATIBILITY_ENABLED=true
-    depends_on:
-      - ${DATABASE}
-      - zeebe
     env_file:
       - envs/.env.database.${DATABASE}
-    networks:
-      - zeebe_network
-    restart: always
