@@ -82,10 +82,6 @@ class FileSetManager {
 - The semaphore ensures you never exceed the allowed number of concurrent S3 operations.
 - No thread pooling or complex future composition is needed.
 
----
-
-This pattern is especially useful for I/O-heavy workloads where you want to avoid the complexity of asynchronous code, but still need to limit the number of concurrent operations to avoid exhausting resources (such as S3 connections).
-
 ## Observability and Debugging
 
 - Virtual threads are visible to Java debuggers and profilers.
