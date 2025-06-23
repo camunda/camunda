@@ -7,25 +7,50 @@
  */
 package io.camunda.unifiedconfig;
 
+import io.camunda.operate.property.OperateProperties;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.model.bpmn.instance.Task;
 import jakarta.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @EnableConfigurationProperties(UnifiedConfiguration.class)
 public class UnifiedConfigurationHelper {
 
-  @Autowired
-  UnifiedConfiguration config;
+  private static final String RANDOM_SUFFIX = "-sample";
 
   @PostConstruct
   public void init() {
     System.out.println("Breakpoint here and check the object config");
+  }
+
+  @Bean
+  public TasklistProperties tasklistProperties(final UnifiedConfiguration unifiedConfiguration) {
+    Database databaseCfg = unifiedConfiguration.getCamunda().getData().getDatabase();
+
+    TasklistProperties tasklistProperties = new TasklistProperties();
+    tasklistProperties.getElasticsearch().setUrl(
+        databaseCfg.getElasticsearch().getUrl() + RANDOM_SUFFIX);
+
+    return tasklistProperties;
+  }
+
+  @Bean
+  public OperateProperties operateProperties(final UnifiedConfiguration unifiedConfiguration) {
+    Database databaseCfg = unifiedConfiguration.getCamunda().getData().getDatabase();
+
+    OperateProperties operateProperties = new OperateProperties();
+    operateProperties.getElasticsearch().setUrl(
+        databaseCfg.getElasticsearch().getUrl() + RANDOM_SUFFIX);
+
+    return operateProperties;
   }
 
   public static void populateBrokerCfg(
