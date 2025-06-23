@@ -73,9 +73,6 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Setup yarn
-        run: npm install -g yarn
-
       - name: Install node dependencies
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
         run: yarn install
@@ -151,7 +148,7 @@ jobs:
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
           ZEEBE_REST_ADDRESS: "http://localhost:8080"
-        run: npm run test:tasklist
+        run: npm run test -- --project=tasklist-v1-e2e
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
       - uses: actions/upload-artifact@v4
         if: always()

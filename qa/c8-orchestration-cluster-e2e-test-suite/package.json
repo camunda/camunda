@@ -5,7 +5,6 @@
   "scripts": {
     "test": "playwright test",
     "test:local": "node --env-file=.env ./runTest.js",
-    "test:tasklist": "playwright test tests/tasklist --project=chromium",
     "lint": "tsc && eslint .",
     "lint:fix": "eslint . --fix"
   },
