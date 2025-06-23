@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
+import io.camunda.zeebe.engine.state.routing.DbRoutingState;
+
 public interface ScheduledTaskState {
 
   DistributionState getDistributionState();
@@ -26,4 +28,6 @@ public interface ScheduledTaskState {
   UserTaskState getUserTaskState();
 
   BatchOperationState getBatchOperationState();
+
+  DbRoutingState getRoutingState();
 }

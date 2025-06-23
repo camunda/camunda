@@ -251,7 +251,7 @@ public final class EngineProcessors {
         typedRecordProcessors,
         writers,
         processingState,
-        routingInfo);
+        partitionsCount);
 
     UserProcessors.addUserProcessors(
         keyGenerator,
@@ -606,14 +606,22 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final ProcessingState processingState,
-      final RoutingInfo routingInfo) {
+      final int staticPartitionsCount) {
 
-    // periodically retries command distribution
-    typedRecordProcessors.withListener(
-        new CommandRedistributor(
-            commandDistributionBehavior.withScheduledState(
-                scheduledTaskStateSupplier.get().getDistributionState()),
-            routingInfo));
+    {
+      final var scheduledTaskState = scheduledTaskStateSupplier.get();
+      // periodically retries command distribution
+      // Note that the CommandRedistributor runs in a separate actor, so it must not use the same
+      // state as the StreamProcessors as it runs in another RocksDB transaction as well.
+      // It can only use the state from scheduledTaskStateSupplier.
+      typedRecordProcessors.withListener(
+          new CommandRedistributor(
+              commandDistributionBehavior.withScheduledState(
+                  scheduledTaskState.getDistributionState()),
+              RoutingInfo.dynamic(
+                  scheduledTaskState.getRoutingState(),
+                  RoutingInfo.forStaticPartitions(staticPartitionsCount))));
+    }
 
     final var distributionState = processingState.getDistributionState();
     typedRecordProcessors.onCommand(

@@ -29,6 +29,7 @@ import io.camunda.zeebe.engine.state.message.DbMessageState;
 import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
+import io.camunda.zeebe.engine.state.routing.DbRoutingState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.time.InstantSource;
 
@@ -44,6 +45,7 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
   private final PendingProcessMessageSubscriptionState pendingProcessMessageSubscriptionState;
   private final UserTaskState userTaskState;
   private final BatchOperationState batchOperationState;
+  private final DbRoutingState routingState;
 
   public ScheduledTaskDbState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
@@ -65,6 +67,7 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
             zeebeDb, transactionContext, transientProcessMessageSubscriptionState, clock);
     userTaskState = new DbUserTaskState(zeebeDb, transactionContext);
     batchOperationState = new DbBatchOperationState(zeebeDb, transactionContext);
+    routingState = new DbRoutingState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -110,5 +113,10 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
   @Override
   public BatchOperationState getBatchOperationState() {
     return batchOperationState;
+  }
+
+  @Override
+  public DbRoutingState getRoutingState() {
+    return routingState;
   }
 }
