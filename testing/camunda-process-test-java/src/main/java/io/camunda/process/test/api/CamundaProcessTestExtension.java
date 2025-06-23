@@ -279,11 +279,24 @@ public class CamundaProcessTestExtension
    *
    * @param camundaVersion the version to use
    * @return the extension builder
+   * @deprecated use withCamundaDockerImageVersion instead.
+   * @since 8.8.0
    */
+  @Deprecated
   public CamundaProcessTestExtension withCamundaVersion(final String camundaVersion) {
-    runtimeBuilder
-        .withCamundaDockerImageVersion(camundaVersion)
-        .withConnectorsDockerImageVersion(camundaVersion);
+    return withCamundaDockerImageVersion(camundaVersion);
+  }
+
+  /**
+   * Configure the Camunda docker image version of the runtime.
+   *
+   * @param camundaDockerImageVersion the version to use
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withCamundaDockerImageVersion(
+      final String camundaDockerImageVersion) {
+
+    runtimeBuilder.withCamundaDockerImageVersion(camundaDockerImageVersion);
     return this;
   }
 
