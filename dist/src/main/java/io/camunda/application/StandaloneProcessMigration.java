@@ -11,9 +11,11 @@ import io.camunda.application.commons.migration.AsyncMigrationsRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
 @SpringBootConfiguration(proxyBeanMethods = false)
+@EnableAutoConfiguration
 public class StandaloneProcessMigration {
 
   public static void main(final String[] args) {
@@ -32,7 +34,7 @@ public class StandaloneProcessMigration {
         new SpringApplicationBuilder()
             .logStartupInfo(true)
             .web(WebApplicationType.SERVLET)
-            .sources(AsyncMigrationsRunner.class)
+            .sources(StandaloneProcessMigration.class, AsyncMigrationsRunner.class)
             .profiles(Profile.PROCESS_MIGRATION.getId())
             .addCommandLineProperties(true)
             .build(args);
