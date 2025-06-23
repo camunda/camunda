@@ -18,7 +18,7 @@ package io.camunda.spring.client.jobhandling.parameter;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
 
-public class CustomHeadersResolver implements ParameterResolver {
+public class CustomHeadersParameterResolver implements ParameterResolver {
   @Override
   public Object resolve(final JobClient jobClient, final ActivatedJob job) {
     return job.getCustomHeaders();
