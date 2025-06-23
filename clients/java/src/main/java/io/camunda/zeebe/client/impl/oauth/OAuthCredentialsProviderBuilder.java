@@ -270,8 +270,6 @@ public final class OAuthCredentialsProviderBuilder {
         keyStore.load(
             Files.newInputStream(Paths.get(sslClientCertPath.toAbsolutePath().toString())),
             sslClientCertPassword.toCharArray());
-      } else {
-        Objects.requireNonNull(clientSecret, String.format(INVALID_ARGUMENT_MSG, "client secret"));
       }
       Objects.requireNonNull(audience, String.format(INVALID_ARGUMENT_MSG, "audience"));
       Objects.requireNonNull(
