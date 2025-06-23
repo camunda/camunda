@@ -142,9 +142,8 @@ public class CamundaOAuthPrincipalService {
             .map(TenantDTO::fromEntity)
             .toList();
 
-    final var ownerIds =
-        ownerTypeToIds.values().stream().flatMap(Set::stream).collect(Collectors.toSet());
-    final var authorizedApplications = authorizationServices.getAuthorizedApplications(ownerIds);
+    final var authorizedApplications =
+        authorizationServices.getAuthorizedApplications(ownerTypeToIds);
 
     authContextBuilder
         .withAuthorizedApplications(authorizedApplications)
