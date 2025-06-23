@@ -92,7 +92,7 @@ public class RestErrorMapper {
     return switch (error) {
       case final ForbiddenException fe:
         REST_GATEWAY_LOGGER.trace("Expected to handle REST request, but was forbidden", fe);
-        yield createProblemDetail(HttpStatus.FORBIDDEN, fe.getMessage(), fe.getClass().getName());
+        yield mapForbiddenExceptionToProblem(fe);
       case final CamundaSearchException cse:
         yield mapCamundaSearchExceptionToProblem(cse);
       case final CamundaBrokerException cse:
@@ -367,5 +367,9 @@ public class RestErrorMapper {
               HttpStatus.INTERNAL_SERVER_ERROR, errorMessage, "INTERNAL_ERROR");
         }
     }
+  }
+
+  public static @NotNull ProblemDetail mapForbiddenExceptionToProblem(final ForbiddenException fe) {
+    return createProblemDetail(HttpStatus.FORBIDDEN, fe.getMessage(), fe.getClass().getName());
   }
 }

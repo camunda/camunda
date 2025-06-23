@@ -7,14 +7,15 @@
  */
 package io.camunda.zeebe.engine.processing.user;
 
-import static io.camunda.zeebe.engine.processing.user.UserCreateAdminProcessor.ADMIN_ROLE_HAS_USERS_ERROR_MESSAGE;
-import static io.camunda.zeebe.engine.processing.user.UserCreateAdminProcessor.ADMIN_ROLE_NOT_FOUND_ERROR_MESSAGE;
-import static io.camunda.zeebe.engine.processing.user.UserCreateAdminProcessor.USER_ALREADY_EXISTS_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.user.UserCreateInitialAdminProcessor.ADMIN_ROLE_HAS_USERS_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.user.UserCreateInitialAdminProcessor.ADMIN_ROLE_NOT_FOUND_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.user.UserCreateInitialAdminProcessor.USER_ALREADY_EXISTS_ERROR_MESSAGE;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.DefaultRole;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -41,7 +42,7 @@ public class CreateInitialAdminUserTest {
     final var username = UUID.randomUUID().toString();
 
     // when
-    final var createdUser =
+    final var createdAdminUser =
         engine
             .user()
             .newInitialAdminUser(username)
@@ -52,13 +53,20 @@ public class CreateInitialAdminUserTest {
             .getValue();
 
     // then
-    assertThat(createdUser)
-        .describedAs("Has created the user with the given properties")
+    assertThat(createdAdminUser)
         .hasUsername(username)
         .hasName("name")
         .hasEmail("email")
         .hasPassword("password");
-
+    assertThat(
+            RecordingExporter.userRecords(UserIntent.CREATED)
+                .withUsername(username)
+                .getFirst()
+                .getValue())
+        .hasUsername(username)
+        .hasName("name")
+        .hasEmail("email")
+        .hasPassword("password");
     Assertions.assertThat(
             RecordingExporter.roleRecords(RoleIntent.ADD_ENTITY)
                 .withRoleId(adminRoleId)
@@ -97,7 +105,7 @@ public class CreateInitialAdminUserTest {
             .create();
 
     assertThat(rejection)
-        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(USER_ALREADY_EXISTS_ERROR_MESSAGE.formatted(username));
   }
 
@@ -118,7 +126,7 @@ public class CreateInitialAdminUserTest {
             .create();
 
     assertThat(rejection)
-        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
             ADMIN_ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(DefaultRole.ADMIN.getId()));
   }
@@ -155,7 +163,7 @@ public class CreateInitialAdminUserTest {
             .create();
 
     assertThat(rejection)
-        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(ADMIN_ROLE_HAS_USERS_ERROR_MESSAGE.formatted(adminRoleId));
   }
 }
