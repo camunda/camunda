@@ -21,7 +21,11 @@ import io.camunda.migration.identity.console.ConsoleClient.Permission;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -143,5 +147,32 @@ public class ClientMigrationHandlerTest {
                     PermissionType.READ_PROCESS_DEFINITION,
                     PermissionType.READ_USER_TASK,
                     PermissionType.UPDATE_USER_TASK)));
+  }
+
+  @Test
+  public void shouldIgnoreExistingAuthorization() {
+    // given
+    when(authorizationServices.createAuthorization(any(CreateAuthorizationRequest.class)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new BrokerRejectionException(
+                    new BrokerRejection(
+                        AuthorizationIntent.CREATE,
+                        -1,
+                        RejectionType.ALREADY_EXISTS,
+                        "authorization already exists"))));
+    final var members =
+        new Members(
+            List.of(),
+            List.of(
+                new Client("client", "client-id", List.of(Permission.ZEEBE, Permission.OPERATE)),
+                new Client("tasklist-client", "tasklist-client-id", List.of(Permission.TASKLIST))));
+    when(consoleClient.fetchMembers()).thenReturn(members);
+
+    // when
+    migrationHandler.migrate();
+
+    // then
+    verify(authorizationServices, times(9)).createAuthorization(any());
   }
 }

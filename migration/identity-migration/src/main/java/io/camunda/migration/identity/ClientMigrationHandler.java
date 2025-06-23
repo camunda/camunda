@@ -63,18 +63,18 @@ public class ClientMigrationHandler extends MigrationHandler<Members> {
       logger.debug("No permissions to migrate for client: {}", clientId);
       return;
     }
-    try {
-      for (final CreateAuthorizationRequest request : combinedPermissions) {
+    for (final CreateAuthorizationRequest request : combinedPermissions) {
+      try {
         authorizationServices.createAuthorization(request).join();
         logger.debug(
             "Migrated client permission with owner ID: {} and resource type: {}",
             request.ownerId(),
             request.resourceType());
-      }
-    } catch (final Exception e) {
-      if (!isConflictError(e)) {
-        throw new MigrationException(
-            String.format("Failed to migrate client permissions for client ID: %s", clientId), e);
+      } catch (final Exception e) {
+        if (!isConflictError(e)) {
+          throw new MigrationException(
+              String.format("Failed to migrate client permissions for client ID: %s", clientId), e);
+        }
       }
     }
   }
