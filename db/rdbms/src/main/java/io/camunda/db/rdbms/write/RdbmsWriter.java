@@ -104,7 +104,7 @@ public class RdbmsWriter {
     userTaskWriter = new UserTaskWriter(executionQueue, userTaskMapper);
     formWriter = new FormWriter(executionQueue);
     mappingWriter = new MappingWriter(executionQueue);
-    batchOperationWriter = new BatchOperationWriter(batchOperationReader, executionQueue);
+    batchOperationWriter = new BatchOperationWriter(batchOperationReader, executionQueue, config);
     jobWriter = new JobWriter(executionQueue, jobMapper);
     sequenceFlowWriter = new SequenceFlowWriter(executionQueue, sequenceFlowMapper);
 
