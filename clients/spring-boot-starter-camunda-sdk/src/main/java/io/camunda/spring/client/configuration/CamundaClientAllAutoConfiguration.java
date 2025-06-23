@@ -31,7 +31,9 @@ import io.camunda.spring.client.jobhandling.JobExceptionHandlingStrategy;
 import io.camunda.spring.client.jobhandling.JobWorkerManager;
 import io.camunda.spring.client.jobhandling.parameter.DefaultParameterResolverStrategy;
 import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy;
+import io.camunda.spring.client.jobhandling.result.DefaultDocumentResultProcessorFailureHandlingStrategy;
 import io.camunda.spring.client.jobhandling.result.DefaultResultProcessorStrategy;
+import io.camunda.spring.client.jobhandling.result.DocumentResultProcessorFailureHandlingStrategy;
 import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy;
 import io.camunda.spring.client.metrics.MetricsRecorder;
 import io.camunda.spring.client.properties.CamundaClientProperties;
@@ -83,8 +85,19 @@ public class CamundaClientAllAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean
-  public ResultProcessorStrategy resultProcessorStrategy(final JobClient jobClient) {
-    return new DefaultResultProcessorStrategy(jobClient);
+  public DocumentResultProcessorFailureHandlingStrategy
+      documentResultProcessorFailureHandlingStrategy() {
+    return new DefaultDocumentResultProcessorFailureHandlingStrategy();
+  }
+
+  @Bean
+  @ConditionalOnMissingBean
+  public ResultProcessorStrategy resultProcessorStrategy(
+      final JobClient jobClient,
+      final DocumentResultProcessorFailureHandlingStrategy
+          documentResultProcessorFailureHandlingStrategy) {
+    return new DefaultResultProcessorStrategy(
+        jobClient, documentResultProcessorFailureHandlingStrategy);
   }
 
   @Bean
