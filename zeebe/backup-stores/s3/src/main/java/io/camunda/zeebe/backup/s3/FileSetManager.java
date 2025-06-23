@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Semaphore;
+import java.util.function.Supplier;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.compress.utils.IOUtils;
@@ -43,7 +44,8 @@ final class FileSetManager {
 
   private final S3AsyncClient client;
   private final S3BackupConfig config;
-  private final Semaphore uploadLimit;
+  private final Semaphore concurrencyLimit;
+  private final Thread.Builder threadBuilder;
 
   public FileSetManager(final S3AsyncClient client, final S3BackupConfig config) {
     this.client = client;
@@ -53,7 +55,8 @@ final class FileSetManager {
     // concurrent uploads to half of the number of available connections.
     // This should prevent ConnectionAcquisitionTimeout for backups with many and/or large files
     // where we would otherwise occupy all connections, preventing some uploads from starting.
-    uploadLimit = new Semaphore(Math.max(1, config.maxConcurrentConnections() / 2));
+    concurrencyLimit = new Semaphore(Math.max(1, config.maxConcurrentConnections() / 2));
+    threadBuilder = Thread.ofVirtual().name("zeebe-backup-", 0);
   }
 
   CompletableFuture<FileSet> save(final String prefix, final NamedFileSet files) {
@@ -61,42 +64,53 @@ final class FileSetManager {
     return CompletableFutureUtils.mapAsync(
             files.namedFiles().entrySet(),
             Entry::getKey,
-            namedFile -> saveFile(prefix, namedFile.getKey(), namedFile.getValue()))
+            namedFile -> schedule(() -> saveFile(prefix, namedFile.getKey(), namedFile.getValue())))
         .thenApply(FileSet::new);
   }
 
-  private CompletableFuture<FileSet.FileMetadata> saveFile(
-      final String prefix, final String fileName, final Path filePath) {
+  /** Schedules a task to be executed asynchronously, respecting the concurrency limit. */
+  private <T> CompletableFuture<T> schedule(final Supplier<T> task) {
+    final var result = new CompletableFuture<T>();
+    threadBuilder.start(
+        () -> {
+          try {
+            concurrencyLimit.acquire();
+            result.complete(task.get());
+          } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOG.warn("Backup operation failed due to interruption", e);
+            result.completeExceptionally(e);
+          } catch (final Exception e) {
+            result.completeExceptionally(e);
+          } finally {
+            concurrencyLimit.release();
+          }
+        });
+    return result;
+  }
 
+  private FileSet.FileMetadata saveFile(
+      final String prefix, final String fileName, final Path filePath) {
     if (shouldCompressFile(filePath)) {
       final var algorithm = config.compressionAlgorithm().orElseThrow();
-      return CompletableFuture.runAsync(uploadLimit::acquireUninterruptibly)
-          .thenApply((success) -> compressFile(filePath, algorithm))
-          .thenCompose(
-              (compressedFile) -> {
-                LOG.trace(
-                    "Saving compressed file {}({}) in prefix {}", fileName, compressedFile, prefix);
-                return client
-                    .putObject(
-                        put -> put.bucket(config.bucketName()).key(prefix + fileName),
-                        AsyncRequestBody.fromFile(compressedFile))
-                    .thenRunAsync(() -> cleanupCompressedFile(compressedFile))
-                    .thenApply(unused -> FileSet.FileMetadata.withCompression(algorithm));
-              })
-          .whenComplete((success, error) -> uploadLimit.release());
+      final var compressedFile = compressFile(filePath, algorithm);
+      LOG.trace("Saving compressed file {}({}) in prefix {}", fileName, compressedFile, prefix);
+      client
+          .putObject(
+              put -> put.bucket(config.bucketName()).key(prefix + fileName),
+              AsyncRequestBody.fromFile(compressedFile))
+          .join();
+      cleanupCompressedFile(compressedFile);
+      return FileSet.FileMetadata.withCompression(algorithm);
+    } else {
+      LOG.trace("Saving file {}({}) in prefix {}", fileName, filePath, prefix);
+      client
+          .putObject(
+              put -> put.bucket(config.bucketName()).key(prefix + fileName),
+              AsyncRequestBody.fromFile(filePath))
+          .join();
+      return FileSet.FileMetadata.none();
     }
-
-    return CompletableFuture.runAsync(uploadLimit::acquireUninterruptibly)
-        .thenCompose(
-            (nothing) -> {
-              LOG.trace("Saving file {}({}) in prefix {}", fileName, filePath, prefix);
-              return client
-                  .putObject(
-                      put -> put.bucket(config.bucketName()).key(prefix + fileName),
-                      AsyncRequestBody.fromFile(filePath))
-                  .thenApply(unused -> FileSet.FileMetadata.none());
-            })
-        .whenComplete((success, error) -> uploadLimit.release());
   }
 
   private void cleanupCompressedFile(final Path compressedFile) {
@@ -154,11 +168,14 @@ final class FileSetManager {
             fileSet.files().entrySet(),
             Entry::getKey,
             namedFile ->
-                restoreFile(sourcePrefix, targetFolder, namedFile.getKey(), namedFile.getValue()))
+                schedule(
+                    () ->
+                        restoreFile(
+                            sourcePrefix, targetFolder, namedFile.getKey(), namedFile.getValue())))
         .thenApply(NamedFileSetImpl::new);
   }
 
-  private CompletableFuture<Path> restoreFile(
+  private Path restoreFile(
       final String sourcePrefix,
       final Path targetFolder,
       final String fileName,
@@ -173,7 +190,7 @@ final class FileSetManager {
           targetFolder);
       try {
         final var compressed = Files.createTempFile(TMP_DECOMPRESSION_PREFIX, null);
-        return client
+        client
             .getObject(
                 req -> req.bucket(config.bucketName()).key(sourcePrefix + fileName),
                 AsyncResponseTransformer.toFile(
@@ -181,9 +198,9 @@ final class FileSetManager {
                     cfg ->
                         cfg.fileWriteOption(FileWriteOption.CREATE_OR_REPLACE_EXISTING)
                             .failureBehavior(FailureBehavior.DELETE)))
-            .thenApplyAsync(
-                response -> decompressFile(compressed, decompressed, compressionAlgorithm.get()));
-
+            .join();
+        decompressFile(compressed, decompressed, compressionAlgorithm.get());
+        return decompressed;
       } catch (final IOException e) {
         throw new UncheckedIOException(e);
       }
@@ -191,9 +208,10 @@ final class FileSetManager {
 
     LOG.trace("Restoring file {} from prefix {} to {}", fileName, sourcePrefix, targetFolder);
     final var path = targetFolder.resolve(fileName);
-    return client
+    client
         .getObject(req -> req.bucket(config.bucketName()).key(sourcePrefix + fileName), path)
-        .thenApply(response -> path);
+        .join();
+    return path;
   }
 
   private Path decompressFile(
