@@ -119,7 +119,10 @@ public class AuthorizationServices
                         .page(p -> p.size(1))))
         .items()
         .stream()
-        .map(AuthorizationEntity::resourceId)
+        .map(
+            authorizationEntity -> {
+              return authorizationEntity.resourceId();
+            })
         .collect(Collectors.toList());
   }
 

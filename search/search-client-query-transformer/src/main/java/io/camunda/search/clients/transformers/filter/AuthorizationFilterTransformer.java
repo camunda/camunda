@@ -21,9 +21,6 @@ import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.RES
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import io.camunda.zeebe.protocol.record.value.EntityType;
-import java.util.Map;
-import java.util.Set;
 
 public final class AuthorizationFilterTransformer
     extends IndexFilterTransformer<AuthorizationFilter> {
@@ -35,30 +32,35 @@ public final class AuthorizationFilterTransformer
   @Override
   public SearchQuery toSearchQuery(final AuthorizationFilter filter) {
     if (filter.ownerTypeToOwnerIds() != null && !filter.ownerTypeToOwnerIds().isEmpty()) {
-      return buildOwnerTypeToOwnerIdsQuery(filter.ownerTypeToOwnerIds());
+      return buildOwnerTypeToOwnerIdsQuery(filter);
     }
 
     return and(
-        filter.authorizationKey() == null ? null : term(ID, filter.authorizationKey()),
+        buildCoreFilters(filter),
         stringTerms(OWNER_ID, filter.ownerIds()),
-        filter.ownerType() == null ? null : term(OWNER_TYPE, filter.ownerType()),
+        filter.ownerType() == null ? null : term(OWNER_TYPE, filter.ownerType()));
+  }
+
+  private SearchQuery buildOwnerTypeToOwnerIdsQuery(final AuthorizationFilter filter) {
+    return or(
+        filter.ownerTypeToOwnerIds().entrySet().stream()
+            .map(
+                entry ->
+                    and(
+                        buildCoreFilters(filter),
+                        term(OWNER_TYPE, entry.getKey().name()),
+                        stringTerms(OWNER_ID, entry.getValue())))
+            .toList());
+  }
+
+  private SearchQuery buildCoreFilters(final AuthorizationFilter filter) {
+    return and(
+        filter.authorizationKey() == null ? null : term(ID, filter.authorizationKey()),
         stringTerms(RESOURCE_ID, filter.resourceIds()),
         filter.resourceType() == null ? null : term(RESOURCE_TYPE, filter.resourceType()),
         filter.permissionTypes() == null
             ? null
             : stringTerms(
                 PERMISSIONS_TYPES, filter.permissionTypes().stream().map(Enum::name).toList()));
-  }
-
-  private SearchQuery buildOwnerTypeToOwnerIdsQuery(
-      final Map<EntityType, Set<String>> ownerTypeToOwnerIds) {
-    return or(
-        ownerTypeToOwnerIds.entrySet().stream()
-            .map(
-                entry ->
-                    and(
-                        term(OWNER_TYPE, entry.getKey().name()),
-                        stringTerms(OWNER_ID, entry.getValue())))
-            .toList());
   }
 }
