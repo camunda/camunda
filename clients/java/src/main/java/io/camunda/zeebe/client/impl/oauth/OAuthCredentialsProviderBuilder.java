@@ -241,7 +241,17 @@ public final class OAuthCredentialsProviderBuilder {
   private void validate() {
     try {
       Objects.requireNonNull(clientId, String.format(INVALID_ARGUMENT_MSG, "client id"));
+<<<<<<< HEAD
       Objects.requireNonNull(clientSecret, String.format(INVALID_ARGUMENT_MSG, "client secret"));
+=======
+      if (sslClientCertConfigurationProvided()) {
+        // loading the certificate from the provided path to ensure it exists and is valid
+        final KeyStore keyStore = KeyStore.getInstance("PKCS12");
+        keyStore.load(
+            Files.newInputStream(Paths.get(sslClientCertPath.toAbsolutePath().toString())),
+            sslClientCertPassword.toCharArray());
+      }
+>>>>>>> 9d9e9b49 (fix: make ZEEBE_CLIENT_SECRET nullable)
       Objects.requireNonNull(audience, String.format(INVALID_ARGUMENT_MSG, "audience"));
       Objects.requireNonNull(
           authorizationServerUrl, String.format(INVALID_ARGUMENT_MSG, "authorization server URL"));
