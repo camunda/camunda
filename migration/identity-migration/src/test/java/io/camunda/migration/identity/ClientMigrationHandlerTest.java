@@ -18,7 +18,6 @@ import io.camunda.migration.identity.console.ConsoleClient;
 import io.camunda.migration.identity.console.ConsoleClient.Client;
 import io.camunda.migration.identity.console.ConsoleClient.Members;
 import io.camunda.migration.identity.console.ConsoleClient.Permission;
-import io.camunda.migration.identity.transformer.ClientMigrationHandler;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;

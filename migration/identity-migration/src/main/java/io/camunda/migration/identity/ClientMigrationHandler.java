@@ -5,14 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.identity.transformer;
+package io.camunda.migration.identity;
 
 import static io.camunda.migration.identity.config.saas.StaticEntities.getOperateClientPermissions;
 import static io.camunda.migration.identity.config.saas.StaticEntities.getTasklistClientPermissions;
 import static io.camunda.migration.identity.config.saas.StaticEntities.getZeebeClientPermissions;
 
 import io.camunda.migration.api.MigrationException;
-import io.camunda.migration.identity.MigrationHandler;
 import io.camunda.migration.identity.console.ConsoleClient;
 import io.camunda.migration.identity.console.ConsoleClient.Client;
 import io.camunda.migration.identity.console.ConsoleClient.Members;
