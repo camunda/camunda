@@ -19,13 +19,13 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
 
-public class VariableResolver implements ParameterResolver {
+public class VariableParameterResolver implements ParameterResolver {
   private final String variableName;
   private final Class<?> variableType;
   private final JsonMapper jsonMapper;
   private final boolean optional;
 
-  public VariableResolver(
+  public VariableParameterResolver(
       final String variableName,
       final Class<?> variableType,
       final JsonMapper jsonMapper,
