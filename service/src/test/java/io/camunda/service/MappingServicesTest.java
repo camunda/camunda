@@ -102,7 +102,7 @@ public class MappingServicesTest {
   public void shouldReturnSingleVariable() {
     // given
     final var entity = mock(MappingEntity.class);
-    final var result = new SearchQueryResult<>(1, List.of(entity), null, null);
+    final var result = new SearchQueryResult<>(1, false, List.of(entity), null, null);
     when(client.searchMappings(any())).thenReturn(result);
   }
 
@@ -110,7 +110,7 @@ public class MappingServicesTest {
   public void shouldReturnSingleVariableForFind() {
     // given
     final var entity = mock(MappingEntity.class);
-    final var result = new SearchQueryResult<>(1, List.of(entity), null, null);
+    final var result = new SearchQueryResult<>(1, false, List.of(entity), null, null);
     when(client.searchMappings(any())).thenReturn(result);
 
     // when
@@ -123,7 +123,7 @@ public class MappingServicesTest {
   @Test
   public void shouldReturnEmptyWhenNotFoundByFind() {
     // given
-    when(client.searchMappings(any())).thenReturn(new SearchQueryResult(0, List.of(), null, null));
+    when(client.searchMappings(any())).thenReturn(new SearchQueryResult(0, false, List.of(), null, null));
 
     // when / then
     assertThat(services.findMapping("mappingId")).isEmpty();
@@ -132,7 +132,7 @@ public class MappingServicesTest {
   @Test
   public void shouldThrowExceptionWhenNotFoundByGet() {
     // given
-    when(client.searchMappings(any())).thenReturn(new SearchQueryResult(0, List.of(), null, null));
+    when(client.searchMappings(any())).thenReturn(new SearchQueryResult(0, false, List.of(), null, null));
 
     // when / then
     final var exception =
