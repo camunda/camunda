@@ -7,7 +7,7 @@
  */
 
 import React, { useState } from "react";
-import { Button, PasswordInput, TextInput } from "@carbon/react";
+import { PasswordInput, TextInput } from "@carbon/react";
 import { UserAdmin } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import CamundaLogo from "src/assets/images/camunda.svg";
@@ -18,6 +18,7 @@ import {
   Header,
   PageTitle,
   InlineNotification,
+  Button,
 } from "src/pages/setup/styled.ts";
 import Divider from "src/components/form/Divider";
 import { createAdminUser } from "src/utility/api/setup";

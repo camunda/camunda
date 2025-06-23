@@ -10,6 +10,7 @@ import styled from "styled-components";
 import {
   Stack,
   InlineNotification as BaseInlineNotification,
+  Button as BaseButton,
 } from "@carbon/react";
 import { spacing06, spacing07 } from "@carbon/elements";
 import Page from "src/components/layout/Page.tsx";
@@ -21,11 +22,6 @@ export const SetupFormContainer = styled(Stack)<{ $hasError: boolean }>`
   gap: ${spacing06};
   width: 100%;
   padding-top: ${({ $hasError }) => ($hasError ? 0 : spacing06)};
-
-  > button {
-    max-inline-size: unset;
-    width: 100%;
-  }
 `;
 
 export const SetupPageContainer = styled(Page)`
@@ -65,4 +61,8 @@ export const Header = styled.div`
 
 export const InlineNotification = styled(BaseInlineNotification)`
   margin-top: ${spacing06};
+`;
+
+export const Button: typeof BaseButton = styled(BaseButton)`
+  min-width: 100%;
 `;
