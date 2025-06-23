@@ -8,6 +8,7 @@
 package io.camunda.search.os.clients;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -15,6 +16,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchIndexRequest;
 import io.camunda.search.clients.core.SearchQueryRequest;
+import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.core.SearchWriteResponse;
 import io.camunda.search.os.transformers.OpensearchTransformers;
 import java.io.IOException;
@@ -35,6 +37,10 @@ import org.opensearch.client.opensearch.core.search.TotalHitsRelation;
 
 public class OpensearchDataStoreClientTest {
 
+  private final static long TEST_HITS = 789;
+  private final static TotalHitsRelation HITS_RELATION = TotalHitsRelation.Eq;
+  private final static long CAPPED_HITS = 10_000;
+  private final static TotalHitsRelation CAPPED_HITS_RELATION = TotalHitsRelation.Gte;
   private OpenSearchClient client;
   private OpensearchSearchClient searchClient;
 
@@ -48,7 +54,7 @@ public class OpensearchDataStoreClientTest {
   public void shouldTransformSearchRequest() throws IOException {
     // given
     final var searchRequestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
-    final var searchResponse = createDefaultSearchResponse();
+    final var searchResponse = createDefaultSearchResponse(TEST_HITS, HITS_RELATION);
     when(client.search(searchRequestCaptor.capture(), eq(TestDocument.class)))
         .thenReturn(searchResponse);
 
@@ -66,7 +72,7 @@ public class OpensearchDataStoreClientTest {
   public void shouldTransformSearchResponse() throws IOException {
     // given
     final var searchRequestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
-    final var searchResponse = createDefaultSearchResponse();
+    final var searchResponse = createDefaultSearchResponse(TEST_HITS, HITS_RELATION);
     when(client.search(searchRequestCaptor.capture(), eq(TestDocument.class)))
         .thenReturn(searchResponse);
 
@@ -163,7 +169,46 @@ public class OpensearchDataStoreClientTest {
     assertThat(response.result()).isEqualTo(SearchWriteResponse.Result.CREATED);
   }
 
-  private SearchResponse<TestDocument> createDefaultSearchResponse() {
+  @Test
+  public void shouldHasMoreFieldFalse() throws IOException {
+    // given
+    final var searchRequestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
+    final var searchResponse = createDefaultSearchResponse(TEST_HITS, HITS_RELATION);
+    when(client.search(searchRequestCaptor.capture(), eq(TestDocument.class)))
+        .thenReturn(searchResponse);
+
+    final SearchQueryRequest request =
+        SearchQueryRequest.of(b -> b.index("operate-list-view-8.3.0_").size(1));
+
+    // when
+    final SearchQueryResponse<TestDocument> response = searchClient.search(request,
+        TestDocument.class);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.hasMore()).isFalse();
+  }
+
+  @Test
+  public void shouldHasMoreFieldTrue() throws IOException {
+    // given
+    final var searchResponse = createDefaultSearchResponse(CAPPED_HITS, CAPPED_HITS_RELATION);
+    when(client.search((SearchRequest) any(), eq(TestDocument.class))).thenReturn(searchResponse);
+
+    final SearchQueryRequest request =
+        SearchQueryRequest.of(b -> b.index("operate-list-view-8.3.0_").size(1));
+
+    // when
+    final SearchQueryResponse<TestDocument> response = searchClient.search(request,
+        TestDocument.class);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.hasMore()).isTrue();
+  }
+
+  private SearchResponse<TestDocument> createDefaultSearchResponse(long totalHits,
+      TotalHitsRelation totalHitsRelation) {
     return SearchResponse.searchResponseOf(
         (f) ->
             f.took(122)
@@ -171,7 +216,7 @@ public class OpensearchDataStoreClientTest {
                     HitsMetadata.of(
                         (m) ->
                             m.hits(new ArrayList<>())
-                                .total((t) -> t.value(789).relation(TotalHitsRelation.Eq))))
+                                .total((t) -> t.value(totalHits).relation(totalHitsRelation))))
                 .shards((s) -> s.failed(0).successful(100).total(100))
                 .timedOut(false));
   }
