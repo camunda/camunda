@@ -13,10 +13,13 @@ import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
+import io.camunda.unifiedconfig.UnifiedConfiguration;
+import io.camunda.unifiedconfig.UnifiedConfigurationHelper;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.SystemContext;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.FileUtil;
@@ -105,12 +108,18 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     }
   }
 
+  @Autowired
+  UnifiedConfiguration unifiedConfiguration;
+
   @Bean(destroyMethod = "close")
   public Broker broker(final ExporterRepository exporterRepository) {
+    BrokerCfg brokerCfg = configuration.config();
+    UnifiedConfigurationHelper.populateBrokerCfg(unifiedConfiguration, brokerCfg);
+
     final SystemContext systemContext =
         new SystemContext(
             configuration.shutdownTimeout(),
-            configuration.config(),
+            brokerCfg,
             identityConfiguration,
             actorScheduler,
             cluster,

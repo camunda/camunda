@@ -26,6 +26,7 @@ import io.camunda.tasklist.property.SslProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.RetryOperation;
 import io.camunda.zeebe.util.VisibleForTesting;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;

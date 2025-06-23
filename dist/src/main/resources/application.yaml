@@ -1,0 +1,6 @@
+camunda:
+  data:
+    database:
+      elasticsearch:
+        url: http://next-random-url
+        indexPrefix: 'ourprefix'

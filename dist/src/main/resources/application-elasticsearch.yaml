@@ -177,8 +177,6 @@ camunda:
     elasticsearch:
       # Cluster name
       clusterName: elasticsearch
-      # URL
-      url: http://localhost:9200
     # Zeebe instance
     zeebe:
       # Gateway address
