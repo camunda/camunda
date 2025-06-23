@@ -72,17 +72,17 @@ public class DefaultParameterResolverStrategy implements ParameterResolverStrate
       final VariableValue variableValue = getVariableValue(parameterInfo).get();
       final String variableName = variableValue.getName();
       final boolean optional = variableValue.isOptional();
-      return new VariableResolver(variableName, parameterType, jsonMapper, optional);
+      return new VariableParameterResolver(variableName, parameterType, jsonMapper, optional);
     } else if (isVariablesAsType(parameterInfo)) {
-      return new VariablesAsTypeResolver(parameterType);
+      return new VariablesAsTypeParameterResolver(parameterType);
     } else if (isCustomHeaders(parameterInfo)) {
-      return new CustomHeadersResolver();
+      return new CustomHeadersParameterResolver();
     } else if (isDocument(parameterInfo)) {
       final DocumentValue documentValue = getDocumentValue(parameterInfo).get();
       final String variableName = documentValue.getName();
       final boolean optional = documentValue.isOptional();
       final ParameterType documentParameterType = documentValue.getParameterType();
-      return new DocumentResolver(variableName, optional, documentParameterType);
+      return new DocumentParameterResolver(variableName, optional, documentParameterType);
     }
     throw new IllegalStateException(
         "Could not create parameter resolver for parameter " + parameterInfo);

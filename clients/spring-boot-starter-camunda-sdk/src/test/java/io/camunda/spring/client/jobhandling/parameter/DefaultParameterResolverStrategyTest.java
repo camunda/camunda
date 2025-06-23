@@ -66,7 +66,7 @@ public class DefaultParameterResolverStrategyTest {
     final List<ParameterInfo> parameters = parameterInfos(this, "documentMethod");
     assertThat(parameters).hasSize(1);
     final ParameterResolver parameterResolver = strategy.createResolver(parameters.get(0));
-    assertThat(parameterResolver).isInstanceOf(DocumentResolver.class);
+    assertThat(parameterResolver).isInstanceOf(DocumentParameterResolver.class);
   }
 
   public void legacyMethod(
