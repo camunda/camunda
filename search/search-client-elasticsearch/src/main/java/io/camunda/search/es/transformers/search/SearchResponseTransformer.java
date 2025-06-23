@@ -11,6 +11,7 @@ import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.TotalHits;
+import co.elastic.clients.elasticsearch.core.search.TotalHitsRelation;
 import io.camunda.search.clients.core.AggregationResult;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryResponse;
@@ -20,6 +21,7 @@ import io.camunda.search.es.transformers.aggregator.SearchAggregationResultTrans
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public final class SearchResponseTransformer<T>
@@ -37,13 +39,14 @@ public final class SearchResponseTransformer<T>
 
     final var total = hits.total();
     final var totalHits = of(total);
+    final var hasMore = Objects.nonNull(total) && total.relation() == TotalHitsRelation.Gte;
 
     final var sourceHits = hits.hits();
     final var transformedHits = of(sourceHits);
     final var transformedAggregations = of(aggregations);
 
     return new SearchQueryResponse.Builder<T>()
-        .totalHits(totalHits)
+        .totalHits(totalHits, hasMore)
         .scrollId(scrollId)
         .hits(transformedHits)
         .aggregations(transformedAggregations)
