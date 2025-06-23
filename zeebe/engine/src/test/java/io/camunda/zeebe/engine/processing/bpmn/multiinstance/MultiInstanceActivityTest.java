@@ -1478,11 +1478,11 @@ public final class MultiInstanceActivityTest {
             .withScopeKey(processInstanceKey)
             .limit(10); // Limit to avoid infinite stream if bug causes many updates
 
-    // With the new targeted fix, output mappings are still applied twice for elements that have them
-    // (to ensure correct timing), but this is expected behavior for the fix of issue #23658.
-    // The key test is that we get the correct final result without excessive duplication.
+    // With the targeted fix, the multi-instance element has output mappings, so output mappings 
+    // are still applied twice for each iteration (to ensure correct timing for issue #23658).
+    // The key test is that we get the correct final result.
     assertThat(outputMappingUpdates)
-        .hasSize(7) // initial + 3*2 iterations (but this is expected for output mapping elements)
+        .hasSize(7) // initial + 3*2 iterations (expected for elements with output mappings)
         .extracting(r -> r.getValue().getValue())
         .containsExactly(
             "[null,null,null]", "[null,null,null]", "[11,null,null]", "[11,null,null]", 
@@ -1524,6 +1524,59 @@ public final class MultiInstanceActivityTest {
         .hasSize(4)
         .extracting(r -> r.getValue().getValue())
         .containsExactly("[null,null,null]", "[11,null,null]", "[11,22,null]", "[11,22,33]");
+  }
+
+  @Test
+  public void shouldNotDuplicateOutputsForMultiInstanceSubprocessWithOutputMapping() {
+    // given - regression test for user reported issue #32318 
+    // This reproduces the exact scenario: multi-instance subprocess with output mapping on the subprocess element
+    final var process = Bpmn.createExecutableProcess(PROCESS_ID)
+        .startEvent()
+        .scriptTask("setup")
+        .zeebeExpression("testB = []; documents = [{\"number\": \"01\"}]")
+        .subProcess("miSubprocess")
+        .multiInstance()
+        .zeebeInputCollectionExpression("documents") 
+        .zeebeInputElement("document")
+        .sequential()
+        .multiInstanceDone()
+        .zeebeOutputExpression("append(testB, {\"docNumber\": document.number, \"loopCounter\": loopCounter})", "testB")
+        .embeddedSubProcess()
+        .startEvent()
+        .scriptTask("innerTask")
+        .zeebeExpression("document.number") // Just access the document to use the variable
+        .endEvent()
+        .subProcessDone()
+        .endEvent()
+        .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .create();
+
+    // then - process should complete successfully
+    assertThat(
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.PROCESS)
+            .exists())
+        .isTrue();
+
+    // testB should contain exactly one element (no duplication)
+    final var testBFinalValue = RecordingExporter.variableRecords()
+        .withProcessInstanceKey(processInstanceKey) 
+        .withName("testB")
+        .withScopeKey(processInstanceKey)
+        .getLast();
+
+    assertThat(testBFinalValue.getValue().getValue())
+        .describedAs("testB should contain exactly one element, proving no duplication occurred")
+        .isEqualTo("[{\"docNumber\":\"01\",\"loopCounter\":1}]");
   }
 
   @Test

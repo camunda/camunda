@@ -180,12 +180,11 @@ public final class MultiInstanceBodyProcessor
       return updatedOrFailure;
     }
 
-    // Apply output mappings after updating the output collection, but only if the inner activity
+    // Apply output mappings after updating the output collection, but only if the multi-instance element
     // has output mappings. This ensures that output mappings see the updated collection values
-    // while avoiding duplicate execution when no output mappings exist.
-    final var innerActivity = element.getInnerActivity();
-    if (innerActivity.getOutputMappings().isPresent()) {
-      final var outputMappingResult = variableMappingBehavior.applyOutputMappings(childContext, innerActivity);
+    // while avoiding duplicate execution when no output mappings exist on the multi-instance element.
+    if (element.getOutputMappings().isPresent()) {
+      final var outputMappingResult = variableMappingBehavior.applyOutputMappings(childContext, element);
       if (outputMappingResult.isLeft()) {
         return outputMappingResult;
       }
