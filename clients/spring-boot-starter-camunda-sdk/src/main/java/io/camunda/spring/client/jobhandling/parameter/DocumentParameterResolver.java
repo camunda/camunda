@@ -15,7 +15,10 @@
  */
 package io.camunda.spring.client.jobhandling.parameter;
 
-import io.camunda.client.DocumentUtil;
+import static java.util.Optional.ofNullable;
+
+import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.command.InternalClientException;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.api.worker.JobClient;
@@ -24,13 +27,13 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DocumentResolver implements ParameterResolver {
-  private static final Logger LOG = LoggerFactory.getLogger(DocumentResolver.class);
+public class DocumentParameterResolver implements ParameterResolver {
+  private static final Logger LOG = LoggerFactory.getLogger(DocumentParameterResolver.class);
   private final String variableName;
   private final boolean optional;
   private final ParameterType parameterType;
 
-  public DocumentResolver(
+  public DocumentParameterResolver(
       final String variableName, final boolean optional, final ParameterType parameterType) {
     this.variableName = variableName;
     this.optional = optional;
@@ -39,21 +42,8 @@ public class DocumentResolver implements ParameterResolver {
 
   @Override
   public Object resolve(final JobClient jobClient, final ActivatedJob job) {
-    LOG.debug("Resolving documents for reference {}", variableName);
-    final Object variableValue = getVariable(job);
-    if (variableValue == null) {
-      if (optional) {
-        LOG.debug(
-            "No documents found for reference {} and they are optional, returning null",
-            variableName);
-        return null;
-      } else {
-        throw new IllegalStateException(
-            "Document reference " + variableName + " is mandatory, but no value was found");
-      }
-    }
-    final List<DocumentReferenceResponse> documentReferences =
-        DocumentUtil.createDocumentContext(jobClient, variableValue);
+    LOG.debug("Resolving document references for variable {}", variableName);
+    final List<DocumentReferenceResponse> documentReferences = getDocumentReferences(job);
     return switch (parameterType) {
       case LIST -> documentReferences;
       case CONTEXT -> new ParameterDocumentContext(documentReferences, jobClient, optional);
@@ -64,11 +54,19 @@ public class DocumentResolver implements ParameterResolver {
   private DocumentReferenceResponse singleDocumentReference(
       final List<DocumentReferenceResponse> documentReferences) {
     if (optional) {
-      return documentReferences.stream().findFirst().orElse(null);
+      return documentReferences.stream()
+          .findFirst()
+          .orElseGet(
+              () -> {
+                LOG.debug("Variable {} contains empty list of document references", variableName);
+                return null;
+              });
     } else {
       if (documentReferences.isEmpty()) {
         throw new IllegalStateException(
-            "No document references available for variable " + variableName);
+            String.format(
+                "Variable %s contains empty list of document references and parameter is not optional",
+                variableName));
       } else if (documentReferences.size() > 1) {
         LOG.warn(
             "Multiple document references for variable {}, returning only first", variableName);
@@ -77,7 +75,24 @@ public class DocumentResolver implements ParameterResolver {
     }
   }
 
-  protected Object getVariable(final ActivatedJob job) {
-    return job.getVariablesAsMap().get(variableName);
+  protected List<DocumentReferenceResponse> getDocumentReferences(final ActivatedJob job) {
+    try {
+      return ofNullable(job.getDocumentReferences(variableName))
+          .orElseThrow(
+              () -> new InternalClientException("Document reference variable value is null"));
+    } catch (final ClientException e) {
+      if (!optional) {
+        throw new IllegalStateException(
+            String.format("Could not get document references for variable %s", variableName), e);
+      }
+      if (LOG.isDebugEnabled()) {
+        LOG.warn("Could not get document references for variable {}", variableName, e);
+      } else {
+        LOG.warn(
+            "Could not get document references for variable {}, please enable debug log for more details",
+            variableName);
+      }
+      return List.of();
+    }
   }
 }
