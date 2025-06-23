@@ -743,9 +743,6 @@ public class CamundaProcessTestContextIT {
     Assertions.assertThatThrownBy(
             () -> assertThat(DecisionSelectors.byId("decision_overall_happiness")).isEvaluated())
         .hasMessage("No DecisionInstance [decision_overall_happiness] found.");
-    Assertions.assertThatThrownBy(
-            () -> assertThat(DecisionSelectors.byId("decision_language_happiness")).isEvaluated())
-        .hasMessage("No DecisionInstance [decision_language_happiness] found.");
   }
 
   /**

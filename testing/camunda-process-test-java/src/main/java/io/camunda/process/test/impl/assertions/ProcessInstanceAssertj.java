@@ -245,14 +245,33 @@ public class ProcessInstanceAssertj
   }
 
   @Override
+  public ProcessInstanceAssert hasLocalVariableNames(final String... variableNames) {
+    variableAssertj.hasLocalVariableNames(getProcessInstanceKey(), variableNames);
+    return this;
+  }
+
+  @Override
   public ProcessInstanceAssert hasVariable(final String variableName, final Object variableValue) {
     variableAssertj.hasVariable(getProcessInstanceKey(), variableName, variableValue);
     return this;
   }
 
   @Override
+  public ProcessInstanceAssert hasLocalVariable(
+      final String variableName, final Object variableValue) {
+    variableAssertj.hasLocalVariable(getProcessInstanceKey(), variableName, variableValue);
+    return this;
+  }
+
+  @Override
   public ProcessInstanceAssert hasVariables(final Map<String, Object> variables) {
     variableAssertj.hasVariables(getProcessInstanceKey(), variables);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariables(final Map<String, Object> variables) {
+    variableAssertj.hasLocalVariables(getProcessInstanceKey(), variables);
     return this;
   }
 

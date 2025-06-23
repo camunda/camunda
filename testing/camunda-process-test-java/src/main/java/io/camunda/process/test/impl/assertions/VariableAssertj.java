@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.impl.assertions.util.AssertionJsonMapper;
 import java.util.Arrays;
 import java.util.Collections;
@@ -29,6 +30,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
 import org.awaitility.Awaitility;
@@ -44,7 +46,17 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     this.dataSource = dataSource;
   }
 
+  public void hasLocalVariableNames(final long processInstanceKey, final String... variableNames) {
+    hasVariableNames(() -> getAllProcessInstanceVariables(processInstanceKey), variableNames);
+  }
+
   public void hasVariableNames(final long processInstanceKey, final String... variableNames) {
+    hasVariableNames(() -> getGlobalProcessInstanceVariables(processInstanceKey), variableNames);
+  }
+
+  private void hasVariableNames(
+      final Supplier<Map<String, String>> actualVariablesSupplier, final String... variableNames) {
+
     final AtomicReference<Map<String, String>> reference =
         new AtomicReference<>(Collections.emptyMap());
 
@@ -52,8 +64,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       Awaitility.await()
           .untilAsserted(
               () -> {
-                final Map<String, String> variables =
-                    getProcessInstanceVariables(processInstanceKey);
+                final Map<String, String> variables = actualVariablesSupplier.get();
                 reference.set(variables);
 
                 assertThat(variables).containsKeys(variableNames);
@@ -78,8 +89,24 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     }
   }
 
+  public void hasLocalVariable(
+      final long processInstanceKey, final String variableName, final Object variableValue) {
+
+    hasVariable(
+        variableName, variableValue, () -> getAllProcessInstanceVariables(processInstanceKey));
+  }
+
   public void hasVariable(
       final long processInstanceKey, final String variableName, final Object variableValue) {
+
+    hasVariable(
+        variableName, variableValue, () -> getGlobalProcessInstanceVariables(processInstanceKey));
+  }
+
+  private void hasVariable(
+      final String variableName,
+      final Object variableValue,
+      final Supplier<Map<String, String>> actualVariablesSupplier) {
     final JsonNode expectedValue = AssertionJsonMapper.toJson(variableValue);
 
     final AtomicReference<Map<String, String>> reference =
@@ -89,8 +116,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       Awaitility.await()
           .untilAsserted(
               () -> {
-                final Map<String, String> variables =
-                    getProcessInstanceVariables(processInstanceKey);
+                final Map<String, String> variables = actualVariablesSupplier.get();
                 reference.set(variables);
 
                 assertThat(variables).containsKey(variableName);
@@ -117,8 +143,21 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     }
   }
 
+  public void hasLocalVariables(
+      final long processInstanceKey, final Map<String, Object> expectedVariables) {
+
+    hasVariables(expectedVariables, () -> getAllProcessInstanceVariables(processInstanceKey));
+  }
+
   public void hasVariables(
       final long processInstanceKey, final Map<String, Object> expectedVariables) {
+
+    hasVariables(expectedVariables, () -> getGlobalProcessInstanceVariables(processInstanceKey));
+  }
+
+  private void hasVariables(
+      final Map<String, Object> expectedVariables,
+      final Supplier<Map<String, String>> actualVariablesSupplier) {
     final Map<String, JsonNode> expectedValues =
         expectedVariables.entrySet().stream()
             .collect(
@@ -135,7 +174,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
           .untilAsserted(
               () -> {
                 final Map<String, JsonNode> actualValues =
-                    getProcessInstanceVariables(processInstanceKey).entrySet().stream()
+                    actualVariablesSupplier.get().entrySet().stream()
                         .filter(entry -> expectedVariableNames.contains(entry.getKey()))
                         .collect(
                             Collectors.toMap(
@@ -173,8 +212,16 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     }
   }
 
-  private Map<String, String> getProcessInstanceVariables(final long processInstanceKey) {
-    return dataSource.findGlobalVariablesByProcessInstanceKey(processInstanceKey).stream()
+  private Map<String, String> getGlobalProcessInstanceVariables(final long processInstanceKey) {
+    return toMap(dataSource.findGlobalVariablesByProcessInstanceKey(processInstanceKey));
+  }
+
+  private Map<String, String> getAllProcessInstanceVariables(final long processInstanceKey) {
+    return toMap(dataSource.findVariables(f -> f.processInstanceKey(processInstanceKey)));
+  }
+
+  private Map<String, String> toMap(final List<Variable> variables) {
+    return variables.stream()
         // We're deliberately switching from the Collectors.toMap collector to a custom
         // implementation because it's allowed to have Camunda Variables with null values
         // However, the toMap collector does not allow null values and would throw an exception.
