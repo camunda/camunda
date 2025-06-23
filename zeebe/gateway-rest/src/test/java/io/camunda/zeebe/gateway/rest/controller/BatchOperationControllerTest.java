@@ -139,7 +139,7 @@ class BatchOperationControllerTest extends RestControllerTest {
 
     // when / then
     when(batchOperationServices.search(any(BatchOperationQuery.class)))
-        .thenReturn(new SearchQueryResult(1, List.of(entity), null, null));
+        .thenReturn(new SearchQueryResult(1, false, List.of(entity), null, null));
 
     webClient
         .post()

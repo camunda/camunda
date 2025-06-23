@@ -9029,6 +9029,9 @@ components:
           description: Total items matching the criteria.
           type: integer
           format: int64
+        hasMore:
+          description: Has more items than default maximum total items ES/OS return.
+          type: boolean
         startCursor:
           description: The cursor value for getting the previous page of results. Use this in the `before` field of an ensuing request.
           type: string

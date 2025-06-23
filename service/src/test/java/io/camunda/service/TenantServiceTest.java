@@ -82,7 +82,7 @@ public class TenantServiceTest {
   @Test
   public void shouldReturnSingleTenant() {
     // given
-    final var result = new SearchQueryResult<>(1, List.of(tenantEntity), null, null);
+    final var result = new SearchQueryResult<>(1, false, List.of(tenantEntity), null, null);
     when(client.searchTenants(any())).thenReturn(result);
 
     // when
@@ -95,7 +95,7 @@ public class TenantServiceTest {
   @Test
   public void shouldReturnSingleVariableForGet() {
     // given
-    final var result = new SearchQueryResult<>(1, List.of(tenantEntity), null, null);
+    final var result = new SearchQueryResult<>(1, false, List.of(tenantEntity), null, null);
     when(client.searchTenants(any())).thenReturn(result);
 
     // when
@@ -108,7 +108,7 @@ public class TenantServiceTest {
   @Test
   public void shouldThrowExceptionIfNotFoundByKey() {
     // given
-    when(client.searchTenants(any())).thenReturn(new SearchQueryResult(0, List.of(), null, null));
+    when(client.searchTenants(any())).thenReturn(new SearchQueryResult(0, false, List.of(), null, null));
 
     // when / then
 
@@ -244,7 +244,7 @@ public class TenantServiceTest {
     final var service = new TenantServices(stubbedBrokerClient, contextProvider, client, auth);
     when(client.withSecurityContext(any())).thenReturn(client);
     when(client.searchTenants(any()))
-        .thenReturn(new SearchQueryResult<>(1, List.of(tenantEntity), null, null));
+        .thenReturn(new SearchQueryResult<>(1, false, List.of(tenantEntity), null, null));
 
     assertThatCode(() -> service.getById("tenant-id")).isInstanceOf(ForbiddenException.class);
   }
