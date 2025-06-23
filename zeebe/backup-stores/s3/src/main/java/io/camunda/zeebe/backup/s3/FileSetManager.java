@@ -25,7 +25,6 @@ import java.util.concurrent.Semaphore;
 import java.util.function.Supplier;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
-import org.apache.commons.compress.utils.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.core.FileTransformerConfiguration.FailureBehavior;
@@ -140,7 +139,7 @@ final class FileSetManager {
           final var output = new BufferedOutputStream(Files.newOutputStream(compressedFile));
           final var compressedOutput =
               new CompressorStreamFactory().createCompressorOutputStream(algorithm, output)) {
-        IOUtils.copy(input, compressedOutput);
+        input.transferTo(compressedOutput);
         if (LOG.isTraceEnabled()) {
           LOG.trace(
               "Compressed file {} to {}. Uncompressed: {} bytes, compressed: {} bytes",
@@ -218,9 +217,9 @@ final class FileSetManager {
       final Path compressed, final Path decompressed, final String algorithm) {
     try (final var input = new BufferedInputStream(Files.newInputStream(compressed));
         final var output = new BufferedOutputStream(Files.newOutputStream(decompressed));
-        final var decompressedOutput =
+        final var decompressedInput =
             new CompressorStreamFactory().createCompressorInputStream(algorithm, input)) {
-      IOUtils.copy(decompressedOutput, output);
+      decompressedInput.transferTo(output);
       if (LOG.isTraceEnabled()) {
         LOG.trace(
             "Decompressed file {} to {} using {}. Compressed: {} bytes, uncompressed: {} bytes",
