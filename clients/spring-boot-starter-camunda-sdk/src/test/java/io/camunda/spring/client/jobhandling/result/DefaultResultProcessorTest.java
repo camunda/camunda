@@ -25,7 +25,8 @@ import org.junit.jupiter.api.Test;
 class DefaultResultProcessorTest {
 
   private final DefaultResultProcessor defaultResultProcessor =
-      new DefaultResultProcessor(mock(CamundaClient.class));
+      new DefaultResultProcessor(
+          mock(CamundaClient.class), mock(DocumentResultProcessorFailureHandlingStrategy.class));
 
   @Test
   public void testProcessMethodShouldReturnResult() {

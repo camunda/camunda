@@ -39,6 +39,7 @@ import io.camunda.spring.client.annotation.value.JobWorkerValue;
 import io.camunda.spring.client.jobhandling.parameter.DefaultParameterResolverStrategy;
 import io.camunda.spring.client.jobhandling.parameter.ParameterResolver;
 import io.camunda.spring.client.jobhandling.result.DefaultResultProcessorStrategy;
+import io.camunda.spring.client.jobhandling.result.DocumentResultProcessorFailureHandlingStrategy;
 import io.camunda.spring.client.jobhandling.result.ResultProcessor;
 import io.camunda.spring.client.metrics.DefaultNoopMetricsRecorder;
 import io.camunda.spring.client.metrics.MetricsRecorder;
@@ -224,7 +225,9 @@ public class JobHandlerInvokingSpringBeansTest {
 
   private static ResultProcessor resultProcessor(final JobWorkerValue jobWorkerValue) {
     return JobHandlingUtil.createResultProcessor(
-        new DefaultResultProcessorStrategy(mock(JobClient.class)), jobWorkerValue);
+        new DefaultResultProcessorStrategy(
+            mock(JobClient.class), mock(DocumentResultProcessorFailureHandlingStrategy.class)),
+        jobWorkerValue);
   }
 
   private static JobExceptionHandlingStrategy jobExceptionHandlingStrategy() {
