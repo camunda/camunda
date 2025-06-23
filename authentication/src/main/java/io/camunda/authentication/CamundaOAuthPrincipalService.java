@@ -148,7 +148,8 @@ public class CamundaOAuthPrincipalService {
                     .collect(Collectors.toSet())))
         .withTenants(tenants)
         .withGroups(groups.stream().toList())
-        .withRoles(roles);
+        .withRoles(roles)
+        .withGroupsClaimEnabled(StringUtils.hasText(groupsClaim));
 
     return new OAuthContext(mappingIds, authContextBuilder.build());
   }
