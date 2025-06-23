@@ -1,6 +1,6 @@
 openapi: "3.0.3"
 info:
-  title: Camunda 8 REST API
+  title: Orchestration Cluster REST API
   version: "0.1"
   description: API for communicating with a Camunda 8 cluster.
   license:
@@ -8,20 +8,20 @@ info:
     url: https://github.com/camunda/camunda/blob/main/licenses/CAMUNDA-LICENSE-1.0.txt
 externalDocs:
   description: Find out more
-  url: https://docs.camunda.io/docs/apis-tools/camunda-api-rest/camunda-api-rest-overview/
+  url: https://docs.camunda.io/docs/apis-tools/orchestration-cluster-api-rest/orchestration-cluster-api-rest-overview/
 
 servers:
   - url: "{schema}://{host}:{port}/v2"
     variables:
       host:
         default: localhost
-        description: The hostname of the Camunda 8 REST Gateway.
+        description: The hostname of the Orchestration Cluster REST Gateway.
       port:
         default: "8080"
-        description: The port of the Camunda 8 REST API server.
+        description: The port of the Orchestration Cluster REST API server.
       schema:
         default: http
-        description: The schema of the Camunda 8 REST API server.
+        description: The schema of the Orchestration Cluster REST API server.
 
 tags:
   - name: Ad-hoc sub-process

@@ -7,7 +7,7 @@ It covers the whole end-to-end view from endpoint definition and implementation 
 considerations and testing, touching on the following steps:
 
 - [ ] Define the endpoint you want to create.
-- [ ] Define your endpoint and any required data models in the [OpenAPI description](../zeebe/gateway-protocol/src/main/proto/rest-api.yaml) of the C8 REST API.
+- [ ] Define your endpoint and any required data models in the [OpenAPI description](../zeebe/gateway-protocol/src/main/proto/rest-api.yaml) of the Orchestration Cluster REST API.
 - [ ] Implement your controller(s) in the `zeebe/gateway-rest` module.
 - [ ] Implement or extend the respective `Services` your controller invokes.
 - [ ] Extend the Camunda Client with the new command.
@@ -19,12 +19,12 @@ considerations and testing, touching on the following steps:
 Define the endpoint you want to create.
 
 1. Consider the (🔒 currently internal) [REST API guidelines](https://docs.google.com/document/d/1G9AmmNac-4QLGZ0LXQXa3FyeCrSJdIboaPt3-R6dWNw/).
-2. Consider the [existing endpoints](https://docs.camunda.io/docs/next/apis-tools/camunda-api-rest/specifications/camunda-8-rest-api/) to create consistent endpoints.
+2. Consider the [existing endpoints](https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/camunda-8-rest-api/) to create consistent endpoints.
 3. Share and validate your endpoint design with peers, for example in the [#prj-c8-rest-api](https://camunda.slack.com/archives/C06UKS51QV9).
 
 ## OpenAPI extension
 
-Define your endpoint and any required data models in the [OpenAPI description](../zeebe/gateway-protocol/src/main/proto/rest-api.yaml) of the C8 REST API.
+Define your endpoint and any required data models in the [OpenAPI description](../zeebe/gateway-protocol/src/main/proto/rest-api.yaml) of the Orchestration Cluster REST API.
 
 1. Consider the [OpenAPI specification](https://spec.openapis.org/oas/v3.0.3) and [guide](https://learn.openapis.org/) for detailed guidance.
 2. Reuse existing data models as much as possible to avoid duplication and foster streamlined models. Consider the following aspects:
@@ -97,7 +97,7 @@ Refer to existing integration tests for setup.
 
 ## Documentation generation
 
-[The public reference documentation](https://docs.camunda.io/docs/next/apis-tools/camunda-api-rest/specifications/camunda-8-rest-api/) needs to be synchronized with [your specification changes](#openapi-extension).
+[The public reference documentation](https://docs.camunda.io/docs/next/apis-tools/orchestration-cluster-api-rest/specifications/camunda-8-rest-api/) needs to be synchronized with [your specification changes](#openapi-extension).
 
 ### Automatic synchronization
 
