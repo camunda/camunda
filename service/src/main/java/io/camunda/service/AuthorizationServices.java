@@ -26,8 +26,10 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -92,21 +94,33 @@ public class AuthorizationServices
     return findAll(authorizationQuery).stream().map(AuthorizationEntity::resourceId).toList();
   }
 
-  public List<String> getAuthorizedApplications(final Set<String> ownerIds) {
+  public List<String> getAuthorizedApplications(
+      final Map<EntityType, Set<String>> ownerTypeToOwnerIds) {
     if (!securityConfiguration.getAuthorizations().isEnabled()) {
       // if authorizations are not enabled, we default to a wildcard authorization which is
       // needed for frontend side checks
       return List.of("*");
     }
 
-    if (ownerIds == null || ownerIds.isEmpty()) {
+    if (ownerTypeToOwnerIds == null || ownerTypeToOwnerIds.isEmpty()) {
       // if no ownerIds are provided, we return an empty list to be defensive, we can't work out
       // which applications the user has access to if we don't know the ownerIds
       return List.of();
     }
 
-    return getAuthorizedResources(
-        ownerIds, PermissionType.ACCESS, AuthorizationResourceType.APPLICATION);
+    return search(
+            SearchQueryBuilders.authorizationSearchQuery(
+                fn ->
+                    fn.filter(
+                            f ->
+                                f.resourceType(AuthorizationResourceType.APPLICATION.name())
+                                    .permissionTypes(PermissionType.ACCESS)
+                                    .ownerTypeToOwnerIds(ownerTypeToOwnerIds))
+                        .page(p -> p.size(1))))
+        .items()
+        .stream()
+        .map(AuthorizationEntity::resourceId)
+        .collect(Collectors.toList());
   }
 
   public Set<String> fetchAssignedPermissions(

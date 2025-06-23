@@ -8,6 +8,7 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.ID;
@@ -20,6 +21,9 @@ import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.RES
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.Map;
+import java.util.Set;
 
 public final class AuthorizationFilterTransformer
     extends IndexFilterTransformer<AuthorizationFilter> {
@@ -30,6 +34,10 @@ public final class AuthorizationFilterTransformer
 
   @Override
   public SearchQuery toSearchQuery(final AuthorizationFilter filter) {
+    if (filter.ownerTypeToOwnerIds() != null && !filter.ownerTypeToOwnerIds().isEmpty()) {
+      return buildOwnerTypeToOwnerIdsQuery(filter.ownerTypeToOwnerIds());
+    }
+
     return and(
         filter.authorizationKey() == null ? null : term(ID, filter.authorizationKey()),
         stringTerms(OWNER_ID, filter.ownerIds()),
@@ -40,5 +48,17 @@ public final class AuthorizationFilterTransformer
             ? null
             : stringTerms(
                 PERMISSIONS_TYPES, filter.permissionTypes().stream().map(Enum::name).toList()));
+  }
+
+  private SearchQuery buildOwnerTypeToOwnerIdsQuery(
+      final Map<EntityType, Set<String>> ownerTypeToOwnerIds) {
+    return or(
+        ownerTypeToOwnerIds.entrySet().stream()
+            .map(
+                entry ->
+                    and(
+                        term(OWNER_TYPE, entry.getKey().name()),
+                        stringTerms(OWNER_ID, entry.getValue())))
+            .toList());
   }
 }

@@ -21,6 +21,8 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.List;
+import java.util.Map;
+import org.assertj.core.util.Arrays;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -67,7 +69,7 @@ public class AuthorizationServiceTest {
     securityConfiguration.getAuthorizations().setEnabled(true);
 
     // when
-    final var authorizedApplications = services.getAuthorizedApplications(Set.of());
+    final var authorizedApplications = services.getAuthorizedApplications(Map.of());
 
     // then
     assertThat(authorizedApplications).isEmpty();
@@ -79,7 +81,7 @@ public class AuthorizationServiceTest {
     securityConfiguration.getAuthorizations().setEnabled(false);
 
     // when
-    final var authorizedApplications = services.getAuthorizedApplications(Set.of());
+    final var authorizedApplications = services.getAuthorizedApplications(Map.of());
 
     // then
     assertThat(authorizedApplications).containsExactly("*");
@@ -91,7 +93,7 @@ public class AuthorizationServiceTest {
     securityConfiguration.getAuthorizations().setEnabled(true);
 
     // when
-    final var authorizedApplications = services.getAuthorizedApplications(Set.of());
+    final var authorizedApplications = services.getAuthorizedApplications(Map.of());
 
     // then
     assertThat(authorizedApplications).isEmpty();
