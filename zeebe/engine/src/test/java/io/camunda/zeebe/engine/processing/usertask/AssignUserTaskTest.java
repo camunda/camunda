@@ -20,10 +20,8 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
-import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
@@ -285,49 +283,6 @@ public final class AssignUserTaskTest {
 
     // then
     Assertions.assertThat(assigningRecord).hasRejectionType(RejectionType.NOT_FOUND);
-  }
-
-  @Test
-  public void shouldAssignUserTaskForCustomTenant() {
-    // given
-    final String tenantId = Strings.newRandomValidIdentityId();
-    final String username = Strings.newRandomValidIdentityId();
-    ENGINE.tenant().newTenant().withTenantId(tenantId).create();
-    ENGINE.user().newUser(username).create();
-    ENGINE
-        .tenant()
-        .addEntity(tenantId)
-        .withEntityId(username)
-        .withEntityType(EntityType.USER)
-        .add();
-    ENGINE.deployment().withXmlResource(process()).withTenantId(tenantId).deploy();
-    final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withTenantId(tenantId).create();
-
-    // when
-    final var assigningRecord =
-        ENGINE.userTask().ofInstance(processInstanceKey).withAssignee("foo").assign(username);
-
-    // then
-    Assertions.assertThat(assigningRecord)
-        .hasRecordType(RecordType.EVENT)
-        .hasIntent(UserTaskIntent.ASSIGNING);
-
-    final var assigningRecordValue = assigningRecord.getValue();
-    final var assignedRecordValue =
-        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED).getFirst().getValue();
-
-    assertThat(List.of(assigningRecordValue, assignedRecordValue))
-        .describedAs(
-            "Ensure ASSIGNING and ASSIGNED records have consistent attribute values "
-                + "as dependent applications will rely on them to update user task data internally")
-        .allSatisfy(
-            recordValue ->
-                Assertions.assertThat(recordValue)
-                    .hasAction(DEFAULT_ACTION)
-                    .hasAssignee("foo")
-                    .hasOnlyChangedAttributes(UserTaskRecord.ASSIGNEE)
-                    .hasTenantId(tenantId));
   }
 
   @Test

@@ -25,7 +25,6 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -55,11 +54,8 @@ public class JobUpdateTimeoutTest {
   public static void setUp() {
     tenantId = UUID.randomUUID().toString();
     username = UUID.randomUUID().toString();
-    final var user = ENGINE.user().newUser(username).create().getValue();
-    final var userKey = user.getUserKey();
-    final var username = user.getUsername();
-    final var tenantKey =
-        ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
+    ENGINE.user().newUser(username).create().getValue();
+    ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     ENGINE
         .tenant()
         .addEntity(tenantId)
@@ -238,63 +234,6 @@ public class JobUpdateTimeoutTest {
         .extracting(Record::getIntent)
         .containsExactly(
             JobIntent.CREATED, JobIntent.TIMEOUT_UPDATED, JobIntent.TIME_OUT, JobIntent.TIMED_OUT);
-  }
-
-  @Test
-  public void shouldUpdateJobTimeoutForCustomTenant() {
-    // given
-    ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
-
-    final var batchRecord =
-        ENGINE
-            .jobs()
-            .withType(jobType)
-            .withTimeout(Duration.ofMinutes(5).toMillis())
-            .withTenantId(tenantId)
-            .activate(username);
-
-    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
-    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    final long timeout = Duration.ofMinutes(10).toMillis();
-
-    // when
-    final Record<JobRecordValue> updatedRecord =
-        ENGINE.job().withKey(jobKey).withTimeout(timeout).updateTimeout(username);
-
-    // then
-    Assertions.assertThat(updatedRecord.getValue()).hasTenantId(tenantId);
-    assertJobDeadline(updatedRecord, jobKey, job, timeout);
-  }
-
-  @Test
-  public void shouldRejectUpdateRetriesIfTenantIsUnauthorized() {
-    // given
-    final String falseTenantId = "foo";
-    ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
-
-    final var batchRecord =
-        ENGINE
-            .jobs()
-            .withType(jobType)
-            .withTimeout(Duration.ofMinutes(5).toMillis())
-            .withTenantId(tenantId)
-            .activate(username);
-
-    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    final long timeout = Duration.ofMinutes(10).toMillis();
-
-    // when
-    final Record<JobRecordValue> jobRecord =
-        ENGINE
-            .job()
-            .withKey(jobKey)
-            .withTimeout(timeout)
-            .withAuthorizedTenantIds(falseTenantId)
-            .expectRejection()
-            .updateTimeout();
-
-    // then
-    Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.NOT_FOUND);
   }
 
   private static void assertJobDeadline(

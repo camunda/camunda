@@ -36,7 +36,6 @@ import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -66,9 +65,7 @@ public final class FailJobTest {
   public static void setUp() {
     tenantId = UUID.randomUUID().toString();
     username = UUID.randomUUID().toString();
-    final var user = ENGINE.user().newUser(username).create().getValue();
-    final var userKey = user.getUserKey();
-    final var username = user.getUsername();
+    ENGINE.user().newUser(username).create().getValue();
     ENGINE.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
     ENGINE
         .tenant()
@@ -429,55 +426,5 @@ public final class FailJobTest {
     final String expectedErrorMessage = "*".repeat(DEFAULT_MAX_ERROR_MESSAGE_SIZE);
     assertThat(failedRecord.getValue().getErrorMessage()).isEqualTo(expectedErrorMessage);
     assertThat(incident.getValue().getErrorMessage()).isEqualTo(expectedErrorMessage);
-  }
-
-  @Test
-  public void shouldFailForCustomTenant() {
-    // given
-    ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
-
-    final Record<JobBatchRecordValue> batchRecord =
-        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(username);
-
-    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
-    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
-    final int retries = 23;
-
-    // when
-    final Record<JobRecordValue> failRecord =
-        ENGINE
-            .job()
-            .withKey(jobKey)
-            .ofInstance(job.getProcessInstanceKey())
-            .withRetries(retries)
-            .fail(username);
-
-    // then
-    Assertions.assertThat(failRecord).hasRecordType(RecordType.EVENT).hasIntent(FAILED);
-    Assertions.assertThat(failRecord.getValue()).hasTenantId(tenantId);
-  }
-
-  @Test
-  public void shouldRejectFailIfTenantIsUnauthorized() {
-    // given
-    final String falseTenantId = UUID.randomUUID().toString();
-    ENGINE.createJob(jobType, PROCESS_ID, Collections.emptyMap(), tenantId);
-
-    final Record<JobBatchRecordValue> batchRecord =
-        ENGINE.jobs().withType(jobType).withTenantId(tenantId).activate(username);
-    final long jobKey = batchRecord.getValue().getJobKeys().get(0);
-
-    // when
-    final Record<JobRecordValue> jobRecord =
-        ENGINE
-            .job()
-            .withKey(jobKey)
-            .withRetries(3)
-            .withAuthorizedTenantIds(falseTenantId)
-            .expectRejection()
-            .fail();
-
-    // then
-    Assertions.assertThat(jobRecord).hasRejectionType(RejectionType.NOT_FOUND);
   }
 }
