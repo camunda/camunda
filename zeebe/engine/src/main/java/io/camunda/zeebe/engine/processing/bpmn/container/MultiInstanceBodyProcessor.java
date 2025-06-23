@@ -180,10 +180,6 @@ public final class MultiInstanceBodyProcessor
       return updatedOrFailure;
     }
 
-    // we modify the output collection variable above
-    // if there is a mapping using this, it should get updated as well
-    variableMappingBehavior.applyOutputMappings(childContext, element.getInnerActivity());
-
     // test that completion condition can be evaluated correctly
     final Either<Failure, Boolean> satisfiesCompletionConditionOrFailure =
         satisfiesCompletionCondition(element, childContext);

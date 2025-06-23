@@ -1447,6 +1447,46 @@ public final class MultiInstanceActivityTest {
   }
 
   @Test
+  public void shouldNotDuplicateOutputMappingForOutputCollection() {
+    // given - this is a regression test for issue #32318
+    // Output mappings should not be executed twice for each iteration
+    final ServiceTask task = process(miBuilder).getModelElementById(ELEMENT_ID);
+    final var process =
+        task.builder()
+            .zeebeOutputExpression(OUTPUT_COLLECTION_VARIABLE, "resultsFromOutput")
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
+            .create();
+
+    completeJobs(processInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    // Count the number of times resultsFromOutput is updated
+    final var outputMappingUpdates =
+        RecordingExporter.records()
+            .betweenProcessInstance(processInstanceKey)
+            .variableRecords()
+            .withName("resultsFromOutput")
+            .withScopeKey(processInstanceKey)
+            .limit(10); // Limit to avoid infinite stream if bug causes many updates
+
+    // Should see exactly 4 updates: initial + 3 iterations
+    // With the bug, we would see 7 updates: initial + 3*2 iterations (double execution)
+    assertThat(outputMappingUpdates)
+        .hasSize(4)
+        .extracting(r -> r.getValue().getValue())
+        .containsExactly("[null,null,null]", "[11,null,null]", "[11,22,null]", "[11,22,33]");
+  }
+
+  @Test
   public void shouldTriggerInterruptingBoundaryEvent() {
     // given
     final ServiceTask task = process(miBuilder).getModelElementById(ELEMENT_ID);
