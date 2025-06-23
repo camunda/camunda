@@ -11,7 +11,7 @@ import {expect} from '@playwright/test';
 import {authAPI} from 'utils/apiHelpers';
 import {createInstances, deploy} from 'utils/zeebeClient';
 
-const baseURL = process.env.CORE_APPLICATION_TASKLIST_URL;
+const baseURL = process.env.CORE_APPLICATION_URL;
 
 test.beforeAll(async () => {
   await Promise.all([
@@ -21,12 +21,12 @@ test.beforeAll(async () => {
     ]),
   ]);
   await createInstances('Form_User_Task_API', 1, 3);
-  await authAPI('demo', 'demo', 'tasklist');
+  await authAPI('demo', 'demo');
 });
 
 test.describe('API tests', () => {
   test.use({
-    storageState: 'utils/.auth_tasklist',
+    storageState: 'utils/.auth',
     baseURL: baseURL,
   });
 

@@ -8,22 +8,13 @@
 
 import {APIRequestContext, request} from '@playwright/test';
 
-export async function authAPI(
-  name: string,
-  password: string,
-  application: string,
-): Promise<void> {
+export async function authAPI(name: string, password: string): Promise<void> {
   let baseURL: string;
   let authFilePath: string;
-  if (application === 'tasklist') {
-    baseURL = process.env.CORE_APPLICATION_TASKLIST_URL as string;
-    authFilePath = 'utils/.auth_tasklist';
-  } else if (application === 'operate') {
-    baseURL = process.env.CORE_APPLICATION_OPERATE_URL as string;
-    authFilePath = 'utils/.auth_operate';
-  } else {
-    throw new Error(`Unsupported application: ${application}`);
-  }
+
+  baseURL = process.env.CORE_APPLICATION_URL as string;
+  authFilePath = 'utils/.auth';
+
   const apiRequestContext: APIRequestContext = await request.newContext({
     baseURL,
   });
