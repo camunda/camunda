@@ -74,6 +74,21 @@ public class ProcessDefinitionSearchTest {
   }
 
   @Test
+  void shouldNotifyIfHasMoreItems() {
+    // given
+    final var resultAll =
+        camundaClient
+            .newProcessDefinitionSearchRequest()
+            .sort(s -> s.processDefinitionKey().desc())
+            .send()
+            .join();
+
+    // then
+    assertThat(resultAll.page().hasMore()).isNotNull();
+    assertThat(resultAll.page().hasMore()).isFalse();
+  }
+
+  @Test
   void shouldPaginateWithSortingByProcessDefinitionKey() {
     // given
     final var resultAll =
