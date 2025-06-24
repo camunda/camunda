@@ -44,15 +44,6 @@ public class UsageMetricsExportProcessor implements TypedRecordProcessor<UsageMe
     this.keyGenerator = keyGenerator;
   }
 
-  private UsageMetricRecord copyRecord(final UsageMetricRecord record) {
-    return new UsageMetricRecord()
-        .setEventType(record.getEventType())
-        .setIntervalType(record.getIntervalType())
-        .setResetTime(record.getResetTime())
-        .setStartTime(record.getStartTime())
-        .setEndTime(record.getEndTime());
-  }
-
   private List<UsageMetricRecord> divideRecord(final UsageMetricRecord record) {
     final var size = record.getValues().size();
     final int halfCapacity = (int) Math.ceil(size / 2.0f);
@@ -71,9 +62,11 @@ public class UsageMetricsExportProcessor implements TypedRecordProcessor<UsageMe
             });
 
     final var record1 =
-        copyRecord(record).setValues(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(values1)));
+        UsageMetricRecord.copyWithoutValues(record)
+            .setValues(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(values1)));
     final var record2 =
-        copyRecord(record).setValues(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(values2)));
+        UsageMetricRecord.copyWithoutValues(record)
+            .setValues(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(values2)));
 
     final var result = new ArrayList<>(checkRecordLength(record1));
     result.addAll(checkRecordLength(record2));

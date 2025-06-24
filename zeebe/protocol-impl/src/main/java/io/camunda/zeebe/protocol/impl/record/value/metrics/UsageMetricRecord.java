@@ -38,6 +38,15 @@ public class UsageMetricRecord extends UnifiedRecordValue implements UsageMetric
         .declareProperty(valuesProp);
   }
 
+  public static UsageMetricRecord copyWithoutValues(final UsageMetricRecord record) {
+    return new UsageMetricRecord()
+        .setEventType(record.getEventType())
+        .setIntervalType(record.getIntervalType())
+        .setResetTime(record.getResetTime())
+        .setStartTime(record.getStartTime())
+        .setEndTime(record.getEndTime());
+  }
+
   @Override
   public IntervalType getIntervalType() {
     return intervalTypeProp.getValue();
