@@ -15,6 +15,10 @@
  */
 package io.camunda.zeebe.spring.client.properties.common;
 
+import io.camunda.zeebe.spring.client.properties.CamundaClientAuthClientAssertionProperties;
+import java.time.Duration;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
+
 public class AuthProperties {
 
   // self-managed and saas
@@ -24,12 +28,43 @@ public class AuthProperties {
   private String issuer;
   private String credentialsCachePath;
 
+  private Duration connectTimeout;
+  private Duration readTimeout;
+
+  @NestedConfigurationProperty
+  private CamundaClientAuthClientAssertionProperties clientAssertion =
+      new CamundaClientAuthClientAssertionProperties();
+
+  public CamundaClientAuthClientAssertionProperties getClientAssertion() {
+    return clientAssertion;
+  }
+
+  public void setClientAssertion(final CamundaClientAuthClientAssertionProperties clientAssertion) {
+    this.clientAssertion = clientAssertion;
+  }
+
   public String getCredentialsCachePath() {
     return credentialsCachePath;
   }
 
   public void setCredentialsCachePath(final String credentialsCachePath) {
     this.credentialsCachePath = credentialsCachePath;
+  }
+
+  public Duration getConnectTimeout() {
+    return connectTimeout;
+  }
+
+  public void setConnectTimeout(final Duration connectTimeout) {
+    this.connectTimeout = connectTimeout;
+  }
+
+  public Duration getReadTimeout() {
+    return readTimeout;
+  }
+
+  public void setReadTimeout(final Duration readTimeout) {
+    this.readTimeout = readTimeout;
   }
 
   public String getIssuer() {
@@ -54,5 +89,26 @@ public class AuthProperties {
 
   public void setClientSecret(final String clientSecret) {
     this.clientSecret = clientSecret;
+  }
+
+  @Override
+  public String toString() {
+    return "AuthProperties{"
+        + "clientId='"
+        + (clientId != null ? "***" : null)
+        + '\''
+        + ", clientSecret='"
+        + (clientSecret != null ? "***" : null)
+        + '\''
+        + ", issuer="
+        + issuer
+        + ", credentialsCachePath='"
+        + credentialsCachePath
+        + '\''
+        + ", connectTimeout="
+        + connectTimeout
+        + ", readTimeout="
+        + readTimeout
+        + '}';
   }
 }

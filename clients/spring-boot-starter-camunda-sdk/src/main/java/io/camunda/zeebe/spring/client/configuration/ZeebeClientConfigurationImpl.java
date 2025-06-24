@@ -343,6 +343,16 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
           .authorizationServerUrl(camundaClientProperties.getAuth().getIssuer())
           .scope(camundaClientProperties.getZeebe().getScope())
           .credentialsCachePath(camundaClientProperties.getAuth().getCredentialsCachePath())
+          .connectTimeout(camundaClientProperties.getAuth().getConnectTimeout())
+          .readTimeout(camundaClientProperties.getAuth().getReadTimeout())
+          .clientAssertionKeystorePath(
+              camundaClientProperties.getAuth().getClientAssertion().getKeystorePath())
+          .clientAssertionKeystorePassword(
+              camundaClientProperties.getAuth().getClientAssertion().getKeystorePassword())
+          .clientAssertionKeystoreKeyAlias(
+              camundaClientProperties.getAuth().getClientAssertion().getKeystoreKeyAlias())
+          .clientAssertionKeystoreKeyPassword(
+              camundaClientProperties.getAuth().getClientAssertion().getKeystoreKeyPassword())
           .build();
     }
     return new NoopCredentialsProvider();
@@ -404,6 +414,16 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
           .scope(properties.getCloud().getScope())
           .authorizationServerUrl(properties.getCloud().getAuthUrl())
           .credentialsCachePath(properties.getCloud().getCredentialsCachePath())
+          .connectTimeout(camundaClientProperties.getAuth().getConnectTimeout())
+          .readTimeout(camundaClientProperties.getAuth().getReadTimeout())
+          .clientAssertionKeystorePath(
+              camundaClientProperties.getAuth().getClientAssertion().getKeystorePath())
+          .clientAssertionKeystorePassword(
+              camundaClientProperties.getAuth().getClientAssertion().getKeystorePassword())
+          .clientAssertionKeystoreKeyAlias(
+              camundaClientProperties.getAuth().getClientAssertion().getKeystoreKeyAlias())
+          .clientAssertionKeystoreKeyPassword(
+              camundaClientProperties.getAuth().getClientAssertion().getKeystoreKeyPassword())
           .build();
     } else if (Environment.system().get("ZEEBE_CLIENT_ID") != null
         && Environment.system().get("ZEEBE_CLIENT_SECRET") != null) {
