@@ -637,10 +637,15 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   }
 
   private boolean shouldUseDefaultCredentialsProvider() {
+    final boolean clientSecretOrCertificateProvided =
+        Environment.system().get(OAuthCredentialsProviderBuilder.OAUTH_ENV_CLIENT_SECRET) != null
+            || Environment.system()
+                    .get(OAuthCredentialsProviderBuilder.OAUTH_ENV_SSL_CLIENT_CERT_PATH)
+                != null;
+
     return credentialsProvider == null
         && Environment.system().get(OAuthCredentialsProviderBuilder.OAUTH_ENV_CLIENT_ID) != null
-        && Environment.system().get(OAuthCredentialsProviderBuilder.OAUTH_ENV_CLIENT_SECRET)
-            != null;
+        && clientSecretOrCertificateProvided;
   }
 
   private CredentialsProvider createDefaultCredentialsProvider() {
