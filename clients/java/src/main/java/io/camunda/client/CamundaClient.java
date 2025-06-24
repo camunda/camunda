@@ -118,6 +118,7 @@ import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
 import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
 import io.camunda.client.api.search.request.GroupsByRoleSearchRequest;
 import io.camunda.client.api.search.request.IncidentSearchRequest;
+import io.camunda.client.api.search.request.IncidentsByProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.MappingsByRoleSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
@@ -2393,6 +2394,20 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the roles by group search request
    */
   RolesByGroupSearchRequest newRolesByGroupSearchRequest(String groupId);
+
+  /**
+   * Executes a search request to query incidents by process instance key.
+   *
+   * <pre>
+   *   camundaClient
+   *    .newIncidentSearchByProcessInstanceKey(processInstanceKey)
+   *    .sort((s) -> s.incidentKey().desc())
+   *    .page((p) -> p.limit(100))
+   *    .send();
+   * </pre>
+   */
+  IncidentsByProcessInstanceSearchRequest newIncidentsByProcessInstanceSearchRequest(
+      long processInstanceKey);
 
   /**
    * Executes a search request to query groups by role.

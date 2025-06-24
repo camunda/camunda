@@ -15,30 +15,11 @@
  */
 package io.camunda.client.api.search.request;
 
-import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestFilter;
-import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestSort;
+import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.sort.IncidentSort;
 import java.util.function.Consumer;
 
-public interface TypedSearchRequest<
-    F extends SearchRequestFilter,
-    S extends SearchRequestSort<S>,
-    SELF extends TypedSearchRequest<F, S, SELF>> {
-
-  /**
-   * Sets the filter to be included in the search request.
-   *
-   * @param value the filter
-   * @return the builder for the search request
-   */
-  SELF filter(final F value);
-
-  /**
-   * Provides a fluent builder to create a filter to be included in the search request.
-   *
-   * @param fn consumer to create the filter
-   * @return the builder for the search request
-   */
-  SELF filter(final Consumer<F> fn);
+public interface IncidentsByProcessInstanceSearchRequest extends FinalSearchRequestStep<Incident> {
 
   /**
    * Sets the sorting the returned entities should be sorted by.
@@ -46,7 +27,7 @@ public interface TypedSearchRequest<
    * @param value the sort options
    * @return the builder for the search request
    */
-  SELF sort(final S value);
+  IncidentsByProcessInstanceSearchRequest sort(IncidentSort value);
 
   /**
    * Provides a fluent builder to provide sorting options the returned entities should sorted by
@@ -54,7 +35,7 @@ public interface TypedSearchRequest<
    * @param fn consumer to create the sort options
    * @return the builder for the search request
    */
-  SELF sort(final Consumer<S> fn);
+  IncidentsByProcessInstanceSearchRequest sort(Consumer<IncidentSort> fn);
 
   /**
    * Support for pagination.
@@ -62,7 +43,7 @@ public interface TypedSearchRequest<
    * @param value the next page
    * @return the builder for the search request
    */
-  SELF page(final SearchRequestPage value);
+  IncidentsByProcessInstanceSearchRequest page(SearchRequestPage value);
 
   /**
    * Provides a fluent builder to support pagination.
@@ -70,24 +51,5 @@ public interface TypedSearchRequest<
    * @param fn consumer to support pagination
    * @return the builder for the search request
    */
-  SELF page(final Consumer<SearchRequestPage> fn);
-
-  public static interface SearchRequestFilter {}
-
-  public static interface SearchRequestSort<S extends SearchRequestSort<S>> {
-
-    /**
-     * Sort in ascending order
-     *
-     * @return the sort builder
-     */
-    S asc();
-
-    /**
-     * Sort in descending order
-     *
-     * @return the sort builder
-     */
-    S desc();
-  }
+  IncidentsByProcessInstanceSearchRequest page(Consumer<SearchRequestPage> fn);
 }
