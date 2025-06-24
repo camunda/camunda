@@ -59,10 +59,10 @@ final class ProcessInstanceCreationCreatedApplier
               });
     }
 
-    createUsageMetric(value);
+    incrementUsageMetric(value);
   }
 
-  private void createUsageMetric(final ProcessInstanceCreationRecord value) {
+  private void incrementUsageMetric(final ProcessInstanceCreationRecord value) {
     usageMetricState.recordRPIMetric(value.getTenantId());
   }
 
