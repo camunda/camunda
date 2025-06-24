@@ -12,22 +12,28 @@ import type {QueryElementInstancesRequestBody} from '@vzeta/camunda-api-zod-sche
 
 const ELEMENT_INSTANCES_SEARCH_QUERY_KEY = 'elementInstancesSearch';
 
-function getQueryKey(params: QueryElementInstancesRequestBody) {
-  return [ELEMENT_INSTANCES_SEARCH_QUERY_KEY, params];
-}
-
 const useElementInstancesSearch = (
-  params: QueryElementInstancesRequestBody,
+  elementId: string | undefined,
+  processInstanceKey: string | undefined,
+  options: {enabled: boolean} = {enabled: true},
 ) => {
+  const payload: QueryElementInstancesRequestBody = {
+    filter: {
+      elementId,
+      processInstanceKey: processInstanceKey ?? '',
+    },
+    page: {limit: 1},
+  };
+
   return useQuery({
-    queryKey: getQueryKey(params),
+    queryKey: [ELEMENT_INSTANCES_SEARCH_QUERY_KEY, payload],
     queryFn: () =>
-      searchElementInstances(params).then(({response, error}) => {
+      searchElementInstances(payload).then(({response, error}) => {
         if (response !== null) return response;
         throw error;
       }),
-    enabled: !!params,
+    ...options,
   });
 };
 
-export {useElementInstancesSearch, ELEMENT_INSTANCES_SEARCH_QUERY_KEY};
+export {useElementInstancesSearch};
