@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '../test-fixtures';
+import {test} from '../visual-fixtures';
 import {expect} from '@playwright/test';
 
 import {
@@ -43,9 +43,8 @@ test.describe('process instance modification', () => {
       }),
     );
 
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: '2251799813888430',
-      options: {waitUntil: 'networkidle'},
     });
 
     const modifyInstanceButton = await page.getByRole('button', {
@@ -147,9 +146,8 @@ test.describe('process instance modification', () => {
       }),
     );
 
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: '2251799813888430',
-      options: {waitUntil: 'networkidle'},
     });
 
     await page
@@ -411,9 +409,8 @@ test.describe('process instance modification', () => {
       }),
     );
 
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: '2251799813888430',
-      options: {waitUntil: 'networkidle'},
     });
 
     await page

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '../test-fixtures';
+import {test} from '../visual-fixtures';
 import {
   mockIncidentsByError,
   mockIncidentsByProcess,
@@ -45,7 +45,7 @@ test.describe('get familiar with operate', () => {
       }),
     );
 
-    await dashboardPage.navigateToDashboard({waitUntil: 'networkidle'});
+    await dashboardPage.gotoDashboardPage();
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/get-familiar-with-operate/operate-introduction.png',
@@ -69,12 +69,11 @@ test.describe('get familiar with operate', () => {
       }),
     );
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         incidents: 'true',
       },
-      options: {waitUntil: 'networkidle'},
     });
 
     await filtersPanel.selectProcess('Order process');
@@ -129,7 +128,7 @@ test.describe('get familiar with operate', () => {
       }),
     );
 
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: '225179981395430',
     });
 

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '../test-fixtures';
+import {test} from '../visual-fixtures';
 import {
   mockIncidentsByError,
   mockIncidentsByProcess,
@@ -31,7 +31,7 @@ test.describe('self managed platform deployment', () => {
       }),
     );
 
-    await dashboardPage.navigateToDashboard({waitUntil: 'networkidle'});
+    await dashboardPage.gotoDashboardPage();
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/self-managed-platform-deployment/operate-dashboard-no-processes.png',
@@ -48,7 +48,7 @@ test.describe('self managed platform deployment', () => {
       }),
     );
 
-    await dashboardPage.navigateToDashboard({waitUntil: 'networkidle'});
+    await dashboardPage.gotoDashboardPage();
 
     await page.screenshot({
       path: 'e2e-playwright/docs-screenshots/self-managed-platform-deployment/operate-introduction.png',

@@ -7,7 +7,7 @@
  */
 
 import {setup} from './processInstanceVariables.mocks';
-import {test} from '../test-fixtures';
+import {test} from '../e2e-fixtures';
 import {expect} from '@playwright/test';
 import {SETUP_WAITING_TIME} from './constants';
 import {config} from '../config';
@@ -51,7 +51,7 @@ test.describe('Process Instance Variables', () => {
     test.slow();
 
     const processInstanceKey = initialData.instance.processInstanceKey;
-    processInstancePage.navigateToProcessInstance({id: processInstanceKey});
+    processInstancePage.gotoProcessInstancePage({id: processInstanceKey});
 
     expect(processInstancePage.addVariableButton).toBeEnabled();
 
@@ -90,7 +90,7 @@ test.describe('Process Instance Variables', () => {
     test.slow();
 
     const processInstanceKey = initialData.instance.processInstanceKey;
-    processInstancePage.navigateToProcessInstance({id: processInstanceKey});
+    processInstancePage.gotoProcessInstancePage({id: processInstanceKey});
 
     await expect(processInstancePage.addVariableButton).toBeEnabled();
 
@@ -137,7 +137,7 @@ test.describe('Process Instance Variables', () => {
     const processInstanceKey =
       initialData.instanceWithManyVariables.processInstanceKey;
 
-    processInstancePage.navigateToProcessInstance({id: processInstanceKey});
+    processInstancePage.gotoProcessInstancePage({id: processInstanceKey});
 
     await expect(processInstancePage.variablesList).toBeVisible();
 

@@ -7,7 +7,7 @@
  */
 
 import {setup} from './processInstance.mocks';
-import {test} from '../test-fixtures';
+import {test} from '../e2e-fixtures';
 import {expect} from '@playwright/test';
 import {DATE_REGEX, SETUP_WAITING_TIME} from './constants';
 import {config} from '../config';
@@ -106,7 +106,7 @@ test.describe('Process Instance', () => {
   }) => {
     test.slow();
 
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: initialData.instanceWithIncidentToResolve.processInstanceKey,
     });
 
@@ -216,7 +216,7 @@ test.describe('Process Instance', () => {
     const instanceId =
       initialData.instanceWithIncidentToCancel.processInstanceKey;
 
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: initialData.instanceWithIncidentToCancel.processInstanceKey,
     });
 
@@ -268,7 +268,7 @@ test.describe('Process Instance', () => {
       diagram: {popover},
     } = processInstancePage;
 
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: initialData.collapsedSubProcessInstance.processInstanceKey,
     });
 
@@ -330,7 +330,7 @@ test.describe('Process Instance', () => {
   }) => {
     const {diagram} = processInstancePage;
 
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: initialData.executionCountProcessInstance.processInstanceKey,
     });
 

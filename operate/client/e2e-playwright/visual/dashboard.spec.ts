@@ -7,7 +7,7 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from '../test-fixtures';
+import {test} from '../visual-fixtures';
 import {
   mockIncidentsByError,
   mockIncidentsByProcess,
@@ -30,104 +30,91 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('dashboard page', () => {
-  for (const theme of ['light', 'dark']) {
-    test(`empty page - ${theme}`, async ({page, commonPage, dashboardPage}) => {
-      await commonPage.changeTheme(theme);
+  test('empty page', async ({page, dashboardPage}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        statistics: {
+          running: 0,
+          active: 0,
+          withIncidents: 0,
+        },
+        incidentsByError: [],
+        incidentsByProcess: [],
+      }),
+    );
 
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          statistics: {
-            running: 0,
-            active: 0,
-            withIncidents: 0,
-          },
-          incidentsByError: [],
-          incidentsByProcess: [],
-        }),
-      );
+    await dashboardPage.gotoDashboardPage();
 
-      await dashboardPage.navigateToDashboard({waitUntil: 'networkidle'});
+    await expect(page).toHaveScreenshot();
+  });
 
-      await expect(page).toHaveScreenshot();
-    });
+  test('error page', async ({page, dashboardPage}) => {
+    await page.route(URL_API_PATTERN, mockResponses({}));
 
-    test(`error page - ${theme}`, async ({page, commonPage, dashboardPage}) => {
-      await commonPage.changeTheme(theme);
+    await dashboardPage.gotoDashboardPage();
 
-      await page.route(URL_API_PATTERN, mockResponses({}));
+    await expect(page.getByText('Data could not be fetched')).toHaveCount(2);
+    await expect(
+      page.getByText('Process statistics could not be fetched'),
+    ).toBeVisible();
 
-      await dashboardPage.navigateToDashboard({waitUntil: 'networkidle'});
+    await expect(page).toHaveScreenshot();
+  });
 
-      await expect(page).toHaveScreenshot();
-    });
+  test('filled with data', async ({page, dashboardPage}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        statistics: mockStatistics,
+        incidentsByError: mockIncidentsByError,
+        incidentsByProcess: mockIncidentsByProcess,
+      }),
+    );
 
-    test(`filled with data - ${theme}`, async ({
-      page,
-      commonPage,
-      dashboardPage,
-    }) => {
-      await commonPage.changeTheme(theme);
+    await dashboardPage.gotoDashboardPage();
 
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          statistics: mockStatistics,
-          incidentsByError: mockIncidentsByError,
-          incidentsByProcess: mockIncidentsByProcess,
-        }),
-      );
+    await expect(page).toHaveScreenshot();
+  });
 
-      await dashboardPage.navigateToDashboard({waitUntil: 'networkidle'});
+  test('expanded rows', async ({page, dashboardPage}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        statistics: mockStatistics,
+        incidentsByError: mockIncidentsByError,
+        incidentsByProcess: mockIncidentsByProcess,
+      }),
+    );
 
-      await expect(page).toHaveScreenshot();
-    });
+    await dashboardPage.gotoDashboardPage();
 
-    test(`expanded rows - ${theme}`, async ({
-      page,
-      commonPage,
-      dashboardPage,
-    }) => {
-      await commonPage.changeTheme(theme);
+    const expandInstancesByProcessRow = page
+      .getByTestId('instances-by-process')
+      .getByRole('button', {
+        name: /expand current row/i,
+      })
+      .nth(0);
 
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          statistics: mockStatistics,
-          incidentsByError: mockIncidentsByError,
-          incidentsByProcess: mockIncidentsByProcess,
-        }),
-      );
+    expect(expandInstancesByProcessRow).toBeEnabled();
 
-      await dashboardPage.navigateToDashboard({waitUntil: 'networkidle'});
+    await expandInstancesByProcessRow.click();
 
-      const expandInstancesByProcessRow = page
-        .getByTestId('instances-by-process')
-        .getByRole('button', {
-          name: /expand current row/i,
-        })
-        .nth(0);
+    await expect(
+      page.getByText(/order process – 136 instances in version 2/i),
+    ).toBeVisible();
 
-      expect(expandInstancesByProcessRow).toBeEnabled();
+    const expandIncidentsByErrorRow = page
+      .getByTestId('incident-byError')
+      .getByRole('button', {
+        name: /expand current row/i,
+      })
+      .nth(0);
 
-      await expandInstancesByProcessRow.click();
+    await expandIncidentsByErrorRow.click();
 
-      await expect(
-        page.getByText(/order process – 136 instances in version 2/i),
-      ).toBeVisible();
+    await expect(page.getByText(/complexprocess – version 2/i)).toBeVisible();
 
-      const expandIncidentsByErrorRow = page
-        .getByTestId('incident-byError')
-        .getByRole('button', {
-          name: /expand current row/i,
-        })
-        .nth(0);
-
-      await expandIncidentsByErrorRow.click();
-
-      await expect(page.getByText(/complexprocess – version 2/i)).toBeVisible();
-
-      await expect(page).toHaveScreenshot();
-    });
-  }
+    await expect(page).toHaveScreenshot();
+  });
 });

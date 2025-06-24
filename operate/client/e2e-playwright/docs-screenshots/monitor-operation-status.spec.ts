@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '../test-fixtures';
+import {test} from '../visual-fixtures';
 import * as path from 'path';
 
 import {
@@ -63,15 +63,12 @@ test.describe('process instance migration', () => {
       }),
     );
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         incidents: 'false',
         canceled: 'false',
         completed: 'false',
-      },
-      options: {
-        waitUntil: 'networkidle',
       },
     });
 
@@ -85,16 +82,13 @@ test.describe('process instance migration', () => {
 
     await commonPage.deleteArrows();
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         incidents: 'false',
         canceled: 'false',
         completed: 'false',
         operationId: '653ed5e6-49ed-4675-85bf-2c54a94d8180',
-      },
-      options: {
-        waitUntil: 'networkidle',
       },
     });
 

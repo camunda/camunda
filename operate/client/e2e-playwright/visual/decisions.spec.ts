@@ -7,7 +7,7 @@
  */
 
 import {expect} from '@playwright/test';
-import {test} from '../test-fixtures';
+import {test} from '../visual-fixtures';
 import {
   mockBatchOperations,
   mockDecisionInstances,
@@ -31,198 +31,164 @@ test.beforeEach(async ({context}) => {
 });
 
 test.describe('decisions page', () => {
-  for (const theme of ['light', 'dark']) {
-    test(`empty page - ${theme}`, async ({page, commonPage, decisionsPage}) => {
-      await commonPage.changeTheme(theme);
-
-      await page.addInitScript(() => {
-        window.localStorage.setItem(
-          'panelStates',
-          JSON.stringify({
-            isOperationsCollapsed: false,
-          }),
-        );
-      }, theme);
-
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          batchOperations: [],
-          groupedDecisions: mockGroupedDecisions,
-          decisionXml: '',
-          decisionInstances: {
-            decisionInstances: [],
-            totalCount: 0,
-          },
+  test(`empty page`, async ({page, decisionsPage}) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        'panelStates',
+        JSON.stringify({
+          isOperationsCollapsed: false,
         }),
       );
-
-      await decisionsPage.navigateToDecisions({
-        searchParams: {
-          evaluated: 'true',
-          failed: 'true',
-        },
-        options: {
-          waitUntil: 'networkidle',
-        },
-      });
-
-      await expect(page).toHaveScreenshot();
     });
 
-    test(`error page - ${theme}`, async ({page, commonPage, decisionsPage}) => {
-      await commonPage.changeTheme(theme);
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        batchOperations: [],
+        groupedDecisions: mockGroupedDecisions,
+        decisionXml: '',
+        decisionInstances: {
+          decisionInstances: [],
+          totalCount: 0,
+        },
+      }),
+    );
 
-      await page.addInitScript(() => {
-        window.localStorage.setItem(
-          'panelStates',
-          JSON.stringify({
-            isDecisionsFiltersCollapsed: true,
-            isOperationsCollapsed: false,
-          }),
-        );
-      }, theme);
+    await decisionsPage.gotoDecisionsPage({
+      searchParams: {
+        evaluated: 'true',
+        failed: 'true',
+      },
+    });
 
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          groupedDecisions: mockGroupedDecisions,
+    await expect(page).toHaveScreenshot();
+  });
+
+  test(`error page`, async ({page, decisionsPage}) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        'panelStates',
+        JSON.stringify({
+          isDecisionsFiltersCollapsed: true,
+          isOperationsCollapsed: false,
         }),
       );
-
-      await decisionsPage.navigateToDecisions({
-        searchParams: {
-          evaluated: 'true',
-          failed: 'true',
-          name: 'invoiceClassification',
-          version: '2',
-        },
-        options: {
-          waitUntil: 'networkidle',
-        },
-      });
-
-      await expect(decisionsPage.fetchErrorMessage).toBeVisible();
-      await expect(decisionsPage.diagramSpinner).not.toBeVisible();
-
-      await expect(page).toHaveScreenshot();
     });
 
-    test(`filled with data - ${theme}`, async ({
-      page,
-      commonPage,
-      decisionsPage,
-    }) => {
-      await commonPage.changeTheme(theme);
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        groupedDecisions: mockGroupedDecisions,
+      }),
+    );
 
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          groupedDecisions: mockGroupedDecisions,
-          batchOperations: mockBatchOperations,
-          decisionInstances: mockDecisionInstances,
-          decisionXml: mockDecisionXml,
+    await decisionsPage.gotoDecisionsPage({
+      searchParams: {
+        evaluated: 'true',
+        failed: 'true',
+        name: 'invoiceClassification',
+        version: '2',
+      },
+    });
+
+    await expect(decisionsPage.fetchErrorMessage).toBeVisible();
+    await expect(decisionsPage.diagramSpinner).not.toBeVisible();
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test(`filled with data`, async ({page, decisionsPage}) => {
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        groupedDecisions: mockGroupedDecisions,
+        batchOperations: mockBatchOperations,
+        decisionInstances: mockDecisionInstances,
+        decisionXml: mockDecisionXml,
+      }),
+    );
+
+    await decisionsPage.gotoDecisionsPage({
+      searchParams: {
+        evaluated: 'true',
+        failed: 'true',
+        name: 'invoiceClassification',
+        version: '2',
+      },
+    });
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test(`filled with data and operations panel expanded`, async ({
+    page,
+    decisionsPage,
+  }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        'panelStates',
+        JSON.stringify({
+          isOperationsCollapsed: false,
         }),
       );
-
-      await decisionsPage.navigateToDecisions({
-        searchParams: {
-          evaluated: 'true',
-          failed: 'true',
-          name: 'invoiceClassification',
-          version: '2',
-        },
-        options: {
-          waitUntil: 'networkidle',
-        },
-      });
-
-      await expect(page).toHaveScreenshot();
     });
 
-    test(`filled with data and operations panel expanded - ${theme}`, async ({
-      page,
-      commonPage,
-      decisionsPage,
-    }) => {
-      await commonPage.changeTheme(theme);
-      await page.addInitScript(() => {
-        window.localStorage.setItem(
-          'panelStates',
-          JSON.stringify({
-            isOperationsCollapsed: false,
-          }),
-        );
-      }, theme);
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        groupedDecisions: mockGroupedDecisions,
+        batchOperations: mockBatchOperations,
+        decisionInstances: mockDecisionInstances,
+        decisionXml: mockDecisionXml,
+      }),
+    );
 
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          groupedDecisions: mockGroupedDecisions,
-          batchOperations: mockBatchOperations,
-          decisionInstances: mockDecisionInstances,
-          decisionXml: mockDecisionXml,
+    await decisionsPage.gotoDecisionsPage({
+      searchParams: {
+        evaluated: 'true',
+        failed: 'true',
+        name: 'invoiceClassification',
+        version: '2',
+      },
+    });
+
+    await expect(page).toHaveScreenshot();
+  });
+
+  test(`optional filters visible`, async ({page, decisionsPage}) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        'panelStates',
+        JSON.stringify({
+          isOperationsCollapsed: false,
         }),
       );
-
-      await decisionsPage.navigateToDecisions({
-        searchParams: {
-          evaluated: 'true',
-          failed: 'true',
-          name: 'invoiceClassification',
-          version: '2',
-        },
-        options: {
-          waitUntil: 'networkidle',
-        },
-      });
-
-      await expect(page).toHaveScreenshot();
     });
 
-    test(`optional filters visible - ${theme}`, async ({
-      page,
-      commonPage,
-      decisionsPage,
-    }) => {
-      await commonPage.changeTheme(theme);
-      await page.addInitScript(() => {
-        window.localStorage.setItem(
-          'panelStates',
-          JSON.stringify({
-            isOperationsCollapsed: false,
-          }),
-        );
-      }, theme);
+    await page.route(
+      URL_API_PATTERN,
+      mockResponses({
+        groupedDecisions: mockGroupedDecisions,
+        batchOperations: mockBatchOperations,
+        decisionInstances: mockDecisionInstances,
+        decisionXml: mockDecisionXml,
+      }),
+    );
 
-      await page.route(
-        URL_API_PATTERN,
-        mockResponses({
-          groupedDecisions: mockGroupedDecisions,
-          batchOperations: mockBatchOperations,
-          decisionInstances: mockDecisionInstances,
-          decisionXml: mockDecisionXml,
-        }),
-      );
-
-      await decisionsPage.navigateToDecisions({
-        searchParams: {
-          evaluated: 'true',
-          failed: 'true',
-          name: 'invoiceClassification',
-          version: '2',
-        },
-        options: {
-          waitUntil: 'networkidle',
-        },
-      });
-
-      await decisionsPage.displayOptionalFilter('Process Instance Key');
-      await decisionsPage.displayOptionalFilter('Decision Instance Key(s)');
-      await decisionsPage.decisionInstanceKeysFilter.type('aaa');
-      await decisionsPage.displayOptionalFilter('Evaluation Date Range');
-
-      await expect(page).toHaveScreenshot();
+    await decisionsPage.gotoDecisionsPage({
+      searchParams: {
+        evaluated: 'true',
+        failed: 'true',
+        name: 'invoiceClassification',
+        version: '2',
+      },
     });
-  }
+
+    await decisionsPage.displayOptionalFilter('Process Instance Key');
+    await decisionsPage.displayOptionalFilter('Decision Instance Key(s)');
+    await decisionsPage.decisionInstanceKeysFilter.type('aaa');
+    await decisionsPage.displayOptionalFilter('Evaluation Date Range');
+
+    await expect(page).toHaveScreenshot();
+  });
 });

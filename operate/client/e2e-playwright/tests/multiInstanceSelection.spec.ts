@@ -8,7 +8,7 @@
 
 import {expect} from '@playwright/test';
 import {config} from '../config';
-import {test} from '../test-fixtures';
+import {test} from '../e2e-fixtures';
 import {SETUP_WAITING_TIME} from './constants';
 import {setup} from './multiInstanceSelection.mocks';
 
@@ -53,7 +53,7 @@ test.beforeEach(async ({processInstancePage}) => {
     multiInstanceProcessInstance: {processInstanceKey},
   } = initialData;
 
-  await processInstancePage.navigateToProcessInstance({id: processInstanceKey});
+  await processInstancePage.gotoProcessInstancePage({id: processInstanceKey});
 });
 
 test.describe('Multi Instance Flow Node Selection', () => {

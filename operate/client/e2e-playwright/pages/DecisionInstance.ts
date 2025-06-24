@@ -7,8 +7,6 @@
  */
 
 import {Locator, Page} from '@playwright/test';
-import {Paths} from 'modules/Routes';
-import {relativizePath} from './utils/relativizePath';
 
 export class DecisionInstance {
   private page: Page;
@@ -43,13 +41,11 @@ export class DecisionInstance {
     await this.drdPanel.getByRole('button', {name: /close drd panel/i}).click();
   }
 
-  async navigateToDecisionInstance({
+  async gotoDecisionInstance({
     decisionInstanceKey,
   }: {
     decisionInstanceKey: string;
   }) {
-    await this.page.goto(
-      relativizePath(Paths.decisionInstance(decisionInstanceKey)),
-    );
+    await this.page.goto(`/operate/decisions/${decisionInstanceKey}`);
   }
 }

@@ -7,7 +7,7 @@
  */
 
 import {setup} from './batchMoveModification.mocks';
-import {test} from '../test-fixtures';
+import {test} from '../e2e-fixtures';
 import {expect} from '@playwright/test';
 import {SETUP_WAITING_TIME} from './constants';
 import {config} from '../config';
@@ -55,7 +55,7 @@ test.describe('Process Instance Batch Modification', () => {
       (instance) => instance.processInstanceKey,
     );
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         ids: processInstanceKeys.join(','),
@@ -194,7 +194,7 @@ test.describe('Process Instance Batch Modification', () => {
   });
 
   test('Exit Modal', async ({processesPage, page}) => {
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         process: 'orderProcess',

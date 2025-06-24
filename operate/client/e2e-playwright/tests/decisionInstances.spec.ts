@@ -7,7 +7,7 @@
  */
 
 import {setup} from './decisionInstances.mocks';
-import {test} from '../test-fixtures';
+import {test} from '../e2e-fixtures';
 import {SETUP_WAITING_TIME} from './constants';
 import {expect} from '@playwright/test';
 import {config} from '../config';
@@ -48,7 +48,7 @@ test.describe('Decision Instances', () => {
       decision2Version2,
     ] = decisions;
 
-    await decisionsPage.navigateToDecisions({
+    await decisionsPage.gotoDecisionsPage({
       searchParams: {
         evaluated: 'true',
         failed: 'true',

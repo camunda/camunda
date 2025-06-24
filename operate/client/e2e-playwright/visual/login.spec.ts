@@ -6,14 +6,27 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test, expect} from '@playwright/test';
-import {Paths} from 'modules/Routes';
+import {loginTest as test} from '../visual-fixtures';
+import {expect} from '@playwright/test';
+import {clientConfigMock} from '../mocks/clientConfig';
+
+test.beforeEach(async ({context}) => {
+  await context.route('**/client-config.js', (route) =>
+    route.fulfill({
+      status: 200,
+      headers: {
+        'Content-Type': 'text/javascript;charset=UTF-8',
+      },
+      body: clientConfigMock,
+    }),
+  );
+});
 
 test.describe('login page', () => {
-  test('empty page', async ({page}) => {
-    await page.goto(Paths.login(), {
-      waitUntil: 'networkidle',
-    });
+  test('empty page', async ({page, loginPage}) => {
+    await loginPage.gotoLoginPage();
+
+    await expect(page.getByRole('heading', {name: 'Operate'})).toBeVisible();
 
     await expect(page).toHaveScreenshot();
   });

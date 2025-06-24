@@ -7,7 +7,7 @@
  */
 
 import {setup} from './processInstanceMigration.mocks';
-import {test} from '../test-fixtures';
+import {test} from '../e2e-fixtures';
 import {expect} from '@playwright/test';
 import {SETUP_WAITING_TIME, SETUP_WAITING_TIME_LONG} from './constants';
 import {config} from '../config';
@@ -170,7 +170,7 @@ test.describe.skip('Process Instance Migration', () => {
     const targetVersion = initialData.processV2.version.toString();
     const targetBpmnProcessId = initialData.processV2.bpmnProcessId;
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {active: 'true', incidents: 'true'},
     });
 
@@ -375,7 +375,7 @@ test.describe.skip('Process Instance Migration', () => {
 
   test('Migrated event sub processes', async ({commonPage, processesPage}) => {
     const {processV2} = initialData;
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         incidents: 'true',
@@ -392,7 +392,7 @@ test.describe.skip('Process Instance Migration', () => {
       .getByRole('link')
       .innerText();
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         incidents: 'true',
@@ -426,7 +426,7 @@ test.describe.skip('Process Instance Migration', () => {
     const targetVersion = initialData.processV3.version.toString();
     const targetBpmnProcessId = initialData.processV3.bpmnProcessId;
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {active: 'true', incidents: 'true'},
     });
 
@@ -701,7 +701,7 @@ test.describe.skip('Process Instance Migration', () => {
       )
       .toHaveProperty('total', 3);
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         incidents: 'true',
@@ -894,7 +894,7 @@ test.describe.skip('Process Instance Migration', () => {
   }) => {
     const {processV3} = initialData;
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         incidents: 'true',
@@ -1001,7 +1001,7 @@ test.describe.skip('Process Instance Migration', () => {
   }) => {
     const {processV3} = initialData;
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         incidents: 'true',
@@ -1050,7 +1050,7 @@ test.describe.skip('Process Instance Migration', () => {
     const targetBpmnProcessId = initialData.processV3.bpmnProcessId;
     const targetVersion = initialData.processV3.version.toString();
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         incidents: 'true',
@@ -1102,7 +1102,7 @@ test.describe.skip('Process Instance Migration', () => {
       )
       .toHaveProperty('total', 3);
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         incidents: 'true',
@@ -1142,7 +1142,7 @@ test.describe.skip('Process Instance Migration', () => {
     const targetBpmnProcessId = initialData.processV3.bpmnProcessId;
     const targetVersion = initialData.processV3.version.toString();
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         incidents: 'true',

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '../test-fixtures';
+import {test} from '../visual-fixtures';
 import {expect} from '@playwright/test';
 
 import {mockResponses as mockProcessesResponses} from '../mocks/processes.mocks';
@@ -82,14 +82,13 @@ test.describe('variables and incidents', () => {
       }),
     );
 
-    await processesPage.navigateToProcesses({
+    await processesPage.gotoProcessesPage({
       searchParams: {
         active: 'true',
         incidents: 'true',
         process: 'order-process',
         version: '1',
       },
-      options: {waitUntil: 'networkidle'},
     });
 
     await page.screenshot({
@@ -118,9 +117,8 @@ test.describe('variables and incidents', () => {
       }),
     );
 
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: '2251799813725328',
-      options: {waitUntil: 'networkidle'},
     });
 
     await expect(
@@ -200,9 +198,8 @@ test.describe('variables and incidents', () => {
       }),
     );
 
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: '2251799813725328',
-      options: {waitUntil: 'networkidle'},
     });
 
     await expect(
@@ -265,9 +262,8 @@ test.describe('variables and incidents', () => {
       }),
     );
 
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: '2251799813725328',
-      options: {waitUntil: 'networkidle'},
     });
 
     await page.screenshot({
@@ -292,9 +288,8 @@ test.describe('variables and incidents', () => {
       }),
     );
 
-    await processInstancePage.navigateToProcessInstance({
+    await processInstancePage.gotoProcessInstancePage({
       id: '2251799813725328',
-      options: {waitUntil: 'networkidle'},
     });
 
     await page.screenshot({
