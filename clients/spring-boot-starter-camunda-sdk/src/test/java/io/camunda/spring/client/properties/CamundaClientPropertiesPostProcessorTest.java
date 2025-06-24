@@ -1092,7 +1092,7 @@ public class CamundaClientPropertiesPostProcessorTest {
       @Test
       void shouldReadGrpcAddress() {
         assertThat(camundaClientProperties.getRestAddress())
-            .isEqualTo(URI.create("http://localhost:8080"));
+            .isEqualTo(URI.create("http://localhost:18088"));
       }
     }
 
