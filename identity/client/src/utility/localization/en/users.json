@@ -23,7 +23,6 @@
   "actionCannotBeUndone": "This action cannot be undone.",
   "updatingUser": "Updating user",
   "updateUser": "Update user",
-  "validEmail": "Please enter a valid email",
   "newPassword": "New Password",
   "enterNewPassword": "Enter new password",
   "keepCurrentPassword": "Leave empty to keep current password",

@@ -7,13 +7,15 @@
  */
 
 import styled from "styled-components";
+import { layer01, borderStrong01, spacing05 } from "@carbon/elements";
 
-const Divider = styled.hr`
+const Divider = styled.hr<{ $highContrast?: boolean; $noMargin?: boolean }>`
   width: 100%;
-  border-top: 1px solid var(--cds-layer-01);
+  border-top: 1px solid
+    ${({ $highContrast }) => ($highContrast ? borderStrong01 : layer01)};
   border-left: none;
   border-right: none;
-  margin-top: 1rem;
+  margin: ${({ $noMargin }) => ($noMargin ? 0 : `${spacing05} 0 0 0`)};
 `;
 
 export default Divider;

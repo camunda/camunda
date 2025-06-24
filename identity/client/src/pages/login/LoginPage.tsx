@@ -9,7 +9,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import {
-  Button,
   InlineNotification,
   Link,
   PasswordInput,
@@ -27,6 +26,7 @@ import {
   CopyrightNotice,
   Header,
   LicenseInfo,
+  Button,
 } from "src/pages/login/styled.ts";
 import { Paths } from "src/components/global/routePaths";
 
