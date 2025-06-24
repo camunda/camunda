@@ -20,11 +20,9 @@ async function createHealthStatusConfig() {
   const githubService = new GitHubService(GITHUB_TOKEN, GITHUB_ORG, GITHUB_REPO);
   const releaseBranches = await githubService.getBranchesWithPrefix('release/optimize-');
   const optimizeStableBranches = await githubService.getBranchesWithPrefix('stable/optimize-');
-  const ciBranches = [
-    MAIN_BRANCH,
-    ...releaseBranches,
-    ...optimizeStableBranches,
-  ].sort(githubService.sortBranches);
+  const ciBranches = [MAIN_BRANCH, ...releaseBranches, ...optimizeStableBranches].sort(
+    githubService.sortBranches,
+  );
 
   const config: Partial<Config> = {
     github: {
@@ -33,7 +31,11 @@ async function createHealthStatusConfig() {
       defaultBranch: MAIN_BRANCH,
       workflows: [
         {
-          name: 'optimize-ci',
+          name: 'optimize-ci-core-features',
+          branches: ciBranches,
+        },
+        {
+          name: 'optimize-ci-data-layer',
           branches: ciBranches,
         },
         'optimize-zeebe-compatibility',
