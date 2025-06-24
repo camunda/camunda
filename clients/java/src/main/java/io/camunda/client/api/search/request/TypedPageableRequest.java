@@ -13,8 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.filter;
+package io.camunda.client.api.search.request;
 
-import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
+import java.util.function.Consumer;
 
-public interface ClientFilter extends SearchRequestFilter {}
+public interface TypedPageableRequest<SELF extends TypedPageableRequest<SELF>> {
+
+  /**
+   * Support for pagination.
+   *
+   * @param value the next page
+   * @return the builder for the search request
+   */
+  SELF page(final SearchRequestPage value);
+
+  /**
+   * Provides a fluent builder to support pagination.
+   *
+   * @param fn consumer to support pagination
+   * @return the builder for the search request
+   */
+  SELF page(final Consumer<SearchRequestPage> fn);
+}

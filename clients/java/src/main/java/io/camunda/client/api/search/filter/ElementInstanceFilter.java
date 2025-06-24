@@ -18,7 +18,7 @@ package io.camunda.client.api.search.filter;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.client.api.search.filter.builder.ElementInstanceStateProperty;
-import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestFilter;
+import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
 import java.util.function.Consumer;
 
 public interface ElementInstanceFilter extends SearchRequestFilter {

@@ -15,7 +15,7 @@
  */
 package io.camunda.client.api.search.sort;
 
-import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestSort;
+import io.camunda.client.api.search.request.TypedSortableRequest.SearchRequestSort;
 
 public interface MappingSort extends SearchRequestSort<MappingSort> {
 

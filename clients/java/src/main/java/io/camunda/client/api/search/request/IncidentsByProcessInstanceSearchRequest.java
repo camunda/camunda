@@ -17,39 +17,8 @@ package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.sort.IncidentSort;
-import java.util.function.Consumer;
 
-public interface IncidentsByProcessInstanceSearchRequest extends FinalSearchRequestStep<Incident> {
-
-  /**
-   * Sets the sorting the returned entities should be sorted by.
-   *
-   * @param value the sort options
-   * @return the builder for the search request
-   */
-  IncidentsByProcessInstanceSearchRequest sort(IncidentSort value);
-
-  /**
-   * Provides a fluent builder to provide sorting options the returned entities should sorted by
-   *
-   * @param fn consumer to create the sort options
-   * @return the builder for the search request
-   */
-  IncidentsByProcessInstanceSearchRequest sort(Consumer<IncidentSort> fn);
-
-  /**
-   * Support for pagination.
-   *
-   * @param value the next page
-   * @return the builder for the search request
-   */
-  IncidentsByProcessInstanceSearchRequest page(SearchRequestPage value);
-
-  /**
-   * Provides a fluent builder to support pagination.
-   *
-   * @param fn consumer to support pagination
-   * @return the builder for the search request
-   */
-  IncidentsByProcessInstanceSearchRequest page(Consumer<SearchRequestPage> fn);
-}
+public interface IncidentsByProcessInstanceSearchRequest
+    extends TypedSortableRequest<IncidentSort, IncidentsByProcessInstanceSearchRequest>,
+        TypedPageableRequest<IncidentsByProcessInstanceSearchRequest>,
+        FinalSearchRequestStep<Incident> {}
