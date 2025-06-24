@@ -8,6 +8,7 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.index.AuthorizationIndex.ID;
@@ -30,10 +31,31 @@ public final class AuthorizationFilterTransformer
 
   @Override
   public SearchQuery toSearchQuery(final AuthorizationFilter filter) {
+    if (filter.ownerTypeToOwnerIds() != null && !filter.ownerTypeToOwnerIds().isEmpty()) {
+      return buildOwnerTypeToOwnerIdsQuery(filter);
+    }
+
+    return and(
+        buildCoreFilters(filter),
+        stringTerms(OWNER_ID, filter.ownerIds()),
+        filter.ownerType() == null ? null : term(OWNER_TYPE, filter.ownerType()));
+  }
+
+  private SearchQuery buildOwnerTypeToOwnerIdsQuery(final AuthorizationFilter filter) {
+    return or(
+        filter.ownerTypeToOwnerIds().entrySet().stream()
+            .map(
+                entry ->
+                    and(
+                        buildCoreFilters(filter),
+                        term(OWNER_TYPE, entry.getKey().name()),
+                        stringTerms(OWNER_ID, entry.getValue())))
+            .toList());
+  }
+
+  private SearchQuery buildCoreFilters(final AuthorizationFilter filter) {
     return and(
         filter.authorizationKey() == null ? null : term(ID, filter.authorizationKey()),
-        stringTerms(OWNER_ID, filter.ownerIds()),
-        filter.ownerType() == null ? null : term(OWNER_TYPE, filter.ownerType()),
         stringTerms(RESOURCE_ID, filter.resourceIds()),
         filter.resourceType() == null ? null : term(RESOURCE_TYPE, filter.resourceType()),
         filter.permissionTypes() == null

@@ -19,9 +19,10 @@ import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -70,8 +71,11 @@ public class CamundaUserDetailsService implements UserDetailsService {
 
     final var authorizedApplications =
         authorizationServices.getAuthorizedApplications(
-            Stream.concat(roles.stream().map(RoleEntity::roleId), Stream.of(storedUser.username()))
-                .collect(Collectors.toSet()));
+            Map.of(
+                EntityType.USER,
+                Set.of(storedUser.username()),
+                EntityType.ROLE,
+                roles.stream().map(RoleEntity::roleId).collect(Collectors.toSet())));
 
     final var tenants =
         tenantServices.getTenantsByUserAndGroupsAndRoles(username, groups, roleIds).stream()

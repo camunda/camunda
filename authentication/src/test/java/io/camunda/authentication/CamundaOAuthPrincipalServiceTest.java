@@ -238,7 +238,15 @@ public class CamundaOAuthPrincipalServiceTest {
           .thenReturn(List.of(tenantT1, groupTenant));
 
       when(authorizationServices.getAuthorizedApplications(
-              Set.of("test-id", "test-id-2", "roleR1", "roleGroup")))
+              Map.of(
+                  EntityType.MAPPING,
+                  Set.of("test-id", "test-id-2"),
+                  EntityType.GROUP,
+                  Set.of("group-g1"),
+                  EntityType.USER,
+                  Set.of("foo@camunda.test"),
+                  EntityType.ROLE,
+                  Set.of("roleR1", "roleGroup"))))
           .thenReturn(List.of("*"));
 
       // when
@@ -292,7 +300,16 @@ public class CamundaOAuthPrincipalServiceTest {
                                   Set.of("scooby-doo")))));
       when(roleServices.findAll(expectedQuery)).thenReturn(List.of(roleR1));
 
-      when(authorizationServices.getAuthorizedApplications(Set.of("map-1", "map-2", "roleR1")))
+      when(authorizationServices.getAuthorizedApplications(
+              Map.of(
+                  EntityType.MAPPING,
+                  Set.of("map-1", "map-2"),
+                  EntityType.GROUP,
+                  Set.of("group-g1"),
+                  EntityType.USER,
+                  Set.of("scooby-doo"),
+                  EntityType.ROLE,
+                  Set.of("roleR1"))))
           .thenReturn(List.of("app-1", "app-2"));
 
       // when

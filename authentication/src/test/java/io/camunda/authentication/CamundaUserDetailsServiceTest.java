@@ -27,6 +27,7 @@ import io.camunda.service.UserServices;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
@@ -65,7 +66,12 @@ public class CamundaUserDetailsServiceTest {
                 null));
 
     final var roleId = "admin";
-    when(authorizationServices.getAuthorizedApplications(Set.of(roleId, "roleGroup", TEST_USER_ID)))
+    when(authorizationServices.getAuthorizedApplications(
+            Map.of(
+                EntityType.USER,
+                Set.of(TEST_USER_ID),
+                EntityType.ROLE,
+                Set.of(roleId, "roleGroup"))))
         .thenReturn(List.of("operate", "identity"));
     final var adminGroup = new GroupEntity(1L, "admin", "Admin Group", "description");
     when(groupServices.getGroupsByMemberId(TEST_USER_ID, EntityType.USER))
