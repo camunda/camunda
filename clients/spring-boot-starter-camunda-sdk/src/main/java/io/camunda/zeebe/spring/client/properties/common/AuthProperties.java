@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.spring.client.properties.common;
 
-import io.camunda.zeebe.spring.client.configuration.ClientAssertionProperties;
+import io.camunda.zeebe.spring.client.properties.CamundaClientAuthClientAssertionProperties;
 import java.net.URI;
 import java.time.Duration;
 import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
@@ -35,13 +35,14 @@ public class AuthProperties {
   private Duration readTimeout;
 
   @NestedConfigurationProperty
-  private ClientAssertionProperties clientAssertion = new ClientAssertionProperties();
+  private CamundaClientAuthClientAssertionProperties clientAssertion =
+      new CamundaClientAuthClientAssertionProperties();
 
-  public ClientAssertionProperties getClientAssertion() {
+  public CamundaClientAuthClientAssertionProperties getClientAssertion() {
     return clientAssertion;
   }
 
-  public void setClientAssertion(final ClientAssertionProperties clientAssertion) {
+  public void setClientAssertion(final CamundaClientAuthClientAssertionProperties clientAssertion) {
     this.clientAssertion = clientAssertion;
   }
 
