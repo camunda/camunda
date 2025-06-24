@@ -36,10 +36,14 @@ export function ObjectVariableModal({
 }: ObjectVariableModalProps) {
   const [objectString, setObjectString] = useState<string>();
 
+  const updateObjectString = (objectString: string): void => {
+    setObjectString(objectString ? objectString : t('report.disabledObjectVariables').toString());
+  };
+
   useEffect(() => {
     mightFail(
       loadObjectValues(name, processInstanceId, processDefinitionKey, versions, tenantIds),
-      setObjectString,
+      updateObjectString,
       showError
     );
   }, [mightFail, name, processDefinitionKey, processInstanceId, tenantIds, versions]);
