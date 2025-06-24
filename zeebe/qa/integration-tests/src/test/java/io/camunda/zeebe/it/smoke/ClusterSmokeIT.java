@@ -32,6 +32,7 @@ final class ClusterSmokeIT {
           .withBrokersCount(3)
           .withReplicationFactor(3)
           .withGatewaysCount(1)
+          .withBrokerConfig(b -> b.brokerConfig().getNetwork().setHost("localhost"))
           .build();
 
   @AutoClose private CamundaClient client;
