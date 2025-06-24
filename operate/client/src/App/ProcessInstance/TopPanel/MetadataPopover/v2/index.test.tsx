@@ -308,7 +308,7 @@ describe('MetadataPopover', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should render metadata for multi instance flow nodes', async () => {
+  it('should render metadata for multi instance elements', async () => {
     mockFetchFlowNodeMetadata().withSuccess(multiInstancesMetadata);
     mockFetchFlowNodeMetadata().withSuccess(multiInstancesMetadata);
     flowNodeMetaDataStore.setMetaData(multiInstancesMetadata);

@@ -23,6 +23,7 @@ import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesS
 import {useMemo} from 'react';
 import {Details} from './Details';
 import {createV2InstanceMetadata} from './types';
+import {useGetUserTaskByElementInstance} from 'modules/queries/userTasks/useUserTasksSearch';
 
 type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;
@@ -96,11 +97,22 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     elementInstancesSearchResult,
   ]);
 
+  const {data: userTask, isLoading: isSearchingUserTasks} =
+    useGetUserTaskByElementInstance(
+      elementInstanceMetadata?.elementInstanceKey ?? '',
+      {
+        enabled:
+          !!elementInstanceMetadata?.elementInstanceKey &&
+          elementInstanceMetadata?.type === 'USER_TASK',
+      },
+    );
+
   if (
     elementId === undefined ||
     metaData === null ||
     (shouldFetchElementInstances && isSearchingInstances) ||
-    (!!elementInstanceId && isFetchingInstance)
+    (!!elementInstanceId && isFetchingInstance) ||
+    isSearchingUserTasks
   ) {
     return null;
   }
@@ -139,6 +151,9 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
                 instanceMetadata: createV2InstanceMetadata(
                   instanceMetadata,
                   elementInstanceMetadata,
+                  elementInstanceMetadata.type === 'USER_TASK'
+                    ? userTask
+                    : undefined,
                 ),
               }}
               elementId={elementInstanceMetadata.elementId}
