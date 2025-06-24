@@ -22,6 +22,11 @@ import {useProcessInstance} from 'modules/queries/processInstance/useProcessInst
 import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 
+// TODO: Remove when listeners tab is fully migrated to v2
+import {processInstanceListenersStore} from 'modules/stores/processInstanceListeners';
+import {Listeners as ListenersLegacy} from '../Listeners';
+import {IS_LISTENERS_TAB_V2} from 'modules/feature-flags';
+
 type Props = {
   setListenerTabVisibility: React.Dispatch<React.SetStateAction<boolean>>;
 };
@@ -56,6 +61,11 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
       ...(listenerTypeFilter && {kind: {$eq: listenerTypeFilter}}),
     };
   }
+
+  // TODO: remove when listeners tab is fully migrated to v2
+  const {listenersFailureCount, fetchListeners, reset} =
+    processInstanceListenersStore;
+
   const {
     data: jobs,
     fetchNextPage,
@@ -64,7 +74,8 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
     hasPreviousPage,
   } = useJobs({
     payload: {filter: jobsFilter},
-    disabled: !shouldUseFlowNodeId && !flowNodeInstanceId,
+    disabled:
+      !IS_LISTENERS_TAB_V2 || (!shouldUseFlowNodeId && !flowNodeInstanceId),
     select: (data) => data.pages?.flatMap((page) => page.items),
   });
 
@@ -77,6 +88,46 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
       variablesStore.reset();
     };
   }, [processInstance]);
+
+  // TODO: remove when listeners tab is fully migrated to v2
+  useEffect(() => {
+    if (IS_LISTENERS_TAB_V2) {
+      return;
+    }
+    reset();
+  }, [flowNodeId, flowNodeInstanceId, reset]);
+  useEffect(() => {
+    if (IS_LISTENERS_TAB_V2) {
+      return;
+    }
+
+    if (shouldUseFlowNodeId) {
+      fetchListeners({
+        fetchType: 'initial',
+        processInstanceId: processInstanceId,
+        payload: {
+          flowNodeId,
+          ...(listenerTypeFilter && {listenerTypeFilter}),
+        },
+      });
+    } else if (flowNodeInstanceId) {
+      fetchListeners({
+        fetchType: 'initial',
+        processInstanceId: processInstanceId,
+        payload: {
+          flowNodeInstanceId,
+          ...(listenerTypeFilter && {listenerTypeFilter}),
+        },
+      });
+    }
+  }, [
+    fetchListeners,
+    processInstanceId,
+    flowNodeId,
+    flowNodeInstanceId,
+    shouldUseFlowNodeId,
+    listenerTypeFilter,
+  ]);
 
   return (
     <TabView
@@ -114,29 +165,48 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
                 },
               },
             ]),
-        {
-          id: 'listeners',
-          testId: 'listeners-tab-button',
-          ...(hasFailedListeners && {
-            labelIcon: <WarningFilled />,
-          }),
-          label: 'Listeners',
-          content: (
-            <Listeners
-              jobs={jobs}
-              setListenerTypeFilter={setListenerTypeFilter}
-              fetchNextPage={fetchNextPage}
-              fetchPreviousPage={fetchPreviousPage}
-              hasNextPage={hasNextPage}
-              hasPreviousPage={hasPreviousPage}
-            />
-          ),
-          removePadding: true,
-          onClick: () => {
-            setListenerTabVisibility(true);
-            return variablesStore.stopPolling;
-          },
-        },
+        ...(IS_LISTENERS_TAB_V2
+          ? [
+              {
+                id: 'listeners',
+                testId: 'listeners-tab-button',
+                ...(hasFailedListeners && {
+                  labelIcon: <WarningFilled />,
+                }),
+                label: 'Listeners',
+                content: (
+                  <Listeners
+                    jobs={jobs}
+                    setListenerTypeFilter={setListenerTypeFilter}
+                    fetchNextPage={fetchNextPage}
+                    fetchPreviousPage={fetchPreviousPage}
+                    hasNextPage={hasNextPage}
+                    hasPreviousPage={hasPreviousPage}
+                  />
+                ),
+                removePadding: true,
+                onClick: () => {
+                  setListenerTabVisibility(true);
+                  return variablesStore.stopPolling;
+                },
+              },
+            ]
+          : [
+              {
+                id: 'listeners',
+                testId: 'listeners-tab-button',
+                ...(listenersFailureCount > 0 && {
+                  labelIcon: <WarningFilled />,
+                }),
+                label: 'Listeners',
+                content: <ListenersLegacy />,
+                removePadding: true,
+                onClick: () => {
+                  setListenerTabVisibility(true);
+                  return variablesStore.stopPolling;
+                },
+              },
+            ]),
       ]}
       key={`tabview-${flowNodeId}-${flowNodeInstanceId}`}
     />

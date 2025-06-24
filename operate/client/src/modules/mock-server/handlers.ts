@@ -7,10 +7,12 @@
  */
 
 import {GetJobsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
+import {IS_LISTENERS_TAB_V2} from 'modules/feature-flags';
 import {RequestHandler, rest} from 'msw';
 
-const mockEndpoints = [
-  rest.post('/v2/jobs/search', async (req, res, ctx) => {
+const mockListenerEndpoint = rest.post(
+  '/v2/jobs/search',
+  async (req, res, ctx) => {
     const mockResponse: GetJobsResponseBody = {
       items: [
         {
@@ -44,9 +46,11 @@ const mockEndpoints = [
     };
 
     return res(ctx.json(mockResponse));
-  }),
-];
+  },
+);
 
-const handlers: RequestHandler[] = [...mockEndpoints];
+const handlers: RequestHandler[] = [
+  ...(IS_LISTENERS_TAB_V2 ? [mockListenerEndpoint] : []),
+];
 
 export {handlers};
