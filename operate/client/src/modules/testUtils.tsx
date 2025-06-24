@@ -13,7 +13,7 @@ import {ProcessInstanceByNameDto} from './api/incidents/fetchProcessInstancesByN
 import {ProcessDto} from './api/processes/fetchGroupedProcesses';
 import {IncidentDto} from './api/processInstances/fetchProcessInstanceIncidents';
 import {BatchOperationDto} from './api/sharedTypes';
-import {Variable} from '@vzeta/camunda-api-zod-schemas/process-management';
+import {Variable} from '@vzeta/camunda-api-zod-schemas';
 
 /**
  * @returns a jest mock function that resolves with given value

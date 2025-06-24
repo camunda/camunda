@@ -7,7 +7,7 @@
  */
 
 import {InfiniteData} from '@tanstack/react-query';
-import {QueryVariablesResponseBody} from '@vzeta/camunda-api-zod-schemas/process-management';
+import {QueryVariablesResponseBody} from '@vzeta/camunda-api-zod-schemas';
 import React from 'react';
 
 export type VariablesDisplayStatus =

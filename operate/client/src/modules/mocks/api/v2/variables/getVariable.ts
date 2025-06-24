@@ -7,7 +7,7 @@
  */
 
 import {mockGetRequest} from '../../mockRequest';
-import {Variable} from '@vzeta/camunda-api-zod-schemas/process-management';
+import {Variable} from '@vzeta/camunda-api-zod-schemas';
 
 const mockGetVariable = (contextPath = '') =>
   mockGetRequest<Variable>(`${contextPath}/v2/variables/:variableKey`);

@@ -50,28 +50,8 @@ test.describe('process detail', () => {
       }),
     );
 
-    await page.route(
-      URL_API_PATTERN,
-      mockResponses({
-        processInstanceDetail: runningInstance.detail,
-        processInstanceDetailV2: runningInstance.detailV2,
-        callHierarchy: runningInstance.callHierarchy,
-        flowNodeInstances: runningInstance.flowNodeInstances,
-        statisticsV2: runningInstance.statisticsV2,
-        sequenceFlows: runningInstance.sequenceFlows,
-        sequenceFlowsV2: runningInstance.sequenceFlowsV2,
-        variables: runningInstance.variables,
-        variablesV2: runningInstance.variablesV2,
-        xml: runningInstance.xml,
-        metaData: runningInstance.metaData,
-      }),
-    );
-
     await processInstancePage.gotoProcessInstancePage({
       id: '1',
-      options: {
-        waitUntil: 'networkidle',
-      },
     });
 
     // TODO: Enable 'aria-required-parent' and 'list' rules when https://github.com/carbon-design-system/carbon/issues/14944 is implemented and necessary changes are made in our code base.
@@ -123,22 +103,6 @@ test.describe('process detail', () => {
       .analyze();
 
     validateResults(results);
-    await page.route(
-      URL_API_PATTERN,
-      mockResponses({
-        processInstanceDetail: runningInstance.detail,
-        processInstanceDetailV2: runningInstance.detailV2,
-        callHierarchy: runningInstance.callHierarchy,
-        flowNodeInstances: runningInstance.flowNodeInstances,
-        statisticsV2: runningInstance.statisticsV2,
-        sequenceFlows: runningInstance.sequenceFlows,
-        sequenceFlowsV2: runningInstance.sequenceFlowsV2,
-        variables: runningInstance.variables,
-        variablesV2: runningInstance.variablesV2,
-        xml: runningInstance.xml,
-        metaData: runningInstance.metaData,
-      }),
-    );
 
     // edit variable state
     const resultsWithEditVariableState = await makeAxeBuilder()

@@ -7,7 +7,7 @@
  */
 
 import {skipToken, useQuery, UseQueryResult} from '@tanstack/react-query';
-import {Variable} from '@vzeta/camunda-api-zod-schemas/process-management';
+import {Variable} from '@vzeta/camunda-api-zod-schemas';
 import {RequestError} from 'modules/request';
 import {getVariable} from 'modules/api/v2/variables/getVariable';
 

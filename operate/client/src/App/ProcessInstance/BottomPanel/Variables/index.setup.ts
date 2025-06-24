@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {QueryVariablesResponseBody} from '@vzeta/camunda-api-zod-schemas/process-management';
+import {QueryVariablesResponseBody} from '@vzeta/camunda-api-zod-schemas';
 import {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 
 const mockVariables: VariableEntity[] = [

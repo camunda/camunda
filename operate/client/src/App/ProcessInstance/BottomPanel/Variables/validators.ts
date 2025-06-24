@@ -13,7 +13,7 @@ import {ERRORS, VALIDATION_DELAY} from './constants';
 import get from 'lodash/get';
 import {getNewVariablePrefix} from './getNewVariablePrefix';
 import {VariableFormValues} from 'modules/types/variables';
-import {Variable} from '@vzeta/camunda-api-zod-schemas/process-management';
+import {Variable} from '@vzeta/camunda-api-zod-schemas';
 import {variablesStore} from 'modules/stores/variables';
 
 const validateNameCharacters: FieldValidator<string | undefined> = (

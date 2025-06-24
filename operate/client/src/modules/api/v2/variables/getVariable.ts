@@ -6,10 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  endpoints,
-  Variable,
-} from '@vzeta/camunda-api-zod-schemas/process-management';
+import {endpoints, Variable} from '@vzeta/camunda-api-zod-schemas';
 import {RequestResult, requestWithThrow} from 'modules/request';
 
 const getVariable = async (variableKey: string): RequestResult<Variable> => {

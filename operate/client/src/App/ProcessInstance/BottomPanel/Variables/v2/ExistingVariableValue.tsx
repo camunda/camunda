@@ -20,7 +20,7 @@ import {LoadingTextfield} from '../LoadingTextField';
 import {Layer} from '@carbon/react';
 import {useSelectedFlowNodeName} from 'modules/hooks/flowNodeSelection';
 import {getScopeId} from 'modules/utils/variables';
-import {Variable} from '@vzeta/camunda-api-zod-schemas/process-management';
+import {Variable} from '@vzeta/camunda-api-zod-schemas';
 import {useVariable} from 'modules/queries/variables/useVariable';
 import {notificationsStore} from 'modules/stores/notifications';
 
