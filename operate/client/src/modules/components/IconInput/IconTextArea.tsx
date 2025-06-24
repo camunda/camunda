@@ -15,7 +15,7 @@
  * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
  */
 
-import {Icon} from '@carbon/react/icons';
+import {CarbonIconType as Icon} from '@carbon/react/icons';
 import {
   TextArea as BaseTextArea,
   IconButton as BaseIconButton,
