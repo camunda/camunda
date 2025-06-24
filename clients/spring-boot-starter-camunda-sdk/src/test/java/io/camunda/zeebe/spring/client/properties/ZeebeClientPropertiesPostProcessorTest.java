@@ -1042,7 +1042,7 @@ public class ZeebeClientPropertiesPostProcessorTest {
       @Test
       void shouldReadGrpcAddress() {
         assertThat(camundaClientProperties.getZeebe().getRestAddress())
-            .isEqualTo(URI.create("http://localhost:8080"));
+            .isEqualTo(URI.create("http://localhost:18088"));
       }
     }
 
