@@ -18,6 +18,7 @@ package io.camunda.spring.client.properties;
 import java.net.URI;
 import java.time.Duration;
 import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class CamundaClientAuthProperties {
   private AuthMethod method;
@@ -43,6 +44,18 @@ public class CamundaClientAuthProperties {
   private String credentialsCachePath;
   private Duration connectTimeout;
   private Duration readTimeout;
+
+  @NestedConfigurationProperty
+  private CamundaClientAuthClientAssertionProperties clientAssertion =
+      new CamundaClientAuthClientAssertionProperties();
+
+  public CamundaClientAuthClientAssertionProperties getClientAssertion() {
+    return clientAssertion;
+  }
+
+  public void setClientAssertion(final CamundaClientAuthClientAssertionProperties clientAssertion) {
+    this.clientAssertion = clientAssertion;
+  }
 
   public AuthMethod getMethod() {
     return method;
