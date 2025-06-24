@@ -16,10 +16,10 @@
  */
 
 import {
-  CarbonIconType as Icon,
   Error,
   Tools,
   RetryFailed,
+  CarbonIconType as Icon,
 } from '@carbon/react/icons';
 import {Button, ButtonSize} from '@carbon/react';
 
@@ -37,7 +37,12 @@ type ItemProps = {
 const TYPE_DETAILS: Readonly<
   Record<
     ItemProps['type'],
-    {icon?: Icon; testId: string; isDangerous?: boolean; label?: string}
+    {
+      icon?: Icon;
+      testId: string;
+      isDangerous?: boolean;
+      label?: string;
+    }
   >
 > = {
   RESOLVE_INCIDENT: {icon: RetryFailed, testId: 'retry-operation'},
