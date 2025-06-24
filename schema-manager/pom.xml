@@ -167,11 +167,30 @@
             <ignoredNonTestScopedDependency>com.fasterxml.jackson.core:jackson-core</ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
         </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <!-- required to resolve the byte-buddy-agent jar location for the surefire and failsafe plugins -->
+              <goal>properties</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>-javaagent:${net.bytebuddy:byte-buddy-agent:jar}</argLine>
+        </configuration>
       </plugin>
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <argLine>-javaagent:${net.bytebuddy:byte-buddy-agent:jar}</argLine>
+        </configuration>
       </plugin>
 
     </plugins>
