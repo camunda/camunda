@@ -113,11 +113,16 @@
 /zeebe/transport @camunda/zeebe-distributed-platform
 
 # Broker packages
+/zeebe/broker/src/test/java/io/camunda/zeebe/broker/backup @camunda/zeebe-distributed-platform
 /zeebe/broker/src/main/java/io/camunda/zeebe/broker/clustering @camunda/zeebe-distributed-platform
 /zeebe/broker/src/main/java/io/camunda/zeebe/broker/logstreams @camunda/zeebe-distributed-platform
+/zeebe/broker/src/test/java/io/camunda/zeebe/broker/logstreams @camunda/zeebe-distributed-platform
 /zeebe/broker/src/main/java/io/camunda/zeebe/broker/partitioning @camunda/zeebe-distributed-platform
+/zeebe/broker/src/test/java/io/camunda/zeebe/broker/partitioning @camunda/zeebe-distributed-platform
 /zeebe/broker/src/main/java/io/camunda/zeebe/broker/raft @camunda/zeebe-distributed-platform
+/zeebe/broker/src/test/java/io/camunda/zeebe/broker/raft @camunda/zeebe-distributed-platform
 /zeebe/broker/src/main/java/io/camunda/zeebe/broker/transport @camunda/zeebe-distributed-platform
+/zeebe/broker/src/test/java/io/camunda/zeebe/broker/transport @camunda/zeebe-distributed-platform
 
 # Performance  + Load testing
 /zeebe/benchmarks @camunda/zeebe-distributed-platform
