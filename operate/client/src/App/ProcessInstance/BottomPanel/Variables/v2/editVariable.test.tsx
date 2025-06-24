@@ -568,7 +568,7 @@ describe('Edit variable', () => {
     jest.useRealTimers();
   });
 
-  it.only('should load full value on json viewer click during modification mode if it was truncated', async () => {
+  it('should load full value on json viewer click during modification mode if it was truncated', async () => {
     modificationsStore.enableModificationMode();
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 

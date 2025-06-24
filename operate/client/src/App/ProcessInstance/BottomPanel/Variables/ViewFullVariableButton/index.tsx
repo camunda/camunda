@@ -13,7 +13,7 @@ import {Popup} from '@carbon/react/icons';
 import {Operations} from '../Operations';
 
 type Props = {
-  onClick?: () => void;
+  onClick?: () => Promise<string | null>;
   variableName: string;
 };
 

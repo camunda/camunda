@@ -293,7 +293,7 @@ describe('VariablePanel', () => {
       ),
     ).toBeInTheDocument();
 
-    let withinVariablesList = within(screen.getByTestId('variables-list'));
+    const withinVariablesList = within(screen.getByTestId('variables-list'));
     expect(withinVariablesList.queryByTestId('foo')).not.toBeInTheDocument();
 
     await waitForElementToBeRemoved(

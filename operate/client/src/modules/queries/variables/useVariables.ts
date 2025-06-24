@@ -6,7 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {QueryVariablesRequestBody} from '@vzeta/camunda-api-zod-schemas';
+import {
+  QueryVariablesRequestBody,
+  QueryVariablesResponseBody,
+} from '@vzeta/camunda-api-zod-schemas';
 import {useInfiniteQuery} from '@tanstack/react-query';
 import {searchVariables} from 'modules/api/v2/variables/searchVariables';
 import {MAX_VARIABLES_PER_REQUEST} from 'modules/constants/variables';
@@ -48,17 +51,17 @@ function useVariables(
       });
 
       if (response !== null) {
-        return response;
+        return response as QueryVariablesResponseBody;
       }
 
       throw error;
     },
     initialPageParam: 0,
-    getNextPageParam: (lastPage: any, _pages, lastPageParam) => {
+    getNextPageParam: (lastPage, __pages_, lastPageParam) => {
       const {page} = lastPage;
       if (!page) return null;
       const nextPage =
-        lastPageParam + (page.items?.size ?? MAX_VARIABLES_PER_REQUEST);
+        lastPageParam + (page.totalItems ?? MAX_VARIABLES_PER_REQUEST);
       if (nextPage >= page.totalItems) {
         return null;
       }
