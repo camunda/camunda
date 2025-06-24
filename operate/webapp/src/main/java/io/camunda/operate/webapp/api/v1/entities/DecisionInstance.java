@@ -32,6 +32,7 @@ public class DecisionInstance {
       EVALUATION_DATE = DecisionInstanceTemplate.EVALUATION_DATE,
       EVALUATION_FAILURE = DecisionInstanceTemplate.EVALUATION_FAILURE,
       EVALUATION_FAILURE_MESSAGE = DecisionInstanceTemplate.EVALUATION_FAILURE_MESSAGE,
+      RESULT = DecisionInstanceTemplate.RESULT,
       PROCESS_DEFINITION_KEY = DecisionInstanceTemplate.PROCESS_DEFINITION_KEY,
       PROCESS_INSTANCE_KEY = DecisionInstanceTemplate.PROCESS_INSTANCE_KEY,
       DECISION_ID = DecisionInstanceTemplate.DECISION_ID,
