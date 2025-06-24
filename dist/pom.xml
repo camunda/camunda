@@ -337,7 +337,6 @@
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-registry-otlp</artifactId>
-      <scope>runtime</scope>
     </dependency>
 
     <dependency>
