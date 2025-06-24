@@ -22,7 +22,7 @@ import static io.camunda.client.impl.search.request.TypedSearchRequestPropertyPr
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
-import io.camunda.client.api.search.request.IncidentByProcessInstanceKeySearchRequest;
+import io.camunda.client.api.search.request.IncidentsByProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.SearchResponse;
@@ -37,8 +37,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class IncidentByProcessInstanceKeySearchRequestImpl
-    implements IncidentByProcessInstanceKeySearchRequest {
+public class IncidentsByProcessInstanceSearchRequestImpl
+    implements IncidentsByProcessInstanceSearchRequest {
 
   private final ProcessInstanceIncidentSearchQuery request;
   private final long processInstanceKey;
@@ -46,7 +46,7 @@ public class IncidentByProcessInstanceKeySearchRequestImpl
   private final JsonMapper jsonMapper;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public IncidentByProcessInstanceKeySearchRequestImpl(
+  public IncidentsByProcessInstanceSearchRequestImpl(
       final HttpClient httpClient, final JsonMapper jsonMapper, final long processInstanceKey) {
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
@@ -75,7 +75,7 @@ public class IncidentByProcessInstanceKeySearchRequestImpl
   }
 
   @Override
-  public IncidentByProcessInstanceKeySearchRequest sort(final IncidentSort value) {
+  public IncidentsByProcessInstanceSearchRequest sort(final IncidentSort value) {
     request.setSort(
         SearchRequestSortMapper.toIncidentSearchQuerySortRequest(
             provideSearchRequestProperty(value)));
@@ -83,18 +83,18 @@ public class IncidentByProcessInstanceKeySearchRequestImpl
   }
 
   @Override
-  public IncidentByProcessInstanceKeySearchRequest sort(final Consumer<IncidentSort> fn) {
+  public IncidentsByProcessInstanceSearchRequest sort(final Consumer<IncidentSort> fn) {
     return sort(incidentSort(fn));
   }
 
   @Override
-  public IncidentByProcessInstanceKeySearchRequest page(final SearchRequestPage value) {
+  public IncidentsByProcessInstanceSearchRequest page(final SearchRequestPage value) {
     request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 
   @Override
-  public IncidentByProcessInstanceKeySearchRequest page(final Consumer<SearchRequestPage> fn) {
+  public IncidentsByProcessInstanceSearchRequest page(final Consumer<SearchRequestPage> fn) {
     return page(searchRequestPage(fn));
   }
 }

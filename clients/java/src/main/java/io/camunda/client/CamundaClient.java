@@ -117,8 +117,8 @@ import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
 import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
 import io.camunda.client.api.search.request.GroupsByRoleSearchRequest;
-import io.camunda.client.api.search.request.IncidentByProcessInstanceKeySearchRequest;
 import io.camunda.client.api.search.request.IncidentSearchRequest;
+import io.camunda.client.api.search.request.IncidentsByProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.MappingsByRoleSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
@@ -2406,7 +2406,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *    .send();
    * </pre>
    */
-  IncidentByProcessInstanceKeySearchRequest newIncidentSearchByProcessInstanceKey(
+  IncidentsByProcessInstanceSearchRequest newIncidentsByProcessInstanceSearchRequest(
       long processInstanceKey);
 
   /**

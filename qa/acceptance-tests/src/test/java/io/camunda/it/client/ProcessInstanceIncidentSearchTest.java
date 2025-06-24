@@ -98,7 +98,7 @@ class ProcessInstanceIncidentSearchTest {
             ProblemException.class,
             () ->
                 camundaClient
-                    .newIncidentSearchByProcessInstanceKey(processInstanceKey)
+                    .newIncidentsByProcessInstanceSearchRequest(processInstanceKey)
                     .send()
                     .join());
 
@@ -117,7 +117,7 @@ class ProcessInstanceIncidentSearchTest {
       final long processInstanceKey, final List<Incident> expectedIncidents) {
     // when
     final SearchResponse<Incident> incidentsResult =
-        camundaClient.newIncidentSearchByProcessInstanceKey(processInstanceKey).send().join();
+        camundaClient.newIncidentsByProcessInstanceSearchRequest(processInstanceKey).send().join();
 
     // then
     assertThat(incidentsResult.items().size()).isEqualTo(expectedIncidents.size());
@@ -132,7 +132,7 @@ class ProcessInstanceIncidentSearchTest {
     // when
     final SearchResponse<Incident> incidentsResult =
         camundaClient
-            .newIncidentSearchByProcessInstanceKey(processInstanceKey)
+            .newIncidentsByProcessInstanceSearchRequest(processInstanceKey)
             .sort(s -> s.incidentKey().desc())
             .send()
             .join();
@@ -148,20 +148,20 @@ class ProcessInstanceIncidentSearchTest {
   }
 
   @Test
-  void shouldPaginateWithLimitAndOffset() {
+  void shouldPaginateWithLimitAndCursor() {
     // given
     final var processInstanceKey = processInstancesSortedByKey.getFirst().getProcessInstanceKey();
 
     // when
     final var response1 =
         camundaClient
-            .newIncidentSearchByProcessInstanceKey(processInstanceKey)
+            .newIncidentsByProcessInstanceSearchRequest(processInstanceKey)
             .page(p -> p.limit(1))
             .send()
             .join();
     final var response2 =
         camundaClient
-            .newIncidentSearchByProcessInstanceKey(processInstanceKey)
+            .newIncidentsByProcessInstanceSearchRequest(processInstanceKey)
             .page(p -> p.after(response1.page().endCursor()))
             .send()
             .join();
