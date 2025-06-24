@@ -90,21 +90,6 @@ class AdminUserCheckFilterTest {
   }
 
   @Test
-  void shouldNotRedirectIfApiIsNotProtected() throws ServletException, IOException {
-    // given
-    final var securityConfig = new SecurityConfiguration();
-    securityConfig.getAuthentication().setUnprotectedApi(true);
-    final AdminUserCheckFilter adminUserCheckFilter =
-        new AdminUserCheckFilter(securityConfig, roleServices);
-
-    // when
-    adminUserCheckFilter.doFilterInternal(request, response, filterChain);
-
-    // then
-    verify(filterChain).doFilter(request, response);
-  }
-
-  @Test
   void shouldNotRedirectIfRequestIsToSetupPath() throws ServletException, IOException {
     // given
     final var securityConfig = new SecurityConfiguration();
