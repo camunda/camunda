@@ -41,12 +41,14 @@ public final class OAuthCredentialsProviderBuilder {
   public static final String OAUTH_ENV_CACHE_PATH = "ZEEBE_CLIENT_CONFIG_PATH";
   public static final String OAUTH_ENV_CONNECT_TIMEOUT = "ZEEBE_AUTH_CONNECT_TIMEOUT";
   public static final String OAUTH_ENV_READ_TIMEOUT = "ZEEBE_AUTH_READ_TIMEOUT";
-  public static final String OAUTH_ENV_SSL_CLIENT_CERT_PATH = "OAUTH_SSL_CLIENT_CERT_PATH";
-  public static final String OAUTH_ENV_SSL_CLIENT_CERT_PASSWORD = "OAUTH_SSL_CLIENT_CERT_PASSWORD";
-  public static final String OAUTH_ENV_SSL_CLIENT_CERT_KEY_ALIAS =
-      "OAUTH_SSL_CLIENT_CERT_KEY_ALIAS";
-  public static final String OAUTH_ENV_SSL_CLIENT_CERT_KEY_PASSWORD =
-      "OAUTH_SSL_CLIENT_CERT_KEY_PASSWORD";
+  public static final String OAUTH_ENV_CLIENT_ASSERTION_KEYSTORE_PATH =
+      "ZEEBE_CLIENT_ASSERTION_KEYSTORE_PATH";
+  public static final String OAUTH_ENV_CLIENT_ASSERTION_KEYSTORE_PASSWORD =
+      "ZEEBE_CLIENT_ASSERTION_KEYSTORE_PASSWORD";
+  public static final String OAUTH_ENV_CLIENT_ASSERTION_KEYSTORE_KEY_ALIAS =
+      "ZEEBE_CLIENT_ASSERTION_KEYSTORE_KEY_ALIAS";
+  public static final String OAUTH_ENV_CLIENT_ASSERTION_KEYSTORE_KEY_PASSWORD =
+      "ZEEBE_CLIENT_ASSERTION_KEYSTORE_KEY_PASSWORD";
   private static final String DEFAULT_AUTHZ_SERVER = "https://login.cloud.camunda.io/oauth/token/";
   private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
   private static final Duration DEFAULT_READ_TIMEOUT = DEFAULT_CONNECT_TIMEOUT;
@@ -197,13 +199,13 @@ public final class OAuthCredentialsProviderBuilder {
 
   private void applySSLClientCertConfiguration() {
     applyEnvironmentValueIfNotNull(
-        this::clientAssertionKeystorePath, OAUTH_ENV_SSL_CLIENT_CERT_PATH);
+        this::clientAssertionKeystorePath, OAUTH_ENV_CLIENT_ASSERTION_KEYSTORE_PATH);
     applyEnvironmentValueIfNotNull(
-        this::clientAssertionKeystorePassword, OAUTH_ENV_SSL_CLIENT_CERT_PASSWORD);
+        this::clientAssertionKeystorePassword, OAUTH_ENV_CLIENT_ASSERTION_KEYSTORE_PASSWORD);
     applyEnvironmentValueIfNotNull(
-        this::clientAssertionKeystoreKeyAlias, OAUTH_ENV_SSL_CLIENT_CERT_KEY_ALIAS);
+        this::clientAssertionKeystoreKeyAlias, OAUTH_ENV_CLIENT_ASSERTION_KEYSTORE_KEY_ALIAS);
     applyEnvironmentValueIfNotNull(
-        this::clientAssertionKeystoreKeyPassword, OAUTH_ENV_SSL_CLIENT_CERT_KEY_PASSWORD);
+        this::clientAssertionKeystoreKeyPassword, OAUTH_ENV_CLIENT_ASSERTION_KEYSTORE_KEY_PASSWORD);
   }
 
   private void checkEnvironmentOverrides() {
