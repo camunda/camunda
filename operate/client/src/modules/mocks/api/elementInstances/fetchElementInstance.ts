@@ -6,12 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { mockGetRequest } from '../mockRequest';
-import { GetElementInstanceResponseBody } from '@vzeta/camunda-api-zod-schemas/8.8';
+import {mockGetRequest} from '../mockRequest';
+import {GetElementInstanceResponseBody} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 const mockGetElementInstance = (contextPath = '') =>
   mockGetRequest<GetElementInstanceResponseBody>(
     `${contextPath}/v2/element-instances/:elementInstanceKey`,
   );
 
-export { mockGetElementInstance };
+export {mockGetElementInstance};
