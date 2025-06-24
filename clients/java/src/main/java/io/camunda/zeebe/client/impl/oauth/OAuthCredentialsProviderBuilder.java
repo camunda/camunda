@@ -43,13 +43,15 @@ public final class OAuthCredentialsProviderBuilder {
   public static final String OAUTH_ENV_READ_TIMEOUT = "ZEEBE_AUTH_READ_TIMEOUT";
   public static final String OAUTH_ENV_SSL_CLIENT_CERT_PATH = "OAUTH_SSL_CLIENT_CERT_PATH";
   public static final String OAUTH_ENV_SSL_CLIENT_CERT_PASSWORD = "OAUTH_SSL_CLIENT_CERT_PASSWORD";
-  public static final String OAUTH_ENV_ISSUER = "OAUTH_ISSUER";
+  public static final String OAUTH_ENV_SSL_CLIENT_CERT_KEY_ALIAS =
+      "OAUTH_SSL_CLIENT_CERT_KEY_ALIAS";
+  public static final String OAUTH_ENV_SSL_CLIENT_CERT_KEY_PASSWORD =
+      "OAUTH_SSL_CLIENT_CERT_KEY_PASSWORD";
   private static final String DEFAULT_AUTHZ_SERVER = "https://login.cloud.camunda.io/oauth/token/";
   private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
   private static final Duration DEFAULT_READ_TIMEOUT = DEFAULT_CONNECT_TIMEOUT;
 
   private String clientId;
-  private String issuer;
   private String clientSecret;
   private String audience;
   private String scope;
@@ -60,8 +62,10 @@ public final class OAuthCredentialsProviderBuilder {
   private Duration connectTimeout;
   private Duration readTimeout;
   private boolean applyEnvironmentOverrides = true;
-  private Path sslClientCertPath;
-  private String sslClientCertPassword;
+  private Path clientAssertionKeystorePath;
+  private String clientAssertionKeystorePassword;
+  private String clientAssertionKeystoreKeyAlias;
+  private String clientAssertionKeystoreKeyPassword;
 
   /** Client id to be used when requesting access token from OAuth authorization server. */
   public OAuthCredentialsProviderBuilder clientId(final String clientId) {
@@ -183,18 +187,23 @@ public final class OAuthCredentialsProviderBuilder {
   public OAuthCredentialsProvider build() {
     if (applyEnvironmentOverrides) {
       checkEnvironmentOverrides();
+      applySSLClientCertConfiguration();
     }
     applyDefaults();
-    applySSLClientCertConfiguration();
 
     validate();
     return new OAuthCredentialsProvider(this);
   }
 
   private void applySSLClientCertConfiguration() {
-    applyEnvironmentValueIfNotNull(this::sslClientCertPath, OAUTH_ENV_SSL_CLIENT_CERT_PATH);
-    applyEnvironmentValueIfNotNull(this::sslClientCertPassword, OAUTH_ENV_SSL_CLIENT_CERT_PASSWORD);
-    applyEnvironmentValueIfNotNull(this::issuer, OAUTH_ENV_ISSUER);
+    applyEnvironmentValueIfNotNull(
+        this::clientAssertionKeystorePath, OAUTH_ENV_SSL_CLIENT_CERT_PATH);
+    applyEnvironmentValueIfNotNull(
+        this::clientAssertionKeystorePassword, OAUTH_ENV_SSL_CLIENT_CERT_PASSWORD);
+    applyEnvironmentValueIfNotNull(
+        this::clientAssertionKeystoreKeyAlias, OAUTH_ENV_SSL_CLIENT_CERT_KEY_ALIAS);
+    applyEnvironmentValueIfNotNull(
+        this::clientAssertionKeystoreKeyPassword, OAUTH_ENV_SSL_CLIENT_CERT_KEY_PASSWORD);
   }
 
   private void checkEnvironmentOverrides() {
@@ -264,12 +273,22 @@ public final class OAuthCredentialsProviderBuilder {
   private void validate() {
     try {
       Objects.requireNonNull(clientId, String.format(INVALID_ARGUMENT_MSG, "client id"));
-      if (sslClientCertConfigurationProvided()) {
+      if (clientAssertionEnabled()) {
         // loading the certificate from the provided path to ensure it exists and is valid
         final KeyStore keyStore = KeyStore.getInstance("PKCS12");
         keyStore.load(
-            Files.newInputStream(Paths.get(sslClientCertPath.toAbsolutePath().toString())),
-            sslClientCertPassword.toCharArray());
+            Files.newInputStream(
+                Paths.get(clientAssertionKeystorePath.toAbsolutePath().toString())),
+            clientAssertionKeystorePassword.toCharArray());
+        if (clientAssertionKeystoreKeyPassword == null) {
+          // if the keystore key password is not set, apply the keystore password
+          clientAssertionKeystoreKeyPassword = clientAssertionKeystorePassword;
+        }
+        if (clientAssertionKeystoreKeyAlias == null) {
+          // if the keystore key alias is not set, apply the first one
+          clientAssertionKeystoreKeyAlias = keyStore.aliases().nextElement();
+        }
+
       } else {
         Objects.requireNonNull(clientSecret, String.format(INVALID_ARGUMENT_MSG, "client secret"));
       }
@@ -304,45 +323,61 @@ public final class OAuthCredentialsProviderBuilder {
     }
   }
 
-  public OAuthCredentialsProviderBuilder sslClientCertPath(final String entraCertificatePath) {
-    if (entraCertificatePath != null) {
-      this.sslClientCertPath = Paths.get(entraCertificatePath);
+  public OAuthCredentialsProviderBuilder clientAssertionKeystorePath(
+      final String clientAssertionKeystorePath) {
+    if (clientAssertionKeystorePath != null) {
+      this.clientAssertionKeystorePath = Paths.get(clientAssertionKeystorePath);
     }
     return this;
   }
 
-  public Path getSslClientCertPath() {
-    return sslClientCertPath;
-  }
-
-  /** Issuer to be used when requesting access token from OAuth authorization server. */
-  public OAuthCredentialsProviderBuilder issuer(final String issuer) {
-    this.issuer = issuer;
+  public OAuthCredentialsProviderBuilder clientAssertionKeystorePath(
+      final Path clientAssertionKeystorePath) {
+    if (clientAssertionKeystorePath != null) {
+      this.clientAssertionKeystorePath = clientAssertionKeystorePath;
+    }
     return this;
   }
 
-  /**
-   * @see OAuthCredentialsProviderBuilder#issuer(String)
-   */
-  public String getIssuer() {
-    return issuer;
-  }
-
-  public OAuthCredentialsProviderBuilder sslClientCertPassword(
-      final String entraCertificatePassword) {
-    this.sslClientCertPassword = entraCertificatePassword;
+  public OAuthCredentialsProviderBuilder clientAssertionKeystorePassword(
+      final String clientAssertionKeystorePassword) {
+    this.clientAssertionKeystorePassword = clientAssertionKeystorePassword;
     return this;
   }
 
-  public String getSslClientCertPassword() {
-    return sslClientCertPassword;
+  public OAuthCredentialsProviderBuilder clientAssertionKeystoreKeyPassword(
+      final String clientAssertionKeystoreKeyPassword) {
+    this.clientAssertionKeystoreKeyPassword = clientAssertionKeystoreKeyPassword;
+    return this;
   }
 
-  public boolean sslClientCertConfigurationProvided() {
-    return sslClientCertPassword != null
-        && !sslClientCertPassword.isEmpty()
-        && sslClientCertPath != null
-        && sslClientCertPath.toFile().exists();
+  public OAuthCredentialsProviderBuilder clientAssertionKeystoreKeyAlias(
+      final String clientAssertionKeystoreKeyAlias) {
+    this.clientAssertionKeystoreKeyAlias = clientAssertionKeystoreKeyAlias;
+    return this;
+  }
+
+  public Path getClientAssertionKeystorePath() {
+    return clientAssertionKeystorePath;
+  }
+
+  public String getClientAssertionKeystorePassword() {
+    return clientAssertionKeystorePassword;
+  }
+
+  public String getClientAssertionKeystoreKeyAlias() {
+    return clientAssertionKeystoreKeyAlias;
+  }
+
+  public String getClientAssertionKeystoreKeyPassword() {
+    return clientAssertionKeystoreKeyPassword;
+  }
+
+  public boolean clientAssertionEnabled() {
+    return clientAssertionKeystorePassword != null
+        && !clientAssertionKeystorePassword.isEmpty()
+        && clientAssertionKeystorePath != null
+        && clientAssertionKeystorePath.toFile().exists();
   }
 
   public OAuthCredentialsProviderBuilder applyEnvironmentOverrides(
