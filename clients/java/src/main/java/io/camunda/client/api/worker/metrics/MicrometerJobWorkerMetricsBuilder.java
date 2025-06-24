@@ -64,7 +64,8 @@ public interface MicrometerJobWorkerMetricsBuilder {
   /** Set of possible metrics/metric names. */
   @SuppressWarnings("NullableProblems")
   enum Names implements KeyName {
-    /** Counter backing the {@link JobWorkerMetrics#jobActivated(int)} count. */
+
+    /** New counter name backing the {@link JobWorkerMetrics#jobActivated(int)} count. */
     JOB_ACTIVATED {
       @Override
       public String asString() {
@@ -72,11 +73,39 @@ public interface MicrometerJobWorkerMetricsBuilder {
       }
     },
 
-    /** Counter backing the {@link JobWorkerMetrics#jobHandled(int)} count. */
+    /** New counter name backing the {@link JobWorkerMetrics#jobHandled(int)} count. */
     JOB_HANDLED {
       @Override
       public String asString() {
         return "camunda.client.worker.job.handled";
+      }
+    },
+
+    /**
+     * Counter backing the {@link JobWorkerMetrics#zeebeJobActivated(int)} count.
+     *
+     * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+     *     io.camunda.client.api.worker.metrics.MicrometerJobWorkerMetricsBuilder.Names#JOB_ACTIVATED}
+     */
+    @Deprecated
+    ZEEBE_JOB_ACTIVATED {
+      @Override
+      public String asString() {
+        return "zeebe.client.worker.job.activated";
+      }
+    },
+
+    /**
+     * Counter backing the {@link JobWorkerMetrics#zeebeJobHandled(int)} count.
+     *
+     * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+     *     io.camunda.client.api.worker.metrics.MicrometerJobWorkerMetricsBuilder.Names#JOB_HANDLED}
+     */
+    @Deprecated
+    ZEEBE_JOB_HANDLED {
+      @Override
+      public String asString() {
+        return "zeebe.client.worker.job.handled";
       }
     }
   }

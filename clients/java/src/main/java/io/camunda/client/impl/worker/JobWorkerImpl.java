@@ -251,6 +251,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
 
   private void handleActivatedJob(final ActivatedJob job, final Runnable finalizer) {
     metrics.jobActivated(1);
+    metrics.zeebeJobActivated(1);
     try {
       executor.execute(jobHandlerFactory.create(job, finalizer));
     } catch (final RejectedExecutionException e) {
@@ -274,9 +275,11 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       tryPoll();
     }
     metrics.jobHandled(1);
+    metrics.zeebeJobHandled(1);
   }
 
   private void handleStreamJobFinished() {
     metrics.jobHandled(1);
+    metrics.zeebeJobHandled(1);
   }
 }
