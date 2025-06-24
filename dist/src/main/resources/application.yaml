@@ -2,5 +2,5 @@ camunda:
   data:
     database:
       elasticsearch:
-        url: http://next-random-url
-        indexPrefix: 'ourprefix'
+        url: http://localhost:9200
+        indexPrefix: my-camunda

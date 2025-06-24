@@ -32,7 +32,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.web.filter.CompositeFilter;
 
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(BrokerBasedProperties.class)
 @Profile(value = {"broker", "restore"})
 public class BrokerBasedConfiguration {
 
@@ -103,6 +102,5 @@ public class BrokerBasedConfiguration {
     return configFactory.mapConfiguration(properties);
   }
 
-  @ConfigurationProperties("zeebe.broker")
   public static final class BrokerBasedProperties extends BrokerCfg {}
 }

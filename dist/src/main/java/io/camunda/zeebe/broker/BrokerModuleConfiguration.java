@@ -113,13 +113,13 @@ public class BrokerModuleConfiguration implements CloseableSilently {
 
   @Bean(destroyMethod = "close")
   public Broker broker(final ExporterRepository exporterRepository) {
-    BrokerCfg brokerCfg = configuration.config();
-    UnifiedConfigurationHelper.populateBrokerCfg(unifiedConfiguration, brokerCfg);
+    // BrokerCfg brokerCfg = configuration.config();
+    // UnifiedConfigurationHelper.populateBrokerCfg(unifiedConfiguration, brokerCfg);
 
     final SystemContext systemContext =
         new SystemContext(
             configuration.shutdownTimeout(),
-            brokerCfg,
+            configuration.config(),
             identityConfiguration,
             actorScheduler,
             cluster,
