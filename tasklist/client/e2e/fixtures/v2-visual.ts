@@ -12,13 +12,10 @@ import {type Page} from '@playwright/test';
 import {
   type Form,
   type UserTask,
-  endpoints as tasklistEndpoints,
-} from '@vzeta/camunda-api-zod-schemas/tasklist';
-import {type Variable} from '@vzeta/camunda-api-zod-schemas/process-management';
-import {
-  endpoints as operateEndpoints,
+  type Variable,
+  endpoints,
   type ProcessDefinition,
-} from '@vzeta/camunda-api-zod-schemas/operate';
+} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {unassignedTask} from '@/mocks/v2/task';
 import {bpmnXml} from '@/mocks/v2/bpmnXml';
 
@@ -128,7 +125,7 @@ const test = base.extend<PlaywrightFixtures>({
   mockGetUserTaskFormRequest: async ({page}, use) => {
     await use(async ({form = {}, userTaskKey}) => {
       await page.route(
-        tasklistEndpoints.getUserTaskForm.getUrl({
+        endpoints.getUserTaskForm.getUrl({
           userTaskKey,
         }),
         (route) =>
@@ -145,7 +142,7 @@ const test = base.extend<PlaywrightFixtures>({
   },
   mockQueryUserTasksRequest: async ({page}, use) => {
     await use(async (userTasks = []) => {
-      await page.route(tasklistEndpoints.queryUserTasks.getUrl(), (route) =>
+      await page.route(endpoints.queryUserTasks.getUrl(), (route) =>
         route.fulfill({
           status: 200,
           body: JSON.stringify(getCollectionResponse(userTasks)),
@@ -159,7 +156,7 @@ const test = base.extend<PlaywrightFixtures>({
   mockGetUserTaskRequest: async ({page}, use) => {
     await use(async (userTask = unassignedTask()) => {
       await page.route(
-        tasklistEndpoints.getUserTask.getUrl({
+        endpoints.getUserTask.getUrl({
           userTaskKey: userTask.userTaskKey,
         }),
         (route) =>
@@ -176,7 +173,7 @@ const test = base.extend<PlaywrightFixtures>({
   mockQueryVariablesByUserTaskRequest: async ({page}, use) => {
     await use(async ({variables = [], userTaskKey}) => {
       await page.route(
-        tasklistEndpoints.queryVariablesByUserTask.getUrl({userTaskKey}),
+        endpoints.queryVariablesByUserTask.getUrl({userTaskKey}),
         (route) =>
           route.fulfill({
             status: 200,
@@ -191,7 +188,7 @@ const test = base.extend<PlaywrightFixtures>({
   mockGetProcessDefinitionXmlRequest: async ({page}, use) => {
     await use(async ({processDefinitionKey, xml = bpmnXml}) => {
       await page.route(
-        operateEndpoints.getProcessDefinitionXml.getUrl({
+        endpoints.getProcessDefinitionXml.getUrl({
           processDefinitionKey,
         }),
         (route) =>
@@ -217,16 +214,14 @@ const test = base.extend<PlaywrightFixtures>({
   },
   mockQueryProcessDefinitionsRequest: async ({page}, use) => {
     await use(async (processDefinitions = []) => {
-      await page.route(
-        operateEndpoints.queryProcessDefinitions.getUrl(),
-        (route) =>
-          route.fulfill({
-            status: 200,
-            body: JSON.stringify(getCollectionResponse(processDefinitions)),
-            headers: {
-              'content-type': 'application/json',
-            },
-          }),
+      await page.route(endpoints.queryProcessDefinitions.getUrl(), (route) =>
+        route.fulfill({
+          status: 200,
+          body: JSON.stringify(getCollectionResponse(processDefinitions)),
+          headers: {
+            'content-type': 'application/json',
+          },
+        }),
       );
     });
   },

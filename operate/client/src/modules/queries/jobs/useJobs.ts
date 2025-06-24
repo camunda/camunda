@@ -8,27 +8,27 @@
 
 import {useInfiniteQuery, UseInfiniteQueryResult} from '@tanstack/react-query';
 import {
-  GetJobsRequestBody,
-  GetJobsResponseBody,
-} from '@vzeta/camunda-api-zod-schemas/operate';
+  type QueryJobsRequestBody,
+  type QueryJobsResponseBody,
+} from '@vzeta/camunda-api-zod-schemas';
 import {RequestError} from 'modules/request';
 import {searchJobs} from 'modules/api/v2/jobs/searchJobs';
 
 const MAX_JOBS_PER_REQUEST = 50;
 const JOBS_SEARCH_QUERY_KEY = 'jobsSearch';
 
-function getQueryKey(payload: GetJobsRequestBody) {
+function getQueryKey(payload: QueryJobsRequestBody) {
   return [JOBS_SEARCH_QUERY_KEY, ...Object.values(payload)];
 }
 
-function useJobs<T = GetJobsResponseBody>(options: {
-  payload: GetJobsRequestBody;
-  select?: (data: {pages: GetJobsResponseBody[]; pageParams: unknown[]}) => T;
+function useJobs<T = QueryJobsResponseBody>(options: {
+  payload: QueryJobsRequestBody;
+  select?: (data: {pages: QueryJobsResponseBody[]; pageParams: unknown[]}) => T;
   disabled?: boolean;
 }): UseInfiniteQueryResult<T, RequestError> {
   const {payload, select, disabled} = options;
   return useInfiniteQuery<
-    GetJobsResponseBody,
+    QueryJobsResponseBody,
     RequestError,
     T,
     (string | unknown)[],

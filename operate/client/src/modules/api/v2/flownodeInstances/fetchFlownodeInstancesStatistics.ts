@@ -8,8 +8,8 @@
 
 import {
   endpoints,
-  GetProcessInstanceStatisticsResponseBody,
-} from '@vzeta/camunda-api-zod-schemas/operate';
+  type GetProcessInstanceStatisticsResponseBody,
+} from '@vzeta/camunda-api-zod-schemas';
 import {RequestResult, requestWithThrow} from 'modules/request';
 
 const fetchFlownodeInstancesStatistics = async (

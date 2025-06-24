@@ -8,18 +8,18 @@
 
 import {
   endpoints,
-  GetProcessSequenceFlowsResponseBody,
-} from '@vzeta/camunda-api-zod-schemas/operate';
+  type GetProcessInstanceSequenceFlowsResponseBody,
+} from '@vzeta/camunda-api-zod-schemas';
 import {RequestResult, requestWithThrow} from 'modules/request';
 
 const fetchProcessSequenceFlows = async (
   processInstanceKey: string,
-): RequestResult<GetProcessSequenceFlowsResponseBody> => {
-  return requestWithThrow<GetProcessSequenceFlowsResponseBody>({
-    url: endpoints.getProcessSequenceFlows.getUrl({
+): RequestResult<GetProcessInstanceSequenceFlowsResponseBody> => {
+  return requestWithThrow<GetProcessInstanceSequenceFlowsResponseBody>({
+    url: endpoints.getProcessInstanceSequenceFlows.getUrl({
       processInstanceKey: processInstanceKey,
     }),
-    method: endpoints.getProcessSequenceFlows.method,
+    method: endpoints.getProcessInstanceSequenceFlows.method,
   });
 };
 

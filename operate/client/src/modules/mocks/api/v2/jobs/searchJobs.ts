@@ -8,13 +8,13 @@
 
 import {mockPostRequest} from '../../mockRequest';
 import {
-  GetJobsResponseBody,
+  type QueryJobsResponseBody,
   endpoints,
-} from '@vzeta/camunda-api-zod-schemas/operate';
+} from '@vzeta/camunda-api-zod-schemas';
 
 const mockSearchJobs = (contextPath = '') =>
-  mockPostRequest<GetJobsResponseBody>(
-    contextPath + endpoints.getJobs.getUrl(),
+  mockPostRequest<QueryJobsResponseBody>(
+    contextPath + endpoints.queryJobs.getUrl(),
   );
 
 export {mockSearchJobs};

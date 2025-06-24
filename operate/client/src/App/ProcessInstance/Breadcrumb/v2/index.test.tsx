@@ -11,10 +11,7 @@ import {Breadcrumb} from './index';
 import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {LocationLog} from 'modules/utils/LocationLog';
 import {Paths} from 'modules/Routes';
-import {
-  CallHierarchy,
-  ProcessInstance,
-} from '@vzeta/camunda-api-zod-schemas/operate';
+import {CallHierarchy, ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 
 const createWrapper = (initialPath: string = Paths.processInstance('123')) => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (

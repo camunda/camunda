@@ -10,7 +10,7 @@ import {useTranslation} from 'react-i18next';
 import {Stack} from '@carbon/react';
 import {CheckmarkFilled} from '@carbon/react/icons';
 import {AssigneeTag} from 'common/components/AssigneeTag';
-import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/identity';
+import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/8.8';
 import styles from './styles.module.scss';
 import taskDetailsLayoutCommon from 'common/tasks/details/taskDetailsLayoutCommon.module.scss';
 

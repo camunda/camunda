@@ -17,7 +17,7 @@ import {useQuery} from '@tanstack/react-query';
 import {
   GetProcessDefinitionStatisticsRequestBody,
   GetProcessDefinitionStatisticsResponseBody,
-} from '@vzeta/camunda-api-zod-schemas/operate';
+} from '@vzeta/camunda-api-zod-schemas';
 
 function batchModificationOverlayParser(params: {
   sourceFlowNodeId?: string;

@@ -9,7 +9,7 @@
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {api} from 'v2/api';
 import {request} from 'common/api/request';
-import type {UserTask} from '@vzeta/camunda-api-zod-schemas/tasklist';
+import type {UserTask} from '@vzeta/camunda-api-zod-schemas/8.8';
 import {USE_TASKS_QUERY_KEY} from './useTasks.query';
 import {getUseTaskQueryKey} from './useTask.query';
 

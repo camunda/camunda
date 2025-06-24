@@ -8,7 +8,7 @@
 
 import {useState} from 'react';
 import {observer} from 'mobx-react';
-import {Job} from '@vzeta/camunda-api-zod-schemas/operate';
+import {Job} from '@vzeta/camunda-api-zod-schemas';
 import {UseInfiniteQueryResult} from '@tanstack/react-query';
 import {Layer} from '@carbon/react';
 
