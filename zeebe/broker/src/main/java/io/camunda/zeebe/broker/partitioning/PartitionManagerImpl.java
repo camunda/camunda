@@ -254,6 +254,7 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
   public Collection<RaftPartition> getRaftPartitions() {
     return partitions.values().stream()
         .map(Partition::raftPartition)
+        // raftPartition may be null before the partition is fully started
         .filter(Objects::nonNull)
         .toList();
   }
@@ -262,6 +263,7 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
   public Collection<ZeebePartition> getZeebePartitions() {
     return partitions.values().stream()
         .map(Partition::zeebePartition)
+        // zeebePartition may be null before the partition is fully started
         .filter(Objects::nonNull)
         .toList();
   }
