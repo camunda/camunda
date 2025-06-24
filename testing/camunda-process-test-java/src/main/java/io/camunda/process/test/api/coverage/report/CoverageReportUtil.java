@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 /**
  * Utility for generating graphical class and method coverage reports.
  *
- * @author z0rbas
+ * @author macoun, z0rbas
  */
 public class CoverageReportUtil {
 

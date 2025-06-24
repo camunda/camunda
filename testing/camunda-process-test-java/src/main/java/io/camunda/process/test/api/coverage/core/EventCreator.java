@@ -96,8 +96,10 @@ public class EventCreator {
 
   private static List<SequenceFlow> findSequenceFlowsByEvent(
       final CamundaDataSource dataSource, final Event event) {
-    final String modelXml =
-        dataSource.getProcessDefinitionXmlByProcessDefinitionId(event.getModelKey());
+    final CamundaModelProvider modelProvider = new CamundaModelProvider(dataSource);
+    final String modelXml = modelProvider.getModel(event.getModelKey()).getXml();
+    //    final String modelXml =
+    //        dataSource.getProcessDefinitionXmlByProcessDefinitionId(event.getModelKey());
     final BpmnModelInstance modelInstance =
         Bpmn.readModelFromStream(new ByteArrayInputStream(modelXml.getBytes()));
 

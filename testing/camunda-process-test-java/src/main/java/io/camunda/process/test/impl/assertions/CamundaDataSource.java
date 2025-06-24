@@ -60,6 +60,7 @@ public class CamundaDataSource {
         .newProcessDefinitionSearchRequest()
         .filter(filter -> filter.processDefinitionId(bpmnProcessId))
         .page(DEFAULT_PAGE_REQUEST)
+        .sort(sort -> sort.version().desc())
         .send()
         .join()
         .items();
