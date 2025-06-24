@@ -363,6 +363,45 @@ public final class OAuthCredentialsProviderTest {
     wireMockInfo.getWireMock().verifyThat(1, RequestPatternBuilder.allRequests());
   }
 
+<<<<<<< HEAD
+=======
+  private void mockTokenRequest(final boolean withAssertion) {
+    final String assertionRegex = ".*client_assertion\\=[\\._\\-A-Za-z0-9]{400,500}.*";
+    final String assertionTypeRegex = ".*client_assertion_type.*";
+    final String clientSecret = ".*client_secret.*";
+    final HashMap<String, String> map = new HashMap<>();
+    map.put("access_token", ACCESS_TOKEN);
+    map.put("token_type", TOKEN_TYPE);
+    map.put("expires_in", "3600");
+    map.put("scope", SCOPE);
+
+    try {
+      wireMockInfo
+          .getWireMock()
+          .register(
+              WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
+                  .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
+                  .withHeader("Accept", equalTo("application/json"))
+                  .withHeader("User-Agent", matching("zeebe-client-java/\\d+\\.\\d+\\.\\d+.*"))
+                  .withRequestBody(
+                      withAssertion ? matching(assertionRegex) : notMatching(assertionRegex))
+                  .withRequestBody(
+                      withAssertion
+                          ? matching(assertionTypeRegex)
+                          : notMatching(assertionTypeRegex))
+                  .withRequestBody(
+                      !withAssertion ? matching(clientSecret) : notMatching(clientSecret))
+                  .willReturn(
+                      WireMock.aResponse()
+                          .withBody(jsonMapper.writeValueAsString(map))
+                          .withHeader("Content-Type", "application/json")
+                          .withStatus(200)));
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+>>>>>>> ad533cdf (refactor: client assertion refactored)
   private void mockCredentials(final String token, final String scope) {
     final HashMap<String, String> map = new HashMap<>();
     map.put("client_secret", SECRET);
@@ -473,6 +512,74 @@ public final class OAuthCredentialsProviderTest {
   }
 
   @Nested
+<<<<<<< HEAD
+=======
+  final class EntraTests {
+
+    @Test
+    void shouldUseEntraCredentialsWhenProvidedBoth() throws IOException {
+      final OAuthCredentialsProvider provider =
+          initializeCredentialsProviderBuilder(true, true).build();
+      mockTokenRequest(true);
+
+      provider.applyCredentials(applier);
+
+      final List<Credential> credentials = applier.getCredentials();
+      assertThat(credentials)
+          .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+    }
+
+    @Test
+    void shouldUseEntraCredentialsWhenProvidedOnlyAssertion() throws IOException {
+      final OAuthCredentialsProvider provider =
+          initializeCredentialsProviderBuilder(true, false).build();
+      mockTokenRequest(true);
+      mockCredentials(ACCESS_TOKEN, null);
+
+      provider.applyCredentials(applier);
+
+      final List<Credential> credentials = applier.getCredentials();
+      assertThat(credentials)
+          .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+    }
+
+    @Test
+    void shouldUseClientSecretWhenNoAssertionProvided() throws IOException {
+      final OAuthCredentialsProvider provider =
+          initializeCredentialsProviderBuilder(false, true).build();
+      mockTokenRequest(false);
+
+      provider.applyCredentials(applier);
+
+      final List<Credential> credentials = applier.getCredentials();
+      assertThat(credentials)
+          .containsExactly(new Credential("Authorization", TOKEN_TYPE + " " + ACCESS_TOKEN));
+    }
+
+    private OAuthCredentialsProviderBuilder initializeCredentialsProviderBuilder(
+        final boolean withAssertion, final boolean withClientSecret) {
+      OAuthCredentialsProviderBuilder builder =
+          new OAuthCredentialsProviderBuilder()
+              .clientId(CLIENT_ID)
+              .audience(AUDIENCE)
+              .scope(SCOPE)
+              .authorizationServerUrl(tokenUrlString())
+              .credentialsCachePath(cacheFilePath.toString());
+      if (withAssertion) {
+        builder =
+            builder
+                .clientAssertionKeystorePath(OAUTH_SSL_CLIENT_CERT_PATH)
+                .clientAssertionKeystorePassword(OAUTH_SSL_CLIENT_CERT_PASSWORD);
+      }
+      if (withClientSecret) {
+        builder = builder.clientSecret(SECRET);
+      }
+      return builder;
+    }
+  }
+
+  @Nested
+>>>>>>> ad533cdf (refactor: client assertion refactored)
   final class ClientTest {
 
     private final RecordingGatewayService grpcService = new RecordingGatewayService();
