@@ -6,7 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED = false;
-const IS_LISTENERS_TAB_V2 = false;
+import {mockPostRequest} from '../../mockRequest';
+import {
+  GetJobsResponseBody,
+  endpoints,
+} from '@vzeta/camunda-api-zod-schemas/operate';
 
-export {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED, IS_LISTENERS_TAB_V2};
+const mockSearchJobs = (contextPath = '') =>
+  mockPostRequest<GetJobsResponseBody>(
+    contextPath + endpoints.getJobs.getUrl(),
+  );
+
+export {mockSearchJobs};

@@ -6,8 +6,51 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {RequestHandler} from 'msw';
+import {GetJobsResponseBody} from '@vzeta/camunda-api-zod-schemas/operate';
+import {IS_LISTENERS_TAB_V2} from 'modules/feature-flags';
+import {RequestHandler, rest} from 'msw';
 
-const handlers: RequestHandler[] = [];
+const mockListenerEndpoint = rest.post(
+  '/v2/jobs/search',
+  async (req, res, ctx) => {
+    const mockResponse: GetJobsResponseBody = {
+      items: [
+        {
+          jobKey: '2251799813916032',
+          type: 'task_start_el_1',
+          worker: 'worker',
+          state: 'CREATED',
+          kind: 'EXECUTION_LISTENER',
+          listenerEventType: 'START',
+          retries: 3,
+          isDenied: false,
+          deniedReason: 'deniedReason',
+          hasFailedWithRetriesLeft: false,
+          errorCode: 'errorCode',
+          errorMessage: 'errorMessage',
+          deadline: 'deadline',
+          endTime: '2024-05-27T07:42:43.705+0000',
+          processDefinitionId: 'processDefinitionId',
+          processDefinitionKey: 'processDefinitionKey',
+          processInstanceKey: 'processInstanceKey',
+          elementId: 'elementId',
+          elementInstanceKey: 'elementInstanceKey',
+          tenantId: 'tenantId',
+        },
+      ],
+      page: {
+        totalItems: 1,
+        startCursor: 'startCursor',
+        endCursor: 'endCursor',
+      },
+    };
+
+    return res(ctx.json(mockResponse));
+  },
+);
+
+const handlers: RequestHandler[] = [
+  ...(IS_LISTENERS_TAB_V2 ? [mockListenerEndpoint] : []),
+];
 
 export {handlers};

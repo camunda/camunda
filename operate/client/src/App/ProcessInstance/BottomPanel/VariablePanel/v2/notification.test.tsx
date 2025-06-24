@@ -161,7 +161,10 @@ describe('VariablePanel', () => {
   it('should display error notification if add variable operation could not be created', async () => {
     mockFetchVariables().withSuccess([createVariable()]);
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -252,7 +255,10 @@ describe('VariablePanel', () => {
       items: statistics,
     });
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -324,7 +330,10 @@ describe('VariablePanel', () => {
   it('should display error notification if add variable operation fails', async () => {
     jest.useFakeTimers();
 
-    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={jest.fn()} />,
+      {wrapper: getWrapper()},
+    );
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
