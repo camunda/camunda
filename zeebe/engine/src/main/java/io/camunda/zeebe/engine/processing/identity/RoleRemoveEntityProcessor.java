@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.Map;
 
 public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
 
@@ -92,7 +93,7 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
 
     final var entityId = record.getEntityId();
     final var entityType = record.getEntityType();
-    if (!allowNonExistingEntity(command, entityType) && !isEntityPresent(entityId, entityType)) {
+    if (!isEntityPresent(command.getAuthorizations(), entityType, entityId)) {
       final var errorMessage =
           ENTITY_NOT_FOUND_ERROR_MESSAGE.formatted(entityId, entityType, record.getRoleId());
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
@@ -139,20 +140,16 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
         record.getEntityType(), record.getEntityId(), RelationType.ROLE, record.getRoleId());
   }
 
-  private boolean allowNonExistingEntity(
-      final TypedRecord<RoleRecord> command, final EntityType entityType) {
+  private boolean isEntityPresent(
+      final Map<String, Object> authorizations,
+      final EntityType entityType,
+      final String entityId) {
     return switch (entityType) {
       case USER, CLIENT -> true; // With simple mappings, any username or client id can be assigned
-      case GROUP -> command.getAuthorizations().get(Authorization.USER_GROUPS_CLAIMS) != null;
-      default -> false;
-    };
-  }
-
-  private boolean isEntityPresent(final String entityId, final EntityType entityType) {
-    return switch (entityType) {
-      case USER, CLIENT -> true; // With simple mappings, any username or client id can be assigned
+      case GROUP ->
+          authorizations.get(Authorization.USER_GROUPS_CLAIMS) != null
+              || groupState.get(entityId).isPresent();
       case MAPPING -> mappingState.get(entityId).isPresent();
-      case GROUP -> groupState.get(entityId).isPresent();
       default -> false;
     };
   }
