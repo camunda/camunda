@@ -628,6 +628,10 @@ public class RequestMapper {
 
         authenticationBuilder.groupIds(authenticationContext.groups());
 
+        if (authenticationContext.groupsClaimEnabled()) {
+          claims.put(Authorization.USER_GROUPS_CLAIMS, authenticationContext.groups());
+        }
+
         if (authenticationContext.username() != null) {
           final var authenticatedUsername = authenticationContext.username();
           claims.put(Authorization.AUTHORIZED_USERNAME, authenticatedUsername);

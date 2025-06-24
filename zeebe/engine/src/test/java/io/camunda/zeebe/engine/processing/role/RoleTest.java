@@ -9,11 +9,14 @@ package io.camunda.zeebe.engine.processing.role;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
+import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.junit.Rule;
@@ -124,7 +127,7 @@ public class RoleTest {
   }
 
   @Test
-  public void shouldAddEntityToRole() {
+  public void shouldAddUserToRole() {
     final var username =
         engine
             .user()
@@ -215,6 +218,77 @@ public class RoleTest {
             .getValue();
 
     assertThat(updatedRecord).hasEntityId(entityId);
+  }
+
+  @Test
+  public void shouldAddGroupToRole() {
+    final var groupId =
+        engine.group().newGroup("groupId").withName("Foo Bar").create().getValue().getGroupId();
+    final var roleId = Strings.newRandomValidIdentityId();
+    engine.role().newRole(roleId).create().getValue().getRoleKey();
+    final var updatedRole =
+        engine
+            .role()
+            .addEntity(roleId)
+            .withEntityId(groupId)
+            .withEntityType(EntityType.GROUP)
+            .add()
+            .getValue();
+
+    assertThat(updatedRole)
+        .isNotNull()
+        .hasRoleId(roleId)
+        .hasEntityId(groupId)
+        .hasEntityType(EntityType.GROUP);
+  }
+
+  @Test
+  public void shouldAddNonExistingGroupToRoleIfGroupsClaimEnabled() {
+    final var groupId =
+        engine.group().newGroup("groupId").withName("Foo Bar").create().getValue().getGroupId();
+    final var roleId = Strings.newRandomValidIdentityId();
+    engine.role().newRole(roleId).create().getValue().getRoleKey();
+    final var updatedRole =
+        engine
+            .role()
+            .addEntity(roleId)
+            .withEntityId(groupId)
+            .withEntityType(EntityType.GROUP)
+            .add(
+                AuthorizationUtil.getAuthInfoWithClaim(
+                    Authorization.USER_GROUPS_CLAIMS, List.of("g1")))
+            .getValue();
+
+    assertThat(updatedRole)
+        .isNotNull()
+        .hasRoleId(roleId)
+        .hasEntityId(groupId)
+        .hasEntityType(EntityType.GROUP);
+  }
+
+  @Test
+  public void shouldRejectNonExistingGroupIfGroupsClaimDisabled() {
+    // given
+    final var roleId = UUID.randomUUID().toString();
+    final var roleRecord = engine.role().newRole(roleId).create();
+
+    // when
+    roleRecord.getValue();
+    final var entityId = "non-existing-entity";
+    final var notPresentUpdateRecord =
+        engine
+            .role()
+            .addEntity(roleId)
+            .withEntityId(entityId)
+            .withEntityType(EntityType.GROUP)
+            .expectRejection()
+            .add();
+
+    assertThat(notPresentUpdateRecord)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to add an entity with ID '%s' and type '%s' to role with ID '%s', but the entity doesn't exist."
+                .formatted(entityId, EntityType.GROUP, roleId));
   }
 
   @Test
@@ -329,6 +403,37 @@ public class RoleTest {
             .withEntityId(groupId)
             .withEntityType(EntityType.GROUP)
             .remove()
+            .getValue();
+
+    assertThat(removedEntity)
+        .isNotNull()
+        .hasRoleId(roleId)
+        .hasEntityId(groupId)
+        .hasEntityType(EntityType.GROUP);
+  }
+
+  @Test
+  public void shouldRemoveNonExistingGroupFromRole() {
+    final var groupId = Strings.newRandomValidUsername();
+    final var roleId = UUID.randomUUID().toString();
+    engine.role().newRole(roleId).create();
+    engine
+        .role()
+        .addEntity(roleId)
+        .withEntityId(groupId)
+        .withEntityType(EntityType.GROUP)
+        .add(
+            AuthorizationUtil.getAuthInfoWithClaim(
+                Authorization.USER_GROUPS_CLAIMS, List.of("g1")));
+    final var removedEntity =
+        engine
+            .role()
+            .removeEntity(roleId)
+            .withEntityId(groupId)
+            .withEntityType(EntityType.GROUP)
+            .remove(
+                AuthorizationUtil.getAuthInfoWithClaim(
+                    Authorization.USER_GROUPS_CLAIMS, List.of("g1")))
             .getValue();
 
     assertThat(removedEntity)
