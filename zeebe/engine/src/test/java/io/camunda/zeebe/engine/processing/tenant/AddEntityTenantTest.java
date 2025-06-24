@@ -13,11 +13,14 @@ import static io.camunda.zeebe.protocol.record.value.EntityType.MAPPING;
 import static io.camunda.zeebe.protocol.record.value.EntityType.ROLE;
 import static io.camunda.zeebe.protocol.record.value.EntityType.USER;
 
+import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.junit.Rule;
@@ -176,6 +179,62 @@ public class AddEntityTenantTest {
         .hasTenantId(tenantId)
         .hasEntityType(entityType)
         .hasEntityId(groupId);
+  }
+
+  @Test
+  public void shouldAddNonExistingGroupToTenantIfGroupsClaimEnabled() {
+    // given
+    final var entityType = GROUP;
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var tenantId = UUID.randomUUID().toString();
+    engine.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create().getValue();
+
+    // when add user entity to tenant
+    final var updatedTenant =
+        engine
+            .tenant()
+            .addEntity(tenantId)
+            .withEntityId(groupId)
+            .withEntityType(entityType)
+            .add(
+                AuthorizationUtil.getAuthInfoWithClaim(
+                    Authorization.USER_GROUPS_CLAIMS, List.of("g1")))
+            .getValue();
+
+    // then assert that the entity was added correctly
+    assertThat(updatedTenant)
+        .describedAs(
+            "Entity of type %s with ID %s should be correctly added to tenant with ID %s",
+            entityType, groupId, tenantId)
+        .isNotNull()
+        .hasTenantId(tenantId)
+        .hasEntityType(entityType)
+        .hasEntityId(groupId);
+  }
+
+  @Test
+  public void shouldRejectAddingNonExistingGroupToTenantIfGroupsClaimDisabled() {
+    // given
+    final var groupId = Strings.newRandomValidIdentityId();
+    final var tenantId = UUID.randomUUID().toString();
+    engine.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create().getValue();
+
+    // when
+    final var rejection =
+        engine
+            .tenant()
+            .addEntity(tenantId)
+            .withEntityId(groupId)
+            .withEntityType(GROUP)
+            .expectRejection()
+            .add();
+
+    // then
+    assertThat(rejection)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to add group with ID '%s' to tenant with ID '%s', but the group doesn't exist."
+                .formatted(groupId, tenantId));
   }
 
   @Test

@@ -111,6 +111,12 @@
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
+    <if test="filter.treePathOperations != null and !filter.treePathOperations.isEmpty()">
+      <foreach collection="filter.treePathOperations" item="operation">
+        AND TREE_PATH
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
 
     <!-- date filters -->
     <if test="filter.creationTimeOperations != null and !filter.creationTimeOperations.isEmpty()">
@@ -155,12 +161,13 @@
                           STATE,
                           CREATION_DATE,
                           JOB_KEY,
-                                   TENANT_ID,
-                                   PARTITION_ID,
-                                   HISTORY_CLEANUP_DATE)
+                          TENANT_ID,
+                          PARTITION_ID,
+                          TREE_PATH,
+                          HISTORY_CLEANUP_DATE)
     VALUES (#{incidentKey}, #{flowNodeInstanceKey}, #{flowNodeId}, #{processInstanceKey},
             #{processDefinitionId}, #{processDefinitionKey}, #{errorMessage}, #{errorMessageHash}, #{errorType},
-            #{state}, #{creationDate, jdbcType=TIMESTAMP}, #{jobKey}, #{tenantId}, #{partitionId},
+            #{state}, #{creationDate, jdbcType=TIMESTAMP}, #{jobKey}, #{tenantId}, #{partitionId}, #{treePath},
             #{historyCleanupDate, jdbcType=TIMESTAMP})
   </insert>
 
@@ -182,6 +189,7 @@
         CREATION_DATE          = #{creationDate, jdbcType=TIMESTAMP},
         JOB_KEY                = #{jobKey},
         TENANT_ID              = #{tenantId},
+        TREE_PATH              = #{treePath},
         HISTORY_CLEANUP_DATE   = #{historyCleanupDate, jdbcType=TIMESTAMP}
     WHERE INCIDENT_KEY = #{incidentKey}
   </update>

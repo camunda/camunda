@@ -7,19 +7,22 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
-import static io.camunda.exporter.rdbms.utils.ExportUtil.buildTreePath;
-
 import io.camunda.db.rdbms.write.domain.IncidentDbModel;
 import io.camunda.db.rdbms.write.service.IncidentWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
+import io.camunda.exporter.rdbms.utils.TreePath;
 import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.util.DateUtil;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
@@ -34,8 +37,13 @@ public class IncidentExportHandler implements RdbmsExportHandler<IncidentRecordV
 
   private final IncidentWriter incidentWriter;
 
-  public IncidentExportHandler(final IncidentWriter incidentWriter) {
+  private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
+
+  public IncidentExportHandler(
+      final IncidentWriter incidentWriter,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
     this.incidentWriter = incidentWriter;
+    this.processCache = processCache;
   }
 
   @Override
@@ -76,9 +84,7 @@ public class IncidentExportHandler implements RdbmsExportHandler<IncidentRecordV
         .errorMessageHash(Optional.of(value.getErrorMessage()).map(String::hashCode).orElse(0))
         .creationDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
         .jobKey(mapIfGreaterZero(value.getJobKey()))
-        .treePath(
-            buildTreePath(
-                record.getKey(), value.getProcessInstanceKey(), value.getElementInstancePath()))
+        .treePath(buildTreePath(record))
         .tenantId(value.getTenantId())
         .build();
   }
@@ -96,5 +102,53 @@ public class IncidentExportHandler implements RdbmsExportHandler<IncidentRecordV
     } catch (final IllegalArgumentException ex) {
       return ErrorType.UNKNOWN;
     }
+  }
+
+  /*
+   * This code was copied from zeebe/exporters/.../handlers/IncidentHandler.java
+   * TODO: It should be refactored under https://github.com/camunda/camunda/issues/31218
+   */
+  private String buildTreePath(final Record<IncidentRecordValue> record) {
+
+    final IncidentRecordValue value = record.getValue();
+    final List<List<Long>> elementInstancePath = value.getElementInstancePath();
+    final List<Integer> callingElementPath = value.getCallingElementPath();
+    final List<Long> processDefinitionPath = value.getProcessDefinitionPath();
+
+    final Long processInstanceKey = value.getProcessInstanceKey();
+
+    // example of how the tree path is built when current instance is on the third level of calling
+    // hierarchy:
+    // PI_<parentProcessInstanceKey>/FN_<parentCallActivityId>/FNI_<parentCallActivityInstanceKey>/
+    // PI_<secondLevelProcessInstanceKey>/FN_<secondLevelCallActivityId>/FNI_<secondLevelCallActivityInstanceKey>/
+    // PI_<currentProcessInstanceKey>/FN_<flowNodeId>/FNI_<flowNodeInstanceId>
+    final TreePath treePath = new TreePath();
+    for (int i = 0; i < elementInstancePath.size(); i++) {
+      final List<Long> keysWithinOnePI = elementInstancePath.get(i);
+      treePath.appendProcessInstance(keysWithinOnePI.get(0));
+      if (keysWithinOnePI.get(0).equals(processInstanceKey)) {
+        // when we reached current processInstanceKey, we build the last piece of tree path
+        treePath.appendFlowNode(value.getElementId());
+        treePath.appendFlowNodeInstance(String.valueOf(value.getElementInstanceKey()));
+        break;
+      } else {
+        final var callActivityId =
+            ProcessCacheUtil.getCallActivityId(
+                processCache, processDefinitionPath.get(i), callingElementPath.get(i));
+        if (callActivityId.isPresent()) {
+          treePath.appendFlowNode(callActivityId.get());
+        } else {
+          LOGGER.warn(
+              "No process found in cache. TreePath won't contain proper callActivityId. processInstanceKey: {}, processDefinitionKey: {}, incidentKey: {}",
+              processInstanceKey,
+              processDefinitionPath.get(i),
+              record.getKey());
+          treePath.appendFlowNode(String.valueOf(callingElementPath.get(i)));
+        }
+        treePath.appendFlowNodeInstance(String.valueOf(keysWithinOnePI.get(1)));
+      }
+    }
+
+    return treePath.toString();
   }
 }

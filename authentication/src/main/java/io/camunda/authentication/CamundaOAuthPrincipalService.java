@@ -113,7 +113,8 @@ public class CamundaOAuthPrincipalService {
     }
 
     final Set<String> groups;
-    if (StringUtils.hasText(groupsClaim)) {
+    final boolean groupsClaimPresent = StringUtils.hasText(groupsClaim);
+    if (groupsClaimPresent) {
       groups = new HashSet<>(oidcGroupsLoader.load(claims));
     } else {
       // TODO: Get groups for username and clientId https://github.com/camunda/camunda/issues/26572
@@ -149,7 +150,8 @@ public class CamundaOAuthPrincipalService {
         .withAuthorizedApplications(authorizedApplications)
         .withTenants(tenants)
         .withGroups(groups.stream().toList())
-        .withRoles(roles);
+        .withRoles(roles)
+        .withGroupsClaimEnabled(groupsClaimPresent);
 
     return new OAuthContext(mappingIds, authContextBuilder.build());
   }

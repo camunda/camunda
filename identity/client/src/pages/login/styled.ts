@@ -7,7 +7,7 @@
  */
 
 import styled from "styled-components";
-import { Stack } from "@carbon/react";
+import { Stack, Button as BaseButton } from "@carbon/react";
 import { spacing04, spacing05, spacing07 } from "@carbon/elements";
 import Page from "src/components/layout/Page.tsx";
 
@@ -19,11 +19,6 @@ export const LoginFormContainer = styled(Stack)<{ $hasError: boolean }>`
   width: 100%;
   padding-top: ${({ $hasError }) => ($hasError ? 0 : spacing07)};
   padding-bottom: ${spacing07};
-
-  > button {
-    max-inline-size: unset;
-    width: 100%;
-  }
 `;
 
 export const LoginPageContainer = styled(Page)`
@@ -74,4 +69,8 @@ export const CopyrightNotice = styled.div`
   display: block;
   bottom: 0;
   font-size: ${spacing04};
+`;
+
+export const Button: typeof BaseButton = styled(BaseButton)`
+  min-width: 100%;
 `;

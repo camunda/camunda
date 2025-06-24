@@ -19,7 +19,8 @@ public record AuthenticationContext(
     List<RoleEntity> roles,
     List<String> authorizedApplications,
     List<TenantDTO> tenants,
-    List<String> groups)
+    List<String> groups,
+    boolean groupsClaimEnabled)
     implements Serializable {
 
   public static final class AuthenticationContextBuilder {
@@ -29,6 +30,7 @@ public record AuthenticationContext(
     private List<String> authorizedApplications = new ArrayList<>();
     private List<TenantDTO> tenants = new ArrayList<>();
     private List<String> groups = new ArrayList<>();
+    private boolean groupsClaimEnabled = false;
 
     public AuthenticationContextBuilder withUsername(final String username) {
       this.username = username;
@@ -61,9 +63,14 @@ public record AuthenticationContext(
       return this;
     }
 
+    public AuthenticationContextBuilder withGroupsClaimEnabled(final boolean groupsClaimEnabled) {
+      this.groupsClaimEnabled = groupsClaimEnabled;
+      return this;
+    }
+
     public AuthenticationContext build() {
       return new AuthenticationContext(
-          username, clientId, roles, authorizedApplications, tenants, groups);
+          username, clientId, roles, authorizedApplications, tenants, groups, groupsClaimEnabled);
     }
   }
 }

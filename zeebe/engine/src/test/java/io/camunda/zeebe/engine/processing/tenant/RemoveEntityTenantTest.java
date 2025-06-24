@@ -9,11 +9,14 @@ package io.camunda.zeebe.engine.processing.tenant;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
+import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.engine.util.AuthorizationUtil;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.UUID;
 import org.junit.Rule;
 import org.junit.Test;
@@ -255,6 +258,38 @@ public class RemoveEntityTenantTest {
         .hasRejectionReason(
             "Expected to remove group with ID '%s' from tenant with ID '%s', but the group is not assigned to this tenant."
                 .formatted(groupId, tenantId));
+  }
+
+  @Test
+  public void shouldRemoveNonExistingGroupIfGroupsClaimEnabled() {
+    // given
+    final var tenantId = UUID.randomUUID().toString();
+    final var name = UUID.randomUUID().toString();
+    final var groupId = "123";
+    final var tenantRecord = engine.tenant().newTenant().withTenantId(tenantId).create();
+    engine.group().newGroup(groupId).withName(name).create();
+
+    // when
+    final var createdTenant = tenantRecord.getValue();
+    final var notPresentUpdateRecord =
+        engine
+            .tenant()
+            .removeEntity(tenantId)
+            .withEntityId(groupId)
+            .withEntityType(EntityType.GROUP)
+            .expectRejection()
+            .remove(
+                AuthorizationUtil.getAuthInfoWithClaim(
+                    Authorization.USER_GROUPS_CLAIMS, List.of("g1")))
+            .getValue();
+
+    assertThat(createdTenant).isNotNull().hasTenantId(tenantId);
+
+    assertThat(notPresentUpdateRecord)
+        .isNotNull()
+        .hasTenantId(tenantId)
+        .hasEntityId(groupId)
+        .hasEntityType(EntityType.GROUP);
   }
 
   @Test
