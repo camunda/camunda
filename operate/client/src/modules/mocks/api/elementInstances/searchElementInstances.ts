@@ -6,12 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { mockPostRequest } from '../mockRequest';
-import { QueryElementInstancesResponseBody } from '@vzeta/camunda-api-zod-schemas/8.8';
+import {mockPostRequest} from '../mockRequest';
+import {QueryElementInstancesResponseBody} from '@vzeta/camunda-api-zod-schemas/8.8';
 
 const mockSearchElementInstances = (contextPath = '') =>
   mockPostRequest<QueryElementInstancesResponseBody>(
     `${contextPath}/v2/element-instances/search`,
   );
 
-export { mockSearchElementInstances };
+export {mockSearchElementInstances};
