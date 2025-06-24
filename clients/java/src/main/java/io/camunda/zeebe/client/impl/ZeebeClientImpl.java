@@ -124,8 +124,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ZeebeClientImpl implements ZeebeClient {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ZeebeClientImpl.class);
 
   private static final String UNSUPPORTED_OPERATION_MSG =
       String.format(
@@ -183,6 +187,10 @@ public final class ZeebeClientImpl implements ZeebeClient {
       final GatewayStub gatewayStub,
       final ExecutorResource executorResource,
       final HttpClient httpClient) {
+    LOG.warn("{} is deprecated and will be removed in version 8.10. Please migrate to {}",
+        ZeebeClient.class.getSimpleName(),
+        CamundaClient.class.getSimpleName());
+
     this.config = config;
     jsonMapper = config.getJsonMapper();
     this.channel = channel;
