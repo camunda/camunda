@@ -17,7 +17,7 @@ package io.camunda.client.api.command;
 
 import io.camunda.client.api.response.CreateBatchOperationResponse;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
-import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestFilter;
+import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
 import java.util.function.Consumer;
 
 public interface CreateBatchOperationCommandStep1 {

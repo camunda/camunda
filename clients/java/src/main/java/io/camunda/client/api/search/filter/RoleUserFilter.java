@@ -15,6 +15,6 @@
  */
 package io.camunda.client.api.search.filter;
 
-import io.camunda.client.api.search.request.TypedSearchRequest.SearchRequestFilter;
+import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
 
 public interface RoleUserFilter extends SearchRequestFilter {}

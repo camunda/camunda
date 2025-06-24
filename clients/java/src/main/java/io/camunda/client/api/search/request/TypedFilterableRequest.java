@@ -15,13 +15,25 @@
  */
 package io.camunda.client.api.search.request;
 
-import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
-import io.camunda.client.api.search.request.TypedSortableRequest.SearchRequestSort;
+import java.util.function.Consumer;
 
-public interface TypedSearchRequest<
-        F extends SearchRequestFilter,
-        S extends SearchRequestSort<S>,
-        SELF extends TypedSearchRequest<F, S, SELF>>
-    extends TypedFilterableRequest<F, SELF>,
-        TypedSortableRequest<S, SELF>,
-        TypedPageableRequest<SELF> {}
+public interface TypedFilterableRequest<F, SELF extends TypedFilterableRequest<F, SELF>> {
+
+  /**
+   * Sets the filter to be included in the search request.
+   *
+   * @param value the filter
+   * @return the builder for the search request
+   */
+  SELF filter(final F value);
+
+  /**
+   * Provides a fluent builder to create a filter to be included in the search request.
+   *
+   * @param fn consumer to create the filter
+   * @return the builder for the search request
+   */
+  SELF filter(final Consumer<F> fn);
+
+  interface SearchRequestFilter {}
+}
