@@ -55,7 +55,7 @@ describe('Variables', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+    render(<VariablePanel />, {
       wrapper: getWrapper(),
     });
     await waitFor(() => {
@@ -86,7 +86,7 @@ describe('Variables', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+    render(<VariablePanel />, {
       wrapper: getWrapper(),
     });
     await waitFor(() => {
@@ -140,7 +140,7 @@ describe('Variables', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+    render(<VariablePanel />, {
       wrapper: getWrapper(),
     });
     await waitFor(() => {

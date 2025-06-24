@@ -26,7 +26,7 @@ describe('Skeleton', () => {
     });
     flowNodeMetaDataStore.setMetaData(mockMetaData);
 
-    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+    render(<VariablePanel />, {
       wrapper: getWrapper(),
     });
     expect(await screen.findByText(EMPTY_PLACEHOLDER)).toBeInTheDocument();

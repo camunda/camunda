@@ -102,10 +102,7 @@ describe('Footer', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -180,7 +177,7 @@ describe('Footer', () => {
       }),
     );
 
-    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+    render(<VariablePanel />, {
       wrapper: getWrapper(),
     });
 
@@ -227,7 +224,7 @@ describe('Footer', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+    render(<VariablePanel />, {
       wrapper: getWrapper(),
     });
 
@@ -257,7 +254,7 @@ describe('Footer', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+    render(<VariablePanel />, {
       wrapper: getWrapper(),
     });
 

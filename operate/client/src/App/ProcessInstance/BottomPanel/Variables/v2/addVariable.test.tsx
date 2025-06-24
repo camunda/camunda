@@ -46,12 +46,9 @@ describe('Add variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
-      {
-        wrapper: getWrapper(),
-      },
-    );
+    const {user} = render(<VariablePanel />, {
+      wrapper: getWrapper(),
+    });
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -110,10 +107,7 @@ describe('Add variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -164,10 +158,7 @@ describe('Add variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
 
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
@@ -272,10 +263,7 @@ describe('Add variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -369,10 +357,7 @@ describe('Add variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -440,10 +425,7 @@ describe('Add variable', () => {
 
     variablesStore.fetchVariables('1');
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -477,10 +459,7 @@ describe('Add variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -538,10 +517,7 @@ describe('Add variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -573,10 +549,7 @@ describe('Add variable', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={jest.fn()} />,
-      {wrapper: getWrapper()},
-    );
+    const {user} = render(<VariablePanel />, {wrapper: getWrapper()});
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });

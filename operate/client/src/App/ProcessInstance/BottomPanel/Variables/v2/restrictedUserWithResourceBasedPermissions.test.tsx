@@ -91,7 +91,7 @@ describe('Restricted user with resource based permissions', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+    render(<VariablePanel />, {
       wrapper: getWrapper(),
     });
     await waitFor(() => {
@@ -115,7 +115,7 @@ describe('Restricted user with resource based permissions', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+    render(<VariablePanel />, {
       wrapper: getWrapper(),
     });
 
@@ -162,7 +162,7 @@ describe('Restricted user with resource based permissions', () => {
       payload: {pageSize: 10, scopeId: '1'},
     });
 
-    render(<VariablePanel setListenerTabVisibility={jest.fn()} />, {
+    render(<VariablePanel />, {
       wrapper: getWrapper(),
     });
     await waitFor(() => {
