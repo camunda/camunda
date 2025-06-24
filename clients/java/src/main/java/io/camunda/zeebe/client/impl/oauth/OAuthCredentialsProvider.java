@@ -102,6 +102,10 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     clientAssertionKeystoreKeyPassword = builder.getClientAssertionKeystoreKeyPassword();
   }
 
+  public boolean isClientAssertionEnabled() {
+    return clientAssertionEnabled;
+  }
+
   /** Adds an access token to the Authorization header of a gRPC call. */
   @Override
   public void applyCredentials(final CredentialsApplier applier) throws IOException {

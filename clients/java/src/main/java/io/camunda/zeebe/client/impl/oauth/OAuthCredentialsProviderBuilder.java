@@ -268,6 +268,9 @@ public final class OAuthCredentialsProviderBuilder {
     if (readTimeout == null) {
       readTimeout = DEFAULT_READ_TIMEOUT;
     }
+    if (clientAssertionKeystoreKeyPassword == null) {
+      clientAssertionKeystoreKeyPassword = clientAssertionKeystorePassword;
+    }
   }
 
   private void validate() {
@@ -280,15 +283,10 @@ public final class OAuthCredentialsProviderBuilder {
             Files.newInputStream(
                 Paths.get(clientAssertionKeystorePath.toAbsolutePath().toString())),
             clientAssertionKeystorePassword.toCharArray());
-        if (clientAssertionKeystoreKeyPassword == null) {
-          // if the keystore key password is not set, apply the keystore password
-          clientAssertionKeystoreKeyPassword = clientAssertionKeystorePassword;
-        }
         if (clientAssertionKeystoreKeyAlias == null) {
           // if the keystore key alias is not set, apply the first one
           clientAssertionKeystoreKeyAlias = keyStore.aliases().nextElement();
         }
-
       } else {
         Objects.requireNonNull(clientSecret, String.format(INVALID_ARGUMENT_MSG, "client secret"));
       }
