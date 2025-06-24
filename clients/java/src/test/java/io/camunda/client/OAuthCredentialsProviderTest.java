@@ -115,7 +115,6 @@ public final class OAuthCredentialsProviderTest {
 
   private static final String TRUSTSTORE_PASSWORD = "password";
   private static final String KEYSTORE_PASSWORD = "password";
-  private static final String OAUTH_SSL_CLIENT_CERT_PASSWORD = "mstest";
 
   @RegisterExtension
   static WireMockExtension httpsWiremock =
@@ -131,6 +130,7 @@ public final class OAuthCredentialsProviderTest {
                   .keystorePassword(KEYSTORE_PASSWORD))
           .build();
 
+  private static final String OAUTH_SSL_CLIENT_CERT_PASSWORD = "mstest";
   private static final String KEYSTORE_MATERIAL_PASSWORD = "password";
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
   private static final Key<String> AUTH_KEY =
@@ -460,7 +460,7 @@ public final class OAuthCredentialsProviderTest {
     }
   }
 
-  private void mockTokenRequest(boolean withAssertion) {
+  private void mockTokenRequest(final boolean withAssertion) {
     final String assertionRegex = ".*client_assertion\\=[\\._\\-A-Za-z0-9]{400,500}.*";
     final String assertionTypeRegex = ".*client_assertion_type.*";
     final String clientSecret = ".*client_secret.*";
@@ -490,7 +490,7 @@ public final class OAuthCredentialsProviderTest {
                           .withBody(jsonMapper.writeValueAsString(map))
                           .withHeader("Content-Type", "application/json")
                           .withStatus(200)));
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
     }
   }
@@ -753,7 +753,7 @@ public final class OAuthCredentialsProviderTest {
     }
 
     private OAuthCredentialsProviderBuilder initializeCredentialsProviderBuilder(
-        boolean withAssertion, boolean withClientSecret) {
+        final boolean withAssertion, final boolean withClientSecret) {
       OAuthCredentialsProviderBuilder builder =
           new OAuthCredentialsProviderBuilder()
               .clientId(CLIENT_ID)
@@ -768,8 +768,8 @@ public final class OAuthCredentialsProviderTest {
       if (withAssertion) {
         builder =
             builder
-                .sslClientCertPath(OAUTH_SSL_CLIENT_CERT_PATH)
-                .sslClientCertPassword(OAUTH_SSL_CLIENT_CERT_PASSWORD);
+                .clientAssertionKeystorePath(OAUTH_SSL_CLIENT_CERT_PATH)
+                .clientAssertionKeystorePassword(OAUTH_SSL_CLIENT_CERT_PASSWORD);
       }
       if (withClientSecret) {
         builder = builder.clientSecret(SECRET);
