@@ -99,10 +99,16 @@
 
 # Distributed Platform
 /zeebe/atomix @camunda/zeebe-distributed-platform
+/zeebe/backup @camunda/zeebe-distributed-platform
+/zeebe/backup-stores @camunda/zeebe-distributed-platform
+/zeebe/broker-client @camunda/zeebe-distributed-platform
+/zeebe/docker @camunda/zeebe-distributed-platform
 /zeebe/dynamic-config @camunda/zeebe-distributed-platform
 /zeebe/journal @camunda/zeebe-distributed-platform
 /zeebe/logstreams @camunda/zeebe-distributed-platform
+/zeebe/restore @camunda/zeebe-distributed-platform
 /zeebe/stream-platform @camunda/zeebe-distributed-platform
+/zeebe/transport @camunda/zeebe-distributed-platform
 
 # Performance  + Load testing
 /zeebe/benchmarks @camunda/zeebe-distributed-platform
