@@ -1,4 +1,3 @@
----
 name: C8 Orchestration Cluster E2E Tests On Demand
 
 on:
@@ -15,6 +14,8 @@ permissions:
 jobs:
   validate-branch:
     runs-on: ubuntu-latest
+    outputs:
+      base: ${{ steps.detect-base.outputs.base }}
     steps:
       - name: Check if branch exists
         run: |
@@ -31,17 +32,58 @@ jobs:
 
           echo "Branch '$branch_name' exists."
 
+      - uses: actions/checkout@v4
+
+      - name: Detect base branch
+        id: detect-base
+        run: |
+          branch="${{ github.event.inputs.branch }}"
+          echo "Detecting base branch for input branch: $branch"
+          git fetch origin stable/8.6 stable/8.7 main "$branch"
+          base="main"
+          for candidate in stable/8.6 stable/8.7 main; do
+            if git merge-base --is-ancestor origin/$candidate origin/$branch; then
+              base="$candidate"
+              break
+            fi
+          done
+          echo "Detected base branch: $base"
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+
+      - name: Print input and base branch
+        run: |
+          echo "Input branch: ${{ github.event.inputs.branch }}"
+          echo "Detected base branch: ${{ steps.detect-base.outputs.base }}"
+
   c8-orchestration-cluster-e2e-tests:
     needs: validate-branch
     runs-on: ubuntu-latest
     steps:
+      - name: Print input and base branch
+        run: |
+          echo "Input branch: ${{ github.event.inputs.branch }}"
+          echo "Base branch: ${{ needs.validate-branch.outputs.base }}"
+
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.branch }} # Use the branch selected by the user
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Set NON_STANDALONE variable
+        run: |
+          base="${{ needs.validate-branch.outputs.base }}"
+          if [[ "$base" == "stable/8.6" || "$base" == "stable/8.7" ]]; then
+            echo "NON_STANDALONE=true" >> "$GITHUB_ENV"
+          else
+            echo "NON_STANDALONE=false" >> "$GITHUB_ENV"
+          fi
 
       - name: Start Camunda
         run: |
-          DATABASE=elasticsearch docker compose up -d camunda
+          if [[ "$NON_STANDALONE" == "true" ]]; then
+            DATABASE=elasticsearch docker compose up -d operate tasklist
+          else
+            DATABASE=elasticsearch docker compose up -d camunda
+          fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: List running Docker containers
@@ -54,40 +96,44 @@ jobs:
           echo "Checking if services are up..."
           ready=false
           for i in {1..90}; do
-            if ! nc -zv localhost 8080; then
-              echo "Port 8080 is not open yet..."
+            if [[ "$NON_STANDALONE" == "true" ]]; then
+              tasklist_status=$(curl -s -m 5 http://localhost:8080 || echo "Failed")
+              operate_status=$(curl -s -m 5 http://localhost:8081 || echo "Failed")
+            else
+              tasklist_status=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
+              operate_status=$(curl -s -m 5 http://localhost:8080/operate || echo "Failed")
+              # identity_status is not used, so removed to avoid shellcheck warning
             fi
 
-            # Check if pages are available 
-            tasklist_status=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
-            operate_status=$(curl -s -m 5 http://localhost:8080/operate || echo "Failed")
-            identity_status=$(curl -s -m 5 http://localhost:8080/identity || echo "Failed")
-
-            # Check if services are up
-            if [[ "$tasklist_status" != "Failed" ]] && [[ "$operate_status" != "Failed" ]] && [[ "$identity_status" != "Failed" ]]; then
+            if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" ]]; then
               echo "Services are ready!"
               ready=true
               break
             fi
 
             echo "Waiting for services... ($i/90)"
-            echo "Response from tasklist: $tasklist_status"
-            echo "Response from operate: $operate_status"
-            echo "Response from identity: $identity_status"
+            echo "Tasklist: $tasklist_status"
+            echo "Operate: $operate_status"
             sleep 10
           done
 
-          if [ "$ready" == "true" ]; then
+          if [ "$ready" = true ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "Services failed to start in time."
             exit 1
           fi
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Print Docker logs before failing
         if: failure()
         run: |
-          docker compose logs camunda
+          if [[ "$NON_STANDALONE" == "true" ]]; then
+            docker compose logs tasklist
+            docker compose logs operate
+          else
+            docker compose logs camunda
+          fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Setup Node.js
@@ -98,9 +144,7 @@ jobs:
           cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
 
       - name: Install dependencies
-        run: |
-          echo "Installing dependencies..."
-          npm ci --verbose
+        run: npm ci --verbose
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Import Secrets
@@ -111,7 +155,7 @@ jobs:
           method: approle
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false # we rely on step outputs, no need for environment variables
+          exportEnv: false
           secrets: |
             secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
             secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
@@ -131,12 +175,19 @@ jobs:
         shell: bash
         env:
           LOCAL_TEST: "false"
-          CORE_APPLICATION_URL: http://localhost:8080
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          ZEEBE_REST_ADDRESS: "http://localhost:8080"
-        run: npm run test -- --project=chromium
+        run: |
+          if [[ "$NON_STANDALONE" == "true" ]]; then
+            export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
+            export CORE_APPLICATION_OPERATE_URL="http://localhost:8081"
+            export ZEEBE_REST_ADDRESS="http://localhost:8089"
+          else
+            export CORE_APPLICATION_URL="http://localhost:8080"
+            export ZEEBE_REST_ADDRESS="http://localhost:8080"
+          fi
+          npm run test -- --project=chromium
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Publish test results to TestRail
@@ -144,8 +195,8 @@ jobs:
         shell: bash
         env:
           TESTRAIL_HOST: "https://camunda.testrail.com/"
-          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }} # Use the imported secret
-          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }} # Use the imported secret
+          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }}
+          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }}
           JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
         run: |
           pip install trcli
@@ -154,7 +205,7 @@ jobs:
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
             parse_junit --suite-id 17050 \
-            --title "On Demand C8 Orchestration Cluster Test Run Results -  ${{ github.event.inputs.branch }}" \
+            --title "On Demand C8 Orchestration Cluster Test Run Results - ${{ github.event.inputs.branch }}" \
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
 
