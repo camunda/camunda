@@ -44,6 +44,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
@@ -266,12 +267,20 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
 
   @Override
   public Collection<RaftPartition> getRaftPartitions() {
-    return partitions.values().stream().map(Partition::raftPartition).toList();
+    return partitions.values().stream()
+        .map(Partition::raftPartition)
+        // raftPartition may be null before the partition is fully started
+        .filter(Objects::nonNull)
+        .toList();
   }
 
   @Override
   public Collection<ZeebePartition> getZeebePartitions() {
-    return partitions.values().stream().map(Partition::zeebePartition).toList();
+    return partitions.values().stream()
+        .map(Partition::zeebePartition)
+        // zeebePartition may be null before the partition is fully started
+        .filter(Objects::nonNull)
+        .toList();
   }
 
   @Override
