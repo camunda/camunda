@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceResult;
+import io.camunda.zeebe.client.impl.Loggers;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -32,7 +33,6 @@ final class ClusterSmokeIT {
           .withBrokersCount(3)
           .withReplicationFactor(3)
           .withGatewaysCount(1)
-          .withBrokerConfig(b -> b.brokerConfig().getNetwork().setHost("localhost"))
           .build();
 
   @AutoClose private CamundaClient client;
@@ -53,12 +53,14 @@ final class ClusterSmokeIT {
    */
   @SmokeTest
   void smokeTest() {
+    Loggers.LOGGER.info("Test started");
     // given
     final var processId = Strings.newRandomValidBpmnId();
     final var process = Bpmn.createExecutableProcess(processId).startEvent().endEvent().done();
 
     // when
     final var result = executeProcessInstance(processId, process);
+    Loggers.LOGGER.info("PI executed");
 
     // then
     assertThat(result.getBpmnProcessId()).isEqualTo(processId);
@@ -67,6 +69,7 @@ final class ClusterSmokeIT {
             () ->
                 TopologyAssert.assertThat(client.newTopologyRequest().send().join())
                     .isComplete(3, 1, 3));
+    Loggers.LOGGER.info("Awaited topology is complete");
     Awaitility.await("until cluster topology is active")
         .untilAsserted(
             () ->
@@ -74,6 +77,7 @@ final class ClusterSmokeIT {
                     .hasActiveBroker(0)
                     .hasActiveBroker(1)
                     .hasActiveBroker(2));
+    Loggers.LOGGER.info("Awaited cluster topology is active");
   }
 
   private ProcessInstanceResult executeProcessInstance(
