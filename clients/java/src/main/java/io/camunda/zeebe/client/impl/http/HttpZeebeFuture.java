@@ -15,8 +15,6 @@
  */
 package io.camunda.zeebe.client.impl.http;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.ProblemException;
@@ -25,8 +23,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Implements a {@link ZeebeFuture} representing a HTTP call. Supports propagating cancellation of
@@ -36,17 +32,11 @@ import org.slf4j.LoggerFactory;
  */
 public class HttpZeebeFuture<RespT> extends CompletableFuture<RespT> implements ZeebeFuture<RespT> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(HttpZeebeFuture.class);
-
   private volatile Future<?> transportFuture;
 
   @Override
   public RespT join() {
     try {
-      LOG.warn(
-          "{} is deprecated and will be removed in version 8.10. Please migrate to {}",
-          ZeebeClient.class.getSimpleName(),
-          CamundaClient.class.getSimpleName());
       return get();
     } catch (final ExecutionException e) {
       throw unwrapExecutionException(e);
@@ -68,10 +58,6 @@ public class HttpZeebeFuture<RespT> extends CompletableFuture<RespT> implements 
   @Override
   public RespT join(final long timeout, final TimeUnit unit) {
     try {
-      LOG.warn(
-          "{} is deprecated and will be removed in version 8.10. Please migrate to {}",
-          ZeebeClient.class.getSimpleName(),
-          CamundaClient.class.getSimpleName());
       return super.get(timeout, unit);
     } catch (final ExecutionException e) {
       throw unwrapExecutionException(e);

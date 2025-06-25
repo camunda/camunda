@@ -17,8 +17,6 @@
 package io.camunda.zeebe.client.impl;
 
 import com.google.protobuf.GeneratedMessageV3;
-import io.camunda.client.CamundaClient;
-import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.ClientStatusException;
@@ -31,15 +29,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ZeebeClientFutureImpl<ClientResponse, BrokerResponse>
     extends CompletableFuture<ClientResponse>
     implements ZeebeFuture<ClientResponse>,
         ClientResponseObserver<GeneratedMessageV3, BrokerResponse> {
-
-  private static final Logger LOG = LoggerFactory.getLogger(ZeebeClientFutureImpl.class);
 
   protected ClientCallStreamObserver<GeneratedMessageV3> clientCall;
   private final Function<BrokerResponse, ClientResponse> responseMapper;
@@ -55,10 +49,6 @@ public class ZeebeClientFutureImpl<ClientResponse, BrokerResponse>
   @Override
   public ClientResponse join() {
     try {
-      LOG.warn(
-          "{} is deprecated and will be removed in version 8.10. Please migrate to {}",
-          ZeebeClient.class.getSimpleName(),
-          CamundaClient.class.getSimpleName());
       return get();
     } catch (final ExecutionException e) {
       throw transformExecutionException(e);
@@ -79,10 +69,6 @@ public class ZeebeClientFutureImpl<ClientResponse, BrokerResponse>
   @Override
   public ClientResponse join(final long timeout, final TimeUnit unit) {
     try {
-      LOG.warn(
-          "{} is deprecated and will be removed in version 8.10. Please migrate to {}",
-          ZeebeClient.class.getSimpleName(),
-          CamundaClient.class.getSimpleName());
       return get(timeout, unit);
     } catch (final ExecutionException e) {
       throw transformExecutionException(e);
