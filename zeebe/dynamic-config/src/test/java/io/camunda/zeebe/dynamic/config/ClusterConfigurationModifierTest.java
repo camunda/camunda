@@ -10,6 +10,7 @@ package io.camunda.zeebe.dynamic.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.dynamic.config.state.ExporterState;
@@ -17,8 +18,14 @@ import io.camunda.zeebe.dynamic.config.state.ExporterState.State;
 import io.camunda.zeebe.dynamic.config.state.ExportersConfig;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
 import io.camunda.zeebe.dynamic.config.state.PartitionState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling.AllPartitions;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -26,6 +33,7 @@ import java.util.stream.Stream;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -53,22 +61,12 @@ final class ClusterConfigurationModifierTest {
 
   @Nested
   final class RoutingStateInitializerTest {
-    @Test
-    void shouldNotInitializeRoutingStateIfPartitionScalingIsDisabled() {
-      // given
-      final var routingStateInitializer = new RoutingStateInitializer(false, 3);
-
-      // when
-      final var newConfiguration = routingStateInitializer.modify(currentConfiguration).join();
-
-      // then
-      ClusterConfigurationAssert.assertThatClusterTopology(newConfiguration).hasNoRoutingState();
-    }
+    @TempDir Path tempDir;
 
     @Test
-    void shouldInitializeRoutingStateIfPartitionScalingIsEnabled() {
+    void shouldInitializeRoutingStateWithStaticCountIfNoFileIsPresent() {
       // given
-      final var routingStateInitializer = new RoutingStateInitializer(true, 5);
+      final var routingStateInitializer = new RoutingStateInitializer(5, Optional.empty());
 
       // when
       final var newConfiguration = routingStateInitializer.modify(currentConfiguration).join();
@@ -80,6 +78,27 @@ final class ClusterConfigurationModifierTest {
           .hasVersion(1)
           .hasActivatedPartitions(5)
           .correlatesMessagesToPartitions(5);
+    }
+
+    @Test
+    void shouldInitializeRoutingStateFromFileIfExists() throws IOException {
+      // given
+      final var filePath = tempDir.resolve("routing-state.pb");
+      final var routingStateInitializer = new RoutingStateInitializer(5, Optional.of(filePath));
+      final var routingState = new RoutingState(4L, new AllPartitions(4), new HashMod(3));
+      final var bytes = new ProtoBufSerializer().serializeRoutingState(routingState);
+      Files.write(filePath, bytes);
+
+      // when
+      final var newConfiguration = routingStateInitializer.modify(currentConfiguration).join();
+
+      // then
+      ClusterConfigurationAssert.assertThatClusterTopology(newConfiguration).hasRoutingState();
+      ClusterConfigurationAssert.assertThatClusterTopology(newConfiguration)
+          .routingState()
+          .hasVersion(4)
+          .hasActivatedPartitions(4)
+          .correlatesMessagesToPartitions(3);
     }
   }
 
