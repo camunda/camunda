@@ -238,6 +238,29 @@ public class TenantController {
     }
   }
 
+  @CamundaPostMapping(path = "/{tenantId}/group-ids/search")
+  public ResponseEntity<TenantGroupSearchResult> searchGroupIdsInTenant(
+      @PathVariable final String tenantId,
+      @RequestBody(required = false) final TenantGroupSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toTenantQuery(query)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            tenantQuery -> searchGroupIdsInTenant(tenantId, tenantQuery));
+  }
+
+  private ResponseEntity<TenantGroupSearchResult> searchGroupIdsInTenant(
+      final String tenantId, final TenantQuery query) {
+    try {
+      final var result =
+          tenantServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .searchMembers(buildTenantMemberQuery(tenantId, EntityType.GROUP, query));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toTenantGroupSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
   @CamundaPostMapping(path = "/{tenantId}/roles/search")
   public ResponseEntity<RoleSearchQueryResult> searchRolesInTenant(
       @PathVariable final String tenantId,
