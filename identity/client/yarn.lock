@@ -512,28 +512,28 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/colors@npm:^11.34.0":
-  version: 11.34.0
-  resolution: "@carbon/colors@npm:11.34.0"
+"@carbon/colors@npm:^11.35.0":
+  version: 11.35.0
+  resolution: "@carbon/colors@npm:11.35.0"
   dependencies:
     "@ibm/telemetry-js": "npm:^1.5.0"
-  checksum: 10c0/f7294c08991a509adbff6c86fec23105a033aece1160137382812e937bf8eb280eea71773445c71aabd4a500ee66c1f323d20585bce8c4442257898cc0a7eccd
+  checksum: 10c0/1bf9f0fd05b928c983351c43107fa2eed046868390f69550c213d6cbb6eaae00e357fb5e9eb3332324151e41da4a417f41ccf00aa1e1ca1538277f129b1e04c6
   languageName: node
   linkType: hard
 
 "@carbon/elements@npm:^11.57.0":
-  version: 11.69.0
-  resolution: "@carbon/elements@npm:11.69.0"
+  version: 11.70.0
+  resolution: "@carbon/elements@npm:11.70.0"
   dependencies:
-    "@carbon/colors": "npm:^11.34.0"
-    "@carbon/grid": "npm:^11.37.0"
-    "@carbon/icons": "npm:^11.61.0"
-    "@carbon/layout": "npm:^11.35.0"
-    "@carbon/motion": "npm:^11.29.0"
-    "@carbon/themes": "npm:^11.54.0"
-    "@carbon/type": "npm:^11.41.0"
+    "@carbon/colors": "npm:^11.35.0"
+    "@carbon/grid": "npm:^11.38.0"
+    "@carbon/icons": "npm:^11.62.0"
+    "@carbon/layout": "npm:^11.36.0"
+    "@carbon/motion": "npm:^11.30.0"
+    "@carbon/themes": "npm:^11.55.0"
+    "@carbon/type": "npm:^11.42.0"
     "@ibm/telemetry-js": "npm:^1.5.0"
-  checksum: 10c0/c954f7a2c77e0629ba25ddab0a888f1268d582597e87a89c70ae88d81456bc8a809d2d76b7d7c10317ebd5822f8cf2e1f04469f4fc6797835d107b3b5382fdcd
+  checksum: 10c0/f78eb07e7fe9405109166392a404dca83a5c91fe7786897a14c8cbe0293d4de3da5bdcb173d361c3f361ed7e81dd0f1ddb653609e064c8bd2804bc893b39a997
   languageName: node
   linkType: hard
 
@@ -556,13 +556,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/grid@npm:^11.37.0":
-  version: 11.37.0
-  resolution: "@carbon/grid@npm:11.37.0"
+"@carbon/grid@npm:^11.38.0":
+  version: 11.38.0
+  resolution: "@carbon/grid@npm:11.38.0"
   dependencies:
-    "@carbon/layout": "npm:^11.35.0"
+    "@carbon/layout": "npm:^11.36.0"
     "@ibm/telemetry-js": "npm:^1.5.0"
-  checksum: 10c0/2c21f4a9ad900de694d736915d5e128d2a8c3bdf3cbf763a9bac171bdedcbb14e816eede83c195cfe54145592a445443af0fee7d8933a391f09e56614e3ad5e9
+  checksum: 10c0/522fe70d9529100254218dec15937dfa0727892185c58f1fc4394531ac1f80fcd3a92b7b5291efa08353be667994898864a4a37c7ee33417249c5613efc98339
   languageName: node
   linkType: hard
 
@@ -588,12 +588,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/icons@npm:^11.61.0":
-  version: 11.61.0
-  resolution: "@carbon/icons@npm:11.61.0"
+"@carbon/icons@npm:^11.62.0":
+  version: 11.62.0
+  resolution: "@carbon/icons@npm:11.62.0"
   dependencies:
     "@ibm/telemetry-js": "npm:^1.5.0"
-  checksum: 10c0/cdb47cd13b0fa09e2eadd75e9f79276aebdc7b994065e1dd9ac89b679185f59a2b19532037bcc3c6c4f780ad3678574e7b415a1f3fa527383dd500037590ff0c
+  checksum: 10c0/2be5b68a46e19244221a7ae3e23b70c044d0c912b54403d2b558c762d6643274eeda607a6b7e3276dc8c717cd9158d1cd3a877fe62f5b719bcf26686341be3ff
   languageName: node
   linkType: hard
 
@@ -606,12 +606,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/layout@npm:^11.35.0":
-  version: 11.35.0
-  resolution: "@carbon/layout@npm:11.35.0"
+"@carbon/layout@npm:^11.36.0":
+  version: 11.36.0
+  resolution: "@carbon/layout@npm:11.36.0"
   dependencies:
     "@ibm/telemetry-js": "npm:^1.5.0"
-  checksum: 10c0/93f137c43dcd45c8af437f1fcf3479b9fafe304224e8305c7e5b6bb7638d8fceef1d50c5350648f5203fab642d12bb351b9cc17f782a283d3f36e719dfa0640b
+  checksum: 10c0/d6f4618b70f9edce8c17b2128290f0ee9dbd474624f61159c1c850da64c99b64f7319b838c6bbe3a731bcb62d0ffc9637628e192215c0fa45bd5c804fecb119c
   languageName: node
   linkType: hard
 
@@ -624,12 +624,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/motion@npm:^11.29.0":
-  version: 11.29.0
-  resolution: "@carbon/motion@npm:11.29.0"
+"@carbon/motion@npm:^11.30.0":
+  version: 11.30.0
+  resolution: "@carbon/motion@npm:11.30.0"
   dependencies:
     "@ibm/telemetry-js": "npm:^1.5.0"
-  checksum: 10c0/7e6161e782262ced1464e647b5738ec2e5a16b65c7cd3bcae73234188b2cad4f19584bcf9a830b62807f5f84802829ccda842fe00f2b36badda2f37176a19b33
+  checksum: 10c0/3dbc3b879482322ca8f19b71266b7c757e02ee6d7e4102bc1d6ac8469101685d2be02e046fbebd03346ad8a8861109a98871d34c00acc2f053f5b5e2d1d80b6a
   languageName: node
   linkType: hard
 
@@ -707,16 +707,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/themes@npm:^11.54.0":
-  version: 11.54.0
-  resolution: "@carbon/themes@npm:11.54.0"
+"@carbon/themes@npm:^11.55.0":
+  version: 11.55.0
+  resolution: "@carbon/themes@npm:11.55.0"
   dependencies:
-    "@carbon/colors": "npm:^11.34.0"
-    "@carbon/layout": "npm:^11.35.0"
-    "@carbon/type": "npm:^11.41.0"
+    "@carbon/colors": "npm:^11.35.0"
+    "@carbon/layout": "npm:^11.36.0"
+    "@carbon/type": "npm:^11.42.0"
     "@ibm/telemetry-js": "npm:^1.5.0"
     color: "npm:^4.0.0"
-  checksum: 10c0/521c8d4bcf54b885216d1a8cd675cd33767c58f0bd06498698ae9dbbfce72adb6de3d6c383e4a3fe91146e37979a2b2f66bd6a3a1abf88c14440bf7ce95f0653
+  checksum: 10c0/d12eb9b6fb35dc8e6122821fce0fbb2f3f19af4359d008c44d8035dff0b56e9e5c4f3357019baa175e06c75044b67ec9509e583a110c6562d2d7bf064309b564
   languageName: node
   linkType: hard
 
@@ -731,14 +731,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@carbon/type@npm:^11.41.0":
-  version: 11.41.0
-  resolution: "@carbon/type@npm:11.41.0"
+"@carbon/type@npm:^11.42.0":
+  version: 11.42.0
+  resolution: "@carbon/type@npm:11.42.0"
   dependencies:
-    "@carbon/grid": "npm:^11.37.0"
-    "@carbon/layout": "npm:^11.35.0"
+    "@carbon/grid": "npm:^11.38.0"
+    "@carbon/layout": "npm:^11.36.0"
     "@ibm/telemetry-js": "npm:^1.5.0"
-  checksum: 10c0/c8e6e706d82b59b1d0d7158a00375bb0b82a42f1e7320177e71b285de7d8784485d2c4bc8a0e4656a1551f29587b7d4124eae4f43121aa54d08a35032efe48c9
+  checksum: 10c0/11c0006f4497984f2792eec95942f08595b80c5ada266f283fb5f8d9d3db02c8a3cd1410d3943419f1833c6258107213ccca807bcd304cef4409649989312360
   languageName: node
   linkType: hard
 
