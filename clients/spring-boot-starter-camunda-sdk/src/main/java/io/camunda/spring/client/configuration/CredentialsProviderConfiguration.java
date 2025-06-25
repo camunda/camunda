@@ -25,7 +25,6 @@ import io.camunda.spring.client.properties.CamundaClientProperties;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -118,7 +117,7 @@ public class CredentialsProviderConfiguration {
       final OAuthCredentialsProviderBuilder builder,
       final CamundaClientProperties camundaClientProperties) {
     if (camundaClientProperties.getAuth().getKeystorePath() != null) {
-      final Path keyStore = Paths.get(camundaClientProperties.getAuth().getKeystorePath());
+      final Path keyStore = camundaClientProperties.getAuth().getKeystorePath();
       if (Files.exists(keyStore)) {
         LOG.debug("Using keystore {}", keyStore);
         builder.keystorePath(keyStore);
@@ -130,7 +129,7 @@ public class CredentialsProviderConfiguration {
     }
 
     if (camundaClientProperties.getAuth().getTruststorePath() != null) {
-      final Path trustStore = Paths.get(camundaClientProperties.getAuth().getTruststorePath());
+      final Path trustStore = camundaClientProperties.getAuth().getTruststorePath();
       if (Files.exists(trustStore)) {
         LOG.debug("Using truststore {}", trustStore);
         builder.truststorePath(trustStore);
