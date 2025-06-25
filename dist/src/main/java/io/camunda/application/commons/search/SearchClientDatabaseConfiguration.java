@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.search;
 
+import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.MappingCacheConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedSearchClients;
@@ -65,11 +66,13 @@ public class SearchClientDatabaseConfiguration {
   @ConditionalOnBean(DocumentBasedSearchClient.class)
   public DocumentBasedSearchClients documentBasedSearchClients(
       final DocumentBasedSearchClient searchClient,
-      final ConnectConfiguration connectConfiguration) {
+      final ConnectConfiguration connectConfiguration,
+      final MappingCacheConfiguration cacheConfiguration) {
     final IndexDescriptors indexDescriptors =
         new IndexDescriptors(
             connectConfiguration.getIndexPrefix(),
             connectConfiguration.getTypeEnum().isElasticSearch());
-    return new DocumentBasedSearchClients(searchClient, indexDescriptors);
+    return new DocumentBasedSearchClients(
+        searchClient, indexDescriptors, cacheConfiguration.getTtl());
   }
 }

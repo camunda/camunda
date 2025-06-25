@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.search;
 
+import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.MappingCacheConfiguration;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineIndexProperties;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineRetentionProperties;
@@ -19,6 +20,7 @@ import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -33,6 +35,7 @@ import org.springframework.context.annotation.Configuration;
   SearchEngineIndexProperties.class,
   SearchEngineRetentionProperties.class,
   SearchEngineSchemaManagerProperties.class,
+  MappingCacheConfiguration.class
 })
 public class SearchEngineDatabaseConfiguration {
 
@@ -78,5 +81,18 @@ public class SearchEngineDatabaseConfiguration {
     @VisibleForTesting
     public static final String CREATE_SCHEMA_ENV_VAR =
         "CAMUNDA_DATABASE_SCHEMA_MANAGER_CREATE_SCHEMA";
+  }
+
+  @ConfigurationProperties("camunda.database.cache")
+  public static final class MappingCacheConfiguration {
+    private Duration ttl = Duration.ofMinutes(2);
+
+    public Duration getTtl() {
+      return ttl;
+    }
+
+    public void setTtl(final Duration ttl) {
+      this.ttl = ttl;
+    }
   }
 }

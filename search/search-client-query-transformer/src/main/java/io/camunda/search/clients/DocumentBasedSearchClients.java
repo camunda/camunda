@@ -78,6 +78,7 @@ import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEnt
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.util.CloseableSilently;
+import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -90,22 +91,39 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   private final DocumentBasedSearchClient searchClient;
   private final ServiceTransformers transformers;
   private final SecurityContext securityContext;
+  private final MappingsCache mappingsCache;
 
   public DocumentBasedSearchClients(
-      final DocumentBasedSearchClient searchClient, final IndexDescriptors indexDescriptors) {
+      final DocumentBasedSearchClient searchClient,
+      final IndexDescriptors indexDescriptors,
+      final Duration mappingsCacheRefreshInterval) {
     this(
         searchClient,
         ServiceTransformers.newInstance(indexDescriptors),
-        SecurityContext.withoutAuthentication());
+        SecurityContext.withoutAuthentication(),
+        mappingsCacheRefreshInterval);
   }
 
   private DocumentBasedSearchClients(
       final DocumentBasedSearchClient searchClient,
       final ServiceTransformers transformers,
-      final SecurityContext securityContext) {
+      final SecurityContext securityContext,
+      final Duration mappingsCacheRefreshInterval) {
     this.searchClient = searchClient;
     this.transformers = transformers;
     this.securityContext = securityContext;
+    mappingsCache = new MappingsCache(searchClient, transformers, mappingsCacheRefreshInterval);
+  }
+
+  private DocumentBasedSearchClients(
+      final DocumentBasedSearchClient searchClient,
+      final ServiceTransformers transformers,
+      final SecurityContext securityContext,
+      final MappingsCache cache) {
+    this.searchClient = searchClient;
+    this.transformers = transformers;
+    this.securityContext = securityContext;
+    mappingsCache = cache;
   }
 
   @Override
@@ -131,7 +149,8 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
 
   @Override
   public DocumentBasedSearchClients withSecurityContext(final SecurityContext securityContext) {
-    return new DocumentBasedSearchClients(searchClient, transformers, securityContext);
+    return new DocumentBasedSearchClients(
+        searchClient, transformers, securityContext, mappingsCache);
   }
 
   @Override
@@ -143,8 +162,9 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
 
   @Override
   public List<MappingEntity> findAllMappings(final MappingQuery query) {
-    return getSearchExecutor()
-        .findAll(query, io.camunda.webapps.schema.entities.usermanagement.MappingEntity.class);
+    final var values = mappingsCache.getAll();
+    assert values != null && !values.isEmpty();
+    return values.stream().toList();
   }
 
   @Override

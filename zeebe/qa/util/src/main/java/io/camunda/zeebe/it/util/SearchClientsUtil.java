@@ -14,6 +14,7 @@ import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import io.camunda.search.os.clients.OpensearchSearchClient;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import java.time.Duration;
 
 public class SearchClientsUtil {
 
@@ -27,7 +28,8 @@ public class SearchClientsUtil {
 
   public static DocumentBasedSearchClients createSearchClients(final String elasticsearchUrl) {
     final var lowLevelSearchClient = createLowLevelSearchClient(elasticsearchUrl);
-    return new DocumentBasedSearchClients(lowLevelSearchClient, new IndexDescriptors("", true));
+    return new DocumentBasedSearchClients(
+        lowLevelSearchClient, new IndexDescriptors("", true), Duration.ofMinutes(1));
   }
 
   public static OpensearchSearchClient createLowLevelOpensearchSearchClient(
