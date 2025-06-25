@@ -14,7 +14,7 @@ type mockC8 struct {
 	ProcessTreeFunc func(pid int) []*os.Process
 }
 
-func (m *mockC8) OpenBrowser(ctx context.Context, protocol string, port int) error { return nil }
+func (m *mockC8) OpenBrowser(ctx context.Context, url string) error { return nil }
 func (m *mockC8) ProcessTree(pid int) []*os.Process {
 	if m.ProcessTreeFunc != nil {
 		return m.ProcessTreeFunc(pid)

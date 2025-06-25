@@ -7,7 +7,7 @@ import (
 )
 
 type C8Run interface {
-	OpenBrowser(ctx context.Context, protocol string, port int) error
+	OpenBrowser(ctx context.Context, url string) error
 	ProcessTree(commandPid int) []*os.Process
 	VersionCmd(ctx context.Context, javaBinaryPath string) *exec.Cmd
 	ElasticsearchCmd(ctx context.Context, elasticsearchVersion string, parentDir string) *exec.Cmd

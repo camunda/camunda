@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"text/template"
 	"time"
 
@@ -21,7 +22,7 @@ import (
 )
 
 type opener interface {
-	OpenBrowser(ctx context.Context, protocol string, port int) error
+	OpenBrowser(ctx context.Context, url string) error
 }
 
 type Ports struct {
@@ -37,9 +38,10 @@ func QueryCamunda(ctx context.Context, c8 opener, name string, settings types.C8
 		protocol = "https"
 	}
 	healthEndpoint := fmt.Sprintf("%s://localhost:9600/actuator/health", protocol)
+	browserUrl := fmt.Sprintf("%s://localhost:%s/operate", protocol, strconv.Itoa(settings.Port))
 	if isRunning(ctx, name, healthEndpoint, retries, 14*time.Second) {
 		log.Info().Str("name", name).Msg("has successfully been started.")
-		if err := c8.OpenBrowser(ctx, protocol, settings.Port); err != nil {
+		if err := c8.OpenBrowser(ctx, browserUrl); err != nil {
 			log.Err(err).Msg("Failed to open browser")
 			return nil
 		}
