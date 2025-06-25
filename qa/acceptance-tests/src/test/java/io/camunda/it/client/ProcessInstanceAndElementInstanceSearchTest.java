@@ -1014,6 +1014,90 @@ public class ProcessInstanceAndElementInstanceSearchTest {
   }
 
   @Test
+  void shouldRetrieveElementInstaneceByStartDateFilter() {
+    // given
+    final var ei =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .page(p -> p.limit(1))
+            .send()
+            .join()
+            .items()
+            .getFirst();
+
+    // when
+    final var result =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            // also filtering by elementId to get a unique result since others may coincidentally
+            // have been started at the same time
+            .filter(f -> f.startDate(ei.getStartDate()).elementId(ei.getElementId()))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getStartDate()).isEqualTo(ei.getStartDate());
+  }
+
+  @Test
+  void shouldNotFindElementInstanceByStartDateFilter() {
+    // given
+    final String hourAgo = OffsetDateTime.now().minusHours(1).toString();
+    // when
+    final var result =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.startDate(hourAgo))
+            .send()
+            .join();
+    // then
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
+  void shouldRetrieveElementInstaneceByEndDateFilter() {
+    // given
+    final var ei =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .page(p -> p.limit(1))
+            .send()
+            .join()
+            .items()
+            .getFirst();
+
+    // when
+    final var result =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            // also filtering by elementId to get a unique result since others may coincidentally
+            // have ended at the same time
+            .filter(f -> f.startDate(ei.getEndDate()).elementId(ei.getElementId()))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getStartDate()).isEqualTo(ei.getStartDate());
+  }
+
+  @Test
+  void shouldNotFindElementInstanceByEndDateFilter() {
+    // given
+    final String hourAgo = OffsetDateTime.now().minusHours(1).toString();
+    // when
+    final var result =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.endDate(hourAgo))
+            .send()
+            .join();
+    // then
+    assertThat(result.items()).isEmpty();
+  }
+
+  @Test
   void shouldSortProcessInstancesByState() {
     // when
     final var resultAsc =
