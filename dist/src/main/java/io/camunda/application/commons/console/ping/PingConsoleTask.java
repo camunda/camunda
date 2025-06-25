@@ -1,0 +1,135 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.application.commons.console.ping;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.application.commons.console.ping.PingConsoleConfiguration.ConsolePingConfiguration;
+import io.camunda.service.ManagementServices;
+import io.camunda.zeebe.util.retry.RetryConfiguration;
+import io.camunda.zeebe.util.retry.RetryDecorator;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.time.Duration;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class PingConsoleTask implements Runnable {
+
+  public static final DateTimeFormatter DATE_TIME_FORMATTER =
+      DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss'Z'").withZone(ZoneOffset.UTC);
+  private static final Logger LOGGER = LoggerFactory.getLogger(PingConsoleTask.class);
+  private static final int NUMBER_OF_MAX_RETRIES = 10;
+  private static final int RETRY_DELAY_MULTIPLIER = 2;
+  private static final Duration MAX_RETRY_DELAY = Duration.ofMinutes(2);
+  private final ManagementServices managementServices;
+  private final ConsolePingConfiguration pingConfiguration;
+  private final HttpClient client;
+  private final RetryDecorator retryDecorator;
+
+  public PingConsoleTask(
+      final ManagementServices managementServices,
+      final ConsolePingConfiguration pingConfiguration) {
+    this.managementServices = managementServices;
+    this.pingConfiguration = pingConfiguration;
+    client = HttpClient.newHttpClient();
+    final var retryConfiguration = new RetryConfiguration();
+    retryConfiguration.setMaxRetries(NUMBER_OF_MAX_RETRIES);
+    retryConfiguration.setRetryDelayMultiplier(RETRY_DELAY_MULTIPLIER);
+    retryConfiguration.setMaxRetryDelay(MAX_RETRY_DELAY);
+    retryDecorator = new RetryDecorator();
+  }
+
+  @Override
+  public void run() {
+    try {
+      final HttpRequest request =
+          HttpRequest.newBuilder()
+              .uri(URI.create(pingConfiguration.endpoint()))
+              .POST(HttpRequest.BodyPublishers.ofString(getLicensePayload()))
+              .build();
+
+      retryDecorator.decorate("Ping console.", () -> tryPingConsole(request));
+
+    } catch (final Exception e) {
+      if (e instanceof JsonProcessingException) {
+        LOGGER.warn("Failed to parse payload for Console ping task: {}", e.getMessage());
+      } else {
+        LOGGER.warn(
+            "Failed to execute Console ping task. Exception Message: {}", e.getMessage(), e);
+      }
+    }
+  }
+
+  private void tryPingConsole(final HttpRequest request) throws RetriableException {
+    final HttpResponse<String> resp;
+    try {
+      resp = client.send(request, BodyHandlers.ofString());
+    } catch (final IOException | InterruptedException e) {
+      // If the request fails due to a network issue, we should retry.
+      throw new RetriableException("Network error: " + e.getMessage());
+    }
+
+    // We should retry on server errors, timeouts or too many request.
+    if (resp.statusCode() >= 500) {
+      throw new RetriableException("Server error: " + resp.statusCode(), resp.body());
+    } else if (resp.statusCode() == 429 || resp.statusCode() == 408) {
+      throw new RetriableException(
+          "Too many requests or timeout: " + resp.statusCode(), resp.body());
+    } else if (resp.statusCode() >= 400) {
+      // Should not retry for the remaining 4xx errors, but we log them.
+      LOGGER.warn(
+          "Received client error response: {}. No retry will be attempted.", resp.statusCode());
+    }
+  }
+
+  private String getLicensePayload() throws JsonProcessingException {
+    final ObjectMapper objectMapper = new ObjectMapper();
+    final LicensePayload.License license =
+        new LicensePayload.License(
+            managementServices.isCamundaLicenseValid(),
+            managementServices.getCamundaLicenseType().toString(),
+            managementServices.isCommercialCamundaLicense(),
+            managementServices.getCamundaLicenseExpiresAt() == null
+                ? null
+                : DATE_TIME_FORMATTER.format(managementServices.getCamundaLicenseExpiresAt()));
+    final LicensePayload payload =
+        new LicensePayload(
+            license,
+            pingConfiguration.clusterId(),
+            pingConfiguration.clusterName(),
+            pingConfiguration.properties());
+    return objectMapper.writeValueAsString(payload);
+  }
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  public record LicensePayload(
+      License license, String clusterId, String clusterName, Map<String, String> properties) {
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record License(
+        boolean validLicense, String licenseType, boolean isCommercial, String expiresAt) {}
+  }
+
+  private static class RetriableException extends RuntimeException {
+    public RetriableException(final String message) {
+      super(message);
+    }
+
+    public RetriableException(final String message, final String responseBody) {
+      super(message + ". Response body: " + responseBody);
+    }
+  }
+}
