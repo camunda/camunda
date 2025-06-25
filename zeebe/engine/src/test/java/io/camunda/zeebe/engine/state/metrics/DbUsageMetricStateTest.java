@@ -35,23 +35,23 @@ public class DbUsageMetricStateTest {
   void beforeEach() {
     mockClock = mock(InstantSource.class);
     state = new DbUsageMetricState(zeebeDb, transactionContext, Duration.ofSeconds(1));
+    state.resetActiveBucket(1L);
   }
 
   @Test
-  public void shouldCreateActiveBucket() {
+  public void shouldResetActiveBucket() {
     // given
     final var eventTime = InstantSource.system().millis();
     when(mockClock.millis()).thenReturn(eventTime);
 
     // when
-    state.recordRPIMetric(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    state.resetActiveBucket(1L);
 
     // then
     final var actual = state.getActiveBucket();
-    assertThat(actual.getFromTime()).isEqualTo(eventTime);
-    assertThat(actual.getToTime()).isEqualTo(eventTime + 1000);
-    assertThat(actual.getTenantRPIMap())
-        .containsExactlyInAnyOrderEntriesOf(Map.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 1L));
+    assertThat(actual.getFromTime()).isEqualTo(1L);
+    assertThat(actual.getToTime()).isEqualTo(1001L);
+    assertThat(actual.getTenantRPIMap()).isEmpty();
   }
 
   @Test
@@ -59,6 +59,7 @@ public class DbUsageMetricStateTest {
     // given
     final var eventTime = InstantSource.system().millis();
     when(mockClock.millis()).thenReturn(eventTime);
+    state.resetActiveBucket(1L);
 
     // when
     state.recordRPIMetric(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
@@ -70,28 +71,10 @@ public class DbUsageMetricStateTest {
 
     // then
     final var actual = state.getActiveBucket();
-    assertThat(actual.getFromTime()).isEqualTo(eventTime);
-    assertThat(actual.getToTime()).isEqualTo(eventTime + 1000);
+    assertThat(actual.getFromTime()).isEqualTo(1L);
+    assertThat(actual.getToTime()).isEqualTo(1001L);
     assertThat(actual.getTenantRPIMap())
         .containsExactlyInAnyOrderEntriesOf(
             Map.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 2L, "tenant1", 3L, "tenant2", 1L));
-  }
-
-  @Test
-  public void shouldResetActiveBucket() {
-    // given
-    final var eventTime = InstantSource.system().millis();
-    when(mockClock.millis()).thenReturn(eventTime);
-    state.recordRPIMetric(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    final var bucket = state.getActiveBucket();
-    assertThat(bucket.getTenantRPIMap())
-        .containsExactlyInAnyOrderEntriesOf(Map.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER, 1L));
-
-    // when
-    state.resetActiveBucket(1L);
-
-    // then
-    final var actual = state.getActiveBucket();
-    assertThat(actual).isNull();
   }
 }

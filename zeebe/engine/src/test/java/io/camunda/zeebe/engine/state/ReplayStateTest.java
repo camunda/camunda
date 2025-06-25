@@ -23,7 +23,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
-import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
+import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -405,51 +405,42 @@ public final class ReplayStateTest {
                     .isGreaterThanOrEqualTo(finalRecord.getPosition()));
 
     final var processingState = engine.collectState();
+    final var position = engine.getLastProcessedPosition();
     engine.stop();
 
     // when
-    engine.start();
+    engine.start(StreamProcessorMode.REPLAY, false);
 
     Awaitility.await()
-        .untilAsserted(
-            () ->
-                assertThat(engine.getStreamProcessor(1).getCurrentPhase().join())
-                    .isEqualTo(Phase.PROCESSING));
+        .untilAsserted(() -> assertThat(engine.getLastProcessedPosition()).isEqualTo(position));
 
     // then
-    Awaitility.await("await that the replay state is equal to the processing state")
-        .untilAsserted(
-            () -> {
-              final var replayState = engine.collectState();
+    final var replayState = engine.collectState();
 
-              final var softly = new SoftAssertions();
+    final var softly = new SoftAssertions();
 
-              processingState.entrySet().stream()
-                  .filter(entry -> entry.getKey() != ZbColumnFamilies.DEFAULT)
-                  .forEach(
-                      entry -> {
-                        final var column = entry.getKey();
-                        final var processingEntries = entry.getValue();
-                        final var replayEntries = replayState.get(column);
+    processingState.entrySet().stream()
+        .filter(entry -> entry.getKey() != ZbColumnFamilies.DEFAULT)
+        .forEach(
+            entry -> {
+              final var column = entry.getKey();
+              final var processingEntries = entry.getValue();
+              final var replayEntries = replayState.get(column);
 
-                        if (processingEntries.isEmpty()) {
-                          softly
-                              .assertThat(replayEntries)
-                              .describedAs(
-                                  "The state column '%s' should be empty after replay", column)
-                              .isEmpty();
-                        } else {
-                          softly
-                              .assertThat(replayEntries)
-                              .describedAs(
-                                  "The state column '%s' has different entries after replay",
-                                  column)
-                              .containsExactlyInAnyOrderEntriesOf(processingEntries);
-                        }
-                      });
-
-              softly.assertAll();
+              if (processingEntries.isEmpty()) {
+                softly
+                    .assertThat(replayEntries)
+                    .describedAs("The state column '%s' should be empty after replay", column)
+                    .isEmpty();
+              } else {
+                softly
+                    .assertThat(replayEntries)
+                    .describedAs("The state column '%s' has different entries after replay", column)
+                    .containsExactlyInAnyOrderEntriesOf(processingEntries);
+              }
             });
+
+    softly.assertAll();
   }
 
   private static TestCase testCase(final String description) {
