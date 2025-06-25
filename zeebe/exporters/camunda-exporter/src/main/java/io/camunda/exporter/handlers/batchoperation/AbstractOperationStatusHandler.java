@@ -57,7 +57,7 @@ public abstract class AbstractOperationStatusHandler<R extends RecordValue>
   @Override
   public void updateEntity(final Record<R> record, final OperationEntity entity) {
     entity
-        .setBatchOperationId(String.valueOf(record.getOperationReference()))
+        .setBatchOperationId(String.valueOf(record.getBatchOperationReference()))
         .setItemKey(getItemKey(record))
         .setProcessInstanceKey(getProcessInstanceKey(record));
 
