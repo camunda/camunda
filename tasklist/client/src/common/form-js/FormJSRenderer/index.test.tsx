@@ -72,6 +72,7 @@ describe('<FormJSRenderer />', () => {
     await user.type(screen.getByLabelText(/surname/i), 'bar');
     vi.runOnlyPendingTimers();
 
+    // eslint-disable-next-line testing-library/no-node-access
     formManager!.submit();
 
     expect(handleSubmit).toHaveBeenCalledWith([
