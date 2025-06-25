@@ -2,7 +2,7 @@
 # test location: /optimize/qa/schema-integrity-tests, /optimize/backend/src/it/java, optimize/upgrade/src/test/java/io/camunda/optimize/upgrade
 # type: CI
 # owner: @camunda/core-features
-name: Optimize CI
+name: "[Legacy] Optimize / Data Layer"
 on:
   pull_request:
     paths:
@@ -54,16 +54,9 @@ jobs:
         id: filter
         uses: ./.github/actions/paths-filter
 
-  docker:
-    name: Optimize Build
-    if: github.event_name == 'pull_request'
-    uses: ./.github/workflows/optimize-ci-build-reusable.yml
-    secrets: inherit
-    with:
-      branch: ${{ github.head_ref }}
-
+  # TODO - re-enable this test. It fails when enabled
   es-schema-integrity-test:
-    name: Elasticsearch Schema Integrity Test
+    name: "Elasticsearch Schema Integrity"
     if: false
     runs-on: gcp-core-8-default
     timeout-minutes: 30
@@ -134,8 +127,9 @@ jobs:
         with:
           archive_name: es-schema-integrity-test-docker
 
+  # TODO - re-enable this test. It fails when enabled
   os-schema-integrity-test:
-    name: OpenSearch Schema Integrity Test
+    name: "OpenSearch Schema Integrity"
     if: false
     runs-on: gcp-core-8-default
     timeout-minutes: 30
@@ -203,167 +197,8 @@ jobs:
         with:
           archive_name: os-schema-integrity-test-docker
 
-  integration-tests:
-    name: Integration Tests
-    runs-on: gcp-core-32-default
-    timeout-minutes: 120
-    needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.backend-changes == 'true' }}
-    strategy:
-      fail-fast: false
-      matrix:
-        includedGroups: [ 'ccsm-test' ]
-        include:
-          - includedGroups: 'ccsm-test'
-            excludedGroups: ''
-            profiles: 'ccsm-it'
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-
-      - name: Fetch main branch
-        run: git fetch origin main:refs/remote/origin/main
-
-      - name: Setup Maven
-        uses: ./.github/actions/setup-build
-        with:
-          harbor: true
-          maven-cache-key-modifier: optimize-tests
-          maven-version: 3.8.6
-          time-zone: Europe/Berlin
-          vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-
-      - name: "Read Java / Version Info"
-        id: "pom-info"
-        uses: YunaBraska/java-info-action@main
-        with:
-          work-dir: ./optimize
-
-      - name: Expose Parsed Elastic Version
-        run: |
-          echo "ELASTIC_VERSION=${{ steps.pom-info.outputs.x_elasticsearch_test_version }}" >> "$GITHUB_ENV"
-
-      - name: Start Elasticsearch
-        uses: ./.github/actions/compose
-        with:
-          compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
-          project_name: elasticsearch
-        env:
-          ELASTIC_VERSION: ${{ env.ELASTIC_VERSION }}
-          ELASTIC_JVM_MEMORY: 16
-          ELASTIC_HTTP_PORT: 9200
-
-      - name: Verify integration
-        uses: ./.github/actions/run-maven
-        env:
-          LIMITS_CPU: 8
-        with:
-          threads: 8
-          parameters: >
-            verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }}
-            -Dit.test.includedGroups=${{ matrix.includedGroups }}
-            -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
-            -Dfailsafe.rerunFailingTestsCount=2
-            -Ddatabase.type=elasticsearch -f optimize/pom.xml -pl backend -am
-
-      - name: Upload Test Results
-        if: always()
-        uses: ./.github/actions/collect-test-artifacts
-        with:
-          name: integration-test-elasticsearch-${{ matrix.includedGroups }}-junit
-          path: |
-            **/failsafe-reports/**/*.xml
-
-      - name: Docker log dump
-        uses: ./.github/actions/docker-logs
-        if: always()
-        with:
-          archive_name: integration-tests-elasticsearch-${{ matrix.includedGroups }}-docker
-
-  integration-tests-os:
-    name: Integration Tests OpenSearch
-    runs-on: gcp-core-32-default
-    timeout-minutes: 120
-    needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.backend-changes == 'true' }}
-    strategy:
-      fail-fast: false
-      matrix:
-        includedGroups: [ 'ccsm-test' ]
-        include:
-          - includedGroups: 'ccsm-test'
-            excludedGroups: 'openSearchSingleTestFailOK'
-            profiles: 'ccsm-it'
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-
-      - name: Fetch main branch
-        run: git fetch origin main:refs/remote/origin/main
-
-      - name: Setup Maven
-        uses: ./.github/actions/setup-build
-        with:
-          harbor: true
-          maven-cache-key-modifier: optimize-tests
-          maven-version: 3.8.6
-          time-zone: Europe/Berlin
-          vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-
-      - name: "Read Java / Version Info"
-        id: "pom-info"
-        uses: YunaBraska/java-info-action@main
-        with:
-          work-dir: ./optimize
-
-      - name: Expose Parsed OpenSearch Version
-        run: echo "OPENSEARCH_VERSION=${{ steps.pom-info.outputs.x_opensearch_test_version }}" >> "$GITHUB_ENV"
-
-      - name: Start OpenSearch
-        uses: ./.github/actions/compose
-        with:
-          compose_file: .github/actions/compose/docker-compose.opensearch.yml
-          project_name: opensearch
-        env:
-          OPENSEARCH_VERSION: ${{ env.OPENSEARCH_VERSION }}
-          OPENSEARCH_JVM_MEMORY: 16
-          OPENSEARCH_HTTP_PORT: 9200
-
-      - name: Verify integration
-        uses: ./.github/actions/run-maven
-        env:
-          LIMITS_CPU: 8
-        with:
-          threads: 8
-          parameters: >
-            verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }}
-            -Dit.test.includedGroups=${{ matrix.includedGroups }}
-            -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
-            -Dfailsafe.rerunFailingTestsCount=2
-            -Ddatabase.type=opensearch -f optimize/pom.xml -pl backend -am
-
-      - name: Upload Test Results
-        if: always()
-        uses: ./.github/actions/collect-test-artifacts
-        with:
-          name: integration-test-opensearch-${{ matrix.includedGroups }}-junit
-          path: |
-            **/failsafe-reports/**/*.xml
-
-      - name: Docker log dump
-        uses: ./.github/actions/docker-logs
-        if: always()
-        with:
-          archive_name: integration-tests-opensearch-${{ matrix.includedGroups }}-docker
-
   upgrade-tests:
-    name: Upgrade
+    name: "Database Upgrade"
     runs-on: gcp-core-8-default
     timeout-minutes: 20
     strategy:
@@ -429,23 +264,13 @@ jobs:
         with:
           archive_name: upgrade-docker-${{ matrix.database }}
 
-  # Only deploy artifacts on push event, which in this case can only be triggered by main and stable
-  deploy-artifacts:
-    if: github.event_name == 'push' && (github.ref_name == 'main' || startsWith(github.ref_name, 'stable/'))
-    name: Deploy Artifacts
-    needs: [ integration-tests, upgrade-tests ]
-    uses: ./.github/workflows/optimize-deploy-artifacts.yml
-    secrets: inherit
 
   # Rerun failed jobs running on self-hosted runners in case of network issues or node preemption
   rerun-failed-jobs:
     needs:
-      - integration-tests
-      - integration-tests-os
       - upgrade-tests
       - os-schema-integrity-test
       - es-schema-integrity-test
-      - deploy-artifacts
     if: failure() && fromJSON(github.run_attempt) < 3
     runs-on: ubuntu-latest
     steps:
