@@ -164,12 +164,12 @@ public class RestErrorMapper {
             HttpStatus.SERVICE_UNAVAILABLE, pnfeMsg, pnfe.getClass().getName());
       case final PartitionInactiveException pie:
         final var pieMsg =
-            "Expected to handle gRPC request, but the target partition is currently inactive";
+            "Expected to handle REST API request, but the target partition is currently inactive";
         REST_GATEWAY_LOGGER.debug(pieMsg, pie);
         yield createProblemDetail(HttpStatus.SERVICE_UNAVAILABLE, pieMsg, pie.getClass().getName());
       case final NoTopologyAvailableException ntae:
         final var ntaeMsg =
-            "Expected to handle gRPC request, but the gateway does not know any partitions yet";
+            "Expected to handle REST API request, but the gateway does not know any partitions yet";
         REST_GATEWAY_LOGGER.debug(ntaeMsg, ntae);
         yield createProblemDetail(
             HttpStatus.SERVICE_UNAVAILABLE, ntaeMsg, ntae.getClass().getName());
