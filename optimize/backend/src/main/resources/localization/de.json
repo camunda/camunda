@@ -538,6 +538,7 @@
     "runningEndedFlowNodeWarning": "Bei der Gruppierung nach Enddatum werden nur abgeschlossene Prozessknoten berücksichtigt. Daher zeigt das Setzen des Prozessknoten-Status Filters auf 'laufende Prozessknoten' keine Ergebnisse",
     "missingVariable": "Fehlende Variable",
     "nonExistingVariable": "Variable existiert nicht",
+    "disabledObjectVariables": "Keine Daten verfügbar. Die Konfiguration includeObjectVariableValue ist möglicherweise deaktiviert.",
     "nonExistingFlowNode": "Prozessknoten existiert nicht",
     "percentageOfInstances": "% der gesamten Instanzen, die dem Filter entsprechen",
     "addDescription": "Beschreibung hinzufügen"
