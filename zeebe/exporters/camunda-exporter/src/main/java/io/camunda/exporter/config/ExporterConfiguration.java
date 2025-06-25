@@ -17,6 +17,7 @@ public class ExporterConfiguration {
   private IndexConfiguration index = new IndexConfiguration();
   private BulkConfiguration bulk = new BulkConfiguration();
   private HistoryConfiguration history = new HistoryConfiguration();
+  private CacheConfiguration batchOperationCache = new CacheConfiguration();
   private CacheConfiguration processCache = new CacheConfiguration();
   private CacheConfiguration formCache = new CacheConfiguration();
   private PostExportConfiguration postExport = new PostExportConfiguration();
@@ -46,6 +47,14 @@ public class ExporterConfiguration {
 
   public void setBulk(final BulkConfiguration bulk) {
     this.bulk = bulk;
+  }
+
+  public CacheConfiguration getBatchOperationCache() {
+    return batchOperationCache;
+  }
+
+  public void setBatchOperationCache(final CacheConfiguration batchOperationCache) {
+    this.batchOperationCache = batchOperationCache;
   }
 
   public CacheConfiguration getProcessCache() {
@@ -117,6 +126,8 @@ public class ExporterConfiguration {
         + history
         + ", createSchema="
         + createSchema
+        + ", batchOperationCache="
+        + batchOperationCache
         + ", processCache="
         + processCache
         + ", formCache="
