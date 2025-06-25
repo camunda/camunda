@@ -35,7 +35,8 @@ public final class BatchOperationStartProcessor
   @Override
   public void processRecord(final TypedRecord<BatchOperationCreationRecord> command) {
     final var recordValue = command.getValue();
-    LOGGER.debug("Processing new command with key '{}': {}", command.getKey(), recordValue);
+    LOGGER.debug(
+        "Marking batch operation {} as started", command.getValue().getBatchOperationKey());
 
     stateWriter.appendFollowUpEvent(command.getKey(), BatchOperationIntent.STARTED, recordValue);
 

@@ -66,7 +66,7 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
   @Override
   public void create(final long batchOperationKey, final BatchOperationCreationRecord record) {
-    LOGGER.debug("Creating batch operation with key {}", record.getBatchOperationKey());
+    LOGGER.trace("Creating batch operation with key {}", record.getBatchOperationKey());
     batchKey.wrapLong(record.getBatchOperationKey());
     final var batchOperation = new PersistedBatchOperation();
     batchOperation.wrap(record).setStatus(BatchOperationStatus.CREATED);
@@ -76,7 +76,7 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
   @Override
   public void start(final long batchOperationKey) {
-    LOGGER.debug("Starting batch operation with key {}", batchOperationKey);
+    LOGGER.trace("Starting batch operation with key {}", batchOperationKey);
     batchKey.wrapLong(batchOperationKey);
     final var batchOperation = get(batchOperationKey);
     if (batchOperation.isPresent()) {
@@ -91,7 +91,7 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
   @Override
   public void fail(final long batchOperationKey) {
-    LOGGER.debug("Failing batch operation with key {}", batchOperationKey);
+    LOGGER.trace("Failing batch operation with key {}", batchOperationKey);
     batchKey.wrapLong(batchOperationKey);
     final var batchOperation = get(batchOperationKey);
     if (batchOperation.isPresent()) {
@@ -111,24 +111,29 @@ public class DbBatchOperationState implements MutableBatchOperationState {
         batchOperationKey);
 
     // First, get the batch operation
-    final var batch = get(batchOperationKey);
-    if (batch.isEmpty()) {
+    final var oBatch = get(batchOperationKey);
+    if (oBatch.isEmpty()) {
       LOGGER.error(
           "Batch operation with key {} not found, cannot append itemKeys to it.",
           batchOperationKey);
       return;
     }
 
+    final var batch = oBatch.get();
+
     // Second, get the chunk to append the keys to
-    var chunk = getOrCreateChunk(batch.get());
+    var chunk = getOrCreateChunk(batch);
 
     // Third, append the keys to the chunk, if the chunk is full, a new one is returned
     for (final long key : itemKeys) {
-      chunk = appendKeyToChunk(batch.get(), chunk, key);
+      chunk = appendKeyToChunk(batch, chunk, key);
     }
 
+    // Fourth, update the number of total items in the batch
+    batch.setNumTotalItems(batch.getNumTotalItems() + itemKeys.size());
+
     // Finally, update the batch and the chunk in the column family
-    updateChunkAndBatch(chunk, batch.get());
+    updateChunkAndBatch(chunk, batch);
   }
 
   @Override
@@ -139,8 +144,8 @@ public class DbBatchOperationState implements MutableBatchOperationState {
         batchOperationKey);
 
     // First, get the batch operation
-    final var batch = get(batchOperationKey);
-    if (batch.isEmpty()) {
+    final var batch = get(batchOperationKey).orElse(null);
+    if (batch == null) {
       LOGGER.error(
           "Batch operation with key {} not found, cannot remove itemKeys from it.",
           batchOperationKey);
@@ -148,11 +153,14 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     }
 
     // Second, delete the keys from chunk
-    final var chunk = getMinChunk(batch.get());
+    final var chunk = getMinChunk(batch);
     chunk.removeItemKeys(itemKeys);
 
+    // Fourth, update the number of executed items in the batch
+    batch.setNumExecutedItems(batch.getNumExecutedItems() + itemKeys.size());
+
     // Finally, update the chunk and batch in the column family
-    updateBatchAndChunkAfterRemoval(batch.get(), chunk);
+    updateBatchAndChunkAfterRemoval(batch, chunk);
   }
 
   @Override
@@ -293,10 +301,10 @@ public class DbBatchOperationState implements MutableBatchOperationState {
     if (chunk.getItemKeys().isEmpty()) {
       batchOperationChunksColumnFamily.deleteExisting(fkBatchKeyAndChunkKey);
       batch.removeChunkKey(chunk.getKey());
-      batchOperationColumnFamily.update(batchKey, batch);
     } else {
       batchOperationChunksColumnFamily.update(fkBatchKeyAndChunkKey, chunk);
     }
+    batchOperationColumnFamily.update(batchKey, batch);
   }
 
   /**

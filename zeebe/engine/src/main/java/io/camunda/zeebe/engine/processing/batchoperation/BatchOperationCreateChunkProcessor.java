@@ -33,7 +33,10 @@ public final class BatchOperationCreateChunkProcessor
   @Override
   public void processRecord(final TypedRecord<BatchOperationChunkRecord> command) {
     final var recordValue = command.getValue();
-    LOGGER.debug("Processing new command with key '{}': {}", command.getKey(), recordValue);
+    LOGGER.debug(
+        "Creating a new chunk with {} items for batch operation {}",
+        recordValue.getBatchOperationKey(),
+        recordValue.getItems().size());
 
     stateWriter.appendFollowUpEvent(
         command.getKey(), BatchOperationChunkIntent.CREATED, recordValue);

@@ -90,9 +90,7 @@ public final class BatchOperationSuspendProcessor
     final var batchOperationKey = command.getValue().getBatchOperationKey();
     final var suspendKey = keyGenerator.nextKey();
     LOGGER.debug(
-        "Processing new command to suspend batch operation with key '{}': {}",
-        command.getKey(),
-        recordValue);
+        "Suspending batch operation with key {}", command.getValue().getBatchOperationKey());
 
     // validation
     final var batchOperation = batchOperationState.get(batchOperationKey);
