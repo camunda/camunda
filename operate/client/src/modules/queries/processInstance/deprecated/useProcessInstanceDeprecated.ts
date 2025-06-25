@@ -19,6 +19,7 @@ function getQueryKey(processInstanceKey?: string) {
 
 const useProcessInstanceDeprecated = <T = ProcessInstanceEntity>(
   select?: (data: ProcessInstanceEntity) => T,
+  enabled: boolean = true,
 ): UseQueryResult<T, RequestError> => {
   const {processInstanceId} = useProcessInstancePageParams();
 
@@ -38,6 +39,7 @@ const useProcessInstanceDeprecated = <T = ProcessInstanceEntity>(
       : skipToken,
     select,
     refetchInterval: 5000,
+    enabled,
   });
 };
 

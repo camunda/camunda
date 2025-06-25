@@ -15,7 +15,11 @@ const rootInstanceIdParser = (
   return data[0]?.processInstanceKey;
 };
 
-const useRootInstanceId = () =>
-  useCallHierarchy<string | undefined>(rootInstanceIdParser);
+type useRootInstanceIdOptions = {
+  enabled?: boolean;
+};
+
+const useRootInstanceId = (options?: useRootInstanceIdOptions) =>
+  useCallHierarchy<string | undefined>(rootInstanceIdParser, options?.enabled);
 
 export {useRootInstanceId};
