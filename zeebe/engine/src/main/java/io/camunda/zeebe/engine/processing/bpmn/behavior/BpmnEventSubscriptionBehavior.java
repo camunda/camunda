@@ -105,10 +105,13 @@ public final class BpmnEventSubscriptionBehavior {
         eventTrigger.getVariables());
   }
 
-  public Optional<EventTrigger> getEventTriggerForProcessDefinition(
-      final long processDefinitionKey) {
-    final var eventTrigger = eventScopeInstanceState.peekEventTrigger(processDefinitionKey);
-    return Optional.ofNullable(eventTrigger);
+  public Optional<EventTrigger> findEventTriggerForStartEvent(
+      final long processDefinitionKey, final long processInstanceKey) {
+    return eventScopeInstanceState.findEventTrigger(
+        processDefinitionKey,
+        eventTrigger ->
+            eventTrigger.getProcessInstanceKey() == processInstanceKey
+                || eventTrigger.getProcessInstanceKey() == -1L);
   }
 
   public void activateTriggeredStartEvent(
