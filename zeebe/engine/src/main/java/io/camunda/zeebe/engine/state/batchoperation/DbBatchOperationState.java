@@ -66,7 +66,7 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
   @Override
   public void create(final long batchOperationKey, final BatchOperationCreationRecord record) {
-    LOGGER.debug("Creating batch operation with key {}", record.getBatchOperationKey());
+    LOGGER.trace("Creating batch operation with key {}", record.getBatchOperationKey());
     batchKey.wrapLong(record.getBatchOperationKey());
     final var batchOperation = new PersistedBatchOperation();
     batchOperation.wrap(record).setStatus(BatchOperationStatus.CREATED);
@@ -76,7 +76,7 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
   @Override
   public void start(final long batchOperationKey) {
-    LOGGER.debug("Starting batch operation with key {}", batchOperationKey);
+    LOGGER.trace("Starting batch operation with key {}", batchOperationKey);
     batchKey.wrapLong(batchOperationKey);
     final var batchOperation = get(batchOperationKey);
     if (batchOperation.isPresent()) {
@@ -91,7 +91,7 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
   @Override
   public void fail(final long batchOperationKey) {
-    LOGGER.debug("Failing batch operation with key {}", batchOperationKey);
+    LOGGER.trace("Failing batch operation with key {}", batchOperationKey);
     batchKey.wrapLong(batchOperationKey);
     final var batchOperation = get(batchOperationKey);
     if (batchOperation.isPresent()) {
@@ -105,7 +105,7 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
   @Override
   public void appendItemKeys(final long batchOperationKey, final Set<Long> itemKeys) {
-    LOGGER.debug(
+    LOGGER.trace(
         "Appending {} item keys to batch operation with key {}",
         itemKeys.size(),
         batchOperationKey);
