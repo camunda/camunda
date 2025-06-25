@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.value.DefaultRole;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -85,6 +86,15 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
   public List<RoleEntity> getRolesByMemberId(final String memberId, final EntityType entityType) {
     return findAll(
         RoleQuery.of(q -> q.filter(f -> f.memberId(memberId).childMemberType(entityType))));
+  }
+
+  public List<RoleEntity> getRolesByMemberTypeAndMemberIds(
+      final Map<EntityType, Set<String>> memberTypesToMemberIds) {
+    return findAll(
+        RoleQuery.of(
+            roleQuery ->
+                roleQuery.filter(
+                    roleFilter -> roleFilter.memberIdsByType(memberTypesToMemberIds))));
   }
 
   public List<RoleEntity> getRolesByUserAndGroups(
