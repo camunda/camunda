@@ -80,7 +80,7 @@ For running tests locally, ensure you have an active instance. To set it up:
 2. Run:
 
 ```bash
-DATABASE=elasticsearch docker compose up -d tasklist operate
+DATABASE=elasticsearch docker compose up -d camunda
 ```
 
 This launches Tasklist and Operate with Elasticsearch as the backing database.
