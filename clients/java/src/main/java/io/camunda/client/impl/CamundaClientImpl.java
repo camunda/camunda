@@ -966,7 +966,7 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public CreateUserCommandStep1 newUserCreateCommand() {
+  public CreateUserCommandStep1 newCreateUserCommand() {
     return new CreateUserCommandImpl(httpClient, jsonMapper);
   }
 

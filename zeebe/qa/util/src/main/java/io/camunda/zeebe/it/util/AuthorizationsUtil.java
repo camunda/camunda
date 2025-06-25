@@ -68,7 +68,7 @@ public class AuthorizationsUtil implements CloseableSilently {
       final String username, final String password, final Permissions... permissions) {
     final var userCreateResponse =
         client
-            .newUserCreateCommand()
+            .newCreateUserCommand()
             .username(username)
             .password(password)
             .name("name")

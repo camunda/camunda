@@ -596,7 +596,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public CreateUserCommandStep1 newUserCreateCommand() {
+  public CreateUserCommandStep1 newCreateUserCommand() {
     return new CreateUserCommandImpl(httpClient, jsonMapper);
   }
 

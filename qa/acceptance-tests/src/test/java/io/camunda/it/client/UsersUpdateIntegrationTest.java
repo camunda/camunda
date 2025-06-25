@@ -34,7 +34,7 @@ public class UsersUpdateIntegrationTest {
     final var updatedEmail = "updated_email@email.com";
 
     camundaClient
-        .newUserCreateCommand()
+        .newCreateUserCommand()
         .username(username)
         .password("password")
         .name(name)

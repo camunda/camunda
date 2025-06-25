@@ -38,7 +38,7 @@ public final class EntityManager {
             user -> {
               this.users.put(user.username(), user);
               defaultClient
-                  .newUserCreateCommand()
+                  .newCreateUserCommand()
                   .username(user.username())
                   .password(user.password())
                   .name(user.username())

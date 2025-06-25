@@ -44,7 +44,7 @@ class RemoveUserFromTenantTest {
 
     // Create User
     client
-        .newUserCreateCommand()
+        .newCreateUserCommand()
         .username(USERNAME)
         .name("name")
         .email("email@example.com")
@@ -92,7 +92,7 @@ class RemoveUserFromTenantTest {
     // Given
     final var unassignedUsername = "username2";
     client
-        .newUserCreateCommand()
+        .newCreateUserCommand()
         .username(unassignedUsername)
         .name("name2")
         .email("email2@example.com")

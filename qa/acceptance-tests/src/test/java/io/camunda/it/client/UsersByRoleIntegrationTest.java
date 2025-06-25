@@ -278,7 +278,7 @@ public class UsersByRoleIntegrationTest {
   private static CreateUserResponse createUser(
       final String username, final String name, final String email) {
     return camundaClient
-        .newUserCreateCommand()
+        .newCreateUserCommand()
         .username(username)
         .email(email)
         .name(name)
