@@ -44,8 +44,8 @@ public final class SnapshotMetrics {
   public SnapshotMetrics(final MeterRegistry registry) {
     clock = registry.config().clock();
 
-    for (final var bool : List.of(true, false)) {
-      final var index = encodeBoolean(bool);
+    for (final var isBootstrap : List.of(true, false)) {
+      final var index = encodeBoolean(isBootstrap);
       // init the AtomicLongs
       snapshotChunkCountArray.put(new AtomicLong(), index);
       snapshotSizeArray.put(new AtomicLong(), index);
@@ -53,29 +53,29 @@ public final class SnapshotMetrics {
       // INIT non gauges
       snapshotDuration.put(
           MicrometerUtil.buildTimer(SNAPSHOT_DURATION)
-              .tags(SnapshotMetricsDoc.BootstrapKeyNames.tags(bool))
+              .tags(SnapshotMetricsDoc.BootstrapKeyNames.tags(isBootstrap))
               .register(registry),
           index);
       snapshotPersistDuration.put(
           MicrometerUtil.buildTimer(SNAPSHOT_PERSIST_DURATION)
-              .tags(SnapshotMetricsDoc.BootstrapKeyNames.tags(bool))
+              .tags(SnapshotMetricsDoc.BootstrapKeyNames.tags(isBootstrap))
               .register(registry),
           index);
       snapshotTransferDuration.put(
           MicrometerUtil.buildTimer(SNAPSHOT_TRANSFER_DURATION)
-              .tags(SnapshotMetricsDoc.BootstrapKeyNames.tags(bool))
+              .tags(SnapshotMetricsDoc.BootstrapKeyNames.tags(isBootstrap))
               .register(registry),
           index);
       snapshotFileSize.put(
           MicrometerUtil.buildSummary(SNAPSHOT_FILE_SIZE)
-              .tags(SnapshotMetricsDoc.BootstrapKeyNames.tags(bool))
+              .tags(SnapshotMetricsDoc.BootstrapKeyNames.tags(isBootstrap))
               .register(registry),
           index);
 
       snapshotCount.put(
           Counter.builder(SNAPSHOT_COUNT.getName())
               .description(SNAPSHOT_COUNT.getDescription())
-              .tags(SnapshotMetricsDoc.BootstrapKeyNames.tags(bool))
+              .tags(SnapshotMetricsDoc.BootstrapKeyNames.tags(isBootstrap))
               .register(registry),
           index);
 
@@ -83,11 +83,11 @@ public final class SnapshotMetrics {
       Gauge.builder(
               SNAPSHOT_CHUNK_COUNT.getName(), snapshotChunkCountArray.get(index), Number::longValue)
           .description(SNAPSHOT_CHUNK_COUNT.getDescription())
-          .tags(SnapshotMetricsDoc.BootstrapKeyNames.tags(bool))
+          .tags(SnapshotMetricsDoc.BootstrapKeyNames.tags(isBootstrap))
           .register(registry);
       Gauge.builder(SNAPSHOT_SIZE.getName(), snapshotSizeArray.get(index), Number::longValue)
           .description(SNAPSHOT_SIZE.getDescription())
-          .tags(SnapshotMetricsDoc.BootstrapKeyNames.tags(bool))
+          .tags(SnapshotMetricsDoc.BootstrapKeyNames.tags(isBootstrap))
           .register(registry);
     }
   }
