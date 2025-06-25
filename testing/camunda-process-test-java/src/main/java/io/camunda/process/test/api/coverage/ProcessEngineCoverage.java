@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.api.coverage;
 
+import io.camunda.process.test.api.coverage.core.CoverageCalculator;
 import io.camunda.process.test.api.coverage.core.CoverageCollector;
 import io.camunda.process.test.api.coverage.core.EventCreator;
 import io.camunda.process.test.api.coverage.core.ExclusionUtils;
@@ -80,7 +81,8 @@ public class ProcessEngineCoverage {
     if (!ExclusionUtils.isTestClassExcluded(context)
         && context.getUniqueId().equals(activeSuiteContextId)) {
       final Suite suite = coverageCollector.getActiveSuite();
-      final double suiteCoveragePercentage = suite.calculateCoverage(coverageCollector.getModels());
+      final double suiteCoveragePercentage =
+          CoverageCalculator.calculateCoverage(suite, coverageCollector.getModels());
 
       if (Double.isNaN(suiteCoveragePercentage)) {
         logger.warning(
@@ -158,7 +160,8 @@ public class ProcessEngineCoverage {
     if (run == null) {
       return;
     }
-    final double coveragePercentage = run.calculateCoverage(coverageCollector.getModels());
+    final double coveragePercentage =
+        CoverageCalculator.calculateCoverage(run, coverageCollector.getModels());
 
     if (Double.isNaN(coveragePercentage)) {
       logger.warning(

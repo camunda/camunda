@@ -747,8 +747,8 @@ public class CamundaProcessTestContextIT {
 
   private BpmnModelInstance processModelWithChildProcess() {
     return Bpmn.createExecutableProcess("test-process")
-        .startEvent()
-        .callActivity()
+        .startEvent("start-1")
+        .callActivity("call-child-process")
         .zeebeProcessId("child-process-1")
         .endEvent("success-end")
         .done();
@@ -756,7 +756,7 @@ public class CamundaProcessTestContextIT {
 
   private BpmnModelInstance childProcessModel() {
     return Bpmn.createExecutableProcess("child-process-1")
-        .startEvent()
+        .startEvent("start-child")
         .serviceTask("child-service-task")
         .zeebeJobType("child-job")
         .endEvent("child-end")
@@ -765,7 +765,7 @@ public class CamundaProcessTestContextIT {
 
   private BpmnModelInstance processModelWithServiceTask() {
     return Bpmn.createExecutableProcess("test-process-with-service-task")
-        .startEvent()
+        .startEvent("start-1")
         .serviceTask("service-task-1")
         .zeebeJobType("test")
         .boundaryEvent("error-boundary-event")
@@ -784,7 +784,7 @@ public class CamundaProcessTestContextIT {
   private BpmnModelInstance processModelWithUserTask(
       final String taskName, final String elementId) {
     return Bpmn.createExecutableProcess("test-process-with-user-task")
-        .startEvent()
+        .startEvent("start-1")
         .userTask(elementId)
         .name(taskName)
         .zeebeUserTask()
@@ -835,8 +835,8 @@ public class CamundaProcessTestContextIT {
   }
 
   private BpmnModelInstance processModelWithBusinessRule() {
-    return Bpmn.createExecutableProcess("test-process")
-        .startEvent()
+    return Bpmn.createExecutableProcess("test-process-business-rule")
+        .startEvent("start-1")
         .businessRuleTask(
             "br-task",
             builder -> builder.zeebeCalledDecisionId("decision-id-1").zeebeResultVariable("result"))
@@ -947,7 +947,7 @@ public class CamundaProcessTestContextIT {
   private BpmnModelInstance processModelWithBusinessRuleTask(
       final String decisionId, final String resultVariable) {
     return Bpmn.createExecutableProcess("test-process")
-        .startEvent()
+        .startEvent("start-1")
         .businessRuleTask("business-rule-1")
         .zeebeCalledDecisionId(decisionId)
         .zeebeResultVariable(resultVariable)

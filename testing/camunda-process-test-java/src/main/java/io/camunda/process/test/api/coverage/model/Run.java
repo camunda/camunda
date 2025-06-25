@@ -20,7 +20,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class Run implements Coverage {
+public class Run {
 
   /** The id of the run */
   private final String id;
@@ -42,13 +42,11 @@ public class Run implements Coverage {
   }
 
   /** Returns all events of the run */
-  @Override
   public Collection<Event> getEvents() {
     return events;
   }
 
   /** Returns all events for the given model key */
-  @Override
   public Collection<Event> getEvents(final String modelKey) {
     return events.stream()
         .filter(event -> event.getModelKey().equals(modelKey))

@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /** A suite includes several Runs and contains the data for the coverage calculation. */
-public class Suite implements Coverage {
+public class Suite {
 
   /** The id of the suite */
   private final String id;
@@ -42,14 +42,7 @@ public class Suite implements Coverage {
     runs.add(run);
   }
 
-  /** Returns all events of the suite */
-  @Override
-  public Collection<Event> getEvents() {
-    return runs.stream().flatMap(run -> run.getEvents().stream()).collect(Collectors.toList());
-  }
-
   /** Returns all events for the given model key */
-  @Override
   public Collection<Event> getEvents(final String modelKey) {
     return runs.stream()
         .flatMap(run -> run.getEvents(modelKey).stream())
@@ -67,5 +60,9 @@ public class Suite implements Coverage {
 
   public String getName() {
     return name;
+  }
+
+  public Collection<Run> getRuns() {
+    return runs;
   }
 }

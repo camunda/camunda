@@ -15,25 +15,23 @@
  */
 package io.camunda.process.test.api.coverage.export;
 
-import camundajar.impl.com.google.gson.Gson;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.process.test.api.coverage.model.Model;
 import io.camunda.process.test.api.coverage.model.Suite;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
  * Exporter for Coverage State
  *
- * @author dominikhorn
+ * @author macoun
  */
 public class CoverageStateJsonExporter {
-
-  private CoverageStateJsonExporter() {
-    // Utility class, prevent instantiation
-  }
+  private static final ObjectMapper objectMapper = new ObjectMapper();
 
   /**
    * Creates a Json String from the given input.
@@ -44,23 +42,23 @@ public class CoverageStateJsonExporter {
    */
   public static String createCoverageStateResult(
       final Collection<Suite> suites, final Collection<Model> models) {
-    return new Gson().toJson(new CoverageStateResult(suites, models));
-  }
-
-  /**
-   * Creates a Json String from the given input with empty collections as default values.
-   *
-   * @return XML String representation.
-   */
-  public static String createCoverageStateResult() {
-    return createCoverageStateResult(Collections.emptyList(), Collections.emptyList());
+    try {
+      return objectMapper.writeValueAsString(new CoverageStateResult(suites, models));
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException("Failed to serialize object to Json : " + e);
+    }
   }
 
   public static CoverageStateResult readCoverageStateResult(final String json) {
-    return new Gson().fromJson(json, CoverageStateResult.class);
+    try {
+      return objectMapper.readValue(json, CoverageStateResult.class);
+    } catch (final IOException e) {
+      throw new RuntimeException("Failed to serialize Json to object : " + e);
+    }
   }
 
   public static String combineCoverageStateResults(final String json1, final String json2) {
+    // FIXME: Not used yet
     final CoverageStateResult result1 = readCoverageStateResult(json1);
     final CoverageStateResult result2 = readCoverageStateResult(json2);
 
