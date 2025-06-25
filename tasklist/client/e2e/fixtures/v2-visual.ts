@@ -24,8 +24,8 @@ function getCollectionResponse<Item>(items: Item[]) {
     items,
     page: {
       totalItems: items.length,
-      startCursor: "<startCursor>",
-      endCursor: "<endCursor>",
+      startCursor: '<startCursor>',
+      endCursor: '<endCursor>',
     },
   };
 }

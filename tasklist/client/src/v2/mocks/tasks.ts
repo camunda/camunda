@@ -46,8 +46,8 @@ function getQueryTasksResponseMock(
     items: tasks,
     page: {
       totalItems,
-      startCursor: "startCursor",
-      endCursor: "endCursor",
+      startCursor: 'startCursor',
+      endCursor: 'endCursor',
     },
   };
 }

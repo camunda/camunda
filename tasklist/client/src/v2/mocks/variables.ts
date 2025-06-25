@@ -102,8 +102,8 @@ function getQueryVariablesResponseMock(
     items: variables,
     page: {
       totalItems,
-      startCursor: "startCursor",
-      endCursor: "endCursor",
+      startCursor: 'startCursor',
+      endCursor: 'endCursor',
     },
   };
 }
