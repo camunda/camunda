@@ -267,7 +267,7 @@ For the button on the confirmation modal
 
 ## Automatic Formatting
 
-We use [prettier](https://prettier.io/) to automatically format the Javascript sourcecode. It automatically runs before any commit using [husky](https://github.com/typicode/husky) and [lint-staged](https://github.com/okonet/lint-staged). It is recommended to add a prettier plugin to your IDE:
+We use [prettier](https://prettier.io/) to automatically format the Javascript sourcecode. It is recommended to add a prettier plugin to your IDE:
 
 - [VSCode](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
 

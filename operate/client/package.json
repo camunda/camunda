@@ -55,7 +55,6 @@
     "test:visual": "playwright test --project=visual-light --project=visual-dark",
     "generate-screenshots": "playwright test --project=screenshot-generator",
     "test:e2e:ci": "cross-env IS_E2E=true PORT=8080 playwright test --project=e2e",
-    "postinstall": "cd ../.. && husky install",
     "coverage": "yarn test --coverage --collectCoverageFrom=src/**/* --changedSince=origin/main --watchAll=false --passWithNoTests",
     "analyze-bundle": "react-app-rewired build && source-map-explorer 'build/static/js/*.js'",
     "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.51.1 /bin/bash",
@@ -92,9 +91,7 @@
     "event-source-polyfill": "1.0.31",
     "glob": "11.0.0",
     "http-proxy-middleware": "3.0.4",
-    "husky": "9.1.6",
     "jest-styled-components": "7.2.0",
-    "lint-staged": "16.1.0",
     "monaco-editor": "^0.52.0",
     "monaco-editor-webpack-plugin": "^7.1.0",
     "msw": "1.3.3",
@@ -106,14 +103,6 @@
     "ts-toolbelt": "9.6.0",
     "typescript": "5.8.2",
     "zod": "3.25.57"
-  },
-  "lint-staged": {
-    "*": [
-      "prettier --write"
-    ],
-    "*.{js,jsx,ts,tsx}": [
-      "yarn lint"
-    ]
   },
   "browserslist": [
     ">0.2%",
