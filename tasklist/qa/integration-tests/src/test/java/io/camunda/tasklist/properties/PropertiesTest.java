@@ -31,7 +31,6 @@ public class PropertiesTest {
   public void testProperties() {
     assertThat(tasklistProperties.getImporter().isStartLoadingDataOnStartup()).isFalse();
     assertThat(tasklistProperties.getImporter().getCompletedReaderMinEmptyBatches()).isEqualTo(10);
-    assertThat(tasklistProperties.getBatchOperationMaxSize()).isEqualTo(500);
     assertThat(tasklistProperties.getElasticsearch().getClusterName()).isEqualTo("clusterName");
     assertThat(tasklistProperties.getElasticsearch().getHost()).isEqualTo("someHost");
     assertThat(tasklistProperties.getElasticsearch().getPort()).isEqualTo(12345);
