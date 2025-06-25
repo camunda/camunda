@@ -43,7 +43,14 @@ public class AdminUserCheckFilter extends OncePerRequestFilter {
       final HttpServletResponse response,
       final FilterChain filterChain)
       throws ServletException, IOException {
-    if (!securityConfig.isApiProtected()) {
+    // Skip redirect logic for the setup page itself to prevent redirect loops
+    // Skip redirect logic for loading assets, e.g., CSS and JS files
+    // Skip redirect logic if the API is not protected
+    final var requestURI = request.getRequestURI();
+    final String setupPath = request.getContextPath() + REDIRECT_PATH;
+    if (requestURI.equals(setupPath)
+        || requestURI.contains(ASSETS_PATH)
+        || !securityConfig.isApiProtected()) {
       filterChain.doFilter(request, response);
       return;
     }

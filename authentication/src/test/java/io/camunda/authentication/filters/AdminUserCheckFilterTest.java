@@ -97,4 +97,20 @@ class AdminUserCheckFilterTest {
     // then
     verify(filterChain).doFilter(request, response);
   }
+
+  @Test
+  void shouldNotRedirectOIfRequestIsToSetupPath() throws ServletException, IOException {
+    // given
+    final var securityConfig = new SecurityConfiguration();
+    when(request.getContextPath()).thenReturn("");
+    when(request.getRequestURI()).thenReturn("/identity/setup");
+    final AdminUserCheckFilter adminUserCheckFilter =
+        new AdminUserCheckFilter(securityConfig, roleServices);
+
+    // when
+    adminUserCheckFilter.doFilterInternal(request, response, filterChain);
+
+    // then
+    verify(filterChain).doFilter(request, response);
+  }
 }
