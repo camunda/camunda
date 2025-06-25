@@ -7,6 +7,9 @@
  */
 package io.camunda.exporter.handlers.batchoperation;
 
+import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -16,8 +19,14 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValu
 public class ProcessInstanceMigrationOperationHandler
     extends AbstractOperationStatusHandler<ProcessInstanceMigrationRecordValue> {
 
-  public ProcessInstanceMigrationOperationHandler(final String indexName) {
-    super(indexName, ValueType.PROCESS_INSTANCE_MIGRATION);
+  public ProcessInstanceMigrationOperationHandler(
+      final String indexName,
+      final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache) {
+    super(
+        indexName,
+        ValueType.PROCESS_INSTANCE_MIGRATION,
+        OperationType.MIGRATE_PROCESS_INSTANCE,
+        batchOperationCache);
   }
 
   @Override
