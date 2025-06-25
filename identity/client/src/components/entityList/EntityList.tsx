@@ -47,6 +47,12 @@ const TooltipTrigger = styled.button`
   all: unset;
 `;
 
+const StyledToolTip = styled(Tooltip)`
+  .cds--tooltip-content {
+    max-inline-size: 28rem;
+  }
+`;
+
 export type EntityData = {
   [key: string]: string | object | boolean | number;
 } & {
@@ -319,7 +325,7 @@ const EntityList = <D extends EntityData>({
                             displayValue &&
                             displayValue.toString().length >
                               MAX_DISPLAY_CELL_LENGTH ? (
-                              <Tooltip
+                              <StyledToolTip
                                 label={displayValue}
                                 autoAlign
                                 align="bottom"
@@ -329,7 +335,7 @@ const EntityList = <D extends EntityData>({
                                     .substring(0, MAX_DISPLAY_CELL_LENGTH)
                                     .concat("…")}
                                 </TooltipTrigger>
-                              </Tooltip>
+                              </StyledToolTip>
                             ) : (
                               displayValue
                             );
