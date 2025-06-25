@@ -115,6 +115,7 @@ public final class BackupApiRequestHandler
             .requestId(requestId)
             .requestStreamId(requestStreamId);
     final var checkpointRecord = new CheckpointRecord().setCheckpointId(requestReader.backupId());
+    LOG.debug("Taking backup with id {} for partition {}", requestReader.backupId(), partitionId);
     final var written =
         logStreamWriter.tryWrite(
             WriteContext.internal(), LogAppendEntry.of(metadata, checkpointRecord));
