@@ -289,3 +289,4 @@ We will further work on more detailed instructions and requirements, for now you
 - The Accessibility section of our [Design Review Guidelines](https://app.camunda.com/confluence/display/camBPM/Design+Review+Guidelines)
 - Our [Confluence page on Accessibility](https://app.camunda.com/confluence/display/camBPM/Accessibility)
 - [Get started using VoiceOver, the Mac built-in screen reader](https://webaim.org/articles/voiceover/)
+
