@@ -17,7 +17,6 @@ import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.RoleEntity;
-import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.auth.OidcPrincipalLoader;
@@ -118,13 +117,7 @@ public class CamundaOAuthPrincipalService {
       groups = new HashSet<>(oidcGroupsLoader.load(claims));
     } else {
       groups =
-          groupServices
-              .findAll(
-                  GroupQuery.of(
-                      groupQuery ->
-                          groupQuery.filter(
-                              groupFilter -> groupFilter.memberIdsByType(ownerTypeToIds))))
-              .stream()
+          groupServices.getGroupsByMemberTypeAndMemberIds(ownerTypeToIds).stream()
               .map(GroupEntity::groupId)
               .collect(Collectors.toSet());
     }

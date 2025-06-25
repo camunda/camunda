@@ -18,7 +18,6 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
-import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
@@ -214,18 +213,12 @@ public class CamundaOAuthPrincipalServiceTest {
       final var roleR1 = new RoleEntity(8L, "roleR1", "Role R1", "R1 description");
       final var groupRole = new RoleEntity(3L, "roleGroup", "Role Group", "description");
 
-      final var expectedGroupQuery =
-          GroupQuery.of(
-              groupQuery ->
-                  groupQuery.filter(
-                      groupFilter ->
-                          groupFilter.memberIdsByType(
-                              Map.of(
-                                  EntityType.MAPPING,
-                                  Set.of("test-id", "test-id-2"),
-                                  EntityType.USER,
-                                  Set.of("foo@camunda.test")))));
-      when(groupServices.findAll(expectedGroupQuery))
+      when(groupServices.getGroupsByMemberTypeAndMemberIds(
+              Map.of(
+                  EntityType.MAPPING,
+                  Set.of("test-id", "test-id-2"),
+                  EntityType.USER,
+                  Set.of("foo@camunda.test"))))
           .thenReturn(List.of(new GroupEntity(1L, "group-g1", "G1", "Group G1")));
 
       final var expectedRoleQuery =
@@ -286,18 +279,12 @@ public class CamundaOAuthPrincipalServiceTest {
 
       when(mappingServices.getMatchingMappings(claims)).thenReturn(Stream.of(mapping1, mapping2));
 
-      final var expectedGroupQuery =
-          GroupQuery.of(
-              groupQuery ->
-                  groupQuery.filter(
-                      groupFilter ->
-                          groupFilter.memberIdsByType(
-                              Map.of(
-                                  EntityType.MAPPING,
-                                  Set.of("map-1", "map-2"),
-                                  EntityType.USER,
-                                  Set.of("scooby-doo")))));
-      when(groupServices.findAll(expectedGroupQuery))
+      when(groupServices.getGroupsByMemberTypeAndMemberIds(
+              Map.of(
+                  EntityType.MAPPING,
+                  Set.of("map-1", "map-2"),
+                  EntityType.USER,
+                  Set.of("scooby-doo"))))
           .thenReturn(List.of(new GroupEntity(1L, "group-g1", "G1", "Group G1")));
 
       final var tenantEntity1 = new TenantEntity(100L, "t1", "Tenant One", "First Tenant");
