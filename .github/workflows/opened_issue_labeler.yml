@@ -1,3 +1,5 @@
+# type: Project Management
+# owner: Engineering Ops
 name: "Opened Issue Labeler"
 on:
   issues:

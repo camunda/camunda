@@ -1,3 +1,6 @@
+# description: Runs End to End tests on the C8 Orchestration Cluster (ie, Tasklist, Operate) This workflow is run manually
+# type: CI
+# owner: @camunda/qa-engineering
 ---
 name: C8 Orchestration Cluster E2E Tests On Demand
 

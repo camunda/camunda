@@ -1,7 +1,7 @@
+# type: Project Management
+# owner: @camunda/monorepo-devops-team
 ---
 name: Assign new issues to the default projects
-
-# owner: @camunda/monorepo-devops-team
 
 on:
   issues:

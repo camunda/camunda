@@ -1,3 +1,7 @@
+# description: Tests rolling updates for Zeebe. Detailed information can be found at /docs/zeebe/rolling_updates.md
+# test location: /zeebe/qa/update-tests
+# type: CI
+# owner: @camunda/core-features
 name: Zeebe Version Compatibility
 on:
   workflow_dispatch:

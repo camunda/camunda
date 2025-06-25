@@ -1,7 +1,8 @@
+# description: For C8Run, this workflow runs a linting check, unit tests, a build, tests on unix, and end to end tests on windows
+# type: CI
+# owner: @camunda/distribution
 ---
 name: "C8Run: build/test"
-
-# owner: @camunda/distribution
 
 on:
   push:

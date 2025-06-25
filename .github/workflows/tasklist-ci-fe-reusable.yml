@@ -1,3 +1,8 @@
+# description: Workflow for running Front End tests for Tasklist. Does a type check, two lint checks (eslint and stylelint), unit tests, visual regression tests, and accessibility testing (a11y)
+# test location: /tasklist/client
+# called by: ci.yml
+# type: CI
+# owner: @camunda/core-features
 name: Tasklist Frontend Jobs
 
 on:

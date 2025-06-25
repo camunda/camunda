@@ -1,7 +1,7 @@
+# type: Preview Environment
+# owner: @camunda/monorepo-devops-team
 ---
 name: Preview Env Clean
-
-# owner: @camunda/monorepo-devops-team
 
 on:
   schedule:

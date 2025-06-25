@@ -1,7 +1,8 @@
-# Runs front end tests for Operate. Tests include a type check, linting, unit tests, and visual regression tests
+# description: Runs front end tests for Operate. Tests include a type check, linting, unit tests, and visual regression tests
 # test location: operate/client/e2e-playwright/a11y, operate/client/src/App
 # called by: ci.yml
-# owner: Core Features
+# type: CI
+# owner: @camunda/core-features
 name: Operate Frontend
 
 on:

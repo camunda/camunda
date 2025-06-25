@@ -1,3 +1,7 @@
+# description: Runs End to End tests on the C8 Orchestration Cluster (ie, Tasklist, Operate). This workflow runs on a schedule
+# test location: /qa/core-application-e2e-test-suite
+# type: CI
+# owner: @camunda/qa-engineering
 ---
 name: C8 Orchestration Cluster E2E Tests Nightly
 
@@ -25,7 +29,7 @@ jobs:
         run: |
           if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then
             echo "Using single services for Camunda 8.6 and 8.7"
-            DATABASE=elasticsearch docker compose up -d operate tasklist 
+            DATABASE=elasticsearch docker compose up -d operate tasklist
           else
             echo "Using standalone camunda container"
             DATABASE=elasticsearch docker compose up -d camunda

@@ -1,7 +1,7 @@
+# type: Preview Environment
+# owner: @camunda/monorepo-devops-team
 ---
 name: Preview Environment Build and Deploy
-
-# owner: @camunda/monorepo-devops-team
 
 on:
   pull_request:

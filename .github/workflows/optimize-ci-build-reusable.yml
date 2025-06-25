@@ -9,6 +9,11 @@
 # Environment variables are used to define the image tags used for Docker builds.
 # This workflow is designed to provide a comprehensive, automated CI process that ensures code quality, handles secrets securely,
 # and enables detailed reporting of test results.
+# description: Reuseable workflow for building Optimize and a docker image
+# test location: /optimize
+# called by:
+# type: CI
+# owner: @camunda/core-features
 
 name: Optimize CI Reusable
 

@@ -1,3 +1,8 @@
+# description: Runs Tasklist integration tests in a docker environment
+# test location: /tasklist/qa/integration-tests
+# called by: ci.yml
+# type: CI
+# owner: @camunda/core-features
 ---
 name: Tasklist Docker Tests
 on:

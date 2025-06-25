@@ -1,9 +1,7 @@
-# This workflow builds the release, triggered by our engineering process automation cluster. It creates the release based on the
-# given input.
-#
-name: Repo dispatch Release 8.7
-
+# description: This workflow builds the release, triggered by our engineering process automation cluster. It creates the release based on the given input.
+# type: Release
 # owner: @camunda/monorepo-devops-team
+name: Repo dispatch Release 8.7
 
 on:
   repository_dispatch:

@@ -1,4 +1,7 @@
-# This is a workflow for 'Tasklist Backup and Restore' tests (supported only for 8.7 and lower versions).
+# description: This is a workflow for 'Tasklist Backup and Restore' tests (supported only for 8.7 and lower versions).
+# test location: /tasklist/qa/backup-restore-tests
+# type: CI
+# owner: @camunda/data-layer
 name: Tasklist Backup and restore tests (reusable)
 
 on:

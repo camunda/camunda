@@ -1,7 +1,7 @@
+# type: Project Management
+# owner: @camunda/distribution
 ---
 name: "C8Run: Issue Closed"
-
-# owner: @camunda/distribution
 
 on:
   issues:

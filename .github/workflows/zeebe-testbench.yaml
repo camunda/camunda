@@ -1,3 +1,13 @@
+# description: Starts a test in the testbench cluster: https://console.cloud.camunda.io/org/9061128c-7381-4caa-abbe-e97057e0e1eb/cluster/eeef5734-cfd6-47a5-a2ed-5fe13269e589
+#  This is used to orchestrate several tests for Zeebe that are not part of the regular ci build.
+#  To start a test we create a process instance in Testbench cluster using curl v2/process-instances.
+#  The call itself is not doing any tests. But the process started by it will start different tests
+# against a new camunda cluster with the specified version. This is started daily by the github
+# action zeebe-daily-qa.yml. Github workflows just start the process instance and do not monitor it.
+#  The results of these tests are posted to #zeebe-ci via Testbench workers once the test is completed.
+# called by: zeebe-e2e-testbench.yaml, zeebe-qa-testbench.yaml, zeebe-update-long-running-migrating-benchmark.yaml
+# type: CI
+# owner @camunda/core-features
 name: Start a Zeebe test in Testbench
 
 on:

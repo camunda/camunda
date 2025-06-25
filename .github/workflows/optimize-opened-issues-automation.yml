@@ -1,3 +1,4 @@
+# type: Project Management
 name: Optimize Opened Issues Automation
 on:
   issues:

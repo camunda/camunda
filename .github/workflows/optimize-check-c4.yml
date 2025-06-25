@@ -1,4 +1,8 @@
-name: Check if C4 builds
+# description: Workflow to see if FE code in C4 directory in Optimize properly builds after there are any changes to it
+# test location: /optimize/c4
+# type: CI
+# owner: @camunda/core-features
+name: Optimize Check if C4 builds
 on:
   push:
     branches:
