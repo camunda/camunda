@@ -13,6 +13,7 @@ import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.DECIS
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.DECISION_TYPE;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.PROCESS_INSTANCE_KEY;
+import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.RESULT;
 import static io.camunda.operate.schema.templates.DecisionInstanceTemplate.STATE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -34,6 +35,7 @@ public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
   private static final Long FAKE_PROCESS_DEFINITION_KEY = 2251799813685253L;
   private static final Long FAKE_PROCESS_INSTANCE_KEY = 2251799813685255L;
   private static final Long DUMMY_LONG = 2251799813685252L;
+  private static final String DECISION_RESULT = "\"day-to-day expense\"";
   private final String firstDecisionEvaluationDate = "2024-02-15T22:40:10.834+0000";
   private final String secondDecisionEvaluationDate = "2024-02-15T22:41:10.834+0000";
   private final String evaluationFailureMessage = "evaluation failure message";
@@ -58,7 +60,7 @@ public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
             .setDecisionName("Invoice Classification")
             .setDecisionVersion(1)
             .setDecisionType(DecisionType.DECISION_TABLE)
-            .setResult("\"day-to-day expense\"")
+            .setResult(DECISION_RESULT)
             .setTenantId(DEFAULT_TENANT_ID));
 
     testSearchRepository.createOrUpdateDocumentFromObject(
@@ -75,7 +77,7 @@ public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
             .setDecisionName("Assign Approver Group")
             .setDecisionVersion(1)
             .setDecisionType(DecisionType.DECISION_TABLE)
-            .setResult("\"day-to-day expense\"")
+            .setResult(DECISION_RESULT)
             .setTenantId(DEFAULT_TENANT_ID));
 
     testSearchRepository.createOrUpdateDocumentFromObject(
@@ -130,14 +132,16 @@ public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
             DECISION_TYPE,
             STATE,
             PROCESS_DEFINITION_KEY,
-            PROCESS_INSTANCE_KEY)
+            PROCESS_INSTANCE_KEY,
+            RESULT)
         .containsExactly(
             "invoiceClassification",
             "Invoice Classification",
             DecisionType.DECISION_TABLE,
             DecisionInstanceState.EVALUATED,
             FAKE_PROCESS_DEFINITION_KEY,
-            FAKE_PROCESS_INSTANCE_KEY);
+            FAKE_PROCESS_INSTANCE_KEY,
+            DECISION_RESULT);
 
     checkDecisionInstance =
         decisionInstanceResults.getItems().stream()
@@ -152,14 +156,16 @@ public class DecisionInstanceDaoIT extends OperateSearchAbstractIT {
             DECISION_TYPE,
             STATE,
             PROCESS_DEFINITION_KEY,
-            PROCESS_INSTANCE_KEY)
+            PROCESS_INSTANCE_KEY,
+            RESULT)
         .containsExactly(
             "invoiceAssignApprover",
             "Assign Approver Group",
             DecisionType.DECISION_TABLE,
             DecisionInstanceState.EVALUATED,
             FAKE_PROCESS_DEFINITION_KEY,
-            FAKE_PROCESS_INSTANCE_KEY);
+            FAKE_PROCESS_INSTANCE_KEY,
+            DECISION_RESULT);
   }
 
   @Test

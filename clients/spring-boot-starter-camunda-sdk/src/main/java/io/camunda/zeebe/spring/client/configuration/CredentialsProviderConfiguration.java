@@ -52,7 +52,15 @@ public class CredentialsProviderConfiguration {
                     .orElse(null))
             .credentialsCachePath(camundaClientProperties.getAuth().getCredentialsCachePath())
             .connectTimeout(camundaClientProperties.getAuth().getConnectTimeout())
-            .readTimeout(camundaClientProperties.getAuth().getReadTimeout());
+            .readTimeout(camundaClientProperties.getAuth().getReadTimeout())
+            .clientAssertionKeystorePath(
+                camundaClientProperties.getAuth().getClientAssertion().getKeystorePath())
+            .clientAssertionKeystorePassword(
+                camundaClientProperties.getAuth().getClientAssertion().getKeystorePassword())
+            .clientAssertionKeystoreKeyAlias(
+                camundaClientProperties.getAuth().getClientAssertion().getKeystoreKeyAlias())
+            .clientAssertionKeystoreKeyPassword(
+                camundaClientProperties.getAuth().getClientAssertion().getKeystoreKeyPassword());
     try {
       return credBuilder.build();
     } catch (final Exception e) {

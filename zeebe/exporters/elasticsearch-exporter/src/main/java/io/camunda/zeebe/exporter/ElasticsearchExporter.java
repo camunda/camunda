@@ -121,7 +121,7 @@ public class ElasticsearchExporter implements Exporter {
 
   @Override
   public void export(final Record<?> record) {
-    schemaManager.createSchema();
+    schemaManager.createSchema(record.getBrokerVersion());
 
     final var recordSequence = recordCounters.getNextRecordSequence(record);
     final var isRecordIndexedToBatch = client.index(record, recordSequence);

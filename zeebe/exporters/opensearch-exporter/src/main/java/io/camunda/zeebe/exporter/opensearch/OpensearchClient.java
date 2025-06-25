@@ -28,6 +28,7 @@ import io.camunda.zeebe.exporter.opensearch.dto.PutIndexTemplateResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -153,11 +154,15 @@ public class OpensearchClient implements AutoCloseable {
    * @return true if request was acknowledged
    */
   public boolean putIndexTemplate(final ValueType valueType) {
-    final String templateName = indexRouter.indexPrefixForValueType(valueType);
+    return putIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
+  }
+
+  public boolean putIndexTemplate(final ValueType valueType, final String version) {
+    final String templateName = indexRouter.indexPrefixForValueType(valueType, version);
     final Template template =
         templateReader.readIndexTemplate(
             valueType,
-            indexRouter.searchPatternForValueType(valueType),
+            indexRouter.searchPatternForValueType(valueType, version),
             indexRouter.aliasNameForValueType(valueType));
 
     return putIndexTemplate(templateName, template);

@@ -7,6 +7,8 @@
  */
 package io.camunda.application;
 
+import static io.camunda.zeebe.protocol.impl.record.RecordMetadata.CURRENT_BROKER_VERSION;
+
 import io.camunda.application.StandaloneSchemaManager.SchemaManagerConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.sources.DefaultObjectMapperConfiguration;
 import io.camunda.application.listeners.ApplicationErrorListener;
@@ -126,7 +128,8 @@ public class StandaloneSchemaManager implements CommandLineRunner {
                   "elasticsearch", brokerProperties.getExporters().get("elasticsearch").getArgs())
               .instantiate(ElasticsearchExporterConfiguration.class);
 
-      new io.camunda.zeebe.exporter.SchemaManager(elasticsearchConfig).createSchema();
+      new io.camunda.zeebe.exporter.SchemaManager(elasticsearchConfig)
+          .createSchema(CURRENT_BROKER_VERSION.toString());
       operateUserDetailsService.initializeUsers();
     } catch (final Exception e) {
       LOG.error("Failed to create/update schemas", e);

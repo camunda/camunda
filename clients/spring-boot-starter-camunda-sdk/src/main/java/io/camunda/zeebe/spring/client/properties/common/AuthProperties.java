@@ -15,9 +15,11 @@
  */
 package io.camunda.zeebe.spring.client.properties.common;
 
+import io.camunda.zeebe.spring.client.properties.CamundaClientAuthClientAssertionProperties;
 import java.net.URI;
 import java.time.Duration;
 import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class AuthProperties {
 
@@ -31,6 +33,18 @@ public class AuthProperties {
   private String credentialsCachePath;
   private Duration connectTimeout;
   private Duration readTimeout;
+
+  @NestedConfigurationProperty
+  private CamundaClientAuthClientAssertionProperties clientAssertion =
+      new CamundaClientAuthClientAssertionProperties();
+
+  public CamundaClientAuthClientAssertionProperties getClientAssertion() {
+    return clientAssertion;
+  }
+
+  public void setClientAssertion(final CamundaClientAuthClientAssertionProperties clientAssertion) {
+    this.clientAssertion = clientAssertion;
+  }
 
   public String getCredentialsCachePath() {
     return credentialsCachePath;

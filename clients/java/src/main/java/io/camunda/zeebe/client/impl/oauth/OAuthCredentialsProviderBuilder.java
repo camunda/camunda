@@ -19,9 +19,17 @@ import io.camunda.zeebe.client.impl.util.Environment;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Consumer;
 
 public final class OAuthCredentialsProviderBuilder {
   public static final String INVALID_ARGUMENT_MSG = "Expected valid %s but none was provided.";
@@ -33,6 +41,14 @@ public final class OAuthCredentialsProviderBuilder {
   public static final String OAUTH_ENV_CACHE_PATH = "ZEEBE_CLIENT_CONFIG_PATH";
   public static final String OAUTH_ENV_CONNECT_TIMEOUT = "ZEEBE_AUTH_CONNECT_TIMEOUT";
   public static final String OAUTH_ENV_READ_TIMEOUT = "ZEEBE_AUTH_READ_TIMEOUT";
+  public static final String OAUTH_ENV_CLIENT_ASSERTION_KEYSTORE_PATH =
+      "ZEEBE_CLIENT_ASSERTION_KEYSTORE_PATH";
+  public static final String OAUTH_ENV_CLIENT_ASSERTION_KEYSTORE_PASSWORD =
+      "ZEEBE_CLIENT_ASSERTION_KEYSTORE_PASSWORD";
+  public static final String OAUTH_ENV_CLIENT_ASSERTION_KEYSTORE_KEY_ALIAS =
+      "ZEEBE_CLIENT_ASSERTION_KEYSTORE_KEY_ALIAS";
+  public static final String OAUTH_ENV_CLIENT_ASSERTION_KEYSTORE_KEY_PASSWORD =
+      "ZEEBE_CLIENT_ASSERTION_KEYSTORE_KEY_PASSWORD";
   private static final String DEFAULT_AUTHZ_SERVER = "https://login.cloud.camunda.io/oauth/token/";
   private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
   private static final Duration DEFAULT_READ_TIMEOUT = DEFAULT_CONNECT_TIMEOUT;
@@ -48,6 +64,10 @@ public final class OAuthCredentialsProviderBuilder {
   private Duration connectTimeout;
   private Duration readTimeout;
   private boolean applyEnvironmentOverrides = true;
+  private Path clientAssertionKeystorePath;
+  private String clientAssertionKeystorePassword;
+  private String clientAssertionKeystoreKeyAlias;
+  private String clientAssertionKeystoreKeyPassword;
 
   /** Client id to be used when requesting access token from OAuth authorization server. */
   public OAuthCredentialsProviderBuilder clientId(final String clientId) {
@@ -169,11 +189,23 @@ public final class OAuthCredentialsProviderBuilder {
   public OAuthCredentialsProvider build() {
     if (applyEnvironmentOverrides) {
       checkEnvironmentOverrides();
+      applySSLClientCertConfiguration();
     }
     applyDefaults();
 
     validate();
     return new OAuthCredentialsProvider(this);
+  }
+
+  private void applySSLClientCertConfiguration() {
+    applyEnvironmentValueIfNotNull(
+        this::clientAssertionKeystorePath, OAUTH_ENV_CLIENT_ASSERTION_KEYSTORE_PATH);
+    applyEnvironmentValueIfNotNull(
+        this::clientAssertionKeystorePassword, OAUTH_ENV_CLIENT_ASSERTION_KEYSTORE_PASSWORD);
+    applyEnvironmentValueIfNotNull(
+        this::clientAssertionKeystoreKeyAlias, OAUTH_ENV_CLIENT_ASSERTION_KEYSTORE_KEY_ALIAS);
+    applyEnvironmentValueIfNotNull(
+        this::clientAssertionKeystoreKeyPassword, OAUTH_ENV_CLIENT_ASSERTION_KEYSTORE_KEY_PASSWORD);
   }
 
   private void checkEnvironmentOverrides() {
@@ -238,12 +270,28 @@ public final class OAuthCredentialsProviderBuilder {
     if (readTimeout == null) {
       readTimeout = DEFAULT_READ_TIMEOUT;
     }
+    if (clientAssertionKeystoreKeyPassword == null) {
+      clientAssertionKeystoreKeyPassword = clientAssertionKeystorePassword;
+    }
   }
 
   private void validate() {
     try {
       Objects.requireNonNull(clientId, String.format(INVALID_ARGUMENT_MSG, "client id"));
-      Objects.requireNonNull(clientSecret, String.format(INVALID_ARGUMENT_MSG, "client secret"));
+      if (clientAssertionEnabled()) {
+        // loading the certificate from the provided path to ensure it exists and is valid
+        final KeyStore keyStore = KeyStore.getInstance("PKCS12");
+        keyStore.load(
+            Files.newInputStream(
+                Paths.get(clientAssertionKeystorePath.toAbsolutePath().toString())),
+            clientAssertionKeystorePassword.toCharArray());
+        if (clientAssertionKeystoreKeyAlias == null) {
+          // if the keystore key alias is not set, apply the first one
+          clientAssertionKeystoreKeyAlias = keyStore.aliases().nextElement();
+        }
+      } else {
+        Objects.requireNonNull(clientSecret, String.format(INVALID_ARGUMENT_MSG, "client secret"));
+      }
       Objects.requireNonNull(audience, String.format(INVALID_ARGUMENT_MSG, "audience"));
       Objects.requireNonNull(
           authorizationServerUrl, String.format(INVALID_ARGUMENT_MSG, "authorization server URL"));
@@ -257,7 +305,11 @@ public final class OAuthCredentialsProviderBuilder {
       }
       validateTimeout(connectTimeout, "ConnectTimeout");
       validateTimeout(readTimeout, "ReadTimeout");
-    } catch (final NullPointerException | IOException e) {
+    } catch (final NullPointerException
+        | IOException
+        | KeyStoreException
+        | NoSuchAlgorithmException
+        | CertificateException e) {
       throw new IllegalArgumentException(e);
     }
   }
@@ -271,9 +323,81 @@ public final class OAuthCredentialsProviderBuilder {
     }
   }
 
+  public OAuthCredentialsProviderBuilder clientAssertionKeystorePath(
+      final String clientAssertionKeystorePath) {
+    if (clientAssertionKeystorePath != null) {
+      this.clientAssertionKeystorePath = Paths.get(clientAssertionKeystorePath);
+    }
+    return this;
+  }
+
+  public OAuthCredentialsProviderBuilder clientAssertionKeystorePath(
+      final Path clientAssertionKeystorePath) {
+    if (clientAssertionKeystorePath != null) {
+      this.clientAssertionKeystorePath = clientAssertionKeystorePath;
+    }
+    return this;
+  }
+
+  public OAuthCredentialsProviderBuilder clientAssertionKeystorePassword(
+      final String clientAssertionKeystorePassword) {
+    this.clientAssertionKeystorePassword = clientAssertionKeystorePassword;
+    return this;
+  }
+
+  public OAuthCredentialsProviderBuilder clientAssertionKeystoreKeyPassword(
+      final String clientAssertionKeystoreKeyPassword) {
+    this.clientAssertionKeystoreKeyPassword = clientAssertionKeystoreKeyPassword;
+    return this;
+  }
+
+  public OAuthCredentialsProviderBuilder clientAssertionKeystoreKeyAlias(
+      final String clientAssertionKeystoreKeyAlias) {
+    this.clientAssertionKeystoreKeyAlias = clientAssertionKeystoreKeyAlias;
+    return this;
+  }
+
+  public Path getClientAssertionKeystorePath() {
+    return clientAssertionKeystorePath;
+  }
+
+  public String getClientAssertionKeystorePassword() {
+    return clientAssertionKeystorePassword;
+  }
+
+  public String getClientAssertionKeystoreKeyAlias() {
+    return clientAssertionKeystoreKeyAlias;
+  }
+
+  public String getClientAssertionKeystoreKeyPassword() {
+    return clientAssertionKeystoreKeyPassword;
+  }
+
+  public boolean clientAssertionEnabled() {
+    return clientAssertionKeystorePassword != null
+        && !clientAssertionKeystorePassword.isEmpty()
+        && clientAssertionKeystorePath != null
+        && clientAssertionKeystorePath.toFile().exists();
+  }
+
   public OAuthCredentialsProviderBuilder applyEnvironmentOverrides(
       final boolean applyEnvironmentOverrides) {
     this.applyEnvironmentOverrides = applyEnvironmentOverrides;
     return this;
+  }
+
+  private static Optional<String> getEnvironmentVariableValue(final String envName) {
+    return Optional.ofNullable(Environment.system().get(envName));
+  }
+
+  private static void applyEnvironmentValueIfNotNull(
+      final Consumer<String> action, final String... envNames) {
+    for (final String envName : envNames) {
+      final Optional<String> value = getEnvironmentVariableValue(envName);
+      value.ifPresent(action);
+      if (value.isPresent()) {
+        break;
+      }
+    }
   }
 }
