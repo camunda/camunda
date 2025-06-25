@@ -189,7 +189,6 @@ public final class ZeebeClientImpl implements ZeebeClient {
       final HttpClient httpClient) {
     LOG.warn("{} is deprecated and will be removed in version 8.10. Please migrate to {}",
         ZeebeClient.class.getSimpleName(), CamundaClient.class.getSimpleName());
-
     this.config = config;
     jsonMapper = config.getJsonMapper();
     this.channel = channel;
