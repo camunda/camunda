@@ -29,7 +29,7 @@ public class SignalStartEventTest {
   private static final String SIGNAL_NAME_1 = "a";
   private static final String SIGNAL_NAME_2 = "b";
 
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
+  @Rule public final EngineRule engine = EngineRule.singlePartition().maxCommandsInBatch(21);
 
   @Test
   public void shouldBroadcastSignalToStartEvent() {
@@ -184,6 +184,59 @@ public class SignalStartEventTest {
                 .withElementType(BpmnElementType.START_EVENT))
         .extracting(r -> r.getValue().getElementId())
         .containsOnly("signal-start");
+  }
+
+  @Test // Regression test for https://github.com/camunda/camunda/issues/33952
+  public void
+      shouldTriggerOnlySignalStartEventWhenCommandProcessingOrderIsSkewedByCommandBatching() {
+    // given
+    final var catchEventProcessId = "catchEventProcess";
+    final var catchEventProcess =
+        Bpmn.createExecutableProcess(catchEventProcessId)
+            .startEvent("none-start")
+            .endEvent()
+            .moveToProcess(catchEventProcessId)
+            .startEvent("signal-start")
+            .signal(SIGNAL_NAME_1)
+            .endEvent()
+            .done();
+    final var broadcastProcessId = "broadcastProcess";
+    final var broadcastProcess =
+        Bpmn.createExecutableProcess(broadcastProcessId)
+            .startEvent()
+            .subProcess(
+                "multi",
+                subProcessBuilder -> {
+                  subProcessBuilder.multiInstance(
+                      consumer ->
+                          consumer
+                              .zeebeInputCollectionExpression("[1,2,3,4]")
+                              .zeebeInputElement("index"));
+                })
+            .embeddedSubProcess()
+            .startEvent()
+            .endEvent()
+            .signal(SIGNAL_NAME_1)
+            .done();
+
+    engine
+        .deployment()
+        .withXmlResource(catchEventProcess)
+        .withXmlResource(broadcastProcess)
+        .deploy();
+
+    // when
+    engine.processInstance().ofBpmnProcessId(broadcastProcessId).create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .limit(broadcastProcessId, ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withBpmnProcessId(catchEventProcessId)
+                .withElementType(BpmnElementType.START_EVENT)
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED))
+        .extracting(r -> r.getValue().getBpmnEventType())
+        .containsOnly(BpmnEventType.SIGNAL);
   }
 
   @Test
