@@ -27,6 +27,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupUpdateReque
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -42,6 +43,15 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
       final Authentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.groupSearchClient = groupSearchClient;
+  }
+
+  public List<GroupEntity> getGroupsByMemberTypeAndMemberIds(
+      final Map<EntityType, Set<String>> memberTypesToMemberIds) {
+    return findAll(
+        GroupQuery.of(
+            groupQuery ->
+                groupQuery.filter(
+                    groupFilter -> groupFilter.memberIdsByType(memberTypesToMemberIds))));
   }
 
   @Override

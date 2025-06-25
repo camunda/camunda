@@ -117,14 +117,14 @@ public class CamundaOAuthPrincipalService {
     if (groupsClaimPresent) {
       groups = new HashSet<>(oidcGroupsLoader.load(claims));
     } else {
-      // TODO: Get groups for username and clientId https://github.com/camunda/camunda/issues/26572
       groups =
-          groupServices.getGroupsByMemberIds(mappingIds, MAPPING).stream()
+          groupServices.getGroupsByMemberTypeAndMemberIds(ownerTypeToIds).stream()
               .map(GroupEntity::groupId)
               .collect(Collectors.toSet());
-      if (!groups.isEmpty()) {
-        ownerTypeToIds.put(GROUP, groups);
-      }
+    }
+
+    if (!groups.isEmpty()) {
+      ownerTypeToIds.put(GROUP, groups);
     }
 
     final var roles =
