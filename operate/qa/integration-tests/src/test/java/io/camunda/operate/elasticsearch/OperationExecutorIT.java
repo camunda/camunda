@@ -97,6 +97,19 @@ public class OperationExecutorIT extends OperateAbstractIT {
         "lockSecondBatch");
   }
 
+  @Test
+  public void testOperationsFromZeebeAreIgnored() throws PersistenceException {
+    // given
+    createZeebeEngineData();
+
+    // when execute 1st batch
+    final var futures = operationExecutor.executeOneBatch();
+
+    // then
+    assertThat(futures).isEmpty();
+    assertNoOperationsLocked(operationReader.getOperationsByProcessInstanceKey(null));
+  }
+
   private void assertOperationsLocked(
       final List<OperationEntity> allOperations,
       final int operationCount,
@@ -116,6 +129,30 @@ public class OperationExecutorIT extends OperateAbstractIT {
         .filteredOn(op -> op.getLockExpirationTime().isBefore(approxLockExpirationTime))
         .as(assertionLabel + "operation.lockExpirationTime")
         .isEmpty();
+  }
+
+  private void assertNoOperationsLocked(final List<OperationEntity> allOperations) {
+    final String workerId = operateProperties.getOperationExecutor().getWorkerId();
+    final List<OperationEntity> lockedOperations =
+        CollectionUtil.filter(
+            allOperations,
+            op ->
+                op.getState().equals(OperationState.LOCKED) && op.getLockOwner().equals(workerId));
+    assertThat(lockedOperations).isEmpty();
+  }
+
+  private void createZeebeEngineData() {
+    final List<OperationEntity> instances = new ArrayList<>();
+
+    final var operationEntity =
+        createOperationEntity(
+                TestUtil.createProcessInstanceEntityWithIds().getProcessInstanceKey(),
+                OperationState.SCHEDULED)
+            .setItemKey(42L); // Simulating a Zeebe operation with a specific item key
+
+    instances.add(operationEntity);
+    // persist instances
+    searchTestRule.persistNew(instances.toArray(new ExporterEntity[0]));
   }
 
   private void createData(final int processInstanceCount) {
