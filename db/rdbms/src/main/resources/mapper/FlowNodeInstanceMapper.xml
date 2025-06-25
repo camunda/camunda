@@ -100,6 +100,14 @@
       AND TENANT_ID IN
       <foreach collection="filter.tenantIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
+    <if test="filter.startDates != null and !filter.startDates.isEmpty()">
+      AND START_DATE IN
+      <foreach collection="filter.startDates" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
+    <if test="filter.endDates != null and !filter.endDates.isEmpty()">
+      AND END_DATE IN
+      <foreach collection="filter.endDates" item="value" open="(" separator=", " close=")">#{value}</foreach>
+    </if>
   </sql>
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.FlowNodeInstanceEntity">

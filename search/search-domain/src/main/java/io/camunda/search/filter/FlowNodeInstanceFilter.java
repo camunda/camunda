@@ -31,7 +31,9 @@ public record FlowNodeInstanceFilter(
     List<String> treePaths,
     Boolean hasIncident,
     List<Long> incidentKeys,
-    List<String> tenantIds)
+    List<String> tenantIds,
+    List<String> startDates,
+    List<String> endDates)
     implements FilterBase {
 
   public static FlowNodeInstanceFilter of(
@@ -53,6 +55,8 @@ public record FlowNodeInstanceFilter(
     private Boolean hasIncident;
     private List<Long> incidentKeys;
     private List<String> tenantIds;
+    private List<String> startDates;
+    private List<String> endDates;
 
     public FlowNodeInstanceFilter.Builder flowNodeInstanceKeys(final List<Long> values) {
       flowNodeInstanceKeys = addValuesToList(flowNodeInstanceKeys, values);
@@ -165,6 +169,24 @@ public record FlowNodeInstanceFilter(
       return tenantIds(collectValuesAsList(values));
     }
 
+    public FlowNodeInstanceFilter.Builder startDates(final List<String> values) {
+      startDates = addValuesToList(startDates, values);
+      return this;
+    }
+
+    public FlowNodeInstanceFilter.Builder startDates(final String... values) {
+      return startDates(collectValuesAsList(values));
+    }
+
+    public FlowNodeInstanceFilter.Builder endDates(final List<String> values) {
+      endDates = addValuesToList(endDates, values);
+      return this;
+    }
+
+    public FlowNodeInstanceFilter.Builder endDates(final String... values) {
+      return endDates(collectValuesAsList(values));
+    }
+
     @Override
     public FlowNodeInstanceFilter build() {
       return new FlowNodeInstanceFilter(
@@ -179,7 +201,9 @@ public record FlowNodeInstanceFilter(
           Objects.requireNonNullElse(treePaths, Collections.emptyList()),
           hasIncident,
           Objects.requireNonNullElse(incidentKeys, Collections.emptyList()),
-          Objects.requireNonNullElse(tenantIds, Collections.emptyList()));
+          Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
+          Objects.requireNonNullElse(startDates, Collections.emptyList()),
+          Objects.requireNonNullElse(endDates, Collections.emptyList()));
     }
   }
 }
