@@ -15,6 +15,7 @@ import licenseHeaderPlugin from 'eslint-plugin-license-header';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
 import tanstackPlugin from '@tanstack/eslint-plugin-query';
 import prettierConfig from 'eslint-config-prettier';
+import prettierPlugin from 'eslint-plugin-prettier';
 import globals from 'globals';
 import vitestPlugin from '@vitest/eslint-plugin';
 
@@ -34,6 +35,15 @@ const files = {
 export default [
   js.configs.recommended,
   prettierConfig,
+
+  {
+    plugins: {
+      prettier: prettierPlugin,
+    },
+    rules: {
+      'prettier/prettier': 'error',
+    },
+  },
 
   {
     files: files.node,
