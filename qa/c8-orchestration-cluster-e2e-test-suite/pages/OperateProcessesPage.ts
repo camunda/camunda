@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator} from '@playwright/test';
+import {Page, Locator, expect} from '@playwright/test';
 
 class OperateProcessesPage {
   private page: Page;
@@ -96,6 +96,14 @@ class OperateProcessesPage {
     throw new Error(
       `Failed to click on process instance link after ${maxRetries} attempts.`,
     );
+  }
+
+  async assertProcessInstanceLink(processInstanceKey: string): Promise<void> {
+    await expect(
+      this.page.getByRole('link', {
+        name: `View instance ${processInstanceKey}`,
+      }),
+    ).toBeVisible();
   }
 }
 
