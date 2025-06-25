@@ -189,4 +189,40 @@ public final class FlowNodeInstanceFilterTest extends AbstractTransformerTest {
               assertThat(t.value().stringValue()).isEqualTo("<default>");
             });
   }
+
+  @Test
+  public void shouldQueryByStartDate() {
+    final var filter =
+        FilterBuilders.flowNodeInstance(f -> f.startDates("2024-05-23T23:05:00.000+000"));
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("startDate");
+              assertThat(t.value().stringValue()).isEqualTo("2024-05-23T23:05:00.000+000");
+            });
+  }
+
+  @Test
+  public void shouldQueryByEndDate() {
+    final var filter =
+        FilterBuilders.flowNodeInstance(f -> f.endDates("2024-05-23T23:05:00.000+000"));
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("endDate");
+              assertThat(t.value().stringValue()).isEqualTo("2024-05-23T23:05:00.000+000");
+            });
+  }
 }
