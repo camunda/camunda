@@ -125,7 +125,7 @@ public final class BatchOperationPartitionCompleteProcessor
                   b -> b.batchOperationReference(command.getValue().getBatchOperationKey())));
 
           metrics.recordCompleted(oBatchOperation.get().getBatchOperationType());
-          metrics.stopTotalLatencyMeasure(batchOperationKey);
+          metrics.stopTotalDurationMeasure(batchOperationKey);
         }
       }
     }
