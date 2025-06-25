@@ -426,6 +426,32 @@ public final class EventScopeInstanceStateTest {
   }
 
   @Test
+  void shouldFindFirstEventTriggerWithPredicate() {
+    // given
+    final var processInstanceKey = 456L;
+    final EventTrigger eventTrigger1 = createEventTrigger();
+    final EventTrigger eventTrigger2 = createEventTrigger();
+
+    state.createInstance(SCOPE_KEY, NO_INTERRUPTING_ELEMENT_IDS, NO_BOUNDARY_ELEMENT_IDS);
+
+    // when
+    triggerEvent(SCOPE_KEY, 1, eventTrigger1, processInstanceKey);
+    triggerEvent(SCOPE_KEY, 2, eventTrigger2, processInstanceKey);
+
+    // then
+    assertThat(
+            state.findEventTrigger(
+                SCOPE_KEY, (trigger) -> trigger.getProcessInstanceKey() == processInstanceKey))
+        .isPresent()
+        .get()
+        .isEqualTo(eventTrigger1);
+    assertThat(
+            state.findEventTrigger(
+                SCOPE_KEY, (trigger) -> trigger.getProcessInstanceKey() != processInstanceKey))
+        .isEmpty();
+  }
+
+  @Test
   void shouldPollEventTrigger() {
     // given
     final EventTrigger eventTrigger1 = createEventTrigger();
