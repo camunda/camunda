@@ -617,7 +617,7 @@ public class CamundaClientPropertiesPostProcessorTest {
         @Test
         void shouldReadKeystorePath() {
           assertThat(camundaClientProperties.getAuth().getKeystorePath())
-              .isEqualTo("/key/store/path");
+              .isEqualTo(Paths.get("/key/store/path"));
         }
 
         @Test
@@ -634,7 +634,7 @@ public class CamundaClientPropertiesPostProcessorTest {
         @Test
         void shouldReadTruststorePath() {
           assertThat(camundaClientProperties.getAuth().getTruststorePath())
-              .isEqualTo("/trust/store/path");
+              .isEqualTo(Paths.get("/trust/store/path"));
         }
 
         @Test
