@@ -327,6 +327,23 @@ class BatchOperationStatusHandlerTest {
       super(new ProcessInstanceCancellationOperationHandler(indexName, batchOperationCache));
     }
 
+    @Test
+    void shouldNotHandleRecordOfSubprocess() {
+      final Record<ProcessInstanceRecordValue> record =
+          factory.generateRecord(
+              ValueType.PROCESS_INSTANCE,
+              b ->
+                  b.withIntent(ProcessInstanceIntent.ELEMENT_TERMINATED)
+                      .withValue(
+                          ImmutableProcessInstanceRecordValue.builder()
+                              .from(factory.generateObject(ProcessInstanceRecordValue.class))
+                              .withBpmnElementType(BpmnElementType.PROCESS)
+                              .build())
+                      .withBatchOperationReference(batchOperationKey));
+
+      assertThat(handler.handlesRecord(record)).isFalse();
+    }
+
     @Override
     void shouldExtractCorrectItemKey() {
       final var record = createSuccessRecord();
@@ -353,6 +370,7 @@ class BatchOperationStatusHandlerTest {
                       ImmutableProcessInstanceRecordValue.builder()
                           .from(factory.generateObject(ProcessInstanceRecordValue.class))
                           .withBpmnElementType(BpmnElementType.PROCESS)
+                          .withParentProcessInstanceKey(-1L)
                           .build())
                   .withBatchOperationReference(batchOperationKey));
     }
@@ -367,6 +385,7 @@ class BatchOperationStatusHandlerTest {
                       ImmutableProcessInstanceRecordValue.builder()
                           .from(factory.generateObject(ProcessInstanceRecordValue.class))
                           .withBpmnElementType(BpmnElementType.PROCESS)
+                          .withParentProcessInstanceKey(-1L)
                           .build())
                   .withIntent(ProcessInstanceIntent.CANCEL)
                   .withBatchOperationReference(batchOperationKey));
