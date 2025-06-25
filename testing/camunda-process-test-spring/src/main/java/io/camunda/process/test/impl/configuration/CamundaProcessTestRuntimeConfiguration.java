@@ -25,7 +25,9 @@ import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
+@Primary
 @Configuration
 @ConfigurationProperties(prefix = "io.camunda.process.test")
 public class CamundaProcessTestRuntimeConfiguration {
@@ -46,6 +48,7 @@ public class CamundaProcessTestRuntimeConfiguration {
   private Map<String, String> connectorsSecrets = Collections.emptyMap();
 
   private CamundaProcessTestRuntimeMode runtimeMode = CamundaProcessTestRuntimeMode.MANAGED;
+  private boolean ignoreGlobalRuntime = false;
 
   @NestedConfigurationProperty private RemoteConfiguration remote = new RemoteConfiguration();
 
@@ -161,6 +164,14 @@ public class CamundaProcessTestRuntimeConfiguration {
 
   public void setRuntimeMode(final CamundaProcessTestRuntimeMode runtimeMode) {
     this.runtimeMode = runtimeMode;
+  }
+
+  public boolean isIgnoreGlobalRuntime() {
+    return ignoreGlobalRuntime;
+  }
+
+  public void setIgnoreGlobalRuntime(final boolean ignoreGlobalRuntime) {
+    this.ignoreGlobalRuntime = ignoreGlobalRuntime;
   }
 
   public RemoteConfiguration getRemote() {

@@ -25,6 +25,7 @@ import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.ZeebeClientProxy;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
+import io.camunda.process.test.impl.runtime.CamundaProcessTestGlobalRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.runtime.CamundaSpringProcessTestRuntimeBuilder;
@@ -67,8 +68,6 @@ import org.springframework.test.context.TestExecutionListener;
  *   <li>Close created {@link CamundaClient}s
  *   <li>Purge the runtime (i.e. delete all data)
  * </ul>
- *
- * <p>The container runtime is closed once all tests have run.
  */
 public class CamundaProcessTestExecutionListener implements TestExecutionListener, Ordered {
 
@@ -100,6 +99,8 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   @Override
   public void beforeTestClass(final TestContext testContext) {
     // create runtime
+    initializeGlobalRuntime(testContext);
+
     runtime = buildRuntime(testContext);
     runtime.start();
 
@@ -234,12 +235,34 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     }
   }
 
+  private void initializeGlobalRuntime(final TestContext testContext) {
+    final CamundaProcessTestRuntimeConfiguration globalRuntimeConfiguration =
+        testContext
+            .getApplicationContext()
+            .getBean("globalRuntimeConfiguration", CamundaProcessTestRuntimeConfiguration.class);
+
+    /*
+     * The runtimeBuilder chooses the global runtime or creates a new one based on the configuration
+     * provided. Since we're using the runtimeBuilder to create a new runtime for our global
+     * instance, we don't want it to defer to the not-yet-initialized global runtime.
+     */
+    final CamundaProcessTestRuntimeBuilder defaultRuntimeBuilder =
+        CamundaProcessTestContainerRuntime.newBuilder().withIgnoringGlobalRuntime();
+
+    final CamundaProcessTestRuntimeBuilder globalRuntimeBuilder =
+        CamundaSpringProcessTestRuntimeBuilder.mergeRuntimeConfiguration(
+            defaultRuntimeBuilder, globalRuntimeConfiguration);
+
+    CamundaProcessTestGlobalRuntime.INSTANCE.initialize(globalRuntimeBuilder);
+  }
+
   private CamundaProcessTestRuntime buildRuntime(final TestContext testContext) {
     final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
         testContext.getApplicationContext().getBean(CamundaProcessTestRuntimeConfiguration.class);
 
-    return CamundaSpringProcessTestRuntimeBuilder.buildRuntime(
-        containerRuntimeBuilder, runtimeConfiguration);
+    return CamundaSpringProcessTestRuntimeBuilder.mergeRuntimeConfiguration(
+            containerRuntimeBuilder, runtimeConfiguration)
+        .build();
   }
 
   private static CamundaClient createClient(
