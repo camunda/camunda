@@ -267,7 +267,7 @@ For the button on the confirmation modal
 
 ## Automatic Formatting
 
-We use [prettier](https://prettier.io/) to automatically format the Javascript sourcecode. It automatically runs before any commit using [husky](https://github.com/typicode/husky) and [lint-staged](https://github.com/okonet/lint-staged). It is recommended to add a prettier plugin to your IDE:
+We use [prettier](https://prettier.io/) to automatically format the Javascript sourcecode. It is recommended to add a prettier plugin to your IDE:
 
 - [VSCode](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
 
@@ -289,4 +289,3 @@ We will further work on more detailed instructions and requirements, for now you
 - The Accessibility section of our [Design Review Guidelines](https://app.camunda.com/confluence/display/camBPM/Design+Review+Guidelines)
 - Our [Confluence page on Accessibility](https://app.camunda.com/confluence/display/camBPM/Accessibility)
 - [Get started using VoiceOver, the Mac built-in screen reader](https://webaim.org/articles/voiceover/)
-
