@@ -640,7 +640,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
     final boolean clientSecretOrCertificateProvided =
         Environment.system().get(OAuthCredentialsProviderBuilder.OAUTH_ENV_CLIENT_SECRET) != null
             || Environment.system()
-                    .get(OAuthCredentialsProviderBuilder.OAUTH_ENV_SSL_CLIENT_CERT_PATH)
+                    .get(OAuthCredentialsProviderBuilder.OAUTH_ENV_CLIENT_ASSERTION_KEYSTORE_PATH)
                 != null;
 
     return credentialsProvider == null
