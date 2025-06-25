@@ -16,7 +16,6 @@
 package io.camunda.zeebe.client.impl.http;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.CamundaFuture;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
@@ -44,8 +43,10 @@ public class HttpZeebeFuture<RespT> extends CompletableFuture<RespT> implements 
   @Override
   public RespT join() {
     try {
-      LOG.warn("{} is deprecated and will be removed in version 8.10. Please migrate to {}",
-          ZeebeClient.class.getSimpleName(), CamundaClient.class.getSimpleName());
+      LOG.warn(
+          "{} is deprecated and will be removed in version 8.10. Please migrate to {}",
+          ZeebeClient.class.getSimpleName(),
+          CamundaClient.class.getSimpleName());
       return get();
     } catch (final ExecutionException e) {
       throw unwrapExecutionException(e);
@@ -67,8 +68,10 @@ public class HttpZeebeFuture<RespT> extends CompletableFuture<RespT> implements 
   @Override
   public RespT join(final long timeout, final TimeUnit unit) {
     try {
-      LOG.warn("{} is deprecated and will be removed in version 8.10. Please migrate to {}",
-          ZeebeClient.class.getSimpleName(), CamundaClient.class.getSimpleName());
+      LOG.warn(
+          "{} is deprecated and will be removed in version 8.10. Please migrate to {}",
+          ZeebeClient.class.getSimpleName(),
+          CamundaClient.class.getSimpleName());
       return super.get(timeout, unit);
     } catch (final ExecutionException e) {
       throw unwrapExecutionException(e);

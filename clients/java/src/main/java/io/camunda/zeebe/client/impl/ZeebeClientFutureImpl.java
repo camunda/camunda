@@ -55,8 +55,10 @@ public class ZeebeClientFutureImpl<ClientResponse, BrokerResponse>
   @Override
   public ClientResponse join() {
     try {
-      LOG.warn("{} is deprecated and will be removed in version 8.10. Please migrate to {}",
-          ZeebeClient.class.getSimpleName(), CamundaClient.class.getSimpleName());
+      LOG.warn(
+          "{} is deprecated and will be removed in version 8.10. Please migrate to {}",
+          ZeebeClient.class.getSimpleName(),
+          CamundaClient.class.getSimpleName());
       return get();
     } catch (final ExecutionException e) {
       throw transformExecutionException(e);
@@ -77,8 +79,10 @@ public class ZeebeClientFutureImpl<ClientResponse, BrokerResponse>
   @Override
   public ClientResponse join(final long timeout, final TimeUnit unit) {
     try {
-      LOG.warn("{} is deprecated and will be removed in version 8.10. Please migrate to {}",
-          ZeebeClient.class.getSimpleName(), CamundaClient.class.getSimpleName());
+      LOG.warn(
+          "{} is deprecated and will be removed in version 8.10. Please migrate to {}",
+          ZeebeClient.class.getSimpleName(),
+          CamundaClient.class.getSimpleName());
       return get(timeout, unit);
     } catch (final ExecutionException e) {
       throw transformExecutionException(e);
