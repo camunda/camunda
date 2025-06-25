@@ -15,7 +15,10 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.util.Collection;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 
 public final class DbEventScopeInstanceState implements MutableEventScopeInstanceState {
@@ -159,6 +162,28 @@ public final class DbEventScopeInstanceState implements MutableEventScopeInstanc
         });
 
     return next[0];
+  }
+
+  @Override
+  public Optional<EventTrigger> findEventTrigger(
+      final long eventScopeKey, final Predicate<EventTrigger> predicate) {
+    eventTriggerScopeKey.wrapLong(eventScopeKey);
+    final AtomicReference<EventTrigger> eventTrigger = new AtomicReference<>();
+
+    eventTriggerColumnFamily.whileEqualPrefix(
+        eventTriggerScopeKey,
+        (key, value) -> {
+          if (predicate.test(value)) {
+            final var copiedEventTrigger = new EventTrigger();
+            copiedEventTrigger.copyFrom(value);
+            eventTrigger.set(copiedEventTrigger);
+            return false;
+          } else {
+            return true;
+          }
+        });
+
+    return Optional.ofNullable(eventTrigger.get());
   }
 
   @Override
