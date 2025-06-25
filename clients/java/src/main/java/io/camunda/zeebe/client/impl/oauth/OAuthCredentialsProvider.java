@@ -37,6 +37,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.MessageDigest;
@@ -71,19 +72,38 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
       JSON_MAPPER.readerFor(ZeebeClientCredentials.class);
   private static final Logger LOG = LoggerFactory.getLogger(OAuthCredentialsProvider.class);
   private final URL authorizationServerUrl;
-  private final OAuthCredentialsProviderBuilder builder;
   private final String clientId;
+  private final String clientSecret;
+  private final String audience;
+  private final String scope;
   private final OAuthCredentialsCache credentialsCache;
   private final Duration connectionTimeout;
   private final Duration readTimeout;
+  // client assertion
+  private final boolean clientAssertionEnabled;
+  private final Path clientAssertionKeystorePath;
+  private final String clientAssertionKeystorePassword;
+  private final String clientAssertionKeystoreKeyAlias;
+  private final String clientAssertionKeystoreKeyPassword;
 
   OAuthCredentialsProvider(final OAuthCredentialsProviderBuilder builder) {
     authorizationServerUrl = builder.getAuthorizationServer();
-    this.builder = builder;
     clientId = builder.getClientId();
+    clientSecret = builder.getClientSecret();
+    audience = builder.getAudience();
+    scope = builder.getScope();
     credentialsCache = new OAuthCredentialsCache(builder.getCredentialsCache());
     connectionTimeout = builder.getConnectTimeout();
     readTimeout = builder.getReadTimeout();
+    clientAssertionEnabled = builder.clientAssertionEnabled();
+    clientAssertionKeystorePath = builder.getClientAssertionKeystorePath();
+    clientAssertionKeystorePassword = builder.getClientAssertionKeystorePassword();
+    clientAssertionKeystoreKeyAlias = builder.getClientAssertionKeystoreKeyAlias();
+    clientAssertionKeystoreKeyPassword = builder.getClientAssertionKeystoreKeyPassword();
+  }
+
+  public boolean isClientAssertionEnabled() {
+    return clientAssertionEnabled;
   }
 
   /** Adds an access token to the Authorization header of a gRPC call. */
@@ -126,25 +146,18 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     }
   }
 
-  private static String createParams(final OAuthCredentialsProviderBuilder builder) {
+  private String createPayload() {
     final Map<String, String> payload = new HashMap<>();
-    if (builder.sslClientCertConfigurationProvided()) {
-      payload.put(
-          "client_assertion",
-          getClientAssertion(
-              builder.getSslClientCertPath().toAbsolutePath().toString(),
-              builder.getSslClientCertPassword(),
-              builder.getClientId(),
-              builder.getIssuer()));
+    if (clientAssertionEnabled) {
+      payload.put("client_assertion", getClientAssertion());
       payload.put("client_assertion_type", JWT_ASSERTION_TYPE);
     } else {
-      payload.put("client_secret", builder.getClientSecret());
+      payload.put("client_secret", clientSecret);
     }
 
-    payload.put("client_id", builder.getClientId());
-    payload.put("audience", builder.getAudience());
+    payload.put("client_id", clientId);
+    payload.put("audience", audience);
     payload.put("grant_type", "client_credentials");
-    final String scope = builder.getScope();
     if (scope != null) {
       payload.put("scope", scope);
     }
@@ -154,23 +167,25 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
         .collect(Collectors.joining("&"));
   }
 
-  private static String getClientAssertion(
-      String certPath, String certStorePassword, String clientId, String issuer) {
+  private String getClientAssertion() {
     final X509Certificate certificate;
     final Algorithm algorithm;
-    try (FileInputStream stream = new FileInputStream(certPath)) {
+    try (final FileInputStream stream = new FileInputStream(clientAssertionKeystorePath.toFile())) {
       final KeyStore keyStore = KeyStore.getInstance("PKCS12");
-      final char[] password = certStorePassword.toCharArray();
-      keyStore.load(stream, password);
+      keyStore.load(stream, clientAssertionKeystorePassword.toCharArray());
 
-      final String alias = keyStore.aliases().nextElement();
-      final RSAPrivateKey privateKey = (RSAPrivateKey) keyStore.getKey(alias, password);
-      final X509Certificate keyStoreCertificate = (X509Certificate) keyStore.getCertificate(alias);
+      final RSAPrivateKey privateKey =
+          (RSAPrivateKey)
+              keyStore.getKey(
+                  clientAssertionKeystoreKeyAlias,
+                  clientAssertionKeystoreKeyPassword.toCharArray());
+      final X509Certificate keyStoreCertificate =
+          (X509Certificate) keyStore.getCertificate(clientAssertionKeystoreKeyAlias);
       final RSAPublicKey publicKey = (RSAPublicKey) keyStoreCertificate.getPublicKey();
 
-      certificate = (X509Certificate) keyStore.getCertificate(alias);
+      certificate = (X509Certificate) keyStore.getCertificate(clientAssertionKeystoreKeyAlias);
       algorithm = Algorithm.RSA256(publicKey, privateKey);
-    } catch (IOException | GeneralSecurityException e) {
+    } catch (final IOException | GeneralSecurityException e) {
       throw new RuntimeException("Failed to create client assertion", e);
     }
 
@@ -186,7 +201,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
         .withHeader(header)
         .withIssuer(clientId)
         .withSubject(clientId)
-        .withAudience(issuer)
+        .withAudience(authorizationServerUrl.toString())
         .withIssuedAt(now)
         .withNotBefore(now)
         .withExpiresAt(new Date(now.getTime() + 5 * 60 * 1000))
@@ -194,12 +209,12 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
         .sign(algorithm);
   }
 
-  private static String generateX5tThumbprint(X509Certificate certificate) {
+  private static String generateX5tThumbprint(final X509Certificate certificate) {
     try {
       final MessageDigest digest = MessageDigest.getInstance("SHA-1");
       final byte[] encoded = digest.digest(certificate.getEncoded());
       return Base64.getUrlEncoder().withoutPadding().encodeToString(encoded);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException("Failed to generate x5t thumbprint", e);
     }
   }
@@ -224,7 +239,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     connection.setRequestProperty("User-Agent", "zeebe-client-java/" + VersionUtil.getVersion());
 
     try (final OutputStream os = connection.getOutputStream()) {
-      final String payload = createParams(builder);
+      final String payload = createPayload();
       final byte[] input = payload.getBytes(StandardCharsets.UTF_8);
       os.write(input, 0, input.length);
     }
