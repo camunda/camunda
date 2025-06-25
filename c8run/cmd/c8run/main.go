@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -163,7 +164,12 @@ func createStartFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	startFlagSet.BoolVar(&settings.Docker, "docker", false, "Run Camunda from docker-compose.")
 	startFlagSet.StringVar(&settings.Username, "username", "demo", "Change the first users username (default: demo)")
 	startFlagSet.StringVar(&settings.Password, "password", "demo", "Change the first users password (default: demo)")
+	startFlagSet.StringVar(&settings.StartupUrl, "startup-url", createOperateUrl(settings), "The URL to open after startup.")
 	return startFlagSet
+}
+
+func createOperateUrl(settings *types.C8RunSettings) string {
+	return fmt.Sprintf("%s://localhost:%s/operate", settings.GetProtocol(), strconv.Itoa(settings.Port))
 }
 
 func createStopFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
