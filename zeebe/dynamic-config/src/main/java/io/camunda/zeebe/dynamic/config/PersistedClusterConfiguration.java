@@ -23,9 +23,11 @@ import java.util.zip.CRC32C;
  * a fixed-size header containing a version and a checksum, followed by the serialized
  * configuration.
  */
-final class PersistedClusterConfiguration {
+public final class PersistedClusterConfiguration {
   // Header is a single byte for the version, followed by a long for the checksum.
   public static final int HEADER_LENGTH = Byte.BYTES + Long.BYTES;
+  // The filename format for the persisted routing info, where %d is replaced by the partition ID.
+  public static final String PERSISTED_ROUTING_INFO_FILENAME_FORMAT = "routing-state-%d.pb";
   // Constant version, to be incremented if the format changes.
   private static final byte VERSION = 1;
   private final Path topologyFile;

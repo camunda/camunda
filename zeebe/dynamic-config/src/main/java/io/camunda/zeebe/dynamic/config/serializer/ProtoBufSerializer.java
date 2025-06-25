@@ -131,6 +131,31 @@ public class ProtoBufSerializer
     }
   }
 
+  @Override
+  public byte[] serializeRoutingState(final RoutingState routingState) {
+    return encodeRoutingState(routingState).toByteArray();
+  }
+
+  @Override
+  public RoutingState deserializeRoutingState(
+      final byte[] encodedRoutingState, final int offset, final int length) {
+    final var buffer = ByteBuffer.wrap(encodedRoutingState, offset, length);
+    try {
+      final var state = Topology.RoutingState.parseFrom(buffer);
+      return decodeRoutingState(state);
+    } catch (final InvalidProtocolBufferException e) {
+      throw new DecodingFailed(e);
+    }
+  }
+
+  public Topology.RoutingState encodeRoutingState(final RoutingState routingState) {
+    return Topology.RoutingState.newBuilder()
+        .setVersion(routingState.version())
+        .setRequestHandling(encodeRequestHandling(routingState.requestHandling()))
+        .setMessageCorrelation(encodeMessageCorrelation(routingState.messageCorrelation()))
+        .build();
+  }
+
   private ClusterConfiguration decodeClusterTopology(
       final Topology.ClusterTopology encodedClusterTopology) {
 
@@ -536,14 +561,6 @@ public class ProtoBufSerializer
       case CORRELATION_NOT_SET ->
           throw new IllegalArgumentException("Unknown message correlation type");
     };
-  }
-
-  private Topology.RoutingState encodeRoutingState(final RoutingState routingState) {
-    return Topology.RoutingState.newBuilder()
-        .setVersion(routingState.version())
-        .setRequestHandling(encodeRequestHandling(routingState.requestHandling()))
-        .setMessageCorrelation(encodeMessageCorrelation(routingState.messageCorrelation()))
-        .build();
   }
 
   private Topology.RequestHandling encodeRequestHandling(final RequestHandling requestHandling) {

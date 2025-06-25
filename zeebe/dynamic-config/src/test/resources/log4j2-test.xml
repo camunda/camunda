@@ -17,6 +17,7 @@
 
   <Loggers>
     <Logger name="io.camunda.zeebe.topology" level="trace"/>
+    <Logger name="io.camunda.zeebe.dynamic" level="debug"/>
     <Root level="info">
       <AppenderRef ref="Console"/>
     </Root>

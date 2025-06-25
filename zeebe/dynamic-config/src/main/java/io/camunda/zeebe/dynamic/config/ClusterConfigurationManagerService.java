@@ -31,6 +31,7 @@ import io.camunda.zeebe.dynamic.config.metrics.TopologyManagerMetrics;
 import io.camunda.zeebe.dynamic.config.metrics.TopologyMetrics;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.AsyncClosable;
@@ -62,6 +63,7 @@ public final class ClusterConfigurationManagerService
   private final ClusterChangeExecutor clusterChangeExecutor;
   private final TopologyMetrics topologyMetrics;
   private final TopologyManagerMetrics topologyManagerMetrics;
+  private final Path routingPath;
 
   public ClusterConfigurationManagerService(
       final Path dataRootDirectory,
@@ -85,6 +87,11 @@ public final class ClusterConfigurationManagerService
     configurationFile = dataRootDirectory.resolve(TOPOLOGY_FILE_NAME);
     persistedClusterConfiguration =
         PersistedClusterConfiguration.ofFile(configurationFile, new ProtoBufSerializer());
+    routingPath =
+        // this file is used only by the coordinator
+        dataRootDirectory.resolve(
+            PersistedClusterConfiguration.PERSISTED_ROUTING_INFO_FILENAME_FORMAT.formatted(
+                Protocol.DEPLOYMENT_PARTITION));
     gossipActor = new Actor() {};
     managerActor = new Actor() {};
     clusterConfigurationManager =
@@ -148,9 +155,7 @@ public final class ClusterConfigurationManagerService
                 staticConfiguration.localMemberId(),
                 managerActor))
         .andThen(
-            new RoutingStateInitializer(
-                staticConfiguration.enablePartitionScaling(),
-                staticConfiguration.partitionCount()));
+            new RoutingStateInitializer(staticConfiguration.partitionCount(), Optional.empty()));
   }
 
   private ClusterConfigurationInitializer getCoordinatorInitializer(
@@ -174,8 +179,7 @@ public final class ClusterConfigurationManagerService
                 managerActor))
         .andThen(
             new RoutingStateInitializer(
-                staticConfiguration.enablePartitionScaling(),
-                staticConfiguration.partitionCount()));
+                staticConfiguration.partitionCount(), Optional.of(routingPath)));
   }
 
   /** Starts ClusterConfigurationManager which initializes ClusterConfiguration */
