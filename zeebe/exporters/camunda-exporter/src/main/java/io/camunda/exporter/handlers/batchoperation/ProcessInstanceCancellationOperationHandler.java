@@ -32,6 +32,11 @@ public class ProcessInstanceCancellationOperationHandler
   }
 
   @Override
+  public boolean handlesRecord(final Record<ProcessInstanceRecordValue> record) {
+    return super.handlesRecord(record) && record.getValue().getParentProcessInstanceKey() == -1;
+  }
+
+  @Override
   long getItemKey(final Record<ProcessInstanceRecordValue> record) {
     return record.getValue().getProcessInstanceKey();
   }
