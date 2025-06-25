@@ -9,9 +9,13 @@ package io.camunda.exporter.cache;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import io.camunda.exporter.cache.form.CachedFormEntity;
+import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 
 public interface ExporterEntityCacheProvider {
+
+  CacheLoader<String, CachedBatchOperationEntity> getBatchOperationCacheLoader(
+      String batchOperationIndexName);
 
   CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(String processIndexName);
 

@@ -26,6 +26,7 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
+import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
@@ -74,6 +75,12 @@ final class CamundaExporterTest {
 
   private static final class NoopExporterEntityCacheProvider
       implements ExporterEntityCacheProvider {
+
+    @Override
+    public CacheLoader<String, CachedBatchOperationEntity> getBatchOperationCacheLoader(
+        final String batchOperationIndexName) {
+      return k -> null;
+    }
 
     @Override
     public CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(
