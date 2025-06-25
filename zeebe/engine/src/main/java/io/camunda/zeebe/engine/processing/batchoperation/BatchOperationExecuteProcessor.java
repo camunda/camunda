@@ -44,6 +44,7 @@ public final class BatchOperationExecuteProcessor
       LoggerFactory.getLogger(BatchOperationExecuteProcessor.class);
 
   private static final int BATCH_SIZE = 10;
+  private static final int HEARTBEAT_INTERVAL = 1000;
 
   private final TypedCommandWriter commandWriter;
   private final StateWriter stateWriter;
@@ -77,7 +78,7 @@ public final class BatchOperationExecuteProcessor
   @SuppressWarnings("checkstyle:MissingSwitchDefault")
   public void processRecord(final TypedRecord<BatchOperationExecutionRecord> command) {
     final var executionRecord = command.getValue();
-    LOGGER.debug(
+    LOGGER.trace(
         "Processing new command with key '{}' on partition{} : {}",
         command.getKey(),
         partitionId,
@@ -104,7 +105,7 @@ public final class BatchOperationExecuteProcessor
       LOGGER.debug(
           "No items to process for BatchOperation {} on partition {}", batchKey, partitionId);
 
-      appendBatchOperationExecutionExecutedEvent(command.getValue(), Collections.emptySet());
+      appendBatchOperationExecutionExecutedEvent(batchOperation, Collections.emptySet());
       appendBatchOperationExecutionCompletedEvent(command.getValue());
 
       metrics.stopTotalExecutionLatencyMeasure(batchKey);
@@ -119,14 +120,10 @@ public final class BatchOperationExecuteProcessor
     final var handler = handlers.get(batchOperation.getBatchOperationType());
     entityKeys.forEach(entityKey -> handler.execute(entityKey, batchOperation));
 
-    appendBatchOperationExecutionExecutedEvent(command.getValue(), Set.copyOf(entityKeys));
+    appendBatchOperationExecutionExecutedEvent(batchOperation, Set.copyOf(entityKeys));
     appendBatchOperationExecuteCommand(command, batchKey, batchOperation);
 
     metrics.startExecuteCycleLatencyMeasure(batchKey, batchOperation.getBatchOperationType());
-  }
-
-  private PersistedBatchOperation getBatchOperation(final long batchOperationKey) {
-    return batchOperationState.get(batchOperationKey).orElse(null);
   }
 
   @Override
@@ -134,11 +131,15 @@ public final class BatchOperationExecuteProcessor
     return true;
   }
 
+  private PersistedBatchOperation getBatchOperation(final long batchOperationKey) {
+    return batchOperationState.get(batchOperationKey).orElse(null);
+  }
+
   private void appendBatchOperationExecuteCommand(
       final TypedRecord<BatchOperationExecutionRecord> command,
       final long batchKey,
       final PersistedBatchOperation batchOperation) {
-    LOGGER.debug(
+    LOGGER.trace(
         "Scheduling next batch for BatchOperation {} on partition {}", batchKey, partitionId);
     final var followupCommand = new BatchOperationExecutionRecord();
     followupCommand.setBatchOperationKey(batchKey);
@@ -165,16 +166,27 @@ public final class BatchOperationExecuteProcessor
   }
 
   private void appendBatchOperationExecutionExecutedEvent(
-      final BatchOperationExecutionRecord executionRecord, final Set<Long> keys) {
+      final PersistedBatchOperation batchOperation, final Set<Long> keys) {
     final var batchExecute = new BatchOperationExecutionRecord();
-    batchExecute.setBatchOperationKey(executionRecord.getBatchOperationKey());
+
+    // Occasionally log a heartbeat
+    // This modulo only works good if batch size is a divider of HEARTBEAT_INTERVAL
+    if (batchOperation.getNumExecutedItems() % HEARTBEAT_INTERVAL == 0) {
+      LOGGER.debug(
+          "Batch operation {} on partition {} has executed {} of {} items.",
+          batchOperation.getKey(),
+          partitionId,
+          batchOperation.getNumExecutedItems(),
+          batchOperation.getNumTotalItems());
+    }
+
+    batchExecute.setBatchOperationKey(batchOperation.getKey());
     batchExecute.setItemKeys(keys);
     stateWriter.appendFollowUpEvent(
-        executionRecord.getBatchOperationKey(),
+        batchOperation.getKey(),
         BatchOperationExecutionIntent.EXECUTED,
         batchExecute,
-        FollowUpEventMetadata.of(
-            b -> b.batchOperationReference(executionRecord.getBatchOperationKey())));
+        FollowUpEventMetadata.of(b -> b.batchOperationReference(batchOperation.getKey())));
   }
 
   private void appendBatchOperationExecutionCompletedEvent(
