@@ -48,8 +48,7 @@ public class AdminUserCheckFilter extends OncePerRequestFilter {
     // Skip redirect logic for loading assets, e.g., CSS and JS files
     final var requestURI = request.getRequestURI();
     final String setupPath = request.getContextPath() + REDIRECT_PATH;
-    if (requestURI.equals(setupPath)
-        || requestURI.contains(ASSETS_PATH)) {
+    if (requestURI.equals(setupPath) || requestURI.contains(ASSETS_PATH)) {
       filterChain.doFilter(request, response);
       return;
     }
