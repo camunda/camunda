@@ -17,7 +17,16 @@ import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.db.AccessMetricsConfiguration;
+import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
+import io.camunda.zeebe.db.ConsistencyChecksSettings;
 import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
+import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
+import io.camunda.zeebe.engine.state.routing.DbRoutingState;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
@@ -25,9 +34,12 @@ import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -63,14 +75,19 @@ public class RestoreManager {
       return CompletableFuture.failedFuture(e);
     }
 
-    final var partitionToRestore = collectPartitions();
+    final var localBrokerId = configuration.getCluster().getNodeId();
+    final var localMember = MemberId.from(String.valueOf(localBrokerId));
+    final var partitionToRestore = collectPartitions(localMember);
 
     final var partitionIds = partitionToRestore.stream().map(p -> p.partition().id().id()).toList();
     LOG.info("Restoring partitions {}", partitionIds);
 
     return CompletableFuture.allOf(
             partitionToRestore.stream()
-                .map(partition -> restorePartition(partition, backupId, validateConfig))
+                .map(
+                    partition ->
+                        restorePartition(partition, backupId, validateConfig)
+                            .thenCompose(ok -> restoreRoutingInfo(partition, dataDirectory)))
                 .toArray(CompletableFuture[]::new))
         .exceptionallyComposeAsync(error -> logFailureAndDeleteDataDirectory(dataDirectory, error));
   }
@@ -122,9 +139,46 @@ public class RestoreManager {
         .whenComplete((ok, error) -> MicrometerUtil.close(registry));
   }
 
-  private Set<InstrumentedRaftPartition> collectPartitions() {
-    final var localBrokerId = configuration.getCluster().getNodeId();
-    final var localMember = MemberId.from(String.valueOf(localBrokerId));
+  private CompletableFuture<Void> restoreRoutingInfo(
+      final InstrumentedRaftPartition partition, final Path targetDirectory) {
+    final var raftPartition = partition.partition();
+    final var directory = raftPartition.dataDirectory();
+    final var factory =
+        new ZeebeRocksDbFactory<ZbColumnFamilies>(
+            new RocksDbConfiguration(),
+            new ConsistencyChecksSettings(),
+            new AccessMetricsConfiguration(Kind.NONE, raftPartition.id().id()),
+            () -> null);
+    return CompletableFuture.runAsync(
+        () -> {
+          try (final var db = factory.createDb(directory)) {
+            final var ctx = db.createContext();
+            final var state = new DbRoutingState(db, ctx);
+            final var routingState = RoutingUtil.routingState(1L, state);
+            LOG.debug(
+                "Restoring RoutingState for partition {}: {}",
+                raftPartition.id().id(),
+                routingState);
+            final var bytes = new ProtoBufSerializer().serializeRoutingState(routingState);
+            final var routingInfoFile =
+                targetDirectory.resolve(
+                    PersistedClusterConfiguration.PERSISTED_ROUTING_INFO_FILENAME_FORMAT.formatted(
+                        raftPartition.id().id()));
+            try (final var file =
+                FileChannel.open(routingInfoFile, Set.of(StandardOpenOption.TRUNCATE_EXISTING))) {
+              if (file.write(ByteBuffer.wrap(bytes)) < bytes.length) {
+                throw new IOException(
+                    "Failed to write completely routing info to file, written %d bytes: %d, expected bytes: %d"
+                        .formatted(file.position(), bytes.length));
+              }
+            } catch (final IOException e) {
+              throw new RuntimeException(e);
+            }
+          }
+        });
+  }
+
+  private Set<InstrumentedRaftPartition> collectPartitions(final MemberId localMember) {
     final var clusterTopology =
         new PartitionDistribution(
             StaticConfigurationGenerator.getStaticConfiguration(configuration, localMember)
