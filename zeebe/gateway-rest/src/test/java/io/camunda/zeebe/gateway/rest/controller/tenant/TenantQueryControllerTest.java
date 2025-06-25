@@ -662,6 +662,39 @@ public class TenantQueryControllerTest extends RestControllerTest {
             """);
   }
 
+  @Test
+  void shouldListMembersOfTypeGroup() {
+    // given
+    when(tenantServices.searchMembers(any(TenantQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<TenantMemberEntity>()
+                .total(3)
+                .items(
+                    List.of(
+                        new TenantMemberEntity("group1", EntityType.GROUP),
+                        new TenantMemberEntity("group2", EntityType.GROUP),
+                        new TenantMemberEntity("group3", EntityType.GROUP)))
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/%s/group-ids/search".formatted(TENANT_BASE_URL, "tenantId"))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            // language=json
+            """
+                {"items":[{"groupId":"group1"},{"groupId":"group2"},{"groupId":"group3"}],"page":{"totalItems":3}}
+            """);
+  }
+
   public static Stream<Arguments> invalidTenantSearchQueries() {
     return Stream.of(
         Arguments.of(

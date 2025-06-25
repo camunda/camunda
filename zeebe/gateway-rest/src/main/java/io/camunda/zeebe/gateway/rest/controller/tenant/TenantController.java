@@ -31,6 +31,8 @@ import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantClientSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantClientSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.TenantGroupSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.TenantGroupSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResult;
@@ -222,6 +224,29 @@ public class TenantController {
         .fold(
             RestErrorMapper::mapProblemToResponse,
             groupQuery -> searchGroupsInTenant(tenantId, groupQuery));
+  }
+
+  @CamundaPostMapping(path = "/{tenantId}/group-ids/search")
+  public ResponseEntity<TenantGroupSearchResult> searchGroupIdsInTenant(
+      @PathVariable final String tenantId,
+      @RequestBody(required = false) final TenantGroupSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toTenantQuery(query)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            tenantQuery -> searchGroupIdsInTenant(tenantId, tenantQuery));
+  }
+
+  private ResponseEntity<TenantGroupSearchResult> searchGroupIdsInTenant(
+      final String tenantId, final TenantQuery query) {
+    try {
+      final var result =
+          tenantServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .searchMembers(buildTenantMemberQuery(tenantId, EntityType.GROUP, query));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toTenantGroupSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
   }
 
   @CamundaPostMapping(path = "/{tenantId}/roles/search")
