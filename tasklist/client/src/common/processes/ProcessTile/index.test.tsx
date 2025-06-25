@@ -114,10 +114,10 @@ describe('ProcessTile', () => {
     ).toBeDisabled();
   });
 
-  it('should call onStartProcess', () => {
+  it('should call onStartProcess', async () => {
     const onStartProcess = vi.fn();
 
-    render(
+    const {user} = render(
       <ProcessTile
         process={createMockProcess('processId')}
         isFirst={false}
@@ -135,7 +135,7 @@ describe('ProcessTile', () => {
     expect(tile).toBeInTheDocument();
     expect(onStartProcess).not.toHaveBeenCalled();
 
-    within(tile).getByRole('button', {name: 'Start process'}).click();
+    await user.click(within(tile).getByRole('button', {name: 'Start process'}));
     expect(onStartProcess).toHaveBeenCalled();
   });
 

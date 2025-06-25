@@ -65,13 +65,6 @@ export default defineConfig(({mode}) => ({
     banner: '/*! licenses: /assets/vendor.LICENSE.txt */',
     legalComments: 'none',
   },
-  css: {
-    preprocessorOptions: {
-      scss: {
-        api: 'modern-compiler',
-      },
-    },
-  },
   resolve: {
     alias: {
       src: path.resolve(__dirname, './src'),
@@ -83,7 +76,7 @@ export default defineConfig(({mode}) => ({
     include: ['./src/**/*.{test,spec}.?(c|m)[jt]s?(x)'],
     setupFiles: ['./src/setupTests.ts'],
     restoreMocks: true,
-    reset: true,
+    mockReset: true,
     coverage: {
       provider: 'istanbul',
       exclude: [
@@ -94,12 +87,14 @@ export default defineConfig(({mode}) => ({
         `${outDir}/**`,
         'src/modules/mockServer/startBrowserMocking.tsx',
       ],
-      reporters: ['html', 'default', 'hanging-process'],
+      reporter: ['html', 'default', 'hanging-process'],
       all: true,
-      lines: 80,
-      functions: 80,
-      branches: 80,
-      statements: 80,
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 80,
+        statements: 80,
+      },
     },
   },
 }));
