@@ -39,7 +39,7 @@ type RequestParams = {
   headers?: RequestInit['headers'];
   body?: string | unknown;
   signal?: RequestInit['signal'];
-  responseType?: 'json' | 'text';
+  responseType?: 'json' | 'text' | 'none';
 };
 
 async function requestWithThrow<T>({
@@ -54,12 +54,17 @@ async function requestWithThrow<T>({
     const response = await request({url, method, body, headers, signal});
 
     if (response.ok) {
-      return {
-        response: (await (responseType === 'text'
-          ? response.text()
-          : response.json())) as T,
-        error: null,
-      };
+      if (responseType === 'none') {
+        return {response: null as T, error: null};
+      }
+
+      if (responseType === 'text') {
+        return {response: (await response.text()) as T, error: null};
+      }
+
+      if (responseType === 'json') {
+        return {response: (await response.json()) as T, error: null};
+      }
     }
 
     return {
