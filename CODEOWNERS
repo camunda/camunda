@@ -15,6 +15,7 @@
 
 # C8Run by Distro team
 .github/workflows/c8run* @camunda/distribution
+/c8run/ @camunda/distribution
 
 # Camunda Ex Team Clients, SDK and CPT
 /clients/*        @camunda/camundaex
