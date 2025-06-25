@@ -9,6 +9,8 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.instance.EventScopeInstance;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
+import java.util.Optional;
+import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 
 public interface EventScopeInstanceState {
@@ -29,6 +31,18 @@ public interface EventScopeInstanceState {
    * @return the next event trigger or null if none exist
    */
   EventTrigger peekEventTrigger(long eventScopeKey);
+
+  /**
+   * Returns the first event trigger that matches the provided predicate. If none were found,
+   * returns an empty optional.
+   *
+   * @param eventScopeKey the scope of the event trigger
+   * @param predicate the predicate to match the event trigger against
+   * @return the first event trigger that matches the predicate, or an empty optional if none were
+   *     found
+   */
+  Optional<EventTrigger> findEventTrigger(
+      final long eventScopeKey, final Predicate<EventTrigger> predicate);
 
   /**
    * Checks if the event scope can be triggered for the given event.
