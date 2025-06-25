@@ -294,6 +294,8 @@ public class StateControllerImpl implements StateController {
                   "Expected to take snapshot for partition %d, but was called for partition %d",
                   partitionId, partition)));
     }
+    LOG.debug(
+        "Taking snapshot for partition {} at position {}", partitionId, lastProcessedPosition);
     return takeTransientSnapshot(lastProcessedPosition)
         .andThen(PersistableSnapshot::persist, control);
   }
