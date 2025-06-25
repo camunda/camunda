@@ -13,6 +13,8 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -23,9 +25,13 @@ public class BatchOperationCreatedHandler
     implements ExportHandler<BatchOperationEntity, BatchOperationCreationRecordValue> {
 
   private final String indexName;
+  private final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache;
 
-  public BatchOperationCreatedHandler(final String indexName) {
+  public BatchOperationCreatedHandler(
+      final String indexName,
+      final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache) {
     this.indexName = indexName;
+    this.batchOperationCache = batchOperationCache;
   }
 
   @Override
@@ -61,6 +67,11 @@ public class BatchOperationCreatedHandler
         .setId(String.valueOf(value.getBatchOperationKey()))
         .setType(OperationType.valueOf(value.getBatchOperationType().name()))
         .setState(BatchOperationState.CREATED);
+
+    // update local cache so that the batch operation info is available immediately to operation
+    // status handlers
+    final var cachedEntity = new CachedBatchOperationEntity(entity.getId(), entity.getType());
+    batchOperationCache.put(cachedEntity.batchOperationId(), cachedEntity);
   }
 
   @Override

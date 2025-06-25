@@ -8,6 +8,8 @@
 package io.camunda.exporter.handlers.batchoperation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -17,6 +19,7 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -28,8 +31,10 @@ class BatchOperationCreatedHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-" + BatchOperationTemplate.INDEX_NAME;
+
+  private final ExporterEntityCache batchOperationCache = mock(ExporterEntityCache.class);
   private final BatchOperationCreatedHandler underTest =
-      new BatchOperationCreatedHandler(indexName);
+      new BatchOperationCreatedHandler(indexName, batchOperationCache);
 
   @Test
   void testGetHandledValueType() {
@@ -95,6 +100,8 @@ class BatchOperationCreatedHandlerTest {
     assertThat(entity.getType())
         .isEqualTo(OperationType.valueOf(recordValue.getBatchOperationType().name()));
     assertThat(entity.getState()).isEqualTo(BatchOperationEntity.BatchOperationState.CREATED);
+
+    verify(batchOperationCache).put(eq(entity.getId()), any());
   }
 
   @Test

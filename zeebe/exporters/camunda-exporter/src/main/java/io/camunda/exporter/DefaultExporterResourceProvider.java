@@ -106,6 +106,7 @@ import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTempla
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
+import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
@@ -127,6 +128,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   private IndexDescriptors indexDescriptors;
   private Set<ExportHandler<?, ?>> exportHandlers;
   private Map<String, ErrorHandler> indicesWithCustomErrorHandlers;
+  private ExporterEntityCacheImpl<String, CachedBatchOperationEntity> batchOperationCache;
   private ExporterEntityCacheImpl<String, CachedFormEntity> formCache;
   private ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache;
 
@@ -141,6 +143,13 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
     final var isElasticsearch =
         ConnectionTypes.isElasticSearch(configuration.getConnect().getType());
     indexDescriptors = new IndexDescriptors(globalPrefix, isElasticsearch);
+
+    batchOperationCache =
+        new ExporterEntityCacheImpl<>(
+            configuration.getBatchOperationCache().getMaxCacheSize(),
+            entityCacheProvider.getBatchOperationCacheLoader(
+                indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
+            new CaffeineCacheStatsCounter(NAMESPACE, "batchOperation", meterRegistry));
 
     processCache =
         new ExporterEntityCacheImpl<>(
@@ -272,7 +281,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(VariableTemplate.class).getFullQualifiedName()),
             // Batch Operation Handler
             new BatchOperationCreatedHandler(
-                indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName(),
+                batchOperationCache),
             new BatchOperationStartedHandler(
                 indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
             new BatchOperationLifecycleManagementHandler(
@@ -280,13 +290,17 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new BatchOperationChunkCreatedHandler(
                 indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
             new ProcessInstanceCancellationOperationHandler(
-                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+                batchOperationCache),
             new ProcessInstanceMigrationOperationHandler(
-                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+                batchOperationCache),
             new ProcessInstanceModificationOperationHandler(
-                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+                batchOperationCache),
             new ResolveIncidentOperationHandler(
-                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName())));
+                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+                batchOperationCache)));
 
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
       exportHandlers.add(
