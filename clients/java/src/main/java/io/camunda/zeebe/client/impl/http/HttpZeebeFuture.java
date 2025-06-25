@@ -45,8 +45,7 @@ public class HttpZeebeFuture<RespT> extends CompletableFuture<RespT> implements 
   public RespT join() {
     try {
       LOG.warn("{} is deprecated and will be removed in version 8.10. Please migrate to {}",
-          ZeebeClient.class.getSimpleName(),
-          CamundaClient.class.getSimpleName());
+          ZeebeClient.class.getSimpleName(), CamundaClient.class.getSimpleName());
       return get();
     } catch (final ExecutionException e) {
       throw unwrapExecutionException(e);
@@ -69,8 +68,7 @@ public class HttpZeebeFuture<RespT> extends CompletableFuture<RespT> implements 
   public RespT join(final long timeout, final TimeUnit unit) {
     try {
       LOG.warn("{} is deprecated and will be removed in version 8.10. Please migrate to {}",
-          ZeebeClient.class.getSimpleName(),
-          CamundaClient.class.getSimpleName());
+          ZeebeClient.class.getSimpleName(), CamundaClient.class.getSimpleName());
       return super.get(timeout, unit);
     } catch (final ExecutionException e) {
       throw unwrapExecutionException(e);
