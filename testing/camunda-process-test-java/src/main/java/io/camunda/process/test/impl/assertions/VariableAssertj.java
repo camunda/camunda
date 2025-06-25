@@ -19,7 +19,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.search.filter.ElementInstanceFilter;
+import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Variable;
+import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.impl.assertions.util.AssertionJsonMapper;
 import java.util.Arrays;
 import java.util.Collections;
@@ -30,6 +34,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
@@ -46,8 +51,25 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     this.dataSource = dataSource;
   }
 
-  public void hasLocalVariableNames(final long processInstanceKey, final String... variableNames) {
-    hasVariableNames(() -> getAllProcessInstanceVariables(processInstanceKey), variableNames);
+  public void hasLocalVariableNames(
+      final long processInstanceKey,
+      final ElementSelector selector,
+      final String... variableNames) {
+
+    withLocalVariableAssertion(
+        processInstanceKey,
+        selector,
+        instance -> {
+          hasVariableNames(
+              () ->
+                  toMap(
+                      dataSource.findVariables(
+                          filter ->
+                              filter
+                                  .processInstanceKey(processInstanceKey)
+                                  .scopeKey(instance.getElementInstanceKey()))),
+              variableNames);
+        });
   }
 
   public void hasVariableNames(final long processInstanceKey, final String... variableNames) {
@@ -90,10 +112,19 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
   }
 
   public void hasLocalVariable(
-      final long processInstanceKey, final String variableName, final Object variableValue) {
+      final long processInstanceKey,
+      final ElementSelector selector,
+      final String variableName,
+      final Object variableValue) {
 
-    hasVariable(
-        variableName, variableValue, () -> getAllProcessInstanceVariables(processInstanceKey));
+    withLocalVariableAssertion(
+        processInstanceKey,
+        selector,
+        instance ->
+            hasVariable(
+                variableName,
+                variableValue,
+                () -> findLocalVariables(processInstanceKey, instance.getElementInstanceKey())));
   }
 
   public void hasVariable(
@@ -144,9 +175,23 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
   }
 
   public void hasLocalVariables(
-      final long processInstanceKey, final Map<String, Object> expectedVariables) {
+      final long processInstanceKey,
+      final ElementSelector selector,
+      final Map<String, Object> expectedVariables) {
 
-    hasVariables(expectedVariables, () -> getAllProcessInstanceVariables(processInstanceKey));
+    withLocalVariableAssertion(
+        processInstanceKey,
+        selector,
+        instance ->
+            hasVariables(
+                expectedVariables,
+                () ->
+                    toMap(
+                        dataSource.findVariables(
+                            filter ->
+                                filter
+                                    .processInstanceKey(processInstanceKey)
+                                    .scopeKey(instance.getElementInstanceKey())))));
   }
 
   public void hasVariables(
@@ -212,12 +257,65 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     }
   }
 
-  private Map<String, String> getGlobalProcessInstanceVariables(final long processInstanceKey) {
-    return toMap(dataSource.findGlobalVariablesByProcessInstanceKey(processInstanceKey));
+  private void withLocalVariableAssertion(
+      final long processInstanceKey,
+      final ElementSelector selector,
+      final Consumer<ElementInstance> assertionCallback) {
+
+    awaitElementInstanceAssertion(
+        f -> {
+          f.processInstanceKey(processInstanceKey);
+          selector.applyFilter(f);
+        },
+        elementInstances -> {
+          final Optional<ElementInstance> instance =
+              elementInstances.stream().filter(selector::test).findFirst();
+
+          assertThat(instance)
+              .withFailMessage(
+                  "No element [%s] found for process instance [key: %s]",
+                  selector.describe(), processInstanceKey)
+              .isPresent();
+
+          assertionCallback.accept(instance.get());
+        });
   }
 
-  private Map<String, String> getAllProcessInstanceVariables(final long processInstanceKey) {
-    return toMap(dataSource.findVariables(f -> f.processInstanceKey(processInstanceKey)));
+  private void awaitElementInstanceAssertion(
+      final Consumer<ElementInstanceFilter> filter,
+      final Consumer<List<ElementInstance>> assertion) {
+    // If await() times out, the exception doesn't contain the assertion error. Use a reference to
+    // store the error's failure message.
+    final AtomicReference<String> failureMessage = new AtomicReference<>("?");
+    try {
+      Awaitility.await()
+          .ignoreException(ClientException.class)
+          .untilAsserted(
+              () -> dataSource.findElementInstances(filter),
+              elementInstances -> {
+                try {
+                  assertion.accept(elementInstances);
+                } catch (final AssertionError e) {
+                  failureMessage.set(e.getMessage());
+                  throw e;
+                }
+              });
+
+    } catch (final ConditionTimeoutException ignore) {
+      fail(failureMessage.get());
+    }
+  }
+
+  private Map<String, String> findLocalVariables(
+      final long processInstanceKey, final long elementInstanceKey) {
+
+    return toMap(
+        dataSource.findVariables(
+            filter -> filter.processInstanceKey(processInstanceKey).scopeKey(elementInstanceKey)));
+  }
+
+  private Map<String, String> getGlobalProcessInstanceVariables(final long processInstanceKey) {
+    return toMap(dataSource.findGlobalVariablesByProcessInstanceKey(processInstanceKey));
   }
 
   private Map<String, String> toMap(final List<Variable> variables) {

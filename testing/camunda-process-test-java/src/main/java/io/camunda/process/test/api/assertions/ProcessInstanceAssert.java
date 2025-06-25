@@ -310,15 +310,31 @@ public interface ProcessInstanceAssert {
   ProcessInstanceAssert hasVariableNames(String... variableNames);
 
   /**
-   * Verifies that the process instance has the given local variables. The verification fails if at
-   * least one variable doesn't exist.
+   * Verifies that the given BPMN element has the specified local variables. Local variables are
+   * scoped to the element and do not appear in the parent scope. The verification fails if at least
+   * one variable doesn't exist.
    *
-   * <p>The assertion waits until all variables exist.
+   * <p>The assertion waits until all local variables exist for the element.
    *
+   * @param elementId the id of the BPMN element
    * @param variableNames the variable names
    * @return the assertion object
    */
-  ProcessInstanceAssert hasLocalVariableNames(String... variableNames);
+  ProcessInstanceAssert hasLocalVariableNames(String elementId, String... variableNames);
+
+  /**
+   * Verifies that the given BPMN element has the specified local variables. Local variables are
+   * scoped to the element and do not appear in the parent scope. The verification fails if at least
+   * one variable doesn't exist.
+   *
+   * <p>The assertion waits until all local variables exist for the element.
+   *
+   * @param selector the selector for the BPMN element
+   * @param variableNames the variable names
+   * @return the assertion object
+   * @see ElementSelectors
+   */
+  ProcessInstanceAssert hasLocalVariableNames(ElementSelector selector, String... variableNames);
 
   /**
    * Verifies that the process instance has the variable with the given value. The verification
@@ -333,16 +349,35 @@ public interface ProcessInstanceAssert {
   ProcessInstanceAssert hasVariable(String variableName, Object variableValue);
 
   /**
-   * Verifies that the process instance has the local variable with the given value. The
-   * verification fails if the variable doesn't exist or has a different value.
+   * Verifies that the given BPMN element has the local variable with the specified value. Local
+   * variables are scoped to the element and do not appear in the parent scope. The verification
+   * fails if the variable doesn't exist or has a different value.
    *
    * <p>The assertion waits until the variable exists and has the given value.
    *
+   * @param elementId the id of the BPMN element
    * @param variableName the variable name
    * @param variableValue the variable value
    * @return the assertion object
    */
-  ProcessInstanceAssert hasLocalVariable(final String variableName, final Object variableValue);
+  ProcessInstanceAssert hasLocalVariable(
+      String elementId, String variableName, Object variableValue);
+
+  /**
+   * Verifies that the given BPMN element has the local variable with the specified value. Local
+   * variables are scoped to the element and do not appear in the parent scope. The verification
+   * fails if the variable doesn't exist or has a different value.
+   *
+   * <p>The assertion waits until the variable exists and has the given value.
+   *
+   * @param selector the selector for the BPMN element
+   * @param variableName the variable name
+   * @param variableValue the variable value
+   * @return the assertion object
+   * @see ElementSelectors
+   */
+  ProcessInstanceAssert hasLocalVariable(
+      ElementSelector selector, String variableName, Object variableValue);
 
   /**
    * Verifies that the process instance has the given variables. The verification fails if at least
@@ -356,15 +391,31 @@ public interface ProcessInstanceAssert {
   ProcessInstanceAssert hasVariables(Map<String, Object> variables);
 
   /**
-   * Verifies that the process instance has the given local variables. The verification fails if at
-   * least one variable doesn't exist or has a different value.
+   * Verifies that the given element associated with the process instance has the given local
+   * variables. Local variables are scoped to the element and do not appear in the parent scope. The
+   * verification fails if at least one variable doesn't exist or has a different value.
    *
-   * <p>The assertion waits until all variables exist and have the given value.
+   * <p>The assertion waits until all variables exist and have the given values.
    *
+   * @param elementId the id of the BPMN element
    * @param variables the expected variables
    * @return the assertion object
    */
-  ProcessInstanceAssert hasLocalVariables(Map<String, Object> variables);
+  ProcessInstanceAssert hasLocalVariables(String elementId, Map<String, Object> variables);
+
+  /**
+   * Verifies that the given element associated with the process instance has the given local
+   * variables. Local variables are scoped to the element and do not appear in the parent scope. The
+   * verification fails if at least one variable doesn't exist or has a different value.
+   *
+   * <p>The assertion waits until all variables exist and have the given values.
+   *
+   * @param selector the selector for the BPMN element
+   * @param variables the expected variables
+   * @return the assertion object
+   * @see ElementSelectors
+   */
+  ProcessInstanceAssert hasLocalVariables(ElementSelector selector, Map<String, Object> variables);
 
   /**
    * Verifies that the process instance has no active incidents. The verification fails if there is
