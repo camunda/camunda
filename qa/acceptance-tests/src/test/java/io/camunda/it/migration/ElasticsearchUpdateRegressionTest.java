@@ -52,7 +52,7 @@ public class ElasticsearchUpdateRegressionTest {
   public static void setup() {
     final var esUrl = String.format("http://%s:%d", ELASTIC_ALIAS, 9200);
     final GenericContainer<?> schemaManagerContainer =
-        new GenericContainer<>("camunda/zeebe:8.7.0-SNAPSHOT")
+        new GenericContainer<>("camunda/zeebe:8.7-SNAPSHOT")
             .withCreateContainerCmdModifier(
                 (final CreateContainerCmd cmd) -> cmd.withEntrypoint("/usr/local/zeebe/bin/schema"))
             .withNetwork(NETWORK)
