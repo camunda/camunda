@@ -21,6 +21,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
@@ -30,6 +31,11 @@ class AdminUserCheckFilterTest {
   @Mock private final HttpServletRequest request = mock(HttpServletRequest.class);
   @Mock private final HttpServletResponse response = mock(HttpServletResponse.class);
   @Mock private final FilterChain filterChain = mock(FilterChain.class);
+
+  @BeforeEach
+  void setup() {
+    when(request.getRequestURI()).thenReturn("/login");
+  }
 
   @Test
   void shouldRedirectIfNoAdminUserExistsOrIsConfigured() throws ServletException, IOException {
@@ -99,11 +105,27 @@ class AdminUserCheckFilterTest {
   }
 
   @Test
-  void shouldNotRedirectOIfRequestIsToSetupPath() throws ServletException, IOException {
+  void shouldNotRedirectIfRequestIsToSetupPath() throws ServletException, IOException {
     // given
     final var securityConfig = new SecurityConfiguration();
     when(request.getContextPath()).thenReturn("");
     when(request.getRequestURI()).thenReturn("/identity/setup");
+    final AdminUserCheckFilter adminUserCheckFilter =
+        new AdminUserCheckFilter(securityConfig, roleServices);
+
+    // when
+    adminUserCheckFilter.doFilterInternal(request, response, filterChain);
+
+    // then
+    verify(filterChain).doFilter(request, response);
+  }
+
+  @Test
+  void shouldNotRedirectIfRequestIsToAssetsPath() throws ServletException, IOException {
+    // given
+    final var securityConfig = new SecurityConfiguration();
+    when(request.getContextPath()).thenReturn("");
+    when(request.getRequestURI()).thenReturn("/identity/assets/some-asset.js");
     final AdminUserCheckFilter adminUserCheckFilter =
         new AdminUserCheckFilter(securityConfig, roleServices);
 

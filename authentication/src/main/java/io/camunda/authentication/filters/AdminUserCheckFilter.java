@@ -27,6 +27,7 @@ public class AdminUserCheckFilter extends OncePerRequestFilter {
   public static final String ADMIN_ROLE_ID = DefaultRole.ADMIN.getId();
   public static final String USER_MEMBERS = "users";
   public static final String REDIRECT_PATH = "/identity/setup";
+  public static final String ASSETS_PATH = "/identity/assets";
   private static final Logger LOG = LoggerFactory.getLogger(AdminUserCheckFilter.class);
   private final SecurityConfiguration securityConfig;
   private final RoleServices roleServices;
