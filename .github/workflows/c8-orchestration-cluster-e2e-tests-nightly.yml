@@ -1,3 +1,4 @@
+---
 name: C8 Orchestration Cluster E2E Tests Nightly
 
 on:
@@ -12,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [stable/8.6, stable/8.7, main]
+        branch: [stable/8.6, stable/8.7, main] # Run all three branches in parallel
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -20,10 +21,10 @@ jobs:
         with:
           ref: ${{ matrix.branch }}
 
-      - name: Start Camunda Services
+      - name: Start Camunda
         run: |
           if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then
-            echo "Using single services for stable branch"
+            echo "Using single services for Camunda 8.6 and 8.7"
             DATABASE=elasticsearch docker compose up -d operate tasklist 
           else
             echo "Using standalone camunda container"
@@ -42,17 +43,21 @@ jobs:
           ready=false
           for i in {1..90}; do
             if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then
-              tasklist_status=$(curl -s -m 5 http://localhost:8082 || echo "Failed")
+              tasklist_status=$(curl -s -m 5 http://localhost:8080 || echo "Failed")
               operate_status=$(curl -s -m 5 http://localhost:8081 || echo "Failed")
+            else
+              tasklist_status=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
+              operate_status=$(curl -s -m 5 http://localhost:8080/operate || echo "Failed")
+              identity_status=$(curl -s -m 5 http://localhost:8080/identity || echo "Failed")
+            fi
+
+            if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then
               if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" ]]; then
                 echo "Services are ready!"
                 ready=true
                 break
               fi
             else
-              tasklist_status=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
-              operate_status=$(curl -s -m 5 http://localhost:8080/operate || echo "Failed")
-              identity_status=$(curl -s -m 5 http://localhost:8080/identity || echo "Failed")
               if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" && "$identity_status" != "Failed" ]]; then
                 echo "Services are ready!"
                 ready=true
@@ -61,9 +66,9 @@ jobs:
             fi
 
             echo "Waiting for services... ($i/90)"
-            echo "Tasklist: $tasklist_status"
-            echo "Operate: $operate_status"
-            [[ -n "$identity_status" ]] && echo "Identity: $identity_status"
+            echo "Response from Tasklist: $tasklist_status"
+            echo "Response from Operate: $operate_status"
+            [[ -n "$identity_status" ]] && echo "Response from Identity: $identity_status"
             sleep 10
           done
 
@@ -105,13 +110,14 @@ jobs:
           method: approle
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false
+          exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
             secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
             secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
             secret/data/products/camunda/ci/github-actions SLACK_CORE_DOMAIN_BOT_TOKEN;
 
       - name: Install Playwright Browsers
+        shell: bash
         run: npx playwright install --with-deps chromium
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
@@ -122,6 +128,7 @@ jobs:
           python-version: "3.x"
 
       - name: Run tests
+        shell: bash
         env:
           LOCAL_TEST: "false"
           CAMUNDA_AUTH_STRATEGY: "BASIC"
@@ -132,7 +139,7 @@ jobs:
           VERSION: ${{ matrix.branch }}
         run: |
           if [[ "${{ matrix.branch }}" == "stable/8.6" || "${{ matrix.branch }}" == "stable/8.7" ]]; then
-            export CORE_APPLICATION_TASKLIST_URL="http://localhost:8082"
+            export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
             export CORE_APPLICATION_OPERATE_URL="http://localhost:8081"
             export ZEEBE_REST_ADDRESS="http://localhost:8089"
           else
@@ -145,10 +152,11 @@ jobs:
 
       - name: Publish test results to TestRail
         if: always()
+        shell: bash
         env:
           TESTRAIL_HOST: "https://camunda.testrail.com/"
-          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }}
-          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }}
+          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }} # Use the imported secret
+          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }} # Use the imported secret
           JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
           BRANCH_NAME: ${{ matrix.branch }}
         run: |

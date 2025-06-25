@@ -1,3 +1,4 @@
+---
 name: C8 Orchestration Cluster E2E Tests On Demand
 
 on:
@@ -50,11 +51,6 @@ jobs:
           echo "Detected base branch: $base"
           echo "base=$base" >> "$GITHUB_OUTPUT"
 
-      - name: Print input and base branch
-        run: |
-          echo "Input branch: ${{ github.event.inputs.branch }}"
-          echo "Detected base branch: ${{ steps.detect-base.outputs.base }}"
-
   c8-orchestration-cluster-e2e-tests:
     needs: validate-branch
     runs-on: ubuntu-latest
@@ -66,7 +62,7 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.branch }}
+          ref: ${{ github.event.inputs.branch }} # Use the branch selected by the user
 
       - name: Set NON_STANDALONE variable
         run: |
@@ -102,18 +98,27 @@ jobs:
             else
               tasklist_status=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
               operate_status=$(curl -s -m 5 http://localhost:8080/operate || echo "Failed")
-              # identity_status is not used, so removed to avoid shellcheck warning
+              identity_status=$(curl -s -m 5 http://localhost:8080/identity || echo "Failed")
             fi
 
-            if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" ]]; then
-              echo "Services are ready!"
-              ready=true
-              break
+            if [[ "$NON_STANDALONE" == "true" ]]; then
+              if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" ]]; then
+                echo "Services are ready!"
+                ready=true
+                break
+              fi
+            else
+              if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" && "$identity_status" != "Failed" ]]; then
+                echo "Services are ready!"
+                ready=true
+                break
+              fi
             fi
 
             echo "Waiting for services... ($i/90)"
-            echo "Tasklist: $tasklist_status"
-            echo "Operate: $operate_status"
+            echo "Response from Tasklist: $tasklist_status"
+            echo "Response from Operate: $operate_status"
+            [[ -n "$identity_status" ]] && echo "Response from Identity: $identity_status"
             sleep 10
           done
 
@@ -155,7 +160,7 @@ jobs:
           method: approle
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false
+          exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
             secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
             secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
