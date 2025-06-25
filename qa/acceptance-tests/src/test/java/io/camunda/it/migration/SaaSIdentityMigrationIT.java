@@ -61,6 +61,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -98,22 +99,16 @@ public class SaaSIdentityMigrationIT {
                   .forStatusCode(200)
                   .withReadTimeout(Duration.ofSeconds(10))
                   .withStartupTimeout(Duration.ofMinutes(5)));
-
-  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
   private static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
+  @AutoClose private final HttpClient httpClient = HttpClient.newHttpClient();
   private TestStandaloneIdentityMigration migration;
   private CamundaClient client;
 
   @BeforeAll
-  static void init() {
+  static void init(final WireMockRuntimeInfo wmRuntimeInfo) {
     BROKER.withCamundaExporter("http://" + ELASTIC.getHttpHostAddress()).start();
-  }
 
-  @BeforeEach
-  public void setup(final WireMockRuntimeInfo wmRuntimeInfo) throws Exception {
-    // given
     org.testcontainers.Testcontainers.exposeHostPorts(wmRuntimeInfo.getHttpPort());
     IDENTITY.withEnv(
         "IDENTITY_AUTH_PROVIDER_BACKEND_URL",
@@ -122,7 +117,11 @@ public class SaaSIdentityMigrationIT {
         "IDENTITY_AUTH_PROVIDER_ISSUER_URL",
         "http://host.testcontainers.internal:%d/".formatted(wmRuntimeInfo.getHttpPort()));
     IDENTITY.start();
+  }
 
+  @BeforeEach
+  public void setup(final WireMockRuntimeInfo wmRuntimeInfo) throws Exception {
+    // given
     stubConsoleClient();
 
     final IdentityMigrationProperties migrationProperties = new IdentityMigrationProperties();
@@ -154,6 +153,11 @@ public class SaaSIdentityMigrationIT {
                 });
 
     client = BROKER.newClientBuilder().build();
+  }
+
+  @AfterAll
+  static void cleanup() {
+    IDENTITY.stop();
   }
 
   @Test
@@ -598,8 +602,8 @@ public class SaaSIdentityMigrationIT {
             .header("Authorization", "Bearer %s".formatted(TOKEN))
             .build();
 
-    HTTP_CLIENT.send(request1, HttpResponse.BodyHandlers.ofString());
-    HTTP_CLIENT.send(request2, HttpResponse.BodyHandlers.ofString());
+    httpClient.send(request1, HttpResponse.BodyHandlers.ofString());
+    httpClient.send(request2, HttpResponse.BodyHandlers.ofString());
   }
 
   private void createGroups() throws IOException, InterruptedException, URISyntaxException {
@@ -627,7 +631,7 @@ public class SaaSIdentityMigrationIT {
             .header("Authorization", "Bearer %s".formatted(TOKEN))
             .build();
 
-    HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    httpClient.send(request, HttpResponse.BodyHandlers.ofString());
   }
 
   private void assignGroupsToUsers() throws IOException, URISyntaxException, InterruptedException {
@@ -661,7 +665,7 @@ public class SaaSIdentityMigrationIT {
             .header("Authorization", "Bearer %s".formatted(TOKEN))
             .build();
 
-    HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    httpClient.send(request, HttpResponse.BodyHandlers.ofString());
   }
 
   private List<io.camunda.migration.identity.dto.Group> getGroups()
@@ -678,11 +682,11 @@ public class SaaSIdentityMigrationIT {
             .build();
 
     final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
     return OBJECT_MAPPER.readValue(response.body(), new TypeReference<>() {});
   }
 
-  private void stubConsoleClient() {
+  private static void stubConsoleClient() {
     // IDENTITY
     stubFor(
         get("/.well-known/jwks.json")
@@ -760,7 +764,7 @@ public class SaaSIdentityMigrationIT {
   }
 
   // TODO: refactor this once https://github.com/camunda/camunda/issues/32721 is implemented
-  private static AuthorizationSearchResponse searchAuthorizations(final String restAddress)
+  private AuthorizationSearchResponse searchAuthorizations(final String restAddress)
       throws URISyntaxException, IOException, InterruptedException {
     final var encodedCredentials =
         Base64.getEncoder().encodeToString("%s:%s".formatted("demo", "demo").getBytes());
@@ -772,7 +776,7 @@ public class SaaSIdentityMigrationIT {
             .build();
 
     final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
     return OBJECT_MAPPER.readValue(response.body(), AuthorizationSearchResponse.class);
   }
 
