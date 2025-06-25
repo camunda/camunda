@@ -103,6 +103,8 @@ import io.camunda.zeebe.gateway.protocol.rest.RoleUserSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
 import io.camunda.zeebe.gateway.protocol.rest.TenantClientResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantClientSearchResult;
+import io.camunda.zeebe.gateway.protocol.rest.TenantGroupResult;
+import io.camunda.zeebe.gateway.protocol.rest.TenantGroupSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUserResult;
@@ -286,6 +288,16 @@ public final class SearchQueryResponseMapper {
         .items(
             ofNullable(result.items())
                 .map(SearchQueryResponseMapper::toTenants)
+                .orElseGet(List::of));
+  }
+
+  public static TenantGroupSearchResult toTenantGroupSearchQueryResponse(
+      final SearchQueryResult<TenantMemberEntity> result) {
+    return new TenantGroupSearchResult()
+        .page(toSearchQueryPageResponse(result))
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toTenantGroups)
                 .orElseGet(List::of));
   }
 
@@ -595,6 +607,14 @@ public final class SearchQueryResponseMapper {
 
   private static List<TenantClientResult> toTenantClients(final List<TenantMemberEntity> members) {
     return members.stream().map(SearchQueryResponseMapper::toTenantClient).toList();
+  }
+
+  private static List<TenantGroupResult> toTenantGroups(final List<TenantMemberEntity> members) {
+    return members.stream().map(SearchQueryResponseMapper::toTenantGroup).toList();
+  }
+
+  private static TenantGroupResult toTenantGroup(final TenantMemberEntity tenantMember) {
+    return new TenantGroupResult().groupId(tenantMember.id());
   }
 
   private static TenantUserResult toTenantUser(final TenantMemberEntity tenantMember) {
