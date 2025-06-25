@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -214,6 +215,7 @@ public class ResourceDeletionTest {
             RecordingExporter.records()
                 .onlyEvents()
                 .filter(r -> r.getIntent() != DeploymentIntent.RECONSTRUCTED_ALL)
+                .filter(r -> r.getIntent() != UsageMetricIntent.EXPORTED)
                 .limit(r -> r.getIntent().equals(ResourceDeletionIntent.DELETED)))
         .describedAs("Should write events in correct order")
         .extracting(Record::getIntent)
