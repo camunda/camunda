@@ -133,8 +133,7 @@ public class BatchOperationExecutionScheduler implements StreamProcessorLifecycl
             partitionId);
       }
 
-      metrics.recordItemsPerPartition(
-          keys.size(), batchOperation.getKey(), batchOperation.getBatchOperationType());
+      metrics.recordItemsPerPartition(keys.size(), batchOperation.getBatchOperationType());
 
       appendExecution(batchOperation.getKey(), taskResultBuilder);
 
