@@ -44,20 +44,12 @@ public final class MicrometerJobWorkerMetrics implements JobWorkerMetrics {
   @Override
   public void jobActivated(final int count) {
     jobActivatedCounter.increment(count);
+    zeebeJobActivatedCounter.increment(count);
   }
 
   @Override
   public void jobHandled(final int count) {
     jobHandledCounter.increment(count);
-  }
-
-  @Override
-  public void zeebeJobActivated(final int count) {
-    zeebeJobActivatedCounter.increment(count);
-  }
-
-  @Override
-  public void zeebeJobHandled(final int count) {
     zeebeJobHandledCounter.increment(count);
   }
 }

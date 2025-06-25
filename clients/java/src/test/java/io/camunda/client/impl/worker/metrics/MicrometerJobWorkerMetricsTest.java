@@ -40,7 +40,6 @@ final class MicrometerJobWorkerMetricsTest {
   void shouldCountActivatedJobs() {
     // when
     metrics.jobActivated(5);
-    metrics.zeebeJobActivated(5);
 
     // then
     Assertions.assertThat(meterRegistry).has(hasCounter(Names.JOB_ACTIVATED, tags));
@@ -55,7 +54,6 @@ final class MicrometerJobWorkerMetricsTest {
   void shouldCountHandledJobs() {
     // when
     metrics.jobHandled(3);
-    metrics.zeebeJobHandled(3);
 
     // then
     Assertions.assertThat(meterRegistry).has(hasCounter(Names.JOB_HANDLED, tags));

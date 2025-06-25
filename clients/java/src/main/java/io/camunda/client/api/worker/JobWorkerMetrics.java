@@ -40,30 +40,6 @@ public interface JobWorkerMetrics {
   default void jobHandled(final int count) {}
 
   /**
-   * Called every time one or more jobs are activated.
-   *
-   * <p>NOTE: this is called <em>before</em> the job is worked on.
-   *
-   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
-   *     io.camunda.client.api.worker.JobWorkerMetrics#jobActivated}
-   * @param count the amount of jobs that were activated
-   */
-  @Deprecated
-  default void zeebeJobActivated(final int count) {}
-
-  /**
-   * Called every time one or more jobs are handled.
-   *
-   * <p>NOTE: this is called <em>after</em> a job has been worked on, successfully or not.
-   *
-   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
-   *     io.camunda.client.api.worker.JobWorkerMetrics#jobHandled}
-   * @param count the amount of jobs that were handled
-   */
-  @Deprecated
-  default void zeebeJobHandled(final int count) {}
-
-  /**
    * Returns a new builder for the Micrometer bridge.
    *
    * @throws UnsupportedOperationException if Micrometer is not found in the class path

@@ -82,7 +82,7 @@ public interface MicrometerJobWorkerMetricsBuilder {
     },
 
     /**
-     * Counter backing the {@link JobWorkerMetrics#zeebeJobActivated(int)} count.
+     * Counter backing the {@link JobWorkerMetrics#jobActivated(int)} count.
      *
      * @deprecated since 8.8 for removal in 8.10, replaced by {@link
      *     io.camunda.client.api.worker.metrics.MicrometerJobWorkerMetricsBuilder.Names#JOB_ACTIVATED}
@@ -96,7 +96,7 @@ public interface MicrometerJobWorkerMetricsBuilder {
     },
 
     /**
-     * Counter backing the {@link JobWorkerMetrics#zeebeJobHandled(int)} count.
+     * Counter backing the {@link JobWorkerMetrics#jobHandled(int)} count.
      *
      * @deprecated since 8.8 for removal in 8.10, replaced by {@link
      *     io.camunda.client.api.worker.metrics.MicrometerJobWorkerMetricsBuilder.Names#JOB_HANDLED}
