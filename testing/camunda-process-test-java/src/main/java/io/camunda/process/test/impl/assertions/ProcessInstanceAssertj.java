@@ -22,6 +22,7 @@ import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.api.assertions.ElementSelector;
+import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
@@ -245,8 +246,17 @@ public class ProcessInstanceAssertj
   }
 
   @Override
-  public ProcessInstanceAssert hasLocalVariableNames(final String... variableNames) {
-    variableAssertj.hasLocalVariableNames(getProcessInstanceKey(), variableNames);
+  public ProcessInstanceAssert hasLocalVariableNames(
+      final String elementName, final String... variableNames) {
+    variableAssertj.hasLocalVariableNames(
+        getProcessInstanceKey(), ElementSelectors.byName(elementName), variableNames);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariableNames(
+      final ElementSelector selector, final String... variableNames) {
+    variableAssertj.hasLocalVariableNames(getProcessInstanceKey(), selector, variableNames);
     return this;
   }
 
@@ -258,8 +268,17 @@ public class ProcessInstanceAssertj
 
   @Override
   public ProcessInstanceAssert hasLocalVariable(
-      final String variableName, final Object variableValue) {
-    variableAssertj.hasLocalVariable(getProcessInstanceKey(), variableName, variableValue);
+      final String elementName, final String variableName, final Object variableValue) {
+    variableAssertj.hasLocalVariable(
+        getProcessInstanceKey(), ElementSelectors.byName(elementName), variableName, variableValue);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariable(
+      final ElementSelector selector, final String variableName, final Object variableValue) {
+    variableAssertj.hasLocalVariable(
+        getProcessInstanceKey(), selector, variableName, variableValue);
     return this;
   }
 
@@ -270,8 +289,17 @@ public class ProcessInstanceAssertj
   }
 
   @Override
-  public ProcessInstanceAssert hasLocalVariables(final Map<String, Object> variables) {
-    variableAssertj.hasLocalVariables(getProcessInstanceKey(), variables);
+  public ProcessInstanceAssert hasLocalVariables(
+      final String elementName, final Map<String, Object> variables) {
+    variableAssertj.hasLocalVariables(
+        getProcessInstanceKey(), ElementSelectors.byName(elementName), variables);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasLocalVariables(
+      final ElementSelector selector, final Map<String, Object> variables) {
+    variableAssertj.hasLocalVariables(getProcessInstanceKey(), selector, variables);
     return this;
   }
 
