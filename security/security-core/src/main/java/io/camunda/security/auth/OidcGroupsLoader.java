@@ -11,14 +11,17 @@ import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.InvalidPathException;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
+import com.jayway.jsonpath.PathNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class OidcGroupsLoader {
   public static final String DERIVED_GROUPS_ARE_NOT_STRING_ARRAY =
       "Group's list derived from (%s) is not a string array. Please check your OIDC configuration.";
-
+  private static final Logger LOGGER = LoggerFactory.getLogger(OidcGroupsLoader.class);
   private static final Configuration CONFIGURATION =
       Configuration.builder()
           // Ignore the common case that the last path element is not set
@@ -47,24 +50,28 @@ public class OidcGroupsLoader {
     if (groupsClaim == null) {
       return null;
     }
-    final var claimGroups = JsonPath.using(CONFIGURATION).parse(claims).read(groupsClaim);
     final var groups = new ArrayList<String>();
-    if (claimGroups != null) {
-      if (claimGroups instanceof final String group) {
-        groups.add(group);
-      } else if (claimGroups instanceof final List<?> list) {
-        for (final Object o : list) {
-          if (o instanceof final String group) {
-            groups.add(group);
-          } else {
-            throw new IllegalArgumentException(
-                String.format(DERIVED_GROUPS_ARE_NOT_STRING_ARRAY, groupsClaim));
+    try {
+      final var claimGroups = JsonPath.using(CONFIGURATION).parse(claims).read(groupsClaim);
+      if (claimGroups != null) {
+        if (claimGroups instanceof final String group) {
+          groups.add(group);
+        } else if (claimGroups instanceof final List<?> list) {
+          for (final Object o : list) {
+            if (o instanceof final String group) {
+              groups.add(group);
+            } else {
+              throw new IllegalArgumentException(
+                  String.format(DERIVED_GROUPS_ARE_NOT_STRING_ARRAY, groupsClaim));
+            }
           }
+        } else {
+          throw new IllegalArgumentException(
+              String.format(DERIVED_GROUPS_ARE_NOT_STRING_ARRAY, groupsClaim));
         }
-      } else {
-        throw new IllegalArgumentException(
-            String.format(DERIVED_GROUPS_ARE_NOT_STRING_ARRAY, groupsClaim));
       }
+    } catch (final PathNotFoundException exception) {
+      LOGGER.warn("Could not load groups from claims {}", claims, exception);
     }
     return groups;
   }

@@ -119,7 +119,7 @@ final class OidcGroupsLoaderTest {
     final var claims =
         Map.<String, Object>of("groups", List.of("g1", "g2"), "other_claim", "other_value");
 
-    final var loader = new OidcGroupsLoader("group_names");
+    final var loader = new OidcGroupsLoader("$.groups.names[*]");
 
     // when
     final var groups = loader.load(claims);
