@@ -12,17 +12,15 @@ import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {Paths} from 'modules/Routes';
 import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCancelProcessInstance';
 import {OperationItem} from 'modules/components/OperationItem';
-import {Restricted} from 'modules/components/Restricted';
 import {Link} from 'modules/components/Link';
 import {useRootInstanceId} from 'modules/queries/callHierarchy/useRootInstanceId';
 import {notificationsStore} from 'modules/stores/notifications';
 
 type Props = {
   processInstanceKey: ProcessInstance['processInstanceKey'];
-  permissions?: ResourceBasedPermissionDto[] | null;
 };
 
-const Cancel: React.FC<Props> = ({processInstanceKey, permissions}) => {
+const Cancel: React.FC<Props> = ({processInstanceKey}) => {
   const [isCancellationModalVisible, setIsCancellationModalVisible] =
     useState(false);
 
@@ -43,20 +41,13 @@ const Cancel: React.FC<Props> = ({processInstanceKey, permissions}) => {
 
   return (
     <>
-      <Restricted
-        resourceBasedRestrictions={{
-          scopes: ['UPDATE_PROCESS_INSTANCE'],
-          permissions,
-        }}
-      >
-        <OperationItem
-          type="CANCEL_PROCESS_INSTANCE"
-          onClick={() => setIsCancellationModalVisible(true)}
-          title={`Cancel Instance ${processInstanceKey}`}
-          disabled={cancelProcessInstanceMutation.isPending}
-          size="sm"
-        />
-      </Restricted>
+      <OperationItem
+        type="CANCEL_PROCESS_INSTANCE"
+        onClick={() => setIsCancellationModalVisible(true)}
+        title={`Cancel Instance ${processInstanceKey}`}
+        disabled={cancelProcessInstanceMutation.isPending}
+        size="sm"
+      />
 
       {isCancellationModalVisible && (
         <>

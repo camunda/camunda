@@ -89,10 +89,7 @@ const Operations: React.FC<Props> = observer(
             />
           )}
           {isInstanceActive && !isModificationModeEnabled && (
-            <Cancel
-              processInstanceKey={instance.processInstanceKey}
-              permissions={permissions}
-            />
+            <Cancel processInstanceKey={instance.processInstanceKey} />
           )}
           {!isInstanceActive && (
             <Delete
