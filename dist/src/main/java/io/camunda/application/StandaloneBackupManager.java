@@ -142,10 +142,10 @@ public class StandaloneBackupManager implements CommandLineRunner {
       if (isCompletedBackup(backupState)) {
         isBackupInProgress = false;
       } else if (isFailedBackup(backupState)) {
-        final var failureReason = new StringBuilder();
-        if (backup.getFailureReason() != null && !backup.getFailureReason().isEmpty()) {
-          failureReason.append(" Indices backup failure: %s.".formatted(backup.getFailureReason()));
-        }
+        final var failureReason =
+            backup.getFailureReason() != null && !backup.getFailureReason().isEmpty()
+                ? " Indices backup failure: %s.".formatted(backup.getFailureReason())
+                : "";
         throw new IllegalStateException(
             "Backup with id:[%d] failed.%s".formatted(backupId, failureReason));
       }
