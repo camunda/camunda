@@ -8,6 +8,9 @@
 package io.camunda.exporter.rdbms.handlers.batchoperation;
 
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
+import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -19,8 +22,9 @@ public class ProcessInstanceCancellationBatchOperationExportHandler
     extends RdbmsBatchOperationStatusExportHandler<ProcessInstanceRecordValue> {
 
   public ProcessInstanceCancellationBatchOperationExportHandler(
-      final BatchOperationWriter batchOperationWriter) {
-    super(batchOperationWriter);
+      final BatchOperationWriter batchOperationWriter,
+      final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache) {
+    super(batchOperationWriter, batchOperationCache, OperationType.CANCEL_PROCESS_INSTANCE);
   }
 
   @Override
