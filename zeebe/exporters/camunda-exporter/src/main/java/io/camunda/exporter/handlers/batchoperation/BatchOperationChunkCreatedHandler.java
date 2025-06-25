@@ -17,7 +17,6 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -67,17 +66,23 @@ public class BatchOperationChunkCreatedHandler
   @Override
   public void updateEntity(
       final Record<BatchOperationChunkRecordValue> record, final BatchOperationEntity entity) {
-    // set the endDate to null to ensure that the batch operation is processed again by the
-    // BatchOperationUpdateTask
-    entity.setEndDate(null);
+    // set to just the size of the current chunk. delta update is performed in the update script
+    entity.setOperationsTotalCount(record.getValue().getItems().size());
   }
 
   @Override
   public void flush(final BatchOperationEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    final Map<String, Object> updateFields = new HashMap<>();
-    updateFields.put(BatchOperationTemplate.END_DATE, entity.getState());
-    batchRequest.update(indexName, entity.getId(), updateFields);
+    // also set the endDate to null to ensure that the batch operation is processed again by the
+    // BatchOperationUpdateTask
+    batchRequest.updateWithScript(
+        indexName,
+        entity.getId(),
+        """
+            ctx._source.operationsTotalCount = ctx._source.operationsTotalCount + params.operationsTotalCount;
+            ctx._source.endDate = null;
+        """,
+        Map.of(BatchOperationTemplate.OPERATIONS_TOTAL_COUNT, entity.getOperationsTotalCount()));
   }
 
   @Override

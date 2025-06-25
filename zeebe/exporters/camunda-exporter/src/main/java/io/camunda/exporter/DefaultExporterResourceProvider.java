@@ -278,7 +278,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new BatchOperationLifecycleManagementHandler(
                 indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
             new BatchOperationChunkCreatedHandler(
-                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
+                indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()),
             new ProcessInstanceCancellationOperationHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()),
             new ProcessInstanceMigrationOperationHandler(
@@ -291,7 +291,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
       exportHandlers.add(
           new BatchOperationChunkCreatedItemHandler(
-              indexDescriptors.get(BatchOperationTemplate.class).getFullQualifiedName()));
+              indexDescriptors.get(OperationTemplate.class).getFullQualifiedName()));
     }
 
     indicesWithCustomErrorHandlers =
