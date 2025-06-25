@@ -34,8 +34,7 @@ public final class BatchOperationCreateChunkProcessor
   public void processRecord(final TypedRecord<BatchOperationChunkRecord> command) {
     final var recordValue = command.getValue();
     LOGGER.debug(
-        "Processing new command with key '{}' for batch operation {} to create chunk with {} items",
-        command.getKey(),
+        "Creating a new chunk with {} items for batch operation {}",
         recordValue.getBatchOperationKey(),
         recordValue.getItems().size());
 

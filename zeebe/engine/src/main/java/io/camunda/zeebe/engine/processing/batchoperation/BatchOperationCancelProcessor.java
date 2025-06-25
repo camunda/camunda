@@ -86,10 +86,7 @@ public final class BatchOperationCancelProcessor
     final var recordValue = command.getValue();
     final var batchOperationKey = recordValue.getBatchOperationKey();
     final var cancelKey = keyGenerator.nextKey();
-    LOGGER.debug(
-        "Processing new command to cancel a batch operation with key '{}': {}",
-        batchOperationKey,
-        recordValue);
+    LOGGER.debug("Cancelling batch operation with key {}", batchOperationKey);
 
     final var batchOperation = batchOperationState.get(batchOperationKey);
     if (batchOperation.isPresent() && batchOperation.get().canCancel()) {

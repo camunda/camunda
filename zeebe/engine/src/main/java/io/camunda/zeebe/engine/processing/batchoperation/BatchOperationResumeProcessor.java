@@ -97,10 +97,7 @@ public final class BatchOperationResumeProcessor
     final var recordValue = command.getValue();
     final var batchOperationKey = command.getValue().getBatchOperationKey();
     final var resumeKey = keyGenerator.nextKey();
-    LOGGER.debug(
-        "Processing new command to resume a batch operation with key '{}': {}",
-        command.getKey(),
-        recordValue);
+    LOGGER.debug("Resuming batch operation with key {}", command.getValue().getBatchOperationKey());
 
     // validation
     final var batchOperation = batchOperationState.get(batchOperationKey);

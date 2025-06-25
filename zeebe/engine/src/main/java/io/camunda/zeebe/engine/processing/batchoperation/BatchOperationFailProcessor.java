@@ -57,7 +57,10 @@ public final class BatchOperationFailProcessor
   @Override
   public void processRecord(final TypedRecord<BatchOperationCreationRecord> command) {
     final var recordValue = command.getValue();
-    LOGGER.debug("Processing new command with key '{}': {}", command.getKey(), recordValue);
+    LOGGER.debug(
+        "Marking batch operation {} as failed on partition {}",
+        command.getValue().getBatchOperationKey(),
+        partitionId);
 
     final int originPartitionId = Protocol.decodePartitionId(recordValue.getBatchOperationKey());
     final var batchInternalFail =

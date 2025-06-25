@@ -85,7 +85,7 @@ public final class BatchOperationCreateProcessor
 
     final long key = keyGenerator.nextKey();
     final var recordValue = command.getValue();
-    LOGGER.debug("Processing new command with key '{}': {}", key, recordValue);
+    LOGGER.debug("Creating new batch operation with key '{}': {}", key, recordValue);
     metrics.startTotalLatencyMeasure(key, recordValue.getBatchOperationType());
 
     final var recordWithKey = new BatchOperationCreationRecord();

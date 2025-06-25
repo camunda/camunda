@@ -78,12 +78,9 @@ public final class BatchOperationExecuteProcessor
   @SuppressWarnings("checkstyle:MissingSwitchDefault")
   public void processRecord(final TypedRecord<BatchOperationExecutionRecord> command) {
     final var executionRecord = command.getValue();
-    LOGGER.trace(
-        "Processing new command with key '{}' on partition{} : {}",
-        command.getKey(),
-        partitionId,
-        executionRecord);
     final long batchKey = executionRecord.getBatchOperationKey();
+    LOGGER.trace(
+        "Executing next items of batch operation {} on partition {}", batchKey, partitionId);
 
     // Stop the measure for the batch operation execute cycle latency which was started the last
     // time
