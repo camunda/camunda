@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.spring.client.properties.CamundaClientProperties.ClientMode;
 import java.net.URI;
+import java.nio.file.Paths;
 import java.time.Duration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -616,7 +617,7 @@ public class CamundaClientPropertiesPostProcessorTest {
         @Test
         void shouldReadKeystorePath() {
           assertThat(camundaClientProperties.getAuth().getKeystorePath())
-              .isEqualTo("/key/store/path");
+              .isEqualTo(Paths.get("/key/store/path"));
         }
 
         @Test
@@ -633,7 +634,7 @@ public class CamundaClientPropertiesPostProcessorTest {
         @Test
         void shouldReadTruststorePath() {
           assertThat(camundaClientProperties.getAuth().getTruststorePath())
-              .isEqualTo("/trust/store/path");
+              .isEqualTo(Paths.get("/trust/store/path"));
         }
 
         @Test
@@ -1233,6 +1234,25 @@ public class CamundaClientPropertiesPostProcessorTest {
       @Test
       void shouldReadModeSelfManaged() {
         assertThat(camundaClientProperties.getMode()).isEqualTo(ClientMode.selfManaged);
+      }
+    }
+
+    @SpringBootTest(
+        properties = "spring.config.location=classpath:properties/8.7/client-assertion.yaml")
+    @Nested
+    class ClientAssertion {
+      @Autowired CamundaClientProperties camundaClientProperties;
+
+      @Test
+      void shouldReadModeSelfManaged() {
+        assertThat(camundaClientProperties.getAuth().getClientAssertion().getKeystorePath())
+            .isEqualTo(Paths.get("/path/to/keystore.jks"));
+        assertThat(camundaClientProperties.getAuth().getClientAssertion().getKeystorePassword())
+            .isEqualTo("changeit");
+        assertThat(camundaClientProperties.getAuth().getClientAssertion().getKeystoreKeyAlias())
+            .isEqualTo("alias");
+        assertThat(camundaClientProperties.getAuth().getClientAssertion().getKeystoreKeyPassword())
+            .isEqualTo("alias-password");
       }
     }
   }

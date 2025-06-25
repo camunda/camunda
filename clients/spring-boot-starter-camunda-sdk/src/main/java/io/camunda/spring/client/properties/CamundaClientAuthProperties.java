@@ -16,8 +16,10 @@
 package io.camunda.spring.client.properties;
 
 import java.net.URI;
+import java.nio.file.Path;
 import java.time.Duration;
 import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class CamundaClientAuthProperties {
   private AuthMethod method;
@@ -34,15 +36,27 @@ public class CamundaClientAuthProperties {
   private String audience;
   private String scope;
 
-  private String keystorePath;
+  private Path keystorePath;
   private String keystorePassword;
   private String keystoreKeyPassword;
-  private String truststorePath;
+  private Path truststorePath;
   private String truststorePassword;
 
   private String credentialsCachePath;
   private Duration connectTimeout;
   private Duration readTimeout;
+
+  @NestedConfigurationProperty
+  private CamundaClientAuthClientAssertionProperties clientAssertion =
+      new CamundaClientAuthClientAssertionProperties();
+
+  public CamundaClientAuthClientAssertionProperties getClientAssertion() {
+    return clientAssertion;
+  }
+
+  public void setClientAssertion(final CamundaClientAuthClientAssertionProperties clientAssertion) {
+    this.clientAssertion = clientAssertion;
+  }
 
   public AuthMethod getMethod() {
     return method;
@@ -129,11 +143,11 @@ public class CamundaClientAuthProperties {
     this.clientSecret = clientSecret;
   }
 
-  public String getKeystorePath() {
+  public Path getKeystorePath() {
     return keystorePath;
   }
 
-  public void setKeystorePath(final String keystorePath) {
+  public void setKeystorePath(final Path keystorePath) {
     this.keystorePath = keystorePath;
   }
 
@@ -153,11 +167,11 @@ public class CamundaClientAuthProperties {
     this.keystoreKeyPassword = keystoreKeyPassword;
   }
 
-  public String getTruststorePath() {
+  public Path getTruststorePath() {
     return truststorePath;
   }
 
-  public void setTruststorePath(final String truststorePath) {
+  public void setTruststorePath(final Path truststorePath) {
     this.truststorePath = truststorePath;
   }
 
