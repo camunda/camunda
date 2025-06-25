@@ -15,6 +15,7 @@ import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.value.IntegerValue;
@@ -44,6 +45,8 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
   private final ObjectProperty<BatchOperationProcessInstanceModificationPlan> modificationPlanProp =
       new ObjectProperty<>("modificationPlan", new BatchOperationProcessInstanceModificationPlan());
   private final BooleanProperty initializedProp = new BooleanProperty("initialized", false);
+  private final IntegerProperty numTotalItemsProp = new IntegerProperty("numTotalItems", 0);
+  private final IntegerProperty numExecutedItemsProp = new IntegerProperty("numExecutedItems", 0);
   private final ArrayProperty<LongValue> chunkKeysProp =
       new ArrayProperty<>("chunkKeys", LongValue::new);
   // Authentication claims, needed for query + command auth
@@ -54,7 +57,7 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
       new ArrayProperty<>("finishedPartitions", IntegerValue::new);
 
   public PersistedBatchOperation() {
-    super(11);
+    super(13);
     declareProperty(keyProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(statusProp)
@@ -65,7 +68,9 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
         .declareProperty(initializedProp)
         .declareProperty(authenticationProp)
         .declareProperty(partitionsProp)
-        .declareProperty(finishedPartitionsProp);
+        .declareProperty(finishedPartitionsProp)
+        .declareProperty(numTotalItemsProp)
+        .declareProperty(numExecutedItemsProp);
   }
 
   public PersistedBatchOperation wrap(final BatchOperationCreationRecord record) {
@@ -206,6 +211,24 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
 
   public List<Integer> getFinishedPartitions() {
     return finishedPartitionsProp.stream().map(IntegerValue::getValue).toList();
+  }
+
+  public int getNumTotalItems() {
+    return numTotalItemsProp.getValue();
+  }
+
+  public PersistedBatchOperation setNumTotalItems(final int numTotalItems) {
+    numTotalItemsProp.setValue(numTotalItems);
+    return this;
+  }
+
+  public int getNumExecutedItems() {
+    return numExecutedItemsProp.getValue();
+  }
+
+  public PersistedBatchOperation setNumExecutedItems(final int numExecutedItems) {
+    numExecutedItemsProp.setValue(numExecutedItems);
+    return this;
   }
 
   public long nextChunkKey() {

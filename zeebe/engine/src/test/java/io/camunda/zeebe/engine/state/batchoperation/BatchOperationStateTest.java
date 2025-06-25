@@ -78,6 +78,8 @@ public class BatchOperationStateTest {
     assertThat(batchOperation.getStatus()).isEqualTo(BatchOperationStatus.CREATED);
     assertThat(batchOperation.getAuthentication()).isEqualTo(authentication);
     assertThat(batchOperation.isInitialized()).isFalse();
+    assertThat(batchOperation.getNumTotalItems()).isEqualTo(0);
+    assertThat(batchOperation.getNumExecutedItems()).isEqualTo(0);
   }
 
   @Test
@@ -270,7 +272,7 @@ public class BatchOperationStateTest {
     state.create(batchOperationKey, createRecord);
 
     // when
-    final var keys = LongStream.rangeClosed(0, 10).boxed().collect(Collectors.toSet());
+    final var keys = LongStream.range(0, 10).boxed().collect(Collectors.toSet());
     state.appendItemKeys(batchOperationKey, keys);
 
     // then
@@ -278,6 +280,8 @@ public class BatchOperationStateTest {
 
     assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(0);
     assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(0);
+    assertThat(persistedBatchOperation.getNumTotalItems()).isEqualTo(10);
+    assertThat(persistedBatchOperation.getNumExecutedItems()).isEqualTo(0);
 
     final var nextKeys = state.getNextItemKeys(batchOperationKey, 5);
     assertThat(nextKeys).hasSize(5);
@@ -347,15 +351,15 @@ public class BatchOperationStateTest {
     // when
     state.appendItemKeys(
         batchOperationKey,
-        LongStream.range(0, MAX_DB_CHUNK_SIZE - 1).boxed().collect(Collectors.toSet()));
+        LongStream.range(0, MAX_DB_CHUNK_SIZE).boxed().collect(Collectors.toSet()));
     state.appendItemKeys(
         batchOperationKey,
-        LongStream.range(MAX_DB_CHUNK_SIZE, MAX_DB_CHUNK_SIZE * 2 - 1)
+        LongStream.range(MAX_DB_CHUNK_SIZE, MAX_DB_CHUNK_SIZE * 2)
             .boxed()
             .collect(Collectors.toSet()));
     state.appendItemKeys(
         batchOperationKey,
-        LongStream.range(MAX_DB_CHUNK_SIZE * 2, MAX_DB_CHUNK_SIZE * 3 - 1)
+        LongStream.range(MAX_DB_CHUNK_SIZE * 2, MAX_DB_CHUNK_SIZE * 3)
             .boxed()
             .collect(Collectors.toSet()));
 
@@ -364,6 +368,8 @@ public class BatchOperationStateTest {
 
     assertThat(persistedBatchOperation.getMinChunkKey()).isEqualTo(0);
     assertThat(persistedBatchOperation.getMaxChunkKey()).isEqualTo(2);
+    assertThat(persistedBatchOperation.getNumTotalItems()).isEqualTo(MAX_DB_CHUNK_SIZE * 3);
+    assertThat(persistedBatchOperation.getNumExecutedItems()).isEqualTo(0);
   }
 
   @Test
@@ -384,6 +390,7 @@ public class BatchOperationStateTest {
     final var nextItemKeys = state.getNextItemKeys(batchOperationKey, 5);
     assertThat(nextItemKeys).hasSize(5);
     assertThat(nextItemKeys).containsSequence(List.of(6L, 7L, 8L, 9L, 10L));
+    assertThat(persistedBatchOperation.getNumTotalItems()).isEqualTo(MAX_DB_CHUNK_SIZE * 3);
   }
 
   @Test
