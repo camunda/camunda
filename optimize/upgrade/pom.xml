@@ -159,7 +159,7 @@
     <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
-      <version>4.8.179</version>
+      <version>4.8.180</version>
       <scope>provided</scope>
     </dependency>
 
