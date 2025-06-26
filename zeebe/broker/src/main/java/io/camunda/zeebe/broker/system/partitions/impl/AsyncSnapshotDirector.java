@@ -12,12 +12,14 @@ import io.camunda.zeebe.broker.system.partitions.NoEntryAtSnapshotPosition;
 import io.camunda.zeebe.broker.system.partitions.StateController;
 import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
+import io.camunda.zeebe.snapshots.transfer.SnapshotTransferService;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.util.health.FailureListener;
@@ -34,7 +36,9 @@ import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 
 public final class AsyncSnapshotDirector extends Actor
-    implements RaftApplicationEntryCommittedPositionListener, HealthMonitorable {
+    implements RaftApplicationEntryCommittedPositionListener,
+        HealthMonitorable,
+        SnapshotTransferService.TakeSnapshot {
 
   public static final Duration MINIMUM_SNAPSHOT_PERIOD = Duration.ofMinutes(1);
 
@@ -378,9 +382,17 @@ public final class AsyncSnapshotDirector extends Actor
     ongoingSnapshotFuture = null;
   }
 
+  @Override
+  public ActorFuture<PersistedSnapshot> takeSnapshot(
+      final int partition, final long lastProcessedPosition, final ConcurrencyControl control) {
+    final var inProgressSnapshot = new InProgressSnapshot();
+    inProgressSnapshot.lowerBoundSnapshotPosition = lastProcessedPosition;
+    return snapshot(inProgressSnapshot);
+  }
+
   private static final class InProgressSnapshot {
-    private long lastWrittenPosition;
-    private TransientSnapshot pendingSnapshot;
-    private long lowerBoundSnapshotPosition;
+    private volatile long lastWrittenPosition;
+    private volatile TransientSnapshot pendingSnapshot;
+    private volatile long lowerBoundSnapshotPosition;
   }
 }
