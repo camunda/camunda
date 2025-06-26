@@ -131,7 +131,7 @@ public final class BatchOperationSetupProcessors {
         .onCommand(
             ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
             BatchOperationIntent.COMPLETE_PARTITION,
-            new BatchOperationPartitionCompleteProcessor(
+            new BatchOperationLeadPartitionCompleteProcessor(
                 writers,
                 processingState,
                 commandDistributionBehavior,
@@ -140,7 +140,7 @@ public final class BatchOperationSetupProcessors {
         .onCommand(
             ValueType.BATCH_OPERATION_PARTITION_LIFECYCLE,
             BatchOperationIntent.FAIL_PARTITION,
-            new BatchOperationPartitionFailProcessor(
+            new BatchOperationLeadPartitionFailProcessor(
                 writers, processingState, commandDistributionBehavior, batchOperationMetrics))
         .withListener(
             new BatchOperationExecutionScheduler(

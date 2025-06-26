@@ -27,6 +27,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Local command processor which sends the FAIL_PARTITION command to the lead partition. */
 @ExcludeAuthorizationCheck
 public final class BatchOperationFailProcessor
     implements TypedRecordProcessor<BatchOperationCreationRecord> {
