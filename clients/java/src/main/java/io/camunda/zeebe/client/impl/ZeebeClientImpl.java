@@ -287,7 +287,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
     final List<ClientInterceptor> defaultInterceptors = getDefaultInterceptors();
 
     if (!configInterceptors.isEmpty()) {
-      List<ClientInterceptor> allInterceptors = new ArrayList<>(configInterceptors);
+      final List<ClientInterceptor> allInterceptors = new ArrayList<>(configInterceptors);
       allInterceptors.addAll(defaultInterceptors);
       return gatewayStub.withInterceptors(allInterceptors.toArray(new ClientInterceptor[] {}));
     }
@@ -296,7 +296,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   private static List<ClientInterceptor> getDefaultInterceptors() {
-    List<ClientInterceptor> defaultInterceptors = new ArrayList<>();
+    final List<ClientInterceptor> defaultInterceptors = new ArrayList<>();
     defaultInterceptors.add(getZeebeGrpcDeprecationInterceptor());
     return defaultInterceptors;
   }
