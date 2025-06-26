@@ -230,7 +230,6 @@ public final class ZeebePartitionFactory {
       runtimeDirectory = raftPartition.dataDirectory().toPath().resolve("runtime");
     }
     return new StateControllerImpl(
-        partitionId,
         zeebeRocksDbFactory,
         snapshotStore,
         runtimeDirectory,

@@ -83,7 +83,6 @@ public class LargeStateControllerPerformanceTest {
     // given
     final var controller =
         new StateControllerImpl(
-            1,
             context.dbFactory(),
             context.snapshotStore(),
             context.temporaryFolder().resolve("runtime"),
