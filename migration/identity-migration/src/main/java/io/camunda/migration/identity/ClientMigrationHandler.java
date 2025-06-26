@@ -65,7 +65,7 @@ public class ClientMigrationHandler extends MigrationHandler<Members> {
   @Override
   protected void logSummary() {
     logger.info(
-        "Client migration complete: Created {} authorizations out of {} clients. Skipped {} due to conflicts.",
+        "Client migration complete: Created {} authorizations out of {} clients. Skipped {} as they already exist.",
         createdAuthorizations.get(),
         totalClientsProcessed.get(),
         skippedAuthorizations.get());
@@ -94,7 +94,7 @@ public class ClientMigrationHandler extends MigrationHandler<Members> {
         }
         skippedAuthorizations.incrementAndGet();
         logger.debug(
-            "Client permission with owner ID: {} and resource type: {} already exists, skipping creation.",
+            "Client authorization with owner ID: {} and resource type: {} already exists, skipping creation.",
             request.ownerId(),
             request.resourceType());
       }

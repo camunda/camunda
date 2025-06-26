@@ -69,7 +69,7 @@ public class StaticConsoleRoleAuthorizationMigrationHandler extends MigrationHan
   @Override
   protected void logSummary() {
     logger.info(
-        "Role authorization migration complete: Created {} authorizations out of {} total. Skipped {} due to conflicts.",
+        "Role authorization migration complete: Created {} authorizations out of {} total. Skipped {} as they already exist.",
         createdAuthorizations.get(),
         totalRolePermissions.get(),
         skippedAuthorizations.get());

@@ -78,7 +78,7 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
   @Override
   protected void logSummary() {
     logger.info(
-        "Migration completed: Created {} out of {} groups. Assigned {} users out of {} attempted.",
+        "Group migration completed: Created {} out of {} groups, the remaining existed already. Assigned {} users out of {} attempted, the remaining were already assigned.",
         createdGroupCount.get(),
         totalGroupCount.get(),
         assignedUserCount.get(),

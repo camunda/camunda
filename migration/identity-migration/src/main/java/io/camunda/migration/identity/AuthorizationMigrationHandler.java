@@ -60,7 +60,7 @@ public class AuthorizationMigrationHandler extends MigrationHandler<Authorizatio
   @Override
   protected void logSummary() {
     logger.info(
-        "Authorization migration complete: Created {} out of {} authorizations. Skipped {} due to conflicts.",
+        "Authorization migration complete: Created {} out of {} authorizations. Skipped {} as they already exist.",
         createdAuthorizationsCount.get(),
         totalAuthorizationsCount.get(),
         skippedAuthorizationsCount.get());

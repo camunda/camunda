@@ -50,7 +50,7 @@ public class StaticConsoleRoleMigrationHandler extends MigrationHandler<NoopDTO>
   @Override
   protected void logSummary() {
     logger.info(
-        "Role migration complete: Created {} roles. Assigned {} out of {} attempted role assignments.",
+        "Role migration complete: Created {} roles. Assigned {} out of {} user members to those, the remaining were already members.",
         createdRoleCount.get(),
         assignedRoleCount.get(),
         totalRoleAssignmentAttempts.get());
