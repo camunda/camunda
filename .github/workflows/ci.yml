@@ -1033,6 +1033,16 @@ jobs:
     secrets: inherit
     permissions: {}  # GITHUB_TOKEN unused in this job
 
+  # Runs Operate's visual regression tests
+  # owner: Core Features
+  operate-visual-regression-tests:
+    if: needs.detect-changes.outputs.operate-frontend-changes == 'true'
+    needs: [ detect-changes ]
+    name: "[FE] Operate Visual Regression"
+    uses: ./.github/workflows/operate-playwright.yml
+    secrets: inherit
+    permissions: {}  # GITHUB_TOKEN unused in this job
+
   tasklist-docker-tests:
     # Currently only runs Tasklist Docker tests but should be extended in future to also include backend tests
     if: needs.detect-changes.outputs.tasklist-backend-changes == 'true'
@@ -1249,6 +1259,7 @@ jobs:
       - openapi-lint
       - opensearch-integration-tests
       - operate-frontend-tests
+      - operate-visual-regression-tests
       - optimize-backend-unit-tests
       - optimize-frontend-unit-tests
       - protobuf-checks
