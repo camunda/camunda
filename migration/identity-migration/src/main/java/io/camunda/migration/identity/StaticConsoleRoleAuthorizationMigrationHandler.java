@@ -14,10 +14,15 @@ import io.camunda.migration.identity.dto.NoopDTO;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.AuthorizationServices;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class StaticConsoleRoleAuthorizationMigrationHandler extends MigrationHandler<NoopDTO> {
 
   final AuthorizationServices authorizationServices;
+
+  private final AtomicInteger totalRolePermissions = new AtomicInteger();
+  private final AtomicInteger createdAuthorizations = new AtomicInteger();
+  private final AtomicInteger skippedAuthorizations = new AtomicInteger();
 
   public StaticConsoleRoleAuthorizationMigrationHandler(
       final AuthorizationServices authorizationServices,
@@ -33,10 +38,13 @@ public class StaticConsoleRoleAuthorizationMigrationHandler extends MigrationHan
 
   @Override
   protected void process(final List<NoopDTO> batch) {
+    totalRolePermissions.set(ROLE_PERMISSIONS.size());
+
     ROLE_PERMISSIONS.forEach(
         request -> {
           try {
             authorizationServices.createAuthorization(request).join();
+            createdAuthorizations.incrementAndGet();
             logger.debug(
                 "Migrated role permission with owner ID: {} and resource type: {}",
                 request.ownerId(),
@@ -49,7 +57,21 @@ public class StaticConsoleRoleAuthorizationMigrationHandler extends MigrationHan
                       request.ownerId(), request.resourceType()),
                   e);
             }
+            skippedAuthorizations.incrementAndGet();
+            logger.debug(
+                "Role permission for owner ID: {} and resource type: {} already exists, skipping.",
+                request.ownerId(),
+                request.resourceType());
           }
         });
+  }
+
+  @Override
+  protected void logSummary() {
+    logger.info(
+        "Role authorization migration complete: Created {} authorizations out of {} total. Skipped {} due to conflicts.",
+        createdAuthorizations.get(),
+        totalRolePermissions.get(),
+        skippedAuthorizations.get());
   }
 }

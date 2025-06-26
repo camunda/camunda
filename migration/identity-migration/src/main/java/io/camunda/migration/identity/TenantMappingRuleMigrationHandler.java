@@ -51,6 +51,9 @@ public class TenantMappingRuleMigrationHandler extends MigrationHandler<TenantMa
     managementIdentityClient.updateMigrationStatus(batch.stream().map(this::processTask).toList());
   }
 
+  @Override
+  protected void logSummary() {}
+
   protected MigrationStatusUpdateRequest processTask(final TenantMappingRule tenantMappingRule) {
     try {
       final var request =

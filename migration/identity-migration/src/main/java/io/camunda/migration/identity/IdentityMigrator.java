@@ -51,7 +51,7 @@ public class IdentityMigrator implements Migrator {
       } catch (final Exception e) {
         throw new MigrationException("Execution of %s failed".formatted(handler.getName()), e);
       }
-      LOG.info("Completed {}", handler.getName());
+      handler.logSummary();
     }
   }
 

@@ -49,6 +49,9 @@ public class UserTenantsMigrationHandler extends MigrationHandler<UserTenants> {
     managementIdentityClient.updateMigrationStatus(batch.stream().map(this::processTask).toList());
   }
 
+  @Override
+  protected void logSummary() {}
+
   public MigrationStatusUpdateRequest processTask(final UserTenants userTenants) {
     try {
       final var mapping =

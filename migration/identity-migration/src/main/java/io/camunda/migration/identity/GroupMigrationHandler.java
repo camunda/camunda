@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class GroupMigrationHandler extends MigrationHandler<Group> {
@@ -27,6 +28,11 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
   private final ConsoleClient consoleClient;
   private final ManagementIdentityClient managementIdentityClient;
   private final GroupServices groupServices;
+
+  private final AtomicInteger createdGroupCount = new AtomicInteger();
+  private final AtomicInteger assignedUserCount = new AtomicInteger();
+  private final AtomicInteger totalGroupCount = new AtomicInteger();
+  private final AtomicInteger totalUserAssignmentAttempts = new AtomicInteger();
 
   public GroupMigrationHandler(
       final Authentication authentication,
@@ -45,6 +51,8 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
 
   @Override
   protected void process(final List<Group> batch) {
+    totalGroupCount.addAndGet(batch.size());
+
     final Map<String, String> userIdToEmailMapping =
         consoleClient.fetchMembers().members().stream()
             .collect(Collectors.toMap(Member::userId, Member::email));
@@ -56,13 +64,25 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
           try {
             final var groupDTO = new GroupDTO(normalizedGroupId, group.name(), "");
             groupServices.createGroup(groupDTO).join();
+            createdGroupCount.incrementAndGet();
           } catch (final Exception e) {
             if (!isConflictError(e)) {
               throw new MigrationException("Failed to migrate group with ID: " + group.id(), e);
             }
+            logger.debug("Group with ID '{}' already exists, skipping creation.", group.id());
           }
           assignUsersToGroup(group.id(), normalizedGroupId, userIdToEmailMapping);
         });
+  }
+
+  @Override
+  protected void logSummary() {
+    logger.info(
+        "Migration completed: Created {} out of {} groups. Assigned {} users out of {} attempted.",
+        createdGroupCount.get(),
+        totalGroupCount.get(),
+        assignedUserCount.get(),
+        totalUserAssignmentAttempts.get());
   }
 
   // Normalizes the group ID to ensure it meets the requirements for a valid group ID.
@@ -88,6 +108,8 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
       final String targetGroupId,
       final Map<String, String> userIdToEmailMapping) {
     final var users = managementIdentityClient.fetchGroupUsers(sourceGroupId);
+    totalUserAssignmentAttempts.addAndGet(users.size());
+
     users.forEach(
         user -> {
           try {
@@ -107,6 +129,7 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
                 targetGroupId);
             final var groupMember = new GroupMemberDTO(targetGroupId, userEmail, EntityType.USER);
             groupServices.assignMember(groupMember).join();
+            assignedUserCount.incrementAndGet();
           } catch (final Exception e) {
             if (!isConflictError(e)) {
               throw new MigrationException(
@@ -115,6 +138,10 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
                       user.getEmail(), targetGroupId),
                   e);
             }
+            logger.debug(
+                "User with ID '{}' already assigned to group '{}', skipping assignment.",
+                user.getId(),
+                targetGroupId);
           }
         });
   }
