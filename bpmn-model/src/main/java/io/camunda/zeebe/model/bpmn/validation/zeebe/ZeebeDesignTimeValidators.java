@@ -123,6 +123,7 @@ public final class ZeebeDesignTimeValidators {
                 ZeebePublishMessage::getCorrelationKey, ZeebeConstants.ATTRIBUTE_CORRELATION_KEY));
     validators.add(new IntermediateThrowEventValidator());
     validators.add(new CompensationTaskValidator());
+    validators.addAll(ExtensionElementDuplicationValidators.VALIDATORS);
 
     VALIDATORS = Collections.unmodifiableList(validators);
   }
