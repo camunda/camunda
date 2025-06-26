@@ -107,8 +107,12 @@ import io.camunda.zeebe.client.impl.worker.JobWorkerBuilderImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.grpc.CallCredentials;
+import io.grpc.CallOptions;
+import io.grpc.Channel;
+import io.grpc.ClientCall;
 import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
+import io.grpc.MethodDescriptor;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.SslContext;
@@ -117,6 +121,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -130,7 +135,8 @@ import org.slf4j.LoggerFactory;
 public final class ZeebeClientImpl implements ZeebeClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(ZeebeClientImpl.class);
-
+  private static final String ZEEBE_DEPRECATION_WARNING =
+      "{} is deprecated and will be removed in version 8.10. Please migrate to {}";
   private static final String UNSUPPORTED_OPERATION_MSG =
       String.format(
           "Not supported with %s. Please use %s.",
@@ -188,7 +194,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
       final ExecutorResource executorResource,
       final HttpClient httpClient) {
     LOG.warn(
-        "{} is deprecated and will be removed in version 8.10. Please migrate to {}",
+        ZEEBE_DEPRECATION_WARNING,
         ZeebeClient.class.getSimpleName(),
         CamundaClient.class.getSimpleName());
     this.config = config;
@@ -277,11 +283,38 @@ public final class ZeebeClientImpl implements ZeebeClient {
       final ManagedChannel channel, final ZeebeClientConfiguration config) {
     final CallCredentials credentials = buildCallCredentials(config);
     final GatewayStub gatewayStub = GatewayGrpc.newStub(channel).withCallCredentials(credentials);
-    if (!config.getInterceptors().isEmpty()) {
-      return gatewayStub.withInterceptors(
-          config.getInterceptors().toArray(new ClientInterceptor[] {}));
+    final List<ClientInterceptor> configInterceptors = config.getInterceptors();
+    final List<ClientInterceptor> defaultInterceptors = getDefaultInterceptors();
+
+    if (!configInterceptors.isEmpty()) {
+      List<ClientInterceptor> allInterceptors = new ArrayList<>(configInterceptors);
+      allInterceptors.addAll(defaultInterceptors);
+      return gatewayStub.withInterceptors(allInterceptors.toArray(new ClientInterceptor[] {}));
     }
-    return gatewayStub;
+    return gatewayStub.withInterceptors(
+        defaultInterceptors.toArray(new ClientInterceptor[defaultInterceptors.size()]));
+  }
+
+  private static List<ClientInterceptor> getDefaultInterceptors() {
+    List<ClientInterceptor> defaultInterceptors = new ArrayList<>();
+    defaultInterceptors.add(getZeebeGrpcDeprecationInterceptor());
+    return defaultInterceptors;
+  }
+
+  private static ClientInterceptor getZeebeGrpcDeprecationInterceptor() {
+    return new ClientInterceptor() {
+      @Override
+      public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
+          final MethodDescriptor<ReqT, RespT> methodDescriptor,
+          final CallOptions callOptions,
+          final Channel channel) {
+        LOG.warn(
+            ZEEBE_DEPRECATION_WARNING,
+            ZeebeClient.class.getSimpleName(),
+            CamundaClient.class.getSimpleName());
+        return channel.newCall(methodDescriptor, callOptions);
+      }
+    };
   }
 
   private static Map<String, Object> defaultServiceConfig() {

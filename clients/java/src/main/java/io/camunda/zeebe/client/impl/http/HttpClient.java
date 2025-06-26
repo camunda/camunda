@@ -16,7 +16,9 @@
 package io.camunda.zeebe.client.impl.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.client.CredentialsProvider;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ClientException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -227,6 +229,11 @@ public final class HttpClient implements AutoCloseable {
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
       final HttpZeebeFuture<RespT> result) {
+
+    LOGGER.warn(
+        "{} is deprecated and will be removed in version 8.10. Please migrate to {}",
+        ZeebeClient.class.getSimpleName(),
+        CamundaClient.class.getSimpleName());
 
     final URI target = buildRequestURI(path);
 
