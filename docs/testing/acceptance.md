@@ -1,6 +1,6 @@
 # Acceptance tests
 
-This module contains acceptance tests (ATs) for the whole Camunda 8 platform, covering multiple or even all components at the same time in an integrated manner.
+Acceptance tests (ATs) cover the whole Camunda 8 platform, meaning multiple or even all components at the same time in an integrated manner.
 
 In the following document, we shortly highlight general recommendations and how-tos/examples of how to write them.
 This ensures we consistently write such tests and cover all necessary supported environments.
