@@ -24,12 +24,16 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This processor only runs on the lead partition of a batch operation. It processes commands to
+ * mark follower partitions as failed.
+ */
 @ExcludeAuthorizationCheck
-public final class BatchOperationPartitionFailProcessor
+public final class BatchOperationLeadPartitionFailProcessor
     implements DistributedTypedRecordProcessor<BatchOperationPartitionLifecycleRecord> {
 
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(BatchOperationPartitionFailProcessor.class);
+      LoggerFactory.getLogger(BatchOperationLeadPartitionFailProcessor.class);
 
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
@@ -37,7 +41,7 @@ public final class BatchOperationPartitionFailProcessor
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final BatchOperationMetrics batchOperationMetrics;
 
-  public BatchOperationPartitionFailProcessor(
+  public BatchOperationLeadPartitionFailProcessor(
       final Writers writers,
       final ProcessingState processingState,
       final CommandDistributionBehavior commandDistributionBehavior,

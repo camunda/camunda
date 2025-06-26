@@ -29,11 +29,11 @@ import org.slf4j.LoggerFactory;
  * mark follower partitions as completed.
  */
 @ExcludeAuthorizationCheck
-public final class BatchOperationPartitionCompleteProcessor
+public final class BatchOperationLeadPartitionCompleteProcessor
     implements DistributedTypedRecordProcessor<BatchOperationPartitionLifecycleRecord> {
 
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(BatchOperationPartitionCompleteProcessor.class);
+      LoggerFactory.getLogger(BatchOperationLeadPartitionCompleteProcessor.class);
 
   private final StateWriter stateWriter;
   private final BatchOperationState batchOperationState;
@@ -41,7 +41,7 @@ public final class BatchOperationPartitionCompleteProcessor
   private final BatchOperationMetrics metrics;
   private final int partitionId;
 
-  public BatchOperationPartitionCompleteProcessor(
+  public BatchOperationLeadPartitionCompleteProcessor(
       final Writers writers,
       final ProcessingState processingState,
       final CommandDistributionBehavior commandDistributionBehavior,
