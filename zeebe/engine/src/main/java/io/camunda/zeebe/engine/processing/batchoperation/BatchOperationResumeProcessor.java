@@ -114,6 +114,8 @@ public final class BatchOperationResumeProcessor
     }
 
     resumeBatchOperation(resumeKey, batchOperation.get(), command.getValue());
+    responseWriter.writeEventOnCommand(
+        resumeKey, BatchOperationIntent.RESUMED, command.getValue(), command);
     commandDistributionBehavior
         .withKey(resumeKey)
         .inQueue(DistributionQueue.BATCH_OPERATION)
