@@ -23,7 +23,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.MutableReference;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksIterator;
 
@@ -142,6 +145,29 @@ class TransactionalColumnFamily<
       return valueInstance;
     }
     return null;
+  }
+
+  @Override
+  public ValueType get(final KeyType key, final Supplier<ValueType> valueSupplier) {
+    final var result = new MutableReference<ValueType>();
+    try (final var timer = metrics.measureGetLatency()) {
+      ensureInOpenTransaction(
+          transaction -> {
+            columnFamilyContext.writeKey(key);
+            final byte[] valueBytes =
+                transaction.get(
+                    transactionDb.getDefaultNativeHandle(),
+                    transactionDb.getReadOptionsNativeHandle(),
+                    columnFamilyContext.getKeyBufferArray(),
+                    columnFamilyContext.getKeyLength());
+            if (valueBytes != null) {
+              final var newValue = valueSupplier.get();
+              newValue.wrap(new UnsafeBuffer(valueBytes), 0, valueBytes.length);
+              result.set(newValue);
+            }
+          });
+      return result.get();
+    }
   }
 
   @Override

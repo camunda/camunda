@@ -466,6 +466,61 @@ public final class ColumnFamilyTest {
         .hasMessageContaining("Foreign key");
   }
 
+  @Test
+  public void shouldGetWithSupplierWhenKeyExists() {
+    // given
+    upsertKeyValuePair(123, 456);
+
+    // when
+    final var result = columnFamily.get(key, DbLong::new);
+
+    // then
+    assertThat(result).isNotNull();
+    assertThat(result.getValue()).isEqualTo(456);
+  }
+
+  @Test
+  public void shouldReturnNullWithSupplierWhenKeyDoesNotExist() {
+    // given
+    key.wrapLong(123);
+
+    // when
+    final var result = columnFamily.get(key, DbLong::new);
+
+    // then
+    assertThat(result).isNull();
+  }
+
+  @Test
+  public void shouldReturnIndependentValueWithSupplier() {
+    // given
+    upsertKeyValuePair(123, 456);
+
+    // when
+    final DbLong result1 = columnFamily.get(key, DbLong::new);
+    final DbLong result2 = columnFamily.get(key, DbLong::new);
+
+    // then -- verify they are different instances
+    assertThat(result1).isNotSameAs(result2);
+  }
+
+  @Test
+  public void shouldReturnImmutableValueWithSupplier() {
+    // given
+    upsertKeyValuePair(1, 2);
+    upsertKeyValuePair(3, 4);
+
+    // when
+    key.wrapLong(1);
+    final DbLong result1 = columnFamily.get(key, DbLong::new);
+    key.wrapLong(3);
+    final DbLong result2 = columnFamily.get(key, DbLong::new);
+
+    // then -- verify they are different instances
+    assertThat(result1.getValue()).isEqualTo(2);
+    assertThat(result2.getValue()).isEqualTo(4);
+  }
+
   private void upsertKeyValuePair(final int key, final int value) {
     this.key.wrapLong(key);
     this.value.wrapLong(value);
