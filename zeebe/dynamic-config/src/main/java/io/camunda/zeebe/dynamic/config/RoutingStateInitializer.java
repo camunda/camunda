@@ -11,7 +11,9 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRedistributionCompletion;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -47,29 +49,34 @@ public class RoutingStateInitializer implements ClusterConfigurationModifier {
   @Override
   public ActorFuture<ClusterConfiguration> modify(final ClusterConfiguration configuration) {
     RoutingState routingState = null;
-    AwaitRedistributionCompletion operation = null;
+    List<ClusterConfigurationChangeOperation> operations = List.of();
     if (routingStatePath.isPresent() && Files.exists(routingStatePath.get())) {
       final byte[] routingStateContent;
       try {
         routingStateContent = Files.readAllBytes(routingStatePath.get());
         routingState =
             serializer.deserializeRoutingState(routingStateContent, 0, routingStateContent.length);
-        operation =
-            switch (routingState.requestHandling()) {
-              case final RequestHandling.ActivePartitions activePartitions ->
-                  new AwaitRedistributionCompletion(
-                      MemberId.from("0"),
-                      activePartitions.basePartitionCount()
-                          + activePartitions.additionalActivePartitions().size()
-                          + activePartitions.inactivePartitions().size(),
-                      new TreeSet<>(activePartitions.inactivePartitions()));
-              case final RequestHandling.AllPartitions allPartitions ->
-                  // no need to add an operation
-                  null;
-              default ->
-                  throw new IllegalStateException(
-                      "Unexpected request handling type: " + routingState.requestHandling());
-            };
+        switch (routingState.requestHandling()) {
+          case final RequestHandling.ActivePartitions activePartitions -> {
+            final var coordinator = MemberId.from("0");
+            final var partitionCount =
+                activePartitions.basePartitionCount()
+                    + activePartitions.additionalActivePartitions().size()
+                    + activePartitions.inactivePartitions().size();
+            final var partitionsLeft = new TreeSet<>(activePartitions.inactivePartitions());
+            operations =
+                List.of(
+                    new AwaitRedistributionCompletion(coordinator, partitionCount, partitionsLeft),
+                    new AwaitRelocationCompletion(coordinator, partitionCount, partitionsLeft));
+          }
+          case final RequestHandling.AllPartitions allPartitions -> {
+            // no need to add an operation, state is already initialized
+            operations = List.of();
+          }
+          default ->
+              throw new IllegalStateException(
+                  "Unexpected request handling type: " + routingState.requestHandling());
+        }
         LOG.debug(
             "Initialized routing state from file '{}': {}", routingStatePath.get(), routingState);
       } catch (final IOException e) {
@@ -83,8 +90,8 @@ public class RoutingStateInitializer implements ClusterConfigurationModifier {
       routingState = RoutingState.initializeWithPartitionCount(staticPartitionCount);
     }
     var pendingChanges = configuration.pendingChanges();
-    if (pendingChanges.isEmpty() && operation != null) {
-      pendingChanges = Optional.of(ClusterChangePlan.init(1L, List.of(operation)));
+    if (pendingChanges.isEmpty() && !operations.isEmpty()) {
+      pendingChanges = Optional.of(ClusterChangePlan.init(1L, operations));
     }
     final var withRoutingState =
         new ClusterConfiguration(
