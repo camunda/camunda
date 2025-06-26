@@ -8,7 +8,7 @@ This ensures we consistently write such tests and cover all necessary supported 
 ## When to write acceptance tests
 
 1. You should write acceptance tests when implementing a feature and validating the user flow
-   1. This comes after writing unit tests and integration tests, for more details please see our [testing guide](../docs/testing.md).
+   1. This comes after writing unit tests and integration tests, for more details please see our [testing guide](/docs/testing.md).
    2. Integration tests might live in a different submodule, where two or more dependencies are tested together
    3. Unit tests live in a module, related to the code of the unit
 2. As a regression test, when fixing a bug that impacted the user flow/behavior.
