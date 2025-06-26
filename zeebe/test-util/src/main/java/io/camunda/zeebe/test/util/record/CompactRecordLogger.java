@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
+import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
@@ -123,6 +124,7 @@ public class CompactRecordLogger {
           entry("ROLE", "RL"),
           entry("GROUP", "GR"),
           entry("MAPPING", "MAP"),
+          entry("AUTHORIZATION", "AUTH"),
           entry("ASYNC_REQUEST", "ASYNC"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
@@ -186,6 +188,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.MAPPING, this::summarizeMapping);
     valueLoggers.put(ValueType.ASYNC_REQUEST, this::summarizeAsyncRequest);
     valueLoggers.put(ValueType.USER, this::summarizeUser);
+    valueLoggers.put(ValueType.AUTHORIZATION, this::summarizeAuthorization);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -1112,6 +1115,18 @@ public class CompactRecordLogger {
         .append(value.getName());
 
     return builder.toString();
+  }
+
+  private String summarizeAuthorization(final Record<?> record) {
+    final var value = (AuthorizationRecordValue) record.getValue();
+
+    return "%s %s can %s %s %s"
+        .formatted(
+            value.getOwnerType(),
+            formatId(value.getOwnerId()),
+            value.getPermissionTypes(),
+            value.getResourceType(),
+            formatId(value.getResourceId()));
   }
 
   private String summarizeAsyncRequest(final Record<?> record) {
