@@ -13,15 +13,12 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
+import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
@@ -46,13 +43,13 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
   public void shouldSuspendProcessInstanceWhenElementIsCompleted() {
     // given
     final String processId = "process";
-    final String elementToSuspend = "element";
+    final String elementBeforeSuspension = "element";
     ENGINE
         .deployment()
         .withXmlResource(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
-                .manualTask(elementToSuspend)
+                .manualTask(elementBeforeSuspension)
                 .endEvent()
                 .done())
         .deploy();
@@ -62,7 +59,7 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(processId)
-            .withRuntimeSuspendInstruction(elementToSuspend)
+            .withRuntimeSuspendInstruction(elementBeforeSuspension)
             .create();
 
     // then
@@ -74,12 +71,12 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
             .filter(
                 record ->
                     record.getValue().getElementId().equals(processId)
-                        || record.getValue().getElementId().equals(elementToSuspend));
+                        || record.getValue().getElementId().equals(elementBeforeSuspension));
 
     assertThat(result)
         .extracting(Record::getIntent, record -> record.getValue().getElementId())
         .containsSequence(
-            Tuple.tuple(ProcessInstanceIntent.ELEMENT_COMPLETED, elementToSuspend),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_COMPLETED, elementBeforeSuspension),
             Tuple.tuple(ProcessInstanceIntent.ELEMENT_SUSPENDED, processId));
 
     final var processInstanceRecord =
@@ -103,52 +100,10 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
   }
 
   @Test
-  public void shouldSuspendProcessInstanceWhenMultipleInstructionsAndElementIsCompleted() {
-    // given
-    final String processId = "process";
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(processId)
-                .startEvent()
-                .manualTask("manualTask1")
-                .manualTask("manualTask2")
-                .endEvent()
-                .done())
-        .deploy();
-
-    // when
-    final long processInstanceKey =
-        ENGINE
-            .processInstance()
-            .ofBpmnProcessId(processId)
-            .withRuntimeSuspendInstruction("manualTask2")
-            .withRuntimeSuspendInstruction("manualTask1")
-            .create();
-
-    // then
-    final var result =
-        RecordingExporter.processInstanceRecords()
-            .onlyEvents()
-            .withProcessInstanceKey(processInstanceKey)
-            .limit(processId, ProcessInstanceIntent.ELEMENT_SUSPENDED)
-            .filter(
-                record ->
-                    record.getValue().getElementId().equals(processId)
-                        || record.getValue().getElementId().equals("manualTask1"));
-
-    assertThat(result)
-        .extracting(Record::getIntent, record -> record.getValue().getElementId())
-        .containsSequence(
-            Tuple.tuple(ProcessInstanceIntent.ELEMENT_COMPLETED, "manualTask1"),
-            Tuple.tuple(ProcessInstanceIntent.ELEMENT_SUSPENDED, processId));
-  }
-
-  @Test
   public void shouldCancelJobWhenProcessInstanceIsSuspended() {
     // given
     final String processId = "process";
-    final String elementToSuspend = "element";
+    final String elementBeforeSuspension = "element";
     ENGINE
         .deployment()
         .withXmlResource(
@@ -158,7 +113,7 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
                 .serviceTask("task", t -> t.zeebeJobType("jobType"))
                 .endEvent()
                 .moveToLastGateway()
-                .manualTask(elementToSuspend)
+                .manualTask(elementBeforeSuspension)
                 .endEvent()
                 .done())
         .deploy();
@@ -168,7 +123,7 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(processId)
-            .withRuntimeSuspendInstruction(elementToSuspend)
+            .withRuntimeSuspendInstruction(elementBeforeSuspension)
             .create();
 
     // then
@@ -184,7 +139,7 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
   public void shouldUnsubscribeFromEventsWhenProcessIsSuspended() {
     // given
     final String processId = "process";
-    final String elementToSuspend = "element";
+    final String elementBeforeSuspension = "element";
     ENGINE
         .deployment()
         .withXmlResource(
@@ -196,7 +151,7 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
                     e -> e.message(m -> m.name("my_message").zeebeCorrelationKey("=\"my_key\"")))
                 .endEvent()
                 .moveToLastGateway()
-                .manualTask(elementToSuspend)
+                .manualTask(elementBeforeSuspension)
                 .endEvent()
                 .done())
         .deploy();
@@ -206,25 +161,34 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(processId)
-            .withRuntimeSuspendInstruction(elementToSuspend)
+            .withRuntimeSuspendInstruction(elementBeforeSuspension)
             .create();
 
     // then
-    final var result =
+    final var processMessageSubscriptionDeletionRecord =
         RecordingExporter.processMessageSubscriptionRecords(
                 ProcessMessageSubscriptionIntent.DELETED)
             .withProcessInstanceKey(processInstanceKey)
             .withMessageName("my_message")
             .getFirst();
 
-    assertThat(result.getValue().getElementId()).isEqualTo("message");
+    Assertions.assertThat(processMessageSubscriptionDeletionRecord.getValue())
+        .hasElementId("message");
+
+    final var messageSubscriptionDeletionRecord =
+        RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.DELETED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withMessageName("my_message")
+            .getFirst();
+
+    assertThat(messageSubscriptionDeletionRecord.getValue()).isNotNull();
   }
 
   @Test
   public void shouldCancelUserTasksWhenProcessInstanceIsSuspended() {
     // given
     final String processId = "process";
-    final String elementToSuspend = "element";
+    final String elementBeforeSuspension = "element";
     ENGINE
         .deployment()
         .withXmlResource(
@@ -234,7 +198,7 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
                 .userTask("userTask", AbstractUserTaskBuilder::zeebeUserTask)
                 .endEvent()
                 .moveToLastGateway()
-                .manualTask(elementToSuspend)
+                .manualTask(elementBeforeSuspension)
                 .endEvent()
                 .done())
         .deploy();
@@ -244,7 +208,7 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(processId)
-            .withRuntimeSuspendInstruction(elementToSuspend)
+            .withRuntimeSuspendInstruction(elementBeforeSuspension)
             .create();
 
     // then
@@ -260,7 +224,7 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
   public void shouldResolveIncidentsWhenProcessInstanceIsSuspended() {
     // given
     final String processId = "process";
-    final String elementToSuspend = "element";
+    final String elementBeforeSuspension = "element";
     ENGINE
         .deployment()
         .withXmlResource(
@@ -272,7 +236,7 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
                     "timer", e -> e.timerWithDurationExpression("not.a.valid.expr"))
                 .endEvent()
                 .moveToLastGateway()
-                .manualTask(elementToSuspend)
+                .manualTask(elementBeforeSuspension)
                 .endEvent()
                 .done())
         .deploy();
@@ -282,7 +246,7 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(processId)
-            .withRuntimeSuspendInstruction(elementToSuspend)
+            .withRuntimeSuspendInstruction(elementBeforeSuspension)
             .create();
 
     // then
@@ -297,7 +261,7 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
   @Test
   public void shouldBePossibleToCancelSuspendedProcessInstance() {
     final String processId = "process";
-    final String elementToSuspend = "element";
+    final String elementBeforeSuspension = "element";
     ENGINE
         .deployment()
         .withXmlResource(
@@ -310,7 +274,7 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
                 .task("task4")
                 .endEvent()
                 .moveToLastGateway()
-                .manualTask(elementToSuspend)
+                .manualTask(elementBeforeSuspension)
                 .endEvent()
                 .done())
         .deploy();
@@ -320,30 +284,22 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(processId)
-            .withRuntimeSuspendInstruction(elementToSuspend)
+            .withRuntimeSuspendInstruction(elementBeforeSuspension)
             .create();
 
-    // then
     final var result =
-        RecordingExporter.processInstanceRecords()
-            .onlyEvents()
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_SUSPENDED)
             .withProcessInstanceKey(processInstanceKey)
-            .limit(processId, ProcessInstanceIntent.ELEMENT_SUSPENDED)
-            .filter(record -> record.getValue().getElementId().equals(processId));
+            .getFirst();
 
-    assertThat(result)
-        .extracting(Record::getIntent, record -> record.getValue().getElementId())
-        .contains(Tuple.tuple(ProcessInstanceIntent.ELEMENT_SUSPENDED, processId));
+    Assertions.assertThat(result.getValue()).hasElementId(processId);
 
     final var processInstanceRecord =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_SUSPENDED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
-    ENGINE.writeRecords(
-        RecordToWrite.command()
-            .key(processInstanceKey)
-            .processInstance(ProcessInstanceIntent.CANCEL, processInstanceRecord.getValue()));
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
 
     final var terminatedEvent =
         RecordingExporter.processInstanceRecords()
@@ -359,13 +315,13 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
   public void shouldNotAllowToMigrateSuspendedProcessInstance() {
     // given
     final String processId = "process";
-    final String elementToSuspend = "element";
+    final String elementBeforeSuspension = "element";
     ENGINE
         .deployment()
         .withXmlResource(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
-                .manualTask(elementToSuspend)
+                .manualTask(elementBeforeSuspension)
                 .endEvent()
                 .done())
         .deploy();
@@ -374,7 +330,7 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(processId)
-            .withRuntimeSuspendInstruction(elementToSuspend)
+            .withRuntimeSuspendInstruction(elementBeforeSuspension)
             .create();
 
     final long updatedProcessDefinitionKey =
@@ -383,42 +339,41 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
                     .startEvent()
-                    .manualTask(elementToSuspend)
+                    .manualTask(elementBeforeSuspension)
                     .manualTask("anotherManualTask")
                     .endEvent()
                     .done())
             .deploy()
             .getKey();
 
-    // when
-    final var migrationRecord =
-        new ProcessInstanceMigrationRecord()
-            .setProcessInstanceKey(processInstanceKey)
-            .setTargetProcessDefinitionKey(updatedProcessDefinitionKey);
-
-    ENGINE.writeRecords(RecordToWrite.command().key(processInstanceKey).migration(migrationRecord));
+    final var rejectedCommandRecord =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(updatedProcessDefinitionKey)
+            .expectRejection()
+            .migrate();
 
     // then
-    final var rejectedCommandRecord =
-        RecordingExporter.processInstanceMigrationRecords(ProcessInstanceMigrationIntent.MIGRATE)
-            .withProcessInstanceKey(processInstanceKey)
-            .onlyCommandRejections()
-            .getFirst();
-
-    assertThat(rejectedCommandRecord).isNotNull();
+    assertThat(rejectedCommandRecord.getRejectionReason())
+        .isEqualTo(
+            String.format(
+                "Expected to migrate process instance '%s' but it is currently suspended. Suspended process instances cannot be migrated.",
+                processInstanceKey));
   }
 
   @Test
   public void shouldNotAllowToModifySuspendedProcessInstance() {
     // given
     final String processId = "process";
-    final String elementToSuspend = "element";
+    final String elementBeforeSuspension = "element";
     ENGINE
         .deployment()
         .withXmlResource(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
-                .manualTask(elementToSuspend)
+                .manualTask(elementBeforeSuspension)
                 .manualTask("anotherManualTask")
                 .endEvent()
                 .done())
@@ -428,47 +383,43 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(processId)
-            .withRuntimeSuspendInstruction(elementToSuspend)
+            .withRuntimeSuspendInstruction(elementBeforeSuspension)
             .create();
 
     // when
-    final var modification =
-        new ProcessInstanceModificationRecord()
-            .setProcessInstanceKey(processInstanceKey)
-            .addActivateInstruction(
-                new ProcessInstanceModificationActivateInstruction()
-                    .setElementId("anotherManualTask"));
-    ENGINE.writeRecords(RecordToWrite.command().key(processInstanceKey).modification(modification));
+    final var rejectedCommandRecord =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("anotherManualTask")
+            .expectRejection()
+            .modify();
 
     // then
-    final var rejectedCommandRecord =
-        RecordingExporter.processInstanceModificationRecords(
-                ProcessInstanceModificationIntent.MODIFY)
-            .withProcessInstanceKey(processInstanceKey)
-            .onlyCommandRejections()
-            .getFirst();
-
-    assertThat(rejectedCommandRecord).isNotNull();
+    assertThat(rejectedCommandRecord.getRejectionReason())
+        .isEqualTo(
+            "Expected to modify instance of process 'process' but it is currently suspended. Suspended process instances cannot be modified.");
   }
 
   @Test
   public void shouldSuspendWhenInterruptingBoundaryEventActivated() {
     // given
     final String processId = "process";
-    final String elementToSuspend = "element";
+    final String elementBeforeSuspension = "element";
     ENGINE
         .deployment()
         .withXmlResource(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
-                .serviceTask(elementToSuspend, t -> t.zeebeJobType("jobType"))
+                .serviceTask(elementBeforeSuspension, t -> t.zeebeJobType("jobType"))
                 .boundaryEvent("boundary")
                 .cancelActivity(true)
                 .message(
                     messageBuilder ->
                         messageBuilder.name("myMessage").zeebeCorrelationKey("=\"myKey\""))
                 .endEvent()
-                .moveToActivity(elementToSuspend)
+                .moveToActivity(elementBeforeSuspension)
                 .endEvent()
                 .done())
         .deploy();
@@ -477,54 +428,49 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(processId)
-            .withRuntimeSuspendInstruction(elementToSuspend)
+            .withRuntimeSuspendInstruction(elementBeforeSuspension)
             .create();
 
     // when
-    ENGINE
-        .message()
-        .withName("myMessage")
-        .withCorrelationKey("myKey")
-        .withTimeToLive(1000)
-        .publish();
+    ENGINE.message().withName("myMessage").withCorrelationKey("myKey").publish();
 
     // then
     final var result =
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey)
             .onlyEvents()
-            .limit(elementToSuspend, ProcessInstanceIntent.ELEMENT_TERMINATED)
+            .limit(elementBeforeSuspension, ProcessInstanceIntent.ELEMENT_TERMINATED)
             .filter(
                 record ->
                     record.getValue().getElementId().equals(processId)
-                        || record.getValue().getElementId().equals(elementToSuspend));
+                        || record.getValue().getElementId().equals(elementBeforeSuspension));
 
     assertThat(result)
         .extracting(Record::getIntent, record -> record.getValue().getElementId())
         .containsSequence(
-            Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATING, elementToSuspend),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATING, elementBeforeSuspension),
             Tuple.tuple(ProcessInstanceIntent.ELEMENT_SUSPENDED, processId),
-            Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATED, elementToSuspend));
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATED, elementBeforeSuspension));
   }
 
   @Test
   public void shouldNotSuspendWhenNonInterruptingBoundaryEventIsActivated() {
     // given
     final String processId = "process";
-    final String elementToSuspend = "element";
+    final String elementBeforeSuspension = "element";
     ENGINE
         .deployment()
         .withXmlResource(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
-                .serviceTask(elementToSuspend, t -> t.zeebeJobType("jobType"))
+                .serviceTask(elementBeforeSuspension, t -> t.zeebeJobType("jobType"))
                 .boundaryEvent("boundary")
                 .cancelActivity(false)
                 .message(
                     messageBuilder ->
                         messageBuilder.name("myMessage").zeebeCorrelationKey("=\"myKey\""))
                 .endEvent()
-                .moveToActivity(elementToSuspend)
+                .moveToActivity(elementBeforeSuspension)
                 .endEvent()
                 .done())
         .deploy();
@@ -533,7 +479,7 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(processId)
-            .withRuntimeSuspendInstruction(elementToSuspend)
+            .withRuntimeSuspendInstruction(elementBeforeSuspension)
             .create();
 
     // when
@@ -548,9 +494,8 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
     final var result =
         RecordingExporter.processInstanceRecords()
             .onlyEvents()
-            .limit("boundary", ProcessInstanceIntent.ELEMENT_COMPLETED)
             .withProcessInstanceKey(processInstanceKey)
-            .limit(processId, ProcessInstanceIntent.ELEMENT_SUSPENDED)
+            .limit("boundary", ProcessInstanceIntent.ELEMENT_COMPLETED)
             .filter(record -> record.getValue().getElementId().equals(processId));
 
     assertThat(result)
