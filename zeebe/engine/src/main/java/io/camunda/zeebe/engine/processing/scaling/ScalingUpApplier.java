@@ -26,6 +26,6 @@ public class ScalingUpApplier implements TypedEventApplier<ScaleIntent, ScaleRec
     final var partitionCount = value.getDesiredPartitionCount();
     final var partitions = PartitionUtil.allPartitions(partitionCount);
 
-    routingState.setDesiredPartitions(new TreeSet<>(partitions), key);
+    routingState.setDesiredPartitions(new TreeSet<>(partitions), value.getScalingPosition());
   }
 }
