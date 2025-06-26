@@ -10,6 +10,7 @@ package io.camunda.zeebe.db;
 import io.camunda.zeebe.protocol.ScopedColumnFamily;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Represents a column family, where it is possible to store keys of type {@link KeyType} and
@@ -45,6 +46,16 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue>
    * @return if the key was found in the column family then the value, otherwise null
    */
   ValueType get(KeyType key);
+
+  /**
+   * Returns the corresponding stored value in the column family to the given key. Returns null if
+   * the key does not exist. The difference to {@link #get(KeyType)} is that this method calls the
+   * {@code valueSupplier} to create a new instance of {@link ValueType} instead of a reference to
+   * the mutable internal value instance.
+   *
+   * <p>Use this method if you would otherwise immediately copy the returned value.
+   */
+  ValueType get(KeyType key, Supplier<ValueType> valueSupplier);
 
   /**
    * Visits the values, which are stored in the column family. The ordering depends on the key.
