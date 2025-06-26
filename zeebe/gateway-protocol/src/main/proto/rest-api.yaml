@@ -656,7 +656,7 @@ paths:
     post:
       tags:
         - Tenant
-      operationId: searchGroupIdsForTenant
+      operationId: searchGroupsForTenant
       summary: Search groups for tenant
       description: Retrieves a filtered and sorted list of groups for a specified tenant.
       parameters:
@@ -671,14 +671,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/TenantGroupSearchQueryRequest"
+              $ref: "#/components/schemas/GroupSearchQueryRequest"
       responses:
         "200":
           description: The search result of groups for the tenant.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TenantGroupSearchResult"
+                $ref: "#/components/schemas/GroupSearchQueryResult"
   /tenants/{tenantId}/roles/search:
     post:
       tags:
