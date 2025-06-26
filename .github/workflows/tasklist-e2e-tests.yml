@@ -33,6 +33,7 @@ jobs:
       - name: Detect changes
         uses: ./.github/actions/paths-filter
         id: filter
+
   test:
     runs-on: ubuntu-latest
     needs: [detect-changes]
@@ -50,12 +51,14 @@ jobs:
         ports:
           - 9200:9200
           - 9300:9300
+
     steps:
       - name: Check out repository code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b
+        uses: hashicorp/vault-action@b022ecdb0c75c75ceb164232485b392254f981f4
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -64,36 +67,46 @@ jobs:
           secrets: |
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Setup yarn
-        run: npm install -g yarn
+
       - name: Install node dependencies
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+        run: yarn install
+
+      - name: Install frontend dependencies
         working-directory: ./tasklist/client
         run: yarn install
+
       - name: Add Yarn binaries to Path
         working-directory: ./tasklist/client
         run: |
           yarn bin >> "$GITHUB_PATH"
           yarn global bin >> "$GITHUB_PATH"
+
       - name: Install Playwright
         run: yarn exec playwright install -- --with-deps chromium
-        working-directory: ./tasklist/client
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
       - name: Build frontend
         working-directory: ./tasklist/client
         run: yarn build
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: "adopt"
           java-version: "21"
+
       - name: Setup Maven
         uses: ./.github/actions/setup-maven-dist
         with:
           maven-version: "3.9.6"
           set-mvnw: true
+
       # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
       - name: "Create settings.xml"
         uses: s4u/maven-settings-action@v3.1.0
@@ -106,6 +119,7 @@ jobs:
               "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
             }]
           mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+
       - name: Build backend
         # Currently, the e2e environment of tasklist conflicts with the optimize build. For the moment,
         # we're excluding optimize from the build, not to impact this tasklist's workflow.
@@ -117,20 +131,32 @@ jobs:
           -Dspring-boot.run.fork=true
           -Dspring-boot.run.jvmArguments="-Dspring.profiles.active=e2e-test,dev,tasklist,consolidated-auth,broker -Dzeebe.broker.exporters.camundaexporter.classname=io.camunda.exporter.CamundaExporter -Dzeebe.broker.exporters.camundaexporter.args.connect.url=http://localhost:9200 -Dzeebe.broker.exporters.camundaexporter.args.bulk.size=100 -Dzeebe.broker.exporters.camundaexporter.args.index.shouldWaitForImporters=false -Dzeebe.broker.backpressure.enabled=false"
           -Dspring-boot.run.arguments="--camunda.tasklist.cloud.clusterId=449ac2ad-d3c6-4c73-9c68-7752e39ae616 --camunda.tasklist.csrfPreventionEnabled=false"
+
       - name: Python setup
         if: always()
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
+
       - name: Run tests
-        working-directory: ./tasklist/client
-        run: yarn run test:e2e:ci
+        shell: bash
+        env:
+          LOCAL_TEST: "false"
+          CORE_APPLICATION_TASKLIST_URL: http://localhost:8080
+          CORE_APPLICATION_OPERATE_URL: http://localhost:8081
+          CAMUNDA_AUTH_STRATEGY: "BASIC"
+          CAMUNDA_BASIC_AUTH_USERNAME: "demo"
+          CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
+          ZEEBE_REST_ADDRESS: "http://localhost:8080"
+        run: npm run test -- --project=tasklist-v1-e2e
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: Playwright report
-          path: tasklist/client/playwright-report/
+          name: C8 Orchestration Cluster E2E Test Result
+          path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
           retention-days: 30
+
       - name: Observe build status
         if: always()
         continue-on-error: true
