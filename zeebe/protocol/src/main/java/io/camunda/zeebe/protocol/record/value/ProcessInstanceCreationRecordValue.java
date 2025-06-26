@@ -59,12 +59,4 @@ public interface ProcessInstanceCreationRecordValue
 
     String getAfterElementId();
   }
-
-  @Value.Immutable
-  @ImmutableProtocol(
-      builder = ImmutableProcessInstanceCreationCancellationInstructionValue.Builder.class)
-  interface ProcessInstanceCreationCancellationInstructionValue
-      extends ProcessInstanceCreationRuntimeInstructionValue {
-    String getAfterElementId();
-  }
 }

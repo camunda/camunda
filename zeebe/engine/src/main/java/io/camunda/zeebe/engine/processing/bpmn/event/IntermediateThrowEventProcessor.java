@@ -178,7 +178,7 @@ public class IntermediateThrowEventProcessor
               completed ->
                   stateTransitionBehavior
                       .suspendProcessInstanceIfNeeded(element, completed)
-                      .ifRight(
+                      .ifLeft(
                           notSuspended ->
                               stateTransitionBehavior.takeOutgoingSequenceFlows(
                                   element, notSuspended)));
@@ -231,7 +231,7 @@ public class IntermediateThrowEventProcessor
               completed ->
                   stateTransitionBehavior
                       .suspendProcessInstanceIfNeeded(element, completed)
-                      .ifRight(
+                      .ifLeft(
                           notSuspended ->
                               stateTransitionBehavior.takeOutgoingSequenceFlows(
                                   element, notSuspended)));
@@ -320,7 +320,7 @@ public class IntermediateThrowEventProcessor
               completed ->
                   stateTransitionBehavior
                       .suspendProcessInstanceIfNeeded(element, completed)
-                      .ifRight(
+                      .ifLeft(
                           notSuspended ->
                               stateTransitionBehavior.takeOutgoingSequenceFlows(
                                   element, notSuspended)));
@@ -382,7 +382,7 @@ public class IntermediateThrowEventProcessor
               completed ->
                   stateTransitionBehavior
                       .suspendProcessInstanceIfNeeded(element, completed)
-                      .ifRight(
+                      .ifLeft(
                           notSuspended ->
                               stateTransitionBehavior.takeOutgoingSequenceFlows(
                                   element, notSuspended)));
@@ -426,7 +426,7 @@ public class IntermediateThrowEventProcessor
               completed ->
                   stateTransitionBehavior
                       .suspendProcessInstanceIfNeeded(element, completed)
-                      .ifRight(
+                      .ifLeft(
                           notSuspended ->
                               stateTransitionBehavior.takeOutgoingSequenceFlows(
                                   element, notSuspended)));

@@ -483,21 +483,29 @@ public final class BpmnStateTransitionBehavior {
     element.getOutgoing().forEach(sequenceFlow -> takeSequenceFlow(context, sequenceFlow));
   }
 
+  /**
+   * Suspends the process instance if the condition for suspension is met.
+   *
+   * @param element the flow node element that is being processed
+   * @param context the context of the process instance
+   * @return Either containing the context if the process instance is not suspended (left) or Void
+   *     if the process instance is suspended (right).
+   */
   public <T extends ExecutableFlowNode>
-      Either<Failure, BpmnElementContext> suspendProcessInstanceIfNeeded(
+      Either<BpmnElementContext, Void> suspendProcessInstanceIfNeeded(
           final T element, BpmnElementContext context) {
 
     if (!stateBehavior.shouldSuspendProcessInstance(
         context.getProcessInstanceKey(), BufferUtil.bufferAsString(element.getId()))) {
-      return Either.right(context);
+      return Either.left(context);
     }
     final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
     if (processInstance.isSuspended()) {
       // if the process instance is already suspended, we don't need to suspend it again
-      return Either.right(context);
+      return Either.left(context);
     }
     transitionToSuspended(context);
-    return Either.left(new Failure("Process instance suspended due to runtime instruction"));
+    return Either.right(null);
   }
 
   public Either<Failure, ?> beforeExecutionPathCompleted(

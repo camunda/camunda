@@ -334,7 +334,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
     return isSuspendedProp.getValue();
   }
 
-  public void setSuspended(final boolean suspended) {
-    isSuspendedProp.setValue(suspended);
+  public void suspend() {
+    isSuspendedProp.setValue(true);
   }
 }

@@ -75,7 +75,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       processInstanceKeyByProcessDefinitionKeyColumnFamily;
 
   private final RuntimeInstructions runtimeInstructions;
-  private final ColumnFamily<DbLong, RuntimeInstructions> runtimeInstructionsByProcessInstanceId;
+  private final ColumnFamily<DbLong, RuntimeInstructions> runtimeInstructionsByProcessInstanceKey;
 
   public DbElementInstanceState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
@@ -140,7 +140,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
     runtimeInstructions = new RuntimeInstructions();
 
-    runtimeInstructionsByProcessInstanceId =
+    runtimeInstructionsByProcessInstanceKey =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.RUNTIME_INSTRUCTIONS,
             transactionContext,
@@ -493,7 +493,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       final long processInstanceKey, final String elementId) {
 
     elementInstanceKey.wrapLong(processInstanceKey);
-    final var instructions = runtimeInstructionsByProcessInstanceId.get(elementInstanceKey);
+    final var instructions = runtimeInstructionsByProcessInstanceKey.get(elementInstanceKey);
     if (instructions == null) {
       return false;
     }
@@ -511,7 +511,7 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
     runtimeInstructions.setRuntimeInstructions(instructions);
     elementInstanceKey.wrapLong(processInstanceKey);
-    runtimeInstructionsByProcessInstanceId.insert(elementInstanceKey, runtimeInstructions);
+    runtimeInstructionsByProcessInstanceKey.insert(elementInstanceKey, runtimeInstructions);
   }
 
   private void removeNumberOfTakenSequenceFlows(final long flowScopeKey) {

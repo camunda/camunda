@@ -68,7 +68,11 @@ public final class EventSubProcessProcessor
   @Override
   public Either<Failure, ?> finalizeCompletion(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-    return stateTransitionBehavior.transitionToCompleted(element, context);
+    return stateTransitionBehavior
+        .transitionToCompleted(element, context)
+        .thenDo(
+            completed ->
+                stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, completed));
   }
 
   @Override

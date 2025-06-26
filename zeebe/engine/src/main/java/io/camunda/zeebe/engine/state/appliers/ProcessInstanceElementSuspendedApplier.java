@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -23,6 +24,6 @@ public class ProcessInstanceElementSuspendedApplier
 
   @Override
   public void applyState(final long key, final ProcessInstanceRecord value) {
-    elementInstanceState.updateInstance(key, elementInstance -> elementInstance.setSuspended(true));
+    elementInstanceState.updateInstance(key, ElementInstance::suspend);
   }
 }

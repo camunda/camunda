@@ -116,7 +116,7 @@ public final class MultiInstanceBodyProcessor
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
               stateTransitionBehavior
                   .suspendProcessInstanceIfNeeded(element, completed)
-                  .ifRight(
+                  .ifLeft(
                       notSuspended ->
                           stateTransitionBehavior.takeOutgoingSequenceFlows(element, notSuspended));
             });

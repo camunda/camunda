@@ -93,7 +93,7 @@ public final class SubProcessProcessor
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
               stateTransitionBehavior
                   .suspendProcessInstanceIfNeeded(element, completed)
-                  .ifRight(
+                  .ifLeft(
                       notSuspended ->
                           stateTransitionBehavior.takeOutgoingSequenceFlows(element, notSuspended));
             });
