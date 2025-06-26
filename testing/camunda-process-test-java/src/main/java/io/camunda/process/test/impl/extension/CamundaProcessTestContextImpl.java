@@ -263,9 +263,9 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
-  public void mockDmnDecision(final String decisionId, final Map<String, Object> variables) {
+  public void mockDmnDecision(final String decisionId, final Object decisionOutput) {
     final CamundaClient client = createClient();
-    final String jsonVariables = client.getConfiguration().getJsonMapper().toJson(variables);
+    final String jsonVariables = client.getConfiguration().getJsonMapper().toJson(decisionOutput);
 
     // Create an empty DMN model
     final DmnModelInstance modelInstance = Dmn.createEmptyModel();
@@ -288,7 +288,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     literalExpression.setText(text);
     decision.addChildElement(literalExpression);
 
-    LOGGER.debug("Mock: Deploy a DMN '{}' with result variables {}", decisionId, variables);
+    LOGGER.debug("Mock: Deploy a DMN '{}' with decision output {}", decisionId, decisionOutput);
 
     final String resourceName = decisionId + ".dmn";
     client

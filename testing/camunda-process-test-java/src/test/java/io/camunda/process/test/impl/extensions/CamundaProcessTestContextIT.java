@@ -30,6 +30,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -812,12 +813,12 @@ public class CamundaProcessTestContextIT {
     inputVariables.put("experience", 11);
     inputVariables.put("type", "luxury");
 
-    final Map<String, Object> resultValues = new HashMap<>();
-    resultValues.put("code", "pink");
-    resultValues.put("description", "Pink");
+    final Map<String, Object> decisionOutput = new HashMap<>();
+    decisionOutput.put("code", "pink");
+    decisionOutput.put("description", "Pink");
 
     // When
-    processTestContext.mockDmnDecision(decisionId, resultValues);
+    processTestContext.mockDmnDecision(decisionId, decisionOutput);
 
     final ProcessInstanceEvent processInstanceEvent =
         client
@@ -830,7 +831,50 @@ public class CamundaProcessTestContextIT {
     // Then
     assertThat(processInstanceEvent).isCompleted();
     final Map<String, Object> expectedVariables = new HashMap<>();
-    expectedVariables.put("result", resultValues);
+    expectedVariables.put("result", decisionOutput);
+    assertThat(processInstanceEvent).hasVariables(expectedVariables);
+  }
+
+  @Test
+  void shouldMockBusinessRuleWithGenericOutput() {
+
+    // Given
+    final BpmnModelInstance instance = processModelWithBusinessRule();
+    final long processDefinitionKey = deployProcessModel(instance);
+
+    final String decisionId = "decision-id-1";
+
+    final DmnModelInstance dmnModel = dmnModelWithBusinessRule(decisionId);
+    deployDmnModel(dmnModel);
+
+    final Map<String, Object> inputVariables = new HashMap<>();
+    inputVariables.put("experience", 11);
+    inputVariables.put("type", "luxury");
+
+    final Map<String, Object> decisionOutput = new HashMap<>();
+    decisionOutput.put("code", "pink");
+
+    final Map<String, Object> nestedValues = new HashMap<>();
+    nestedValues.put("color", "burgundy");
+    nestedValues.put("satisfaction", Collections.singletonList(100));
+
+    decisionOutput.put("details", nestedValues);
+
+    // When
+    processTestContext.mockDmnDecision(decisionId, decisionOutput);
+
+    final ProcessInstanceEvent processInstanceEvent =
+        client
+            .newCreateInstanceCommand()
+            .processDefinitionKey(processDefinitionKey)
+            .variables(inputVariables)
+            .send()
+            .join();
+
+    // Then
+    assertThat(processInstanceEvent).isCompleted();
+    final Map<String, Object> expectedVariables = new HashMap<>();
+    expectedVariables.put("result", decisionOutput);
     assertThat(processInstanceEvent).hasVariables(expectedVariables);
   }
 
