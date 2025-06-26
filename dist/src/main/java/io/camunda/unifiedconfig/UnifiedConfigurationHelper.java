@@ -8,14 +8,19 @@
 package io.camunda.unifiedconfig;
 
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
+import io.camunda.application.commons.configuration.BrokerBasedConfiguration.LegacyBrokerBasedProperties;
 import io.camunda.exporter.CamundaExporter;
+import io.camunda.operate.property.LegacyOperateProperties;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.tasklist.property.LegacyTasklistProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import java.util.HashMap;
 import java.util.Map;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
@@ -33,57 +38,40 @@ public class UnifiedConfigurationHelper {
     return environment.getProperty(legacyConfigKey);
   }
 
-  // @Bean
-  public TasklistProperties tasklistProperties(final UnifiedConfiguration unifiedConfiguration) {
-    Database databaseCfg = unifiedConfiguration.getCamunda().getData().getDatabase();
-
-    TasklistProperties tasklistProperties = new TasklistProperties();
-    tasklistProperties.getElasticsearch().setUrl(
-        databaseCfg.getElasticsearch().getUrl());
-
-    // TODO: There should be a cluster name within the elasticsearch node, but I can't
-    //  find it in the technical vision document. We need to figure out. I think it's
-    //  used for logging purposes.
-
-    return tasklistProperties;
-  }
-
-  // @Bean
-  public OperateProperties partialOperateProperties(
+  @Bean
+  public TasklistProperties tasklistProperties(
+      final LegacyTasklistProperties legacyTasklistProperties,
       final UnifiedConfiguration unifiedConfiguration) {
-    OperateProperties operateProperties = new OperateProperties();
-    Database databaseCfg = unifiedConfiguration.getCamunda().getData().getDatabase();
+    TasklistProperties patchedTasklistProperties = new TasklistProperties();
+    BeanUtils.copyProperties(legacyTasklistProperties, patchedTasklistProperties);
 
-    operateProperties.getElasticsearch().setUrl(
-        databaseCfg.getElasticsearch().getUrl());
+    // TODO: Patch patchedTasklistProperties using unifiedConfiguration
 
-    // TODO: There should be a cluster name within the elasticsearch node, but I can't
-    //  find it in the technical vision document. We need to figure out. I think it's
-    //  used for logging purposes.
-
-    return operateProperties;
+    return patchedTasklistProperties;
   }
 
-  // @Bean
-  public BrokerBasedProperties brokerBasedProperties(final UnifiedConfiguration unifiedConfiguration) {
-    BrokerBasedProperties brokerBasedProperties = new BrokerBasedProperties();
-    Database databaseConfig = unifiedConfiguration.getCamunda().getData().getDatabase();
-    Map<String, ExporterCfg> exporters = brokerBasedProperties.getExporters();
+  @Bean
+  public OperateProperties operateProperties(
+      final LegacyOperateProperties legacyOperateProperties,
+      final UnifiedConfiguration unifiedConfiguration) {
+    OperateProperties patchedOperateProperties = new OperateProperties();
+    BeanUtils.copyProperties(legacyOperateProperties, patchedOperateProperties);
 
-    // CamundaExporter is the default
-    ExporterCfg camundaExporter = new ExporterCfg();
-    camundaExporter.setClassName(CamundaExporter.class.getCanonicalName());
+    // TODO: Patch patchedOperateProperties using unifiedConfiguration
 
-    Map<String, Object> args = new HashMap<>();
-    camundaExporter.setArgs(args);
+    return patchedOperateProperties;
+  }
 
-    exporters.put("camundaexporter", camundaExporter);
-    putArg(args, "connect.url", databaseConfig.getElasticsearch().getUrl());
-    putArg(args, "index.prefix", databaseConfig.getElasticsearch().getIndexPrefix());
+  @Bean
+  public BrokerBasedProperties brokerBasedProperties(
+      final LegacyBrokerBasedProperties legacyBrokerBasedProperties,
+      final UnifiedConfiguration unifiedConfiguration) {
+    BrokerBasedProperties patchedBrokerBasedProperties = new BrokerBasedProperties();
+    BeanUtils.copyProperties(legacyBrokerBasedProperties, patchedBrokerBasedProperties);
 
-    // TODO: We need to configure the potential user-configured additional exporters as well
+    // TODO: Patch patchedBrokerBasedProperties using unifiedConfiguration
 
-    return brokerBasedProperties;
+    return patchedBrokerBasedProperties;
   }
 
   private static void putArg(Map<String, Object> args, String keyPath, Object value) {

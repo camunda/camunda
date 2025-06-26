@@ -104,5 +104,7 @@ public class BrokerBasedConfiguration {
   }
 
   @ConfigurationProperties("zeebe.broker")
-  public static final class BrokerBasedProperties extends BrokerCfg {}
+  public static class LegacyBrokerBasedProperties extends BrokerCfg {}
+
+  public static final class BrokerBasedProperties extends LegacyBrokerBasedProperties {}
 }
