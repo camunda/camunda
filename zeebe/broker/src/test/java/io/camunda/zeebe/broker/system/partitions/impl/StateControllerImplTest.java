@@ -74,7 +74,6 @@ public final class StateControllerImplTest {
     runtimeDirectory = tempFolderRule.getRoot().toPath().resolve("runtime");
     snapshotController =
         new StateControllerImpl(
-            1,
             DefaultZeebeDbFactory.defaultFactory(),
             store,
             runtimeDirectory,

@@ -28,10 +28,8 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTran
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.util.health.HealthMonitor;
@@ -471,12 +469,6 @@ public class RandomizedPartitionTransitionTest {
     @Override
     public void close() throws Exception {
       throw new IllegalStateException("Not implemented");
-    }
-
-    @Override
-    public ActorFuture<PersistedSnapshot> takeSnapshot(
-        final int partition, final long lastProcessedPosition, final ConcurrencyControl control) {
-      return CompletableActorFuture.completed(null);
     }
   }
 
