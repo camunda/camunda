@@ -30,4 +30,6 @@ public interface ScaleRecordValue extends RecordValue {
   Collection<Integer> getRelocatedPartitions();
 
   long getBootstrappedAt();
+
+  long getScalingPosition();
 }

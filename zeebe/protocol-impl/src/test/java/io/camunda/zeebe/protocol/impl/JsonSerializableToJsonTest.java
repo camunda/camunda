@@ -2932,7 +2932,8 @@ final class JsonSerializableToJsonTest {
           "desiredPartitionCount": -1,
           "redistributedPartitions": [],
           "relocatedPartitions": [],
-          "bootstrappedAt": -1
+          "bootstrappedAt": -1,
+          "scalingPosition": -1
         }
         """
       },
@@ -2944,7 +2945,8 @@ final class JsonSerializableToJsonTest {
          "desiredPartitionCount": 5,
           "redistributedPartitions": [],
           "relocatedPartitions": [],
-          "bootstrappedAt": -1
+          "bootstrappedAt": -1,
+          "scalingPosition": -1
         }
         """
       },
@@ -2956,13 +2958,15 @@ final class JsonSerializableToJsonTest {
                     .setDesiredPartitionCount(5)
                     .setRelocatedPartitions(List.of(4, 5))
                     .setRedistributedPartitions(List.of(4, 5))
-                    .setBootstrappedAt(123L),
+                    .setBootstrappedAt(123L)
+                    .setScalingPosition(199L),
         """
         {
          "desiredPartitionCount": 5,
           "redistributedPartitions": [4,5],
           "relocatedPartitions": [4,5],
-          "bootstrappedAt": 123
+          "bootstrappedAt": 123,
+          "scalingPosition": 199
         }
         """
       },
