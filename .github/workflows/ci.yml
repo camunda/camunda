@@ -237,8 +237,8 @@ jobs:
             #
             # NOTE: optimize-qa-integrity-tests is temporarily skipped because it needs adjustment
             #   to work with migration from 8.7.0 to 8.8.0.
-            # NOTE: Operate is skipped here as it's UTs are run in consolidated-unit-tests
-            maven-modules: "'-:zeebe-workflow-engine','-:zeebe-broker','-:camunda-process-test-java','-:zeebe-gateway-rest','-:camunda-client-java','-:zeebe-elasticsearch-exporter','-:zeebe-opensearch-exporter','-:camunda-exporter','-:zeebe-atomix-cluster','-:zeebe-cluster-config','-:optimize-schema-integrity-tests','-:operate-common','-:operate-importer-8_7','-:operate-schema','-:operate-webapp'"
+            # NOTE: Operate and Optimize are skipped here as their UTs are run in consolidated-unit-tests
+            maven-modules: "'-:zeebe-workflow-engine','-:zeebe-broker','-:camunda-process-test-java','-:zeebe-gateway-rest','-:camunda-client-java','-:zeebe-elasticsearch-exporter','-:zeebe-opensearch-exporter','-:camunda-exporter','-:zeebe-atomix-cluster','-:zeebe-cluster-config','-:optimize-schema-integrity-tests','-:operate-common','-:operate-importer-8_7','-:operate-schema','-:operate-webapp','-:optimize-backend','-:upgrade-optimize','-:optimize-commons','-:camunda-optimize'"
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: gcp-perf-core-16-default
@@ -306,7 +306,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   # description: Runs unit tests broken down by component and team. Tests are run by JUnit5 Suite and is invoked by the maven command
-  # test location: Operate
+  # test location: Operate, Optimize
   # owner: Core Features, Data Layer
   consolidated-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
@@ -318,7 +318,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        component: [ Operate ]
+        component: [ Operate, Optimize ]
         suite: [ DataLayer, CoreFeatures ]
         include:
           - suite: DataLayer
@@ -1091,59 +1091,6 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  optimize-backend-unit-tests:
-    if: needs.detect-changes.outputs.optimize-backend-changes == 'true'
-    needs: [ detect-changes ]
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions: {}  # GITHUB_TOKEN unused in this job
-    env:
-      LIMITS_CPU: 4
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - name: Setup Maven
-        uses: ./.github/actions/setup-build
-        with:
-          maven-cache-key-modifier: optimize-tests
-          maven-version: 3.8.6
-          time-zone: Europe/Berlin
-          vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - name: Build zeebe-build-tools
-        uses: ./.github/actions/run-maven
-        with:
-          parameters: -f build-tools/pom.xml install
-      - name: Build optimize dependencies
-        uses: ./.github/actions/run-maven
-        with:
-          parameters: -f optimize/pom.xml -pl backend -am install -Dskip.docker -DskipTests -PskipFrontendBuild
-          threads: .5C
-      - name: Test
-        uses: ./.github/actions/run-maven
-        with:
-          parameters: -f optimize/pom.xml test -PskipFrontendBuild -Dskip.docker
-          threads: .5C
-      - name: Upload Test Results
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: optimize-unit-tests-backend-junit
-          path: |
-            **/surefire-reports/**/*.xml
-          retention-days: 7
-          if-no-files-found: ignore
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
   protobuf-checks:
     name: "Protobuf Backwards Compatibility"
     needs: [detect-changes]
@@ -1257,7 +1204,6 @@ jobs:
       - openapi-lint
       - opensearch-integration-tests
       - operate-frontend-tests
-      - optimize-backend-unit-tests
       - optimize-frontend-unit-tests
       - protobuf-checks
       - rdbms-h2-integration-tests
