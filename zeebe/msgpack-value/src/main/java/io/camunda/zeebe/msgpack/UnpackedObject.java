@@ -16,6 +16,10 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
 public class UnpackedObject extends ObjectValue implements Recyclable, BufferReader, BufferWriter {
+
+  private MsgPackReader reader;
+  private MsgPackWriter writer;
+
   /**
    * Creates a new UnpackedObject
    *
@@ -33,7 +37,9 @@ public class UnpackedObject extends ObjectValue implements Recyclable, BufferRea
   @Override
   public void wrap(final DirectBuffer buff, final int offset, final int length) {
     reset();
-    final var reader = new MsgPackReader();
+    if (reader == null) {
+      reader = new MsgPackReader();
+    }
     reader.wrap(buff, offset, length);
     try {
       read(reader);
@@ -56,7 +62,9 @@ public class UnpackedObject extends ObjectValue implements Recyclable, BufferRea
 
   @Override
   public void write(final MutableDirectBuffer buffer, final int offset) {
-    final var writer = new MsgPackWriter();
+    if (writer == null) {
+      writer = new MsgPackWriter();
+    }
     writer.wrap(buffer, offset);
     write(writer);
   }
