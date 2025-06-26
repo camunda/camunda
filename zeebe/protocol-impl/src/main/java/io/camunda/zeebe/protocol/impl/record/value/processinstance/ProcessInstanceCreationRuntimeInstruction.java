@@ -45,12 +45,6 @@ public class ProcessInstanceCreationRuntimeInstruction extends ObjectValue
     return BufferUtil.bufferAsString(afterElementIdProp.getValue());
   }
 
-  /**
-   * Gets the type of this instruction as a string. This method is used to satisfy the
-   * ProcessInstanceCreationRuntimeInstructionValue interface.
-   *
-   * @return the type as a string
-   */
   @Override
   public String getType() {
     final RuntimeInstructionType type = typeProp.getValue();
@@ -67,12 +61,6 @@ public class ProcessInstanceCreationRuntimeInstruction extends ObjectValue
     return this;
   }
 
-  /**
-   * Creates a new instruction instance based on the given type.
-   *
-   * @return a new instruction instance of the appropriate type
-   * @throws IllegalArgumentException if the type is unknown
-   */
   public static ProcessInstanceCreationRuntimeInstruction createInstruction() {
     return new ProcessInstanceCreationRuntimeInstruction();
   }

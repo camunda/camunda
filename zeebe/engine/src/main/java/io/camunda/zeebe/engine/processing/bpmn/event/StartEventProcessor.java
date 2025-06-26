@@ -78,7 +78,7 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
             completed ->
                 stateTransitionBehavior
                     .suspendProcessInstanceIfNeeded(element, completed)
-                    .ifRight(
+                    .ifLeft(
                         notSuspended ->
                             stateTransitionBehavior.takeOutgoingSequenceFlows(
                                 element, notSuspended)));

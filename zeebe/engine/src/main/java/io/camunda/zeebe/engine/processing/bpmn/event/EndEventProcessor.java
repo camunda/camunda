@@ -178,7 +178,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
               completed ->
                   stateTransitionBehavior
                       .suspendProcessInstanceIfNeeded(element, completed)
-                      .ifRight(
+                      .ifLeft(
                           notSuspended ->
                               stateTransitionBehavior.takeOutgoingSequenceFlows(
                                   element, notSuspended)));
@@ -262,7 +262,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
               completed ->
                   stateTransitionBehavior
                       .suspendProcessInstanceIfNeeded(element, completed)
-                      .ifRight(
+                      .ifLeft(
                           notSuspended ->
                               stateTransitionBehavior.takeOutgoingSequenceFlows(
                                   element, notSuspended)));
@@ -345,7 +345,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
               completed ->
                   stateTransitionBehavior
                       .suspendProcessInstanceIfNeeded(element, completed)
-                      .ifRight(
+                      .ifLeft(
                           notSuspended ->
                               stateTransitionBehavior.takeOutgoingSequenceFlows(
                                   element, notSuspended)));
@@ -406,7 +406,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
               completed ->
                   stateTransitionBehavior
                       .suspendProcessInstanceIfNeeded(element, completed)
-                      .ifRight(
+                      .ifLeft(
                           notSuspended ->
                               stateTransitionBehavior.takeOutgoingSequenceFlows(
                                   element, notSuspended)));
@@ -450,7 +450,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
               completed ->
                   stateTransitionBehavior
                       .suspendProcessInstanceIfNeeded(element, completed)
-                      .ifRight(
+                      .ifLeft(
                           notSuspended ->
                               stateTransitionBehavior.takeOutgoingSequenceFlows(
                                   element, notSuspended)));

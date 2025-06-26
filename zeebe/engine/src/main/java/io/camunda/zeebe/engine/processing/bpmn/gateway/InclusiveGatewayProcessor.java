@@ -61,12 +61,18 @@ public final class InclusiveGatewayProcessor
               return stateTransitionBehavior
                   .transitionToCompleted(element, completing)
                   .thenDo(
-                      completed -> {
-                        if (optFlows != null) {
-                          optFlows.forEach(
-                              flow -> stateTransitionBehavior.takeSequenceFlow(completed, flow));
-                        }
-                      });
+                      completed ->
+                          stateTransitionBehavior
+                              .suspendProcessInstanceIfNeeded(element, completed)
+                              .ifLeft(
+                                  notSuspended -> {
+                                    if (optFlows != null) {
+                                      optFlows.forEach(
+                                          flow ->
+                                              stateTransitionBehavior.takeSequenceFlow(
+                                                  completed, flow));
+                                    }
+                                  }));
             });
   }
 

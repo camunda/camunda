@@ -98,6 +98,16 @@ public interface MutableElementInstanceState extends ElementInstanceState {
    */
   void deleteProcessInstanceKeyByDefinitionKey(long processInstanceKey, long processDefinitionKey);
 
+  /**
+   * Stores runtime instructions for the process instance with the given key.
+   *
+   * <p>This method is used to store runtime instructions during the creation of a process instance,
+   * when the instance does not yet exist in the state.
+   *
+   * @param processInstanceKey the key of the process instance to which the runtime instructions
+   *     belong
+   * @param runtimeInstructions the list of runtime instructions to add
+   */
   void addRuntimeInstructions(
       long processInstanceKey,
       List<ProcessInstanceCreationRuntimeInstructionValue> runtimeInstructions);

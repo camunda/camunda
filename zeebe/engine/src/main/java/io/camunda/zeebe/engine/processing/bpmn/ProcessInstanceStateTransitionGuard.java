@@ -223,7 +223,7 @@ public final class ProcessInstanceStateTransitionGuard {
       return Either.left("Process instance '" + context.getProcessInstanceKey() + "' not found");
     }
     if (processInstance.isSuspended()) {
-      return Either.left("Process instance suspended");
+      return Either.left("Process instance '" + context.getProcessInstanceKey() + "' is suspended");
     }
     return Either.right(processInstance);
   }

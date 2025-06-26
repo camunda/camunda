@@ -60,10 +60,15 @@ public final class ExclusiveGatewayProcessor
               return stateTransitionBehavior
                   .transitionToCompleted(element, completing)
                   .thenDo(
-                      completed -> {
-                        optFlow.ifPresent(
-                            flow -> stateTransitionBehavior.takeSequenceFlow(completed, flow));
-                      });
+                      completed ->
+                          stateTransitionBehavior
+                              .suspendProcessInstanceIfNeeded(element, completed)
+                              .ifLeft(
+                                  notSuspended ->
+                                      optFlow.ifPresent(
+                                          flow ->
+                                              stateTransitionBehavior.takeSequenceFlow(
+                                                  notSuspended, flow))));
             });
   }
 
