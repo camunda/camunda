@@ -18,12 +18,11 @@ import java.util.LinkedHashMap;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Configuration
-@Conditional(WebappBackupEnabledCondition.class)
+@ConditionalOnBackupWebappsEnabled
 public class BackupConfig {
 
   public static String differentRepoNameFormat =

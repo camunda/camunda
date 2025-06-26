@@ -7,7 +7,7 @@
  */
 package io.camunda.qa.util.cluster;
 
-import static io.camunda.application.commons.backup.WebappBackupEnabledCondition.BACKUP_WEBAPPS_ENABLED;
+import static io.camunda.application.commons.backup.ConditionalOnBackupWebappsEnabled.BACKUP_WEBAPPS_ENABLED;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.application.StandaloneBackupManager;

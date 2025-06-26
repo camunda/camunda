@@ -7,7 +7,7 @@
  */
 package io.camunda.application;
 
-import static io.camunda.application.commons.backup.WebappBackupEnabledCondition.BACKUP_WEBAPPS_ENABLED;
+import static io.camunda.application.commons.backup.ConditionalOnBackupWebappsEnabled.BACKUP_WEBAPPS_ENABLED;
 import static java.util.Optional.ofNullable;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;

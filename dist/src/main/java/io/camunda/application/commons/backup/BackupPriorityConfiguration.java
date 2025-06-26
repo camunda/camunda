@@ -10,7 +10,6 @@ package io.camunda.application.commons.backup;
 import static io.camunda.application.commons.backup.ConfigValidation.allMatch;
 import static io.camunda.application.commons.backup.ConfigValidation.skipEmptyOptional;
 
-import io.camunda.application.commons.conditions.WebappEnabledCondition;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.conditions.DatabaseType;
 import io.camunda.operate.property.OperateProperties;
@@ -63,12 +62,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
 @Configuration
-@Conditional(WebappEnabledCondition.class)
+@ConditionalOnBackupWebappsEnabled
 @ProfileWebApp
 public class BackupPriorityConfiguration {
 

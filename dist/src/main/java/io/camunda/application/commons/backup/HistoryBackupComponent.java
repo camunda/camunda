@@ -14,14 +14,13 @@ import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 @Component
 @Configuration
-@Conditional(WebappBackupEnabledCondition.class)
+@ConditionalOnBackupWebappsEnabled
 public class HistoryBackupComponent {
 
   private final ThreadPoolTaskExecutor threadPoolTaskExecutor;
