@@ -188,6 +188,62 @@ public class ScaleUpPartitionsTest {
             });
   }
 
+  @Test
+  public void shouldBePossibleToRestoreAsAfterScalingUp() throws IOException {
+    // given
+    final var desiredPartitionCount = PARTITIONS_COUNT + 1;
+    cluster.awaitHealthyTopology();
+    final var backupId = 1L;
+
+    // when
+    scaleToPartitions(desiredPartitionCount);
+    awaitScaleUpCompletion(desiredPartitionCount);
+
+    final var routingStateAfterScaling = clusterActuator.getTopology().getRouting();
+
+    backupActuator.take(backupId);
+
+    Awaitility.await("until backup is ready")
+        .timeout(Duration.ofMinutes(1))
+        .pollInterval(Duration.ofMillis(500))
+        .untilAsserted(
+            () -> {
+              try {
+                final var backupInfo = backupActuator.status(backupId);
+                assertThat(backupInfo.getState()).isEqualTo(StateCode.COMPLETED);
+              } catch (final Exception e) {
+                LOG.error("Failed to get backup status for backupId: {}", backupId, e);
+                fail(e);
+              }
+            });
+    cluster.brokers().values().forEach(TestSpringApplication::stop);
+
+    for (final var broker : cluster.brokers().values()) {
+      LOG.debug("Restoring broker: {}", broker.nodeId());
+      final var dataFolder = Path.of(broker.brokerConfig().getData().getDirectory());
+      FileUtil.deleteFolderIfExists(dataFolder);
+
+      Files.createDirectories(dataFolder);
+      try (final var restoreApp =
+          new TestRestoreApp(broker.brokerConfig()).withBackupId(backupId)) {
+        assertThatNoException().isThrownBy(restoreApp::start);
+      }
+    }
+
+    // then
+    // the topology is restored to the desired partition count and message correlation
+    cluster.brokers().values().parallelStream().forEach(TestSpringApplication::start);
+    Awaitility.await("until topology is restored correctly")
+        .untilAsserted(
+            () -> {
+              final var topology = clusterActuator.getTopology();
+              assertThat(topology.getRouting().getRequestHandling())
+                  .isEqualTo(routingStateAfterScaling.getRequestHandling());
+              assertThat(topology.getRouting().getMessageCorrelation())
+                  .isEqualTo(routingStateAfterScaling.getMessageCorrelation());
+            });
+  }
+
   private void awaitScaleUpCompletion(final int desiredPartitionCount) {
     Awaitility.await("until scaling is done")
         .timeout(Duration.ofMinutes(5))
