@@ -33,6 +33,7 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
       new ArrayProperty<>("relocatedPartitions", IntegerValue::new);
 
   private final LongProperty bootstrappedAt = new LongProperty("bootstrappedAt", -1L);
+  private final LongProperty scalingPosition = new LongProperty("scalingPosition", -1L);
 
   public ScaleRecord() {
     super(4);
@@ -79,6 +80,16 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
 
   public ScaleRecord setBootstrappedAt(final long bootstrappedAt) {
     this.bootstrappedAt.setValue(bootstrappedAt);
+    return this;
+  }
+
+  @Override
+  public long getScalingPosition() {
+    return scalingPosition.getValue();
+  }
+
+  public ScaleRecord setScalingPosition(final long position) {
+    scalingPosition.setValue(position);
     return this;
   }
 
