@@ -31,6 +31,8 @@ import org.awaitility.Awaitility;
 
 final class Utils {
 
+  public static final String DEFAULT_PROCESS_ID = "processId";
+
   static void scaleAndWait(final TestCluster cluster, final int newClusterSize) {
     final var response = scale(cluster, newClusterSize);
 
@@ -125,7 +127,7 @@ final class Utils {
   static List<Long> createInstanceWithAJobOnAllPartitions(
       final CamundaClient camundaClient, final String jobType, final int partitionsCount) {
     return createInstanceWithAJobOnAllPartitions(
-        camundaClient, jobType, partitionsCount, true, "processId");
+        camundaClient, jobType, partitionsCount, true, DEFAULT_PROCESS_ID);
   }
 
   static List<Long> createInstanceWithAJobOnAllPartitions(
