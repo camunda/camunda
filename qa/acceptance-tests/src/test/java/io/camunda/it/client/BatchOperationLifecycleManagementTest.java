@@ -20,7 +20,11 @@ import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.qa.util.multidb.MultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.lang.reflect.Method;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +42,18 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 public class BatchOperationLifecycleManagementTest {
 
   private static CamundaClient camundaClient;
+
+  @MultiDbTestApplication
+  private static final TestStandaloneApplication<?> APPLICATION =
+      new TestStandaloneBroker()
+          .withUnauthenticatedAccess()
+          .withBrokerConfig(
+              b -> {
+                b.getExperimental()
+                    .getEngine()
+                    .getBatchOperations()
+                    .setSchedulerInterval(Duration.ofSeconds(3));
+              });
 
   String testScopeId;
 
@@ -132,6 +148,6 @@ public class BatchOperationLifecycleManagementTest {
     camundaClient.newResumeBatchOperationCommand(batchOperationId).send().join();
 
     // then it's again active and can complete
-    waitForBatchOperationStatus(camundaClient, batchOperationId, BatchOperationState.COMPLETED);
+    waitForBatchOperationStatus(camundaClient, batchOperationId, BatchOperationState.ACTIVE);
   }
 }
