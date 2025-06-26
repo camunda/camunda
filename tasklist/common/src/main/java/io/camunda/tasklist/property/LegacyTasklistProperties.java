@@ -218,7 +218,8 @@ public class LegacyTasklistProperties {
     return persistentSessionsEnabled;
   }
 
-  public LegacyTasklistProperties setPersistentSessionsEnabled(final boolean persistentSessionsEnabled) {
+  public LegacyTasklistProperties setPersistentSessionsEnabled(
+      final boolean persistentSessionsEnabled) {
     this.persistentSessionsEnabled = persistentSessionsEnabled;
     return this;
   }
@@ -286,7 +287,8 @@ public class LegacyTasklistProperties {
     return securityProperties;
   }
 
-  public LegacyTasklistProperties setSecurityProperties(final SecurityProperties securityProperties) {
+  public LegacyTasklistProperties setSecurityProperties(
+      final SecurityProperties securityProperties) {
     this.securityProperties = securityProperties;
     return this;
   }
@@ -376,7 +378,8 @@ public class LegacyTasklistProperties {
     return zeebeOpenSearch;
   }
 
-  public LegacyTasklistProperties setZeebeOpenSearch(final ZeebeOpenSearchProperties zeebeOpenSearch) {
+  public LegacyTasklistProperties setZeebeOpenSearch(
+      final ZeebeOpenSearchProperties zeebeOpenSearch) {
     this.zeebeOpenSearch = zeebeOpenSearch;
     return this;
   }

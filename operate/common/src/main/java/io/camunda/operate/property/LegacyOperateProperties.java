@@ -285,7 +285,8 @@ public class LegacyOperateProperties {
     return persistentSessionsEnabled;
   }
 
-  public LegacyOperateProperties setPersistentSessionsEnabled(final boolean persistentSessionsEnabled) {
+  public LegacyOperateProperties setPersistentSessionsEnabled(
+      final boolean persistentSessionsEnabled) {
     this.persistentSessionsEnabled = persistentSessionsEnabled;
     return this;
   }

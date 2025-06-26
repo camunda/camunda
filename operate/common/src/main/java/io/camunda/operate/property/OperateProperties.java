@@ -7,5 +7,4 @@
  */
 package io.camunda.operate.property;
 
-public class OperateProperties extends LegacyOperateProperties{
-}
+public class OperateProperties extends LegacyOperateProperties {}

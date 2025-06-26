@@ -9,12 +9,10 @@ package io.camunda.unifiedconfig;
 
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.LegacyBrokerBasedProperties;
-import io.camunda.exporter.CamundaExporter;
 import io.camunda.operate.property.LegacyOperateProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.tasklist.property.LegacyTasklistProperties;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.beans.BeanUtils;
@@ -78,11 +76,11 @@ public class UnifiedConfigurationHelper {
     String[] keys = keyPath.split("\\.");
     Map<String, Object> pointer = args;
 
-    for(int i=0; i<keys.length - 1; i++) {
+    for (int i = 0; i < keys.length - 1; i++) {
       String key = keys[i];
 
       // if child doesn't exist, create it
-      if(pointer.get(key) == null ) {
+      if (pointer.get(key) == null) {
         pointer.put(key, new HashMap<String, Object>());
       }
 

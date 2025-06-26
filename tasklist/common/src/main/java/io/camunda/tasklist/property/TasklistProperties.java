@@ -7,4 +7,4 @@
  */
 package io.camunda.tasklist.property;
 
-public class TasklistProperties extends LegacyTasklistProperties{ }
+public class TasklistProperties extends LegacyTasklistProperties {}
