@@ -37,10 +37,10 @@ import org.mockito.ArgumentCaptor;
 
 public class ElasticsearchDataStoreClientTest {
 
-  private final static long TEST_HITS = 789;
-  private final static TotalHitsRelation HITS_RELATION = TotalHitsRelation.Eq;
-  private final static long CAPPED_HITS = 10_000;
-  private final static TotalHitsRelation CAPPED_HITS_RELATION = TotalHitsRelation.Gte;
+  private static final long TEST_HITS = 789;
+  private static final TotalHitsRelation HITS_RELATION = TotalHitsRelation.Eq;
+  private static final long CAPPED_HITS = 10_000;
+  private static final TotalHitsRelation CAPPED_HITS_RELATION = TotalHitsRelation.Gte;
   private ElasticsearchClient client;
   private ElasticsearchSearchClient searchClient;
 
