@@ -63,9 +63,10 @@ public class BoundaryEventValidator implements ModelElementValidator<BoundaryEve
       validationResultCollector.addError(0, "Cannot have incoming sequence flows");
     }
 
-    if (element.getOutgoing().isEmpty() && !isValidCompensationBoundaryEvent(element)) {
+    if (hasCompensationDefinition(element) && !isValidCompensationBoundaryEvent(element)) {
       validationResultCollector.addError(
-          0, "Must have at least one outgoing sequence flow or association");
+          0,
+          "Compensation boundary events must have a compensation association and no outgoing sequence flows");
     }
 
     validateEventDefinition(element, validationResultCollector);
@@ -98,6 +99,11 @@ public class BoundaryEventValidator implements ModelElementValidator<BoundaryEve
         });
   }
 
+  private boolean hasCompensationDefinition(final BoundaryEvent element) {
+    return element.getEventDefinitions().stream()
+        .anyMatch(CompensateEventDefinition.class::isInstance);
+  }
+
   private boolean isValidCompensationBoundaryEvent(final BoundaryEvent element) {
     // A compensation boundary event should have no outgoing sequence flows. The compensation
     // handler is connected by an association.
@@ -105,10 +111,7 @@ public class BoundaryEventValidator implements ModelElementValidator<BoundaryEve
         element.getModelInstance().getModelElementsByType(Association.class).stream()
             .filter(a -> a.getSource().getId().equals(element.getId()))
             .findFirst();
-    return element.getOutgoing().isEmpty()
-        && association.isPresent()
-        && element.getEventDefinitions().stream()
-            .anyMatch(CompensateEventDefinition.class::isInstance);
+    return element.getOutgoing().isEmpty() && association.isPresent();
   }
 
   private void validateEventDefinition(
