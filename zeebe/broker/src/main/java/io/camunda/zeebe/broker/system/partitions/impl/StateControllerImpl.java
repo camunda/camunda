@@ -19,9 +19,7 @@ import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.snapshots.ConstructableSnapshotStore;
-import io.camunda.zeebe.snapshots.PersistableSnapshot;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.StateClosedException;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
@@ -44,7 +42,6 @@ public class StateControllerImpl implements StateController {
   private final ZeebeDbFactory zeebeDbFactory;
   private final ToLongFunction<ZeebeDb> exporterPositionSupplier;
   private final AtomixRecordEntrySupplier entrySupplier;
-  private final int partitionId;
   private final ConstructableSnapshotStore constructableSnapshotStore;
   private final ConcurrencyControl concurrencyControl;
 
@@ -52,14 +49,12 @@ public class StateControllerImpl implements StateController {
   private ScheduledTimer metricsExportTimer;
 
   public StateControllerImpl(
-      final int partitionId,
       final ZeebeDbFactory zeebeDbFactory,
       final ConstructableSnapshotStore constructableSnapshotStore,
       final Path runtimeDirectory,
       final AtomixRecordEntrySupplier entrySupplier,
       final ToLongFunction<ZeebeDb> exporterPositionSupplier,
       final ConcurrencyControl concurrencyControl) {
-    this.partitionId = partitionId;
     this.constructableSnapshotStore = requireNonNull(constructableSnapshotStore);
     this.runtimeDirectory = requireNonNull(runtimeDirectory);
     this.zeebeDbFactory = requireNonNull(zeebeDbFactory);
@@ -282,22 +277,6 @@ public class StateControllerImpl implements StateController {
             transientSnapshotFuture.complete(snapshot);
           }
         });
-  }
-
-  @Override
-  public ActorFuture<PersistedSnapshot> takeSnapshot(
-      final int partition, final long lastProcessedPosition, final ConcurrencyControl control) {
-    if (partition != partitionId) {
-      return CompletableActorFuture.completedExceptionally(
-          new IllegalArgumentException(
-              String.format(
-                  "Expected to take snapshot for partition %d, but was called for partition %d",
-                  partitionId, partition)));
-    }
-    LOG.debug(
-        "Taking snapshot for partition {} at position {}", partitionId, lastProcessedPosition);
-    return takeTransientSnapshot(lastProcessedPosition)
-        .andThen(PersistableSnapshot::persist, control);
   }
 
   private record NextSnapshotId(
