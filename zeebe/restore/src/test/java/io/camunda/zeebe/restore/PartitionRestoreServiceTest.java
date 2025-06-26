@@ -97,7 +97,12 @@ class PartitionRestoreServiceTest {
         new RaftPartition(partitionMetadata, null, dataDirectoryToRestore.toFile(), meterRegistry);
     restoreService =
         new PartitionRestoreService(
-            backupStore, raftPartition, nodeId, snapshotPath -> Map.of(), meterRegistry);
+            backupStore,
+            dataDirectoryToRestore,
+            raftPartition,
+            nodeId,
+            snapshotPath -> Map.of(),
+            meterRegistry);
 
     journal =
         SegmentedJournal.builder(meterRegistry)

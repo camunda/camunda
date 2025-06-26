@@ -12,6 +12,7 @@ import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
 import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import io.camunda.zeebe.engine.state.immutable.RoutingState.MessageCorrelation.HashMod;
 import io.camunda.zeebe.engine.state.routing.DbRoutingState;
+import java.util.HashSet;
 import java.util.Set;
 
 public class RoutingUtil {
@@ -20,11 +21,13 @@ public class RoutingUtil {
 
     final var desiredPartitions = state.desiredPartitions();
     final var currentPartitions = state.currentPartitions();
+    final var inactivePartitions = new HashSet<>(desiredPartitions);
+    currentPartitions.forEach(inactivePartitions::remove);
     return desiredPartitions.equals(currentPartitions)
         ? new RequestHandling.AllPartitions(currentPartitions.size())
         // check if we need to do it better;
         : new RequestHandling.ActivePartitions(
-            currentPartitions.size(), Set.of(), desiredPartitions);
+            currentPartitions.size(), Set.of(), inactivePartitions);
   }
 
   public static MessageCorrelation messageCorrelation(final DbRoutingState state) {

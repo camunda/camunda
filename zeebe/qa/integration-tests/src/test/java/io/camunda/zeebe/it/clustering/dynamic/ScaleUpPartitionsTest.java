@@ -268,8 +268,16 @@ public class ScaleUpPartitionsTest {
 
     // then
     // the topology is restored to the desired partition count and message correlation
-    final var topology = clusterActuator.getTopology();
-    assertThat(topology.getRouting()).isEqualTo(routingStateAfterScaling);
+    cluster.brokers().values().parallelStream().forEach(TestSpringApplication::start);
+    Awaitility.await("until topology is restored correctly")
+        .untilAsserted(
+            () -> {
+              final var topology = clusterActuator.getTopology();
+              assertThat(topology.getRouting().getRequestHandling())
+                  .isEqualTo(routingStateAfterScaling.getRequestHandling());
+              assertThat(topology.getRouting().getMessageCorrelation())
+                  .isEqualTo(routingStateAfterScaling.getMessageCorrelation());
+            });
   }
 
   private void awaitScaleUpCompletion(final int desiredPartitionCount) {
