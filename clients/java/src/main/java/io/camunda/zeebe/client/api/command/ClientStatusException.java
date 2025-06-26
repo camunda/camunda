@@ -19,7 +19,7 @@ import io.grpc.Status;
 import io.grpc.Status.Code;
 
 /**
- * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ * @deprecated since 8.8 for removal in 8.10, replaced by {@link
  *     io.camunda.client.api.command.ClientStatusException}
  */
 @Deprecated

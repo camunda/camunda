@@ -23,7 +23,7 @@ import java.io.InputStream;
  *
  * <p>The document content is returned as an {@link InputStream}.
  *
- * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ * @deprecated since 8.8 for removal in 8.10, replaced by {@link
  *     io.camunda.client.api.fetch.DocumentContentGetRequest}
  */
 @Deprecated

@@ -20,7 +20,7 @@ import io.camunda.zeebe.client.api.search.response.FlowNodeInstance;
 import io.camunda.zeebe.client.api.search.sort.FlownodeInstanceSort;
 
 /**
- * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ * @deprecated since 8.8 for removal in 8.10, replaced by {@link
  *     io.camunda.client.api.search.request.ElementInstanceSearchRequest}
  */
 @Deprecated

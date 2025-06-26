@@ -19,7 +19,7 @@ import io.camunda.client.protocol.rest.VariableValueFilterProperty;
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
 
 /**
- * @deprecated since 8.8 for removal in 8.9, replaced by {@link
+ * @deprecated since 8.8 for removal in 8.10, replaced by {@link
  *     io.camunda.client.api.search.filter.ProcessInstanceFilter}
  */
 @Deprecated

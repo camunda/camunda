@@ -16,7 +16,8 @@
 package io.camunda.zeebe.client.api.response;
 
 /**
- * @deprecated since 8.8 for removal in 8.9, replaced by {@link io.camunda.client.api.response.Form}
+ * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+ *     io.camunda.client.api.response.Form}
  */
 @Deprecated
 public interface Form {

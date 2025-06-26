@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.api.search.response;
 
 /**
- * @deprecated this class will be removed with version 8.9.
+ * @deprecated this class will be removed with version 8.10.
  */
 @Deprecated
 public interface ProcessInstanceReference {
