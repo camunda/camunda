@@ -192,7 +192,7 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   @Override
   public SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
       final ProcessDefinitionQuery filter) {
-    if (filter.filter().latest()) {
+    if (filter.filter().isLatestVersion()) {
       final var aggResult =
           getSearchExecutor()
               .aggregate(filter, ProcessDefinitionLatestVersionAggregationResult.class);

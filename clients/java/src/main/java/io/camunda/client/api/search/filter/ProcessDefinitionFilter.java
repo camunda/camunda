@@ -24,7 +24,7 @@ public interface ProcessDefinitionFilter extends SearchRequestFilter {
    *
    * @return the updated filter
    */
-  ProcessDefinitionFilter latest();
+  ProcessDefinitionFilter isLatestVersion();
 
   /**
    * Filters process definitions by the specified process definition key.

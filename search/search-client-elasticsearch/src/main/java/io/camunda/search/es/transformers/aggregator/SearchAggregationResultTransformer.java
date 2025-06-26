@@ -28,7 +28,6 @@ import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.clients.transformers.query.Cursor;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.search.es.transformers.search.SearchQueryHitTransformer;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -198,6 +197,6 @@ public class SearchAggregationResultTransformer<T>
           .map(hitTransformer::apply)
           .collect(Collectors.toList());
     }
-    return new ArrayList<>();
+    return List.of();
   }
 }

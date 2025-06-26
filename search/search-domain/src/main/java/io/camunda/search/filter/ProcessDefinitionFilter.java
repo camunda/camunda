@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Objects;
 
 public record ProcessDefinitionFilter(
-    Boolean latest,
+    Boolean isLatestVersion,
     List<Long> processDefinitionKeys,
     List<String> names,
     List<String> processDefinitionIds,
@@ -28,7 +28,7 @@ public record ProcessDefinitionFilter(
 
   public static final class Builder implements ObjectBuilder<ProcessDefinitionFilter> {
 
-    private Boolean latest;
+    private Boolean isLatestVersion;
     private List<String> tenantIds;
     private List<Long> processDefinitionKeys;
     private List<String> names;
@@ -100,15 +100,15 @@ public record ProcessDefinitionFilter(
       return this;
     }
 
-    public Builder latest(final Boolean latest) {
-      this.latest = latest;
+    public Builder isLatestVersion(final Boolean latest) {
+      isLatestVersion = latest;
       return this;
     }
 
     @Override
     public ProcessDefinitionFilter build() {
       return new ProcessDefinitionFilter(
-          Objects.requireNonNullElse(latest, false),
+          Objects.requireNonNullElse(isLatestVersion, false),
           Objects.requireNonNullElse(processDefinitionKeys, Collections.emptyList()),
           Objects.requireNonNullElse(names, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionIds, Collections.emptyList()),
