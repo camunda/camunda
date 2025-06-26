@@ -121,4 +121,5 @@ public interface BatchOperationCreationRecordValue extends BatchOperationRelated
     /** Returns the id of the element to create a new element instance at. */
     String getTargetElementId();
   }
+
 }

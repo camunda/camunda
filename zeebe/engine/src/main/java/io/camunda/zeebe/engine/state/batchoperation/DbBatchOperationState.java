@@ -16,8 +16,10 @@ import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.BatchOperationStatus;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -196,6 +198,22 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   public void complete(final long batchOperationKey) {
     LOGGER.trace("Completing batch operation with key {}", batchOperationKey);
     deleteBatchOperation(batchOperationKey);
+  }
+
+  @Override
+  public void failPartition(final long batchOperationKey, final int sourcePartitionId,
+      final BatchOperationErrorType errorType, final String stackTrace) {
+
+
+    // TODO add error to batch operation
+
+
+    if (Protocol.decodePartitionId(batchOperationKey) == sourcePartitionId) {
+      finishPartition(batchOperationKey, sourcePartitionId);
+    } else {
+      complete(batchOperationKey);
+    }
+
   }
 
   @Override
