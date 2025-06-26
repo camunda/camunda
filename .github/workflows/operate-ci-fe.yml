@@ -148,7 +148,7 @@ jobs:
       - name: Install node dependencies
         run: yarn
       - name: Build frontend
-        run: yarn build
+        run: yarn build:visual-regression
       - name: Start server
         run: yarn start:visual-regression &
       - name: Run Visual regression tests
