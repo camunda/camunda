@@ -32,8 +32,14 @@ public final class TestClusterBuilder {
   private boolean useRecordingExporter = true;
 
   private Consumer<TestApplication<?>> nodeConfig = node -> {};
-  private BiConsumer<MemberId, TestStandaloneBroker> brokerConfig = (id, broker) -> {};
-  private BiConsumer<MemberId, TestStandaloneGateway> gatewayConfig = (id, gateway) -> {};
+  private BiConsumer<MemberId, TestStandaloneBroker> brokerConfig =
+      (id, broker) -> {
+        broker.withUnauthenticatedAccess();
+      };
+  private BiConsumer<MemberId, TestStandaloneGateway> gatewayConfig =
+      (id, gateway) -> {
+        gateway.withUnauthenticatedAccess();
+      };
 
   private final Map<MemberId, TestStandaloneGateway> gateways = new HashMap<>();
   private final Map<MemberId, TestStandaloneBroker> brokers = new HashMap<>();

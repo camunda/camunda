@@ -7,6 +7,7 @@
  */
 package io.camunda.it.network;
 
+import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
 import static io.camunda.zeebe.test.util.asserts.TopologyAssert.assertThat;
 
 import io.atomix.utils.net.Address;
@@ -86,6 +87,7 @@ final class SecuredClusteredMessagingIT {
               "ZEEBE_BROKER_EXPORTERS_CAMUNDA_CLASSNAME", "io.camunda.exporter.CamundaExporter")
           .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDA_ARGS_CONNECT_URL", "http://elastic:9200")
           .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDA_ARGS_CONNECT_INDEXPREFIX", testPrefix)
+          .withEnv(UNPROTECTED_API_ENV_VAR, "true")
           .withEnv("CAMUNDA_LOG_LEVEL", "DEBUG")
           .withAdditionalExposedPort(8080)
           .withAdditionalExposedPort(ZeebePort.INTERNAL.getPort());
