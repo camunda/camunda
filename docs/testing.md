@@ -399,8 +399,7 @@ successfully before running the tests.
 > [!Note]
 >
 > Formerly known as QA - Tests
-> 
-[//]: # If people ever wonder about this note, then we can remove it.
+[//]: # (If people ever wonder about this note, then we can remove it.)
 
 Acceptance tests (ATs) are mostly slow, testing a complete user journey or a feature end-to-end (E2E), covering multiple or even all components at the same time in an integrated manner.
 Details, general recommendations, and how-tos/examples of how to write them, you can find in the [acceptance test guide](./testing/acceptance.md).
