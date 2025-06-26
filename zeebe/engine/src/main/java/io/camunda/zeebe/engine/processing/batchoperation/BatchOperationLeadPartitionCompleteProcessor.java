@@ -13,10 +13,10 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -24,52 +24,74 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This processor only runs on the lead partition of a batch operation. It processes commands to
+ * mark follower partitions as completed.
+ */
 @ExcludeAuthorizationCheck
-public final class BatchOperationPartitionFailProcessor
+public final class BatchOperationLeadPartitionCompleteProcessor
     implements DistributedTypedRecordProcessor<BatchOperationPartitionLifecycleRecord> {
 
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(BatchOperationPartitionFailProcessor.class);
+      LoggerFactory.getLogger(BatchOperationLeadPartitionCompleteProcessor.class);
 
   private final StateWriter stateWriter;
-  private final TypedCommandWriter commandWriter;
   private final BatchOperationState batchOperationState;
   private final CommandDistributionBehavior commandDistributionBehavior;
-  private final BatchOperationMetrics batchOperationMetrics;
+  private final BatchOperationMetrics metrics;
+  private final int partitionId;
 
-  public BatchOperationPartitionFailProcessor(
+  public BatchOperationLeadPartitionCompleteProcessor(
       final Writers writers,
       final ProcessingState processingState,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final BatchOperationMetrics batchOperationMetrics) {
+      final int partitionId,
+      final BatchOperationMetrics metrics) {
     stateWriter = writers.state();
-    commandWriter = writers.command();
     batchOperationState = processingState.getBatchOperationState();
     this.commandDistributionBehavior = commandDistributionBehavior;
-    this.batchOperationMetrics = batchOperationMetrics;
+    this.metrics = metrics;
+    this.partitionId = partitionId;
   }
 
   /**
-   * Processes a non-distributed command to mark a partition of a batch operation as failed.
+   * Processes a non-distributed command to mark a partition of a batch operation as completed. This
+   * occurs, when the leader marks itself as completed.
    *
-   * @param command the not yet distributed command to process
+   * @param command the command to process
    */
   @Override
   public void processNewCommand(final TypedRecord<BatchOperationPartitionLifecycleRecord> command) {
     doProcessRecord(command);
   }
 
+  /**
+   * Processes a command from a follower partition to mark that partition of a batch operation as
+   * completed.
+   *
+   * @param command the command to process
+   */
   @Override
   public void processDistributedCommand(
       final TypedRecord<BatchOperationPartitionLifecycleRecord> command) {
     doProcessRecord(command);
+
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
   private void doProcessRecord(final TypedRecord<BatchOperationPartitionLifecycleRecord> command) {
     final var batchOperationKey = command.getValue().getBatchOperationKey();
+    if (Protocol.decodePartitionId(batchOperationKey) != partitionId) {
+      LOGGER.warn(
+          "Received command for batch operation {} on partition {}, but partition {} is leader for this batch operation. Ignoring command.",
+          batchOperationKey,
+          Protocol.decodePartitionId(batchOperationKey),
+          partitionId);
+      return;
+    }
+
     LOGGER.debug(
-        "Processing command from partition {} to mark batch operation {} as failed",
+        "Processing command from partition {} to mark batch operation {} as completed",
         command.getValue().getSourcePartitionId(),
         command.getValue().getBatchOperationKey());
 
@@ -78,30 +100,32 @@ public final class BatchOperationPartitionFailProcessor
       final var bo = oBatchOperation.get();
       if (bo.getFinishedPartitions().contains(command.getValue().getSourcePartitionId())) {
         LOGGER.debug(
-            "Batch operation {} already contains partition {} as finished, ignoring command",
+            "Batch operation {} already contains partition {}, ignoring command",
             batchOperationKey,
             command.getValue().getSourcePartitionId());
       } else {
-
         stateWriter.appendFollowUpEvent(
             batchOperationKey,
-            BatchOperationIntent.PARTITION_FAILED,
+            BatchOperationIntent.PARTITION_COMPLETED,
             command.getValue(),
-            FollowUpEventMetadata.of(b -> b.batchOperationReference(batchOperationKey)));
+            FollowUpEventMetadata.of(
+                b -> b.batchOperationReference(command.getValue().getBatchOperationKey())));
 
         if (bo.getFinishedPartitions().size() == bo.getPartitions().size()) {
           LOGGER.debug(
               "All partitions finished, appending COMPLETED event for batch operation {}",
               batchOperationKey);
-          final var batchFinished = new BatchOperationLifecycleManagementRecord();
-          batchFinished.setBatchOperationKey(batchOperationKey);
+          final var batchComplete = new BatchOperationLifecycleManagementRecord();
+          batchComplete.setBatchOperationKey(batchOperationKey);
           stateWriter.appendFollowUpEvent(
               batchOperationKey,
               BatchOperationIntent.COMPLETED,
-              batchFinished,
+              batchComplete,
               FollowUpEventMetadata.of(
                   b -> b.batchOperationReference(command.getValue().getBatchOperationKey())));
-          batchOperationMetrics.recordFailed(oBatchOperation.get().getBatchOperationType());
+
+          metrics.recordCompleted(oBatchOperation.get().getBatchOperationType());
+          metrics.stopTotalLatencyMeasure(batchOperationKey);
         }
       }
     }

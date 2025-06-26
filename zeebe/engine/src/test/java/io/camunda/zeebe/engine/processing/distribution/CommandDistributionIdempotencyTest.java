@@ -16,8 +16,8 @@ import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceFilter.Builder;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCancelProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCreateProcessor;
-import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationPartitionCompleteProcessor;
-import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationPartitionFailProcessor;
+import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationLeadPartitionCompleteProcessor;
+import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationLeadPartitionFailProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationResumeProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationSuspendProcessor;
 import io.camunda.zeebe.engine.processing.clock.ClockProcessor;
@@ -310,7 +310,7 @@ public class CommandDistributionIdempotencyTest {
                       .withBatchOperationKey(batchOperation.getKey())
                       .fail();
                 }),
-            BatchOperationPartitionFailProcessor.class
+            BatchOperationLeadPartitionFailProcessor.class
           },
           {
             "BatchOperation.COMPLETE_PARTITION is idempotent",
@@ -326,7 +326,7 @@ public class CommandDistributionIdempotencyTest {
                       .withBatchOperationKey(batchOperation.getKey())
                       .execute();
                 }),
-            BatchOperationPartitionCompleteProcessor.class
+            BatchOperationLeadPartitionCompleteProcessor.class
           },
           {
             "Clock.RESET is idempotent",
