@@ -84,7 +84,7 @@ class SearchClientBasedQueryExecutorTest {
 
     // And our search client returns stuff
     final SearchQueryResponse<ProcessInstanceForListViewEntity> processInstanceEntityResponse =
-        createProcessInstanceEntityResponse(demoProcessInstance);
+        createProcessInstanceEntityResponse(demoProcessInstance, 1, false);
 
     when(searchClient.search(
             any(SearchQueryRequest.class), eq(ProcessInstanceForListViewEntity.class)))
@@ -102,6 +102,54 @@ class SearchClientBasedQueryExecutorTest {
     assertThat(items).hasSize(1);
     assertThat(items.getFirst().processInstanceKey())
         .isEqualTo(demoProcessInstance.getProcessInstanceKey());
+  }
+
+  @Test
+  void shouldSearchQueryResultHaveMoreTotalItemsFalse() {
+    // Given our search Query
+    final var searchAllQuery = new ProcessInstanceQuery.Builder().build();
+
+    // And our search client returns stuff
+    final SearchQueryResponse<ProcessInstanceForListViewEntity> processInstanceEntityResponse =
+        createProcessInstanceEntityResponse(demoProcessInstance, 1, false);
+
+    when(searchClient.search(
+        any(SearchQueryRequest.class), eq(ProcessInstanceForListViewEntity.class)))
+        .thenReturn(processInstanceEntityResponse);
+    when(authorizationQueryStrategy.applyAuthorizationToQuery(
+        any(SearchQueryRequest.class), any(SecurityContext.class), any()))
+        .thenAnswer(i -> i.getArgument(0));
+
+    // When we search
+    final SearchQueryResult<ProcessInstanceEntity> searchResult =
+        queryExecutor.search(searchAllQuery, ProcessInstanceForListViewEntity.class);
+
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.hasMoreTotalItems()).isFalse();
+  }
+
+  @Test
+  void shouldSearchQueryResultHaveMoreTotalItemsTrue() {
+    // Given our search Query
+    final var searchAllQuery = new ProcessInstanceQuery.Builder().build();
+
+    // And our search client returns stuff
+    final SearchQueryResponse<ProcessInstanceForListViewEntity> processInstanceEntityResponse =
+        createProcessInstanceEntityResponse(demoProcessInstance, 10000, true);
+
+    when(searchClient.search(
+        any(SearchQueryRequest.class), eq(ProcessInstanceForListViewEntity.class)))
+        .thenReturn(processInstanceEntityResponse);
+    when(authorizationQueryStrategy.applyAuthorizationToQuery(
+        any(SearchQueryRequest.class), any(SecurityContext.class), any()))
+        .thenAnswer(i -> i.getArgument(0));
+
+    // When we search
+    final SearchQueryResult<ProcessInstanceEntity> searchResult =
+        queryExecutor.search(searchAllQuery, ProcessInstanceForListViewEntity.class);
+
+    assertThat(searchResult.total()).isEqualTo(10000);
+    assertThat(searchResult.hasMoreTotalItems()).isTrue();
   }
 
   @Test
@@ -201,7 +249,8 @@ class SearchClientBasedQueryExecutorTest {
   }
 
   private SearchQueryResponse<ProcessInstanceForListViewEntity> createProcessInstanceEntityResponse(
-      final ProcessInstanceForListViewEntity demoProcessInstance) {
+      final ProcessInstanceForListViewEntity demoProcessInstance, final long totalHits,
+      final boolean hasMoreFields) {
     final SearchQueryHit<ProcessInstanceForListViewEntity> hit =
         new SearchQueryHit.Builder<ProcessInstanceForListViewEntity>()
             .id("1000")
@@ -210,7 +259,7 @@ class SearchClientBasedQueryExecutorTest {
 
     return SearchQueryResponse.of(
         (f) -> {
-          f.totalHits(1).hits(List.of(hit));
+          f.totalHits(totalHits, hasMoreFields).hits(List.of(hit));
           return f;
         });
   }
