@@ -2233,7 +2233,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *   .newCancelBatchOperationCommand("123L")
+   *   .newCancelBatchOperationCommand("123")
    *   .send();
    * </pre>
    *
