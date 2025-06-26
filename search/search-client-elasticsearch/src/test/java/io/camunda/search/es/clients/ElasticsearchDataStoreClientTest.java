@@ -84,7 +84,7 @@ public class ElasticsearchDataStoreClientTest {
 
     // then
     assertThat(response).isNotNull();
-    assertThat(response.totalHits()).isEqualTo(789);
+    assertThat(response.totalHits()).isEqualTo(TEST_HITS);
   }
 
   @Test
