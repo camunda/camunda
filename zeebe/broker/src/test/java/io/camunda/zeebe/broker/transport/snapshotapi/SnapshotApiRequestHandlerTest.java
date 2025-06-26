@@ -32,6 +32,7 @@ import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotCopyUtil;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
+import io.camunda.zeebe.snapshots.impl.SnapshotMetrics;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferImpl;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferService.TakeSnapshot;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferServiceImpl;
@@ -47,6 +48,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.junit.jupiter.api.AutoClose;
@@ -75,6 +77,8 @@ public class SnapshotApiRequestHandlerTest {
   private BrokerClientImpl brokerClient;
   private TakeSnapshot takeSnapshotMock;
   private AtomicInteger scaleUpProgressInvocationCount;
+  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
+  private final SnapshotMetrics snapshotMetrics = new SnapshotMetrics(meterRegistry);
 
   @BeforeEach
   void setup() {
@@ -169,7 +173,8 @@ public class SnapshotApiRequestHandlerTest {
     mockBootstrappedAtWith(position);
 
     final var transfer =
-        submitActor(new SnapshotTransferImpl(ignore -> client, receiverSnapshotStore));
+        submitActor(
+            new SnapshotTransferImpl(ignore -> client, snapshotMetrics, receiverSnapshotStore));
     // when
     final var persistedSnapshot = transfer.getLatestSnapshot(partitionId);
     scheduler.workUntilDone();
@@ -182,6 +187,9 @@ public class SnapshotApiRequestHandlerTest {
               final var snapshotId = snapshot.getId();
               assertThat(snapshotId).isEqualTo(lastSnapshotId);
             });
+
+    assertThat(snapshotMetrics.getTransferDuration(true).mean(TimeUnit.MILLISECONDS))
+        .isGreaterThan(0.1D);
   }
 
   private ActorFuture<PersistedSnapshot> takePersistedSnapshot(final long processedPosition) {

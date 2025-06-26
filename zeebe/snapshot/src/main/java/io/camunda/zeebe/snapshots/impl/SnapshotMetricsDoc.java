@@ -11,6 +11,8 @@ import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
+import io.micrometer.core.instrument.Tags;
+import java.time.Duration;
 
 @SuppressWarnings("NullableProblems")
 public enum SnapshotMetricsDoc implements ExtendedMeterDocumentation {
@@ -33,7 +35,7 @@ public enum SnapshotMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public KeyName[] getKeyNames() {
-      return PartitionKeyNames.values();
+      return getPartitionBootstrapKeyNames();
     }
   },
 
@@ -56,7 +58,7 @@ public enum SnapshotMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public KeyName[] getKeyNames() {
-      return PartitionKeyNames.values();
+      return getPartitionBootstrapKeyNames();
     }
   },
 
@@ -79,7 +81,7 @@ public enum SnapshotMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public KeyName[] getKeyNames() {
-      return PartitionKeyNames.values();
+      return getPartitionBootstrapKeyNames();
     }
   },
 
@@ -102,7 +104,7 @@ public enum SnapshotMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public KeyName[] getKeyNames() {
-      return PartitionKeyNames.values();
+      return getPartitionBootstrapKeyNames();
     }
   },
 
@@ -125,7 +127,47 @@ public enum SnapshotMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public KeyName[] getKeyNames() {
-      return PartitionKeyNames.values();
+      return getPartitionBootstrapKeyNames();
+    }
+  },
+  /** Approximate duration of snapshot transfer between two nodes */
+  SNAPSHOT_TRANSFER_DURATION {
+    @Override
+    public String getDescription() {
+      return "Total transfer duration of a snapshot between two nodes";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.snapshot.transfer.duration";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.TIMER;
+    }
+
+    @Override
+    public String getBaseUnit() {
+      return "ms";
+    }
+
+    @Override
+    public Duration[] getTimerSLOs() {
+      return new Duration[] {
+        Duration.ofMillis(50),
+        Duration.ofMillis(250),
+        Duration.ofMillis(500),
+        Duration.ofSeconds(1),
+        Duration.ofSeconds(5),
+        Duration.ofSeconds(15),
+        Duration.ofMinutes(30)
+      };
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return getPartitionBootstrapKeyNames();
     }
   },
   /** Approximate size of snapshot files */
@@ -154,12 +196,31 @@ public enum SnapshotMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public KeyName[] getKeyNames() {
-      return PartitionKeyNames.values();
+      return getPartitionBootstrapKeyNames();
     }
 
     @Override
     public double[] getDistributionSLOs() {
       return BUCKETS;
+    }
+  };
+
+  private static KeyName[] getPartitionBootstrapKeyNames() {
+    return KeyName.merge(PartitionKeyNames.values(), BootstrapKeyNames.values());
+  }
+
+  @SuppressWarnings("NullableProblems")
+  public enum BootstrapKeyNames implements KeyName {
+    /** Whether the metric is recorded during bootstrap phase */
+    BOOTSTRAP {
+      @Override
+      public String asString() {
+        return "bootstrap";
+      }
+    };
+
+    public static Tags tags(final boolean bootstrap) {
+      return Tags.of(BOOTSTRAP.asString(), String.valueOf(bootstrap));
     }
   }
 }
