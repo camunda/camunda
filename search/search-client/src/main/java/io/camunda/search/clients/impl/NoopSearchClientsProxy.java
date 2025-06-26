@@ -138,12 +138,6 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   }
 
   @Override
-  public List<ProcessDefinitionEntity> latestProcessDefinitions(
-      final ProcessDefinitionQuery filter) {
-    return List.of();
-  }
-
-  @Override
   public List<ProcessFlowNodeStatisticsEntity> processDefinitionFlowNodeStatistics(
       final ProcessDefinitionStatisticsFilter filter) {
     return emptyList();

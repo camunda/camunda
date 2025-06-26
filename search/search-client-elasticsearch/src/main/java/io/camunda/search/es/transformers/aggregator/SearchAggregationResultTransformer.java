@@ -9,6 +9,7 @@ package io.camunda.search.es.transformers.aggregator;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
+import co.elastic.clients.elasticsearch._types.aggregations.CompositeAggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.CompositeBucket;
 import co.elastic.clients.elasticsearch._types.aggregations.LongTermsBucket;
 import co.elastic.clients.elasticsearch._types.aggregations.MultiBucketAggregateBase;
@@ -24,6 +25,7 @@ import io.camunda.search.clients.core.AggregationResult;
 import io.camunda.search.clients.core.AggregationResult.Builder;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.transformers.SearchTransfomer;
+import io.camunda.search.clients.transformers.query.Cursor;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.search.es.transformers.search.SearchQueryHitTransformer;
 import java.util.ArrayList;
@@ -99,6 +101,7 @@ public class SearchAggregationResultTransformer<T>
       final MultiBucketAggregateBase<B> aggregate) {
     final var map = new HashMap<String, AggregationResult>();
     final var buckets = aggregate.buckets();
+    final var searchAfter = extractSearchAfter(aggregate);
     if (buckets.isKeyed()) {
       buckets
           .keyed()
@@ -135,7 +138,20 @@ public class SearchAggregationResultTransformer<T>
             map.put(key, result);
           });
     }
-    return new Builder().aggregations(map).build();
+    return new Builder().aggregations(map).endCursor(Cursor.encode(searchAfter)).build();
+  }
+
+  private <B extends MultiBucketBase> Object[] extractSearchAfter(
+      final MultiBucketAggregateBase<B> aggregate) {
+    if (aggregate instanceof final CompositeAggregate compositeAggregate) {
+      return compositeAggregate.afterKey() != null
+          ? compositeAggregate.afterKey().entrySet().stream()
+              .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().stringValue()))
+              .entrySet()
+              .toArray()
+          : null;
+    }
+    return null;
   }
 
   private Map<String, AggregationResult> transformAggregation(

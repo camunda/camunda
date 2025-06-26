@@ -5,10 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.aggregation.result;
+package io.camunda.search.query;
 
-import io.camunda.search.entities.ProcessDefinitionEntity;
-import java.util.List;
-
-public record ProcessDefinitionLatestVersionAggregationResult(
-    List<ProcessDefinitionEntity> items, String endCursor) implements AggregationResultBase {}
+/**
+ * Marker interface for aggregation queries that support pagination. This interface is used to
+ * indicate that a query can be paginated when retrieving aggregation results.
+ *
+ * <p>If not used, pagination is typically handled in TypedSearchQueryTransformer.
+ */
+public interface AggregationPaginated {}

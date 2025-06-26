@@ -192,15 +192,14 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
   @Override
   public SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
       final ProcessDefinitionQuery filter) {
+    if (filter.filter().latest()) {
+      final var aggResult =
+          getSearchExecutor()
+              .aggregate(filter, ProcessDefinitionLatestVersionAggregationResult.class);
+      return new SearchQueryResult<>(
+          aggResult.items().size(), aggResult.items(), null, aggResult.endCursor());
+    }
     return getSearchExecutor().search(filter, ProcessEntity.class);
-  }
-
-  @Override
-  public List<ProcessDefinitionEntity> latestProcessDefinitions(
-      final ProcessDefinitionQuery query) {
-    return getSearchExecutor()
-        .aggregate(query, ProcessDefinitionLatestVersionAggregationResult.class)
-        .items();
   }
 
   @Override

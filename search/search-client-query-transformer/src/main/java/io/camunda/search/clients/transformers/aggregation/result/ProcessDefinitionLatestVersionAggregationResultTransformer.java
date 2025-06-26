@@ -35,6 +35,7 @@ public class ProcessDefinitionLatestVersionAggregationResultTransformer
                       .map(ProcessEntity.class::cast)
                       .map(new ProcessDefinitionEntityTransfomer()::apply);
                 })
-            .toList());
+            .toList(),
+        aggregations.get(AGGREGATION_NAME_BY_PROCESS_ID).endCursor());
   }
 }

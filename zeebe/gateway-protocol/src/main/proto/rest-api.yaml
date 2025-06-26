@@ -5859,6 +5859,9 @@ components:
         name:
           description: Name of this process definition.
           type: string
+        latest:
+          description: Whether to only return the latest version of each process definition.
+          type: boolean
         resourceName:
           description: Resource name of this process definition.
           type: string

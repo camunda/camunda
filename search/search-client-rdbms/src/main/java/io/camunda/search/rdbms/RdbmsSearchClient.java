@@ -247,12 +247,6 @@ public class RdbmsSearchClient implements SearchClientsProxy {
   }
 
   @Override
-  public List<ProcessDefinitionEntity> latestProcessDefinitions(
-      final ProcessDefinitionQuery filter) {
-    return rdbmsService.getProcessDefinitionReader().findLatest(filter);
-  }
-
-  @Override
   public List<ProcessFlowNodeStatisticsEntity> processDefinitionFlowNodeStatistics(
       final ProcessDefinitionStatisticsFilter filter) {
     LOG.debug("[RDBMS Search Client] Query processDefinition statistics: {}", filter);
