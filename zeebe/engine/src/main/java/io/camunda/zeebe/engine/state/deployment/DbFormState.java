@@ -267,7 +267,7 @@ public class DbFormState implements MutableFormState {
   public Optional<PersistedForm> findFormByKey(final long formKey, final String tenantId) {
     tenantIdKey.wrapString(tenantId);
     dbFormKey.wrapLong(formKey);
-    return Optional.ofNullable(formsByKey.get(tenantAwareFormKey)).map(PersistedForm::copy);
+    return Optional.ofNullable(formsByKey.get(tenantAwareFormKey, PersistedForm::new));
   }
 
   @Override
@@ -327,12 +327,7 @@ public class DbFormState implements MutableFormState {
     dbFormId.wrapString(formId);
     final long latestVersion = versionManager.getLatestResourceVersion(formId, tenantId);
     formVersion.wrapLong(latestVersion);
-    final PersistedForm persistedForm =
-        formByIdAndVersionColumnFamily.get(tenantAwareIdAndVersionKey);
-    if (persistedForm == null) {
-      return null;
-    }
-    return persistedForm.copy();
+    return formByIdAndVersionColumnFamily.get(tenantAwareIdAndVersionKey, PersistedForm::new);
   }
 
   private Optional<PersistedForm> getFormFromCache(final String tenantId, final String formId) {

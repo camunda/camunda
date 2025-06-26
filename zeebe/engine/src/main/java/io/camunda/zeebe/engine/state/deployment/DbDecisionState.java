@@ -257,8 +257,7 @@ public final class DbDecisionState implements MutableDecisionState {
       final String tenantId, final long decisionKey) {
     dbDecisionKey.wrapLong(decisionKey);
     tenantIdKey.wrapString(tenantId);
-    return Optional.ofNullable(decisionsByKey.get(tenantAwareDecisionKey))
-        .map(PersistedDecision::copy);
+    return Optional.ofNullable(decisionsByKey.get(tenantAwareDecisionKey, PersistedDecision::new));
   }
 
   @Override

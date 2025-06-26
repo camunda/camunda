@@ -170,7 +170,7 @@ public final class LegacyDecisionState {
 
   public Optional<PersistedDecision> findDecisionByKey(final long decisionKey) {
     dbDecisionKey.wrapLong(decisionKey);
-    return Optional.ofNullable(decisionsByKey.get(dbDecisionKey)).map(PersistedDecision::copy);
+    return Optional.ofNullable(decisionsByKey.get(dbDecisionKey, PersistedDecision::new));
   }
 
   public Optional<DeployedDrg> findLatestDecisionRequirementsById(
