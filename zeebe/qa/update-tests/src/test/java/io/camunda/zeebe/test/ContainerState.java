@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.test;
 
+import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
+
 import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.testcontainers.ZeebeTestContainerDefaults;
@@ -136,6 +138,7 @@ final class ContainerState implements AutoCloseable {
             .withEnv("ZEEBE_BROKER_DATA_SNAPSHOTPERIOD", "1m")
             .withEnv("ZEEBE_BROKER_DATA_LOGINDEXDENSITY", "1")
             .withEnv("CAMUNDA_DATABASE_SCHEMA_MANAGER_CREATE_SCHEMA", "false")
+            .withEnv(UNPROTECTED_API_ENV_VAR, "true")
             .withZeebeData(volume)
             .withNetwork(network);
     this.withRemoteDebugging = withRemoteDebugging;

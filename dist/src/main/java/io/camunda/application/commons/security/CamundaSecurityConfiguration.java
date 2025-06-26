@@ -10,6 +10,7 @@ package io.camunda.application.commons.security;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.zeebe.util.VisibleForTesting;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -21,6 +22,8 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties(CamundaSecurityProperties.class)
 public class CamundaSecurityConfiguration {
 
+  @VisibleForTesting
+  public static final String UNPROTECTED_API_ENV_VAR = "CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI";
   private final CamundaSecurityProperties camundaSecurityProperties;
 
   @Autowired
