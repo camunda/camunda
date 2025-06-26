@@ -400,9 +400,7 @@ successfully before running the tests.
 >
 > Formerly known as QA - Tests
 
-### What is an acceptance test
+[//]: # (If people ever wonder about this note, then we can remove it.)
 
-### When should I write an acceptance test
-
-### Where should I write an integration test
-
+Acceptance tests (ATs) are mostly slow, testing a complete user journey or a feature end-to-end (E2E), covering multiple or even all components at the same time in an integrated manner.
+Details, general recommendations, and how-tos/examples of how to write them, you can find in the [acceptance test guide](./testing/acceptance.md).
