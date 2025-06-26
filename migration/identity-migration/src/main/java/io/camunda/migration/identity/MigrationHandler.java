@@ -45,4 +45,8 @@ public abstract class MigrationHandler<T> {
   protected abstract List<T> fetchBatch(int page);
 
   protected abstract void process(List<T> batch);
+
+  protected void logSummary() {
+    logger.info("Completed {}", getName());
+  }
 }

@@ -17,10 +17,15 @@ import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class StaticConsoleRoleMigrationHandler extends MigrationHandler<NoopDTO> {
   private final RoleServices roleServices;
   private final ConsoleClient consoleClient;
+
+  private final AtomicInteger createdRoleCount = new AtomicInteger();
+  private final AtomicInteger assignedRoleCount = new AtomicInteger();
+  private final AtomicInteger totalRoleAssignmentAttempts = new AtomicInteger();
 
   public StaticConsoleRoleMigrationHandler(
       final RoleServices roleServices,
@@ -42,16 +47,27 @@ public class StaticConsoleRoleMigrationHandler extends MigrationHandler<NoopDTO>
     assignRolesToUsers();
   }
 
+  @Override
+  protected void logSummary() {
+    logger.info(
+        "Role migration complete: Created {} roles. Assigned {} out of {} user members to those, the remaining were already members.",
+        createdRoleCount.get(),
+        assignedRoleCount.get(),
+        totalRoleAssignmentAttempts.get());
+  }
+
   private void createRoles() {
     ROLES.forEach(
         role -> {
           try {
             roleServices.createRole(role).join();
+            createdRoleCount.incrementAndGet();
             logger.debug("Migrated role: {}", role);
           } catch (final Exception e) {
             if (!isConflictError(e)) {
               throw new MigrationException("Failed to migrate role with ID: " + role.roleId(), e);
             }
+            logger.debug("Role '{}' already exists, skipping creation.", role.roleId());
           }
         });
   }
@@ -75,8 +91,11 @@ public class StaticConsoleRoleMigrationHandler extends MigrationHandler<NoopDTO>
                         final var request =
                             new RoleMemberRequest(effectiveRole.getName(), email, EntityType.USER);
 
+                        totalRoleAssignmentAttempts.incrementAndGet();
+
                         try {
                           roleServices.addMember(request).join();
+                          assignedRoleCount.incrementAndGet();
                           logger.debug(
                               "Assigned role '{}' to user '{}'", effectiveRole.getName(), email);
                         } catch (final Exception e) {
@@ -89,6 +108,10 @@ public class StaticConsoleRoleMigrationHandler extends MigrationHandler<NoopDTO>
                                     + "'",
                                 e);
                           }
+                          logger.debug(
+                              "Role '{}' already assigned to user '{}'. Skipping assignment.",
+                              effectiveRole.getName(),
+                              email);
                         }
                       });
             });

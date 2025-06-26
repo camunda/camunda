@@ -25,12 +25,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class AuthorizationMigrationHandler extends MigrationHandler<Authorization> {
   private final AuthorizationServices authorizationService;
   private final ManagementIdentityClient managementIdentityClient;
   private final ConsoleClient consoleClient;
+
+  private final AtomicInteger createdAuthorizationsCount = new AtomicInteger();
+  private final AtomicInteger skippedAuthorizationsCount = new AtomicInteger();
+  private final AtomicInteger totalAuthorizationsCount = new AtomicInteger();
 
   public AuthorizationMigrationHandler(
       final Authentication authentication,
@@ -52,9 +57,21 @@ public class AuthorizationMigrationHandler extends MigrationHandler<Authorizatio
     createAuthorizations();
   }
 
+  @Override
+  protected void logSummary() {
+    logger.info(
+        "Authorization migration complete: Created {} out of {} authorizations. Skipped {} as they already exist.",
+        createdAuthorizationsCount.get(),
+        totalAuthorizationsCount.get(),
+        skippedAuthorizationsCount.get());
+  }
+
   private void createAuthorizations() {
     final var usersEmailByUsername = getUsersEmailByID();
     final var authorizations = managementIdentityClient.fetchAuthorizations();
+
+    totalAuthorizationsCount.set(authorizations.size());
+
     authorizations.forEach(
         authorization -> {
           final var request =
@@ -66,6 +83,7 @@ public class AuthorizationMigrationHandler extends MigrationHandler<Authorizatio
                   convertPermissions(authorization.permissions(), authorization.resourceType()));
           try {
             authorizationService.createAuthorization(request).join();
+            createdAuthorizationsCount.incrementAndGet();
             logger.debug(
                 "Migrating authorization: {} to an Authorization with ownerId: {}",
                 authorization,
@@ -75,6 +93,7 @@ public class AuthorizationMigrationHandler extends MigrationHandler<Authorizatio
               throw new RuntimeException(
                   "Failed to migrate authorization for entity ID: " + authorization.entityId(), e);
             }
+            skippedAuthorizationsCount.incrementAndGet();
             logger.debug(
                 "Authorization already exists for entity ID: {}. Skipping creation.",
                 authorization.entityId());

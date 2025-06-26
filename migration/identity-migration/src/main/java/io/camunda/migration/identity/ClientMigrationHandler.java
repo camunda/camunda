@@ -28,12 +28,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class ClientMigrationHandler extends MigrationHandler<Members> {
 
   final ConsoleClient consoleClient;
   final AuthorizationServices authorizationServices;
+
+  private final AtomicInteger totalClientsProcessed = new AtomicInteger();
+  private final AtomicInteger createdAuthorizations = new AtomicInteger();
+  private final AtomicInteger skippedAuthorizations = new AtomicInteger();
 
   public ClientMigrationHandler(
       final ConsoleClient consoleClient,
@@ -57,7 +62,18 @@ public class ClientMigrationHandler extends MigrationHandler<Members> {
     clientPermissions.forEach(this::handlePermission);
   }
 
+  @Override
+  protected void logSummary() {
+    logger.info(
+        "Client migration complete: Created {} authorizations out of {} clients. Skipped {} as they already exist.",
+        createdAuthorizations.get(),
+        totalClientsProcessed.get(),
+        skippedAuthorizations.get());
+  }
+
   private void handlePermission(final String clientId, final List<Permission> permissions) {
+    totalClientsProcessed.incrementAndGet();
+
     final var combinedPermissions = getCombinedPermissions(clientId, permissions);
     if (combinedPermissions.isEmpty()) {
       logger.debug("No permissions to migrate for client: {}", clientId);
@@ -66,6 +82,7 @@ public class ClientMigrationHandler extends MigrationHandler<Members> {
     for (final CreateAuthorizationRequest request : combinedPermissions) {
       try {
         authorizationServices.createAuthorization(request).join();
+        createdAuthorizations.incrementAndGet();
         logger.debug(
             "Migrated client permission with owner ID: {} and resource type: {}",
             request.ownerId(),
@@ -75,6 +92,11 @@ public class ClientMigrationHandler extends MigrationHandler<Members> {
           throw new MigrationException(
               String.format("Failed to migrate client permissions for client ID: %s", clientId), e);
         }
+        skippedAuthorizations.incrementAndGet();
+        logger.debug(
+            "Client authorization with owner ID: {} and resource type: {} already exists, skipping creation.",
+            request.ownerId(),
+            request.resourceType());
       }
     }
   }
