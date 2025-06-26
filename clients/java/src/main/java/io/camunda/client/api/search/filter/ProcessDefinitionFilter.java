@@ -20,6 +20,13 @@ import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequest
 public interface ProcessDefinitionFilter extends SearchRequestFilter {
 
   /**
+   * Filters process definitions to only include the latest version of each process definition.
+   *
+   * @return the updated filter
+   */
+  ProcessDefinitionFilter latest();
+
+  /**
    * Filters process definitions by the specified process definition key.
    *
    * @param processDefinitionKey the key of the process definition
