@@ -36,7 +36,7 @@ public class CreateUserTest extends ClientRestTest {
   void shouldCreateUser() {
     // when
     client
-        .newCreateUserCommand()
+        .newUserCreateCommand()
         .username(USERNAME)
         .name(NAME)
         .email(EMAIL)
@@ -58,7 +58,7 @@ public class CreateUserTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newCreateUserCommand()
+                    .newUserCreateCommand()
                     .name(NAME)
                     .email(EMAIL)
                     .password(PASSWORD)
@@ -74,7 +74,7 @@ public class CreateUserTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newCreateUserCommand()
+                    .newUserCreateCommand()
                     .username(USERNAME)
                     .name(NAME)
                     .password(PASSWORD)
@@ -90,7 +90,7 @@ public class CreateUserTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newCreateUserCommand()
+                    .newUserCreateCommand()
                     .username(USERNAME)
                     .email(EMAIL)
                     .password(PASSWORD)
@@ -106,7 +106,7 @@ public class CreateUserTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newCreateUserCommand()
+                    .newUserCreateCommand()
                     .username(USERNAME)
                     .name(NAME)
                     .email(EMAIL)
@@ -126,7 +126,7 @@ public class CreateUserTest extends ClientRestTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newCreateUserCommand()
+                    .newUserCreateCommand()
                     .username(USERNAME)
                     .name(NAME)
                     .email(EMAIL)
