@@ -125,7 +125,7 @@ class UserAuthorizationIT {
 
     final CreateUserResponse createUserResponse =
         adminClient
-            .newUserCreateCommand()
+            .newCreateUserCommand()
             .username(username)
             .name("name")
             .password("password")

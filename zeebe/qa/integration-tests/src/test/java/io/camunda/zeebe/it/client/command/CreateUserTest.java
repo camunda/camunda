@@ -40,7 +40,7 @@ class CreateUserTest {
     // when
     final var response =
         client
-            .newUserCreateCommand()
+            .newCreateUserCommand()
             .username("username")
             .name("name")
             .email("email@example.com")
@@ -63,7 +63,7 @@ class CreateUserTest {
   void shouldRejectIfUsernameAlreadyExists() {
     // given
     client
-        .newUserCreateCommand()
+        .newCreateUserCommand()
         .username("username")
         .name("name")
         .email("email@example.com")
@@ -75,7 +75,7 @@ class CreateUserTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUserCreateCommand()
+                    .newCreateUserCommand()
                     .username("username")
                     .name("name")
                     .email("email@example.com")
@@ -93,7 +93,7 @@ class CreateUserTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUserCreateCommand()
+                    .newCreateUserCommand()
                     .name("name")
                     .email("email@example.com")
                     .password("password")

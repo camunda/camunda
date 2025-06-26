@@ -40,7 +40,7 @@ class AssignUserToGroupTest {
     client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
     username =
         client
-            .newUserCreateCommand()
+            .newCreateUserCommand()
             .name("User Name")
             .username(Strings.newRandomValidUsername())
             .email("foo@example.com")
