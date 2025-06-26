@@ -19,7 +19,6 @@ import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -159,13 +158,9 @@ public class TenantQueryControllerTest extends RestControllerTest {
       {
          "items": [
            {
-             "name": "%s",
-             "description": "%s",
              "groupId": "%s"
            },
            {
-             "name": "%s",
-             "description": "%s",
              "groupId": "%s"
            }
          ],
@@ -445,71 +440,6 @@ public class TenantQueryControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldSearchTenantGroupsWithSorting() {
-    // given
-    when(groupServices.search(any(GroupQuery.class)))
-        .thenReturn(
-            new SearchQueryResult.Builder<GroupEntity>()
-                .total(GROUP_ENTITIES.size())
-                .items(GROUP_ENTITIES)
-                .startCursor("f")
-                .endCursor("v")
-                .build());
-
-    // when / then
-    webClient
-        .post()
-        .uri("%s/%s/groups/search".formatted(TENANT_BASE_URL, "tenantId"))
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(
-            """
-            {
-              "sort": [{"field": "groupId", "order": "ASC"}]
-            }
-            """)
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_JSON)
-        .expectBody()
-        .json(EXPECTED_GROUP_RESPONSE);
-  }
-
-  @Test
-  void shouldSearchTenantGroupsWithEmptyQuery() {
-    // given
-    when(groupServices.search(any(GroupQuery.class)))
-        .thenReturn(
-            new SearchQueryResult.Builder<GroupEntity>()
-                .total(GROUP_ENTITIES.size())
-                .items(GROUP_ENTITIES)
-                .startCursor("f")
-                .endCursor("v")
-                .build());
-
-    // when / then
-    webClient
-        .post()
-        .uri("%s/%s/groups/search".formatted(TENANT_BASE_URL, "tenantId"))
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(
-            """
-            {
-            }
-            """)
-        .exchange()
-        .expectStatus()
-        .isOk()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_JSON)
-        .expectBody()
-        .json(EXPECTED_GROUP_RESPONSE);
-  }
-
-  @Test
   void shouldSearchTenantRolesWithSorting() {
     // given
     when(roleServices.search(any(RoleQuery.class)))
@@ -679,7 +609,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri("%s/%s/group-ids/search".formatted(TENANT_BASE_URL, "tenantId"))
+        .uri("%s/%s/groups/search".formatted(TENANT_BASE_URL, "tenantId"))
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .exchange()

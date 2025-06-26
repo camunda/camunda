@@ -22,7 +22,6 @@ import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.UserServices;
-import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
@@ -217,16 +216,6 @@ public class TenantController {
   }
 
   @CamundaPostMapping(path = "/{tenantId}/groups/search")
-  public ResponseEntity<GroupSearchQueryResult> searchGroupsInTenant(
-      @PathVariable final String tenantId,
-      @RequestBody(required = false) final GroupSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toGroupQuery(query)
-        .fold(
-            RestErrorMapper::mapProblemToResponse,
-            groupQuery -> searchGroupsInTenant(tenantId, groupQuery));
-  }
-
-  @CamundaPostMapping(path = "/{tenantId}/group-ids/search")
   public ResponseEntity<TenantGroupSearchResult> searchGroupIdsInTenant(
       @PathVariable final String tenantId,
       @RequestBody(required = false) final TenantGroupSearchQueryRequest query) {
