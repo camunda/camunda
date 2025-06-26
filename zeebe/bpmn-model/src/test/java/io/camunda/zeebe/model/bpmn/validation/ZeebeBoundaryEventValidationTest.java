@@ -19,6 +19,7 @@ import static io.camunda.zeebe.model.bpmn.validation.ExpectedValidationResult.ex
 import static java.util.Collections.singletonList;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.builder.AbstractBpmnModelElementBuilder;
 import org.junit.runners.Parameterized.Parameters;
 
 public class ZeebeBoundaryEventValidationTest extends AbstractZeebeValidationTest {
@@ -65,11 +66,14 @@ public class ZeebeBoundaryEventValidationTest extends AbstractZeebeValidationTes
             .serviceTask("task", b -> b.zeebeJobType("type"))
             .boundaryEvent("boundary")
             .cancelActivity(true)
-            .timerWithDuration("PT0.5S")
+            .compensation(AbstractBpmnModelElementBuilder::done)
             .moveToActivity("task")
             .endEvent("end")
             .done(),
-        singletonList(expect("boundary", "Must have at least one outgoing sequence flow"))
+        singletonList(
+            expect(
+                "boundary",
+                "Compensation boundary events must have a compensation association and no outgoing sequence flows"))
       },
       {
         Bpmn.createExecutableProcess("process")
