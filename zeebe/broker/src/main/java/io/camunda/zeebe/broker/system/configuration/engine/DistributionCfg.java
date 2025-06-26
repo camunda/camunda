@@ -13,18 +13,18 @@ import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 
 public class DistributionCfg implements ConfigurationEntry {
 
-  private boolean isCommandDistributionPaused = DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
+  private boolean pauseCommandDistribution = DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
 
-  public boolean isCommandDistributionPaused() {
-    return isCommandDistributionPaused;
+  public boolean isPauseCommandDistribution() {
+    return pauseCommandDistribution;
   }
 
-  public void setCommandDistributionPaused(final boolean commandDistributionPaused) {
-    isCommandDistributionPaused = commandDistributionPaused;
+  public void setPauseCommandDistribution(final boolean pauseCommandDistribution) {
+    this.pauseCommandDistribution = pauseCommandDistribution;
   }
 
   @Override
   public String toString() {
-    return "DistributionCfg{" + "isCommandDistributionPaused=" + isCommandDistributionPaused + '}';
+    return "DistributionCfg{" + "pauseCommandDistribution=" + pauseCommandDistribution + '}';
   }
 }

@@ -77,7 +77,7 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
     if (isDistributionPaused) {
-      LOG.debug("Command distribution is paused, skipping retry cycle.");
+      LOG.debug("Command distribution is paused, skipping retry scheduling.");
       return;
     }
     context

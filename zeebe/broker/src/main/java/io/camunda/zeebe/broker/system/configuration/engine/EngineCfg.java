@@ -135,7 +135,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setBatchOperationQueryPageSize(batchOperations.getQueryPageSize())
         .setBatchOperationQueryInClauseSize(batchOperations.getQueryInClauseSize())
         .setUsageMetricsExportInterval(usageMetrics.getExportInterval())
-        .setCommandDistributionPaused(distribution.isCommandDistributionPaused())
+        .setCommandDistributionPaused(distribution.isPauseCommandDistribution())
         .setMaxProcessDepth(getMaxProcessDepth());
   }
 }
