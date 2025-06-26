@@ -108,7 +108,8 @@ public class TenantServiceTest {
   @Test
   public void shouldThrowExceptionIfNotFoundByKey() {
     // given
-    when(client.searchTenants(any())).thenReturn(new SearchQueryResult(0, false, List.of(), null, null));
+    when(client.searchTenants(any()))
+        .thenReturn(new SearchQueryResult(0, false, List.of(), null, null));
 
     // when / then
 

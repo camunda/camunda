@@ -230,7 +230,8 @@ public final class ProcessInstanceServiceTest {
     authorizeProcessReadInstance(true, "parent_process_id");
 
     when(processInstanceSearchClient.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(childProcess, parentProcess), null, null));
+        .thenReturn(
+            new SearchQueryResult<>(1, false, List.of(childProcess, parentProcess), null, null));
 
     // when
     final var result = services.callHierarchy(childProcess.processInstanceKey());

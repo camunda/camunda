@@ -121,7 +121,8 @@ public class GroupServiceTest {
   public void shouldThrowExceptionIfGroupNotFoundById() {
     // given
     final var id = "groupId";
-    when(client.searchGroups(any())).thenReturn(new SearchQueryResult<>(0, false, List.of(), null, null));
+    when(client.searchGroups(any()))
+        .thenReturn(new SearchQueryResult<>(0, false, List.of(), null, null));
 
     // when / then
     assertThat(services.findGroup(id)).isEmpty();

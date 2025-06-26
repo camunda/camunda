@@ -67,7 +67,8 @@ public final class DecisionRequirementsServiceTest {
     when(decisionRequirementEntity.decisionRequirementsKey()).thenReturn(124L);
     when(decisionRequirementEntity.decisionRequirementsId()).thenReturn("decReqId");
     when(client.searchDecisionRequirements(any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(decisionRequirementEntity), null, null));
+        .thenReturn(
+            new SearchQueryResult<>(1, false, List.of(decisionRequirementEntity), null, null));
     when(securityContextProvider.isAuthorized(
             "decReqId",
             authentication,

@@ -118,7 +118,8 @@ public class RoleServicesTest {
   public void shouldThrownExceptionIfNotFoundById() {
     // given
     final var roleId = "roleId";
-    when(client.searchRoles(any())).thenReturn(new SearchQueryResult(0, false, List.of(), null, null));
+    when(client.searchRoles(any()))
+        .thenReturn(new SearchQueryResult(0, false, List.of(), null, null));
 
     // when / then
     assertThat(services.findRole(roleId)).isEmpty();

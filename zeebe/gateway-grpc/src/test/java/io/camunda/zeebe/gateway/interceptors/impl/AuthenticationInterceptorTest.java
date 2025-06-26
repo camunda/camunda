@@ -121,7 +121,8 @@ public class AuthenticationInterceptorTest {
     // demo:demo
     metadata.put(Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER), "Basic ZGVtbzpkZW1v");
     final var userServices = mock(UserServices.class);
-    when(userServices.search(any())).thenReturn(new SearchQueryResult<>(0, false, List.of(), null, null));
+    when(userServices.search(any()))
+        .thenReturn(new SearchQueryResult<>(0, false, List.of(), null, null));
     new AuthenticationInterceptor(new BasicAuth(userServices, mock(PasswordEncoder.class)))
         .interceptCall(closeStatusCapturingServerCall, metadata, failingNextHandler());
 
