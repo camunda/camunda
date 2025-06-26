@@ -69,9 +69,7 @@ public class JobQueryControllerTest extends RestControllerTest {
                 }
             ],
             "page": {
-                "totalItems": 1,
-                "firstSortValues": ["f"],
-                "lastSortValues": ["v"]
+                "totalItems": 1
             }
         }
         """;
@@ -102,8 +100,8 @@ public class JobQueryControllerTest extends RestControllerTest {
                       "elementId",
                       4L,
                       "<default>")))
-          .firstSortValues(new Object[] {"f"})
-          .lastSortValues(new Object[] {"v"})
+          .startCursor("123base64")
+          .endCursor("456base64")
           .build();
   @MockBean JobServices<JobActivationResult> jobServices;
   @MockBean MultiTenancyConfiguration multiTenancyCfg;
