@@ -314,8 +314,8 @@ public final class SearchResponseMapper {
   }
 
   public static List<ProcessInstanceCallHierarchyEntryResponse>
-  toProcessInstanceCallHierarchyEntryResponse(
-      final ProcessInstanceCallHierarchyEntry[] entries) {
+      toProcessInstanceCallHierarchyEntryResponse(
+          final ProcessInstanceCallHierarchyEntry[] entries) {
     return toSearchResponseInstances(
         Arrays.asList(entries), ProcessInstanceCallHierarchyEntryResponseImpl::new);
   }

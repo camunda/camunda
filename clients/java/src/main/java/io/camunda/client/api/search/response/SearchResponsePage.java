@@ -21,18 +21,17 @@ public interface SearchResponsePage {
   Long totalItems();
 
   /**
-   * Indicates whether there are more results available beyond the default maximum threshold
-   * of 10_000 items in search responses from Elasticsearch or OpenSearch (ES/OS).
-   * <p>
-   * In ES/OS-backed searches, the {@code totalItems} value is capped at 10_000 for performance reasons.
-   * If the underlying ES/OS response returns {@code hits.total.relation = "gte"}, meaning the actual
-   * number of results is greater than or equal to 10_000, this method returns {@code true}.
-   * Otherwise, it returns {@code false}.
-   * <p>
-   * This helps API consumers detect when the reported {@code totalItems} count is not the full count,
-   * and more items may be available than are indicated.
+   * Whether more than 10,000 results exist in Elasticsearch (ES) or OpenSearch (OS) searches.
    *
-   * @return {@code true} if more results exist than the default ES/OS maximum of 10_000 items; {@code false} otherwise.
+   * <p>In ES or OS, total hits are capped at 10,000. If the result set is greater than or equal to
+   * this, this method returns {@code true}; otherwise, it returns {@code false}.
+   *
+   * <p>For RDBMS-backed searches, this is always {@code false} because there is no such limitation.
+   *
+   * <p>This helps clients understand when total item counts may be incomplete due to ES or OS
+   * limits.
+   *
+   * @return {@code true} if more than 10,000 items exist in ES or OS; {@code false} otherwise.
    */
   Boolean hasMoreTotalItems();
 
