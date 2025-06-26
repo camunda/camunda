@@ -29,6 +29,11 @@ public class SignalStartEventTest {
   private static final String SIGNAL_NAME_1 = "a";
   private static final String SIGNAL_NAME_2 = "b";
 
+  /**
+   * We set the maximum commands in a batch to 21. It doesn't impact other tests, but it is
+   * necessary for the regression test {@link
+   * #shouldTriggerOnlySignalStartEventWhenCommandProcessingOrderIsSkewedByCommandBatching()}
+   */
   @Rule public final EngineRule engine = EngineRule.singlePartition().maxCommandsInBatch(21);
 
   @Test
