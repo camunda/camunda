@@ -12,7 +12,11 @@ import java.util.List;
 import java.util.Objects;
 
 public record SearchCompositeAggregator(
-    String name, Integer size, List<SearchAggregator> aggregations, List<SearchAggregator> sources)
+    String name,
+    Integer size,
+    String after,
+    List<SearchAggregator> aggregations,
+    List<SearchAggregator> sources)
     implements SearchAggregator {
 
   @Override
@@ -28,6 +32,7 @@ public record SearchCompositeAggregator(
   public static final class Builder extends AbstractBuilder<SearchCompositeAggregator.Builder>
       implements ObjectBuilder<SearchCompositeAggregator> {
     private Integer size = 10000;
+    private String after;
     private List<SearchAggregator> sources;
 
     @Override
@@ -44,6 +49,11 @@ public record SearchCompositeAggregator(
       return this;
     }
 
+    public SearchCompositeAggregator.Builder after(final String value) {
+      after = value;
+      return this;
+    }
+
     public SearchCompositeAggregator.Builder sources(final List<SearchAggregator> sources) {
       this.sources = sources;
       return this;
@@ -54,6 +64,7 @@ public record SearchCompositeAggregator(
       return new SearchCompositeAggregator(
           Objects.requireNonNull(name, "Expected non-null field for name."),
           size,
+          after,
           aggregations,
           sources);
     }

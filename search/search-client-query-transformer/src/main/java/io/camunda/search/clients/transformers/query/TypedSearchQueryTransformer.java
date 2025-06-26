@@ -20,6 +20,7 @@ import io.camunda.search.clients.transformers.filter.FilterTransformer;
 import io.camunda.search.clients.transformers.result.ResultConfigTransformer;
 import io.camunda.search.clients.transformers.sort.SortingTransformer;
 import io.camunda.search.filter.FilterBase;
+import io.camunda.search.query.AggregationPaginated;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.result.QueryResultConfig;
 import io.camunda.search.sort.NoSort;
@@ -44,24 +45,8 @@ public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOpt
     final var searchQueryFilter = toSearchQuery(filter);
     final var indices = toIndices(filter);
 
-    final var page = query.page();
-    final var reverse = !page.isNextPage();
-
-    final var builder =
-        searchRequest().index(indices).query(searchQueryFilter).from(page.from()).size(page.size());
-
-    final var sort = query.sort();
-    if (!(sort instanceof NoSort)) {
-      final var sorting = toSearchSortOptions(sort, reverse);
-      if (!sorting.isEmpty()) {
-        builder.sort(query.retainValidSortings(sorting));
-      }
-    }
-
-    final var searchAfter = page.startNextPageAfter();
-    if (searchAfter != null) {
-      builder.searchAfter(Cursor.decode(searchAfter));
-    }
+    final var builder = searchRequest().index(indices).query(searchQueryFilter);
+    buildPagination(query, builder);
 
     final var resultConfig = query.resultConfig();
     final var searchQuerySourceConfig = toSearchSourceConfig(resultConfig);
@@ -115,5 +100,31 @@ public class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOpt
     final ServiceTransformer<QueryResultConfig, SearchSourceConfig> transformer =
         transformers.getTransformer(clazz);
     return (ResultConfigTransformer) transformer;
+  }
+
+  private void buildPagination(
+      final TypedSearchQuery<F, S> query, final SearchQueryRequest.Builder builder) {
+    if (query instanceof AggregationPaginated) {
+      // AggregationPaginated queries handle pagination differently, as the types are different
+      return;
+    }
+
+    final var page = query.page();
+    final var reverse = !page.isNextPage();
+
+    builder.from(page.from()).size(page.size());
+
+    final var sort = query.sort();
+    if (!(sort instanceof NoSort)) {
+      final var sorting = toSearchSortOptions(sort, reverse);
+      if (!sorting.isEmpty()) {
+        builder.sort(query.retainValidSortings(sorting));
+      }
+    }
+
+    final var searchAfter = page.startNextPageAfter();
+    if (searchAfter != null) {
+      builder.searchAfter(Cursor.decode(searchAfter));
+    }
   }
 }
