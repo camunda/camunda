@@ -60,6 +60,7 @@ func AdjustJavaOpts(javaOpts string, settings types.C8RunSettings) string {
 	}
 	if settings.Username != "" {
 		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].username=" + settings.Username
+		javaOpts = javaOpts + " -Dcamunda.security.initialization.defaultRoles.admin.users[0]=" + settings.Username
 	}
 	if settings.Password != "" {
 		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].password=" + settings.Password
