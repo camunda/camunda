@@ -25,7 +25,10 @@ public class SearchResponsePageImpl implements SearchResponsePage {
   private final String endCursor;
 
   public SearchResponsePageImpl(
-      final long totalItems, final boolean hasMoreTotalItems, final String startCursor, final String endCursor) {
+      final long totalItems,
+      final boolean hasMoreTotalItems,
+      final String startCursor,
+      final String endCursor) {
     this.totalItems = totalItems;
     this.hasMoreTotalItems = hasMoreTotalItems;
     this.startCursor = startCursor;
