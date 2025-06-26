@@ -62,20 +62,20 @@ public final class BoundaryEventWithoutOutgoingSequenceFlowTest {
     return Arrays.asList(
         new Object[][] {
           {
-            "message-int",
+            "message-interrupting",
             (BoundaryScenario)
                 b ->
                     b.serviceTask("element", t -> t.zeebeJobType("type"))
                         .boundaryEvent(
                             "boundary",
-                            bb ->
-                                bb.message(m -> m.name("MSG").zeebeCorrelationKeyExpression("k"))),
+                            bb -> bb.message(m -> m.name("MSG").zeebeCorrelationKeyExpression("k")))
+                        .moveToActivity("element"),
             (BoundaryTrigger)
                 (engine, key) -> engine.message().withName("MSG").withCorrelationKey("v").publish(),
             true
           },
           {
-            "message-non-int",
+            "message-non-interrupting",
             (BoundaryScenario)
                 b ->
                     b.serviceTask("element", t -> t.zeebeJobType("type"))
@@ -83,51 +83,55 @@ public final class BoundaryEventWithoutOutgoingSequenceFlowTest {
                             "boundary",
                             bb ->
                                 bb.cancelActivity(false)
-                                    .message(
-                                        m -> m.name("MSG").zeebeCorrelationKeyExpression("k"))),
+                                    .message(m -> m.name("MSG").zeebeCorrelationKeyExpression("k")))
+                        .moveToActivity("element"),
             (BoundaryTrigger)
                 (engine, key) -> engine.message().withName("MSG").withCorrelationKey("v").publish(),
             false
           },
           {
-            "timer-int",
+            "timer-interrupting",
             (BoundaryScenario)
                 b ->
                     b.serviceTask("element", t -> t.zeebeJobType("type"))
-                        .boundaryEvent("boundary", bb -> bb.timerWithDuration("PT1S")),
+                        .boundaryEvent("boundary", bb -> bb.timerWithDuration("PT1S"))
+                        .moveToActivity("element"),
             (BoundaryTrigger) (engine, key) -> engine.increaseTime(Duration.ofSeconds(2)),
             true
           },
           {
-            "timer-non-int",
+            "timer-non-interrupting",
             (BoundaryScenario)
                 b ->
                     b.serviceTask("element", t -> t.zeebeJobType("type"))
                         .boundaryEvent(
-                            "boundary", bb -> bb.cancelActivity(false).timerWithDuration("PT1S")),
+                            "boundary", bb -> bb.cancelActivity(false).timerWithDuration("PT1S"))
+                        .moveToActivity("element"),
             (BoundaryTrigger) (engine, key) -> engine.increaseTime(Duration.ofSeconds(2)),
             false
           },
           {
-            "signal-int",
+            "signal-interrupting",
             (BoundaryScenario)
                 b ->
                     b.serviceTask("element", t -> t.zeebeJobType("type"))
-                        .boundaryEvent("boundary", bb -> bb.signal("SIG")),
+                        .boundaryEvent("boundary", bb -> bb.signal("SIG"))
+                        .moveToActivity("element"),
             (BoundaryTrigger) (engine, key) -> engine.signal().withSignalName("SIG").broadcast(),
             true
           },
           {
-            "signal-non-int",
+            "signal-non-interrupting",
             (BoundaryScenario)
                 b ->
                     b.serviceTask("element", t -> t.zeebeJobType("type"))
-                        .boundaryEvent("boundary", bb -> bb.cancelActivity(false).signal("SIG")),
+                        .boundaryEvent("boundary", bb -> bb.cancelActivity(false).signal("SIG"))
+                        .moveToActivity("element"),
             (BoundaryTrigger) (engine, key) -> engine.signal().withSignalName("SIG").broadcast(),
             false
           },
           {
-            "escalation-int",
+            "escalation-interrupting",
             (BoundaryScenario)
                 b ->
                     b.subProcess(
@@ -146,7 +150,7 @@ public final class BoundaryEventWithoutOutgoingSequenceFlowTest {
             true
           },
           {
-            "escalation-non-int",
+            "escalation-non-interrupting",
             (BoundaryScenario)
                 b ->
                     b.subProcess(
@@ -166,7 +170,7 @@ public final class BoundaryEventWithoutOutgoingSequenceFlowTest {
             false
           },
           {
-            "error-int",
+            "error-interrupting",
             (BoundaryScenario)
                 b ->
                     b.subProcess(
