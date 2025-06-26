@@ -114,10 +114,10 @@ class SearchClientBasedQueryExecutorTest {
         createProcessInstanceEntityResponse(demoProcessInstance, 1, false);
 
     when(searchClient.search(
-        any(SearchQueryRequest.class), eq(ProcessInstanceForListViewEntity.class)))
+            any(SearchQueryRequest.class), eq(ProcessInstanceForListViewEntity.class)))
         .thenReturn(processInstanceEntityResponse);
     when(authorizationQueryStrategy.applyAuthorizationToQuery(
-        any(SearchQueryRequest.class), any(SecurityContext.class), any()))
+            any(SearchQueryRequest.class), any(SecurityContext.class), any()))
         .thenAnswer(i -> i.getArgument(0));
 
     // When we search
@@ -138,10 +138,10 @@ class SearchClientBasedQueryExecutorTest {
         createProcessInstanceEntityResponse(demoProcessInstance, 10000, true);
 
     when(searchClient.search(
-        any(SearchQueryRequest.class), eq(ProcessInstanceForListViewEntity.class)))
+            any(SearchQueryRequest.class), eq(ProcessInstanceForListViewEntity.class)))
         .thenReturn(processInstanceEntityResponse);
     when(authorizationQueryStrategy.applyAuthorizationToQuery(
-        any(SearchQueryRequest.class), any(SecurityContext.class), any()))
+            any(SearchQueryRequest.class), any(SecurityContext.class), any()))
         .thenAnswer(i -> i.getArgument(0));
 
     // When we search
@@ -249,7 +249,8 @@ class SearchClientBasedQueryExecutorTest {
   }
 
   private SearchQueryResponse<ProcessInstanceForListViewEntity> createProcessInstanceEntityResponse(
-      final ProcessInstanceForListViewEntity demoProcessInstance, final long totalHits,
+      final ProcessInstanceForListViewEntity demoProcessInstance,
+      final long totalHits,
       final boolean hasMoreFields) {
     final SearchQueryHit<ProcessInstanceForListViewEntity> hit =
         new SearchQueryHit.Builder<ProcessInstanceForListViewEntity>()
