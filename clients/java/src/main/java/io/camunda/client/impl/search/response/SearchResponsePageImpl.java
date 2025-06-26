@@ -38,7 +38,7 @@ public class SearchResponsePageImpl implements SearchResponsePage {
   }
 
   @Override
-  public boolean hasMoreTotalItems() {
+  public Boolean hasMoreTotalItems() {
     return hasMoreTotalItems;
   }
 
