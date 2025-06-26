@@ -7,7 +7,6 @@
  */
 package io.camunda.application.commons.backup;
 
-import io.camunda.application.commons.conditions.WebappEnabledCondition;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
@@ -28,7 +27,8 @@ import org.springframework.context.annotation.Profile;
  *
  * <p>Note that the condition used refers to tasklist OpensearchCondition
  */
-@Conditional({OpenSearchCondition.class, WebappEnabledCondition.class})
+@ConditionalOnBackupWebappsEnabled
+@Conditional(OpenSearchCondition.class)
 @Configuration
 @Profile("tasklist")
 @ConditionalOnMissingBean(OpensearchBackupRepository.class)
