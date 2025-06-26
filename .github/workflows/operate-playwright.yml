@@ -2,21 +2,9 @@
 # test location: operate/client/e2e-playwright
 # type: CI
 # owner: @camunda/core-features
-name: "[Legacy] Operate / Visual Regression Tests"
+name: "Operate / Visual Regression Tests"
 on:
-  push:
-    branches:
-      - "main"
-      - "stable/**"
-      - "release/**"
-    paths:
-      - '.github/workflows/operate-playwright.yml'
-      - 'operate/client/**'
-  pull_request:
-    paths:
-      - '.github/workflows/operate-playwright.yml'
-      - 'operate/client/**'
-      - ".github/workflows/operate-*"
+  workflow_call: {}
 
 # Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
 # Exception for main branch: complete builds for every commit needed for confidenence
