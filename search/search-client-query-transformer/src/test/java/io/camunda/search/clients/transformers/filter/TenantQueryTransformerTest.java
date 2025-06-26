@@ -163,8 +163,6 @@ public class TenantQueryTransformerTest extends AbstractTransformerTest {
                     b.must(
                         List.of(
                             SearchQuery.of(
-                                q1 -> q1.term(t -> t.field("memberType").value(memberType))),
-                            SearchQuery.of(
                                 q1 ->
                                     q1.hasParent(
                                         p ->
@@ -175,6 +173,8 @@ public class TenantQueryTransformerTest extends AbstractTransformerTest {
                                                             q2.term(
                                                                 t ->
                                                                     t.field("tenantId")
-                                                                        .value(parentId))))))))));
+                                                                        .value(parentId)))))),
+                            SearchQuery.of(
+                                q1 -> q1.term(t -> t.field("memberType").value(memberType)))))));
   }
 }
