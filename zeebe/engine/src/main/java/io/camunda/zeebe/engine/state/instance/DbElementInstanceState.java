@@ -34,7 +34,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableInteger;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public final class DbElementInstanceState implements MutableElementInstanceState {
 
@@ -330,11 +329,9 @@ public final class DbElementInstanceState implements MutableElementInstanceState
       parentChildColumnFamily.whileEqualPrefix(
           this.parentKey,
           (key, value) -> {
-            final DbLong childKey = key.second().inner();
-            final ElementInstance childInstance = getInstance(childKey.getValue());
-
-            final ElementInstance copiedElementInstance = copyElementInstance(childInstance);
-            children.add(copiedElementInstance);
+            final var childKey = key.second().inner();
+            final var childInstance = getInstance(childKey.getValue());
+            children.add(childInstance);
           });
     }
     return children;
@@ -476,19 +473,6 @@ public final class DbElementInstanceState implements MutableElementInstanceState
         });
 
     return hasActiveInstances.get();
-  }
-
-  private ElementInstance copyElementInstance(final ElementInstance elementInstance) {
-    if (elementInstance != null) {
-      final byte[] bytes = new byte[elementInstance.getLength()];
-      final UnsafeBuffer buffer = new UnsafeBuffer(bytes);
-
-      elementInstance.write(buffer, 0);
-      final ElementInstance copiedElementInstance = new ElementInstance();
-      copiedElementInstance.wrap(buffer, 0, elementInstance.getLength());
-      return copiedElementInstance;
-    }
-    return null;
   }
 
   private void removeNumberOfTakenSequenceFlows(final long flowScopeKey) {
