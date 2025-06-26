@@ -181,8 +181,8 @@ public class OpensearchDataStoreClientTest {
         SearchQueryRequest.of(b -> b.index("operate-list-view-8.3.0_").size(1));
 
     // when
-    final SearchQueryResponse<TestDocument> response = searchClient.search(request,
-        TestDocument.class);
+    final SearchQueryResponse<TestDocument> response =
+        searchClient.search(request, TestDocument.class);
 
     // then
     assertThat(response).isNotNull();
@@ -199,16 +199,16 @@ public class OpensearchDataStoreClientTest {
         SearchQueryRequest.of(b -> b.index("operate-list-view-8.3.0_").size(1));
 
     // when
-    final SearchQueryResponse<TestDocument> response = searchClient.search(request,
-        TestDocument.class);
+    final SearchQueryResponse<TestDocument> response =
+        searchClient.search(request, TestDocument.class);
 
     // then
     assertThat(response).isNotNull();
     assertThat(response.hasMoreTotalItems()).isTrue();
   }
 
-  private SearchResponse<TestDocument> createDefaultSearchResponse(long totalHits,
-      TotalHitsRelation totalHitsRelation) {
+  private SearchResponse<TestDocument> createDefaultSearchResponse(
+      long totalHits, TotalHitsRelation totalHitsRelation) {
     return SearchResponse.searchResponseOf(
         (f) ->
             f.took(122)

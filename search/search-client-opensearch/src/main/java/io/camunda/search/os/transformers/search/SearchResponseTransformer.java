@@ -39,7 +39,8 @@ public final class SearchResponseTransformer<T>
 
     final var total = hits.total();
     final var totalHits = of(total);
-    final var hasMoreTotalItems = Objects.nonNull(total) && total.relation() == TotalHitsRelation.Gte;
+    final var hasMoreTotalItems =
+        Objects.nonNull(total) && total.relation() == TotalHitsRelation.Gte;
 
     final var sourceHits = hits.hits();
     final var transformedHits = of(sourceHits);

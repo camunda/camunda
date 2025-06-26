@@ -181,8 +181,8 @@ public class ElasticsearchDataStoreClientTest {
         SearchQueryRequest.of(b -> b.index("operate-list-view-8.3.0_").size(1));
 
     // when
-    final SearchQueryResponse<TestDocument> response = searchClient.search(request,
-        TestDocument.class);
+    final SearchQueryResponse<TestDocument> response =
+        searchClient.search(request, TestDocument.class);
 
     // then
     assertThat(response).isNotNull();
@@ -199,16 +199,16 @@ public class ElasticsearchDataStoreClientTest {
         SearchQueryRequest.of(b -> b.index("operate-list-view-8.3.0_").size(1));
 
     // when
-    final SearchQueryResponse<TestDocument> response = searchClient.search(request,
-        TestDocument.class);
+    final SearchQueryResponse<TestDocument> response =
+        searchClient.search(request, TestDocument.class);
 
     // then
     assertThat(response).isNotNull();
     assertThat(response.hasMoreTotalItems()).isTrue();
   }
 
-  private SearchResponse<TestDocument> createDefaultSearchResponse(long totalHits,
-      TotalHitsRelation totalHitsRelation) {
+  private SearchResponse<TestDocument> createDefaultSearchResponse(
+      long totalHits, TotalHitsRelation totalHitsRelation) {
     return SearchResponse.of(
         (f) ->
             f.took(122)
@@ -238,7 +238,5 @@ public class ElasticsearchDataStoreClientTest {
                 .shards(s -> s.total(1).successful(1).failed(0)));
   }
 
-  record TestDocument(String id) {
-
-  }
+  record TestDocument(String id) {}
 }
