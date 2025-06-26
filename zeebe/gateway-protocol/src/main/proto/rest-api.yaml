@@ -6355,14 +6355,14 @@ components:
           type: string
           description: The parent element instance key.
     ProcessInstanceStateEnum:
-      description: The state, one of ACTIVE, COMPLETED, TERMINATED.
+      description: The state, one of ACTIVE, COMPLETED, TERMINATED, SUSPENDED.
       enum:
         - ACTIVE
         - COMPLETED
         - TERMINATED
         - SUSPENDED
     ElementInstanceStateEnum:
-      description: Element states, one of ACTIVE, COMPLETED, TERMINATED.
+      description: Element states, one of ACTIVE, COMPLETED, TERMINATED, SUSPENDED.
       enum:
         - ACTIVE
         - COMPLETED
@@ -9717,10 +9717,7 @@ components:
         runtimeInstructions:
           description: |
             Runtime instructions (alpha). List of instructions that affect the runtime behavior of
-            the process instance.
-            By default, the process instance will run until it terminates normally. If provided,
-            the process instance may finish earlier. Refer to specific instruction types for more
-            details.
+            the process instance. Refer to specific instruction types for more details.
 
             This parameter is an alpha feature and may be subject to change
             in future releases.
@@ -9774,8 +9771,10 @@ components:
         Note the following limitations of suspended process instances:
           - Suspended process instances currently cannot be resumed. The only possible state
             transition is to cancel the suspended instance.
-          - Process instances suspended with the current implementation may not be fully recoverable
-            in the future, when the resume functionality is implemented.
+          - Suspending a process instance currently means that all jobs, user tasks, incidents, and
+            event subscriptions are removed from the runtime state. This means that process instances
+            suspended with the current implementation may not be fully recoverable in the future,
+            when the resume functionality is implemented.
           - Suspended process instances currently cannot be modified or migrated.
 
         It is therefore not recommended to use process instance suspension outside of testing or
