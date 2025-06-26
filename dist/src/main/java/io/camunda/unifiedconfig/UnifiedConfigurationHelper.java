@@ -20,21 +20,28 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.Environment;
+import org.springframework.core.env.PropertySource;
 
 @Configuration
 @EnableConfigurationProperties(UnifiedConfiguration.class)
 public class UnifiedConfigurationHelper {
 
   private static Environment environment;
+  private static ConfigurableEnvironment configurableEnvironment;
 
-  private UnifiedConfigurationHelper(@Autowired Environment environment) {
+  public UnifiedConfigurationHelper(
+      @Autowired Environment environment,
+      @Autowired ConfigurableEnvironment configurableEnvironment) {
     UnifiedConfigurationHelper.environment = environment;
+    UnifiedConfigurationHelper.configurableEnvironment = configurableEnvironment;
+
+    System.out.println(isConfigExplicitlySet("zeebe.broker.gateway.enabled"));
   }
 
-  public static String getLegacyConfigValue(String legacyConfigKey) {
-    return environment.getProperty(legacyConfigKey);
-  }
+  /* Config beans built using the unified configuration system */
 
   @Bean
   public TasklistProperties tasklistProperties(
@@ -61,6 +68,7 @@ public class UnifiedConfigurationHelper {
   }
 
   @Bean
+  @Primary
   public BrokerBasedProperties brokerBasedProperties(
       final LegacyBrokerBasedProperties legacyBrokerBasedProperties,
       final UnifiedConfiguration unifiedConfiguration) {
@@ -71,6 +79,24 @@ public class UnifiedConfigurationHelper {
 
     return patchedBrokerBasedProperties;
   }
+
+  /* Fallback mechanism utilities */
+
+  public static String getLegacyConfigValue(String legacyConfigKey) {
+    return environment.getProperty(legacyConfigKey);
+  }
+
+  public static boolean isConfigExplicitlySet(String configKey) {
+    for(PropertySource<?> propertySource : configurableEnvironment.getPropertySources()) {
+      if (propertySource.containsProperty(configKey)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /* Other utilities */
 
   private static void putArg(Map<String, Object> args, String keyPath, Object value) {
     String[] keys = keyPath.split("\\.");
