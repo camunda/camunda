@@ -31,6 +31,12 @@ public class ProcessDefinitionFilterImpl
   }
 
   @Override
+  public ProcessDefinitionFilter latest() {
+    filter.setLatest(true);
+    return this;
+  }
+
+  @Override
   public ProcessDefinitionFilter processDefinitionKey(final long processDefinitionKey) {
     filter.setProcessDefinitionKey(ParseUtil.keyToString(processDefinitionKey));
     return this;
