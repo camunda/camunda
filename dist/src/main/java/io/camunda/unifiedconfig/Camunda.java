@@ -8,14 +8,4 @@
 package io.camunda.unifiedconfig;
 
 public class Camunda {
-
-  private Data data = new Data();
-
-  public Data getData() {
-    return data;
-  }
-
-  public void setData(final Data data) {
-    this.data = data;
-  }
 }
