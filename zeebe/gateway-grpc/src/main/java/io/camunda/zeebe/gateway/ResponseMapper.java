@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsArray;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
@@ -41,7 +42,9 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UserTaskProperties;
 import io.camunda.zeebe.msgpack.value.LongValue;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -57,12 +60,19 @@ import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionReco
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import org.agrona.DirectBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ResponseMapper {
+
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final Logger LOG = LoggerFactory.getLogger(ResponseMapper.class);
 
   public static DeployProcessResponse toDeployProcessResponse(
       final long key, final DeploymentRecord brokerResponse) {
@@ -350,22 +360,87 @@ public final class ResponseMapper {
   }
 
   private static ActivatedJob toActivatedJob(final long jobKey, final JobRecord job) {
-    return ActivatedJob.newBuilder()
-        .setKey(jobKey)
-        .setType(bufferAsString(job.getTypeBuffer()))
-        .setBpmnProcessId(job.getBpmnProcessId())
-        .setElementId(job.getElementId())
-        .setProcessInstanceKey(job.getProcessInstanceKey())
-        .setProcessDefinitionVersion(job.getProcessDefinitionVersion())
-        .setProcessDefinitionKey(job.getProcessDefinitionKey())
-        .setElementInstanceKey(job.getElementInstanceKey())
-        .setCustomHeaders(bufferAsJson(job.getCustomHeadersBuffer()))
-        .setWorker(bufferAsString(job.getWorkerBuffer()))
-        .setRetries(job.getRetries())
-        .setDeadline(job.getDeadline())
-        .setVariables(bufferAsJson(job.getVariablesBuffer()))
-        .setTenantId(job.getTenantId())
-        .build();
+    final var builder =
+        ActivatedJob.newBuilder()
+            .setKey(jobKey)
+            .setType(bufferAsString(job.getTypeBuffer()))
+            .setBpmnProcessId(job.getBpmnProcessId())
+            .setElementId(job.getElementId())
+            .setProcessInstanceKey(job.getProcessInstanceKey())
+            .setProcessDefinitionVersion(job.getProcessDefinitionVersion())
+            .setProcessDefinitionKey(job.getProcessDefinitionKey())
+            .setElementInstanceKey(job.getElementInstanceKey())
+            .setCustomHeaders(bufferAsJson(job.getCustomHeadersBuffer()))
+            .setWorker(bufferAsString(job.getWorkerBuffer()))
+            .setRetries(job.getRetries())
+            .setDeadline(job.getDeadline())
+            .setVariables(bufferAsJson(job.getVariablesBuffer()))
+            .setTenantId(job.getTenantId());
+
+    if (job.getJobKind() == JobKind.TASK_LISTENER && !job.getCustomHeaders().isEmpty()) {
+      builder.setUserTask(toUserTaskProperties(job.getCustomHeaders()));
+    }
+
+    return builder.build();
+  }
+
+  private static UserTaskProperties toUserTaskProperties(final Map<String, String> headers) {
+    final var builder = UserTaskProperties.newBuilder();
+    headers.forEach(
+        (key, value) -> {
+          if (value != null) {
+            switch (key) {
+              case Protocol.USER_TASK_ACTION_HEADER_NAME -> builder.setAction(value);
+              case Protocol.USER_TASK_ASSIGNEE_HEADER_NAME -> builder.setAssignee(value);
+              case Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME ->
+                  builder.addAllCandidateGroups(toStringList(value));
+              case Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME ->
+                  builder.addAllCandidateUsers(toStringList(value));
+              case Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME ->
+                  builder.addAllChangedAttributes(toStringList(value));
+              case Protocol.USER_TASK_DUE_DATE_HEADER_NAME -> builder.setDueDate(value);
+              case Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME -> builder.setFollowUpDate(value);
+              case Protocol.USER_TASK_FORM_KEY_HEADER_NAME -> builder.setFormKey(value);
+              case Protocol.USER_TASK_PRIORITY_HEADER_NAME -> {
+                final var priority = toInteger(value);
+                if (priority != null) {
+                  builder.setPriority(priority);
+                }
+              }
+              case Protocol.USER_TASK_KEY_HEADER_NAME -> builder.setUserTaskKey(value);
+              default -> {
+                /* Ignore not user task headers */
+              }
+            }
+          }
+        });
+    return builder.build();
+  }
+
+  public static List<String> toStringList(final String input) {
+    if (input.isEmpty()) {
+      return List.of();
+    }
+
+    try {
+      return OBJECT_MAPPER.readValue(
+          input, OBJECT_MAPPER.getTypeFactory().constructCollectionType(List.class, String.class));
+    } catch (final Exception e) {
+      LOG.warn("Failed to parse string to list: {}", input, e);
+      return List.of();
+    }
+  }
+
+  public static Integer toInteger(final String value) {
+    if (value.isEmpty()) {
+      return null;
+    }
+    try {
+      return Integer.parseInt(value);
+    } catch (final NumberFormatException e) {
+      LOG.warn("Failed to parse integer from value: {}", value, e);
+      return null;
+    }
   }
 
   public static ResolveIncidentResponse toResolveIncidentResponse(
