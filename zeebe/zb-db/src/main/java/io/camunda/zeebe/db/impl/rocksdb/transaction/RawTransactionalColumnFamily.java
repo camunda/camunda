@@ -174,7 +174,10 @@ public class RawTransactionalColumnFamily {
         shouldVisitNext = visitor.visit(keyBytes, 0, keyLen, valueBytes, 0, valueLen);
       } catch (final Exception e) {
         LOG.error(
-            "Error visiting key {} in column family {}", new String(keyBytes), columnFamily, e);
+            "Error visiting key {} in column family {}",
+            new String(keyBytes, 0, keyLen),
+            columnFamily,
+            e);
         shouldVisitNext = false;
       }
     }
