@@ -135,7 +135,7 @@ final class SnapshotOnlyDb<ColumnFamilyType extends Enum<? extends EnumValue> & 
                   new DbNullKey(),
                   (prefixKey, prefixLength) -> {
                     try (final RocksIterator iterator = db.newIterator(readOptions)) {
-                      RawTransactionalColumnFamily.forEach(
+                      RawTransactionalColumnFamily.forEachPreallocated(
                           iterator,
                           cf,
                           prefixKey,
