@@ -1,4 +1,10 @@
+# description: Generate a Docker version tag for snapshot builds based on the branch name.
+# type: CI
+# owner: @camunda/monorepo-devops-team
 name: Generate Docker Version Tag (SNAPSHOT)
+
+permissions:
+  contents: read
 
 on:
   workflow_call:
