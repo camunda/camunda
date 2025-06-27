@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React from 'react';
 import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {Restricted} from 'modules/components/Restricted';
 import {useOperations} from 'modules/queries/operations/useOperations';
