@@ -863,7 +863,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *
    *
    * zeebeClient
-   *  .newCreateUserCommand()
+   *  .newUserCreateCommand()
    *  .username(username)
    *  .email(email)
    *  .name(name)
@@ -875,7 +875,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  CreateUserCommandStep1 newCreateUserCommand();
+  CreateUserCommandStep1 newUserCreateCommand();
 
   /**
    * Command to create a document.
