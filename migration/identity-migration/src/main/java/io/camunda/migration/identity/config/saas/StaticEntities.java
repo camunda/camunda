@@ -22,17 +22,11 @@ public class StaticEntities {
   public static final String TASK_USER_ROLE_ID = "taskuser";
   public static final String VISITOR_ROLE_ID = "visitor";
 
-  public static final String ZEEBE_CLIENT_ID = "Zeebe";
-  public static final String OPERATE_CLIENT_ID = "Operate";
-  public static final String TASKLIST_CLIENT_ID = "Tasklist";
-
   public static final String IDENTITY_PROCESS_DEFINITION_RESOURCE_TYPE = "process-definition";
   public static final String IDENTITY_DECISION_DEFINITION_RESOURCE_TYPE = "decision-definition";
 
   public static final Set<String> ROLE_IDS =
       Set.of(DEVELOPER_ROLE_ID, OPERATIONS_ENGINEER_ROLE_ID, TASK_USER_ROLE_ID, VISITOR_ROLE_ID);
-  public static final Set<String> CLIENT_IDS =
-      Set.of(ZEEBE_CLIENT_ID, OPERATE_CLIENT_ID, TASKLIST_CLIENT_ID);
 
   public static final List<CreateRoleRequest> ROLES =
       List.of(
@@ -159,8 +153,7 @@ public class StaticEntities {
               AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
               Set.of(PermissionType.READ)));
 
-  public static final List<CreateAuthorizationRequest> getZeebeClientPermissions(
-      final String clientId) {
+  public static List<CreateAuthorizationRequest> getZeebeClientPermissions(final String clientId) {
     return List.of(
         new CreateAuthorizationRequest(
             clientId,
@@ -210,7 +203,7 @@ public class StaticEntities {
             Set.of(PermissionType.UPDATE, PermissionType.DELETE)));
   }
 
-  public static final List<CreateAuthorizationRequest> getOperateClientPermissions(
+  public static List<CreateAuthorizationRequest> getOperateClientPermissions(
       final String clientId) {
     return List.of(
         new CreateAuthorizationRequest(
@@ -254,7 +247,7 @@ public class StaticEntities {
             Set.of(PermissionType.READ)));
   }
 
-  public static final List<CreateAuthorizationRequest> getTasklistClientPermissions(
+  public static List<CreateAuthorizationRequest> getTasklistClientPermissions(
       final String ownerId) {
     return List.of(
         new CreateAuthorizationRequest(

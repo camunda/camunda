@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.identity.config;
+package io.camunda.migration.identity.config.saas;
 
 import io.camunda.migration.identity.AuthorizationMigrationHandler;
 import io.camunda.migration.identity.ClientMigrationHandler;
@@ -23,7 +23,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @ConditionalOnCloud
-public class MigrationHandlerConfig {
+public class SaaSMigrationHandlerConfig {
   @Bean
   public GroupMigrationHandler groupMigrationHandler(
       final Authentication authentication,

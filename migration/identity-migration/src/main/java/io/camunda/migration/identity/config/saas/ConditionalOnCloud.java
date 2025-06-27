@@ -5,12 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.identity.config;
+package io.camunda.migration.identity.config.saas;
 
 import static io.camunda.migration.identity.config.IdentityMigrationProperties.PROP_CAMUNDA_MIGRATION_IDENTITY_MODE;
 
-import io.camunda.migration.identity.config.ConditionalOnCloud.ConditionalOnCloudCondition;
 import io.camunda.migration.identity.config.IdentityMigrationProperties.Mode;
+import io.camunda.migration.identity.config.saas.ConditionalOnCloud.ConditionalOnCloudCondition;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
