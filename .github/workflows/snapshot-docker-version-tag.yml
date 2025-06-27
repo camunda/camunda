@@ -32,6 +32,6 @@ jobs:
             TAG="${BRANCH#stable/}-SNAPSHOT"
           else
             echo "Unsupported branch: $BRANCH"
-            exit 1
+            exit 0
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
