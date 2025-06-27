@@ -293,24 +293,24 @@ jobs:
 
           # To show the changelog also as step summary
           echo "$changelog" >> "$GITHUB_STEP_SUMMARY"
-      - name: Download Release Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: release-artifacts-${{ inputs.releaseVersion }}
-          path: release-artifacts
-      - name: Create Artifact Checksums
-        id: checksum
-        working-directory: ./release-artifacts
-        run: |
-          for filename in *; do
-            checksumFile="${filename}.sha1sum"
-            sha1sum "${filename}" > "${checksumFile}"
-            sha1sumResult=$?
-            if [ ! -f "${checksumFile}" ]; then
-              echo "Failed to created checksum of ${filename} at ${checksumFile}; [sha1sum] exited with result ${sha1sumResult}. Check the logs for errors."
-              exit 1
-            fi
-          done
+#      - name: Download Release Artifacts
+#        uses: actions/download-artifact@v4
+#        with:
+#          name: release-artifacts-${{ inputs.releaseVersion }}
+#          path: release-artifacts
+#      - name: Create Artifact Checksums
+#        id: checksum
+#        working-directory: ./release-artifacts
+#        run: |
+#          for filename in *; do
+#            checksumFile="${filename}.sha1sum"
+#            sha1sum "${filename}" > "${checksumFile}"
+#            sha1sumResult=$?
+#            if [ ! -f "${checksumFile}" ]; then
+#              echo "Failed to created checksum of ${filename} at ${checksumFile}; [sha1sum] exited with result ${sha1sumResult}. Check the logs for errors."
+#              exit 1
+#            fi
+#          done
       - name: Determine if Pre-Release
         id: pre-release
         run: |
