@@ -144,7 +144,7 @@ public class RocksDBSnapshotCopyTest {
                     if (channel.read(bb) < 0) {
                       break;
                     }
-                    crc.update(bb.array());
+                    crc.update(bb);
                   }
                   return Map.entry(path.toString(), crc.getValue());
                 } catch (final IOException e) {
