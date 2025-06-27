@@ -135,6 +135,57 @@ public class IndexSchemaValidatorTest {
   }
 
   @Test
+  public void shouldDetectAmbiguousIndexDifferenceCaseWithDynamicProperties() throws IOException {
+    // given
+    final var currentIndices =
+        Map.of(
+            "qualified_name",
+            jsonToIndexMappingProperties(
+                "/mappings-dynamic-property-properties.json", "qualified_name"),
+            "qualified_name_2",
+            jsonToIndexMappingProperties(
+                "/mappings-dynamic-property-properties-deleted.json", "qualified_name_2"));
+
+    // when
+    final var indexMapping =
+        SchemaTestUtil.mockIndex(
+            "qualified_name", "alias3", "index_name", "/mappings-dynamic-property.json");
+
+    // then
+    assertThatThrownBy(() -> VALIDATOR.validateIndexMappings(currentIndices, Set.of(indexMapping)))
+        .isInstanceOf(IndexSchemaValidationException.class)
+        .hasMessageContaining("Ambiguous schema update.");
+  }
+
+  @Test
+  public void shouldSkipIndexDifferenceWhenRelatesToDynamicProperty() throws IOException {
+    // given
+    final var currentIndices =
+        Map.of(
+            "qualified_name",
+            jsonToIndexMappingProperties("/mappings-dynamic-property.json", "qualified_name"),
+            "qualified_name_2",
+            jsonToIndexMappingProperties(
+                "/mappings-dynamic-property-properties.json", "qualified_name_2"));
+
+    // when
+    final var indexMapping =
+        SchemaTestUtil.mockIndex(
+            "qualified_name", "alias3", "index_name", "/mappings-dynamic-property-added.json");
+
+    // then
+    final var actual = VALIDATOR.validateIndexMappings(currentIndices, Set.of(indexMapping));
+    assertThat(actual).hasSize(1);
+    assertThat(actual)
+        .containsValue(
+            Set.of(
+                new IndexMappingProperty.Builder()
+                    .name("foo")
+                    .typeDefinition(Map.of("type", "keyword"))
+                    .build()));
+  }
+
+  @Test
   void shouldIgnoreARemovedIndexProperty() throws IOException {
     // given
     final var currentIndices =

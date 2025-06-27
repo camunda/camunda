@@ -7,7 +7,12 @@
       },
       "world": {
         "type": "object",
-        "dynamic": true
+        "dynamic": true,
+        "properties": {
+          "header1": {
+            "type": "keyword"
+          }
+        }
       }
     }
   }

@@ -2,12 +2,14 @@
   "mappings": {
     "dynamic": "strict",
     "properties": {
-      "hello": {
-        "type": "text"
-      },
       "world": {
         "type": "object",
-        "dynamic": true
+        "dynamic": true,
+        "properties": {
+          "header1": {
+            "type": "keyword"
+          }
+        }
       }
     }
   }
