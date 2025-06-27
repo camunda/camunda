@@ -314,6 +314,7 @@ jobs:
       - name: Produce artifacts
         id: artifacts
         run: |
+          mkdir "release-artifacts"
           echo "test" => "release-artifacts/test.txt"
       - name: Determine if Pre-Release
         id: pre-release
