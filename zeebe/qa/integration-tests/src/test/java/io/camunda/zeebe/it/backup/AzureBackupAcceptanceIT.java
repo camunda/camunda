@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.backup;
 
+import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.azure.AzureBackupConfig;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
@@ -58,7 +59,7 @@ final class AzureBackupAcceptanceIT implements BackupAcceptance {
           .withEmbeddedGateway(false)
           .build();
 
-  private AzureBackupStore store;
+  private BackupStore store;
 
   @BeforeEach
   void beforeEach() {
@@ -67,7 +68,7 @@ final class AzureBackupAcceptanceIT implements BackupAcceptance {
             .withConnectionString(AZURITE_CONTAINER.getConnectString())
             .withContainerName(CONTAINER_NAME)
             .build();
-    store = new AzureBackupStore(config);
+    store = AzureBackupStore.of(config);
 
     // we have to configure the cluster here, after azurite is started, as otherwise we won't have
     // access to the exposed port
