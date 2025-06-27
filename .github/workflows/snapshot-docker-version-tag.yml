@@ -1,0 +1,31 @@
+name: Generate Docker Version Tag (SNAPSHOT)
+
+on:
+  workflow_call:
+    outputs:
+      version_tag:
+        description: "Generated Docker version tag"
+        value: ${{  jobs.generate_docker_version_tag.outputs.tag }}
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  generate_docker_version_tag:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.set_docker_snapshot_version_tag.outputs.tag }}
+    steps:
+      - name: Determine Snapshot Docker Version Tag
+        id: set_docker_snapshot_version_tag
+        run: |
+          BRANCH="${GITHUB_REF#refs/heads/}"
+          if [[ "$BRANCH" == "main" ]]; then
+            TAG="SNAPSHOT"
+          elif [[ "$BRANCH" == stable/* ]]; then
+            TAG="${BRANCH#stable/}-SNAPSHOT"
+          else
+            echo "Unsupported branch: $BRANCH"
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"

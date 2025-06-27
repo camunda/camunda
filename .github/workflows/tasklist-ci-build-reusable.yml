@@ -43,13 +43,20 @@ defaults:
 env:
   BRANCH_NAME: ${{ inputs.branch }}
   IS_DEFAULT_BRANCH: ${{ inputs.branch == 'main' }}
+  IS_MAIN_OR_STABLE_BRANCH: ${{ inputs.branch == 'main' || startsWith(inputs.branch, 'stable/') }}
   DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
 
 jobs:
+  # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) based on branch name
+  get-snapshot-docker-version-tag:
+    uses: ./.github/workflows/snapshot-docker-version-tag.yml
+    secrets: inherit
+
   build:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    needs: [ get-snapshot-docker-version-tag ]
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
@@ -113,11 +120,11 @@ jobs:
       #########################################################################
       # Build SNAPSHOT Docker image
       - name: Build SNAPSHOT Docker image
-        if: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
+        if: ${{ env.IS_MAIN_OR_STABLE_BRANCH == 'true' }}
         uses: ./.github/actions/build-platform-docker
         with:
           repository: camunda/tasklist
-          version: SNAPSHOT
+          version: ${{ needs.get-snapshot-docker-version-tag.outputs.version_tag }}
           push: true
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: tasklist.Dockerfile
