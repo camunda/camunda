@@ -339,7 +339,7 @@ jobs:
           body: ${{ steps.gen-changelog.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: ${{ steps.pre-release.outputs.result }}
-          tag: ${{ inputs.releaseVersion }}
+          tag: "test"
       - name: Observe build status
         if: always()
         continue-on-error: true
