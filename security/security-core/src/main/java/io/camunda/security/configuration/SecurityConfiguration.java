@@ -15,6 +15,7 @@ public class SecurityConfiguration {
   private AuthorizationsConfiguration authorizations = new AuthorizationsConfiguration();
   private InitializationConfiguration initialization = new InitializationConfiguration();
   private MultiTenancyConfiguration multiTenancy = new MultiTenancyConfiguration();
+  private CsrfConfiguration csrf = new CsrfConfiguration();
   private HeaderConfiguration httpHeaders = new HeaderConfiguration();
   private SaasConfiguration saas = new SaasConfiguration();
 
@@ -68,5 +69,13 @@ public class SecurityConfiguration {
 
   public void setHttpHeaders(final HeaderConfiguration httpHeaders) {
     this.httpHeaders = httpHeaders;
+  }
+
+  public CsrfConfiguration getCsrf() {
+    return csrf;
+  }
+
+  public void setCsrf(final CsrfConfiguration csrf) {
+    this.csrf = csrf;
   }
 }
