@@ -71,36 +71,37 @@ public class RocksDBSnapshotCopyTest {
     assertThat(copySize).isLessThan(sourceSize);
 
     final var copiedRows = initCounterMap();
-    copy.withContexts(
-        sourceSnapshotPath,
-        destinationPath,
-        (fromDB, fromCtx, toDB, toCtx) -> {
-          toCtx.runInTransaction(
-              () -> {
-                final var toTx = (ZeebeTransaction) toCtx.getCurrentTransaction();
-                for (final var cf : ZbColumnFamilies.values()) {
-                  if (cf.partitionScope() == ColumnFamilyScope.GLOBAL) {
-                    final var fromCf = new RawTransactionalColumnFamily(fromDB, cf, fromCtx);
-                    final var toCf = new RawTransactionalColumnFamily(toDB, cf, toCtx);
-                    fromCf.forEach(
-                        (key, keyOffset, keyLen, value, valueOffset, valueLen) -> {
-                          final byte[] toValue;
-                          try {
-                            toValue = toCf.get(toTx, key, keyOffset, keyLen);
-                          } catch (final Exception e) {
-                            throw new RuntimeException(e);
-                          }
-                          assertThat(toValue).isNotNull();
-                          final var original = new byte[valueLen - valueOffset];
-                          System.arraycopy(value, valueOffset, original, 0, valueLen - valueOffset);
-                          assertThat(toValue).isEqualTo(original);
-                          copiedRows.compute(cf, (k, v) -> v + 1);
-                          return true;
-                        });
-                  }
-                }
-              });
-        });
+    try (final var fromDB = factory.createDb(sourceSnapshotPath.toFile());
+        final var toDB = factory.createDb(destinationPath.toFile())) {
+      final var fromCtx = fromDB.createContext();
+      final var toCtx = toDB.createContext();
+      toCtx.runInTransaction(
+          () -> {
+            final var toTx = (ZeebeTransaction) toCtx.getCurrentTransaction();
+            for (final var cf : ZbColumnFamilies.values()) {
+              if (cf.partitionScope() == ColumnFamilyScope.GLOBAL) {
+                final var fromCf = new RawTransactionalColumnFamily(fromDB, cf);
+                final var toCf = new RawTransactionalColumnFamily(toDB, cf);
+                fromCf.forEach(
+                    fromCtx,
+                    (key, keyOffset, keyLen, value, valueOffset, valueLen) -> {
+                      final byte[] toValue;
+                      try {
+                        toValue = toCf.get(toTx, key, keyOffset, keyLen);
+                      } catch (final Exception e) {
+                        throw new RuntimeException(e);
+                      }
+                      assertThat(toValue).isNotNull();
+                      final var original = new byte[valueLen - valueOffset];
+                      System.arraycopy(value, valueOffset, original, 0, valueLen - valueOffset);
+                      assertThat(toValue).isEqualTo(original);
+                      copiedRows.compute(cf, (k, v) -> v + 1);
+                      return true;
+                    });
+              }
+            }
+          });
+    }
     assertThat(copiedRows).containsExactlyInAnyOrderEntriesOf(expectedRowsPerCF);
   }
 
@@ -125,8 +126,7 @@ public class RocksDBSnapshotCopyTest {
           () -> {
             final var ctx = (ZeebeTransaction) fromCtx.getCurrentTransaction();
             for (final ZbColumnFamilies cf : ZbColumnFamilies.values()) {
-              final var transactionalColumnFamily =
-                  new RawTransactionalColumnFamily(fromDB, cf, fromCtx);
+              final var transactionalColumnFamily = new RawTransactionalColumnFamily(fromDB, cf);
               for (int i = 0; i < rowsPerCF; i++) {
                 // the key must be big enough to avoid generating duplicates.
                 // with 1024 and the seed in the setup no duplicates are created.

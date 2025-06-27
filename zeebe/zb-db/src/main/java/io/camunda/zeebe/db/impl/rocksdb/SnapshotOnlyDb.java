@@ -13,17 +13,26 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.ZeebeDbException;
+import io.camunda.zeebe.db.impl.rocksdb.transaction.ColumnFamilyContext;
+import io.camunda.zeebe.db.impl.rocksdb.transaction.RawTransactionalColumnFamily;
+import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransaction;
+import io.camunda.zeebe.db.impl.rocksdb.transaction.ZeebeTransactionDb;
+import io.camunda.zeebe.protocol.ColumnFamilyScope;
 import io.camunda.zeebe.protocol.EnumValue;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.agrona.CloseHelper;
 import org.rocksdb.Checkpoint;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
+import org.rocksdb.RocksIterator;
 import org.slf4j.Logger;
 
 final class SnapshotOnlyDb<ColumnFamilyType extends Enum<? extends EnumValue> & EnumValue>
@@ -102,5 +111,56 @@ final class SnapshotOnlyDb<ColumnFamilyType extends Enum<? extends EnumValue> & 
     return new UnsupportedOperationException(
         "Failed to execute 'ZeebeDb#%s'; this operation is not supported on a snapshot-only DB"
             .formatted(operation));
+  }
+
+  public void copySnapshot(
+      final ZeebeTransactionDb<ZbColumnFamilies> toDB, final Set<ColumnFamilyScope> scopes) {
+    try (final var readOptions = PrefixReadOptions.readOptions()) {
+      final var toCtx = toDB.createContext();
+      final var abort = new AtomicBoolean(false);
+      for (final var cf : ZbColumnFamilies.values()) {
+        if (abort.get()) {
+          break;
+        }
+        if (!scopes.contains(cf.partitionScope())) {
+          continue;
+        }
+        LOG.debug("Copying column family '{}'", cf);
+        final var toCf = new RawTransactionalColumnFamily(toDB, cf);
+        final var cfContext = new ColumnFamilyContext(cf.getValue());
+        toCtx.runInTransaction(
+            () -> {
+              final var toTx = (ZeebeTransaction) toCtx.getCurrentTransaction();
+              cfContext.withPrefixKey(
+                  new DbNullKey(),
+                  (prefixKey, prefixLength) -> {
+                    try (final RocksIterator iterator = db.newIterator(readOptions)) {
+                      RawTransactionalColumnFamily.forEach(
+                          iterator,
+                          cf,
+                          prefixKey,
+                          0,
+                          prefixLength,
+                          (key, keyOffset, keyLen, value, valueOffset, valueLen) -> {
+                            try {
+                              toCf.rawPut(
+                                  toTx, key, keyOffset, keyLen, value, valueOffset, valueLen);
+                            } catch (final Exception e) {
+                              LOG.error(
+                                  "Failed to copy column family '{}' on key {} and value with length {} terminating.",
+                                  cf,
+                                  new String(key),
+                                  value.length);
+                              LOG.error("Exception", e);
+                              abort.set(true);
+                              return false;
+                            }
+                            return true;
+                          });
+                    }
+                  });
+            });
+      }
+    }
   }
 }
