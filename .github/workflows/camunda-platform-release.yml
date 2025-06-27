@@ -317,16 +317,6 @@ jobs:
           echo "inputs.isLatest=${{ inputs.isLatest }}"
           mkdir "release-artifacts"
           echo "test" => "release-artifacts/test.txt"
-      - name: Determine if Pre-Release
-        id: pre-release
-        run: |
-          shopt -s nocasematch # set matching to case insensitive
-          PRE_RELEASE=false
-          if [[ "${RELEASE_VERSION}" =~ ^.*-(alpha|rc|SNAPSHOT).*$ ]]; then
-            PRE_RELEASE=true
-          fi
-          shopt -u nocasematch # reset it
-          echo "result=${PRE_RELEASE}" >> "$GITHUB_OUTPUT"
       - name: Create Github release
         uses: ncipollo/release-action@v1
         if: ${{ inputs.dryRun == false }}
@@ -338,7 +328,7 @@ jobs:
           makeLatest: ${{ inputs.isLatest }}
           body: ${{ steps.gen-changelog.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
-          prerelease: ${{ steps.pre-release.outputs.result }}
+          prerelease: false
           tag: "test"
       - name: Observe build status
         if: always()
