@@ -5443,8 +5443,13 @@ components:
           type: string
           description: The state of the user task.
           enum:
+            - CREATING
             - CREATED
+            - ASSIGNING
+            - UPDATING
+            - COMPLETING
             - COMPLETED
+            - CANCELING
             - CANCELED
             - FAILED
         assignee:
@@ -5546,8 +5551,13 @@ components:
           type: string
           description: The state of the user task.
           enum:
+            - CREATING
             - CREATED
+            - ASSIGNING
+            - UPDATING
+            - COMPLETING
             - COMPLETED
+            - CANCELING
             - CANCELED
             - FAILED
         assignee:
