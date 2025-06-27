@@ -314,6 +314,7 @@ jobs:
       - name: Produce artifacts
         id: artifacts
         run: |
+          echo "inputs.isLatest=${{ inputs.isLatest }}"
           mkdir "release-artifacts"
           echo "test" => "release-artifacts/test.txt"
       - name: Determine if Pre-Release
@@ -334,7 +335,7 @@ jobs:
           artifacts: "release-artifacts/*"
           artifactErrorsFailBuild: true
           draft: true
-          makeLatest: ${{ inputs.isLatest }}
+          makeLatest: "${{ inputs.isLatest }}"
           body: ${{ steps.gen-changelog.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: ${{ steps.pre-release.outputs.result }}
