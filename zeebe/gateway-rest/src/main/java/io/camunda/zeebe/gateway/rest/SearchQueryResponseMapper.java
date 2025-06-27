@@ -604,9 +604,11 @@ public final class SearchQueryResponseMapper {
         .map(
             instance -> {
               final var elementName =
-                  processCacheItems
-                      .getOrDefault(instance.processDefinitionKey(), ProcessCacheItem.EMPTY)
-                      .getElementName(instance.flowNodeId());
+                  (instance.flowNodeName() != null)
+                      ? instance.flowNodeName()
+                      : processCacheItems
+                          .getOrDefault(instance.processDefinitionKey(), ProcessCacheItem.EMPTY)
+                          .getElementName(instance.flowNodeId());
               return toElementInstance(instance, elementName);
             })
         .toList();
@@ -671,9 +673,11 @@ public final class SearchQueryResponseMapper {
         .map(
             (final UserTaskEntity t) -> {
               final var name =
-                  processCacheItems
-                      .getOrDefault(t.processDefinitionKey(), ProcessCacheItem.EMPTY)
-                      .getElementName(t.elementId());
+                  (t.name() != null)
+                      ? t.name()
+                      : processCacheItems
+                          .getOrDefault(t.processDefinitionKey(), ProcessCacheItem.EMPTY)
+                          .getElementName(t.elementId());
               return toUserTask(t, name);
             })
         .toList();
