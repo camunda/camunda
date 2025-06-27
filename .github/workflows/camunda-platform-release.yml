@@ -331,11 +331,11 @@ jobs:
         uses: ncipollo/release-action@v1
         if: ${{ inputs.dryRun == false }}
         with:
-          name: "${{ inputs.releaseVersion }}-test"
+          name: "test"
           artifacts: "release-artifacts/*"
           artifactErrorsFailBuild: true
-          draft: true
-          makeLatest: "${{ inputs.isLatest }}"
+          draft: false
+          makeLatest: ${{ inputs.isLatest }}
           body: ${{ steps.gen-changelog.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: ${{ steps.pre-release.outputs.result }}
