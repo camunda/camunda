@@ -7,10 +7,22 @@
  */
 package io.camunda.migration.identity.config.sm;
 
+import io.camunda.migration.identity.client.ManagementIdentityClient;
+import io.camunda.migration.identity.handler.sm.RoleMigrationHandler;
+import io.camunda.security.auth.Authentication;
+import io.camunda.service.RoleServices;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @ConditionalOnKeycloak
 public class SMKeycloakMigrationHandlerConfig {
-  // Add handlers bean here
+  @Bean
+  public RoleMigrationHandler roleMigrationHandler(
+      final Authentication authentication,
+      final ManagementIdentityClient managementIdentityClient,
+      final RoleServices roleServices) {
+    return new RoleMigrationHandler(
+        authentication, managementIdentityClient, roleServices.withAuthentication(authentication));
+  }
 }
