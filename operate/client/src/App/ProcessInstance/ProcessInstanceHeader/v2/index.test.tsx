@@ -495,7 +495,7 @@ describe('InstanceHeader', () => {
     ).toBeInTheDocument();
   });
 
-  it.only('should redirect and show notification when "Delete Instance" is clicked', async () => {
+  it('should redirect and show notification when "Delete Instance" is clicked', async () => {
     mockFetchProcessInstance().withSuccess(mockCanceledInstance);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 

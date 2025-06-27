@@ -10,12 +10,12 @@ import {useField} from 'react-final-form';
 import {createNewVariableFieldName} from '../../createVariableFieldName';
 
 import {modificationsStore} from 'modules/stores/modifications';
-import {variablesStore} from 'modules/stores/variables';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {Button} from '@carbon/react';
 import {TrashCan} from '@carbon/react/icons';
 import {Operations} from '../../Operations';
 import {useNewScopeIdForFlowNode} from 'modules/hooks/modifications';
+import {getScopeId} from 'modules/utils/variables';
 
 type Props = {
   variableName: string;
@@ -29,8 +29,7 @@ const Operation: React.FC<Props> = ({variableName, onRemove}) => {
   const newScopeIdForFlowNode = useNewScopeIdForFlowNode(
     flowNodeSelectionStore.state.selection?.flowNodeId,
   );
-
-  const scopeId = variablesStore.scopeId ?? newScopeIdForFlowNode;
+  const scopeId = getScopeId() ?? newScopeIdForFlowNode;
 
   return (
     <Operations>

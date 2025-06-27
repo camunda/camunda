@@ -46,6 +46,7 @@ test.describe('process instance page', () => {
       id: runningInstance.detail.id,
     });
 
+    await expect(processInstancePage.variablesTableSpinner).not.toBeVisible();
     await processInstancePage.resetZoomButton.click();
     await page.waitForTimeout(500);
 
@@ -56,15 +57,17 @@ test.describe('process instance page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        processInstanceDetail: runningInstance.detail,
-        processInstanceDetailV2: runningInstance.detailV2,
-        callHierarchy: runningInstance.callHierarchy,
-        flowNodeInstances: runningInstance.flowNodeInstances,
-        statisticsV2: runningInstance.statisticsV2,
-        sequenceFlows: runningInstance.sequenceFlows,
-        sequenceFlowsV2: runningInstance.sequenceFlowsV2,
-        variables: runningInstance.variables,
-        xml: runningInstance.xml,
+        processInstanceDetail: instanceWithIncident.detail,
+        processInstanceDetailV2: instanceWithIncident.detailV2,
+        callHierarchy: instanceWithIncident.callHierarchy,
+        flowNodeInstances: instanceWithIncident.flowNodeInstances,
+        statisticsV2: instanceWithIncident.statisticsV2,
+        sequenceFlows: instanceWithIncident.sequenceFlows,
+        sequenceFlowsV2: instanceWithIncident.sequenceFlowsV2,
+        variables: instanceWithIncident.variables,
+        variablesV2: instanceWithIncident.variablesV2,
+        xml: instanceWithIncident.xml,
+        incidents: instanceWithIncident.incidents,
       }),
     );
 
@@ -142,16 +145,16 @@ test.describe('process instance page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        processInstanceDetail: instanceWithIncident.detail,
-        processInstanceDetailV2: instanceWithIncident.detailV2,
-        callHierarchy: instanceWithIncident.callHierarchy,
-        flowNodeInstances: instanceWithIncident.flowNodeInstances,
-        statisticsV2: instanceWithIncident.statisticsV2,
-        sequenceFlows: instanceWithIncident.sequenceFlows,
-        sequenceFlowsV2: instanceWithIncident.sequenceFlowsV2,
-        variables: instanceWithIncident.variables,
-        xml: instanceWithIncident.xml,
-        incidents: instanceWithIncident.incidents,
+        processInstanceDetail: completedInstance.detail,
+        processInstanceDetailV2: completedInstance.detailV2,
+        callHierarchy: completedInstance.callHierarchy,
+        flowNodeInstances: completedInstance.flowNodeInstances,
+        statisticsV2: completedInstance.statisticsV2,
+        sequenceFlows: completedInstance.sequenceFlows,
+        sequenceFlowsV2: completedInstance.sequenceFlowsV2,
+        variables: completedInstance.variables,
+        variablesV2: completedInstance.variablesV2,
+        xml: completedInstance.xml,
       }),
     );
 
@@ -176,15 +179,16 @@ test.describe('process instance page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        processInstanceDetail: completedInstance.detail,
-        processInstanceDetailV2: completedInstance.detailV2,
-        callHierarchy: completedInstance.callHierarchy,
-        flowNodeInstances: completedInstance.flowNodeInstances,
-        statisticsV2: completedInstance.statisticsV2,
-        sequenceFlows: completedInstance.sequenceFlows,
-        sequenceFlowsV2: completedInstance.sequenceFlowsV2,
-        variables: completedInstance.variables,
-        xml: completedInstance.xml,
+        processInstanceDetail: runningInstance.detail,
+        processInstanceDetailV2: runningInstance.detailV2,
+        callHierarchy: runningInstance.callHierarchy,
+        flowNodeInstances: runningInstance.flowNodeInstances,
+        statisticsV2: runningInstance.statisticsV2,
+        sequenceFlows: runningInstance.sequenceFlows,
+        sequenceFlowsV2: runningInstance.sequenceFlowsV2,
+        variables: runningInstance.variables,
+        variablesV2: runningInstance.variablesV2,
+        xml: runningInstance.xml,
       }),
     );
 
@@ -215,6 +219,7 @@ test.describe('process instance page', () => {
         sequenceFlows: compensationProcessInstance.sequenceFlows,
         sequenceFlowsV2: compensationProcessInstance.sequenceFlowsV2,
         variables: compensationProcessInstance.variables,
+        variablesV2: compensationProcessInstance.variablesV2,
         xml: compensationProcessInstance.xml,
       }),
     );

@@ -13,6 +13,7 @@ import {ProcessInstanceByNameDto} from './api/incidents/fetchProcessInstancesByN
 import {ProcessDto} from './api/processes/fetchGroupedProcesses';
 import {IncidentDto} from './api/processInstances/fetchProcessInstanceIncidents';
 import {BatchOperationDto} from './api/sharedTypes';
+import {Variable} from '@vzeta/camunda-api-zod-schemas';
 
 /**
  * @returns a jest mock function that resolves with given value
@@ -134,6 +135,20 @@ const createVariable = (
     hasActiveOperation: false,
     isFirst: false,
     sortValues: [name],
+    ...options,
+  };
+};
+
+const createVariableV2 = (options: Partial<Variable> = {}): Variable => {
+  const name = options.name ?? 'testVariableName';
+  return {
+    variableKey: `2251799813725337-${name}`,
+    name,
+    value: '1',
+    isTruncated: false,
+    tenantId: '<default>',
+    processInstanceKey: '2251799813725337',
+    scopeKey: '2251799813725337',
     ...options,
   };
 };
@@ -1193,4 +1208,4 @@ export const createEventSubProcessFlowNodeInstances = (
   };
 };
 
-export {createVariable, createBatchOperation, createUser};
+export {createVariable, createVariableV2, createBatchOperation, createUser};
