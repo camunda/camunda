@@ -12,6 +12,8 @@ import io.camunda.zeebe.engine.state.instance.AwaitProcessInstanceResultMetadata
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationRuntimeInstructionValue;
+import java.util.List;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
@@ -95,4 +97,18 @@ public interface MutableElementInstanceState extends ElementInstanceState {
    * @param processDefinitionKey the key of the process definition to delete the reference for
    */
   void deleteProcessInstanceKeyByDefinitionKey(long processInstanceKey, long processDefinitionKey);
+
+  /**
+   * Stores runtime instructions for the process instance with the given key.
+   *
+   * <p>This method is used to store runtime instructions during the creation of a process instance,
+   * when the instance does not yet exist in the state.
+   *
+   * @param processInstanceKey the key of the process instance to which the runtime instructions
+   *     belong
+   * @param runtimeInstructions the list of runtime instructions to add
+   */
+  void addRuntimeInstructions(
+      long processInstanceKey,
+      List<ProcessInstanceCreationRuntimeInstructionValue> runtimeInstructions);
 }

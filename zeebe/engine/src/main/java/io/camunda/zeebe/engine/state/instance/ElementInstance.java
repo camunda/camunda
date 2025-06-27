@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
@@ -51,6 +52,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
       new IntegerProperty("executionListenerIndex", 0);
   private final ObjectProperty<TaskListenerIndicesRecord> taskListenerIndicesRecordProp =
       new ObjectProperty<>("taskListenerIndicesRecord", new TaskListenerIndicesRecord());
+  private final BooleanProperty isSuspendedProp = new BooleanProperty("isSuspended", false);
 
   /**
    * Expresses the current depth of the process instance in the called process tree.
@@ -69,7 +71,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   private final IntegerProperty processDepth = new IntegerProperty("processDepth", 1);
 
   public ElementInstance() {
-    super(16);
+    super(17);
     declareProperty(parentKeyProp)
         .declareProperty(childCountProp)
         .declareProperty(childActivatedCountProp)
@@ -85,7 +87,8 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
         .declareProperty(userTaskKeyProp)
         .declareProperty(executionListenerIndexProp)
         .declareProperty(taskListenerIndicesRecordProp)
-        .declareProperty(processDepth);
+        .declareProperty(processDepth)
+        .declareProperty(isSuspendedProp);
   }
 
   public ElementInstance(
@@ -325,5 +328,13 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
 
   public void setProcessDepth(final int depth) {
     processDepth.setValue(depth);
+  }
+
+  public boolean isSuspended() {
+    return isSuspendedProp.getValue();
+  }
+
+  public void suspend() {
+    isSuspendedProp.setValue(true);
   }
 }

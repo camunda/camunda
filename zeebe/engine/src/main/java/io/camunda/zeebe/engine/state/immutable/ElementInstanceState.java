@@ -121,6 +121,16 @@ public interface ElementInstanceState {
    */
   boolean hasActiveProcessInstances(long processDefinitionKey, final List<Long> bannedInstances);
 
+  /**
+   * Verifies if the process instance needs to be suspended after the element with the given ID
+   * completes or terminates, based on the runtime instructions of the process instance.
+   *
+   * @param processInstanceKey the key of the process instance
+   * @param elementId the ID of the element that has completed or terminated
+   * @return a boolean indicating whether the process instance should be suspended
+   */
+  boolean shouldSuspendElementInstance(long processInstanceKey, String elementId);
+
   @FunctionalInterface
   interface TakenSequenceFlowVisitor {
     void visit(

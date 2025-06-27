@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationRuntimeInstructionValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -73,6 +74,9 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   /** [process definition key | process instance key] => [Nil] */
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil>
       processInstanceKeyByProcessDefinitionKeyColumnFamily;
+
+  private final RuntimeInstructions runtimeInstructions;
+  private final ColumnFamily<DbLong, RuntimeInstructions> runtimeInstructionsByProcessInstanceKey;
 
   public DbElementInstanceState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
@@ -134,6 +138,15 @@ public final class DbElementInstanceState implements MutableElementInstanceState
             transactionContext,
             processInstanceKeyByProcessDefinitionKey,
             DbNil.INSTANCE);
+
+    runtimeInstructions = new RuntimeInstructions();
+
+    runtimeInstructionsByProcessInstanceKey =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.RUNTIME_INSTRUCTIONS,
+            transactionContext,
+            elementInstanceKey,
+            runtimeInstructions);
   }
 
   @Override
@@ -476,6 +489,32 @@ public final class DbElementInstanceState implements MutableElementInstanceState
         });
 
     return hasActiveInstances.get();
+  }
+
+  @Override
+  public boolean shouldSuspendElementInstance(
+      final long processInstanceKey, final String elementId) {
+
+    elementInstanceKey.wrapLong(processInstanceKey);
+    final var instructions = runtimeInstructionsByProcessInstanceKey.get(elementInstanceKey);
+    if (instructions == null) {
+      return false;
+    }
+    if (instructions.isEmpty()) {
+      return false;
+    }
+    return instructions.getRuntimeInstructions().stream()
+        .anyMatch(instruction -> instruction.getAfterElementId().equals(elementId));
+  }
+
+  @Override
+  public void addRuntimeInstructions(
+      final long processInstanceKey,
+      final List<ProcessInstanceCreationRuntimeInstructionValue> instructions) {
+
+    runtimeInstructions.setRuntimeInstructions(instructions);
+    elementInstanceKey.wrapLong(processInstanceKey);
+    runtimeInstructionsByProcessInstanceKey.insert(elementInstanceKey, runtimeInstructions);
   }
 
   private ElementInstance copyElementInstance(final ElementInstance elementInstance) {
