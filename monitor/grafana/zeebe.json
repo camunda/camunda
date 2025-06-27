@@ -7,9 +7,236 @@
       "type": "datasource",
       "pluginId": "prometheus",
       "pluginName": "Prometheus"
+    },
+    {
+      "name": "VAR_CONTAINER",
+      "type": "constant",
+      "label": "container",
+      "value": ".*",
+      "description": ""
+    },
+    {
+      "name": "VAR_REGION",
+      "type": "constant",
+      "label": "region",
+      "value": ".*",
+      "description": ""
+    },
+    {
+      "name": "VAR_URI",
+      "type": "constant",
+      "label": "uri",
+      "value": ".*",
+      "description": ""
+    },
+    {
+      "name": "VAR_GRPC_METHOD",
+      "type": "constant",
+      "label": "grpc_method",
+      "value": ".*",
+      "description": ""
     }
   ],
-  "__elements": {},
+  "__elements": {
+    "dep78ee16es5ce": {
+      "name": "Request Rate REST",
+      "uid": "dep78ee16es5ce",
+      "kind": 1,
+      "model": {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Highest-requested API endpoints based on request rate, excluding internal /actuator and Prometheus paths.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "decimals": 3,
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "reqps"
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "hideZeros": false,
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.6.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "thanos-global-view"
+            },
+            "disableTextWrap": false,
+            "editorMode": "code",
+            "expr": "sum by(uri, method) (\n  rate(http_server_requests_seconds_count{\n    camunda_region=~\"$region\",\n    cluster=~\"$cluster\",\n    container=~\"$container\",\n    namespace=~\"$namespace\",\n    pod=~\"$pod\",\n    uri=~\"$uri\",\n    uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$\"\n  }[$__rate_interval])\n)",
+            "fullMetaSearch": false,
+            "includeNullMetadata": true,
+            "legendFormat": "{{method}} {{uri}}",
+            "range": true,
+            "refId": "Requests per second",
+            "useBackend": false
+          }
+        ],
+        "title": "Request Rate REST",
+        "type": "timeseries"
+      }
+    },
+    "eep78ety54bggd": {
+      "name": "Average Latency REST",
+      "uid": "eep78ety54bggd",
+      "kind": 1,
+      "model": {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "description": "Endpoints with the highest average request duration, excluding known internal and noisy paths.",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 0,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "line"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 0.3
+                }
+              ]
+            },
+            "unit": "s"
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "hideZeros": false,
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "11.6.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "prometheus",
+              "uid": "thanos-global-view"
+            },
+            "editorMode": "code",
+            "exemplar": false,
+            "expr": "\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_sum{\n      camunda_region=~\"$region\",\n      cluster=~\"$cluster\",\n      container=~\"$container\",\n      namespace=~\"$namespace\",\n      pod=~\"$pod\",\n      uri=~\"$uri\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|/v2/jobs/activation\"\n    }[$__rate_interval])\n  )\n  /\n  sum by(uri, method) (\n    rate(http_server_requests_seconds_count{\n      camunda_region=~\"$region\",\n      cluster=~\"$cluster\",\n      container=~\"$container\",\n      namespace=~\"$namespace\",\n      pod=~\"$pod\",\n      uri=~\"$uri\",\n      uri!~\"^/actuator/health(/.*)?$|^/actuator/prometheus$|/v2/jobs/activation\"\n    }[$__rate_interval])\n  )\n",
+            "hide": false,
+            "instant": false,
+            "legendFormat": "{{method}} {{uri}}",
+            "range": true,
+            "refId": "Latency (avg)"
+          }
+        ],
+        "title": "Average Latency REST",
+        "type": "timeseries"
+      }
+    }
+  },
   "__requires": [
     {
       "type": "panel",
@@ -10578,6 +10805,48 @@
         "x": 0,
         "y": 10
       },
+      "id": 668,
+      "panels": [
+        {
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 11
+          },
+          "id": 669,
+          "libraryPanel": {
+            "name": "Request Rate REST",
+            "uid": "dep78ee16es5ce"
+          },
+          "title": "Request Rate REST"
+        },
+        {
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 11
+          },
+          "id": 670,
+          "libraryPanel": {
+            "name": "Average Latency REST",
+            "uid": "eep78ety54bggd"
+          },
+          "title": "Average Latency REST"
+        }
+      ],
+      "title": "REST",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 11
+      },
       "id": 162,
       "panels": [
         {
@@ -10918,7 +11187,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 11
+        "y": 12
       },
       "id": 76,
       "panels": [
@@ -12709,7 +12978,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 13
       },
       "id": 554,
       "panels": [
@@ -14129,7 +14398,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 13
+        "y": 14
       },
       "id": 355,
       "panels": [
@@ -15593,7 +15862,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 14
+        "y": 15
       },
       "id": 140,
       "panels": [
@@ -17368,7 +17637,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 15
+        "y": 16
       },
       "id": 50,
       "panels": [
@@ -17844,7 +18113,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 17
       },
       "id": 615,
       "panels": [
@@ -19086,7 +19355,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 17
+        "y": 18
       },
       "id": 629,
       "panels": [
@@ -19613,7 +19882,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 18
+        "y": 19
       },
       "id": 176,
       "panels": [
@@ -19865,7 +20134,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 19
+        "y": 20
       },
       "id": 315,
       "panels": [
@@ -20527,7 +20796,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 20
+        "y": 21
       },
       "id": 434,
       "panels": [
@@ -21126,7 +21395,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 21
+        "y": 22
       },
       "id": 545,
       "panels": [
@@ -21322,7 +21591,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 22
+        "y": 23
       },
       "id": 565,
       "panels": [
@@ -21644,7 +21913,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 23
+        "y": 24
       },
       "id": 569,
       "panels": [
@@ -21955,7 +22224,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 25
       },
       "id": 572,
       "panels": [
@@ -22527,7 +22796,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 25
+        "y": 26
       },
       "id": 576,
       "panels": [
@@ -22944,7 +23213,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 26
+        "y": 27
       },
       "id": 581,
       "panels": [
@@ -23233,7 +23502,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 27
+        "y": 28
       },
       "id": 595,
       "panels": [
@@ -23636,7 +23905,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 28
+        "y": 29
       },
       "id": 665,
       "title": "Dynamic scaling",
@@ -24305,6 +24574,86 @@
         "query": "committed, reserved",
         "skipUrlSync": false,
         "type": "custom"
+      },
+      {
+        "hide": 2,
+        "label": "container",
+        "name": "container",
+        "query": "${VAR_CONTAINER}",
+        "skipUrlSync": true,
+        "type": "constant",
+        "current": {
+          "value": "${VAR_CONTAINER}",
+          "text": "${VAR_CONTAINER}",
+          "selected": false
+        },
+        "options": [
+          {
+            "value": "${VAR_CONTAINER}",
+            "text": "${VAR_CONTAINER}",
+            "selected": false
+          }
+        ]
+      },
+      {
+        "hide": 2,
+        "label": "region",
+        "name": "region",
+        "query": "${VAR_REGION}",
+        "skipUrlSync": true,
+        "type": "constant",
+        "current": {
+          "value": "${VAR_REGION}",
+          "text": "${VAR_REGION}",
+          "selected": false
+        },
+        "options": [
+          {
+            "value": "${VAR_REGION}",
+            "text": "${VAR_REGION}",
+            "selected": false
+          }
+        ]
+      },
+      {
+        "hide": 2,
+        "label": "uri",
+        "name": "uri",
+        "query": "${VAR_URI}",
+        "skipUrlSync": true,
+        "type": "constant",
+        "current": {
+          "value": "${VAR_URI}",
+          "text": "${VAR_URI}",
+          "selected": false
+        },
+        "options": [
+          {
+            "value": "${VAR_URI}",
+            "text": "${VAR_URI}",
+            "selected": false
+          }
+        ]
+      },
+      {
+        "hide": 2,
+        "label": "grpc_method",
+        "name": "grpc_method",
+        "query": "${VAR_GRPC_METHOD}",
+        "skipUrlSync": true,
+        "type": "constant",
+        "current": {
+          "value": "${VAR_GRPC_METHOD}",
+          "text": "${VAR_GRPC_METHOD}",
+          "selected": false
+        },
+        "options": [
+          {
+            "value": "${VAR_GRPC_METHOD}",
+            "text": "${VAR_GRPC_METHOD}",
+            "selected": false
+          }
+        ]
       }
     ]
   },
@@ -24326,6 +24675,6 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "zeebe-dashboard",
-  "version": 34,
+  "version": 35,
   "weekStart": ""
 }
