@@ -10,6 +10,8 @@ package io.camunda.operate.webapp.zeebe.operation;
 import static io.camunda.webapps.schema.entities.operation.OperationType.ADD_VARIABLE;
 import static io.camunda.webapps.schema.entities.operation.OperationType.UPDATE_VARIABLE;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.Map;
@@ -19,6 +21,8 @@ import org.springframework.stereotype.Component;
 /** Update the variable. */
 @Component
 public class UpdateVariableHandler extends AbstractOperationHandler implements OperationHandler {
+
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Override
   public void handleWithException(final OperationEntity operation) throws Exception {
@@ -35,8 +39,9 @@ public class UpdateVariableHandler extends AbstractOperationHandler implements O
     return Set.of(UPDATE_VARIABLE, ADD_VARIABLE);
   }
 
-  private Map<String, Object> mapVariableJson(
-      final String variableName, final String variableValue) {
-    return Map.of(variableName, variableValue);
+  private Map<String, Object> mapVariableJson(final String variableName, final String variableValue)
+      throws JsonProcessingException {
+    final var variableJson = String.format("{\"%s\":%s}", variableName, variableValue);
+    return objectMapper.readValue(variableJson, Map.class);
   }
 }
