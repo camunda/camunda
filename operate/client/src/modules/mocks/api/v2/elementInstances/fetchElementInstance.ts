@@ -17,11 +17,9 @@ const mockFetchElementInstance = (
   contextPath = '',
 ) =>
   mockGetRequest<GetElementInstanceResponseBody>(
-    `${contextPath}${(
-      endpoints.getElementInstance.getUrl as (params: {
-        elementInstanceKey: string;
-      }) => string
-    )({elementInstanceKey})}`,
+    `${contextPath}${endpoints.getElementInstance.getUrl({
+      elementInstanceKey,
+    })}`,
   );
 
 export {mockFetchElementInstance};
