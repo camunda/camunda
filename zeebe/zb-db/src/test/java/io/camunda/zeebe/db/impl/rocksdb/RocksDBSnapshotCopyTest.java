@@ -18,6 +18,8 @@ import io.camunda.zeebe.protocol.ColumnFamilyScope;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -25,6 +27,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
+import java.util.zip.CRC32;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -105,10 +109,50 @@ public class RocksDBSnapshotCopyTest {
     assertThat(copiedRows).containsExactlyInAnyOrderEntriesOf(expectedRowsPerCF);
   }
 
+  @Test
+  public void shouldNotChangeFilesOnDiskFromSourceSnapshot() throws IOException {
+    // given
+    final var expectedRowsPerCF = populateSnapshot(factory);
+    final var initialChecksums = computeChecksums(sourceSnapshotPath);
+
+    // when
+    copy.copySnapshot(sourceSnapshotPath, destinationPath, Set.of(ColumnFamilyScope.GLOBAL));
+
+    // then
+    final var afterChecksums = computeChecksums(sourceSnapshotPath);
+    assertThat(afterChecksums).containsExactlyInAnyOrderEntriesOf(initialChecksums);
+  }
+
   private long computeDBSpace(final Path snapshotPath) throws IOException {
     final var totalSize = new AtomicLong();
     Files.walk(snapshotPath, 10).forEach(f -> totalSize.addAndGet(f.toFile().length()));
     return totalSize.get();
+  }
+
+  private Map<String, Long> computeChecksums(final Path snapshotPath) throws IOException {
+    try (final var fileStream = Files.walk(snapshotPath)) {
+      return fileStream
+          .filter(p -> !p.toFile().isDirectory())
+          .parallel()
+          .map(
+              path -> {
+                try (final var channel = FileChannel.open(path)) {
+                  final var bb = ByteBuffer.allocate(4 * 1024);
+                  final var crc = new CRC32();
+                  while (true) {
+                    bb.clear();
+                    if (channel.read(bb) < 0) {
+                      break;
+                    }
+                    crc.update(bb.array());
+                  }
+                  return Map.entry(path.toString(), crc.getValue());
+                } catch (final IOException e) {
+                  throw new RuntimeException(e);
+                }
+              })
+          .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
   }
 
   private Map<ZbColumnFamilies, Long> initCounterMap() {
