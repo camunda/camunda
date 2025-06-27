@@ -9,6 +9,7 @@ package io.camunda.search.schema;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Maps;
+import io.camunda.search.schema.IndexMappingDifference.PropertyDifference;
 import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -120,7 +121,11 @@ public class IndexSchemaValidator {
 
     final var differences =
         indexMappingsGroup.values().stream()
-            .map(mapping -> IndexMappingDifference.of(indexMappingMustBe, mapping))
+            .map(
+                mapping ->
+                    filterDynamicPropertiesDiff(
+                        IndexMappingDifference.of(indexMappingMustBe, mapping),
+                        mapping.indexName()))
             .filter(difference -> !difference.equal())
             .distinct()
             .toList();
@@ -137,6 +142,24 @@ public class IndexSchemaValidator {
     }
 
     return differences.getFirst();
+  }
+
+  /**
+   * Filters out differences that are only related to dynamic properties. If all differences are
+   * dynamic properties, it returns a copy of the difference with those entries removed.
+   */
+  private IndexMappingDifference filterDynamicPropertiesDiff(
+      final IndexMappingDifference difference, final String indexName) {
+    if (!difference.entriesDiffering().isEmpty()
+        && difference.entriesDiffering().stream().allMatch(this::isDynamicPropertyDifference)) {
+      LOGGER.debug(
+          String.format(
+              "Difference is on dynamic field, ignoring changes found. Index name: {}. Difference: {}.",
+              indexName,
+              difference.entriesDiffering()));
+      return difference.unsetEntriesDiffering();
+    }
+    return difference;
   }
 
   /**
@@ -170,5 +193,10 @@ public class IndexSchemaValidator {
       LOGGER.error(errorMsg);
       throw new IndexSchemaValidationException(errorMsg);
     }
+  }
+
+  private boolean isDynamicPropertyDifference(final PropertyDifference propertyDifference) {
+    return propertyDifference.leftValue().typeDefinition() instanceof final Map typeDefMap
+        && Boolean.parseBoolean(typeDefMap.getOrDefault("dynamic", "false").toString());
   }
 }
