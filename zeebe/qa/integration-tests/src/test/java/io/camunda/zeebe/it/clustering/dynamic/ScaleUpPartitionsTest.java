@@ -20,8 +20,10 @@ import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
+import io.camunda.zeebe.management.cluster.MessageCorrelationHashMod;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.management.cluster.RequestHandlingAllPartitions;
+import io.camunda.zeebe.management.cluster.RoutingState;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -224,60 +226,45 @@ public class ScaleUpPartitionsTest {
             });
   }
 
-  @Test
-  public void shouldBePossibleToRestoreAsAfterScalingUp() throws IOException {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldBePossibleToRestoreAsAfterScalingUp(final boolean backupBeforeScaling)
+      throws IOException {
     // given
     final var desiredPartitionCount = PARTITIONS_COUNT + 1;
     cluster.awaitHealthyTopology();
     final var backupId = 1L;
 
     // when
+    if (backupBeforeScaling) {
+      backupActuator.take(backupId);
+      assertBackupIsCompleted(backupId);
+    }
     scaleToPartitions(desiredPartitionCount);
     awaitScaleUpCompletion(desiredPartitionCount);
 
     final var routingStateAfterScaling = clusterActuator.getTopology().getRouting();
 
-    backupActuator.take(backupId);
+    if (!backupBeforeScaling) {
+      backupActuator.take(backupId);
+      assertBackupIsCompleted(backupId);
+    }
 
-    Awaitility.await("until backup is ready")
-        .timeout(Duration.ofMinutes(1))
-        .pollInterval(Duration.ofMillis(500))
-        .untilAsserted(
-            () -> {
-              try {
-                final var backupInfo = backupActuator.status(backupId);
-                assertThat(backupInfo.getState()).isEqualTo(StateCode.COMPLETED);
-              } catch (final Exception e) {
-                LOG.error("Failed to get backup status for backupId: {}", backupId, e);
-                fail(e);
-              }
-            });
     cluster.brokers().values().forEach(TestSpringApplication::stop);
 
-    for (final var broker : cluster.brokers().values()) {
-      LOG.debug("Restoring broker: {}", broker.nodeId());
-      final var dataFolder = Path.of(broker.brokerConfig().getData().getDirectory());
-      FileUtil.deleteFolderIfExists(dataFolder);
-
-      Files.createDirectories(dataFolder);
-      try (final var restoreApp =
-          new TestRestoreApp(broker.brokerConfig()).withBackupId(backupId)) {
-        assertThatNoException().isThrownBy(restoreApp::start);
-      }
-    }
+    restoreAllBrokers(backupId);
 
     // then
     // the topology is restored to the desired partition count and message correlation
     cluster.brokers().values().parallelStream().forEach(TestSpringApplication::start);
-    Awaitility.await("until topology is restored correctly")
-        .untilAsserted(
-            () -> {
-              final var topology = clusterActuator.getTopology();
-              assertThat(topology.getRouting().getRequestHandling())
-                  .isEqualTo(routingStateAfterScaling.getRequestHandling());
-              assertThat(topology.getRouting().getMessageCorrelation())
-                  .isEqualTo(routingStateAfterScaling.getMessageCorrelation());
-            });
+    if (backupBeforeScaling) {
+      assertThatRoutingStateMatches(
+          new RoutingState()
+              .requestHandling(new RequestHandlingAllPartitions(3).strategy("AllPartitions"))
+              .messageCorrelation(new MessageCorrelationHashMod("HashMod", 3)));
+    } else {
+      assertThatRoutingStateMatches(routingStateAfterScaling);
+    }
   }
 
   private void awaitScaleUpCompletion(final int desiredPartitionCount) {
@@ -295,6 +282,48 @@ public class ScaleUpPartitionsTest {
                         + topology.getRouting().getRequestHandling());
               }
             });
+  }
+
+  public void assertThatRoutingStateMatches(final RoutingState routingState) {
+    Awaitility.await("until topology is restored correctly")
+        .untilAsserted(
+            () -> {
+              final var topology = clusterActuator.getTopology();
+              assertThat(topology.getRouting().getRequestHandling())
+                  .isEqualTo(routingState.getRequestHandling());
+              assertThat(topology.getRouting().getMessageCorrelation())
+                  .isEqualTo(routingState.getMessageCorrelation());
+            });
+  }
+
+  private void assertBackupIsCompleted(final long backupId) {
+    Awaitility.await("until backup is ready")
+        .timeout(Duration.ofMinutes(1))
+        .pollInterval(Duration.ofMillis(500))
+        .untilAsserted(
+            () -> {
+              try {
+                final var backupInfo = backupActuator.status(backupId);
+                assertThat(backupInfo.getState()).isEqualTo(StateCode.COMPLETED);
+              } catch (final Exception e) {
+                LOG.error("Failed to get backup status for backupId: {}", backupId, e);
+                fail(e);
+              }
+            });
+  }
+
+  private void restoreAllBrokers(final long backupId) throws IOException {
+    for (final var broker : cluster.brokers().values()) {
+      LOG.debug("Restoring broker: {}", broker.nodeId());
+      final var dataFolder = Path.of(broker.brokerConfig().getData().getDirectory());
+      FileUtil.deleteFolderIfExists(dataFolder);
+
+      Files.createDirectories(dataFolder);
+      try (final var restoreApp =
+          new TestRestoreApp(broker.brokerConfig()).withBackupId(backupId)) {
+        assertThatNoException().isThrownBy(restoreApp::start);
+      }
+    }
   }
 
   private PlannedOperationsResponse scaleToPartitions(final int desiredPartitionCount) {
