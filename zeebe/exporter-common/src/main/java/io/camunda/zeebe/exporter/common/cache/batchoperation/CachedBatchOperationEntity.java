@@ -5,15 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.db.rdbms.write.domain;
+package io.camunda.zeebe.exporter.common.cache.batchoperation;
 
-import io.camunda.search.entities.BatchOperationEntity;
-import java.time.OffsetDateTime;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 
-public record BatchOperationItemDbModel(
-    String batchOperationId,
-    long itemKey,
-    long processInstanceKey,
-    BatchOperationEntity.BatchOperationItemState state,
-    OffsetDateTime processedDate,
-    String errorMessage) {}
+public record CachedBatchOperationEntity(String batchOperationId, OperationType type) {}

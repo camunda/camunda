@@ -10,15 +10,18 @@ package io.camunda.exporter.adapters;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
+import io.camunda.exporter.cache.batchoperation.OpenSearchBatchOperationCacheLoader;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.cache.form.OpenSearchFormCacheLoader;
 import io.camunda.exporter.cache.process.OpenSearchProcessCacheLoader;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.OpensearchBatchRequest;
+import io.camunda.exporter.utils.OpensearchScriptBuilder;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.search.schema.opensearch.OpensearchEngineClient;
+import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import java.io.IOException;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -50,7 +53,8 @@ class OpensearchAdapter implements ClientAdapter {
 
   @Override
   public BatchRequest createBatchRequest() {
-    return new OpensearchBatchRequest(client, new BulkRequest.Builder());
+    return new OpensearchBatchRequest(
+        client, new BulkRequest.Builder(), new OpensearchScriptBuilder());
   }
 
   @Override
@@ -65,6 +69,12 @@ class OpensearchAdapter implements ClientAdapter {
 
   record OpensearchExporterEntityCacheProvider(OpenSearchClient client)
       implements ExporterEntityCacheProvider {
+
+    @Override
+    public CacheLoader<String, CachedBatchOperationEntity> getBatchOperationCacheLoader(
+        final String batchOperationIndexName) {
+      return new OpenSearchBatchOperationCacheLoader(client, batchOperationIndexName);
+    }
 
     @Override
     public CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(

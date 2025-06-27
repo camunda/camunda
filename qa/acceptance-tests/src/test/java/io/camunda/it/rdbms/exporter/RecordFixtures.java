@@ -32,11 +32,13 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationChunkRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationItemValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
@@ -433,6 +435,11 @@ public class RecordFixtures {
 
   protected static ImmutableRecord<RecordValue> getBatchOperationCreatedRecord(
       final Long position) {
+    return getBatchOperationCreatedRecord(position, BatchOperationType.CANCEL_PROCESS_INSTANCE);
+  }
+
+  protected static ImmutableRecord<RecordValue> getBatchOperationCreatedRecord(
+      final Long position, final BatchOperationType type) {
     final Record<RecordValue> recordValueRecord =
         FACTORY.generateRecord(ValueType.BATCH_OPERATION_CREATION);
 
@@ -441,6 +448,11 @@ public class RecordFixtures {
         .withIntent(BatchOperationIntent.CREATED)
         .withPosition(position)
         .withTimestamp(System.currentTimeMillis())
+        .withValue(
+            ImmutableBatchOperationCreationRecordValue.builder()
+                .from((ImmutableBatchOperationCreationRecordValue) recordValueRecord.getValue())
+                .withBatchOperationType(type)
+                .build())
         .build();
   }
 

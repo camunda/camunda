@@ -11,12 +11,12 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
-import co.elastic.clients.elasticsearch.core.BulkRequest.Builder;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.bulk.OperationType;
 import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -34,11 +34,15 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchBatchRequest.class);
   private final ElasticsearchClient esClient;
   private final BulkRequest.Builder bulkRequestBuilder;
+  private final ElasticsearchScriptBuilder scriptBuilder;
 
   public ElasticsearchBatchRequest(
-      final ElasticsearchClient esClient, final Builder bulkRequestBuilder) {
+      final ElasticsearchClient esClient,
+      final BulkRequest.Builder bulkRequestBuilder,
+      final ElasticsearchScriptBuilder scriptBuilder) {
     this.esClient = esClient;
     this.bulkRequestBuilder = bulkRequestBuilder;
+    this.scriptBuilder = scriptBuilder;
   }
 
   @Override
@@ -103,6 +107,49 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   }
 
   @Override
+  public BatchRequest upsertWithScript(
+      final String index,
+      final String id,
+      final ExporterEntity entity,
+      final String script,
+      final Map<String, Object> parameters) {
+    return upsertWithScriptAndRouting(index, id, entity, script, parameters, null);
+  }
+
+  @Override
+  public BatchRequest upsertWithScriptAndRouting(
+      final String index,
+      final String id,
+      final ExporterEntity entity,
+      final String script,
+      final Map<String, Object> parameters,
+      final String routing) {
+    LOGGER.debug(
+        "Add upsert request with routing {} for index {} id {} entity {} and script {} with parameters {} ",
+        routing,
+        index,
+        id,
+        entity,
+        script,
+        parameters);
+
+    bulkRequestBuilder.operations(
+        op ->
+            op.update(
+                upd ->
+                    upd.index(index)
+                        .id(id)
+                        .routing(routing)
+                        .action(
+                            a ->
+                                a.script(scriptBuilder.getScriptWithParameters(script, parameters))
+                                    .upsert(entity))
+                        .retryOnConflict(UPDATE_RETRY_COUNT)));
+
+    return this;
+  }
+
+  @Override
   public BatchRequest update(
       final String index, final String id, final Map<String, Object> updateFields) {
     LOGGER.debug(
@@ -131,6 +178,33 @@ public class ElasticsearchBatchRequest implements BatchRequest {
                     up.index(index)
                         .id(id)
                         .action(a -> a.doc(entity))
+                        .retryOnConflict(UPDATE_RETRY_COUNT)));
+
+    return this;
+  }
+
+  @Override
+  public BatchRequest updateWithScript(
+      final String index,
+      final String id,
+      final String script,
+      final Map<String, Object> parameters) {
+    LOGGER.debug(
+        "Add upsert request with for index {} id {} and script {} with parameters {} ",
+        index,
+        id,
+        script,
+        parameters);
+
+    bulkRequestBuilder.operations(
+        op ->
+            op.update(
+                up ->
+                    up.index(index)
+                        .id(id)
+                        .action(
+                            a ->
+                                a.script(scriptBuilder.getScriptWithParameters(script, parameters)))
                         .retryOnConflict(UPDATE_RETRY_COUNT)));
 
     return this;

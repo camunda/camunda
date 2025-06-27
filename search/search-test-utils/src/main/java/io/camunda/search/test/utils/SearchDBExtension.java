@@ -11,6 +11,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import java.util.Optional;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -59,6 +60,12 @@ public abstract class SearchDBExtension implements BeforeAllCallback, AfterAllCa
       "idxtestform" + RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
 
   public static final FormIndex FORM_INDEX = new FormIndex(IDX_FORM_PREFIX, true);
+
+  public static final String IDX_BATCH_OPERATION_PREFIX =
+      "idxtestbatchoperation" + RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
+
+  public static final BatchOperationTemplate BATCH_OPERATION_INDEX =
+      new BatchOperationTemplate(IDX_BATCH_OPERATION_PREFIX, true);
 
   public static final String TEST_INTEGRATION_OPENSEARCH_AWS_URL =
       "test.integration.opensearch.aws.url";

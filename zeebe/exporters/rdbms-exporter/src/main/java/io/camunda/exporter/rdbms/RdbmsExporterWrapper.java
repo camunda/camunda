@@ -8,10 +8,12 @@
 package io.camunda.exporter.rdbms;
 
 import static io.camunda.db.rdbms.write.RdbmsWriterConfig.DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE;
+import static io.camunda.db.rdbms.write.RdbmsWriterConfig.DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
+import io.camunda.exporter.rdbms.cache.RdbmsBatchOperationCacheLoader;
 import io.camunda.exporter.rdbms.cache.RdbmsProcessCacheLoader;
 import io.camunda.exporter.rdbms.handlers.DecisionDefinitionExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionInstanceExportHandler;
@@ -44,6 +46,7 @@ import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
+import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -62,11 +65,16 @@ public class RdbmsExporterWrapper implements Exporter {
   private static final int DEFAULT_MAX_QUEUE_SIZE = 1000;
   private static final int DEFAULT_CLEANUP_BATCH_SIZE = 1000;
   private static final long DEFAULT_MAX_CACHE_SIZE = 10_000;
+
+  private static final String CONFIG_CACHE_PROCESS = "processCache";
+  private static final String CONFIG_CACHE_BATCH_OPERATION = "batchOperationCache";
+
   private final RdbmsService rdbmsService;
 
   private RdbmsExporter exporter;
 
   private ExporterEntityCache<Long, CachedProcessEntity> processCache;
+  private ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache;
 
   public RdbmsExporterWrapper(final RdbmsService rdbmsService) {
     this.rdbmsService = rdbmsService;
@@ -86,6 +94,8 @@ public class RdbmsExporterWrapper implements Exporter {
                 .minHistoryCleanupInterval(readMinHistoryCleanupInterval(context))
                 .maxHistoryCleanupInterval(readMaxHistoryCleanupInterval(context))
                 .batchOperationItemInsertBlockSize(readBatchOperationItemInsertBlockSize(context))
+                .exportBatchOperationItemsOnCreation(
+                    readExportBatchOperationItemsOnCreation(context))
                 .build());
 
     final var builder =
@@ -97,9 +107,15 @@ public class RdbmsExporterWrapper implements Exporter {
 
     processCache =
         new ExporterEntityCacheImpl<>(
-            readMaxCacheSize(context),
+            readMaxCacheSize(context, CONFIG_CACHE_PROCESS),
             new RdbmsProcessCacheLoader(rdbmsService.getProcessDefinitionReader()),
             new CaffeineCacheStatsCounter(NAMESPACE, "process", context.getMeterRegistry()));
+
+    batchOperationCache =
+        new ExporterEntityCacheImpl<>(
+            readMaxCacheSize(context, CONFIG_CACHE_BATCH_OPERATION),
+            new RdbmsBatchOperationCacheLoader(rdbmsService.getBatchOperationReader()),
+            new CaffeineCacheStatsCounter(NAMESPACE, "batchOperation", context.getMeterRegistry()));
 
     createHandlers(partitionId, rdbmsWriter, builder);
     createBatchOperationHandlers(rdbmsWriter, builder);
@@ -164,6 +180,13 @@ public class RdbmsExporterWrapper implements Exporter {
         DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE);
   }
 
+  private boolean readExportBatchOperationItemsOnCreation(final Context context) {
+    return readBoolean(
+        context,
+        "exportBatchOperationItemsOnCreation",
+        DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION);
+  }
+
   private Duration readDuration(
       final Context context, final String property, final Duration defaultValue) {
     final var arguments = context.getConfiguration().getArguments();
@@ -183,19 +206,20 @@ public class RdbmsExporterWrapper implements Exporter {
     }
   }
 
-  private long readLong(final Context context, final String property, final long defaultValue) {
+  private boolean readBoolean(
+      final Context context, final String property, final boolean defaultValue) {
     final var arguments = context.getConfiguration().getArguments();
     if (arguments != null && arguments.containsKey(property)) {
-      return (Long) arguments.get(property);
+      return (Boolean) arguments.get(property);
     } else {
       return defaultValue;
     }
   }
 
-  private long readMaxCacheSize(final Context context) {
+  private long readMaxCacheSize(final Context context, final String cacheConfigName) {
     final var arguments = context.getConfiguration().getArguments();
-    if (arguments != null && arguments.containsKey("processCache")) {
-      final var processCacheObject = arguments.get("processCache");
+    if (arguments != null && arguments.containsKey(cacheConfigName)) {
+      final var processCacheObject = arguments.get(cacheConfigName);
       if (processCacheObject instanceof final Map<?, ?> processCacheMap) {
         final var maxCacheSize = processCacheMap.get("maxCacheSize");
         if (maxCacheSize instanceof Number) {
@@ -264,11 +288,12 @@ public class RdbmsExporterWrapper implements Exporter {
         new SequenceFlowExportHandler(rdbmsWriter.getSequenceFlowWriter()));
   }
 
-  private static void createBatchOperationHandlers(
+  private void createBatchOperationHandlers(
       final RdbmsWriter rdbmsWriter, final RdbmsExporterConfig.Builder builder) {
     builder.withHandler(
         ValueType.BATCH_OPERATION_CREATION,
-        new BatchOperationCreatedExportHandler(rdbmsWriter.getBatchOperationWriter()));
+        new BatchOperationCreatedExportHandler(
+            rdbmsWriter.getBatchOperationWriter(), batchOperationCache));
     builder.withHandler(
         ValueType.BATCH_OPERATION_CHUNK,
         new BatchOperationChunkExportHandler(rdbmsWriter.getBatchOperationWriter()));
@@ -280,17 +305,18 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(
         ValueType.PROCESS_INSTANCE,
         new ProcessInstanceCancellationBatchOperationExportHandler(
-            rdbmsWriter.getBatchOperationWriter()));
+            rdbmsWriter.getBatchOperationWriter(), batchOperationCache));
     builder.withHandler(
         ValueType.INCIDENT,
-        new IncidentBatchOperationExportHandler(rdbmsWriter.getBatchOperationWriter()));
+        new IncidentBatchOperationExportHandler(
+            rdbmsWriter.getBatchOperationWriter(), batchOperationCache));
     builder.withHandler(
         ValueType.PROCESS_INSTANCE_MIGRATION,
         new ProcessInstanceMigrationBatchOperationExportHandler(
-            rdbmsWriter.getBatchOperationWriter()));
+            rdbmsWriter.getBatchOperationWriter(), batchOperationCache));
     builder.withHandler(
         ValueType.PROCESS_INSTANCE_MODIFICATION,
         new ProcessInstanceModificationBatchOperationExportHandler(
-            rdbmsWriter.getBatchOperationWriter()));
+            rdbmsWriter.getBatchOperationWriter(), batchOperationCache));
   }
 }

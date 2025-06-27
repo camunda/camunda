@@ -67,6 +67,8 @@ public class BatchOperationChunkCreatedHandler
   @Override
   public void updateEntity(
       final Record<BatchOperationChunkRecordValue> record, final BatchOperationEntity entity) {
+    // set to just the size of the current chunk. delta update is performed in the update script
+    entity.setOperationsTotalCount(record.getValue().getItems().size());
     // set the endDate to null to ensure that the batch operation is processed again by the
     // BatchOperationUpdateTask
     entity.setEndDate(null);
@@ -78,6 +80,13 @@ public class BatchOperationChunkCreatedHandler
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(BatchOperationTemplate.END_DATE, entity.getState());
     batchRequest.update(indexName, entity.getId(), updateFields);
+    batchRequest.updateWithScript(
+        indexName,
+        entity.getId(),
+        """
+            ctx._source.operationsTotalCount = ctx._source.operationsTotalCount + params.operationsTotalCount;
+        """,
+        Map.of(BatchOperationTemplate.OPERATIONS_TOTAL_COUNT, entity.getOperationsTotalCount()));
   }
 
   @Override
