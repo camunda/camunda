@@ -33,7 +33,7 @@ public class ColumnFamilyContext {
   private int keyLength;
   private final long columnFamilyPrefix;
 
-  ColumnFamilyContext(final long columnFamilyPrefix) {
+  public ColumnFamilyContext(final long columnFamilyPrefix) {
     this.columnFamilyPrefix = columnFamilyPrefix;
     prefixKeyBuffers = new ArrayDeque<>();
     prefixKeyBuffers.add(new ExpandableArrayBuffer());
@@ -115,7 +115,7 @@ public class ColumnFamilyContext {
     }
   }
 
-  ByteBuffer keyWithColumnFamily(DbKey key) {
+  ByteBuffer keyWithColumnFamily(final DbKey key) {
     final var bytes = ByteBuffer.allocate(Long.BYTES + key.getLength());
     final var buffer = new UnsafeBuffer(bytes);
 

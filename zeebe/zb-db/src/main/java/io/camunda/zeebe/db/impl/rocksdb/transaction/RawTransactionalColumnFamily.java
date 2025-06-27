@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.startsWith;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.impl.DbBytes;
+import io.camunda.zeebe.db.impl.rocksdb.DbNullKey;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.ReadOptions;
@@ -24,16 +25,13 @@ public class RawTransactionalColumnFamily {
   protected final ZeebeTransactionDb<ZbColumnFamilies> transactionDb;
   protected final ZbColumnFamilies columnFamily;
   protected final ColumnFamilyContext columnFamilyContext;
-  protected final TransactionContext context;
 
   public RawTransactionalColumnFamily(
       final ZeebeTransactionDb<ZbColumnFamilies> transactionDb,
-      final ZbColumnFamilies columnFamily,
-      final TransactionContext context) {
+      final ZbColumnFamilies columnFamily) {
     this.transactionDb = transactionDb;
     this.columnFamily = columnFamily;
     columnFamilyContext = new ColumnFamilyContext(columnFamily.getValue());
-    this.context = context;
   }
 
   /**
@@ -43,7 +41,7 @@ public class RawTransactionalColumnFamily {
    *     the column family prefix. In order to get access to the key without the prefix, you need to
    *     use {@link ColumnFamilyContext#wrapKeyView(byte[])}
    */
-  public void forEach(final Visitor visitor) {
+  public void forEach(final TransactionContext context, final Visitor visitor) {
     context.runInTransaction(
         () -> {
           columnFamilyContext.withPrefixKey(
@@ -51,7 +49,7 @@ public class RawTransactionalColumnFamily {
               (prefixKey, prefixLength) -> {
                 try (final RocksIterator iterator =
                     newIterator(context, transactionDb.getPrefixReadOptions())) {
-                  forEach(iterator, prefixKey, 0, prefixLength, visitor);
+                  forEach(iterator, columnFamily, prefixKey, 0, prefixLength, visitor);
                 }
               });
         });
@@ -111,8 +109,9 @@ public class RawTransactionalColumnFamily {
         keyLen);
   }
 
-  private void forEach(
+  public static void forEach(
       final RocksIterator iterator,
+      final ZbColumnFamilies columnFamily,
       final byte[] prefixKey,
       final int prefixOffset,
       final int prefixLength,
@@ -120,6 +119,7 @@ public class RawTransactionalColumnFamily {
     final var seekTarget = new DbNullKey();
     boolean shouldVisitNext = true;
 
+    final var columnFamilyContext = new ColumnFamilyContext(columnFamily.getValue());
     for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
         iterator.isValid() && shouldVisitNext;
         iterator.next()) {
