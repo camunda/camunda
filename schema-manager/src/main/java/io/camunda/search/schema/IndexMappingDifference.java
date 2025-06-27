@@ -73,7 +73,18 @@ public record IndexMappingDifference(
         right == null ? false : right.isDynamic());
   }
 
-  private record PropertyDifference(
+  public IndexMappingDifference unsetEntriesDiffering() {
+    return new IndexMappingDifference(
+        equal,
+        entriesOnlyOnLeft,
+        entriesOnlyOnRight,
+        entriesInCommon,
+        Set.of(),
+        isLeftDynamic,
+        isRightDynamic);
+  }
+
+  record PropertyDifference(
       String name, IndexMappingProperty leftValue, IndexMappingProperty rightValue) {}
 
   /**

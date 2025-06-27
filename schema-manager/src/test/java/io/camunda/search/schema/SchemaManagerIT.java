@@ -970,4 +970,83 @@ public class SchemaManagerIT {
     assertThat(measuredTime.count()).isEqualTo(0);
     assertThat(measuredTime.totalTime(TimeUnit.MILLISECONDS)).isEqualTo(0);
   }
+
+  @TestTemplate
+  void shouldSkipDynamicPropertyMappingsDifferences(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws IOException {
+    // given
+    final var indexTemplate =
+        mockIndexTemplate(
+            "index_name",
+            "test*",
+            "template_alias",
+            Collections.emptyList(),
+            CONFIG_PREFIX + "-template_name",
+            "/mappings-dynamic-property.json");
+
+    when(indexTemplate.getFullQualifiedName()).thenReturn(CONFIG_PREFIX + "-qualified_name");
+
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config),
+            Set.of(),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    schemaManager.startup();
+
+    final var runtimeIndexName = indexTemplate.getFullQualifiedName();
+    final var archiveIndexName1 = indexTemplate.getIndexPattern().replace("*", "-archived_1");
+    final var archiveIndexName2 = indexTemplate.getIndexPattern().replace("*", "-archived_2");
+
+    // index some data to the runtime and archive indices. "world" is a dynamic property
+    searchClientAdapter.index(
+        "123", runtimeIndexName, Map.of("hello", "a", "world", Map.of("header1", 1, "header2", 2)));
+    searchClientAdapter.index(
+        "123", archiveIndexName1, Map.of("hello", "a", "world", Map.of("header3", true)));
+    searchClientAdapter.index("123", archiveIndexName2, Map.of("hello", "a"));
+
+    var retrievedRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
+    assertThat(retrievedRuntimeIndex.at("/mappings/properties/world/properties").toString())
+        .isEqualTo("{\"header2\":{\"type\":\"long\"},\"header1\":{\"type\":\"long\"}}");
+    var retrievedArchiveIndex1 = searchClientAdapter.getIndexAsNode(archiveIndexName1);
+    assertThat(retrievedArchiveIndex1.at("/mappings/properties/world/properties").toString())
+        .isEqualTo("{\"header3\":{\"type\":\"boolean\"}}");
+
+    // when
+    schemaManager.startup();
+
+    // then
+    // no exception should be thrown
+    retrievedRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
+    assertThat(retrievedRuntimeIndex.at("/mappings/properties/world/properties").toString())
+        .isEqualTo("{\"header2\":{\"type\":\"long\"},\"header1\":{\"type\":\"long\"}}");
+    retrievedArchiveIndex1 = searchClientAdapter.getIndexAsNode(archiveIndexName1);
+    assertThat(retrievedArchiveIndex1.at("/mappings/properties/world/properties").toString())
+        .isEqualTo("{\"header3\":{\"type\":\"boolean\"}}");
+
+    // when
+    // update mappings
+    when(indexTemplate.getMappingsClasspathFilename())
+        .thenReturn("/mappings-dynamic-property-added.json");
+    schemaManager.startup();
+
+    // then
+    // assert all indices have the updated mapping
+    retrievedRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
+    assertThat(retrievedRuntimeIndex.at("/mappings/properties/foo/type").asText())
+        .isEqualTo("keyword");
+    assertThat(retrievedRuntimeIndex.at("/mappings/properties/world/properties").toString())
+        .isEqualTo("{\"header2\":{\"type\":\"long\"},\"header1\":{\"type\":\"long\"}}");
+    retrievedArchiveIndex1 = searchClientAdapter.getIndexAsNode(archiveIndexName1);
+    assertThat(retrievedArchiveIndex1.at("/mappings/properties/foo/type").asText())
+        .isEqualTo("keyword");
+    assertThat(retrievedArchiveIndex1.at("/mappings/properties/world/properties").toString())
+        .isEqualTo("{\"header3\":{\"type\":\"boolean\"}}");
+    final var retrievedArchiveIndex2 = searchClientAdapter.getIndexAsNode(archiveIndexName2);
+    assertThat(retrievedArchiveIndex2.at("/mappings/properties/foo/type").asText())
+        .isEqualTo("keyword");
+  }
 }
