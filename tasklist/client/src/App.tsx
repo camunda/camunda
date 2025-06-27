@@ -86,6 +86,10 @@ const v1Routes = createRoutesFromElements(
 const v2Routes = createRoutesFromElements(
   <Route path="/" element={<Wrapper />} ErrorBoundary={ErrorWithinLayout}>
     <Route path="login" lazy={() => import('common/auth/Login')} />
+    <Route
+      path="new/:bpmnProcessId"
+      lazy={() => import('./v1/StartProcessFromForm')}
+    />
     <Route path="/" lazy={() => import('./common/components/Layout')}>
       <Route path="forbidden" element={<Forbidden />} />
       <Route path="processes" ErrorBoundary={ErrorWithinLayout}>
