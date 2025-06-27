@@ -10,12 +10,14 @@ package io.camunda.zeebe.shared.security;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Collections;
 import java.util.Optional;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationConverter;
 import org.springframework.stereotype.Component;
 
+@Profile("identity-auth")
 @Component
 public final class PreAuthTokenConverter implements AuthenticationConverter {
   private static final NoToken EMPTY_TOKEN = new NoToken();
