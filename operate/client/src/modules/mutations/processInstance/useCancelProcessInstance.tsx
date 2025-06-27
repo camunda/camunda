@@ -14,11 +14,12 @@ function useCancelProcessInstance(
   onError?: (error: Error) => void,
 ) {
   return useMutation({
-    mutationFn: () => cancelProcessInstance(processInstanceKey),
-    onSuccess: (response) => {
+    mutationFn: async () => {
+      const response = await cancelProcessInstance(processInstanceKey);
       if (!response.ok) {
         throw new Error(response.statusText);
       }
+      return response;
     },
     onError,
   });
