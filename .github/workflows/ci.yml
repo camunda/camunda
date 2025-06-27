@@ -728,7 +728,7 @@ jobs:
         id: build-camunda-docker
         with:
           repository: camunda/camunda
-          version: 8.7.0-SNAPSHOT
+          version: 8.7-SNAPSHOT
           distball: ${{ steps.build-camunda.outputs.distball }}
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: camunda.Dockerfile
