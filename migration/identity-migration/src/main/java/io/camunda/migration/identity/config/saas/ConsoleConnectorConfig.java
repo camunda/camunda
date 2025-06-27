@@ -5,8 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.identity.config;
+package io.camunda.migration.identity.config.saas;
 
+import io.camunda.migration.identity.config.ConsoleProperties;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.console.ConsoleClient;
 import java.io.IOException;
 import java.util.Map;

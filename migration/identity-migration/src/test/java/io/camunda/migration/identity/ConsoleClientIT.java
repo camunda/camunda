@@ -18,9 +18,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
-import io.camunda.migration.identity.config.ConsoleConnectorConfig.TokenInterceptor;
 import io.camunda.migration.identity.config.ConsoleProperties;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
+import io.camunda.migration.identity.config.saas.ConsoleConnectorConfig.TokenInterceptor;
 import io.camunda.migration.identity.console.ConsoleClient;
 import io.camunda.migration.identity.console.ConsoleClient.Permission;
 import io.camunda.migration.identity.console.ConsoleClient.Role;
