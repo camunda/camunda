@@ -18,7 +18,6 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
-import io.camunda.search.query.RoleQuery;
 import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -210,9 +209,7 @@ public class CamundaOAuthPrincipalServiceTest {
                   new MappingEntity("test-id", 5L, "role", "R1", "role-r1"),
                   new MappingEntity("test-id-2", 7L, "group", "G1", "group-g1")));
 
-      final var roleR1 = new RoleEntity(8L, "roleR1", "Role R1", "R1 description");
       final var groupRole = new RoleEntity(3L, "roleGroup", "Role Group", "description");
-
       when(groupServices.getGroupsByMemberTypeAndMemberIds(
               Map.of(
                   EntityType.MAPPING,
@@ -221,25 +218,29 @@ public class CamundaOAuthPrincipalServiceTest {
                   Set.of("foo@camunda.test"))))
           .thenReturn(List.of(new GroupEntity(1L, "group-g1", "G1", "Group G1")));
 
-      final var expectedRoleQuery =
-          RoleQuery.of(
-              roleQuery ->
-                  roleQuery.filter(
-                      roleFilter ->
-                          roleFilter.memberIdsByType(
-                              Map.of(
-                                  EntityType.MAPPING,
-                                  Set.of("test-id", "test-id-2"),
-                                  EntityType.USER,
-                                  Set.of("foo@camunda.test"),
-                                  EntityType.GROUP,
-                                  Set.of("group-g1")))));
-      when(roleServices.findAll(expectedRoleQuery)).thenReturn(List.of(roleR1, groupRole));
+      final var roleR1 = new RoleEntity(8L, "roleR1", "Role R1", "R1 description");
+      when(roleServices.getRolesByMemberTypeAndMemberIds(
+              Map.of(
+                  EntityType.MAPPING,
+                  Set.of("test-id", "test-id-2"),
+                  EntityType.USER,
+                  Set.of("foo@camunda.test"),
+                  EntityType.GROUP,
+                  Set.of("group-g1"))))
+          .thenReturn(List.of(roleR1, groupRole));
 
       final var tenantT1 = new TenantEntity(100L, "t1", "Tenant One", "First Tenant");
       final var groupTenant = new TenantEntity(200L, "tenant1", "Tenant One", "First Tenant");
-      when(tenantServices.getTenantsByMappingsAndGroupsAndRoles(
-              Set.of("test-id", "test-id-2"), Set.of("group-g1"), Set.of("roleR1", "roleGroup")))
+      when(tenantServices.getTenantsByMemberTypeAndMemberIds(
+              Map.of(
+                  EntityType.MAPPING,
+                  Set.of("test-id", "test-id-2"),
+                  EntityType.USER,
+                  Set.of("foo@camunda.test"),
+                  EntityType.GROUP,
+                  Set.of("group-g1"),
+                  EntityType.ROLE,
+                  Set.of("roleR1", "roleGroup"))))
           .thenReturn(List.of(tenantT1, groupTenant));
 
       when(authorizationServices.getAuthorizedApplications(
@@ -287,28 +288,31 @@ public class CamundaOAuthPrincipalServiceTest {
                   Set.of("scooby-doo"))))
           .thenReturn(List.of(new GroupEntity(1L, "group-g1", "G1", "Group G1")));
 
+      final var roleR1 = new RoleEntity(10L, "roleR1", "Role R1", "R1 description");
+      when(roleServices.getRolesByMemberTypeAndMemberIds(
+              Map.of(
+                  EntityType.MAPPING,
+                  Set.of("map-1", "map-2"),
+                  EntityType.GROUP,
+                  Set.of("group-g1"),
+                  EntityType.USER,
+                  Set.of("scooby-doo"))))
+          .thenReturn(List.of(roleR1));
+
       final var tenantEntity1 = new TenantEntity(100L, "t1", "Tenant One", "First Tenant");
       final var tenantEntity2 = new TenantEntity(200L, "t2", "Tenant Two", "Second Tenant");
 
-      when(tenantServices.getTenantsByMappingsAndGroupsAndRoles(
-              Set.of("map-1", "map-2"), Set.of("group-g1"), Set.of("roleR1")))
+      when(tenantServices.getTenantsByMemberTypeAndMemberIds(
+              Map.of(
+                  EntityType.MAPPING,
+                  Set.of("map-1", "map-2"),
+                  EntityType.USER,
+                  Set.of("scooby-doo"),
+                  EntityType.GROUP,
+                  Set.of("group-g1"),
+                  EntityType.ROLE,
+                  Set.of("roleR1"))))
           .thenReturn(List.of(tenantEntity1, tenantEntity2));
-
-      final var roleR1 = new RoleEntity(10L, "roleR1", "Role R1", "R1 description");
-      final var expectedQuery =
-          RoleQuery.of(
-              roleQuery ->
-                  roleQuery.filter(
-                      roleFilter ->
-                          roleFilter.memberIdsByType(
-                              Map.of(
-                                  EntityType.MAPPING,
-                                  Set.of("map-1", "map-2"),
-                                  EntityType.GROUP,
-                                  Set.of("group-g1"),
-                                  EntityType.USER,
-                                  Set.of("scooby-doo")))));
-      when(roleServices.findAll(expectedQuery)).thenReturn(List.of(roleR1));
 
       when(authorizationServices.getAuthorizedApplications(
               Map.of(

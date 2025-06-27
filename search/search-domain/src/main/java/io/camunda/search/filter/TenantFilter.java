@@ -9,6 +9,7 @@ package io.camunda.search.filter;
 
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -19,7 +20,8 @@ public record TenantFilter(
     String joinParentId,
     EntityType entityType,
     Set<String> memberIds,
-    EntityType childMemberType)
+    EntityType childMemberType,
+    Map<EntityType, Set<String>> memberIdsByType)
     implements FilterBase {
 
   public static TenantFilter of(final Function<Builder, Builder> builderFunction) {
@@ -34,7 +36,8 @@ public record TenantFilter(
         .joinParentId(joinParentId)
         .memberType(entityType)
         .memberIds(memberIds)
-        .childMemberType(childMemberType);
+        .childMemberType(childMemberType)
+        .memberIdsByType(memberIdsByType);
   }
 
   public static final class Builder implements ObjectBuilder<TenantFilter> {
@@ -46,6 +49,7 @@ public record TenantFilter(
     private EntityType entityType;
     private Set<String> memberIds;
     private EntityType childMemberType;
+    private Map<EntityType, Set<String>> memberIdsByType;
 
     public Builder key(final Long value) {
       key = value;
@@ -82,10 +86,22 @@ public record TenantFilter(
       return this;
     }
 
+    public Builder memberIdsByType(final Map<EntityType, Set<String>> value) {
+      memberIdsByType = value;
+      return this;
+    }
+
     @Override
     public TenantFilter build() {
       return new TenantFilter(
-          key, tenantId, name, joinParentId, entityType, memberIds, childMemberType);
+          key,
+          tenantId,
+          name,
+          joinParentId,
+          entityType,
+          memberIds,
+          childMemberType,
+          memberIdsByType);
     }
   }
 }

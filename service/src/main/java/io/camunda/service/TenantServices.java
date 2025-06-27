@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
@@ -135,6 +136,11 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
     tenants.addAll(groupTenants);
     tenants.addAll(roleTenants);
     return tenants.stream().distinct().toList();
+  }
+
+  public List<TenantEntity> getTenantsByMemberTypeAndMemberIds(
+      final Map<EntityType, Set<String>> memberTypesToMemberIds) {
+    return findAll(TenantQuery.of(q -> q.filter(f -> f.memberIdsByType(memberTypesToMemberIds))));
   }
 
   public TenantEntity getById(final String tenantId) {
