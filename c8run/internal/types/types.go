@@ -7,7 +7,7 @@ import (
 )
 
 type C8Run interface {
-	OpenBrowser(ctx context.Context, protocol string, port int) error
+	OpenBrowser(ctx context.Context, url string) error
 	ProcessTree(commandPid int) []*os.Process
 	VersionCmd(ctx context.Context, javaBinaryPath string) *exec.Cmd
 	ElasticsearchCmd(ctx context.Context, elasticsearchVersion string, parentDir string) *exec.Cmd
@@ -26,11 +26,21 @@ type C8RunSettings struct {
 	Username             string
 	Password             string
 	Docker               bool
+	StartupUrl           string
 }
 
 // HasKeyStore returns true when the keystore and password are set
 func (c C8RunSettings) HasKeyStore() bool {
 	return c.Keystore != "" && c.KeystorePassword != ""
+}
+
+// GetProtocol resolves the protocol to use for accessing Camunda endpoints
+func (c C8RunSettings) GetProtocol() string {
+	protocol := "http"
+	if c.HasKeyStore() {
+		protocol = "https"
+	}
+	return protocol
 }
 
 type Processes struct {

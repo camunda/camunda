@@ -9,13 +9,11 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime/debug"
-	"strconv"
 	"syscall"
 )
 
-func (w *WindowsC8Run) OpenBrowser(ctx context.Context, protocol string, port int) error {
-	operateUrl := protocol + "://localhost:" + strconv.Itoa(port) + "/operate"
-	openBrowserCmdString := "start " + operateUrl
+func (w *WindowsC8Run) OpenBrowser(ctx context.Context, url string) error {
+	openBrowserCmdString := "start " + url
 	openBrowserCmd := exec.CommandContext(ctx, "cmd", "/C", openBrowserCmdString)
 	openBrowserCmd.SysProcAttr = &syscall.SysProcAttr{
 		// CreationFlags: 0x08000000 | 0x00000200, // CREATE_NO_WINDOW, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags

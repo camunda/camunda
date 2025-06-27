@@ -10,12 +10,10 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
-	"strconv"
 	"syscall"
 )
 
-func (w *UnixC8Run) OpenBrowser(ctx context.Context, protocol string, port int) error {
-	operateUrl := protocol + "://localhost:" + strconv.Itoa(port) + "/operate"
+func (w *UnixC8Run) OpenBrowser(ctx context.Context, url string) error {
 	var openBrowserCmdString string
 	if runtime.GOOS == "darwin" {
 		openBrowserCmdString = "open"
@@ -24,7 +22,7 @@ func (w *UnixC8Run) OpenBrowser(ctx context.Context, protocol string, port int) 
 	} else {
 		return fmt.Errorf("OpenBrowser: platform %s is not supported", runtime.GOOS)
 	}
-	openBrowserCmd := exec.CommandContext(ctx, openBrowserCmdString, operateUrl)
+	openBrowserCmd := exec.CommandContext(ctx, openBrowserCmdString, url)
 	err := openBrowserCmd.Run()
 	if err != nil {
 		return fmt.Errorf("OpenBrowser: failed to open browser %w\n%s", err, debug.Stack())

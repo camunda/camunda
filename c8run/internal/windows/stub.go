@@ -8,7 +8,7 @@ import (
 	"os/exec"
 )
 
-func (w *WindowsC8Run) OpenBrowser(ctx context.Context, protocol string, port int) error {
+func (w *WindowsC8Run) OpenBrowser(ctx context.Context, url string) error {
 	panic("Platform was not built for windows")
 }
 
