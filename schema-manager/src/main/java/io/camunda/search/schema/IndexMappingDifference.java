@@ -16,6 +16,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -73,13 +74,25 @@ public record IndexMappingDifference(
         right == null ? false : right.isDynamic());
   }
 
-  public IndexMappingDifference unsetEntriesDiffering() {
+  public IndexMappingDifference filterEntriesDiffering(final Predicate<PropertyDifference> filter) {
     return new IndexMappingDifference(
         equal,
         entriesOnlyOnLeft,
         entriesOnlyOnRight,
         entriesInCommon,
-        Set.of(),
+        entriesDiffering.stream().filter(filter).collect(Collectors.toSet()),
+        isLeftDynamic,
+        isRightDynamic);
+  }
+
+  public IndexMappingDifference filterEntriesInCommon(
+      final Predicate<IndexMappingProperty> filter) {
+    return new IndexMappingDifference(
+        equal,
+        entriesOnlyOnLeft,
+        entriesOnlyOnRight,
+        entriesInCommon.stream().filter(filter).collect(Collectors.toSet()),
+        entriesDiffering,
         isLeftDynamic,
         isRightDynamic);
   }

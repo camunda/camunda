@@ -9,7 +9,6 @@ package io.camunda.search.schema;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Maps;
-import io.camunda.search.schema.IndexMappingDifference.PropertyDifference;
 import io.camunda.search.schema.exceptions.IndexSchemaValidationException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -108,6 +107,9 @@ public class IndexSchemaValidator {
       } else if (!difference.entriesOnlyOnLeft().isEmpty()) {
         // Collect the new fields
         newFields.put(indexDescriptor, difference.entriesOnlyOnLeft());
+      } else {
+        LOGGER.debug(
+            "Index fields are up to date for Index '{}'.", indexDescriptor.getFullQualifiedName());
       }
     } else {
       LOGGER.debug(
@@ -121,12 +123,9 @@ public class IndexSchemaValidator {
 
     final var differences =
         indexMappingsGroup.values().stream()
-            .map(
-                mapping ->
-                    filterDynamicPropertiesDiff(
-                        IndexMappingDifference.of(indexMappingMustBe, mapping),
-                        mapping.indexName()))
+            .map(mapping -> IndexMappingDifference.of(indexMappingMustBe, mapping))
             .filter(difference -> !difference.equal())
+            .map(this::filterOutDynamicProperties)
             .distinct()
             .toList();
 
@@ -144,22 +143,13 @@ public class IndexSchemaValidator {
     return differences.getFirst();
   }
 
-  /**
-   * Filters out differences that are only related to dynamic properties. If all differences are
-   * dynamic properties, it returns a copy of the difference with those entries removed.
-   */
-  private IndexMappingDifference filterDynamicPropertiesDiff(
-      final IndexMappingDifference difference, final String indexName) {
-    if (!difference.entriesDiffering().isEmpty()
-        && difference.entriesDiffering().stream().allMatch(this::isDynamicPropertyDifference)) {
-      LOGGER.debug(
-          String.format(
-              "Difference is on dynamic field, ignoring changes found. Index name: {}. Difference: {}.",
-              indexName,
-              difference.entriesDiffering()));
-      return difference.unsetEntriesDiffering();
-    }
-    return difference;
+  /** Filters out differences that are only related to dynamic properties. */
+  private IndexMappingDifference filterOutDynamicProperties(
+      final IndexMappingDifference difference) {
+    return difference
+        .filterEntriesInCommon(indexMappingProperty -> !isDynamicProperty(indexMappingProperty))
+        .filterEntriesDiffering(
+            propertyDifference -> !isDynamicProperty(propertyDifference.leftValue()));
   }
 
   /**
@@ -195,8 +185,8 @@ public class IndexSchemaValidator {
     }
   }
 
-  private boolean isDynamicPropertyDifference(final PropertyDifference propertyDifference) {
-    return propertyDifference.leftValue().typeDefinition() instanceof final Map typeDefMap
+  private boolean isDynamicProperty(final IndexMappingProperty indexMappingProperty) {
+    return indexMappingProperty.typeDefinition() instanceof final Map typeDefMap
         && Boolean.parseBoolean(typeDefMap.getOrDefault("dynamic", "false").toString());
   }
 }

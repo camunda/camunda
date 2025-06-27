@@ -7,7 +7,7 @@
       },
       "world": {
         "type": "object",
-        "dynamic": "true"
+        "dynamic": true
       },
       "foo": {
         "type": "keyword"
