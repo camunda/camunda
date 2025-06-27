@@ -8,6 +8,7 @@
 package io.camunda.zeebe.msgpack.property;
 
 import io.camunda.zeebe.msgpack.value.BinaryValue;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import org.agrona.DirectBuffer;
 
 public final class BinaryProperty extends BaseProperty<BinaryValue> {
@@ -17,6 +18,14 @@ public final class BinaryProperty extends BaseProperty<BinaryValue> {
 
   public BinaryProperty(final String keyString, final DirectBuffer defaultValue) {
     super(keyString, new BinaryValue(), new BinaryValue(defaultValue, 0, defaultValue.capacity()));
+  }
+
+  public BinaryProperty(final StringValue key) {
+    super(key, new BinaryValue());
+  }
+
+  public BinaryProperty(final StringValue key, final DirectBuffer defaultValue) {
+    super(key, new BinaryValue(), new BinaryValue(defaultValue, 0, defaultValue.capacity()));
   }
 
   public DirectBuffer getValue() {
