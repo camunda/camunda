@@ -38,6 +38,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -264,6 +265,27 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
   @Override
   public Optional<AuthenticationMethod> clientAuthenticationMethod() {
     return apiAuthenticationMethod();
+  }
+
+  public TestCamundaApplication updateExporterArgs(
+      final String id, final Consumer<Map<String, Object>> modifier) {
+    final var exporterCfg = brokerProperties.getExporters().get(id);
+    final var argsCopy = deepCopy(exporterCfg.getArgs());
+    modifier.accept(argsCopy);
+    exporterCfg.setArgs(argsCopy);
+    return this;
+  }
+
+  private Map<String, Object> deepCopy(final Map<String, Object> map) {
+    final Map<String, Object> copy = new HashMap<>();
+    for (final Map.Entry<String, Object> entry : map.entrySet()) {
+      if (entry.getValue() instanceof final Map m) {
+        copy.put(entry.getKey(), deepCopy(m));
+      } else {
+        copy.put(entry.getKey(), entry.getValue());
+      }
+    }
+    return copy;
   }
 
   public TestRestOperateClient newOperateClient() {

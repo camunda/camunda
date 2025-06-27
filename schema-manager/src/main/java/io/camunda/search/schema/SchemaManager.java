@@ -381,6 +381,9 @@ public class SchemaManager {
   }
 
   public boolean isSchemaReadyForUse() {
+    if (!config.schemaManager().isCreateSchema()) {
+      return true;
+    }
     return getMissingIndices(getAllIndexDescriptors()).isEmpty()
         && getMissingIndexTemplates(indexTemplateDescriptors).isEmpty()
         && validateIndices(getAllIndexDescriptors()).isEmpty();
