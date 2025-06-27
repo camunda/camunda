@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
@@ -23,18 +24,31 @@ import org.agrona.DirectBuffer;
 public final class MessageStartEventSubscriptionRecord extends UnifiedRecordValue
     implements MessageStartEventSubscriptionRecordValue {
 
-  private final LongProperty processDefinitionKeyProp =
-      new LongProperty("processDefinitionKey", -1L);
-  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
-  private final StringProperty messageNameProp = new StringProperty("messageName", "");
-  private final StringProperty startEventIdProp = new StringProperty("startEventId", "");
+  // Static StringValue keys to avoid memory waste
+  private static final StringValue PROCESS_DEFINITION_KEY_KEY =
+      new StringValue("processDefinitionKey");
+  private static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
+  private static final StringValue MESSAGE_NAME_KEY = new StringValue("messageName");
+  private static final StringValue START_EVENT_ID_KEY = new StringValue("startEventId");
+  private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
+  private static final StringValue MESSAGE_KEY_KEY = new StringValue("messageKey");
+  private static final StringValue CORRELATION_KEY_KEY = new StringValue("correlationKey");
+  private static final StringValue VARIABLES_KEY = new StringValue("variables");
+  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
 
-  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
-  private final LongProperty messageKeyProp = new LongProperty("messageKey", -1L);
-  private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
-  private final DocumentProperty variablesProp = new DocumentProperty("variables");
+  private final LongProperty processDefinitionKeyProp =
+      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
+  private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
+  private final StringProperty messageNameProp = new StringProperty(MESSAGE_NAME_KEY, "");
+  private final StringProperty startEventIdProp = new StringProperty(START_EVENT_ID_KEY, "");
+
+  private final LongProperty processInstanceKeyProp =
+      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
+  private final LongProperty messageKeyProp = new LongProperty(MESSAGE_KEY_KEY, -1L);
+  private final StringProperty correlationKeyProp = new StringProperty(CORRELATION_KEY_KEY, "");
+  private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
   private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public MessageStartEventSubscriptionRecord() {
     super(9);

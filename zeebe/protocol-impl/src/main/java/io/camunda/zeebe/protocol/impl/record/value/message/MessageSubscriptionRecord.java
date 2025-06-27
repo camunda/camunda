@@ -14,6 +14,7 @@ import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
@@ -24,17 +25,28 @@ import org.agrona.DirectBuffer;
 public final class MessageSubscriptionRecord extends UnifiedRecordValue
     implements MessageSubscriptionRecordValue {
 
-  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey");
-  private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
-  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
-  private final LongProperty messageKeyProp = new LongProperty("messageKey", -1L);
-  private final StringProperty messageNameProp = new StringProperty("messageName", "");
-  private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
-  private final BooleanProperty interruptingProp = new BooleanProperty("interrupting", true);
+  // Static StringValue keys to avoid memory waste
+  private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
+  private static final StringValue ELEMENT_INSTANCE_KEY_KEY = new StringValue("elementInstanceKey");
+  private static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
+  private static final StringValue MESSAGE_KEY_KEY = new StringValue("messageKey");
+  private static final StringValue MESSAGE_NAME_KEY = new StringValue("messageName");
+  private static final StringValue CORRELATION_KEY_KEY = new StringValue("correlationKey");
+  private static final StringValue INTERRUPTING_KEY = new StringValue("interrupting");
+  private static final StringValue VARIABLES_KEY = new StringValue("variables");
+  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
 
-  private final DocumentProperty variablesProp = new DocumentProperty("variables");
+  private final LongProperty processInstanceKeyProp = new LongProperty(PROCESS_INSTANCE_KEY_KEY);
+  private final LongProperty elementInstanceKeyProp = new LongProperty(ELEMENT_INSTANCE_KEY_KEY);
+  private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
+  private final LongProperty messageKeyProp = new LongProperty(MESSAGE_KEY_KEY, -1L);
+  private final StringProperty messageNameProp = new StringProperty(MESSAGE_NAME_KEY, "");
+  private final StringProperty correlationKeyProp = new StringProperty(CORRELATION_KEY_KEY, "");
+  private final BooleanProperty interruptingProp = new BooleanProperty(INTERRUPTING_KEY, true);
+
+  private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
   private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public MessageSubscriptionRecord() {
     super(9);

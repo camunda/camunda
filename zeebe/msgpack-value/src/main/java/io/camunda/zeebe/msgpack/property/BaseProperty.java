@@ -30,10 +30,17 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
   }
 
   public BaseProperty(final String keyString, final T value, final T defaultValue) {
+    this(new StringValue(keyString), value, defaultValue);
+  }
+
+  public BaseProperty(final StringValue keyString, final T value) {
+    this(keyString, value, null);
+  }
+
+  public BaseProperty(final StringValue keyString, final T value, final T defaultValue) {
     Objects.requireNonNull(keyString);
     Objects.requireNonNull(value);
-
-    key = new StringValue(keyString);
+    key = keyString;
     this.value = value;
     this.defaultValue = defaultValue;
   }

@@ -8,11 +8,16 @@
 package io.camunda.zeebe.msgpack.property;
 
 import io.camunda.zeebe.msgpack.value.DeltaEncodedLongArrayValue;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import java.util.Objects;
 
 public final class DeltaEncodedLongArrayProperty extends BaseProperty<DeltaEncodedLongArrayValue> {
   public DeltaEncodedLongArrayProperty(final String keyString) {
     super(keyString, new DeltaEncodedLongArrayValue());
+  }
+
+  public DeltaEncodedLongArrayProperty(final StringValue key) {
+    super(key, new DeltaEncodedLongArrayValue());
   }
 
   public long[] getValues() {

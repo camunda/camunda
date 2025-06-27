@@ -30,12 +30,20 @@ import java.util.stream.StreamSupport;
 })
 public class JobResult extends UnpackedObject implements JobResultValue {
 
-  private final BooleanProperty deniedProp = new BooleanProperty("denied", false);
+  // Static StringValue keys to avoid memory waste
+  private static final StringValue DENIED_KEY = new StringValue("denied");
+  private static final StringValue CORRECTED_ATTRIBUTES_KEY =
+      new StringValue("correctedAttributes");
+  private static final StringValue CORRECTIONS_KEY = new StringValue("corrections");
+  private static final StringValue DENIED_REASON_KEY = new StringValue("deniedReason");
+
+  private final BooleanProperty deniedProp = new BooleanProperty(DENIED_KEY, false);
   private final ArrayProperty<StringValue> correctedAttributesProp =
-      new ArrayProperty<>("correctedAttributes", StringValue::new);
+      new ArrayProperty<>(CORRECTED_ATTRIBUTES_KEY, StringValue::new);
   private final ObjectProperty<JobResultCorrections> correctionsProp =
-      new ObjectProperty<>("corrections", new JobResultCorrections());
-  private final StringProperty deniedReasonProp = new StringProperty("deniedReason", EMPTY_STRING);
+      new ObjectProperty<>(CORRECTIONS_KEY, new JobResultCorrections());
+  private final StringProperty deniedReasonProp =
+      new StringProperty(DENIED_REASON_KEY, EMPTY_STRING);
 
   public JobResult() {
     super(4);
