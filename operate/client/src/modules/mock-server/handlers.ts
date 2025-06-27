@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-<<<<<<< HEAD
 import {
   endpoints,
   type QueryJobsResponseBody,
@@ -17,13 +16,6 @@ import {RequestHandler, rest} from 'msw';
 const mockListenerEndpoint = rest.post(
   endpoints.queryJobs.getUrl(),
   async (_, res, ctx) => {
-=======
-import type {QueryJobsResponseBody} from '@vzeta/camunda-api-zod-schemas';
-import {RequestHandler, rest} from 'msw';
-
-const mockEndpoints = [
-  rest.post('/v2/jobs/search', async (_, res, ctx) => {
->>>>>>> c42ba19d817 (deps: bump @vzeta/camunda-api-zod-schemas)
     const mockResponse: QueryJobsResponseBody = {
       items: [
         {

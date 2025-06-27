@@ -189,9 +189,7 @@ describe('MetadataPopover', () => {
     );
 
     expect(
-      screen.getByText(
-        /Flow Node "Activity_0zqism7" 2251799813699889 Metadata/,
-      ),
+      screen.getByText(/Element "Activity_0zqism7" 2251799813699889 Metadata/),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', {name: /close/i})).toBeInTheDocument();
 
@@ -229,12 +227,12 @@ describe('MetadataPopover', () => {
     await user.click(screen.getByRole('button', {name: /close/i}));
     expect(
       screen.queryByText(
-        /Flow Node "Activity_0zqism7" 2251799813699889 Metadata/,
+        /Element "Activity_0zqism7" 2251799813699889 Metadata/,
       ),
     ).not.toBeInTheDocument();
   });
 
-  it('should render metadata for multi instance flow nodes', async () => {
+  it('should render metadata for multi instance elements', async () => {
     mockFetchFlowNodeMetadata().withSuccess(multiInstancesMetadata);
 
     processInstanceDetailsStore.setProcessInstance(
@@ -253,7 +251,7 @@ describe('MetadataPopover', () => {
     renderPopover();
 
     expect(
-      await screen.findByText(/This Flow Node triggered 10 times/),
+      await screen.findByText(/This Element triggered 10 times/),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
@@ -363,5 +361,103 @@ describe('MetadataPopover', () => {
 
     expect(await screen.findByText(labels.retriesLeft)).toBeInTheDocument();
     expect(screen.getByTestId('retries-left-count')).toHaveTextContent('2');
+  });
+
+  describe('Element Instance', () => {
+    it('should render v2 metadata popover with element instance terminology', async () => {
+      mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+
+      processInstanceDetailsStore.setProcessInstance(
+        createInstance({
+          id: PROCESS_INSTANCE_ID,
+          state: 'ACTIVE',
+        }),
+      );
+      selectFlowNode(
+        {},
+        {
+          flowNodeId: FLOW_NODE_ID,
+        },
+      );
+
+      renderPopover();
+
+      expect(
+        await screen.findByRole('heading', {name: labels.details}),
+      ).toBeInTheDocument();
+
+      expect(screen.getByText(labels.flowNodeInstanceKey)).toBeInTheDocument();
+    });
+
+    it('should handle multiple element instances scenario', async () => {
+      mockFetchFlowNodeMetadata().withSuccess(multiInstancesMetadata);
+
+      processInstanceDetailsStore.setProcessInstance(
+        createInstance({
+          id: '123',
+          state: 'ACTIVE',
+        }),
+      );
+      selectFlowNode(
+        {},
+        {
+          flowNodeId: FLOW_NODE_ID,
+        },
+      );
+
+      renderPopover();
+
+      expect(
+        await screen.findByText(/This Element triggered 10 times/),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          /To view details for any of these, select one Instance in the Instance History./,
+        ),
+      ).toBeInTheDocument();
+    });
+
+    it('should preserve backward compatibility with existing incident data', async () => {
+      mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
+      mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
+
+      processInstanceDetailsStore.setProcessInstance(
+        createInstance({
+          id: PROCESS_INSTANCE_ID,
+          state: 'INCIDENT',
+        }),
+      );
+      incidentsStore.init();
+
+      selectFlowNode({}, {flowNodeId: FLOW_NODE_ID});
+
+      renderPopover();
+
+      expect(await screen.findByText(labels.type)).toBeInTheDocument();
+      expect(screen.getByText(labels.errorMessage)).toBeInTheDocument();
+    });
+
+    it('should preserve call activity functionality', async () => {
+      mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
+
+      processInstanceDetailsStore.setProcessInstance(
+        createInstance({
+          id: PROCESS_INSTANCE_ID,
+          state: 'ACTIVE',
+        }),
+      );
+      selectFlowNode(
+        {},
+        {
+          flowNodeId: CALL_ACTIVITY_FLOW_NODE_ID,
+        },
+      );
+
+      renderPopover();
+
+      expect(
+        await screen.findByRole('heading', {name: labels.details}),
+      ).toBeInTheDocument();
+    });
   });
 });
