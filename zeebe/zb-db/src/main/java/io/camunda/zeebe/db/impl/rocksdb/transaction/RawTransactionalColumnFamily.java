@@ -118,13 +118,12 @@ public class RawTransactionalColumnFamily {
       final Visitor visitor) {
     final var seekTarget = new DbNullKey();
     boolean shouldVisitNext = true;
-
     final var columnFamilyContext = new ColumnFamilyContext(columnFamily.getValue());
     for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
         iterator.isValid() && shouldVisitNext;
         iterator.next()) {
-      final byte[] keyBytes = iterator.key();
-      final byte[] valueBytes = iterator.value();
+      final var keyBytes = iterator.key();
+      final var valueBytes = iterator.value();
 
       if (!startsWith(prefixKey, prefixOffset, prefixLength, keyBytes, 0, keyBytes.length)) {
         break;
@@ -132,6 +131,47 @@ public class RawTransactionalColumnFamily {
       try {
         shouldVisitNext =
             visitor.visit(keyBytes, 0, keyBytes.length, valueBytes, 0, valueBytes.length);
+      } catch (final Exception e) {
+        LOG.error(
+            "Error visiting key {} in column family {}", new String(keyBytes), columnFamily, e);
+        shouldVisitNext = false;
+      }
+    }
+  }
+
+  public static void forEachPreallocated(
+      final RocksIterator iterator,
+      final ZbColumnFamilies columnFamily,
+      final byte[] prefixKey,
+      final int prefixOffset,
+      final int prefixLength,
+      final Visitor visitor) {
+    byte[] keyBytes = new byte[256];
+    var keyLen = 0;
+    byte[] valueBytes = new byte[1024];
+    var valueLen = 0;
+    final var seekTarget = new DbNullKey();
+    boolean shouldVisitNext = true;
+    final var columnFamilyContext = new ColumnFamilyContext(columnFamily.getValue());
+    for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
+        iterator.isValid() && shouldVisitNext;
+        iterator.next()) {
+      keyLen = iterator.key(keyBytes);
+      if (keyLen > keyBytes.length) {
+        keyBytes = new byte[2 * keyLen];
+        iterator.key(keyBytes);
+      }
+      valueLen = iterator.value(valueBytes);
+      if (valueLen > valueBytes.length) {
+        valueBytes = new byte[2 * valueLen];
+        iterator.value(valueBytes);
+      }
+
+      if (!startsWith(prefixKey, prefixOffset, prefixLength, keyBytes, 0, keyLen)) {
+        break;
+      }
+      try {
+        shouldVisitNext = visitor.visit(keyBytes, 0, keyLen, valueBytes, 0, valueLen);
       } catch (final Exception e) {
         LOG.error(
             "Error visiting key {} in column family {}", new String(keyBytes), columnFamily, e);
