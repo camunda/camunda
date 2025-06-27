@@ -47,7 +47,7 @@ public class UnifiedConfigurationHelper {
   public TasklistProperties tasklistProperties(
       final LegacyTasklistProperties legacyTasklistProperties,
       final UnifiedConfiguration unifiedConfiguration) {
-    TasklistProperties patchedTasklistProperties = new TasklistProperties();
+    final TasklistProperties patchedTasklistProperties = new TasklistProperties();
     BeanUtils.copyProperties(legacyTasklistProperties, patchedTasklistProperties);
 
     // TODO: Patch patchedTasklistProperties using unifiedConfiguration
@@ -59,7 +59,7 @@ public class UnifiedConfigurationHelper {
   public OperateProperties operateProperties(
       final LegacyOperateProperties legacyOperateProperties,
       final UnifiedConfiguration unifiedConfiguration) {
-    OperateProperties patchedOperateProperties = new OperateProperties();
+    final OperateProperties patchedOperateProperties = new OperateProperties();
     BeanUtils.copyProperties(legacyOperateProperties, patchedOperateProperties);
 
     // TODO: Patch patchedOperateProperties using unifiedConfiguration
@@ -72,7 +72,7 @@ public class UnifiedConfigurationHelper {
   public BrokerBasedProperties brokerBasedProperties(
       final LegacyBrokerBasedProperties legacyBrokerBasedProperties,
       final UnifiedConfiguration unifiedConfiguration) {
-    BrokerBasedProperties patchedBrokerBasedProperties = new BrokerBasedProperties();
+    final BrokerBasedProperties patchedBrokerBasedProperties = new BrokerBasedProperties();
     BeanUtils.copyProperties(legacyBrokerBasedProperties, patchedBrokerBasedProperties);
 
     // TODO: Patch patchedBrokerBasedProperties using unifiedConfiguration
@@ -99,11 +99,11 @@ public class UnifiedConfigurationHelper {
   /* Other utilities */
 
   private static void putArg(Map<String, Object> args, String keyPath, Object value) {
-    String[] keys = keyPath.split("\\.");
+    final String[] keys = keyPath.split("\\.");
     Map<String, Object> pointer = args;
 
     for (int i = 0; i < keys.length - 1; i++) {
-      String key = keys[i];
+      final String key = keys[i];
 
       // if child doesn't exist, create it
       if (pointer.get(key) == null) {
