@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.identity;
+package io.camunda.migration.identity.client;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
@@ -18,12 +18,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import io.camunda.migration.identity.client.ConsoleClient.Permission;
+import io.camunda.migration.identity.client.ConsoleClient.Role;
 import io.camunda.migration.identity.config.ConsoleProperties;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.config.saas.ConsoleConnectorConfig.TokenInterceptor;
-import io.camunda.migration.identity.console.ConsoleClient;
-import io.camunda.migration.identity.console.ConsoleClient.Permission;
-import io.camunda.migration.identity.console.ConsoleClient.Role;
 import java.text.MessageFormat;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

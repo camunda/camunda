@@ -5,15 +5,16 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.identity;
+package io.camunda.migration.identity.handler.saas;
 
 import static io.camunda.migration.identity.config.saas.StaticEntities.IDENTITY_DECISION_DEFINITION_RESOURCE_TYPE;
 import static io.camunda.migration.identity.config.saas.StaticEntities.IDENTITY_PROCESS_DEFINITION_RESOURCE_TYPE;
 
-import io.camunda.migration.identity.console.ConsoleClient;
-import io.camunda.migration.identity.console.ConsoleClient.Member;
+import io.camunda.migration.identity.client.ConsoleClient;
+import io.camunda.migration.identity.client.ConsoleClient.Member;
+import io.camunda.migration.identity.client.ManagementIdentityClient;
 import io.camunda.migration.identity.dto.Authorization;
-import io.camunda.migration.identity.midentity.ManagementIdentityClient;
+import io.camunda.migration.identity.handler.MigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;

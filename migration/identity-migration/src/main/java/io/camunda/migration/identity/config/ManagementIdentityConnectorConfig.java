@@ -10,7 +10,7 @@ package io.camunda.migration.identity.config;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.identity.sdk.IdentityConfiguration.Type;
-import io.camunda.migration.identity.midentity.ManagementIdentityClient;
+import io.camunda.migration.identity.client.ManagementIdentityClient;
 import java.io.IOException;
 import java.util.Optional;
 import org.apache.commons.lang3.NotImplementedException;
