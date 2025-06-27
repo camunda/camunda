@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -45,6 +46,7 @@ public class CommandRedistributorTest {
   private MutableRoutingState routingState;
   @Mock private DistributionMetrics mockDistributionMetrics;
   @Mock private InterPartitionCommandSender mockCommandSender;
+  @Mock private ReadonlyStreamProcessorContext mockContext;
 
   private CommandRedistributor commandRedistributor;
   private long distributionKey;
@@ -57,23 +59,8 @@ public class CommandRedistributorTest {
     routingState = processingState.getRoutingState();
     routingState.initializeRoutingInfo(2);
 
-    final var fakeProcessingResultBuilder = new FakeProcessingResultBuilder<>();
-    final Writers writers =
-        new Writers(() -> fakeProcessingResultBuilder, mock(EventAppliers.class));
-
-    final RoutingInfo routingInfo =
-        RoutingInfo.dynamic(routingState, new StaticRoutingInfo(Set.of(1, 2), 2));
-
-    final CommandDistributionBehavior behavior =
-        new CommandDistributionBehavior(
-            processingState.getDistributionState(),
-            writers,
-            1,
-            routingInfo,
-            mockCommandSender,
-            mockDistributionMetrics);
-
-    commandRedistributor = new CommandRedistributor(behavior, routingInfo);
+    final var commandDistributionPaused = false;
+    commandRedistributor = getCommandRedistributor(commandDistributionPaused);
 
     recordValue =
         new UserRecord()
@@ -123,6 +110,26 @@ public class CommandRedistributorTest {
     // then
     verify(mockCommandSender, times(1))
         .sendCommand(1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
+  }
+
+  private CommandRedistributor getCommandRedistributor(final boolean commandDistributionPaused) {
+    final var fakeProcessingResultBuilder = new FakeProcessingResultBuilder<>();
+    final Writers writers =
+        new Writers(() -> fakeProcessingResultBuilder, mock(EventAppliers.class));
+
+    final RoutingInfo routingInfo =
+        RoutingInfo.dynamic(routingState, new StaticRoutingInfo(Set.of(1, 2), 2));
+
+    final CommandDistributionBehavior behavior =
+        new CommandDistributionBehavior(
+            processingState.getDistributionState(),
+            writers,
+            1,
+            routingInfo,
+            mockCommandSender,
+            mockDistributionMetrics);
+
+    return new CommandRedistributor(behavior, routingInfo, commandDistributionPaused);
   }
 
   @Nested
@@ -178,6 +185,27 @@ public class CommandRedistributorTest {
       commandRedistributor.runRetryCycle();
       verify(mockCommandSender, times(1))
           .sendCommand(3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
+    }
+  }
+
+  @Nested
+  class PausedCommandRedistribution {
+
+    @BeforeEach
+    void setUp() {
+      // Simulate command distribution paused
+      final var commandDistributionPaused = true;
+      commandRedistributor = getCommandRedistributor(commandDistributionPaused);
+    }
+
+    @Test
+    void shouldNotRetryOnPausedCommandDistribution() {
+      // given
+      // when
+      commandRedistributor.onRecovered(mockContext);
+
+      // then
+      verify(mockContext, never()).getScheduleService();
     }
   }
 }

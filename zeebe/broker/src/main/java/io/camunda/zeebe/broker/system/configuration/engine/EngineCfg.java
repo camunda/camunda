@@ -19,6 +19,7 @@ public final class EngineCfg implements ConfigurationEntry {
   private ValidatorsCfg validators = new ValidatorsCfg();
   private BatchOperationCfg batchOperations = new BatchOperationCfg();
   private UsageMetricsCfg usageMetrics = new UsageMetricsCfg();
+  private DistributionCfg distribution = new DistributionCfg();
   private int maxProcessDepth = EngineConfiguration.DEFAULT_MAX_PROCESS_DEPTH;
 
   @Override
@@ -28,6 +29,7 @@ public final class EngineCfg implements ConfigurationEntry {
     jobs.init(globalConfig, brokerBase);
     batchOperations.init(globalConfig, brokerBase);
     validators.init(globalConfig, brokerBase);
+    distribution.init(globalConfig, brokerBase);
   }
 
   public MessagesCfg getMessages() {
@@ -78,6 +80,14 @@ public final class EngineCfg implements ConfigurationEntry {
     this.usageMetrics = usageMetrics;
   }
 
+  public DistributionCfg getDistribution() {
+    return distribution;
+  }
+
+  public void setDistribution(final DistributionCfg distribution) {
+    this.distribution = distribution;
+  }
+
   public int getMaxProcessDepth() {
     return maxProcessDepth;
   }
@@ -99,6 +109,10 @@ public final class EngineCfg implements ConfigurationEntry {
         + validators
         + ", batchOperations="
         + batchOperations
+        + ", usageMetrics="
+        + usageMetrics
+        + ", distribution="
+        + distribution
         + ", maxProcessDepth="
         + maxProcessDepth
         + '}';
@@ -121,6 +135,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setBatchOperationQueryPageSize(batchOperations.getQueryPageSize())
         .setBatchOperationQueryInClauseSize(batchOperations.getQueryInClauseSize())
         .setUsageMetricsExportInterval(usageMetrics.getExportInterval())
+        .setCommandDistributionPaused(distribution.isPauseCommandDistribution())
         .setMaxProcessDepth(getMaxProcessDepth());
   }
 }

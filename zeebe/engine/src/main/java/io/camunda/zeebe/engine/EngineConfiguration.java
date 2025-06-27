@@ -40,6 +40,7 @@ public final class EngineConfiguration {
   public static final int DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE = 10000;
   // Oracle can only have 1000 elements in `IN` clause
   public static final int DEFAULT_BATCH_OPERATION_QUERY_IN_CLAUSE_SIZE = 1000;
+  public static final boolean DEFAULT_COMMAND_DISTRIBUTION_PAUSED = false;
 
   private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
   private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
@@ -64,6 +65,8 @@ public final class EngineConfiguration {
   private int batchOperationQueryInClauseSize = DEFAULT_BATCH_OPERATION_QUERY_IN_CLAUSE_SIZE;
 
   private Duration usageMetricsExportInterval = DEFAULT_USAGE_METRICS_EXPORT_INTERVAL;
+
+  private boolean commandDistributionPaused = DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -222,6 +225,15 @@ public final class EngineConfiguration {
   public EngineConfiguration setUsageMetricsExportInterval(
       final Duration usageMetricsExportInterval) {
     this.usageMetricsExportInterval = usageMetricsExportInterval;
+    return this;
+  }
+
+  public boolean isCommandDistributionPaused() {
+    return commandDistributionPaused;
+  }
+
+  public EngineConfiguration setCommandDistributionPaused(final boolean commandDistributionPaused) {
+    this.commandDistributionPaused = commandDistributionPaused;
     return this;
   }
 }
