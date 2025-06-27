@@ -12,26 +12,43 @@ import static io.camunda.util.CollectionUtil.collectValues;
 
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 public record JobFilter(
+    List<Operation<OffsetDateTime>> deadlineOperations,
+    List<Operation<String>> deniedReasonOperations,
+    List<Operation<Long>> elementInstanceKeyOperations,
+    List<Operation<String>> elementIdOperations,
+    List<Operation<OffsetDateTime>> endTimeOperations,
+    List<Operation<String>> errorCodeOperations,
+    List<Operation<String>> errorMessageOperations,
+    Boolean hasFailedWithRetriesLeft,
+    Boolean isDenied,
     List<Operation<Long>> jobKeyOperations,
-    List<Operation<String>> typeOperations,
-    List<Operation<String>> workerOperations,
-    List<Operation<String>> stateOperations,
     List<Operation<String>> kindOperations,
     List<Operation<String>> listenerEventTypeOperations,
-    List<Operation<String>> processDefinitionIdOperations,
     List<Operation<Long>> processDefinitionKeyOperations,
+    List<Operation<String>> processDefinitionIdOperations,
     List<Operation<Long>> processInstanceKeyOperations,
-    List<Operation<String>> elementIdOperations,
-    List<Operation<Long>> elementInstanceKeyOperations,
-    List<Operation<String>> tenantIdOperations)
+    List<Operation<Integer>> retriesOperations,
+    List<Operation<String>> stateOperations,
+    List<Operation<String>> tenantIdOperations,
+    List<Operation<String>> typeOperations,
+    List<Operation<String>> workerOperations)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<JobFilter> {
+    private List<Operation<OffsetDateTime>> deadlineOperations;
+    private List<Operation<String>> deniedReasonOperations;
+    private List<Operation<OffsetDateTime>> endTimeOperations;
+    private List<Operation<String>> errorCodeOperations;
+    private List<Operation<String>> errorMessageOperations;
+    private Boolean hasFailedWithRetriesLeft;
+    private Boolean isDenied;
+    private List<Operation<Integer>> retriesOperations;
     private List<Operation<Long>> jobKeyOperations;
     private List<Operation<String>> kindOperations;
     private List<Operation<String>> listenerEventTypeOperations;
@@ -44,6 +61,106 @@ public record JobFilter(
     private List<Operation<Long>> processInstanceKeyOperations;
     private List<Operation<String>> elementIdOperation;
     private List<Operation<Long>> elementInstanceKeyOperations;
+
+    public Builder deadlineOperations(final List<Operation<OffsetDateTime>> operations) {
+      deadlineOperations = addValuesToList(deadlineOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder deadlineOperations(
+        final Operation<OffsetDateTime> operation, final Operation<OffsetDateTime>... operations) {
+      return deadlineOperations(collectValues(operation, operations));
+    }
+
+    public Builder deadlines(final OffsetDateTime value, final OffsetDateTime... values) {
+      return deadlineOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder deniedReasonOperations(final List<Operation<String>> operations) {
+      deniedReasonOperations = addValuesToList(deniedReasonOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder deniedReasonOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return deniedReasonOperations(collectValues(operation, operations));
+    }
+
+    public Builder deniedReasons(final String value, final String... values) {
+      return deniedReasonOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder endTimeOperations(final List<Operation<OffsetDateTime>> operations) {
+      endTimeOperations = addValuesToList(endTimeOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder endTimeOperations(
+        final Operation<OffsetDateTime> operation, final Operation<OffsetDateTime>... operations) {
+      return endTimeOperations(collectValues(operation, operations));
+    }
+
+    public Builder endTimes(final OffsetDateTime value, final OffsetDateTime... values) {
+      return endTimeOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder errorCodeOperations(final List<Operation<String>> operations) {
+      errorCodeOperations = addValuesToList(errorCodeOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder errorCodeOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return errorCodeOperations(collectValues(operation, operations));
+    }
+
+    public Builder errorCodes(final String value, final String... values) {
+      return errorCodeOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder errorMessageOperations(final List<Operation<String>> operations) {
+      errorMessageOperations = addValuesToList(errorMessageOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder errorMessageOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return errorMessageOperations(collectValues(operation, operations));
+    }
+
+    public Builder errorMessages(final String value, final String... values) {
+      return errorMessageOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder hasFailedWithRetriesLeft(final Boolean hasFailedWithRetriesLeft) {
+      this.hasFailedWithRetriesLeft = hasFailedWithRetriesLeft;
+      return this;
+    }
+
+    public Builder isDenied(final Boolean isDenied) {
+      this.isDenied = isDenied;
+      return this;
+    }
+
+    public Builder retriesOperations(final List<Operation<Integer>> operations) {
+      retriesOperations = addValuesToList(retriesOperations, operations);
+      return this;
+    }
+
+    @SafeVarargs
+    public final Builder retriesOperations(
+        final Operation<Integer> operation, final Operation<Integer>... operations) {
+      return retriesOperations(collectValues(operation, operations));
+    }
+
+    public Builder retries(final Integer value, final Integer... values) {
+      return retriesOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
 
     public Builder jobKeyOperations(final List<Operation<Long>> operations) {
       jobKeyOperations = addValuesToList(jobKeyOperations, operations);
@@ -228,18 +345,26 @@ public record JobFilter(
     @Override
     public JobFilter build() {
       return new JobFilter(
+          Objects.requireNonNullElse(deadlineOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(deniedReasonOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(elementInstanceKeyOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(elementIdOperation, Collections.emptyList()),
+          Objects.requireNonNullElse(endTimeOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(errorCodeOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(errorMessageOperations, Collections.emptyList()),
+          hasFailedWithRetriesLeft,
+          isDenied,
           Objects.requireNonNullElse(jobKeyOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(typeOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(workerOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(stateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(kindOperations, Collections.emptyList()),
           Objects.requireNonNullElse(listenerEventTypeOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(processDefinitionIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeyOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(processDefinitionIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeyOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(elementIdOperation, Collections.emptyList()),
-          Objects.requireNonNullElse(elementInstanceKeyOperations, Collections.emptyList()),
-          Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()));
+          Objects.requireNonNullElse(retriesOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(stateOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(typeOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(workerOperations, Collections.emptyList()));
     }
   }
 }

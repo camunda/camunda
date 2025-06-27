@@ -18,7 +18,7 @@ import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
-import io.camunda.zeebe.gateway.protocol.rest.JobSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.JobSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.JobSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
@@ -91,7 +91,7 @@ public class JobController {
 
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<JobSearchQueryResult> searchJobs(
-      @RequestBody(required = false) final JobSearchQueryRequest request) {
+      @RequestBody(required = false) final JobSearchQuery request) {
     return SearchQueryRequestMapper.toJobQuery(request)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }

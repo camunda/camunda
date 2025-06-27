@@ -12,7 +12,6 @@ import static io.camunda.zeebe.gateway.rest.util.AdvancedSearchFilterUtil.mapToO
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.*;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateDate;
-import static io.camunda.zeebe.protocol.impl.record.value.job.JobRecord.RETRIES;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
@@ -270,7 +269,7 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::processInstanceSearchQuery);
   }
 
-  public static Either<ProblemDetail, JobQuery> toJobQuery(final JobSearchQueryRequest request) {
+  public static Either<ProblemDetail, JobQuery> toJobQuery(final JobSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.jobSearchQuery().build());
     }
@@ -325,6 +324,26 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
+      ofNullable(filter.getDeadline())
+          .map(mapToOperations(OffsetDateTime.class))
+          .ifPresent(builder::deadlineOperations);
+      ofNullable(filter.getDeniedReason())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::deniedReasonOperations);
+      ofNullable(filter.getIsDenied()).ifPresent(builder::isDenied);
+      ofNullable(filter.getEndTime())
+          .map(mapToOperations(OffsetDateTime.class))
+          .ifPresent(builder::endTimeOperations);
+      ofNullable(filter.getErrorCode())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::errorCodeOperations);
+      ofNullable(filter.getErrorMessage())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::errorMessageOperations);
+      ofNullable(filter.getHasFailedWithRetriesLeft()).ifPresent(builder::hasFailedWithRetriesLeft);
+      ofNullable(filter.getRetries())
+          .map(mapToOperations(Integer.class))
+          .ifPresent(builder::retriesOperations);
     }
 
     return builder.build();

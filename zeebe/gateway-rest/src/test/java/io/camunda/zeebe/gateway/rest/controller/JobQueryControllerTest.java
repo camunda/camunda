@@ -142,19 +142,26 @@ public class JobQueryControllerTest extends RestControllerTest {
         """
       {
       "filter": {
+        "deadline": "2025-06-05T09:05:00.000Z",
+        "deniedReason": "test denied reason",
+        "elementId": "elementId",
+        "elementInstanceKey": 4,
+        "endTime": "2025-06-05T10:05:00.000Z",
+        "errorCode": "123",
+        "errorMessage": "test error message",
+        "hasFailedWithRetriesLeft": false,
+        "isDenied": true,
         "jobKey": 1,
-        "type": "testJob",
-        "worker": "testWorker",
-        "state": "COMPLETED",
         "kind": "TASK_LISTENER",
         "listenerEventType": "COMPLETING",
         "processDefinitionId": "processDefinitionId",
         "processDefinitionKey": 2,
         "processInstanceKey": 3,
-        "elementId": "elementId",
-        "elementInstanceKey": 4,
-        "tenantId": "<default>"
-            }
+        "retries": 3,
+        "state": "COMPLETED",
+        "tenantId": "<default>",
+        "type": "testJob",
+        "worker": "testWorker"
           }
         }
     """;
@@ -179,18 +186,26 @@ public class JobQueryControllerTest extends RestControllerTest {
             new JobQuery.Builder()
                 .filter(
                     new JobFilter.Builder()
+                        .deniedReasons("test denied reason")
+                        .deadlines(OffsetDateTime.parse("2025-06-05T09:05:00.000Z"))
+                        .elementIds("elementId")
+                        .elementInstanceKeys(4L)
+                        .endTimes(OffsetDateTime.parse("2025-06-05T10:05:00.000Z"))
+                        .errorCodes("123")
+                        .errorMessages("test error message")
+                        .hasFailedWithRetriesLeft(false)
+                        .isDenied(true)
                         .jobKeys(1L)
-                        .types("testJob")
-                        .workers("testWorker")
-                        .states(JobEntity.JobState.COMPLETED.name())
                         .kinds(JobEntity.JobKind.TASK_LISTENER.name())
                         .listenerEventTypes(JobEntity.ListenerEventType.COMPLETING.name())
                         .processDefinitionIds("processDefinitionId")
                         .processDefinitionKeys(2L)
                         .processInstanceKeys(3L)
-                        .elementIds("elementId")
-                        .elementInstanceKeys(4L)
+                        .retries(3)
+                        .states(JobEntity.JobState.COMPLETED.name())
                         .tenantIds("<default>")
+                        .types("testJob")
+                        .workers("testWorker")
                         .build())
                 .build());
   }
