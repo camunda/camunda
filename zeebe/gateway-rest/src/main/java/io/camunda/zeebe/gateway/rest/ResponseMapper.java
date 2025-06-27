@@ -13,6 +13,7 @@ import static java.time.temporal.ChronoField.MINUTE_OF_HOUR;
 import static java.time.temporal.ChronoField.NANO_OF_SECOND;
 import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentError;
 import io.camunda.document.api.DocumentError.DocumentAlreadyExists;
 import io.camunda.document.api.DocumentError.DocumentNotFound;
@@ -59,9 +60,11 @@ import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateResult;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateResult;
 import io.camunda.zeebe.gateway.protocol.rest.UserCreateResult;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskProperties;
 import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
@@ -84,6 +87,7 @@ import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.EvaluatedInputValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedOutputValue;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.util.Either;
@@ -102,8 +106,11 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.CollectionUtils;
 
 public final class ResponseMapper {
+
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   private static final Logger LOG = LoggerFactory.getLogger(ResponseMapper.class);
 
@@ -187,7 +194,60 @@ public final class ResponseMapper {
         .deadline(job.getDeadline())
         .variables(job.getVariables())
         .customHeaders(job.getCustomHeadersObjectMap())
+        .userTask(toUserTaskProperties(job))
         .tenantId(job.getTenantId());
+  }
+
+  private static UserTaskProperties toUserTaskProperties(final JobRecord job) {
+    if (job.getJobKind() != JobKind.TASK_LISTENER
+        || CollectionUtils.isEmpty(job.getCustomHeaders())) {
+      return null;
+    }
+
+    final var headers = job.getCustomHeaders();
+    final var props = new UserTaskProperties();
+
+    props.setAction(headers.get(Protocol.USER_TASK_ACTION_HEADER_NAME));
+    props.setAssignee(headers.get(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME));
+    props.setCandidateGroups(
+        mapStringToList(headers.get(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME)));
+    props.setCandidateUsers(
+        mapStringToList(headers.get(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME)));
+    props.setChangedAttributes(
+        mapStringToList(headers.get(Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME)));
+    props.setDueDate(headers.get(Protocol.USER_TASK_DUE_DATE_HEADER_NAME));
+    props.setFollowUpDate(headers.get(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME));
+    props.setFormKey(headers.get(Protocol.USER_TASK_FORM_KEY_HEADER_NAME));
+    props.setPriority(toInteger(headers.get(Protocol.USER_TASK_PRIORITY_HEADER_NAME)));
+    props.setUserTaskKey(headers.get(Protocol.USER_TASK_KEY_HEADER_NAME));
+
+    return props;
+  }
+
+  public static List<String> mapStringToList(final String input) {
+    if (input == null || input.isEmpty()) {
+      return List.of();
+    }
+
+    try {
+      return OBJECT_MAPPER.readValue(
+          input, OBJECT_MAPPER.getTypeFactory().constructCollectionType(List.class, String.class));
+    } catch (final Exception e) {
+      LOG.warn("Failed to map string to list: {}", input, e);
+      return List.of();
+    }
+  }
+
+  public static Integer toInteger(final String value) {
+    if (value == null || value.isEmpty()) {
+      return null;
+    }
+    try {
+      return Integer.parseInt(value);
+    } catch (final NumberFormatException e) {
+      LOG.warn("Failed to parse integer from value: {}", value, e);
+      return null;
+    }
   }
 
   public static ResponseEntity<Object> toMessageCorrelationResponse(
