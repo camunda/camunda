@@ -332,7 +332,11 @@ jobs:
           name: ${{ inputs.releaseVersion }}
           artifacts: "release-artifacts/*"
           artifactErrorsFailBuild: true
+<<<<<<< HEAD
           draft: ${{ steps.gen-changelog.outputs.isDraftRelease }}
+=======
+          draft: false
+>>>>>>> 37b637ca (feat: Use inputs.isLatest for marking release as latest in camunda-platform-release.yml (#34483))
           makeLatest: ${{ inputs.isLatest }}
           body: ${{ steps.gen-changelog.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
