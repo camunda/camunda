@@ -6355,14 +6355,14 @@ components:
           type: string
           description: The parent element instance key.
     ProcessInstanceStateEnum:
-      description: The state, one of ACTIVE, COMPLETED, TERMINATED, SUSPENDED.
+      description: Process instance states
       enum:
         - ACTIVE
         - COMPLETED
         - TERMINATED
         - SUSPENDED
     ElementInstanceStateEnum:
-      description: Element states, one of ACTIVE, COMPLETED, TERMINATED, SUSPENDED.
+      description: Element states
       enum:
         - ACTIVE
         - COMPLETED
