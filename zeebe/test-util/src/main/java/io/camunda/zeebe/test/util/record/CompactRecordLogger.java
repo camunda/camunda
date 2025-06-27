@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessActivityActivationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
+import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
@@ -57,6 +58,7 @@ import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
@@ -74,6 +76,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -92,7 +95,6 @@ public class CompactRecordLogger {
           entry("COMPLETE_TASK_LISTENER", "COMP_TL"),
           entry("DENY_TASK_LISTENER", "DENY_TL"),
           entry("TASK_LISTENER", "TL"),
-          entry("EXECUTION_LISTENER", "EL"),
           entry("ASSIGNMENT_DENIED", "ASGN_DENIED"),
           entry("COMPLETION_DENIED", "COMP_DENIED"),
           entry("UPDATE_DENIED", "UPDT_DENIED"),
@@ -122,6 +124,7 @@ public class CompactRecordLogger {
           entry("ROLE", "RL"),
           entry("GROUP", "GR"),
           entry("MAPPING", "MAP"),
+          entry("AUTHORIZATION", "AUTH"),
           entry("ASYNC_REQUEST", "ASYNC"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
@@ -131,6 +134,7 @@ public class CompactRecordLogger {
           entry(RecordType.COMMAND_REJECTION, 'R'));
 
   private final Map<ValueType, Function<Record<?>, String>> valueLoggers = new HashMap<>();
+
   private final int keyDigits;
   private final int valueTypeChars;
   private final int intentChars;
@@ -143,6 +147,8 @@ public class CompactRecordLogger {
   private ObjectMapper objectMapper;
 
   {
+    valueLoggers.put(ValueType.NULL_VAL, this::summarizeMiscValue);
+    valueLoggers.put(ValueType.SBE_UNKNOWN, this::summarizeMiscValue);
     valueLoggers.put(ValueType.DEPLOYMENT, this::summarizeDeployment);
     valueLoggers.put(ValueType.DEPLOYMENT_DISTRIBUTION, this::summarizeDeploymentDistribution);
     valueLoggers.put(ValueType.PROCESS, this::summarizeProcess);
@@ -181,6 +187,8 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.GROUP, this::summarizeGroup);
     valueLoggers.put(ValueType.MAPPING, this::summarizeMapping);
     valueLoggers.put(ValueType.ASYNC_REQUEST, this::summarizeAsyncRequest);
+    valueLoggers.put(ValueType.USER, this::summarizeUser);
+    valueLoggers.put(ValueType.AUTHORIZATION, this::summarizeAuthorization);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -188,7 +196,7 @@ public class CompactRecordLogger {
     multiPartition = isMultiPartition();
     hasTimerEvents = records.stream().anyMatch(r -> r.getValueType() == ValueType.TIMER);
 
-    final var highestPosition = this.records.getLast().getPosition();
+    final var highestPosition = this.records.isEmpty() ? 0 : this.records.getLast().getPosition();
 
     int digits = 0;
     long num = highestPosition;
@@ -217,6 +225,10 @@ public class CompactRecordLogger {
             .mapToInt(String::length)
             .max()
             .orElse(0);
+  }
+
+  public Set<ValueType> getSupportedValueTypes() {
+    return valueLoggers.keySet();
   }
 
   public void log() {
@@ -1084,6 +1096,42 @@ public class CompactRecordLogger {
         .append("]");
 
     return builder.toString();
+  }
+
+  private String summarizeUser(final Record<?> record) {
+    final var value = (UserRecordValue) record.getValue();
+
+    final StringBuilder builder = new StringBuilder();
+    if (record.getKey() != value.getUserKey()) {
+      builder.append(shortenKey(value.getUserKey())).append(" ");
+    }
+
+    builder
+        .append("u=")
+        .append(formatId(value.getUsername()))
+        .append(" @=")
+        .append(value.getEmail())
+        .append(" n=")
+        .append(value.getName());
+
+    return builder.toString();
+  }
+
+  private String summarizeAuthorization(final Record<?> record) {
+    // AuthorizationRecord
+    // {"ownerType":"USER","ownerId":"f4a21434-464f-439d-b2f5-9bc9723e9cab","resourceId":"f4a21434-464f-439d-b2f5-9bc9723e9cab","authorizationKey":2251799813685294,"resourceType":"USER","permissionTypes":["READ","UPDATE"]}
+
+    // C AUTHORIZATION CREATE  #91->#89 K45 o="b3c47ad..0e8e896" (USER) r="b3c47ad..0e8e896" (USER)
+    // p=[READ, UPDATE]
+    final var value = (AuthorizationRecordValue) record.getValue();
+
+    return "%s %s can %s %s %s"
+        .formatted(
+            value.getOwnerType(),
+            formatId(value.getOwnerId()),
+            value.getPermissionTypes(),
+            value.getResourceType(),
+            formatId(value.getResourceId()));
   }
 
   private String summarizeAsyncRequest(final Record<?> record) {
