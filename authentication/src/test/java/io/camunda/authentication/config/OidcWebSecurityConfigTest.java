@@ -12,17 +12,20 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 
 import io.camunda.authentication.CamundaJwtAuthenticationConverter;
+import io.camunda.authentication.config.controllers.OidcMockMvcTestHelper;
 import io.camunda.authentication.config.controllers.TestApiController;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
@@ -72,6 +75,8 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
     })
 public class OidcWebSecurityConfigTest extends AbstractWebSecurityConfigTest {
 
+  @Autowired private OAuth2AuthorizedClientRepository authorizedClientRepository;
+
   @ParameterizedTest
   @MethodSource("getAllDummyEndpoints")
   public void shouldAddSecurityHeadersOnAllApiAndWebappRequests(final String endpoint) {
@@ -81,7 +86,7 @@ public class OidcWebSecurityConfigTest extends AbstractWebSecurityConfigTest {
         mockMvcTester
             .get()
             .uri("https://localhost" + endpoint)
-            .with(SecurityMockMvcRequestPostProcessors.oidcLogin())
+            .with(OidcMockMvcTestHelper.oidcLogin(authorizedClientRepository))
             .exchange();
 
     // then
