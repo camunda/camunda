@@ -35,6 +35,7 @@ import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.service.TaskService;
 import io.camunda.tasklist.webapp.service.VariableService;
+import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -450,7 +451,8 @@ public class TaskController extends ApiErrorController {
           final String taskId,
       @RequestBody final SaveVariablesRequest saveVariablesRequest) {
     final var taskSupplier = getTaskSupplier(taskId);
-    if (permissionServices.hasPermissionToUpdateUserTask(TaskDTO.toTaskEntity(taskSupplier.get()))
+    if (permissionServices.hasPermissionToUpdateUserTask(
+            new TaskEntity().setBpmnProcessId(taskSupplier.get().getBpmnProcessId()))
         && (!isUserRestrictionEnabled() || hasAccessToTask(taskSupplier))) {
       variableService.persistDraftTaskVariables(taskId, saveVariablesRequest.getVariables());
     } else {

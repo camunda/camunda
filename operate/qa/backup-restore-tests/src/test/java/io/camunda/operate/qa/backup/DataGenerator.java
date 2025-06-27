@@ -78,6 +78,8 @@ public class DataGenerator {
 
   @Autowired private OperateAPICaller operateAPICaller;
 
+  private String indexPrefix;
+
   private void init(final BackupRestoreTestContext testContext) {
     camundaClient =
         CamundaClient.newClientBuilder()
@@ -86,6 +88,7 @@ public class DataGenerator {
             .build();
     esClient = testContext.getEsClient();
     operateRestClient = testContext.getOperateRestClient();
+    indexPrefix = testContext.getZeebeIndexPrefix();
   }
 
   public void createData(final BackupRestoreTestContext testContext) {
@@ -119,7 +122,9 @@ public class DataGenerator {
     waitTillSomeInstancesAreArchived();
 
     try {
-      esClient.indices().refresh(new RefreshRequest("operate-*"), RequestOptions.DEFAULT);
+      esClient
+          .indices()
+          .refresh(new RefreshRequest(indexPrefix + "-operate-*"), RequestOptions.DEFAULT);
     } catch (final IOException e) {
       LOGGER.error("Error in refreshing indices", e);
     }
@@ -181,7 +186,8 @@ public class DataGenerator {
     try {
       final SearchResponse search =
           esClient.search(
-              new SearchRequest("operate-*_" + ARCHIVER_DATE_TIME_FORMATTER.format(Instant.now())),
+              new SearchRequest(
+                  indexPrefix + "-operate-*_" + ARCHIVER_DATE_TIME_FORMATTER.format(Instant.now())),
               RequestOptions.DEFAULT);
       return search.getHits().getTotalHits().value > 0;
     } catch (final IOException e) {
@@ -272,7 +278,7 @@ public class DataGenerator {
   }
 
   private String getAliasFor(final String index) {
-    return String.format("operate-%s-*_alias", index);
+    return String.format(indexPrefix + "-operate-%s-*_alias", index);
   }
 
   public void assertData() {

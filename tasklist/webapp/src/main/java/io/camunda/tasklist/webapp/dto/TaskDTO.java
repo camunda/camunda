@@ -10,13 +10,10 @@ package io.camunda.tasklist.webapp.dto;
 import static io.camunda.tasklist.util.CollectionUtil.toArrayOfStrings;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.util.DateUtil;
 import io.camunda.tasklist.views.TaskSearchView;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.usertask.TaskState;
-import java.text.ParseException;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Objects;
@@ -358,48 +355,6 @@ public final class TaskDTO {
         .setImplementation(taskSearchView.getImplementation())
         .setPriority(taskSearchView.getPriority() == null ? 50 : taskSearchView.getPriority())
         .setExternalFormReference(taskSearchView.getExternalFormReference());
-  }
-
-  public static TaskEntity toTaskEntity(final TaskDTO taskDTO) {
-
-    final TaskEntity taskEntity;
-    try {
-      taskEntity =
-          new TaskEntity()
-              .setCreationTime(
-                  DateUtil.toOffsetDateTime(
-                      DateUtil.SIMPLE_DATE_FORMAT.parse(taskDTO.getCreationTime()).toInstant()))
-              .setKey(Long.parseLong(taskDTO.getId()))
-              .setProcessInstanceId(taskDTO.getProcessInstanceId())
-              .setState(taskDTO.getTaskState())
-              .setAssignee(taskDTO.getAssignee())
-              .setBpmnProcessId(taskDTO.getBpmnProcessId())
-              .setProcessDefinitionId(taskDTO.getProcessDefinitionId())
-              .setFlowNodeBpmnId(taskDTO.getFlowNodeBpmnId())
-              .setFlowNodeInstanceId(taskDTO.getFlowNodeInstanceId())
-              .setFormKey(taskDTO.getFormKey())
-              .setFormId(taskDTO.getFormId())
-              .setFormVersion(taskDTO.getFormVersion())
-              .setIsFormEmbedded(taskDTO.getIsFormEmbedded())
-              .setTenantId(taskDTO.getTenantId())
-              .setFollowUpDate(taskDTO.getFollowUpDate())
-              .setDueDate(taskDTO.getDueDate())
-              .setCandidateGroups(taskDTO.getCandidateGroups())
-              .setCandidateUsers(taskDTO.getCandidateUsers())
-              .setImplementation(taskDTO.getImplementation())
-              .setPriority(taskDTO.getPriority())
-              .setExternalFormReference(taskDTO.getExternalFormReference());
-
-      if (taskDTO.getCompletionTime() != null) {
-        taskEntity.setCompletionTime(
-            DateUtil.toOffsetDateTime(
-                DateUtil.SIMPLE_DATE_FORMAT.parse(taskDTO.getCompletionTime()).toInstant()));
-      }
-    } catch (final ParseException e) {
-      throw new TasklistRuntimeException(e);
-    }
-
-    return taskEntity;
   }
 
   @Override

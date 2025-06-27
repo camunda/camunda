@@ -302,6 +302,7 @@ public class TestContainerUtil {
             .withNetwork(getNetwork())
             .withEnv("xpack.security.enabled", "false")
             .withEnv("path.repo", "~/")
+            .withEnv("action.destructive_requires_name", "false")
             .withNetworkAliases(ELS_NETWORK_ALIAS)
             .withExposedPorts(ELS_PORT);
     elsContainer.setWaitStrategy(
@@ -396,7 +397,8 @@ public class TestContainerUtil {
         .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", getElasticURL(testContext))
         .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", getElasticURL(testContext))
         .withEnv("CAMUNDA_DATABASE_URL", getElasticURL(testContext))
-        .withEnv("SPRING_PROFILES_ACTIVE", "dev");
+        .withEnv("SPRING_PROFILES_ACTIVE", "dev")
+        .withEnv("CAMUNDA_OPERATE_ZEEBE_COMPATIBILITY_ENABLED", "true");
     final Map<String, String> customEnvs = testContext.getOperateContainerEnvs();
     customEnvs.forEach(operateContainer::withEnv);
 
@@ -568,6 +570,8 @@ public class TestContainerUtil {
             "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL", getElasticURL(testContext))
         .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_DELAY", "1")
         .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE", "1")
+        .withEnv(
+            "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_HISTORY_WAITPERIODBEFOREARCHIVING", "1s")
         .withEnv("CAMUNDA_DATABASE_TYPE", testContext.getConnectionType())
         .withEnv("CAMUNDA_DATABASE_URL", getElasticURL(testContext));
     if (testContext.getZeebeIndexPrefix() != null) {
