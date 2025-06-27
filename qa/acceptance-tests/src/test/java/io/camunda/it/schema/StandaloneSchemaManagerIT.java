@@ -79,6 +79,7 @@ final class StandaloneSchemaManagerIT {
   final TestCamundaApplication camunda =
       new TestCamundaApplication()
           .withAdditionalProfile(Profile.CONSOLIDATED_AUTH)
+          .withUnauthenticatedAccess()
           .withProperty("camunda.database.username", APP_USER)
           .withProperty("camunda.database.password", APP_PASSWORD)
           .withProperty(CREATE_SCHEMA_PROPERTY, "false")

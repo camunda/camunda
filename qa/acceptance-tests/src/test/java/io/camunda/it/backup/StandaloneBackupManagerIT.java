@@ -90,6 +90,7 @@ final class StandaloneBackupManagerIT {
       new TestCamundaApplication()
           .withAdditionalProfile(Profile.CONSOLIDATED_AUTH)
           .withCreateSchema(false)
+          .withUnauthenticatedAccess()
           .withProperty("camunda.database.username", APP_USER)
           .withProperty("camunda.database.password", APP_PASSWORD)
           .withProperty("camunda.operate.elasticsearch.username", APP_USER)

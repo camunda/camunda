@@ -517,7 +517,8 @@ public class TestContainerUtil {
           .withEnv("ZEEBE_CLOCK_CONTROLLED", "true")
           .withEnv("ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK", "0.99")
           .withEnv("ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK", "0.98")
-          .withEnv("ZEEBE_BROKER_DATA_SNAPSHOTPERIOD", "1m");
+          .withEnv("ZEEBE_BROKER_DATA_SNAPSHOTPERIOD", "1m")
+          .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true");
 
       if (testContext.getPartitionCount() != null) {
         broker.withEnv(

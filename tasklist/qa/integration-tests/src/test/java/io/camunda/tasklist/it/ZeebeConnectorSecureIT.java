@@ -75,7 +75,9 @@ public class ZeebeConnectorSecureIT {
                     "ZEEBE_BROKER_GATEWAY_SECURITY_ENABLED",
                     "true",
                     CREATE_SCHEMA_ENV_VAR,
-                    "false"))
+                    "false",
+                    "CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI",
+                    "true"))
             // Can't use connection wait strategy because of TLS
             .waitingFor(
                 new LogMessageWaitStrategy()
