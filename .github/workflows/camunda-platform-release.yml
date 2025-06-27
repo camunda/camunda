@@ -311,6 +311,10 @@ jobs:
 #              exit 1
 #            fi
 #          done
+      - name: Produce artifacts
+        id: artifacts
+        run: |
+          echo "test" => "release-artifacts/test.txt"
       - name: Determine if Pre-Release
         id: pre-release
         run: |
