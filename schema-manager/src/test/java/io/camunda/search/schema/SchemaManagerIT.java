@@ -976,16 +976,20 @@ public class SchemaManagerIT {
       final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws IOException {
     // given
+    // in Opensearch, "dynamic" field is stored String, while in Elasticsearch it is saved as
+    // boolean this gives different results in diff comparison :(
+    final var mappingsFileNamePrefix = config.connect().getTypeEnum().isOpenSearch() ? "/os" : "";
+    final String indexPattern = "test_*";
     final var indexTemplate =
         mockIndexTemplate(
             "index_name",
-            "test*",
+            indexPattern,
             "template_alias",
             Collections.emptyList(),
             CONFIG_PREFIX + "-template_name",
-            "/mappings-dynamic-property.json");
+            mappingsFileNamePrefix + "/mappings-dynamic-property.json");
 
-    when(indexTemplate.getFullQualifiedName()).thenReturn(CONFIG_PREFIX + "-qualified_name");
+    when(indexTemplate.getFullQualifiedName()).thenReturn(indexPattern.replace("*", ""));
 
     final var schemaManager =
         new SchemaManager(
@@ -998,8 +1002,8 @@ public class SchemaManagerIT {
     schemaManager.startup();
 
     final var runtimeIndexName = indexTemplate.getFullQualifiedName();
-    final var archiveIndexName1 = indexTemplate.getIndexPattern().replace("*", "-archived_1");
-    final var archiveIndexName2 = indexTemplate.getIndexPattern().replace("*", "-archived_2");
+    final var archiveIndexName1 = indexPattern.replace("*", "-archived_1");
+    final var archiveIndexName2 = indexPattern.replace("*", "-archived_2");
 
     // index some data to the runtime and archive indices. "world" is a dynamic property
     searchClientAdapter.index(
@@ -1030,7 +1034,7 @@ public class SchemaManagerIT {
     // when
     // update mappings
     when(indexTemplate.getMappingsClasspathFilename())
-        .thenReturn("/mappings-dynamic-property-added.json");
+        .thenReturn(mappingsFileNamePrefix + "/mappings-dynamic-property-added.json");
     schemaManager.startup();
 
     // then
