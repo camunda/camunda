@@ -76,6 +76,12 @@ import io.camunda.authentication.oauth.ConditionalOnPersistentAuthorizedClientsE
 import io.camunda.authentication.oauth.PersistedOAuth2AuthorizedClientService;
 import io.camunda.search.clients.PersistentOAuth2AuthorizedClientsClient;
 import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
+import io.camunda.authentication.oauth.ConditionalOnPersistentAuthorizedClientsEnabled;
+import io.camunda.authentication.oauth.PersistedOAuth2AuthorizedClientService;
+import io.camunda.search.clients.PersistentOAuth2AuthorizedClientsClient;
+import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 
 @Configuration
 @EnableWebSecurity
@@ -574,6 +580,7 @@ public class WebSecurityConfig {
               oauthLoginConfigurer -> {
                 oauthLoginConfigurer
                     .clientRegistrationRepository(clientRegistrationRepository)
+                    .authorizedClientService(authorizedClientService)
                     .redirectionEndpoint(
                         redirectionEndpointConfig ->
                             redirectionEndpointConfig.baseUri("/sso-callback"));
