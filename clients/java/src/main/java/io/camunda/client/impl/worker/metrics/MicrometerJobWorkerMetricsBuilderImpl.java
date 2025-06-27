@@ -44,6 +44,11 @@ public final class MicrometerJobWorkerMetricsBuilderImpl
   public JobWorkerMetrics build() {
     final Counter jobActivatedCounter = meterRegistry.counter(Names.JOB_ACTIVATED.asString(), tags);
     final Counter jobHandledCounter = meterRegistry.counter(Names.JOB_HANDLED.asString(), tags);
-    return new MicrometerJobWorkerMetrics(jobActivatedCounter, jobHandledCounter);
+    final Counter zeebeJobActivatedCounter =
+        meterRegistry.counter(Names.ZEEBE_JOB_ACTIVATED.asString(), tags);
+    final Counter zeebeJobHandledCounter =
+        meterRegistry.counter(Names.ZEEBE_JOB_HANDLED.asString(), tags);
+    return new MicrometerJobWorkerMetrics(
+        jobActivatedCounter, jobHandledCounter, zeebeJobActivatedCounter, zeebeJobHandledCounter);
   }
 }
