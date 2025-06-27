@@ -1,0 +1,26 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.search.entities;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.time.OffsetDateTime;
+import java.util.Set;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+public record PersistentOAuth2AuthorizedClientEntity(
+    String id,
+    String clientRegistrationId,
+    String principalName,
+    String accessTokenValue,
+    String accessTokenType,
+    OffsetDateTime accessTokenIssuedAt,
+    OffsetDateTime accessTokenExpiresAt,
+    Set<String> accessTokenScopes,
+    String refreshTokenValue,
+    OffsetDateTime refreshTokenIssuedAt,
+    OffsetDateTime refreshTokenExpiresAt) {}

@@ -20,8 +20,8 @@ import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
-import io.camunda.authentication.oauth.ConditionalOnPersistentAuthorizedClientsEnabled;
 import io.camunda.authentication.oauth.PersistedOAuth2AuthorizedClientService;
+import io.camunda.authentication.session.ConditionalOnPersistentWebSessionEnabled;
 import io.camunda.search.clients.PersistentOAuth2AuthorizedClientsClient;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
@@ -540,23 +540,6 @@ public class WebSecurityConfig {
       return decoder;
     }
 
-    @Bean
-    @ConditionalOnPersistentAuthorizedClientsEnabled
-    public OAuth2AuthorizedClientService oAuth2AuthorizedClientRepository(
-        final ClientRegistrationRepository clientRegistrationRepository,
-        final PersistentOAuth2AuthorizedClientsClient authorizedClientsClient) {
-      return new PersistedOAuth2AuthorizedClientService(
-          authorizedClientsClient, clientRegistrationRepository);
-    }
-
-    @Bean
-    @ConditionalOnPersistentAuthorizedClientsEnabled
-    public OAuth2RefreshTokenFilter oauth2RefreshTokenFilter(
-        final OAuth2AuthorizedClientService authorizedClientService,
-        final OAuth2AuthorizedClientManager authorizedClientManager) {
-      return new OAuth2RefreshTokenFilter(authorizedClientService, authorizedClientManager);
-    }
-
     private static OAuth2TokenValidator<Jwt> getTokenValidator(
         final SecurityConfiguration configuration) {
       final var validAudiences = configuration.getAuthentication().getOidc().getAudiences();
@@ -576,6 +559,15 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    @ConditionalOnPersistentWebSessionEnabled
+    public OAuth2AuthorizedClientService oAuth2AuthorizedClientRepository(
+        final ClientRegistrationRepository clientRegistrationRepository,
+        final PersistentOAuth2AuthorizedClientsClient authorizedClientsClient) {
+      return new PersistedOAuth2AuthorizedClientService(
+          authorizedClientsClient, clientRegistrationRepository);
+    }
+
+    @Bean
     @Order(ORDER_WEBAPP_API)
     @ConditionalOnProtectedApi
     public SecurityFilterChain oidcApiSecurity(
@@ -584,7 +576,9 @@ public class WebSecurityConfig {
         final JwtDecoder jwtDecoder,
         final CamundaJwtAuthenticationConverter converter,
         final SecurityConfiguration securityConfiguration,
-        final CookieCsrfTokenRepository csrfTokenRepository)
+        final CookieCsrfTokenRepository csrfTokenRepository,
+        final OAuth2AuthorizedClientService authorizedClientService,
+        final OAuth2AuthorizedClientManager authorizedClientManager)
         throws Exception {
       final var filterChainBuilder =
           httpSecurity
@@ -618,6 +612,7 @@ public class WebSecurityConfig {
               .oidcLogout(AbstractHttpConfigurer::disable)
               .logout(AbstractHttpConfigurer::disable);
 
+      applyOauth2RefreshTokenFilter(httpSecurity, authorizedClientService, authorizedClientManager);
       applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
 
       return filterChainBuilder.build();
@@ -635,7 +630,7 @@ public class WebSecurityConfig {
         final SecurityConfiguration securityConfiguration,
         final CookieCsrfTokenRepository csrfTokenRepository,
         final OAuth2AuthorizedClientService authorizedClientService,
-        final OAuth2RefreshTokenFilter oauth2RefreshTokenFilter)
+        final OAuth2AuthorizedClientManager authorizedClientManager)
         throws Exception {
       final var filterChainBuilder =
           httpSecurity
@@ -681,12 +676,31 @@ public class WebSecurityConfig {
                           .logoutUrl(LOGOUT_URL)
                           .logoutSuccessHandler(WebSecurityConfig::noContentSuccessHandler)
                           .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN))
-              .addFilterAfter(webApplicationAuthorizationCheckFilter, AuthorizationFilter.class)
-              .addFilterAfter(oauth2RefreshTokenFilter, AuthorizationFilter.class);
+              .addFilterAfter(webApplicationAuthorizationCheckFilter, AuthorizationFilter.class);
 
+      applyOauth2RefreshTokenFilter(httpSecurity, authorizedClientService, authorizedClientManager);
       applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
 
       return filterChainBuilder.build();
+    }
+
+    // refresh token filter has to be registered after the ExceptionTranslationFilter
+    // which is the exact spot for the AuthorizationFilter.
+    // This is needed to ensure correct exception mapping happened for
+    // earlier filters. See registration order at the
+    // org.springframework.security.config.annotation.web.builders.FilterOrderRegistration
+    private void applyOauth2RefreshTokenFilter(
+        final HttpSecurity httpSecurity,
+        final OAuth2AuthorizedClientService authorizedClientService,
+        final OAuth2AuthorizedClientManager authorizedClientManager) {
+      if (authorizedClientService != null && authorizedClientManager != null) {
+        httpSecurity.addFilterAfter(
+            new OAuth2RefreshTokenFilter(authorizedClientService, authorizedClientManager),
+            AuthorizationFilter.class);
+      } else {
+        LOG.warn(
+            "OAuth2RefreshTokenFilter is not registered because no OAuth2AuthorizedClientService or OAuth2AuthorizedClientManager is available.");
+      }
     }
   }
 }

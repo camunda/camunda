@@ -877,6 +877,7 @@ public class SchemaManagerIT {
             newPrefix + "-camunda-tenant-8.8.0_",
             newPrefix + "-camunda-user-8.8.0_",
             newPrefix + "-camunda-web-session-8.8.0_",
+            newPrefix + "-camunda-authorized-clients-8.8.0_",
             newPrefix + "-operate-batch-operation-1.0.0_",
             newPrefix + "-operate-decision-8.3.0_",
             newPrefix + "-operate-decision-instance-8.3.0_",
