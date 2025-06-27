@@ -30,12 +30,11 @@ public class RocksDBSnapshotCopy implements SnapshotCopy {
   @Override
   public void withContexts(
       final Path fromPath, final Path toDBPath, final CopyContextConsumer consumer) {
-    try (final var toDB = factory.createDb(toDBPath.toFile())) {
-      try (final var fromDB = factory.createDb(fromPath.toFile())) {
-        final var fromCtx = fromDB.createContext();
-        final var toCtx = toDB.createContext();
-        consumer.accept(fromDB, fromCtx, toDB, toCtx);
-      }
+    try (final var toDB = factory.createDb(toDBPath.toFile());
+        final var fromDB = factory.createDb(fromPath.toFile())) {
+      final var fromCtx = fromDB.createContext();
+      final var toCtx = toDB.createContext();
+      consumer.accept(fromDB, fromCtx, toDB, toCtx);
     }
   }
 
