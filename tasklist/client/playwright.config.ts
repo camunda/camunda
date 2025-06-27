@@ -47,13 +47,6 @@ const config: PlaywrightTestConfig = {
       },
     },
     {
-      name: 'e2e',
-      testMatch: 'e2e/tests/**/*.spec.ts',
-      use: {
-        ...devices['Desktop Chrome'],
-      },
-    },
-    {
       name: 'a11y',
       testMatch: 'a11y.spec.ts',
       use: {
