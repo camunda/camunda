@@ -7,6 +7,7 @@
  */
 package io.camunda.application.listeners;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationFailedEvent;
@@ -20,8 +21,15 @@ public class ApplicationErrorListener implements ApplicationListener<Application
   public void onApplicationEvent(final ApplicationFailedEvent event) {
     final var exception = event.getException();
     final var message = exception.getMessage();
+    if (ExceptionUtils.indexOfThrowable(exception, InterruptedException.class) != -1) {
+      LOGGER.warn("Startup interrupted. Message: {}", message);
+      LOGGER.debug("Stack trace:", exception);
+      Thread.currentThread().interrupt();
+      event.getApplicationContext().close();
+      return; // Skip System.exit(-1) to avoid CrashLoopBackOff on "expected" shutdown
+    }
 
-    LOGGER.error(String.format("Failed to start application with message: %s", message), exception);
+    LOGGER.error("Failed to start application with message: {}", message, exception);
 
     event.getApplicationContext().close();
     System.exit(-1);
