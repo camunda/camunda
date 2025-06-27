@@ -23,7 +23,9 @@ import org.springframework.context.annotation.Configuration;
 public class CamundaSecurityConfiguration {
 
   @VisibleForTesting
-  public static final String UNPROTECTED_API_ENV_VAR = "CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI";
+  public static final String UNPROTECTED_API_ENV_VAR =
+      "CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI";
+
   private final CamundaSecurityProperties camundaSecurityProperties;
 
   @Autowired
