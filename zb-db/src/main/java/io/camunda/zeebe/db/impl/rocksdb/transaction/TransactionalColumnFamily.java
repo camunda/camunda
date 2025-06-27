@@ -150,24 +150,22 @@ class TransactionalColumnFamily<
   @Override
   public ValueType get(final KeyType key, final Supplier<ValueType> valueSupplier) {
     final var result = new MutableReference<ValueType>();
-    try (final var timer = metrics.measureGetLatency()) {
-      ensureInOpenTransaction(
-          transaction -> {
-            columnFamilyContext.writeKey(key);
-            final byte[] valueBytes =
-                transaction.get(
-                    transactionDb.getDefaultNativeHandle(),
-                    transactionDb.getReadOptionsNativeHandle(),
-                    columnFamilyContext.getKeyBufferArray(),
-                    columnFamilyContext.getKeyLength());
-            if (valueBytes != null) {
-              final var newValue = valueSupplier.get();
-              newValue.wrap(new UnsafeBuffer(valueBytes), 0, valueBytes.length);
-              result.set(newValue);
-            }
-          });
-      return result.get();
-    }
+    ensureInOpenTransaction(
+        transaction -> {
+          columnFamilyContext.writeKey(key);
+          final byte[] valueBytes =
+              transaction.get(
+                  transactionDb.getDefaultNativeHandle(),
+                  transactionDb.getReadOptionsNativeHandle(),
+                  columnFamilyContext.getKeyBufferArray(),
+                  columnFamilyContext.getKeyLength());
+          if (valueBytes != null) {
+            final var newValue = valueSupplier.get();
+            newValue.wrap(new UnsafeBuffer(valueBytes), 0, valueBytes.length);
+            result.set(newValue);
+          }
+        });
+    return result.get();
   }
 
   @Override
