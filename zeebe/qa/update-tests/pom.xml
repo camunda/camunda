@@ -36,6 +36,12 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-zeebe</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-qa-util</artifactId>
       <scope>test</scope>
     </dependency>
