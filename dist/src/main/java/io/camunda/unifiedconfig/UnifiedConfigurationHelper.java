@@ -87,7 +87,7 @@ public class UnifiedConfigurationHelper {
   }
 
   public static boolean isConfigExplicitlySet(String configKey) {
-    for(PropertySource<?> propertySource : configurableEnvironment.getPropertySources()) {
+    for (PropertySource<?> propertySource : configurableEnvironment.getPropertySources()) {
       if (propertySource.containsProperty(configKey)) {
         return true;
       }

@@ -7,5 +7,4 @@
  */
 package io.camunda.unifiedconfig;
 
-public class Camunda {
-}
+public class Camunda {}
