@@ -10,23 +10,31 @@ package io.camunda.operate.webapp.zeebe.operation;
 import static io.camunda.webapps.schema.entities.operation.OperationType.ADD_VARIABLE;
 import static io.camunda.webapps.schema.entities.operation.OperationType.UPDATE_VARIABLE;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.util.Map;
 import java.util.Set;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 /** Update the variable. */
 @Component
 public class UpdateVariableHandler extends AbstractOperationHandler implements OperationHandler {
 
+  @Autowired
+  @Qualifier("operateObjectMapper")
+  private final ObjectMapper objectMapper = new ObjectMapper();
+
   @Override
   public void handleWithException(final OperationEntity operation) throws Exception {
-    final Map<String, Object> updateVariableJson =
-        mapVariableJson(operation.getVariableName(), operation.getVariableValue());
+    final Map<String, Object> updateVariableMap =
+        getVariableMap(operation.getVariableName(), operation.getVariableValue());
     final var key =
         operationServicesAdapter.setVariables(
-            operation.getScopeKey(), updateVariableJson, true, operation.getId());
+            operation.getScopeKey(), updateVariableMap, true, operation.getId());
     markAsSent(operation, key);
   }
 
@@ -35,8 +43,9 @@ public class UpdateVariableHandler extends AbstractOperationHandler implements O
     return Set.of(UPDATE_VARIABLE, ADD_VARIABLE);
   }
 
-  private Map<String, Object> mapVariableJson(
-      final String variableName, final String variableValue) {
-    return Map.of(variableName, variableValue);
+  private Map<String, Object> getVariableMap(final String variableName, final String variableValue)
+      throws JsonProcessingException {
+    final var variableJson = String.format("{\"%s\":%s}", variableName, variableValue);
+    return objectMapper.readValue(variableJson, Map.class);
   }
 }
