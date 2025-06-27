@@ -38,6 +38,10 @@ async function createHealthStatusConfig() {
           name: 'optimize-ci-data-layer',
           branches: ciBranches,
         },
+        {
+          name: 'optimize-ci',
+          branches: ciBranches,
+        },
         'optimize-zeebe-compatibility',
         'optimize-e2e-tests-sm',
       ],
