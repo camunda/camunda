@@ -278,12 +278,12 @@ public class TenantController {
   }
 
   private ResponseEntity<TenantUserSearchResult> searchUsersInTenant(
-      final String tenantId, final TenantQuery query) {
+      final String tenantId, final TenantQuery tenantQuery) {
     try {
       final var result =
           tenantServices
               .withAuthentication(RequestMapper.getAuthentication())
-              .searchMembers(buildTenantMemberQuery(tenantId, EntityType.USER, query));
+              .searchMembers(buildTenantMemberQuery(tenantId, EntityType.USER, tenantQuery));
       return ResponseEntity.ok(SearchQueryResponseMapper.toTenantUserSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
