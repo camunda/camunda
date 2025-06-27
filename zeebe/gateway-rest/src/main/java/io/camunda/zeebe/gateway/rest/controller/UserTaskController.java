@@ -150,6 +150,7 @@ public class UserTaskController {
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(query);
       final var processCacheItems = processCache.getUserTaskNames(result.items());
+
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toUserTaskSearchQueryResponse(result, processCacheItems));
     } catch (final Exception e) {

@@ -98,7 +98,9 @@ public class ElementInstanceController {
           elementInstanceServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(query);
-      final var processCacheItems = processCache.getElementNames(result.items());
+      final var unnamedItems =
+          result.items().stream().filter(item -> (item.flowNodeName() == null)).toList();
+      final var processCacheItems = processCache.getElementNames(unnamedItems);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toElementInstanceSearchQueryResponse(
               result, processCacheItems));
