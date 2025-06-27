@@ -37,7 +37,7 @@
     "@axe-core/playwright": "^4.10.1",
     "@camunda8/sdk": "^8.6.33",
     "axios": "^1.8.1",
-    "dotenv": "^16.4.7",
+    "dotenv": "^17.0.0",
     "mailslurp-client": "^15.21.0"
   }
 }
