@@ -21,6 +21,7 @@ import io.camunda.client.protocol.rest.DeploymentDecisionResult;
 import io.camunda.client.protocol.rest.DeploymentFormResult;
 import io.camunda.client.protocol.rest.DeploymentMetadataResult;
 import io.camunda.client.protocol.rest.DeploymentProcessResult;
+import io.camunda.client.protocol.rest.DeploymentResourceResult;
 import io.camunda.client.protocol.rest.DeploymentResult;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.response.Decision;
@@ -28,6 +29,7 @@ import io.camunda.zeebe.client.api.response.DecisionRequirements;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.Form;
 import io.camunda.zeebe.client.api.response.Process;
+import io.camunda.zeebe.client.api.response.Resource;
 import io.camunda.zeebe.client.impl.Loggers;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
@@ -51,6 +53,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
   private final List<Decision> decisions = new ArrayList<>();
   private final List<DecisionRequirements> decisionRequirements = new ArrayList<>();
   private final List<Form> forms = new ArrayList<>();
+  private final List<Resource> resources = new ArrayList<>();
 
   public DeploymentEventImpl(final DeployProcessResponse response) {
     key = response.getKey();
@@ -93,6 +96,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
       addDeployedProcess(deployment.getProcessDefinition());
       addDeployedDecision(deployment.getDecisionDefinition());
       addDeployedDecisionRequirements(deployment.getDecisionRequirements());
+      addDeployedResource(deployment.getResource());
     }
   }
 
@@ -105,6 +109,19 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                         f.getFormId(),
                         f.getVersion(),
                         ParseUtil.parseLongOrEmpty(f.getFormKey()),
+                        f.getResourceName(),
+                        f.getTenantId())));
+  }
+
+  private void addDeployedResource(final DeploymentResourceResult resource) {
+    Optional.ofNullable(resource)
+        .ifPresent(
+            f ->
+                resources.add(
+                    new ResourceImpl(
+                        f.getResourceId(),
+                        Long.parseLong(f.getResourceKey()),
+                        f.getVersion(),
                         f.getResourceName(),
                         f.getTenantId())));
   }
@@ -175,6 +192,11 @@ public final class DeploymentEventImpl implements DeploymentEvent {
   @Override
   public List<Form> getForm() {
     return forms;
+  }
+
+  @Override
+  public List<Resource> getResource() {
+    return resources;
   }
 
   @Override
