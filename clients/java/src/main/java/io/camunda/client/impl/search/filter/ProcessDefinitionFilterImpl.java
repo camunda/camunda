@@ -31,8 +31,8 @@ public class ProcessDefinitionFilterImpl
   }
 
   @Override
-  public ProcessDefinitionFilter isLatestVersion() {
-    filter.setIsLatestVersion(true);
+  public ProcessDefinitionFilter isLatestVersion(final boolean latestVersion) {
+    filter.setIsLatestVersion(latestVersion);
     return this;
   }
 
