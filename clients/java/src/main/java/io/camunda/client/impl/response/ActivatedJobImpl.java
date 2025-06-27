@@ -19,8 +19,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
@@ -199,6 +202,14 @@ public final class ActivatedJobImpl implements ActivatedJob {
   }
 
   @Override
+  public List<DocumentReferenceResponse> getDocumentReferences(final String name) {
+    final Object documentReference = getVariable(name);
+    return jsonMapper.transform(documentReference, DocumentReferenceResponseList.class).stream()
+        .map(DocumentReferenceResponse.class::cast)
+        .collect(Collectors.toList());
+  }
+
+  @Override
   public String toString() {
     return toJson();
   }
@@ -218,4 +229,6 @@ public final class ActivatedJobImpl implements ActivatedJob {
   private static Long parseLongOrEmpty(final String value) {
     return value == null ? -1 : Long.parseLong(value);
   }
+
+  static class DocumentReferenceResponseList extends ArrayList<DocumentReferenceResponseImpl> {}
 }

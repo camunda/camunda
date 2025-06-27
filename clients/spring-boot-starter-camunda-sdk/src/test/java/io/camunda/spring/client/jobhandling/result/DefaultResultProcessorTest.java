@@ -17,13 +17,16 @@ package io.camunda.spring.client.jobhandling.result;
 
 import static org.mockito.Mockito.mock;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivatedJob;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class DefaultResultProcessorTest {
 
-  private final DefaultResultProcessor defaultResultProcessor = new DefaultResultProcessor();
+  private final DefaultResultProcessor defaultResultProcessor =
+      new DefaultResultProcessor(
+          mock(CamundaClient.class), mock(DocumentResultProcessorFailureHandlingStrategy.class));
 
   @Test
   public void testProcessMethodShouldReturnResult() {
