@@ -123,9 +123,7 @@ describe('Edit variable', () => {
 
     expect(screen.queryByTestId('add-variable-value')).not.toBeInTheDocument();
 
-    await waitFor(() => {
-      expect(screen.getByTestId(`variable-clientNo`)).toBeInTheDocument();
-    });
+    expect(await screen.findByTestId(`variable-clientNo`)).toBeInTheDocument();
     const withinFirstVariable = within(screen.getByTestId(`variable-clientNo`));
     expect(
       withinFirstVariable.queryByTestId('edit-variable-value'),
