@@ -24,7 +24,6 @@ public class LegacyTasklistProperties {
 
   public static final String PREFIX = "camunda.tasklist";
   public static final String ALPHA_RELEASES_SUFIX = "alpha";
-  public static final long BATCH_OPERATION_MAX_SIZE_DEFAULT = 1_000_000L;
   public static final String ELASTIC_SEARCH = "elasticsearch";
   public static final String OPEN_SEARCH = "opensearch";
   private static final String UNKNOWN_VERSION = "unknown-version";
@@ -47,9 +46,6 @@ public class LegacyTasklistProperties {
   private String database = ELASTIC_SEARCH;
 
   private List<String> roles = List.of("OWNER");
-
-  /** Maximum size of batch operation. */
-  private Long batchOperationMaxSize = BATCH_OPERATION_MAX_SIZE_DEFAULT;
 
   private boolean enterprise = false;
 
@@ -108,14 +104,6 @@ public class LegacyTasklistProperties {
 
   public void setWebappEnabled(final boolean webappEnabled) {
     this.webappEnabled = webappEnabled;
-  }
-
-  public Long getBatchOperationMaxSize() {
-    return batchOperationMaxSize;
-  }
-
-  public void setBatchOperationMaxSize(final Long batchOperationMaxSize) {
-    this.batchOperationMaxSize = batchOperationMaxSize;
   }
 
   public boolean isAlphaVersion() {
@@ -218,8 +206,7 @@ public class LegacyTasklistProperties {
     return persistentSessionsEnabled;
   }
 
-  public LegacyTasklistProperties setPersistentSessionsEnabled(
-      final boolean persistentSessionsEnabled) {
+  public LegacyTasklistProperties setPersistentSessionsEnabled(final boolean persistentSessionsEnabled) {
     this.persistentSessionsEnabled = persistentSessionsEnabled;
     return this;
   }
@@ -287,8 +274,7 @@ public class LegacyTasklistProperties {
     return securityProperties;
   }
 
-  public LegacyTasklistProperties setSecurityProperties(
-      final SecurityProperties securityProperties) {
+  public LegacyTasklistProperties setSecurityProperties(final SecurityProperties securityProperties) {
     this.securityProperties = securityProperties;
     return this;
   }
@@ -378,8 +364,7 @@ public class LegacyTasklistProperties {
     return zeebeOpenSearch;
   }
 
-  public LegacyTasklistProperties setZeebeOpenSearch(
-      final ZeebeOpenSearchProperties zeebeOpenSearch) {
+  public LegacyTasklistProperties setZeebeOpenSearch(final ZeebeOpenSearchProperties zeebeOpenSearch) {
     this.zeebeOpenSearch = zeebeOpenSearch;
     return this;
   }
