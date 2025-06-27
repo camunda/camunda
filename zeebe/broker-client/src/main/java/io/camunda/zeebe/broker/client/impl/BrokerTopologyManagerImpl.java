@@ -240,6 +240,9 @@ public final class BrokerTopologyManagerImpl extends Actor
                 newReplicationFactor);
             topologyToUpdate.setClusterSize(newClusterSize);
             topologyToUpdate.setPartitionsCount(newPartitionsCount);
+            for (int p = topologyToUpdate.getPartitionsCount(); p <= newPartitionsCount; p++) {
+              topologyToUpdate.addPartitionIfAbsent(p);
+            }
             topologyToUpdate.setReplicationFactor(newReplicationFactor);
           }
         });

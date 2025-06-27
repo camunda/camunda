@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossipState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.dynamic.config.util.ClusterTopologyDomain;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
@@ -41,5 +42,30 @@ final class ProtoBufSerializerPropertyTest {
             "routingState.value.requestHandling.additionalActivePartitions")
         .ignoringCollectionOrderInFields("routingState.value.requestHandling.inactivePartitions")
         .isEqualTo(clusterConfiguration);
+  }
+
+  // less tries are needed here, because the routing state is a part of the ClusterConfiguration,
+  // we just need to test the serialize/deserialize functions for RoutingState
+  @Property(tries = 10)
+  @Domain(ClusterTopologyDomain.class)
+  @Domain(DomainContext.Global.class)
+  void shouldEncodeAndDecodeRoutingState(@ForAll final RoutingState routingState) {
+    // given
+    final var protoBufSerializer = new ProtoBufSerializer();
+
+    // when
+    final var bytes = protoBufSerializer.serializeRoutingState(routingState);
+    final var decodedState = protoBufSerializer.deserializeRoutingState(bytes, 0, bytes.length);
+
+    // then
+    assertThat(decodedState)
+        .describedAs("Decoded routingState must be equal to initial one")
+        .usingRecursiveComparison()
+        // The type of generated `activePartitions` is `LinkedHashSet`, which AssertJ treats as an
+        // ordered collection. We are not interested in the order of the partitions, so we ignore
+        // it here.
+        .ignoringCollectionOrderInFields("requestHandling.additionalActivePartitions")
+        .ignoringCollectionOrderInFields("requestHandling.inactivePartitions")
+        .isEqualTo(routingState);
   }
 }

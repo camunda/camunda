@@ -19,9 +19,11 @@ import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator;
 import io.camunda.zeebe.dynamic.config.changes.NoopPartitionChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor.NoopPartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
+import io.camunda.zeebe.dynamic.config.serializer.ProtoBufSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -31,6 +33,7 @@ import io.camunda.zeebe.util.FileUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collection;
@@ -167,6 +170,48 @@ class ClusterConfigurationManagementIntegrationTest {
                     .describedAs("The cluster should use the correct topology")
                     .isInitialized()
                     .hasOnlyMembers(Set.of(0, 1, 2)));
+  }
+
+  @Test
+  void shouldInitializeRoutingStateFromFileIfPresent() {
+    // given
+    final var routingStatePath =
+        rootDir
+            .resolve("0")
+            .resolve(
+                PersistedClusterConfiguration.PERSISTED_ROUTING_INFO_FILENAME_FORMAT.formatted(1));
+    try {
+      Files.createDirectories(routingStatePath.getParent());
+      Files.write(
+          routingStatePath,
+          new ProtoBufSerializer()
+              .serializeRoutingState(
+                  new RoutingState(
+                      1,
+                      new RoutingState.RequestHandling.AllPartitions(3),
+                      new RoutingState.MessageCorrelation.HashMod(1))));
+    } catch (final IOException e) {
+      throw new RuntimeException("Failed to create routing state file", e);
+    }
+    final var startFutures = nodes.values().stream().map(this::startNode).toList();
+
+    // when
+    startFutures.forEach(ActorFuture::join);
+
+    // then
+    //  all nodes should have the correct routing state initialized from the file
+    nodes
+        .values()
+        .forEach(
+            node ->
+                ClusterConfigurationAssert.assertThatClusterTopology(
+                        node.service().getClusterTopology().join())
+                    .describedAs("The cluster should use the correct topology")
+                    .isInitialized()
+                    .hasRoutingState()
+                    .routingState()
+                    .correlatesMessagesToPartitions(1)
+                    .hasActivatedPartitions(3));
   }
 
   @Test
@@ -311,7 +356,7 @@ class ClusterConfigurationManagementIntegrationTest {
                   new ControllablePartitionDistributor().withPartitions(partitions),
                   clusterMembers,
                   cluster.getMembershipService().getLocalMember().id(),
-                  List.of(),
+                  partitions.stream().map(PartitionMetadata::id).toList(),
                   3,
                   DynamicPartitionConfig.init()));
       startFuture.onComplete(

@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config.serializer;
 
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossipState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
 
 public interface ClusterConfigurationSerializer {
 
@@ -20,4 +21,9 @@ public interface ClusterConfigurationSerializer {
 
   ClusterConfiguration decodeClusterTopology(
       byte[] encodedClusterTopology, final int offset, final int length);
+
+  byte[] serializeRoutingState(RoutingState routingState);
+
+  RoutingState deserializeRoutingState(
+      byte[] encodedRoutingState, final int offset, final int length);
 }

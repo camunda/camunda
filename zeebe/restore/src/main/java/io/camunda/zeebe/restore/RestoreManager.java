@@ -63,14 +63,18 @@ public class RestoreManager {
       return CompletableFuture.failedFuture(e);
     }
 
-    final var partitionToRestore = collectPartitions();
+    final var localBrokerId = configuration.getCluster().getNodeId();
+    final var localMember = MemberId.from(String.valueOf(localBrokerId));
+    final var partitionToRestore = collectPartitions(localMember);
 
     final var partitionIds = partitionToRestore.stream().map(p -> p.partition().id().id()).toList();
     LOG.info("Restoring partitions {}", partitionIds);
 
     return CompletableFuture.allOf(
             partitionToRestore.stream()
-                .map(partition -> restorePartition(partition, backupId, validateConfig))
+                .map(
+                    partition ->
+                        restorePartition(dataDirectory, partition, backupId, validateConfig))
                 .toArray(CompletableFuture[]::new))
         .exceptionallyComposeAsync(error -> logFailureAndDeleteDataDirectory(dataDirectory, error));
   }
@@ -97,6 +101,7 @@ public class RestoreManager {
   }
 
   private CompletableFuture<Void> restorePartition(
+      final Path rootDataDirectory,
       final InstrumentedRaftPartition partition,
       final long backupId,
       final boolean validateConfig) {
@@ -113,6 +118,7 @@ public class RestoreManager {
     final var registry = partition.registry();
     return new PartitionRestoreService(
             backupStore,
+            rootDataDirectory,
             partition.partition(),
             configuration.getCluster().getNodeId(),
             new ChecksumProviderRocksDBImpl(),
@@ -122,9 +128,7 @@ public class RestoreManager {
         .whenComplete((ok, error) -> MicrometerUtil.close(registry));
   }
 
-  private Set<InstrumentedRaftPartition> collectPartitions() {
-    final var localBrokerId = configuration.getCluster().getNodeId();
-    final var localMember = MemberId.from(String.valueOf(localBrokerId));
+  private Set<InstrumentedRaftPartition> collectPartitions(final MemberId localMember) {
     final var clusterTopology =
         new PartitionDistribution(
             StaticConfigurationGenerator.getStaticConfiguration(configuration, localMember)
