@@ -72,33 +72,33 @@ const Listeners: React.FC = observer(() => {
 
   return (
     <Content>
-      <Stack as={Layer} $isUserTask={isUserTask}>
-        {isUserTask && (
-          <Dropdown
-            id="listenerTypeFilter"
-            data-testid="listener-type-filter"
-            titleText="Listener type"
-            label="All listeners"
-            hideLabel
-            onChange={async ({selectedItem}: SelectedItem) => {
-              if (selectedItem !== selectedOption) {
-                setSelectedOption(selectedItem);
+      {isUserTask && (
+        <Dropdown
+          id="listenerTypeFilter"
+          data-testid="listener-type-filter"
+          titleText="Listener type"
+          label="All listeners"
+          hideLabel
+          onChange={async ({selectedItem}: SelectedItem) => {
+            if (selectedItem !== selectedOption) {
+              setSelectedOption(selectedItem);
 
-                if (FilterLabelMapping[selectedItem] !== 'ALL_LISTENERS') {
-                  setListenerTypeFilter(FilterLabelMapping[selectedItem]);
-                } else {
-                  setListenerTypeFilter(undefined);
-                }
+              if (FilterLabelMapping[selectedItem] !== 'ALL_LISTENERS') {
+                setListenerTypeFilter(FilterLabelMapping[selectedItem]);
+              } else {
+                setListenerTypeFilter(undefined);
               }
-            }}
-            items={Object.keys(FilterLabelMapping)}
-            size="sm"
-            selectedItem={selectedOption}
-            disabled={
-              selectedOption === 'All listeners' && listeners?.length === 0
             }
-          />
-        )}
+          }}
+          items={Object.keys(FilterLabelMapping)}
+          size="sm"
+          selectedItem={selectedOption}
+          disabled={
+            selectedOption === 'All listeners' && listeners?.length === 0
+          }
+        />
+      )}
+      <Stack as={Layer}>
         {listeners?.length > 0 ? (
           <StructuredList
             dataTestId="listeners-list"
