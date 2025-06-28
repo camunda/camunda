@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.configuration.GatewayBasedConfiguration.GatewayBasedProperties;
+import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
@@ -20,6 +21,7 @@ import java.util.function.Consumer;
 public final class TestStandaloneGateway extends TestSpringApplication<TestStandaloneGateway>
     implements TestGateway<TestStandaloneGateway> {
   private final GatewayBasedProperties config;
+  private final CamundaSecurityProperties securityConfig;
 
   public TestStandaloneGateway() {
     super(GatewayModuleConfiguration.class, CommonsModuleConfiguration.class);
@@ -31,6 +33,12 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
 
     //noinspection resource
     withBean("config", config, GatewayBasedProperties.class).withAdditionalProfile(Profile.GATEWAY);
+
+    securityConfig = new CamundaSecurityProperties();
+    securityConfig.getAuthentication().setUnprotectedApi(true);
+    //noinspection resource
+    withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
+
     // by default, we don't want to create the schema as ES/OS containers may not be used in the
     // current test
     withCreateSchema(false);

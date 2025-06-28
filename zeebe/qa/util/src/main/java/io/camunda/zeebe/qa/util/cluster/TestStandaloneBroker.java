@@ -69,6 +69,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     withBean("config", config, BrokerBasedProperties.class).withAdditionalProfile(Profile.BROKER);
 
     securityConfig = new CamundaSecurityProperties();
+    securityConfig.getAuthentication().setUnprotectedApi(true);
     securityConfig
         .getInitialization()
         .getUsers()
