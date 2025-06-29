@@ -103,7 +103,8 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
         .setJobKind(recordValue.getJobKind().name())
         .setFlowNodeId(recordValue.getElementId());
 
-    if (record.getIntent().equals(JobIntent.COMPLETED) || record.getIntent().equals(JobIntent.CANCELED)) {
+    if (record.getIntent().equals(JobIntent.COMPLETED)
+        || record.getIntent().equals(JobIntent.CANCELED)) {
       entity.setEndTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
     }
 

@@ -7,6 +7,7 @@ import io.camunda.db.rdbms.sql.columns.JobSearchColumn;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.SearchQueryResult;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,8 +18,13 @@ public class JobReader extends AbstractEntityReader<JobEntity> {
   private final JobMapper jobMapper;
 
   public JobReader(final JobMapper jobMapper) {
-    super(JobSearchColumn::findByProperty);
+    super(JobSearchColumn.values());
     this.jobMapper = jobMapper;
+  }
+
+  public Optional<JobEntity> findOne(final long jobKey) {
+    final var result = search(JobQuery.of(b -> b.filter(f -> f.jobKeys(jobKey))));
+    return Optional.ofNullable(result.items()).flatMap(it -> it.stream().findFirst());
   }
 
   public SearchQueryResult<JobEntity> search(final JobQuery query) {
