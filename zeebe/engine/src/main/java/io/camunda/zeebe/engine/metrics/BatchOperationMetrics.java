@@ -18,6 +18,7 @@ import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.Timer.ResourceSample;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,6 +35,7 @@ public class BatchOperationMetrics {
       new ConcurrentHashMap<>();
   private final Map<Tuple<BatchOperationLatency, Long>, ResourceSample> latency =
       new ConcurrentHashMap<>();
+  private final Map<Long, ResourceSample> duration = new ConcurrentHashMap<>();
   private Counter queryCounter;
 
   public BatchOperationMetrics(final MeterRegistry registry, final int partitionId) {
@@ -77,18 +79,18 @@ public class BatchOperationMetrics {
     batchOperationEvent(BatchOperationAction.COMPLETED, batchOperationType);
   }
 
-  public void startTotalLatencyMeasure(
+  public void startTotalDurationMeasure(
       final Long batchOperationKey, final BatchOperationType batchOperationType) {
-    createLatency(BatchOperationLatency.TOTAL_LATENCY, batchOperationKey, batchOperationType);
+    createResourceSampleForDuration(batchOperationKey, batchOperationType);
   }
 
-  public void stopTotalLatencyMeasure(final Long batchOperationKey) {
-    closeAndRemoveLatency(BatchOperationLatency.TOTAL_LATENCY, batchOperationKey);
+  public void stopTotalDurationMeasure(final Long batchOperationKey) {
+    closeAndRemoveDuration(batchOperationKey);
   }
 
   public ResourceSample startTotalQueryLatencyMeasure(
       final Long batchOperationKey, final BatchOperationType batchOperationType) {
-    return createLatency(
+    return createResourceSampleForLatency(
         BatchOperationLatency.TOTAL_QUERY_LATENCY, batchOperationKey, batchOperationType);
   }
 
@@ -98,7 +100,7 @@ public class BatchOperationMetrics {
 
   public void startTotalExecutionLatencyMeasure(
       final Long batchOperationKey, final BatchOperationType batchOperationType) {
-    createLatency(
+    createResourceSampleForLatency(
         BatchOperationLatency.TOTAL_EXECUTION_LATENCY, batchOperationKey, batchOperationType);
   }
 
@@ -115,7 +117,7 @@ public class BatchOperationMetrics {
    */
   public void startStartExecuteLatencyMeasure(
       final Long batchOperationKey, final BatchOperationType batchOperationType) {
-    createLatency(
+    createResourceSampleForLatency(
         BatchOperationLatency.START_EXECUTE_LATENCY, batchOperationKey, batchOperationType);
   }
 
@@ -125,7 +127,7 @@ public class BatchOperationMetrics {
 
   public void startExecuteCycleLatencyMeasure(
       final Long batchOperationKey, final BatchOperationType batchOperationType) {
-    createLatency(
+    createResourceSampleForLatency(
         BatchOperationLatency.EXECUTE_CYCLE_LATENCY, batchOperationKey, batchOperationType);
   }
 
@@ -155,40 +157,14 @@ public class BatchOperationMetrics {
   }
 
   public void recordItemsPerPartition(
-      final int itemsAmount,
-      final long batchOperationKey,
-      final BatchOperationType batchOperationType) {
+      final int itemsAmount, final BatchOperationType batchOperationType) {
     final var meterDoc = BatchOperationMetricsDoc.ITEMS_PER_PARTITION;
     DistributionSummary.builder(meterDoc.getName())
         .description(meterDoc.getDescription())
-        .tag(
-            BatchOperationKeyNames.BATCH_OPERATION_KEY.asString(),
-            String.valueOf(batchOperationKey))
         .tag(PartitionKeyNames.PARTITION.asString(), String.valueOf(partitionId))
         .tag(BatchOperationKeyNames.BATCH_OPERATION_TYPE.asString(), batchOperationType.toString())
         .tag(BatchOperationKeyNames.ORGANIZATION_ID.asString(), ORGANIZATION_ID)
-        .serviceLevelObjectives(
-            1,
-            2,
-            5,
-            10,
-            20,
-            50,
-            100,
-            200,
-            500,
-            1_000,
-            2_000,
-            5_000,
-            10_000,
-            20_000,
-            50_000,
-            100_000,
-            500_000,
-            1_000_000,
-            2_000_000,
-            5_000_000,
-            10_000_000)
+        .serviceLevelObjectives(meterDoc.getDistributionSLOs())
         .register(registry)
         .record(itemsAmount);
   }
@@ -220,32 +196,58 @@ public class BatchOperationMetrics {
    * latency measurement already exists, it returns the existing one.
    *
    * @param latencyType the type of latency to create
-   * @param batchOperationKey the key of the batch operation
    * @param batchOperationType the type of batch operation
    * @return the created or existing ResourceSample for the latency
    */
-  private ResourceSample createLatency(
+  private ResourceSample createResourceSampleForLatency(
       final BatchOperationLatency latencyType,
       final Long batchOperationKey,
       final BatchOperationType batchOperationType) {
     return latency.computeIfAbsent(
         createLatencyKey(latencyType, batchOperationKey),
-        (key) -> registerBatchOperationLatency(batchOperationKey, latencyType, batchOperationType));
+        (key) -> registerBatchOperationExecutionLatency(latencyType, batchOperationType));
+  }
+
+  /**
+   * Creates a duration measurement for the given latency type and batch operation key. If the
+   * duration measurement already exists, it returns the existing one.
+   *
+   * @param batchOperationKey the key of the batch operation
+   * @param batchOperationType the type of batch operation
+   * @return the created or existing ResourceSample for the latency
+   */
+  private ResourceSample createResourceSampleForDuration(
+      final Long batchOperationKey, final BatchOperationType batchOperationType) {
+    return duration.computeIfAbsent(
+        batchOperationKey, (key) -> registerBatchOperationDuration(batchOperationType));
   }
 
   /**
    * Closes the latency measurement and removes it from the map. If the latency measurement does not
    * exist, it does nothing.
    *
-   * @param latency the latency type to close
+   * @param latencyType the latency type to close
    * @param batchOperationKey the key of the batch operation
    */
   private void closeAndRemoveLatency(
-      final BatchOperationLatency latency, final Long batchOperationKey) {
-    final var key = createLatencyKey(latency, batchOperationKey);
-    if (this.latency.containsKey(key)) {
-      this.latency.get(key).close();
-      this.latency.remove(key);
+      final BatchOperationLatency latencyType, final Long batchOperationKey) {
+    final var key = createLatencyKey(latencyType, batchOperationKey);
+    if (latency.containsKey(key)) {
+      latency.get(key).close();
+      latency.remove(key);
+    }
+  }
+
+  /**
+   * Closes the duration measurement and removes it from the map. If the duration measurement does
+   * not exist, it does nothing.
+   *
+   * @param batchOperationKey the key of the batch operation
+   */
+  private void closeAndRemoveDuration(final Long batchOperationKey) {
+    if (duration.containsKey(batchOperationKey)) {
+      duration.get(batchOperationKey).close();
+      duration.remove(batchOperationKey);
     }
   }
 
@@ -254,18 +256,28 @@ public class BatchOperationMetrics {
     return Tuple.of(latency, batchOperationKey);
   }
 
-  private ResourceSample registerBatchOperationLatency(
-      final Long batchOperationKey,
+  private ResourceSample registerBatchOperationExecutionLatency(
       final BatchOperationLatency batchOperationLatency,
       final BatchOperationType batchOperationType) {
-    final var meterDoc = BatchOperationMetricsDoc.BATCH_OPERATION_LATENCY;
+    final var meterDoc = BatchOperationMetricsDoc.EXECUTION_LATENCY;
     return Timer.resource(registry, meterDoc.getName())
         .description(meterDoc.getDescription())
-        .tag(
-            BatchOperationKeyNames.BATCH_OPERATION_KEY.asString(),
-            String.valueOf(batchOperationKey))
+        .serviceLevelObjectives(meterDoc.getTimerSLOs())
+        .minimumExpectedValue(Duration.ofMillis(10))
         .tag(PartitionKeyNames.PARTITION.asString(), String.valueOf(partitionId))
         .tag(BatchOperationKeyNames.LATENCY.asString(), batchOperationLatency.toString())
+        .tag(BatchOperationKeyNames.BATCH_OPERATION_TYPE.asString(), batchOperationType.toString())
+        .tag(BatchOperationKeyNames.ORGANIZATION_ID.asString(), ORGANIZATION_ID);
+  }
+
+  private ResourceSample registerBatchOperationDuration(
+      final BatchOperationType batchOperationType) {
+    final var meterDoc = BatchOperationMetricsDoc.BATCH_OPERATION_DURATION;
+    return Timer.resource(registry, meterDoc.getName())
+        .description(meterDoc.getDescription())
+        .serviceLevelObjectives(meterDoc.getTimerSLOs())
+        .minimumExpectedValue(Duration.ofMillis(10))
+        .tag(PartitionKeyNames.PARTITION.asString(), String.valueOf(partitionId))
         .tag(BatchOperationKeyNames.BATCH_OPERATION_TYPE.asString(), batchOperationType.toString())
         .tag(BatchOperationKeyNames.ORGANIZATION_ID.asString(), ORGANIZATION_ID);
   }
