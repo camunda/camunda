@@ -1,6 +1,6 @@
 # Camunda 8 orchestrates complex business processes that span people, systems, and devices
 
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.camunda.zeebe/camunda-zeebe/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.camunda.zeebe/camunda-zeebe)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.camunda/camunda-zeebe/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.camunda/camunda-zeebe)
 
 Camunda 8 delivers scalable, on-demand process automation as a service. Camunda 8 is combined with powerful execution engines for BPMN processes and DMN decisions, and paired with tools for collaborative modeling, operations, and analytics.
 
@@ -40,7 +40,7 @@ To learn more about what we're currently working on, check the [GitHub issues](h
 
 * [Releases](https://github.com/camunda/camunda/releases)
 * [Pre-built Docker images](https://hub.docker.com/r/camunda/zeebe/tags?page=1&ordering=last_updated)
-* [Building Docker images for other platforms](/zeebe/docs/building_docker_images.md)
+* [Building Docker images for other platforms](docs/zeebe/building_docker_images.md)
 * [Blog](https://camunda.com/blog/category/process-automation-as-a-service/)
 * [Documentation Home](https://docs.camunda.io)
 * [Issue Tracker](https://github.com/camunda/camunda/issues)
@@ -49,12 +49,12 @@ To learn more about what we're currently working on, check the [GitHub issues](h
 
 ## Recommended Docs Entries for New Users
 
-* [What is Camunda Platform 8?](https://docs.camunda.io/docs/components/concepts/what-is-camunda-platform-8/)
+* [What is Camunda Platform 8?](https://docs.camunda.io/docs/components/)
 * [Getting Started Tutorial](https://docs.camunda.io/docs/guides/)
-* [Technical Concepts](https://docs.camunda.io/docs/components/zeebe/technical-concepts/)
+* [Technical Concepts](https://docs.camunda.io/docs/components/zeebe/technical-concepts/technical-concepts-overview/)
 * [BPMN Processes](https://docs.camunda.io/docs/components/modeler/bpmn/bpmn-primer/)
-* [Installation and Configuration](https://docs.camunda.io/docs/self-managed/zeebe-deployment/)
-* [Java Client](https://docs.camunda.io/docs/apis-clients/java-client/)
+* [Installation and Configuration](https://docs.camunda.io/docs/next/self-managed/orchestration-cluster/)
+* [Java Client](https://docs.camunda.io/docs/apis-tools/java-client/)
 * [Spring SDK](https://docs.camunda.io/docs/apis-tools/spring-zeebe-sdk/getting-started/)
 
 ## Contributing
