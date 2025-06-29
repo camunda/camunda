@@ -96,7 +96,7 @@ public class JobDbModel implements Copyable<JobDbModel> {
   @Override
   public JobDbModel copy(
       final Function<ObjectBuilder<JobDbModel>, ObjectBuilder<JobDbModel>> copyFunction) {
-    return null;
+    return copyFunction.apply(toBuilder()).build();
   }
 
   public Long jobKey() {
@@ -286,6 +286,33 @@ public class JobDbModel implements Copyable<JobDbModel> {
 
   public void historyCleanupDate(final OffsetDateTime historyCleanupDate) {
     this.historyCleanupDate = historyCleanupDate;
+  }
+
+  public ObjectBuilder<JobDbModel> toBuilder() {
+    return new Builder()
+        .jobKey(jobKey)
+        .type(type)
+        .worker(worker)
+        .state(state)
+        .kind(kind)
+        .listenerEventType(listenerEventType)
+        .retries(retries)
+        .isDenied(isDenied)
+        .deniedReason(deniedReason)
+        .hasFailedWithRetriesLeft(hasFailedWithRetriesLeft)
+        .errorCode(errorCode)
+        .errorMessage(errorMessage)
+        .customHeaders(customHeaders)
+        .deadline(deadline)
+        .endTime(endTime)
+        .processDefinitionId(processDefinitionId)
+        .processDefinitionKey(processDefinitionKey)
+        .processInstanceKey(processInstanceKey)
+        .elementId(elementId)
+        .elementInstanceKey(elementInstanceKey)
+        .tenantId(tenantId)
+        .partitionId(partitionId)
+        .historyCleanupDate(historyCleanupDate);
   }
 
   public static class Builder implements ObjectBuilder<JobDbModel> {

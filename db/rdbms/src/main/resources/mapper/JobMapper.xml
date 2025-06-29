@@ -62,86 +62,85 @@
   </select>
 
   <sql id="searchFilter">
-    <trim prefixOverrides="AND">
-      <!-- basic filter -->
-      <if test="filter.jobKeyOperations != null and !filter.jobKeyOperations.isEmpty()">
-        <foreach collection="filter.jobKeyOperations" item="operation">
-          AND JOB_KEY
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if test="filter.typeOperations != null and !filter.typeOperations.isEmpty()">
-        <foreach collection="filter.typeOperations" item="operation">
-          AND TYPE
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if test="filter.workerOperations != null and !filter.workerOperations.isEmpty()">
-        <foreach collection="filter.workerOperations" item="operation">
-          AND WORKER
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if test="filter.stateOperations != null and !filter.stateOperations.isEmpty()">
-        <foreach collection="filter.states" item="operation">
-          AND STATE
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if test="filter.kindOperations != null and !filter.kindOperations.isEmpty()">
-        <foreach collection="filter.kindOperations" item="operation">
-          AND KIND
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if
-        test="filter.listenerEventTypeOperations != null and !filter.listenerEventTypeOperations.isEmpty()">
-        <foreach collection="filter.listenerEventTypeOperations" item="operation">
-          AND LISTENER_EVENT_TYPE
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if
-        test="filter.processInstanceKeyOperations != null and !filter.processInstanceKeyOperations.isEmpty()">
-        <foreach collection="filter.processInstanceKeyOperations" item="operation">
-          AND PROCESS_INSTANCE_KEY
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if
-        test="filter.processDefinitionKeyOperations != null and !filter.processDefinitionKeyOperations.isEmpty()">
-        <foreach collection="filter.processDefinitionKeyOperations" item="operation">
-          AND PROCESS_DEFINITION_KEY
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if
-        test="filter.processDefinitionIdOperations != null and !filter.processDefinitionIdOperations.isEmpty()">
-        <foreach collection="filter.processDefinitionIdOperations" item="operation">
-          AND PROCESS_DEFINITION_ID
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if test="filter.elementIdOperations != null and !filter.elementIdOperations.isEmpty()">
-        <foreach collection="filter.elementIdOperations" item="operation">
-          AND ELEMENT_ID
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if
-        test="filter.elementInstanceKeyOperations != null and !filter.elementInstanceKeyOperations.isEmpty()">
-        <foreach collection="filter.elementInstanceKeyOperations" item="operation">
-          AND ELEMENT_INSTANCE_KEY
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if test="filter.tenantIdOperations != null and !filter.tenantIdOperations.isEmpty()">
-        <foreach collection="filter.tenantIdOperations" item="value" open="(" separator="," close=")">
-          AND TENANT_ID
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-    </trim>
+    WHERE 1 = 1
+    <!-- basic filter -->
+    <if test="filter.jobKeyOperations != null and !filter.jobKeyOperations.isEmpty()">
+      <foreach collection="filter.jobKeyOperations" item="operation">
+        AND JOB_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.typeOperations != null and !filter.typeOperations.isEmpty()">
+      <foreach collection="filter.typeOperations" item="operation">
+        AND TYPE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.workerOperations != null and !filter.workerOperations.isEmpty()">
+      <foreach collection="filter.workerOperations" item="operation">
+        AND WORKER
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.stateOperations != null and !filter.stateOperations.isEmpty()">
+      <foreach collection="filter.states" item="operation">
+        AND STATE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.kindOperations != null and !filter.kindOperations.isEmpty()">
+      <foreach collection="filter.kindOperations" item="operation">
+        AND KIND
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if
+      test="filter.listenerEventTypeOperations != null and !filter.listenerEventTypeOperations.isEmpty()">
+      <foreach collection="filter.listenerEventTypeOperations" item="operation">
+        AND LISTENER_EVENT_TYPE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if
+      test="filter.processInstanceKeyOperations != null and !filter.processInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.processInstanceKeyOperations" item="operation">
+        AND PROCESS_INSTANCE_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if
+      test="filter.processDefinitionKeyOperations != null and !filter.processDefinitionKeyOperations.isEmpty()">
+      <foreach collection="filter.processDefinitionKeyOperations" item="operation">
+        AND PROCESS_DEFINITION_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if
+      test="filter.processDefinitionIdOperations != null and !filter.processDefinitionIdOperations.isEmpty()">
+      <foreach collection="filter.processDefinitionIdOperations" item="operation">
+        AND PROCESS_DEFINITION_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.elementIdOperations != null and !filter.elementIdOperations.isEmpty()">
+      <foreach collection="filter.elementIdOperations" item="operation">
+        AND ELEMENT_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if
+      test="filter.elementInstanceKeyOperations != null and !filter.elementInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.elementInstanceKeyOperations" item="operation">
+        AND ELEMENT_INSTANCE_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.tenantIdOperations != null and !filter.tenantIdOperations.isEmpty()">
+      <foreach collection="filter.tenantIdOperations" item="value" open="(" separator="," close=")">
+        AND TENANT_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
   </sql>
 
   <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.JobDbModel">
@@ -169,7 +168,7 @@
     <result column="LISTENER_EVENT_TYPE" property="listenerEventType" javaType="io.camunda.db.rdbms.write.domain.JobDbModel$ListenerEventType" />
     <result column="DEADLINE" property="deadline" javaType="java.time.OffsetDateTime" />
     <result column="HAS_FAILED_WITH_RETRIES_LEFT" property="hasFailedWithRetriesLeft" javaType="java.lang.Boolean" />
-    <result column="HISTORY_CLEANUP_DATE" property="historyCleanupDate" javaType="java.time.OffsetDateTime" jdbcType="TIMESTAMP"/>
+    <result column="HISTORY_CLEANUP_DATE" property="historyCleanupDate" javaType="java.time.OffsetDateTime" />
   </resultMap>
 
 
