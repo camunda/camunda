@@ -8,6 +8,7 @@
 package io.camunda.search.es.clients;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -25,6 +26,7 @@ import co.elastic.clients.elasticsearch.core.search.TotalHitsRelation;
 import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchIndexRequest;
 import io.camunda.search.clients.core.SearchQueryRequest;
+import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.core.SearchWriteResponse;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import java.io.IOException;
@@ -35,6 +37,10 @@ import org.mockito.ArgumentCaptor;
 
 public class ElasticsearchDataStoreClientTest {
 
+  private static final long TEST_HITS = 789;
+  private static final TotalHitsRelation HITS_RELATION = TotalHitsRelation.Eq;
+  private static final long CAPPED_HITS = 10_000;
+  private static final TotalHitsRelation CAPPED_HITS_RELATION = TotalHitsRelation.Gte;
   private ElasticsearchClient client;
   private ElasticsearchSearchClient searchClient;
 
@@ -48,7 +54,7 @@ public class ElasticsearchDataStoreClientTest {
   public void shouldTransformSearchRequest() throws IOException {
     // given
     final var searchRequestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
-    final var searchResponse = createDefaultSearchResponse();
+    final var searchResponse = createDefaultSearchResponse(TEST_HITS, HITS_RELATION);
     when(client.search(searchRequestCaptor.capture(), eq(TestDocument.class)))
         .thenReturn(searchResponse);
 
@@ -66,7 +72,7 @@ public class ElasticsearchDataStoreClientTest {
   public void shouldTransformSearchResponse() throws IOException {
     // given
     final var searchRequestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
-    final var searchResponse = createDefaultSearchResponse();
+    final var searchResponse = createDefaultSearchResponse(TEST_HITS, HITS_RELATION);
     when(client.search(searchRequestCaptor.capture(), eq(TestDocument.class)))
         .thenReturn(searchResponse);
 
@@ -78,7 +84,7 @@ public class ElasticsearchDataStoreClientTest {
 
     // then
     assertThat(response).isNotNull();
-    assertThat(response.totalHits()).isEqualTo(789);
+    assertThat(response.totalHits()).isEqualTo(TEST_HITS);
   }
 
   @Test
@@ -163,7 +169,46 @@ public class ElasticsearchDataStoreClientTest {
     assertThat(response.result()).isEqualTo(SearchWriteResponse.Result.CREATED);
   }
 
-  private SearchResponse<TestDocument> createDefaultSearchResponse() {
+  @Test
+  public void shouldHaveMoreTotalItemsFalse() throws IOException {
+    // given
+    final var searchRequestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
+    final var searchResponse = createDefaultSearchResponse(TEST_HITS, HITS_RELATION);
+    when(client.search(searchRequestCaptor.capture(), eq(TestDocument.class)))
+        .thenReturn(searchResponse);
+
+    final SearchQueryRequest request =
+        SearchQueryRequest.of(b -> b.index("operate-list-view-8.3.0_").size(1));
+
+    // when
+    final SearchQueryResponse<TestDocument> response =
+        searchClient.search(request, TestDocument.class);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.hasMoreTotalItems()).isFalse();
+  }
+
+  @Test
+  public void shouldHaveMoreTotalItemsTrue() throws IOException {
+    // given
+    final var searchResponse = createDefaultSearchResponse(CAPPED_HITS, CAPPED_HITS_RELATION);
+    when(client.search((SearchRequest) any(), eq(TestDocument.class))).thenReturn(searchResponse);
+
+    final SearchQueryRequest request =
+        SearchQueryRequest.of(b -> b.index("operate-list-view-8.3.0_").size(1));
+
+    // when
+    final SearchQueryResponse<TestDocument> response =
+        searchClient.search(request, TestDocument.class);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.hasMoreTotalItems()).isTrue();
+  }
+
+  private SearchResponse<TestDocument> createDefaultSearchResponse(
+      long totalHits, TotalHitsRelation totalHitsRelation) {
     return SearchResponse.of(
         (f) ->
             f.took(122)
@@ -171,7 +216,7 @@ public class ElasticsearchDataStoreClientTest {
                     HitsMetadata.of(
                         (m) ->
                             m.hits(new ArrayList<>())
-                                .total((t) -> t.value(789).relation(TotalHitsRelation.Eq))))
+                                .total((t) -> t.value(totalHits).relation(totalHitsRelation))))
                 .shards((s) -> s.failed(0).successful(100).total(100))
                 .timedOut(false));
   }

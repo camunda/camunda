@@ -121,7 +121,8 @@ public class GroupServiceTest {
   public void shouldThrowExceptionIfGroupNotFoundById() {
     // given
     final var id = "groupId";
-    when(client.searchGroups(any())).thenReturn(new SearchQueryResult<>(0, List.of(), null, null));
+    when(client.searchGroups(any()))
+        .thenReturn(new SearchQueryResult<>(0, false, List.of(), null, null));
 
     // when / then
     assertThat(services.findGroup(id)).isEmpty();
@@ -216,7 +217,7 @@ public class GroupServiceTest {
     final var groupName = "testGroup";
     final var entity = mock(GroupEntity.class);
     when(entity.name()).thenReturn(groupName);
-    final var result = new SearchQueryResult<>(1, List.of(entity), null, null);
+    final var result = new SearchQueryResult<>(1, false, List.of(entity), null, null);
     when(client.searchGroups(any())).thenReturn(result);
 
     // when

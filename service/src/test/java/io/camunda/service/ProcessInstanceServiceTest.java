@@ -126,7 +126,7 @@ public final class ProcessInstanceServiceTest {
     when(entity.processInstanceKey()).thenReturn(key);
     when(entity.processDefinitionId()).thenReturn("processId");
     when(processInstanceSearchClient.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult(1, List.of(entity), null, null));
+        .thenReturn(new SearchQueryResult(1, false, List.of(entity), null, null));
     authorizeProcessReadInstance(true, "processId");
 
     // when
@@ -141,7 +141,7 @@ public final class ProcessInstanceServiceTest {
     // given
     final var key = 100L;
     when(processInstanceSearchClient.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult<>(0, List.of(), null, null));
+        .thenReturn(new SearchQueryResult<>(0, false, List.of(), null, null));
 
     // when / then
     final var exception =
@@ -157,7 +157,7 @@ public final class ProcessInstanceServiceTest {
     final var entity1 = mock(ProcessInstanceEntity.class);
     final var entity2 = mock(ProcessInstanceEntity.class);
     when(processInstanceSearchClient.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult<>(2, List.of(entity1, entity2), null, null));
+        .thenReturn(new SearchQueryResult<>(2, false, List.of(entity1, entity2), null, null));
 
     // when / then
     final var exception =
@@ -172,7 +172,7 @@ public final class ProcessInstanceServiceTest {
     final var entity = mock(ProcessInstanceEntity.class);
     when(entity.processDefinitionId()).thenReturn("processId");
     when(processInstanceSearchClient.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult<>(1, List.of(entity), null, null));
+        .thenReturn(new SearchQueryResult<>(1, false, List.of(entity), null, null));
     authorizeProcessReadInstance(false, "processId");
     // when
     final Executable executeGetByKey = () -> services.getByKey(1L);
@@ -230,7 +230,8 @@ public final class ProcessInstanceServiceTest {
     authorizeProcessReadInstance(true, "parent_process_id");
 
     when(processInstanceSearchClient.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult<>(1, List.of(childProcess, parentProcess), null, null));
+        .thenReturn(
+            new SearchQueryResult<>(1, false, List.of(childProcess, parentProcess), null, null));
 
     // when
     final var result = services.callHierarchy(childProcess.processInstanceKey());
@@ -251,7 +252,7 @@ public final class ProcessInstanceServiceTest {
     when(rootInstance.treePath()).thenReturn(null); // No treePath
 
     when(processInstanceSearchClient.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult<>(1, List.of(rootInstance), null, null));
+        .thenReturn(new SearchQueryResult<>(1, false, List.of(rootInstance), null, null));
 
     // when
     final var result = services.callHierarchy(123L);
@@ -270,7 +271,7 @@ public final class ProcessInstanceServiceTest {
     when(rootInstance.treePath()).thenReturn("PI_123"); // Root treePath
 
     when(processInstanceSearchClient.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult<>(1, List.of(rootInstance), null, null));
+        .thenReturn(new SearchQueryResult<>(1, false, List.of(rootInstance), null, null));
 
     // when
     final var result = services.callHierarchy(123L);
@@ -431,7 +432,7 @@ public final class ProcessInstanceServiceTest {
     when(processInstance.processInstanceKey()).thenReturn(processInstanceKey);
     when(processInstance.processDefinitionId()).thenReturn("processId");
     when(processInstanceSearchClient.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult<>(1, List.of(processInstance), null, null));
+        .thenReturn(new SearchQueryResult<>(1, false, List.of(processInstance), null, null));
     authorizeProcessReadInstance(true, processInstance.processDefinitionId());
 
     when(incidentSearchClient.searchIncidents(any())).thenReturn(queryResult);
@@ -464,7 +465,7 @@ public final class ProcessInstanceServiceTest {
     final var processInstance = mock(ProcessInstanceEntity.class);
     when(processInstance.processDefinitionId()).thenReturn("processId");
     when(processInstanceSearchClient.searchProcessInstances(any()))
-        .thenReturn(new SearchQueryResult<>(1, List.of(processInstance), null, null));
+        .thenReturn(new SearchQueryResult<>(1, false, List.of(processInstance), null, null));
     authorizeProcessReadInstance(false, processInstance.processDefinitionId());
 
     final var query = new IncidentQuery.Builder().build();

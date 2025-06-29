@@ -13,21 +13,28 @@ import java.util.List;
 import java.util.Objects;
 
 public record SearchQueryResult<T>(
-    long total, List<T> items, String startCursor, String endCursor) {
+    long total, boolean hasMoreTotalItems, List<T> items, String startCursor, String endCursor) {
 
   public static <T> SearchQueryResult<T> empty() {
-    return new SearchQueryResult<>(0, Collections.emptyList(), null, null);
+    return new SearchQueryResult<>(0, false, Collections.emptyList(), null, null);
   }
 
   public static final class Builder<T> implements ObjectBuilder<SearchQueryResult<T>> {
 
     private long total;
+    private boolean hasMoreTotalItems = false;
     private List<T> items;
     private String startCursor;
     private String endCursor;
 
     public Builder<T> total(final long value) {
       total = value;
+      return this;
+    }
+
+    public Builder<T> total(final long value, final boolean hasMoreTotalItems) {
+      total = value;
+      this.hasMoreTotalItems = hasMoreTotalItems;
       return this;
     }
 
@@ -50,6 +57,7 @@ public record SearchQueryResult<T>(
     public SearchQueryResult<T> build() {
       return new SearchQueryResult<T>(
           total,
+          hasMoreTotalItems,
           Objects.requireNonNullElse(items, Collections.emptyList()),
           startCursor,
           endCursor);

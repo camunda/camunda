@@ -147,7 +147,7 @@ public class UserTaskServiceTest {
     // given
     final var entity = mock(UserTaskEntity.class);
     when(entity.processDefinitionId()).thenReturn("bpid");
-    final var result = new SearchQueryResult<>(1, List.of(entity), null, null);
+    final var result = new SearchQueryResult<>(1, false, List.of(entity), null, null);
     when(client.searchUserTasks(any())).thenReturn(result);
     authorizeReadUserTasksForProcess(false, "bpid");
 
@@ -167,7 +167,7 @@ public class UserTaskServiceTest {
     // given
     final var entity = mock(UserTaskEntity.class);
     when(entity.processDefinitionId()).thenReturn("bpid");
-    final var result = new SearchQueryResult<>(1, List.of(entity), null, null);
+    final var result = new SearchQueryResult<>(1, false, List.of(entity), null, null);
     when(client.searchUserTasks(any())).thenReturn(result);
     authorizeReadUserTasksForProcess(false, "bpid");
 
@@ -220,6 +220,6 @@ public class UserTaskServiceTest {
   }
 
   private <T> SearchQueryResult<T> wrapWithSearchQueryResult(final T... entities) {
-    return new SearchQueryResult<>(entities.length, List.of(entities), null, null);
+    return new SearchQueryResult<>(entities.length, false, List.of(entities), null, null);
   }
 }
