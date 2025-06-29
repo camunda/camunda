@@ -69,15 +69,6 @@ DATABASE=elasticsearch docker compose -f /config/docker-compose.yml up -d zeebe_
 
 This will result in all the above dependencies being created, except for Tasklist.
 
-### Running E2E tests
-
-We use Playwright for E2E tests, which are executed on every push to any branch via Github Actions.
-
-To run these tests locally, follow the steps:
-
-1. Run `make start-e2e`.
-2. Then, inside the `client/` folder run `yarn test:e2e`.
-
 ### Running visual regression tests
 
 On Tasklist we use Playwright for visual regression testing. These tests run on every push on every branch through Github Actions.

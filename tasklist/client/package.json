@@ -45,8 +45,6 @@
     "build": "tsc && vite build && node ./renameProdIndex.mjs",
     "test": "TZ=utc vitest",
     "test:ci": "CI=true yarn test",
-    "test:e2e": "IS_E2E=true playwright test --project=e2e",
-    "test:e2e:ci": "CI=true IS_E2E=true playwright test --project=e2e",
     "test:visual": "playwright test --project=visual",
     "test:a11y": "IS_A11Y=true playwright test --project=a11y",
     "test:docs": "CI=true IS_E2E=true playwright test --project=docs",
@@ -115,8 +113,7 @@
     "vite": "7.0.0",
     "vite-plugin-svgr": "4.3.0",
     "vite-tsconfig-paths": "5.1.4",
-    "vitest": "3.2.4",
-    "zeebe-node": "8.3.2"
+    "vitest": "3.2.4"
   },
   "scarfSettings": {
     "enabled": false
