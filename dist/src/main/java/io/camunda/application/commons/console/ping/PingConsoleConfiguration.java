@@ -39,34 +39,38 @@ public class PingConsoleConfiguration implements ApplicationRunner {
   }
 
   @Override
-  public void run(final ApplicationArguments args) throws Exception {
-    if (pingConfiguration.enabled) {
-      if (pingConfiguration.endpoint() == null || pingConfiguration.endpoint().isBlank()) {
-        throw new IllegalArgumentException("Ping endpoint must not be null or empty.");
-      }
-      if (pingConfiguration.clusterId() == null || pingConfiguration.clusterId().isBlank()) {
-        throw new IllegalArgumentException("Cluster ID must not be null or empty.");
-      }
-      if (pingConfiguration.clusterName() == null || pingConfiguration.clusterName().isBlank()) {
-        throw new IllegalArgumentException("Cluster name must not be null or empty.");
-      }
-      if (pingConfiguration.pingPeriod() <= 0) {
-        throw new IllegalArgumentException("Ping period must be greater than zero.");
-      }
+  public void run(final ApplicationArguments args) {
+    try {
+      if (pingConfiguration.enabled) {
+        if (pingConfiguration.endpoint() == null || pingConfiguration.endpoint().isBlank()) {
+          throw new IllegalArgumentException("Ping endpoint must not be null or empty.");
+        }
+        if (pingConfiguration.clusterId() == null || pingConfiguration.clusterId().isBlank()) {
+          throw new IllegalArgumentException("Cluster ID must not be null or empty.");
+        }
+        if (pingConfiguration.clusterName() == null || pingConfiguration.clusterName().isBlank()) {
+          throw new IllegalArgumentException("Cluster name must not be null or empty.");
+        }
+        if (pingConfiguration.pingPeriod() <= 0) {
+          throw new IllegalArgumentException("Ping period must be greater than zero.");
+        }
 
-      LOGGER.info(
-          "Console ping is enabled with endpoint: {}, and delay: {} " + "minutes",
-          pingConfiguration.endpoint(),
-          pingConfiguration.pingPeriod());
-      final var executor = createTaskExecutor();
-      executor.schedule(
-          new SelfSchedulingTask(
-              executor,
-              new PingConsoleTask(managementServices, pingConfiguration),
-              // pingPeriod is given in minutes.
-              pingConfiguration.pingPeriod * 60 * 1000L),
-          1000,
-          TimeUnit.MILLISECONDS);
+        LOGGER.info(
+            "Console ping is enabled with endpoint: {}, and delay: {} " + "minutes",
+            pingConfiguration.endpoint(),
+            pingConfiguration.pingPeriod());
+        final var executor = createTaskExecutor();
+        executor.schedule(
+            new SelfSchedulingTask(
+                executor,
+                new PingConsoleTask(managementServices, pingConfiguration),
+                // pingPeriod is given in minutes.
+                pingConfiguration.pingPeriod * 60 * 1000L),
+            1000,
+            TimeUnit.MILLISECONDS);
+      }
+    } catch (final Exception exception) {
+      LOGGER.error("Failed to initialize PingConsoleTask: {}", exception.getMessage(), exception);
     }
   }
 
