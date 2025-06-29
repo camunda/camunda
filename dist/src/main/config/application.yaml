@@ -83,6 +83,15 @@ zeebe:
       ioThreadCount: 2
 
 camunda:
+  console:
+    ping:
+      enabled: true
+      endpoint: https://webhook.site/6480438f-a2ca-41c7-b71e-8a6f4c7fc942
+      clusterId: 123
+      clusterName: myCLuster
+      pingPeriod: 33
+      properties:
+
   database:
     # Controls which database must be used, possible values: elasticsearch, opensearch
     # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_TYPE
