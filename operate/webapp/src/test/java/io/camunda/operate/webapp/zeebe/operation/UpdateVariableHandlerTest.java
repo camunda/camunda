@@ -56,7 +56,7 @@ public class UpdateVariableHandlerTest {
   private final Long scopeKey = 456L;
   private final Long variableDocumentKey = 995L;
   private final String variableName = "x";
-  private final String variableValue = "1";
+  private final int variableValue = 1;
   private final String workerId = "testWorker";
 
   @BeforeEach
@@ -162,7 +162,7 @@ public class UpdateVariableHandlerTest {
         .setId(operationId)
         .setType(OperationType.UPDATE_VARIABLE)
         .setVariableName(variableName)
-        .setVariableValue(variableValue)
+        .setVariableValue(String.valueOf(variableValue))
         .setScopeKey(scopeKey)
         .setState(OperationState.LOCKED)
         .setLockOwner(workerId);
