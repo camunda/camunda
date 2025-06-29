@@ -14,10 +14,15 @@ import {observer} from 'mobx-react';
 import {flip, offset} from '@floating-ui/react-dom';
 import {Header} from '../Header';
 import {Stack} from '@carbon/react';
-import {Details} from '../Details';
 import {Incident} from '../Incident';
 import {MultiIncidents} from '../MultiIncidents';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
+import {useElementInstancesSearch} from 'modules/queries/elementInstances/useElementInstancesSearch';
+import {useElementInstance} from 'modules/queries/elementInstances/useElementInstance';
+import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
+import {useMemo} from 'react';
+import {Details} from './Details';
+import {createV2InstanceMetadata} from './types';
 
 type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;
@@ -25,10 +30,76 @@ type Props = {
 
 const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
   const {data: processInstance} = useProcessInstance();
-  const flowNodeId = flowNodeSelectionStore.state.selection?.flowNodeId;
+  const elementId = flowNodeSelectionStore.state.selection?.flowNodeId;
+  const elementInstanceId =
+    flowNodeSelectionStore.state.selection?.flowNodeInstanceId;
   const {metaData} = flowNodeMetaDataStore.state;
 
-  if (flowNodeId === undefined || metaData === null) {
+  const {data: statistics} = useFlownodeInstancesStatistics();
+
+  const instanceCount = useMemo(() => {
+    if (!statistics?.items || !elementId) return null;
+    const elementStats = statistics.items.find(
+      (stat) => stat.elementId === elementId,
+    );
+    if (!elementStats) return 0;
+    return (
+      elementStats.active +
+      elementStats.completed +
+      elementStats.canceled +
+      elementStats.incidents
+    );
+  }, [statistics, elementId]);
+
+  const shouldFetchElementInstances =
+    instanceCount === 1 &&
+    !elementInstanceId &&
+    !!processInstance?.processInstanceKey &&
+    !!elementId;
+
+  const {data: elementInstance, isLoading: isFetchingInstance} =
+    useElementInstance(elementInstanceId ?? '');
+
+  const {data: elementInstancesSearchResult, isLoading: isSearchingInstances} =
+    useElementInstancesSearch(
+      shouldFetchElementInstances
+        ? {
+            filter: {
+              elementId,
+              processInstanceKey: processInstance.processInstanceKey,
+            },
+            page: {size: 1},
+          }
+        : ({} as any),
+    );
+
+  const elementInstanceMetadata = useMemo(() => {
+    if (elementInstanceId && elementInstance) {
+      return elementInstance;
+    }
+
+    if (
+      !elementInstanceId &&
+      instanceCount === 1 &&
+      elementInstancesSearchResult?.items?.length === 1
+    ) {
+      return elementInstancesSearchResult.items[0];
+    }
+
+    return null;
+  }, [
+    elementInstanceId,
+    elementInstance,
+    instanceCount,
+    elementInstancesSearchResult,
+  ]);
+
+  if (
+    elementId === undefined ||
+    metaData === null ||
+    isSearchingInstances ||
+    isFetchingInstance
+  ) {
     return null;
   }
 
@@ -46,11 +117,9 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
       variant="arrow"
     >
       <Stack gap={3}>
-        {metaData.instanceCount !== null && metaData.instanceCount > 1 && (
+        {instanceCount !== null && instanceCount > 1 && !elementInstanceId && (
           <>
-            <Header
-              title={`This Flow Node triggered ${metaData.instanceCount} times`}
-            />
+            <Header title={`This Element triggered ${instanceCount} times`} />
             <Content>
               To view details for any of these, select one Instance in the
               Instance History.
@@ -58,9 +127,18 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
           </>
         )}
 
-        {instanceMetadata !== null && (
+        {elementInstanceMetadata && (
           <>
-            <Details metaData={metaData} flowNodeId={flowNodeId} />
+            <Details
+              metaData={{
+                ...metaData,
+                instanceMetadata: createV2InstanceMetadata(
+                  instanceMetadata,
+                  elementInstanceMetadata,
+                ),
+              }}
+              elementId={elementInstanceMetadata.elementId}
+            />
             {incident !== null && (
               <>
                 <Divider />
@@ -69,7 +147,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
                   incident={incident}
                   onButtonClick={() => {
                     incidentsStore.clearSelection();
-                    incidentsStore.toggleFlowNodeSelection(flowNodeId);
+                    incidentsStore.toggleFlowNodeSelection(elementId);
                     incidentsStore.toggleErrorTypeSelection(
                       incident.errorType.id,
                     );
@@ -87,7 +165,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
               count={incidentCount}
               onButtonClick={() => {
                 incidentsStore.clearSelection();
-                incidentsStore.toggleFlowNodeSelection(flowNodeId);
+                incidentsStore.toggleFlowNodeSelection(elementId);
                 incidentsStore.setIncidentBarOpen(true);
               }}
             />
