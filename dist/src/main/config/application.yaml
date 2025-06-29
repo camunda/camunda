@@ -96,7 +96,7 @@ camunda:
   # Operate configuration properties
   operate:
     # Set operate username and password.
-    # If user with <username> does not exists it will be created.
+    # If user with <username> does not exist it will be created.
     # Default: demo/demo
     #username:
     #password:
@@ -121,7 +121,7 @@ camunda:
   # Tasklist configuration properties
   tasklist:
     # Set Tasklist username and password.
-    # If user with <username> does not exists it will be created.
+    # If user with <username> does not exist it will be created.
     # Default: demo/demo
     #username:
     #password:
