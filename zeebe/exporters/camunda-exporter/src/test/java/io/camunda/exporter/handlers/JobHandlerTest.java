@@ -205,8 +205,7 @@ final class JobHandlerTest {
     assertThat(entity.getErrorMessage()).isEqualTo(errorMessage);
     assertThat(entity.getErrorCode()).isEqualTo(errorCode);
     assertThat(entity.isJobFailedWithRetriesLeft()).isFalse();
-    assertThat(entity.getEndTime())
-        .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+    assertThat(entity.getEndTime()).isNull();
     assertThat(entity.getDeadline())
         .isEqualTo(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(deadline)));
     // these values are only updated on JobIntent.COMPLETED

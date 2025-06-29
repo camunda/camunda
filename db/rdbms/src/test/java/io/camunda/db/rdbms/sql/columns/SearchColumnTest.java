@@ -17,6 +17,9 @@ import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
+import io.camunda.search.entities.JobEntity.JobKind;
+import io.camunda.search.entities.JobEntity.JobState;
+import io.camunda.search.entities.JobEntity.ListenerEventType;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.time.OffsetDateTime;
@@ -82,7 +85,22 @@ public class SearchColumnTest {
               FlowNodeType.class,
               List.of(
                   Tuple.of(FlowNodeType.CALL_ACTIVITY, FlowNodeType.CALL_ACTIVITY),
-                  Tuple.of(FlowNodeType.CALL_ACTIVITY, "CALL_ACTIVITY"))));
+                  Tuple.of(FlowNodeType.CALL_ACTIVITY, "CALL_ACTIVITY"))),
+          Map.entry(
+              JobState.class,
+              List.of(
+                  Tuple.of(JobState.CREATED, JobState.CREATED),
+                  Tuple.of(JobState.CREATED, "CREATED"))),
+          Map.entry(
+              JobKind.class,
+              List.of(
+                  Tuple.of(JobKind.BPMN_ELEMENT, JobKind.BPMN_ELEMENT),
+                  Tuple.of(JobKind.BPMN_ELEMENT, "BPMN_ELEMENT"))),
+          Map.entry(
+              ListenerEventType.class,
+              List.of(
+                  Tuple.of(ListenerEventType.START, ListenerEventType.START),
+                  Tuple.of(ListenerEventType.START, "START"))));
 
   private static List<Object[]> provideSearchColumns() {
     return SearchColumnUtils.findAll().stream()
