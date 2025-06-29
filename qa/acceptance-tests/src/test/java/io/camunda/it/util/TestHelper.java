@@ -398,6 +398,23 @@ public final class TestHelper {
             });
   }
 
+  public static void waitForBatchOperationStatus(
+      final CamundaClient camundaClient,
+      final String batchOperationId,
+      final BatchOperationState expectedStatus) {
+    Awaitility.await("batch operation should have state " + expectedStatus)
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              // and
+              final var batch =
+                  camundaClient.newBatchOperationGetRequest(batchOperationId).send().join();
+              assertThat(batch).isNotNull();
+              assertThat(batch.getStatus()).isEqualTo(expectedStatus);
+            });
+  }
+
   public static void waitForProcessInstanceToBeTerminated(
       final CamundaClient camundaClient, final Long processInstanceKey) {
     Awaitility.await("should wait until process is terminated")

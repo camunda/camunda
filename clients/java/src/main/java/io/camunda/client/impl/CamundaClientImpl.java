@@ -35,6 +35,7 @@ import io.camunda.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.client.api.command.AssignUserToGroupCommandStep1;
 import io.camunda.client.api.command.AssignUserToTenantCommandStep1;
 import io.camunda.client.api.command.BroadcastSignalCommandStep1;
+import io.camunda.client.api.command.CancelBatchOperationStep1;
 import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ClockPinCommandStep1;
@@ -69,8 +70,10 @@ import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.PublishMessageCommandStep1;
 import io.camunda.client.api.command.RemoveUserFromTenantCommandStep1;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
+import io.camunda.client.api.command.ResumeBatchOperationStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.StreamJobsCommandStep1;
+import io.camunda.client.api.command.SuspendBatchOperationStep1;
 import io.camunda.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
@@ -156,6 +159,7 @@ import io.camunda.client.impl.command.AssignUserTaskCommandImpl;
 import io.camunda.client.impl.command.AssignUserToGroupCommandImpl;
 import io.camunda.client.impl.command.AssignUserToTenantCommandImpl;
 import io.camunda.client.impl.command.BroadcastSignalCommandImpl;
+import io.camunda.client.impl.command.CancelBatchOperationCommandImpl;
 import io.camunda.client.impl.command.CancelProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.ClockPinCommandImpl;
 import io.camunda.client.impl.command.ClockResetCommandImpl;
@@ -190,8 +194,10 @@ import io.camunda.client.impl.command.ModifyProcessInstanceCommandImpl;
 import io.camunda.client.impl.command.PublishMessageCommandImpl;
 import io.camunda.client.impl.command.RemoveUserFromTenantCommandImpl;
 import io.camunda.client.impl.command.ResolveIncidentCommandImpl;
+import io.camunda.client.impl.command.ResumeBatchOperationCommandImpl;
 import io.camunda.client.impl.command.SetVariablesCommandImpl;
 import io.camunda.client.impl.command.StreamJobsCommandImpl;
+import io.camunda.client.impl.command.SuspendBatchOperationCommandImpl;
 import io.camunda.client.impl.command.TopologyRequestImpl;
 import io.camunda.client.impl.command.UnassignGroupFromTenantCommandImpl;
 import io.camunda.client.impl.command.UnassignMappingFromGroupCommandImpl;
@@ -1154,6 +1160,21 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public BatchOperationSearchRequest newBatchOperationSearchRequest() {
     return new BatchOperationSearchRequestImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public CancelBatchOperationStep1 newCancelBatchOperationCommand(final String batchOperationId) {
+    return new CancelBatchOperationCommandImpl(httpClient, batchOperationId);
+  }
+
+  @Override
+  public SuspendBatchOperationStep1 newSuspendBatchOperationCommand(final String batchOperationId) {
+    return new SuspendBatchOperationCommandImpl(httpClient, batchOperationId);
+  }
+
+  @Override
+  public ResumeBatchOperationStep1 newResumeBatchOperationCommand(final String batchOperationId) {
+    return new ResumeBatchOperationCommandImpl(httpClient, batchOperationId);
   }
 
   @Override
