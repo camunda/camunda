@@ -5,6 +5,20 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.property;
+package io.camunda.unifiedconfig;
 
-public class OperateProperties extends LegacyOperateProperties {}
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+@ConfigurationProperties()
+public class UnifiedConfiguration {
+
+  private Camunda camunda = new Camunda();
+
+  public Camunda getCamunda() {
+    return camunda;
+  }
+
+  public void setCamunda(final Camunda camunda) {
+    this.camunda = camunda;
+  }
+}

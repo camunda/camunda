@@ -25,6 +25,7 @@ import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.tasklist.TasklistModuleConfiguration;
+import io.camunda.unifiedconfig.UnifiedConfigurationHelper;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -62,6 +63,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
 
   public TestCamundaApplication() {
     super(
+        UnifiedConfigurationHelper.class,
         CommonsModuleConfiguration.class,
         OperateModuleConfiguration.class,
         TasklistModuleConfiguration.class,
