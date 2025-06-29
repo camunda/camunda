@@ -99,12 +99,16 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
         .setRetries(recordValue.getRetries())
         .setErrorMessage(recordValue.getErrorMessage())
         .setErrorCode(recordValue.getErrorCode())
-        .setEndTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
         .setCustomHeaders(recordValue.getCustomHeaders())
         .setJobKind(recordValue.getJobKind().name())
         .setFlowNodeId(recordValue.getElementId());
 
-    if (record.getIntent() == JobIntent.COMPLETED) {
+    if (record.getIntent().equals(JobIntent.COMPLETED)
+        || record.getIntent().equals(JobIntent.CANCELED)) {
+      entity.setEndTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+    }
+
+    if (record.getIntent().equals(JobIntent.COMPLETED)) {
       entity
           .setDenied(recordValue.getResult().isDenied())
           .setDeniedReason(recordValue.getResult().getDeniedReason());
