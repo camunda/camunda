@@ -20,6 +20,7 @@ function getQueryKey(processInstanceKey?: string) {
 
 const useCallHierarchy = <T = GetProcessInstanceCallHierarchyResponseBody>(
   select?: (data: GetProcessInstanceCallHierarchyResponseBody) => T,
+  enabled: boolean = true,
 ): UseQueryResult<T, RequestError> => {
   const {processInstanceId} = useProcessInstancePageParams();
 
@@ -37,6 +38,7 @@ const useCallHierarchy = <T = GetProcessInstanceCallHierarchyResponseBody>(
         }
       : skipToken,
     select,
+    enabled,
   });
 };
 
