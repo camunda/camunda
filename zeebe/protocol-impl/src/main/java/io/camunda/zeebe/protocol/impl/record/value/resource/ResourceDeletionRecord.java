@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record.value.resource;
 
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -16,8 +17,12 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 public class ResourceDeletionRecord extends UnifiedRecordValue
     implements ResourceDeletionRecordValue {
 
-  private final LongProperty resourceKeyProp = new LongProperty("resourceKey");
-  private final StringProperty tenantIdProp = new StringProperty("tenantId", "");
+  // Static StringValue keys to avoid memory waste
+  private static final StringValue RESOURCE_KEY_KEY = new StringValue("resourceKey");
+  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+
+  private final LongProperty resourceKeyProp = new LongProperty(RESOURCE_KEY_KEY);
+  private final StringProperty tenantIdProp = new StringProperty(TENANT_ID_KEY, "");
 
   public ResourceDeletionRecord() {
     super(2);

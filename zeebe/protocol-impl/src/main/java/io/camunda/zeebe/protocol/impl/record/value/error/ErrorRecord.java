@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.error;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -22,11 +23,18 @@ public final class ErrorRecord extends UnifiedRecordValue implements ErrorRecord
 
   private static final String NULL_MESSAGE = "Without exception message.";
 
-  private final StringProperty exceptionMessageProp = new StringProperty("exceptionMessage");
-  private final StringProperty stacktraceProp = new StringProperty("stacktrace", "");
-  private final LongProperty errorEventPositionProp = new LongProperty("errorEventPosition");
+  // Static StringValue keys for property names
+  private static final StringValue EXCEPTION_MESSAGE_KEY = new StringValue("exceptionMessage");
+  private static final StringValue STACKTRACE_KEY = new StringValue("stacktrace");
+  private static final StringValue ERROR_EVENT_POSITION_KEY = new StringValue("errorEventPosition");
+  private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
 
-  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
+  private final StringProperty exceptionMessageProp = new StringProperty(EXCEPTION_MESSAGE_KEY);
+  private final StringProperty stacktraceProp = new StringProperty(STACKTRACE_KEY, "");
+  private final LongProperty errorEventPositionProp = new LongProperty(ERROR_EVENT_POSITION_KEY);
+
+  private final LongProperty processInstanceKeyProp =
+      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
 
   public ErrorRecord() {
     super(4);

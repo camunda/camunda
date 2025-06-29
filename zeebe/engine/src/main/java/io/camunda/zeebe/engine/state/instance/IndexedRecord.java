@@ -12,6 +12,7 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import org.agrona.DirectBuffer;
@@ -19,11 +20,17 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public final class IndexedRecord extends UnpackedObject implements DbValue {
-  private final LongProperty keyProp = new LongProperty("key", 0L);
+  // Static StringValue keys for property names
+  private static final StringValue KEY_KEY = new StringValue("key");
+  private static final StringValue STATE_KEY = new StringValue("state");
+  private static final StringValue PROCESS_INSTANCE_RECORD_KEY =
+      new StringValue("processInstanceRecord");
+
+  private final LongProperty keyProp = new LongProperty(KEY_KEY, 0L);
   private final EnumProperty<ProcessInstanceIntent> stateProp =
-      new EnumProperty<>("state", ProcessInstanceIntent.class);
+      new EnumProperty<>(STATE_KEY, ProcessInstanceIntent.class);
   private final ObjectProperty<ProcessInstanceRecord> valueProp =
-      new ObjectProperty<>("processInstanceRecord", new ProcessInstanceRecord());
+      new ObjectProperty<>(PROCESS_INSTANCE_RECORD_KEY, new ProcessInstanceRecord());
 
   IndexedRecord() {
     super(3);
