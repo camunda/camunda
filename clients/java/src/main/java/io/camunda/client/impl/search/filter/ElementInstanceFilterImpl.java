@@ -112,6 +112,18 @@ public class ElementInstanceFilterImpl
   }
 
   @Override
+  public ElementInstanceFilter startDate(final String value) {
+    filter.setStartDate(value);
+    return this;
+  }
+
+  @Override
+  public ElementInstanceFilter endDate(final String value) {
+    filter.setEndDate(value);
+    return this;
+  }
+
+  @Override
   protected io.camunda.client.protocol.rest.ElementInstanceFilter getSearchRequestProperty() {
     return filter;
   }

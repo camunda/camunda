@@ -57,7 +57,9 @@ public class ElementInstanceTest extends ClientRestTest {
                     .elementId("elementId")
                     .hasIncident(true)
                     .incidentKey(4L)
-                    .tenantId("<default>"))
+                    .tenantId("<default>")
+                    .startDate("2024-05-23T23:05:00.000+000")
+                    .endDate("2024-05-23T23:06:00.000+000"))
         .send()
         .join();
     // then
@@ -74,6 +76,8 @@ public class ElementInstanceTest extends ClientRestTest {
     assertThat(filter.getHasIncident()).isTrue();
     assertThat(filter.getIncidentKey()).isEqualTo("4");
     assertThat(filter.getTenantId()).isEqualTo("<default>");
+    assertThat(filter.getStartDate()).isEqualTo("2024-05-23T23:05:00.000+000");
+    assertThat(filter.getEndDate()).isEqualTo("2024-05-23T23:06:00.000+000");
   }
 
   @Test

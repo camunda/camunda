@@ -114,4 +114,20 @@ public interface ElementInstanceFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   ElementInstanceFilter tenantId(final String value);
+
+  /**
+   * Filters element instances by start date.
+   *
+   * @param value the start date of the element instance
+   * @return the updated filter
+   */
+  ElementInstanceFilter startDate(final String value);
+
+  /**
+   * Filters element instances by end date.
+   *
+   * @param value the end date of the element instance
+   * @return the updated filter
+   */
+  ElementInstanceFilter endDate(final String value);
 }

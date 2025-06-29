@@ -210,7 +210,9 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                 "elementName": "name",
                 "hasIncident": true,
                 "incidentKey": "2251799813685320",
-                "tenantId": "default"
+                "tenantId": "default",
+                "startDate": "2023-05-17T10:10:10Z",
+                "endDate": "2023-05-23T10:10:10.000Z"
               }
             }
             """;
@@ -244,6 +246,8 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                         .hasIncident(true)
                         .incidentKeys(2251799813685320L)
                         .tenantIds("default")
+                        .startDates("2023-05-17T10:10:10Z")
+                        .endDates("2023-05-23T10:10:10.000Z")
                         .build())
                 .build());
   }

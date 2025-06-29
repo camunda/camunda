@@ -6566,6 +6566,12 @@ components:
         incidentKey:
           type: string
           description: The key of incident if field incident is true.
+        startDate:
+          type: string
+          description: The start date of this element instance.
+        endDate:
+          type: string
+          description: The end date of this element instance.
     ElementInstanceSearchQueryResult:
       type: object
       allOf:
