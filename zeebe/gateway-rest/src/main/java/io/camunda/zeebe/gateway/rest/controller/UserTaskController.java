@@ -142,7 +142,9 @@ public class UserTaskController {
     try {
       final var result =
           userTaskServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
-      final var processCacheItems = processCache.getUserTaskNames(result.items());
+      final var unnamedItems =
+          result.items().stream().filter(item -> (item.name() == null)).toList();
+      final var processCacheItems = processCache.getUserTaskNames(unnamedItems);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toUserTaskSearchQueryResponse(result, processCacheItems));
     } catch (final Exception e) {
