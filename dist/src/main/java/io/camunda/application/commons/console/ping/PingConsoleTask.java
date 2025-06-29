@@ -12,6 +12,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.commons.console.ping.PingConsoleConfiguration.ConsolePingConfiguration;
 import io.camunda.service.ManagementServices;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
 import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.io.IOException;
@@ -35,22 +36,30 @@ public class PingConsoleTask implements Runnable {
   private static final int NUMBER_OF_MAX_RETRIES = 10;
   private static final int RETRY_DELAY_MULTIPLIER = 2;
   private static final Duration MAX_RETRY_DELAY = Duration.ofMinutes(2);
+  public final HttpClient client;
   private final ManagementServices managementServices;
   private final ConsolePingConfiguration pingConfiguration;
-  private final HttpClient client;
   private final RetryDecorator retryDecorator;
 
+  @VisibleForTesting
   public PingConsoleTask(
       final ManagementServices managementServices,
-      final ConsolePingConfiguration pingConfiguration) {
+      final ConsolePingConfiguration pingConfiguration,
+      final HttpClient client) {
     this.managementServices = managementServices;
     this.pingConfiguration = pingConfiguration;
-    client = HttpClient.newHttpClient();
+    this.client = client;
     final var retryConfiguration = new RetryConfiguration();
     retryConfiguration.setMaxRetries(NUMBER_OF_MAX_RETRIES);
     retryConfiguration.setRetryDelayMultiplier(RETRY_DELAY_MULTIPLIER);
     retryConfiguration.setMaxRetryDelay(MAX_RETRY_DELAY);
     retryDecorator = new RetryDecorator();
+  }
+
+  public PingConsoleTask(
+      final ManagementServices managementServices,
+      final ConsolePingConfiguration pingConfiguration) {
+    this(managementServices, pingConfiguration, HttpClient.newHttpClient());
   }
 
   @Override
@@ -74,7 +83,8 @@ public class PingConsoleTask implements Runnable {
     }
   }
 
-  private void tryPingConsole(final HttpRequest request) throws RetriableException {
+  @VisibleForTesting
+  protected void tryPingConsole(final HttpRequest request) throws RetriableException {
     final HttpResponse<String> resp;
     try {
       resp = client.send(request, BodyHandlers.ofString());
@@ -123,7 +133,8 @@ public class PingConsoleTask implements Runnable {
         boolean validLicense, String licenseType, boolean isCommercial, String expiresAt) {}
   }
 
-  private static class RetriableException extends RuntimeException {
+  @VisibleForTesting
+  static class RetriableException extends RuntimeException {
     public RetriableException(final String message) {
       super(message);
     }

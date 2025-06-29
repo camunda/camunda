@@ -9,6 +9,7 @@ package io.camunda.application.commons.console.ping;
 
 import io.camunda.application.commons.console.ping.PingConsoleConfiguration.ConsolePingConfiguration;
 import io.camunda.service.ManagementServices;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -42,18 +43,7 @@ public class PingConsoleConfiguration implements ApplicationRunner {
   public void run(final ApplicationArguments args) {
     try {
       if (pingConfiguration.enabled) {
-        if (pingConfiguration.endpoint() == null || pingConfiguration.endpoint().isBlank()) {
-          throw new IllegalArgumentException("Ping endpoint must not be null or empty.");
-        }
-        if (pingConfiguration.clusterId() == null || pingConfiguration.clusterId().isBlank()) {
-          throw new IllegalArgumentException("Cluster ID must not be null or empty.");
-        }
-        if (pingConfiguration.clusterName() == null || pingConfiguration.clusterName().isBlank()) {
-          throw new IllegalArgumentException("Cluster name must not be null or empty.");
-        }
-        if (pingConfiguration.pingPeriod() <= 0) {
-          throw new IllegalArgumentException("Ping period must be greater than zero.");
-        }
+        validateConfiguration();
 
         LOGGER.info(
             "Console ping is enabled with endpoint: {}, and delay: {} " + "minutes",
@@ -71,6 +61,22 @@ public class PingConsoleConfiguration implements ApplicationRunner {
       }
     } catch (final Exception exception) {
       LOGGER.error("Failed to initialize PingConsoleTask: {}", exception.getMessage(), exception);
+    }
+  }
+
+  @VisibleForTesting
+  protected void validateConfiguration() {
+    if (pingConfiguration.endpoint() == null || pingConfiguration.endpoint().isBlank()) {
+      throw new IllegalArgumentException("Ping endpoint must not be null or empty.");
+    }
+    if (pingConfiguration.clusterId() == null || pingConfiguration.clusterId().isBlank()) {
+      throw new IllegalArgumentException("Cluster ID must not be null or empty.");
+    }
+    if (pingConfiguration.clusterName() == null || pingConfiguration.clusterName().isBlank()) {
+      throw new IllegalArgumentException("Cluster name must not be null or empty.");
+    }
+    if (pingConfiguration.pingPeriod() <= 0) {
+      throw new IllegalArgumentException("Ping period must be greater than zero.");
     }
   }
 
