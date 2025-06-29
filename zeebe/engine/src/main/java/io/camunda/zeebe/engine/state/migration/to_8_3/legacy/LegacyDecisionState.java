@@ -170,7 +170,7 @@ public final class LegacyDecisionState {
 
   public Optional<PersistedDecision> findDecisionByKey(final long decisionKey) {
     dbDecisionKey.wrapLong(decisionKey);
-    return Optional.ofNullable(decisionsByKey.get(dbDecisionKey)).map(PersistedDecision::copy);
+    return Optional.ofNullable(decisionsByKey.get(dbDecisionKey, PersistedDecision::new));
   }
 
   public Optional<DeployedDrg> findLatestDecisionRequirementsById(
@@ -210,18 +210,17 @@ public final class LegacyDecisionState {
     dbDecisionRequirementsKey.wrapLong(decisionRequirementsKey);
 
     final PersistedDecisionRequirements persistedDrg =
-        decisionRequirementsByKey.get(dbDecisionRequirementsKey);
+        decisionRequirementsByKey.get(
+            dbDecisionRequirementsKey, PersistedDecisionRequirements::new);
     if (persistedDrg == null) {
       throw new DrgNotFoundException();
     }
 
-    final PersistedDecisionRequirements copiedDrg = persistedDrg.copy();
-
-    final var resourceBytes = BufferUtil.bufferAsArray(copiedDrg.getResource());
+    final var resourceBytes = BufferUtil.bufferAsArray(persistedDrg.getResource());
     final ParsedDecisionRequirementsGraph parsedDrg =
         decisionEngine.parse(new ByteArrayInputStream(resourceBytes));
 
-    return new DeployedDrg(parsedDrg, copiedDrg);
+    return new DeployedDrg(parsedDrg, persistedDrg);
   }
 
   private Optional<DeployedDrg> findDeployedDrg(final long decisionRequirementsKey) {

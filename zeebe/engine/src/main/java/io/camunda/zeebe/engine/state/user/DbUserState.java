@@ -69,12 +69,7 @@ public class DbUserState implements UserState, MutableUserState {
   @Override
   public Optional<PersistedUser> getUser(final String username) {
     this.username.wrapString(username);
-    final var persistedUser = usersColumnFamily.get(this.username);
-
-    if (persistedUser == null) {
-      return Optional.empty();
-    }
-    return Optional.of(persistedUser.copy());
+    return Optional.ofNullable(usersColumnFamily.get(this.username, PersistedUser::new));
   }
 
   @Override

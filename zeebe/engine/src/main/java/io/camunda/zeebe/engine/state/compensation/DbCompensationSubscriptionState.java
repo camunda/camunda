@@ -56,9 +56,8 @@ public class DbCompensationSubscriptionState implements MutableCompensationSubsc
   public CompensationSubscription get(
       final String tenantId, final long processInstanceKey, final long recordKey) {
     wrapCompensationKeys(processInstanceKey, recordKey, tenantId);
-    return compensationSubscriptionColumnFamily
-        .get(tenantAwareProcessInstanceKeyCompensableActivityId)
-        .copy();
+    return compensationSubscriptionColumnFamily.get(
+        tenantAwareProcessInstanceKeyCompensableActivityId, CompensationSubscription::new);
   }
 
   @Override
