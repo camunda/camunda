@@ -18,7 +18,9 @@ import io.camunda.zeebe.db.ZeebeDbException;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.FineGrainedColumnFamilyMetrics;
 import io.camunda.zeebe.db.impl.NoopColumnFamilyMetrics;
+import io.camunda.zeebe.db.impl.rocksdb.DbNullKey;
 import io.camunda.zeebe.db.impl.rocksdb.Loggers;
+import io.camunda.zeebe.db.impl.rocksdb.PrefixReadOptions;
 import io.camunda.zeebe.db.impl.rocksdb.RocksDbConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.metrics.RocksDBMetricExporter;
 import io.camunda.zeebe.protocol.EnumValue;
@@ -80,14 +82,7 @@ public class ZeebeTransactionDb<
     this.meterRegistry = meterRegistry;
     metricExporter = new RocksDBMetricExporter(meterRegistry);
 
-    prefixReadOptions =
-        new ReadOptions()
-            .setPrefixSameAsStart(true)
-            .setTotalOrderSeek(false)
-            // setting a positive value to read-ahead is only useful when using network storage with
-            // high latency, at the cost of making iterators more expensive (memory and computation
-            // wise)
-            .setReadaheadSize(0);
+    prefixReadOptions = PrefixReadOptions.readOptions();
     closables.add(prefixReadOptions);
     defaultReadOptions = new ReadOptions();
     closables.add(defaultReadOptions);
