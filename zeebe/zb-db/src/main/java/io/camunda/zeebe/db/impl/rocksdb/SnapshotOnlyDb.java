@@ -26,8 +26,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.agrona.CloseHelper;
+import org.agrona.collections.MutableBoolean;
 import org.rocksdb.Checkpoint;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDB;
@@ -117,7 +117,7 @@ final class SnapshotOnlyDb<ColumnFamilyType extends Enum<? extends EnumValue> & 
       final ZeebeTransactionDb<ZbColumnFamilies> toDB, final Set<ColumnFamilyScope> scopes) {
     try (final var readOptions = PrefixReadOptions.readOptions()) {
       final var toCtx = toDB.createContext();
-      final var abort = new AtomicBoolean(false);
+      final var abort = new MutableBoolean(false);
       for (final var cf : ZbColumnFamilies.values()) {
         if (abort.get()) {
           break;
