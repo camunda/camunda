@@ -109,6 +109,12 @@ public class RdbmsSearchClient implements SearchClientsProxy {
   }
 
   @Override
+  public SearchQueryResult<MessageSubscriptionEntity> searchMessageSubscriptions(
+      final MessageSubscriptionQuery filter) {
+    return SearchQueryResult.empty();
+  }
+
+  @Override
   public RdbmsSearchClient withSecurityContext(final SecurityContext securityContext) {
     return this;
   }
