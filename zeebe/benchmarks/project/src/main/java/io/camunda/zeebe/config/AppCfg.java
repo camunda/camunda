@@ -18,6 +18,8 @@ package io.camunda.zeebe.config;
 public class AppCfg {
 
   private String brokerUrl;
+  private String brokerRestUrl;
+  private boolean preferRest;
   private boolean tls;
   private int monitoringPort;
   private StarterCfg starter;
@@ -27,8 +29,24 @@ public class AppCfg {
     return brokerUrl;
   }
 
-  public void setBrokerUrl(String brokerUrl) {
+  public void setBrokerUrl(final String brokerUrl) {
     this.brokerUrl = brokerUrl;
+  }
+
+  public String getBrokerRestUrl() {
+    return brokerRestUrl;
+  }
+
+  public void setBrokerRestUrl(final String brokerRestUrl) {
+    this.brokerRestUrl = brokerRestUrl;
+  }
+
+  public boolean isPreferRest() {
+    return preferRest;
+  }
+
+  public void setPreferRest(final boolean preferRest) {
+    this.preferRest = preferRest;
   }
 
   public boolean isTls() {
@@ -43,7 +61,7 @@ public class AppCfg {
     return starter;
   }
 
-  public void setStarter(StarterCfg starter) {
+  public void setStarter(final StarterCfg starter) {
     this.starter = starter;
   }
 
@@ -51,7 +69,7 @@ public class AppCfg {
     return worker;
   }
 
-  public void setWorker(WorkerCfg worker) {
+  public void setWorker(final WorkerCfg worker) {
     this.worker = worker;
   }
 
@@ -59,7 +77,7 @@ public class AppCfg {
     return monitoringPort;
   }
 
-  public void setMonitoringPort(int monitoringPort) {
+  public void setMonitoringPort(final int monitoringPort) {
     this.monitoringPort = monitoringPort;
   }
 }
