@@ -257,5 +257,4 @@ public final class FlowNodeInstanceFilterTest extends AbstractTransformerTest {
               assertThat(searchRangeQuery.format()).isEqualTo("yyyy-MM-dd'T'HH:mm:ss.SSSZZ");
             });
   }
-
 }

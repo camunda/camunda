@@ -88,9 +88,7 @@ public class ElementInstanceTest extends ClientRestTest {
     // when
     client
         .newElementInstanceSearchRequest()
-        .filter(f ->
-            f.startDate(b -> b.exists(false))
-                .endDate(b -> b.exists(false)))
+        .filter(f -> f.startDate(b -> b.exists(false)).endDate(b -> b.exists(false)))
         .send()
         .join();
 
@@ -109,9 +107,7 @@ public class ElementInstanceTest extends ClientRestTest {
     final OffsetDateTime now = OffsetDateTime.now();
     client
         .newElementInstanceSearchRequest()
-        .filter(f ->
-            f.startDate(b -> b.gt(now))
-                .endDate(b -> b.gt(now)))
+        .filter(f -> f.startDate(b -> b.gt(now)).endDate(b -> b.gt(now)))
         .send()
         .join();
 
@@ -131,9 +127,7 @@ public class ElementInstanceTest extends ClientRestTest {
     // when
     client
         .newElementInstanceSearchRequest()
-        .filter(f ->
-            f.startDate(b -> b.lt(now))
-                .endDate(b -> b.lt(now)))
+        .filter(f -> f.startDate(b -> b.lt(now)).endDate(b -> b.lt(now)))
         .send()
         .join();
 
@@ -152,9 +146,7 @@ public class ElementInstanceTest extends ClientRestTest {
     final OffsetDateTime now = OffsetDateTime.now();
     client
         .newElementInstanceSearchRequest()
-        .filter(f ->
-            f.startDate(b -> b.gte(now))
-                .endDate(b -> b.gte(now)))
+        .filter(f -> f.startDate(b -> b.gte(now)).endDate(b -> b.gte(now)))
         .send()
         .join();
 
@@ -174,9 +166,7 @@ public class ElementInstanceTest extends ClientRestTest {
     // when
     client
         .newElementInstanceSearchRequest()
-        .filter(f ->
-            f.startDate(b -> b.lte(now))
-                .endDate(b -> b.lte(now)))
+        .filter(f -> f.startDate(b -> b.lte(now)).endDate(b -> b.lte(now)))
         .send()
         .join();
 
@@ -197,9 +187,7 @@ public class ElementInstanceTest extends ClientRestTest {
     // when
     client
         .newElementInstanceSearchRequest()
-        .filter(f ->
-            f.startDate(b -> b.gte(startDate))
-                .endDate(b -> b.lte(endDate)))
+        .filter(f -> f.startDate(b -> b.gte(startDate)).endDate(b -> b.lte(endDate)))
         .send()
         .join();
 
@@ -220,9 +208,7 @@ public class ElementInstanceTest extends ClientRestTest {
     // when
     client
         .newElementInstanceSearchRequest()
-        .filter(f ->
-            f.startDate(b -> b.gt(startDate))
-                .endDate(b -> b.lt(endDate)))
+        .filter(f -> f.startDate(b -> b.gt(startDate)).endDate(b -> b.lt(endDate)))
         .send()
         .join();
 
@@ -243,9 +229,7 @@ public class ElementInstanceTest extends ClientRestTest {
     // when
     client
         .newElementInstanceSearchRequest()
-        .filter(f ->
-            f.startDate(b -> b.eq(startDate))
-                .endDate(b -> b.eq(endDate)))
+        .filter(f -> f.startDate(b -> b.eq(startDate)).endDate(b -> b.eq(endDate)))
         .send()
         .join();
 
@@ -266,9 +250,7 @@ public class ElementInstanceTest extends ClientRestTest {
     // when
     client
         .newElementInstanceSearchRequest()
-        .filter(f ->
-            f.startDate(b -> b.neq(startDate))
-                .endDate(b -> b.neq(endDate)))
+        .filter(f -> f.startDate(b -> b.neq(startDate)).endDate(b -> b.neq(endDate)))
         .send()
         .join();
 
@@ -289,9 +271,8 @@ public class ElementInstanceTest extends ClientRestTest {
     // when
     client
         .newElementInstanceSearchRequest()
-        .filter(f ->
-            f.startDate(b -> b.in(startDate, endDate))
-                .endDate(b -> b.in(startDate, endDate)))
+        .filter(
+            f -> f.startDate(b -> b.in(startDate, endDate)).endDate(b -> b.in(startDate, endDate)))
         .send()
         .join();
 

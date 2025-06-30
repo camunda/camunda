@@ -148,5 +148,4 @@ public interface ElementInstanceFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   ElementInstanceFilter endDate(final Consumer<DateTimeProperty> endDate);
-
 }

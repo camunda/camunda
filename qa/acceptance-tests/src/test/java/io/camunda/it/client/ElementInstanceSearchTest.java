@@ -678,5 +678,4 @@ public class ElementInstanceSearchTest {
     // then
     assertThat(result.items().size()).isEqualTo(2);
   }
-
 }

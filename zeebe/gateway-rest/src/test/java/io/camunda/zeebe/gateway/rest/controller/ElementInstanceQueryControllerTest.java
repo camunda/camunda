@@ -255,10 +255,12 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                         .hasIncident(true)
                         .incidentKeys(2251799813685320L)
                         .tenantIds("default")
-                        .startDateOperations(Operation.eq(OffsetDateTime.parse("2023-05-17T10:10:10Z")))
-                        .endDateOperations(Operation.eq(OffsetDateTime.parse("2023-05-23T10:10:10.000Z")))
-                .build())
-        .build());
+                        .startDateOperations(
+                            Operation.eq(OffsetDateTime.parse("2023-05-17T10:10:10Z")))
+                        .endDateOperations(
+                            Operation.eq(OffsetDateTime.parse("2023-05-23T10:10:10.000Z")))
+                        .build())
+                .build());
   }
 
   @Test
