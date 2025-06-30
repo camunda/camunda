@@ -48,7 +48,7 @@ public class AuthorizationGetRequestImpl implements AuthorizationGetRequest {
 
   @Override
   public CamundaFuture<Authorization> send() {
-    ArgumentUtil.ensureNotNegative("authorizationKey", authorizationKey);
+    ArgumentUtil.ensureGreaterThan("authorizationKey", authorizationKey, 0);
     final HttpCamundaFuture<Authorization> result = new HttpCamundaFuture<>();
     httpClient.get(
         String.format("/authorizations/%d", authorizationKey),
