@@ -25,6 +25,7 @@ import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
 import org.junit.jupiter.api.Test;
@@ -58,8 +59,8 @@ public class ElementInstanceTest extends ClientRestTest {
                     .hasIncident(true)
                     .incidentKey(4L)
                     .tenantId("<default>")
-                    .startDate("2024-05-23T23:05:00.000+000")
-                    .endDate("2024-05-23T23:06:00.000+000"))
+                    .startDate(b -> b.exists(true))
+                    .endDate(b -> b.exists(true)))
         .send()
         .join();
     // then
@@ -76,8 +77,232 @@ public class ElementInstanceTest extends ClientRestTest {
     assertThat(filter.getHasIncident()).isTrue();
     assertThat(filter.getIncidentKey()).isEqualTo("4");
     assertThat(filter.getTenantId()).isEqualTo("<default>");
-    assertThat(filter.getStartDate()).isEqualTo("2024-05-23T23:05:00.000+000");
-    assertThat(filter.getEndDate()).isEqualTo("2024-05-23T23:06:00.000+000");
+    assertThat(filter.getStartDate()).isNotNull();
+    assertThat(filter.getEndDate()).isNotNull();
+    assertThat(filter.getStartDate().get$Exists()).isTrue();
+    assertThat(filter.getEndDate().get$Exists()).isTrue();
+  }
+
+  @Test
+  void shouldReturnElementInstanceByDatesNotExists() {
+    // when
+    client
+        .newElementInstanceSearchRequest()
+        .filter(f ->
+            f.startDate(b -> b.exists(false))
+                .endDate(b -> b.exists(false)))
+        .send()
+        .join();
+
+    // then
+    final ElementInstanceSearchQuery request =
+        gatewayService.getLastRequest(ElementInstanceSearchQuery.class);
+    final ElementInstanceFilter filter = Objects.requireNonNull(request.getFilter());
+    assertThat(filter.getStartDate()).isNotNull();
+    assertThat(filter.getEndDate()).isNotNull();
+    assertThat(filter.getStartDate().get$Exists()).isFalse();
+    assertThat(filter.getEndDate().get$Exists()).isFalse();
+  }
+
+  @Test
+  void shouldReturnElementInstanceByDatesGt() {
+    final OffsetDateTime now = OffsetDateTime.now();
+    client
+        .newElementInstanceSearchRequest()
+        .filter(f ->
+            f.startDate(b -> b.gt(now))
+                .endDate(b -> b.gt(now)))
+        .send()
+        .join();
+
+    // then
+    final ElementInstanceSearchQuery request =
+        gatewayService.getLastRequest(ElementInstanceSearchQuery.class);
+    final ElementInstanceFilter filter = Objects.requireNonNull(request.getFilter());
+    assertThat(filter.getStartDate()).isNotNull();
+    assertThat(filter.getEndDate()).isNotNull();
+    assertThat(filter.getStartDate().get$Gt()).isNotNull();
+    assertThat(filter.getEndDate().get$Gt()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnElementInstanceByDatesLt() {
+    final OffsetDateTime now = OffsetDateTime.now();
+    // when
+    client
+        .newElementInstanceSearchRequest()
+        .filter(f ->
+            f.startDate(b -> b.lt(now))
+                .endDate(b -> b.lt(now)))
+        .send()
+        .join();
+
+    // then
+    final ElementInstanceSearchQuery request =
+        gatewayService.getLastRequest(ElementInstanceSearchQuery.class);
+    final ElementInstanceFilter filter = Objects.requireNonNull(request.getFilter());
+    assertThat(filter.getStartDate()).isNotNull();
+    assertThat(filter.getEndDate()).isNotNull();
+    assertThat(filter.getStartDate().get$Lt()).isNotNull();
+    assertThat(filter.getEndDate().get$Lt()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnElementInstanceByDatesGte() {
+    final OffsetDateTime now = OffsetDateTime.now();
+    client
+        .newElementInstanceSearchRequest()
+        .filter(f ->
+            f.startDate(b -> b.gte(now))
+                .endDate(b -> b.gte(now)))
+        .send()
+        .join();
+
+    // then
+    final ElementInstanceSearchQuery request =
+        gatewayService.getLastRequest(ElementInstanceSearchQuery.class);
+    final ElementInstanceFilter filter = Objects.requireNonNull(request.getFilter());
+    assertThat(filter.getStartDate()).isNotNull();
+    assertThat(filter.getEndDate()).isNotNull();
+    assertThat(filter.getStartDate().get$Gte()).isNotNull();
+    assertThat(filter.getEndDate().get$Gte()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnElementInstanceByDatesLte() {
+    final OffsetDateTime now = OffsetDateTime.now();
+    // when
+    client
+        .newElementInstanceSearchRequest()
+        .filter(f ->
+            f.startDate(b -> b.lte(now))
+                .endDate(b -> b.lte(now)))
+        .send()
+        .join();
+
+    // then
+    final ElementInstanceSearchQuery request =
+        gatewayService.getLastRequest(ElementInstanceSearchQuery.class);
+    final ElementInstanceFilter filter = Objects.requireNonNull(request.getFilter());
+    assertThat(filter.getStartDate()).isNotNull();
+    assertThat(filter.getEndDate()).isNotNull();
+    assertThat(filter.getStartDate().get$Lte()).isNotNull();
+    assertThat(filter.getEndDate().get$Lte()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnElementInstanceByDatesGteLte() {
+    final OffsetDateTime startDate = OffsetDateTime.now().minusDays(1);
+    final OffsetDateTime endDate = OffsetDateTime.now();
+    // when
+    client
+        .newElementInstanceSearchRequest()
+        .filter(f ->
+            f.startDate(b -> b.gte(startDate))
+                .endDate(b -> b.lte(endDate)))
+        .send()
+        .join();
+
+    // then
+    final ElementInstanceSearchQuery request =
+        gatewayService.getLastRequest(ElementInstanceSearchQuery.class);
+    final ElementInstanceFilter filter = Objects.requireNonNull(request.getFilter());
+    assertThat(filter.getStartDate()).isNotNull();
+    assertThat(filter.getEndDate()).isNotNull();
+    assertThat(filter.getStartDate().get$Gte()).isNotNull();
+    assertThat(filter.getEndDate().get$Lte()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnElementInstanceByDatesGtLt() {
+    final OffsetDateTime startDate = OffsetDateTime.now().minusDays(1);
+    final OffsetDateTime endDate = OffsetDateTime.now();
+    // when
+    client
+        .newElementInstanceSearchRequest()
+        .filter(f ->
+            f.startDate(b -> b.gt(startDate))
+                .endDate(b -> b.lt(endDate)))
+        .send()
+        .join();
+
+    // then
+    final ElementInstanceSearchQuery request =
+        gatewayService.getLastRequest(ElementInstanceSearchQuery.class);
+    final ElementInstanceFilter filter = Objects.requireNonNull(request.getFilter());
+    assertThat(filter.getStartDate()).isNotNull();
+    assertThat(filter.getEndDate()).isNotNull();
+    assertThat(filter.getStartDate().get$Gt()).isNotNull();
+    assertThat(filter.getEndDate().get$Lt()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnElementInstanceByDatesEq() {
+    final OffsetDateTime startDate = OffsetDateTime.now().minusDays(1);
+    final OffsetDateTime endDate = OffsetDateTime.now();
+    // when
+    client
+        .newElementInstanceSearchRequest()
+        .filter(f ->
+            f.startDate(b -> b.eq(startDate))
+                .endDate(b -> b.eq(endDate)))
+        .send()
+        .join();
+
+    // then
+    final ElementInstanceSearchQuery request =
+        gatewayService.getLastRequest(ElementInstanceSearchQuery.class);
+    final ElementInstanceFilter filter = Objects.requireNonNull(request.getFilter());
+    assertThat(filter.getStartDate()).isNotNull();
+    assertThat(filter.getEndDate()).isNotNull();
+    assertThat(filter.getStartDate().get$Eq()).isNotNull();
+    assertThat(filter.getEndDate().get$Eq()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnElementInstanceByDatesNeq() {
+    final OffsetDateTime startDate = OffsetDateTime.now().minusDays(1);
+    final OffsetDateTime endDate = OffsetDateTime.now();
+    // when
+    client
+        .newElementInstanceSearchRequest()
+        .filter(f ->
+            f.startDate(b -> b.neq(startDate))
+                .endDate(b -> b.neq(endDate)))
+        .send()
+        .join();
+
+    // then
+    final ElementInstanceSearchQuery request =
+        gatewayService.getLastRequest(ElementInstanceSearchQuery.class);
+    final ElementInstanceFilter filter = Objects.requireNonNull(request.getFilter());
+    assertThat(filter.getStartDate()).isNotNull();
+    assertThat(filter.getEndDate()).isNotNull();
+    assertThat(filter.getStartDate().get$Neq()).isNotNull();
+    assertThat(filter.getEndDate().get$Neq()).isNotNull();
+  }
+
+  @Test
+  void shouldReturnElementInstanceByDatesIn() {
+    final OffsetDateTime startDate = OffsetDateTime.now().minusDays(1);
+    final OffsetDateTime endDate = OffsetDateTime.now();
+    // when
+    client
+        .newElementInstanceSearchRequest()
+        .filter(f ->
+            f.startDate(b -> b.in(startDate, endDate))
+                .endDate(b -> b.in(startDate, endDate)))
+        .send()
+        .join();
+
+    // then
+    final ElementInstanceSearchQuery request =
+        gatewayService.getLastRequest(ElementInstanceSearchQuery.class);
+    final ElementInstanceFilter filter = Objects.requireNonNull(request.getFilter());
+    assertThat(filter.getStartDate()).isNotNull();
+    assertThat(filter.getEndDate()).isNotNull();
+    assertThat(filter.getStartDate().get$In()).isNotNull();
+    assertThat(filter.getEndDate().get$In()).isNotNull();
   }
 
   @Test
@@ -105,6 +330,10 @@ public class ElementInstanceTest extends ClientRestTest {
                     .incidentKey()
                     .asc()
                     .tenantId()
+                    .asc()
+                    .startDate()
+                    .asc()
+                    .endDate()
                     .asc())
         .send()
         .join();
@@ -115,7 +344,7 @@ public class ElementInstanceTest extends ClientRestTest {
     final List<SearchRequestSort> sorts =
         SearchRequestSortMapper.fromElementInstanceSearchQuerySortRequest(
             Objects.requireNonNull(request.getSort()));
-    assertThat(sorts.size()).isEqualTo(9);
+    assertThat(sorts.size()).isEqualTo(11);
     assertSort(sorts.get(0), "processDefinitionKey", SortOrderEnum.ASC);
     assertSort(sorts.get(1), "processInstanceKey", SortOrderEnum.ASC);
     assertSort(sorts.get(2), "processDefinitionId", SortOrderEnum.ASC);
@@ -125,6 +354,8 @@ public class ElementInstanceTest extends ClientRestTest {
     assertSort(sorts.get(6), "endDate", SortOrderEnum.DESC);
     assertSort(sorts.get(7), "incidentKey", SortOrderEnum.ASC);
     assertSort(sorts.get(8), "tenantId", SortOrderEnum.ASC);
+    assertSort(sorts.get(9), "startDate", SortOrderEnum.ASC);
+    assertSort(sorts.get(10), "endDate", SortOrderEnum.ASC);
   }
 
   @Test
