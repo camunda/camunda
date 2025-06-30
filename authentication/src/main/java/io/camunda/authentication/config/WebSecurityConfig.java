@@ -18,7 +18,6 @@ import io.camunda.authentication.ConditionalOnUnprotectedApi;
 import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
-import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
 import io.camunda.security.configuration.headers.values.FrameOptionMode;
@@ -40,9 +39,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -73,7 +70,6 @@ import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWrite
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
 @Profile("consolidated-auth")
 public class WebSecurityConfig {
   public static final String SESSION_COOKIE = "camunda-session";
@@ -132,13 +128,6 @@ public class WebSecurityConfig {
           // deprecated Tasklist v1 Public Endpoints
           "/new/**",
           "/favicon.ico");
-
-  @Bean
-  @ConditionalOnMissingBean(MethodSecurityExpressionHandler.class)
-  public MethodSecurityExpressionHandler methodSecurityExpressionHandler(
-      final AuthorizationServices authorizationServices) {
-    return new CustomMethodSecurityExpressionHandler(authorizationServices);
-  }
 
   @Bean
   @Order(ORDER_UNPROTECTED)
