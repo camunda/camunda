@@ -44,6 +44,7 @@ public class UnifiedConfigurationHelper {
   /* Config beans built using the unified configuration system */
 
   @Bean
+  @Primary
   public TasklistProperties tasklistProperties(
       final LegacyTasklistProperties legacyTasklistProperties,
       final UnifiedConfiguration unifiedConfiguration) {
@@ -56,6 +57,7 @@ public class UnifiedConfigurationHelper {
   }
 
   @Bean
+  @Primary
   public OperateProperties operateProperties(
       final LegacyOperateProperties legacyOperateProperties,
       final UnifiedConfiguration unifiedConfiguration) {
