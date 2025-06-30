@@ -47,7 +47,7 @@ public class RawTransactionalColumnFamilyTest {
     context = db.createContext();
 
     for (final var cf : ZbColumnFamilies.values()) {
-      final var rawCF = new RawTransactionalColumnFamily(db, cf, context);
+      final var rawCF = new RawTransactionalColumnFamily(db, cf);
       columnFamilies.put(cf, rawCF);
     }
   }
@@ -80,6 +80,7 @@ public class RawTransactionalColumnFamilyTest {
     // when
     final var i = new MutableReference<>(0);
     rawCF.forEach(
+        context,
         ((rawKey, keyOffset, keyLen, value, valueOffset, valueLen) -> {
           final var cfContext = new ColumnFamilyContext(cf.getValue());
           assertThat(keyOffset).isZero();
