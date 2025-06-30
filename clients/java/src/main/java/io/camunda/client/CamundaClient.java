@@ -29,6 +29,7 @@ import io.camunda.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.client.api.command.AssignUserToGroupCommandStep1;
 import io.camunda.client.api.command.AssignUserToTenantCommandStep1;
 import io.camunda.client.api.command.BroadcastSignalCommandStep1;
+import io.camunda.client.api.command.CancelBatchOperationStep1;
 import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ClockPinCommandStep1;
 import io.camunda.client.api.command.ClockResetCommandStep1;
@@ -60,7 +61,9 @@ import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.PublishMessageCommandStep1;
 import io.camunda.client.api.command.RemoveUserFromTenantCommandStep1;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
+import io.camunda.client.api.command.ResumeBatchOperationStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
+import io.camunda.client.api.command.SuspendBatchOperationStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignMappingFromGroupStep1;
@@ -2222,6 +2225,51 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the groups search request
    */
   BatchOperationSearchRequest newBatchOperationSearchRequest();
+
+  /**
+   * Command to cancel a batch operation
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * camundaClient
+   *   .newCancelBatchOperationCommand("123")
+   *   .send();
+   * </pre>
+   *
+   * @return a builder to configure and send the cancel batch operation command
+   */
+  CancelBatchOperationStep1 newCancelBatchOperationCommand(String batchOperationId);
+
+  /**
+   * Command to suspend a batch operation
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * camundaClient
+   *   .newSuspendBatchOperationCommand("123L")
+   *   .send();
+   * </pre>
+   *
+   * @return a builder to configure and send the suspend batch operation command
+   */
+  SuspendBatchOperationStep1 newSuspendBatchOperationCommand(String batchOperationId);
+
+  /**
+   * Command to resume a batch operation
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * camundaClient
+   *   .newResumeBatchOperationCommand("123L")
+   *   .send();
+   * </pre>
+   *
+   * @return a builder to configure and send the resume batch operation command
+   */
+  ResumeBatchOperationStep1 newResumeBatchOperationCommand(String batchOperationId);
 
   /**
    * Executes a search request to query batch operation items.
