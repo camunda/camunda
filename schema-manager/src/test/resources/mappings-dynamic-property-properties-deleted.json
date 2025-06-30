@@ -1,0 +1,16 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "world": {
+        "type": "object",
+        "dynamic": true,
+        "properties": {
+          "header1": {
+            "type": "keyword"
+          }
+        }
+      }
+    }
+  }
+}
