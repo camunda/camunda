@@ -145,6 +145,7 @@ get_jobs_not_needing_detectchanges(jobInput) = jobs_not_needing_detectchanges {
         # not enforced on Unified CI jobs that are part of change detection control flow structure
         job_id != "detect-changes"
         job_id != "check-results"
+        job_id != "get-snapshot-docker-version-tag"
 
         # not enforced on Unified CI jobs running after "check-results" job
         not startswith(job_id, "deploy-")
