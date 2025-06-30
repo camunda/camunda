@@ -28,6 +28,7 @@ import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -452,7 +453,7 @@ final class BrokerTopologyManagerTest {
   }
 
   @Test
-  void shouldUpdatePartitionsCountFromClusterTopology() {
+  void shouldUpdatePartitionsFromClusterTopology() {
     // given
     final var broker = createBroker(1);
     notifyEvent(createMemberAddedEvent(broker));
@@ -485,6 +486,8 @@ final class BrokerTopologyManagerTest {
     Awaitility.await()
         .untilAsserted(
             () -> assertThat(topologyManager.getTopology().getPartitionsCount()).isEqualTo(2));
+
+    assertThat(topologyManager.getTopology().getPartitions()).isEqualTo(List.of(1, 2));
   }
 
   @Test

@@ -18,6 +18,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
@@ -267,6 +268,13 @@ public record ClusterConfiguration(
   public int partitionCount() {
     return (int)
         members.values().stream().flatMap(m -> m.partitions().keySet().stream()).distinct().count();
+  }
+
+  public IntStream partitionIds() {
+    return members.values().stream()
+        .flatMapToInt(m -> m.partitions().keySet().stream().mapToInt(i -> i))
+        .sorted()
+        .distinct();
   }
 
   public Integer minReplicationFactor() {
