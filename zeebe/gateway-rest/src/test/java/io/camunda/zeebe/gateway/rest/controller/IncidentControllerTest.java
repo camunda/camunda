@@ -11,7 +11,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
@@ -36,7 +36,7 @@ public class IncidentControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setUp() {
-    when(incidentServices.withAuthentication(any(Authentication.class)))
+    when(incidentServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(incidentServices);
   }
 

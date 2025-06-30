@@ -14,7 +14,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
@@ -51,7 +51,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setup() {
-    when(authorizationServices.withAuthentication(any(Authentication.class)))
+    when(authorizationServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(authorizationServices);
   }
 

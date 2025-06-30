@@ -14,8 +14,8 @@ import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -45,7 +45,7 @@ public class AuthorizationServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final AuthorizationSearchClient authorizationSearchClient,
-      final Authentication authentication,
+      final CamundaAuthentication authentication,
       final SecurityConfiguration securityConfiguration) {
     super(brokerClient, securityContextProvider, authentication);
     this.authorizationSearchClient = authorizationSearchClient;
@@ -53,7 +53,7 @@ public class AuthorizationServices
   }
 
   @Override
-  public AuthorizationServices withAuthentication(final Authentication authentication) {
+  public AuthorizationServices withAuthentication(final CamundaAuthentication authentication) {
     return new AuthorizationServices(
         brokerClient,
         securityContextProvider,

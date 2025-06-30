@@ -25,7 +25,7 @@ import io.camunda.migration.identity.dto.TenantMappingRule;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
 import io.camunda.search.entities.TenantEntity;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.MappingServices;
 import io.camunda.service.MappingServices.MappingDTO;
 import io.camunda.service.TenantServices;
@@ -63,7 +63,7 @@ final class TenantMappingRuleMigrationHandlerTest {
     this.mappingServices = mappingServices;
     migrationHandler =
         new TenantMappingRuleMigrationHandler(
-            Authentication.none(),
+            CamundaAuthentication.none(),
             managementIdentityClient,
             new ManagementIdentityTransformer(),
             tenantServices,

@@ -20,7 +20,7 @@ import io.camunda.search.entities.AdHocSubProcessActivityEntity;
 import io.camunda.search.entities.AdHocSubProcessActivityEntity.ActivityType;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
@@ -53,7 +53,7 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setUpServices() {
-    when(adHocSubProcessActivityServices.withAuthentication(any(Authentication.class)))
+    when(adHocSubProcessActivityServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(adHocSubProcessActivityServices);
   }
 

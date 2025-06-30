@@ -20,7 +20,7 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.IncidentSort;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.IncidentServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
@@ -124,7 +124,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setupIncidentServices() {
-    when(incidentServices.withAuthentication(ArgumentMatchers.any(Authentication.class)))
+    when(incidentServices.withAuthentication(ArgumentMatchers.any(CamundaAuthentication.class)))
         .thenReturn(incidentServices);
   }
 

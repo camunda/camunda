@@ -17,7 +17,7 @@ import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemStateEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -39,7 +39,7 @@ class BatchOperationItemControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setUpServices() {
-    when(batchOperationServices.withAuthentication(any(Authentication.class)))
+    when(batchOperationServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(batchOperationServices);
   }
 

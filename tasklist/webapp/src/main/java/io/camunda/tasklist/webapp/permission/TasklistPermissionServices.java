@@ -7,8 +7,8 @@
  */
 package io.camunda.tasklist.webapp.permission;
 
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.security.SecurityContextProvider;
@@ -81,7 +81,8 @@ public class TasklistPermissionServices {
         resourceId, authenticationSupplier.get(), authorization);
   }
 
-  private boolean isAuthorizationCheckDisabled(final Supplier<Authentication> authentication) {
+  private boolean isAuthorizationCheckDisabled(
+      final Supplier<CamundaAuthentication> authentication) {
     return isAuthorizationDisabled() || isWithoutAuthenticatedUserKey(authentication.get());
   }
 
@@ -89,7 +90,7 @@ public class TasklistPermissionServices {
     return !securityConfiguration.getAuthorizations().isEnabled();
   }
 
-  private boolean isWithoutAuthenticatedUserKey(final Authentication authentication) {
+  private boolean isWithoutAuthenticatedUserKey(final CamundaAuthentication authentication) {
     // when the provided authentication does not contain a username,
     // then the authorization check cannot be performed.
     // the authorization key is only provided when running with the BASIC authentication method

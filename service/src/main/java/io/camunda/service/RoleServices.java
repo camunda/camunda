@@ -15,8 +15,8 @@ import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -42,7 +42,7 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final RoleSearchClient roleSearchClient,
-      final Authentication authentication) {
+      final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.roleSearchClient = roleSearchClient;
   }
@@ -115,7 +115,7 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
   }
 
   @Override
-  public RoleServices withAuthentication(final Authentication authentication) {
+  public RoleServices withAuthentication(final CamundaAuthentication authentication) {
     return new RoleServices(
         brokerClient, securityContextProvider, roleSearchClient, authentication);
   }

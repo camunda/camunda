@@ -15,8 +15,8 @@ import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -41,14 +41,14 @@ public final class DecisionDefinitionServices
       final SecurityContextProvider securityContextProvider,
       final DecisionDefinitionSearchClient decisionDefinitionSearchClient,
       final DecisionRequirementSearchClient decisionRequirementSearchClient,
-      final Authentication authentication) {
+      final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.decisionDefinitionSearchClient = decisionDefinitionSearchClient;
     this.decisionRequirementSearchClient = decisionRequirementSearchClient;
   }
 
   @Override
-  public DecisionDefinitionServices withAuthentication(final Authentication authentication) {
+  public DecisionDefinitionServices withAuthentication(final CamundaAuthentication authentication) {
     return new DecisionDefinitionServices(
         brokerClient,
         securityContextProvider,

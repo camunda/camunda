@@ -12,7 +12,7 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.SignalServices;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
@@ -46,7 +46,8 @@ public class SignalControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setup() {
-    when(signalServices.withAuthentication(any(Authentication.class))).thenReturn(signalServices);
+    when(signalServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(signalServices);
   }
 
   @Test

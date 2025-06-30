@@ -11,7 +11,7 @@ import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import java.util.List;
@@ -23,7 +23,7 @@ public class TenantMigrationHandler extends MigrationHandler<Tenant> {
   private final TenantServices tenantServices;
 
   public TenantMigrationHandler(
-      final Authentication authentication,
+      final CamundaAuthentication authentication,
       final ManagementIdentityClient managementIdentityClient,
       final ManagementIdentityTransformer managementIdentityTransformer,
       final TenantServices tenantServices) {

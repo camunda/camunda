@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.rest;
 
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.zeebe.gateway.rest.config.JacksonConfig;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -82,7 +82,8 @@ public abstract class RestControllerTest {
         Mockito.mockStatic(RequestMapper.class, Mockito.CALLS_REAL_METHODS)) {
       mockRequestMapper
           .when(RequestMapper::getAuthentication)
-          .thenReturn(Authentication.of(a -> a.user("foo").group("groupId").tenant(tenantId)));
+          .thenReturn(
+              CamundaAuthentication.of(a -> a.user("foo").group("groupId").tenant(tenantId)));
       return function.apply(webClient);
     }
   }

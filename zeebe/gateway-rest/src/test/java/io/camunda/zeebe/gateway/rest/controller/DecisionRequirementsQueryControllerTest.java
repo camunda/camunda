@@ -20,8 +20,8 @@ import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.DecisionRequirementsSort;
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -90,7 +90,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
 
   @BeforeEach
   void setupServices() {
-    when(decisionRequirementsServices.withAuthentication(any(Authentication.class)))
+    when(decisionRequirementsServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(decisionRequirementsServices);
 
     when(decisionRequirementsServices.getByKey(VALID_DECISION_REQUIREMENTS_KEY))

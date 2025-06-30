@@ -46,8 +46,8 @@ import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.filter.AdHocSubProcessActivityFilter;
 import io.camunda.search.query.AdHocSubProcessActivityQuery;
-import io.camunda.security.auth.Authentication;
-import io.camunda.security.auth.Authentication.Builder;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthentication.Builder;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
@@ -610,7 +610,7 @@ public class RequestMapper {
             new BroadcastSignalRequest(request.getSignalName(), request.getVariables(), tenantId));
   }
 
-  public static Authentication getAuthentication() {
+  public static CamundaAuthentication getAuthentication() {
     final Map<String, Object> claims = new HashMap<>();
     final var authenticationBuilder = new Builder();
 
@@ -654,7 +654,7 @@ public class RequestMapper {
     return authenticationBuilder.build();
   }
 
-  public static Authentication getAnonymousAuthentication() {
+  public static CamundaAuthentication getAnonymousAuthentication() {
     return new Builder().claims(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true)).build();
   }
 

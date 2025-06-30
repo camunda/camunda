@@ -13,7 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.MappingServices;
 import io.camunda.service.MappingServices.MappingDTO;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
@@ -39,7 +39,8 @@ public class MappingControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setup() {
-    when(mappingServices.withAuthentication(any(Authentication.class))).thenReturn(mappingServices);
+    when(mappingServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(mappingServices);
   }
 
   @ParameterizedTest

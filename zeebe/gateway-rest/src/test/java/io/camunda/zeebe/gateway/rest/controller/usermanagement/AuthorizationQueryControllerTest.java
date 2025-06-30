@@ -19,7 +19,7 @@ import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.AuthorizationSort;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
@@ -81,7 +81,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setup() {
-    when(authorizationServices.withAuthentication(any(Authentication.class)))
+    when(authorizationServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(authorizationServices);
   }
 

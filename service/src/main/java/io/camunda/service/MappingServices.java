@@ -14,8 +14,8 @@ import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.MappingRuleMatcher;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -39,7 +39,7 @@ public class MappingServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final MappingSearchClient mappingSearchClient,
-      final Authentication authentication) {
+      final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.mappingSearchClient = mappingSearchClient;
   }
@@ -62,7 +62,7 @@ public class MappingServices
   }
 
   @Override
-  public MappingServices withAuthentication(final Authentication authentication) {
+  public MappingServices withAuthentication(final CamundaAuthentication authentication) {
     return new MappingServices(
         brokerClient, securityContextProvider, mappingSearchClient, authentication);
   }

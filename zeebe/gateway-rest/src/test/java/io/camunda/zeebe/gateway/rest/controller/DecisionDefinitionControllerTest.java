@@ -13,7 +13,7 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
@@ -57,7 +57,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setupServices() {
-    when(decisionServices.withAuthentication(any(Authentication.class)))
+    when(decisionServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(decisionServices);
   }
 

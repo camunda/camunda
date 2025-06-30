@@ -15,8 +15,8 @@ import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -40,7 +40,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final GroupSearchClient groupSearchClient,
-      final Authentication authentication) {
+      final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.groupSearchClient = groupSearchClient;
   }
@@ -72,7 +72,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   }
 
   @Override
-  public GroupServices withAuthentication(final Authentication authentication) {
+  public GroupServices withAuthentication(final CamundaAuthentication authentication) {
     return new GroupServices(
         brokerClient, securityContextProvider, groupSearchClient, authentication);
   }

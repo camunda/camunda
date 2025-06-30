@@ -15,7 +15,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentMetadataModel;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.DocumentServices;
 import io.camunda.service.DocumentServices.DocumentContentResponse;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
@@ -46,7 +46,7 @@ public class DocumentControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setUp() {
-    when(documentServices.withAuthentication(any(Authentication.class)))
+    when(documentServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(documentServices);
   }
 

@@ -23,8 +23,8 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.UserTaskQuery.Builder;
 import io.camunda.search.query.VariableQuery;
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -58,7 +58,7 @@ public final class UserTaskServices
       final FormSearchClient formSearchClient,
       final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
       final VariableSearchClient variableSearchClient,
-      final Authentication authentication) {
+      final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.userTaskSearchClient = userTaskSearchClient;
     this.formSearchClient = formSearchClient;
@@ -67,7 +67,7 @@ public final class UserTaskServices
   }
 
   @Override
-  public UserTaskServices withAuthentication(final Authentication authentication) {
+  public UserTaskServices withAuthentication(final CamundaAuthentication authentication) {
     return new UserTaskServices(
         brokerClient,
         securityContextProvider,

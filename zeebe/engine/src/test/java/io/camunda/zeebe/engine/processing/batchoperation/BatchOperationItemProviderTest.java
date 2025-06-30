@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation;
 
-import static io.camunda.security.auth.Authentication.none;
+import static io.camunda.security.auth.CamundaAuthentication.none;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -21,8 +21,8 @@ import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
@@ -63,7 +63,7 @@ class BatchOperationItemProviderTest {
     final var queryCaptor = ArgumentCaptor.forClass(ProcessInstanceQuery.class);
 
     // given
-    final var auth = mock(Authentication.class);
+    final var auth = mock(CamundaAuthentication.class);
     final var result =
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(
@@ -239,7 +239,7 @@ class BatchOperationItemProviderTest {
     final var queryCaptor = ArgumentCaptor.forClass(ProcessInstanceQuery.class);
 
     // given
-    final var auth = mock(Authentication.class);
+    final var auth = mock(CamundaAuthentication.class);
     final var processInstanceResult =
         new SearchQueryResult.Builder<ProcessInstanceEntity>()
             .items(

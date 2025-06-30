@@ -29,7 +29,7 @@ import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
@@ -140,7 +140,7 @@ class SearchClientBasedQueryExecutorTest {
             SecurityContext.of(
                 builder ->
                     builder.withAuthentication(
-                        Authentication.of(a -> a.user("foo").tenants(tenantIds)))));
+                        CamundaAuthentication.of(a -> a.user("foo").tenants(tenantIds)))));
 
     final var query =
         new ProcessDefinitionQuery.Builder()
@@ -185,7 +185,7 @@ class SearchClientBasedQueryExecutorTest {
             SecurityContext.of(
                 builder ->
                     builder.withAuthentication(
-                        Authentication.of(a -> a.user("foo").tenants(tenantIds)))));
+                        CamundaAuthentication.of(a -> a.user("foo").tenants(tenantIds)))));
 
     final var query =
         new UserQuery.Builder().filter(new UserFilter.Builder().usernames("x").build()).build();

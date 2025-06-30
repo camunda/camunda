@@ -19,8 +19,8 @@ import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.DecisionDefinitionSort;
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.exception.ForbiddenException;
@@ -79,7 +79,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setupServices() {
-    when(decisionDefinitionServices.withAuthentication(any(Authentication.class)))
+    when(decisionDefinitionServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(decisionDefinitionServices);
   }
 
