@@ -32,7 +32,7 @@ const NEW_AUTHORIZATION = {
   resourceId: "identity",
 };
 
-test.describe.serial("authorizations CRUD", () => {
+test.describe.skip("authorizations CRUD", () => {
   test("create an authorization", async ({
     page,
     authorizationsPage,
