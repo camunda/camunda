@@ -111,9 +111,9 @@ public class MessageCorrelationStateTest {
   }
 
   @Test
-  void shouldThrowNpeWhenGettingNonExistingKey() {
+  void shouldReturnNullWhenGettingNonExistingKey() {
     // when - then
-    Assertions.assertThrows(NullPointerException.class, () -> state.getRequestData(1));
+    assertThat(state.getRequestData(1)).isNull();
   }
 
   @Test

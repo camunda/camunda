@@ -257,8 +257,7 @@ public final class DbDecisionState implements MutableDecisionState {
       final String tenantId, final long decisionKey) {
     dbDecisionKey.wrapLong(decisionKey);
     tenantIdKey.wrapString(tenantId);
-    return Optional.ofNullable(decisionsByKey.get(tenantAwareDecisionKey))
-        .map(PersistedDecision::copy);
+    return Optional.ofNullable(decisionsByKey.get(tenantAwareDecisionKey, PersistedDecision::new));
   }
 
   @Override
@@ -357,18 +356,17 @@ public final class DbDecisionState implements MutableDecisionState {
     dbDecisionRequirementsKey.wrapLong(decisionRequirementsKey);
 
     final PersistedDecisionRequirements persistedDrg =
-        decisionRequirementsByKey.get(tenantAwareDecisionRequirementsKey);
+        decisionRequirementsByKey.get(
+            tenantAwareDecisionRequirementsKey, PersistedDecisionRequirements::new);
     if (persistedDrg == null) {
       throw new DrgNotFoundException();
     }
 
-    final PersistedDecisionRequirements copiedDrg = persistedDrg.copy();
-
-    final var resourceBytes = BufferUtil.bufferAsArray(copiedDrg.getResource());
+    final var resourceBytes = BufferUtil.bufferAsArray(persistedDrg.getResource());
     final ParsedDecisionRequirementsGraph parsedDrg =
         decisionEngine.parse(new ByteArrayInputStream(resourceBytes));
 
-    return new DeployedDrg(parsedDrg, copiedDrg);
+    return new DeployedDrg(parsedDrg, persistedDrg);
   }
 
   private Optional<DeployedDrg> findDeployedDrg(
