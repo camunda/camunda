@@ -94,6 +94,7 @@ import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.client.api.fetch.AuthorizationGetRequest;
 import io.camunda.client.api.fetch.BatchOperationGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetXmlRequest;
@@ -214,6 +215,7 @@ import io.camunda.client.impl.command.UpdateRoleCommandImpl;
 import io.camunda.client.impl.command.UpdateTenantCommandImpl;
 import io.camunda.client.impl.command.UpdateUserCommandImpl;
 import io.camunda.client.impl.command.UpdateUserTaskCommandImpl;
+import io.camunda.client.impl.fetch.AuthorizationGetRequestImpl;
 import io.camunda.client.impl.fetch.BatchOperationGetRequestImpl;
 import io.camunda.client.impl.fetch.DecisionDefinitionGetRequestImpl;
 import io.camunda.client.impl.fetch.DecisionDefinitionGetXmlRequestImpl;
@@ -1133,6 +1135,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public CreateAuthorizationCommandStep1 newCreateAuthorizationCommand() {
     return new CreateAuthorizationCommandImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public AuthorizationGetRequest newAuthorizationGetRequest(final long authorizationKey) {
+    return new AuthorizationGetRequestImpl(httpClient, authorizationKey);
   }
 
   @Override

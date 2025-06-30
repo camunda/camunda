@@ -83,6 +83,7 @@ import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
+import io.camunda.client.api.fetch.AuthorizationGetRequest;
 import io.camunda.client.api.fetch.BatchOperationGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetXmlRequest;
@@ -2140,6 +2141,21 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder to configure and send the create authorization command
    */
   CreateAuthorizationCommandStep1 newCreateAuthorizationCommand();
+
+  /**
+   * Request to get an authorization by authorization key.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newAuthorizationGetRequest(authorizationKey)
+   *  .send();
+   * </pre>
+   *
+   * @param authorizationKey the authorizationKey of the authorization
+   * @return a builder for the request to get an authorization
+   */
+  AuthorizationGetRequest newAuthorizationGetRequest(long authorizationKey);
 
   /**
    * Command to delete an authorization

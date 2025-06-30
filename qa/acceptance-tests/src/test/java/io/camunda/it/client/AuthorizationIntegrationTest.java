@@ -8,30 +8,19 @@
 package io.camunda.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.CreateAuthorizationResponse;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
-import io.camunda.client.protocol.rest.AuthorizationResult;
-import io.camunda.client.protocol.rest.OwnerTypeEnum;
-import io.camunda.client.protocol.rest.PermissionTypeEnum;
-import io.camunda.client.protocol.rest.ResourceTypeEnum;
+import io.camunda.client.api.search.response.Authorization;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.util.List;
-import java.util.Objects;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 
 @MultiDbTest
@@ -39,26 +28,24 @@ public class AuthorizationIntegrationTest {
 
   private static CamundaClient camundaClient;
 
-  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
-
-  private static final ObjectMapper OBJECT_MAPPER =
-      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
   @Test
   void shouldCreateAndGetAuthorizationByAuthorizationKey() {
     // given
     final var ownerId = Strings.newRandomValidIdentityId();
     final var resourceId = Strings.newRandomValidIdentityId();
+    final OwnerType ownerType = OwnerType.USER;
+    final ResourceType resourceType = ResourceType.RESOURCE;
+    final PermissionType permissionType = PermissionType.CREATE;
 
     // when
     final CreateAuthorizationResponse authorization =
         camundaClient
             .newCreateAuthorizationCommand()
             .ownerId(ownerId)
-            .ownerType(OwnerType.USER)
+            .ownerType(ownerType)
             .resourceId(resourceId)
-            .resourceType(ResourceType.RESOURCE)
-            .permissionTypes(PermissionType.CREATE)
+            .resourceType(resourceType)
+            .permissionTypes(permissionType)
             .send()
             .join();
     final long authorizationKey = authorization.getAuthorizationKey();
@@ -66,38 +53,33 @@ public class AuthorizationIntegrationTest {
 
     // then
     Awaitility.await()
+        .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
-            () ->
-                assertThat(
-                        getAuthorization(
-                            camundaClient.getConfiguration().getRestAddress().toString(),
-                            authorizationKey))
-                    .matches(
-                        r ->
-                            Objects.equals(
-                                r.getAuthorizationKey(), String.valueOf(authorizationKey)))
-                    .matches(r -> Objects.equals(r.getOwnerId(), ownerId))
-                    .matches(r -> Objects.equals(r.getOwnerType(), OwnerTypeEnum.USER))
-                    .matches(r -> Objects.equals(r.getResourceId(), resourceId))
-                    .matches(r -> Objects.equals(r.getResourceType(), ResourceTypeEnum.RESOURCE))
-                    .matches(
-                        r ->
-                            Objects.equals(
-                                r.getPermissionTypes(), List.of(PermissionTypeEnum.CREATE))));
+            () -> {
+              final Authorization retrievedAuthorization =
+                  camundaClient.newAuthorizationGetRequest(authorizationKey).send().join();
+              assertThat(retrievedAuthorization.getAuthorizationKey())
+                  .isEqualTo(String.valueOf(authorizationKey));
+              assertThat(retrievedAuthorization.getResourceId()).isEqualTo(resourceId);
+              assertThat(retrievedAuthorization.getResourceType()).isEqualTo(resourceType);
+              assertThat(retrievedAuthorization.getOwnerId()).isEqualTo(ownerId);
+              assertThat(retrievedAuthorization.getOwnerType()).isEqualTo(ownerType);
+              assertThat(retrievedAuthorization.getPermissionTypes())
+                  .isEqualTo(List.of(permissionType));
+            });
   }
 
-  // TODO search authorizations command is unimplemented, remove the code below after implementation
-  private static AuthorizationResult getAuthorization(
-      final String restAddress, final long authorizationKey)
-      throws URISyntaxException, IOException, InterruptedException {
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(new URI("%s%s%d".formatted(restAddress, "v2/authorizations/", authorizationKey)))
-            .GET()
-            .build();
-
-    final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-    return OBJECT_MAPPER.readValue(response.body(), AuthorizationResult.class);
+  @Test
+  void shouldReturnNotFoundWhenGettingNonExistentAuthorization() {
+    // when / then
+    final var nonExistingAuthorizationKey = 100L;
+    assertThatThrownBy(
+            () ->
+                camundaClient.newAuthorizationGetRequest(nonExistingAuthorizationKey).send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 404: 'Not Found'")
+        .hasMessageContaining(
+            "Authorization with authorization key %d not found"
+                .formatted(nonExistingAuthorizationKey));
   }
 }
