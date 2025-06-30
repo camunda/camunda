@@ -18,6 +18,7 @@ import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.clients.FormSearchClient;
 import io.camunda.search.clients.GroupSearchClient;
 import io.camunda.search.clients.IncidentSearchClient;
+import io.camunda.search.clients.JobSearchClient;
 import io.camunda.search.clients.MappingSearchClient;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
@@ -81,8 +82,10 @@ public class CamundaServicesConfiguration {
   public JobServices<JobActivationResult> jobServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final ActivateJobsHandler<JobActivationResult> activateJobsHandler) {
-    return new JobServices<>(brokerClient, securityContextProvider, activateJobsHandler, null);
+      final ActivateJobsHandler<JobActivationResult> activateJobsHandler,
+      final JobSearchClient jobSearchClient) {
+    return new JobServices<>(
+        brokerClient, securityContextProvider, activateJobsHandler, jobSearchClient, null);
   }
 
   @Bean

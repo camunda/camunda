@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
+
+import io.camunda.search.query.JobQuery;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.ActivateJobsRequest;
@@ -15,6 +18,8 @@ import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
+import io.camunda.zeebe.gateway.protocol.rest.JobSearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.JobSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RequestMapper.CompleteJobRequest;
@@ -22,6 +27,8 @@ import io.camunda.zeebe.gateway.rest.RequestMapper.ErrorJobRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper.FailJobRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper.UpdateJobRequest;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
+import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import java.util.concurrent.CompletableFuture;
@@ -80,6 +87,13 @@ public class JobController {
       @PathVariable final long jobKey, @RequestBody final JobUpdateRequest jobUpdateRequest) {
     return RequestMapper.toJobUpdateRequest(jobUpdateRequest, jobKey)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateJob);
+  }
+
+  @CamundaPostMapping(path = "/search")
+  public ResponseEntity<JobSearchQueryResult> searchJobs(
+      @RequestBody(required = false) final JobSearchQuery request) {
+    return SearchQueryRequestMapper.toJobQuery(request)
+        .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
   private CompletableFuture<ResponseEntity<Object>> activateJobs(
@@ -144,5 +158,15 @@ public class JobController {
                     updateJobRequest.jobKey(),
                     updateJobRequest.operationReference(),
                     updateJobRequest.changeset()));
+  }
+
+  private ResponseEntity<JobSearchQueryResult> search(final JobQuery query) {
+    try {
+      final var result =
+          jobServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toJobSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
   }
 }
