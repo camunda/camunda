@@ -189,4 +189,13 @@ public final class SortOptionBuilders {
   public static JobSort job(final Function<JobSort.Builder, ObjectBuilder<JobSort>> fn) {
     return fn.apply(job()).build();
   }
+
+  public static MessageSubscriptionSort.Builder messageSubscription() {
+    return new MessageSubscriptionSort.Builder();
+  }
+
+  public static MessageSubscriptionSort messageSubscription(
+      final Function<MessageSubscriptionSort.Builder, ObjectBuilder<MessageSubscriptionSort>> fn) {
+    return fn.apply(messageSubscription()).build();
+  }
 }
