@@ -7,20 +7,19 @@
  */
 package io.camunda.search.schema;
 
-import static io.camunda.search.schema.utils.SchemaManagerITInvocationProvider.CONFIG_PREFIX;
 import static io.camunda.search.schema.utils.SchemaTestUtil.createSchemaManager;
+import static io.camunda.search.schema.utils.SchemaTestUtil.createTestIndexDescriptor;
+import static io.camunda.search.schema.utils.SchemaTestUtil.createTestTemplateDescriptor;
 import static io.camunda.search.schema.utils.SchemaTestUtil.mappingsMatch;
 import static net.bytebuddy.matcher.ElementMatchers.named;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
 
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.utils.SchemaManagerITInvocationProvider;
-import io.camunda.search.schema.utils.SchemaTestUtil;
+import io.camunda.search.schema.utils.TestIndexDescriptor;
+import io.camunda.search.schema.utils.TestTemplateDescriptor;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
-import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -32,9 +31,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Semaphore;
 import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.agent.ByteBuddyAgent;
 import net.bytebuddy.asm.Advice;
 import net.bytebuddy.dynamic.loading.ClassReloadingStrategy;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -50,9 +51,14 @@ import org.slf4j.LoggerFactory;
 public class SchemaManagerConcurrencyIT {
   private static final Logger LOGGER = LoggerFactory.getLogger(SchemaManagerConcurrencyIT.class);
   private static final Duration TIMEOUT = Duration.ofSeconds(30);
-  private IndexDescriptor index;
-  private IndexTemplateDescriptor indexTemplate;
+  private TestIndexDescriptor index;
+  private TestTemplateDescriptor indexTemplate;
   private final MethodInterceptor methodInterceptor = new MethodInterceptor(SchemaManager.class);
+
+  @BeforeAll
+  public static void beforeAll() {
+    ByteBuddyAgent.install();
+  }
 
   @AfterEach
   public void reset() {
@@ -61,20 +67,8 @@ public class SchemaManagerConcurrencyIT {
 
   @BeforeEach
   public void before() throws IOException {
-    indexTemplate =
-        SchemaTestUtil.mockIndexTemplate(
-            "index_name",
-            "test*",
-            "template_alias",
-            Collections.emptyList(),
-            CONFIG_PREFIX + "-template_name",
-            "/mappings.json");
-
-    index =
-        SchemaTestUtil.mockIndex(
-            CONFIG_PREFIX + "-index-qualified_name", "alias", "index_name", "/mappings.json");
-
-    when(indexTemplate.getFullQualifiedName()).thenReturn(CONFIG_PREFIX + "-qualified_name");
+    indexTemplate = createTestTemplateDescriptor("template_name", "/mappings.json");
+    index = createTestIndexDescriptor("index_name", "/mappings.json");
   }
 
   @TestTemplate
@@ -135,8 +129,8 @@ public class SchemaManagerConcurrencyIT {
     final var schemaManager2 = createSchemaManager(Set.of(index), Set.of(indexTemplate), config);
     schemaManager1.startup(); // initial schema creation
     // set the mappings to a different file
-    when(index.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
-    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+    index.setMappingsClasspathFilename("/mappings-added-property.json");
+    indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
 
     // when
     methodInterceptor.applyPostMethodAdvice("validateIndices");
@@ -190,13 +184,13 @@ public class SchemaManagerConcurrencyIT {
     oldSchemaManager.startup(); // initial schema creation
 
     // when
-    when(index.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
-    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+    index.setMappingsClasspathFilename("/mappings-added-property.json");
+    indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
 
     updatedSchemaManager.startup();
 
-    when(index.getMappingsClasspathFilename()).thenReturn("/mappings.json");
-    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings.json");
+    index.setMappingsClasspathFilename("/mappings.json");
+    indexTemplate.setMappingsClasspathFilename("/mappings.json");
 
     oldSchemaManager.startup();
 
