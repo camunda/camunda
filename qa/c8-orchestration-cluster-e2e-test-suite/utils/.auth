@@ -1,1 +1,15 @@
-{}
+{
+  "cookies": [
+    {
+      "name": "camunda-session",
+      "value": "6CB81CB7CC06FE7314D217E477E760C0",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}

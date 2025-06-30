@@ -27,9 +27,9 @@ test.beforeAll(async () => {
 });
 
 test.describe('Process Instance Variables', () => {
-  test.beforeEach(async ({page, operateLoginPage, operateHomePage}) => {
+  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
-    await operateLoginPage.login('demo', 'demo');
+    await loginPage.login('demo', 'demo');
     await expect(operateHomePage.operateBanner).toBeVisible();
   });
 

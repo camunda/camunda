@@ -17,13 +17,9 @@ test.describe('Login Tests', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('Basic Login on Operate', async ({
-    page,
-    operateLoginPage,
-    operateHomePage,
-  }) => {
+  test('Basic Login on Operate', async ({page, loginPage, operateHomePage}) => {
     await navigateToApp(page, 'operate');
-    await operateLoginPage.login('demo', 'demo');
+    await loginPage.login('demo', 'demo');
     await expect(operateHomePage.operateBanner).toBeVisible();
   });
 });
