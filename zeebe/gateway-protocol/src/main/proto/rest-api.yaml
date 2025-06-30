@@ -6571,7 +6571,7 @@ components:
           allOf:
             - $ref: "#/components/schemas/DateTimeFilterProperty"
         endDate:
-          description: The start date of this element instance.
+          description: The end date of this element instance.
           allOf:
             - $ref: "#/components/schemas/DateTimeFilterProperty"
     ElementInstanceSearchQueryResult:
