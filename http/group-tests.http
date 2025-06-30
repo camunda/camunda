@@ -10,7 +10,7 @@ Accept: application/json
 }
 
 > {%
-  client.test("Group creation should be successful", function () {
+  client.test("Group creation should be unsuccessful", function () {
     client.assert(response.status === 401, "Response status is not 401");
   });
 %}
