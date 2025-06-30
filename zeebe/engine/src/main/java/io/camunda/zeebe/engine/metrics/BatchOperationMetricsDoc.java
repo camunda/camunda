@@ -11,6 +11,7 @@ import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.common.docs.KeyName;
 import io.micrometer.core.instrument.Meter.Type;
+import java.time.Duration;
 
 public enum BatchOperationMetricsDoc implements ExtendedMeterDocumentation {
 
@@ -71,6 +72,8 @@ public enum BatchOperationMetricsDoc implements ExtendedMeterDocumentation {
   },
 
   ITEMS_PER_PARTITION {
+    private static final double[] BUCKETS = {1, 10, 100, 1000, 10000, 100000, 1000000};
+
     private static final KeyName[] KEY_NAMES =
         new KeyName[] {
           PartitionKeyNames.PARTITION,
@@ -94,16 +97,76 @@ public enum BatchOperationMetricsDoc implements ExtendedMeterDocumentation {
     }
 
     @Override
+    public double[] getDistributionSLOs() {
+      return BUCKETS;
+    }
+
+    @Override
     public KeyName[] getKeyNames() {
       return KEY_NAMES;
     }
   },
 
-  BATCH_OPERATION_LATENCY {
+  BATCH_OPERATION_DURATION {
+    private static final Duration[] BUCKETS = {
+      Duration.ofMillis(10),
+      Duration.ofMillis(100),
+      Duration.ofMillis(500),
+      Duration.ofSeconds(1),
+      Duration.ofSeconds(5),
+      Duration.ofSeconds(10),
+      Duration.ofSeconds(30),
+      Duration.ofMinutes(1),
+      Duration.ofMinutes(5),
+      Duration.ofMinutes(10),
+      Duration.ofMinutes(30),
+      Duration.ofHours(1),
+      Duration.ofHours(5),
+      Duration.ofHours(10),
+    };
+
     private static final KeyName[] KEY_NAMES =
         new KeyName[] {
           PartitionKeyNames.PARTITION,
-          BatchOperationKeyNames.BATCH_OPERATION_KEY,
+          BatchOperationKeyNames.BATCH_OPERATION_TYPE,
+          BatchOperationKeyNames.ORGANIZATION_ID
+        };
+
+    @Override
+    public String getBaseUnit() {
+      return "ms";
+    }
+
+    @Override
+    public String getName() {
+      return "zeebe.batchoperations.duration";
+    }
+
+    @Override
+    public Type getType() {
+      return Type.TIMER;
+    }
+
+    @Override
+    public String getDescription() {
+      return "Total duration of batch operations";
+    }
+
+    @Override
+    public Duration[] getTimerSLOs() {
+      return BUCKETS;
+    }
+
+    @Override
+    public KeyName[] getKeyNames() {
+      return KEY_NAMES;
+    }
+  },
+
+  EXECUTION_LATENCY {
+    private static final KeyName[] KEY_NAMES =
+        new KeyName[] {
+          PartitionKeyNames.PARTITION,
           BatchOperationKeyNames.LATENCY,
           BatchOperationKeyNames.BATCH_OPERATION_TYPE,
           BatchOperationKeyNames.ORGANIZATION_ID
@@ -116,7 +179,7 @@ public enum BatchOperationMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getName() {
-      return "zeebe.batchoperations.latency";
+      return "zeebe.batchoperations.execution.latency";
     }
 
     @Override
@@ -126,7 +189,7 @@ public enum BatchOperationMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getDescription() {
-      return "Latencies (totalLatency, totalExecutionLatency, totalQueryLatency, startExecuteLatency, executeCycleLatency) which are measured for batch operations";
+      return "Latencies (totalExecutionLatency, totalQueryLatency, startExecuteLatency, executeCycleLatency) which are measured for batch operations";
     }
 
     @Override
@@ -154,14 +217,6 @@ public enum BatchOperationMetricsDoc implements ExtendedMeterDocumentation {
       @Override
       public String asString() {
         return "batchOperationLatency";
-      }
-    },
-
-    /** The key of the batch operation. */
-    BATCH_OPERATION_KEY {
-      @Override
-      public String asString() {
-        return "batchOperationKey";
       }
     },
 
@@ -219,7 +274,6 @@ public enum BatchOperationMetricsDoc implements ExtendedMeterDocumentation {
   }
 
   public enum BatchOperationLatency {
-    TOTAL_LATENCY("totalLatency"),
     TOTAL_EXECUTION_LATENCY("totalExecutionLatency"),
     TOTAL_QUERY_LATENCY("totalQueryLatency"),
     START_EXECUTE_LATENCY("startExecuteLatency"),
