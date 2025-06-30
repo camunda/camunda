@@ -64,7 +64,7 @@ class ElasticsearchAdapter implements ClientAdapter {
 
   @Override
   public void close() throws IOException {
-    client._transport().close();
+    client.close();
   }
 
   record ElasticsearchExporterEntityCacheProvider(ElasticsearchClient client)
