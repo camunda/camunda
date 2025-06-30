@@ -43,6 +43,6 @@ public class SearchAuthorizationTest extends ClientRestTest {
     // when / then
     assertThatThrownBy(() -> client.newAuthorizationGetRequest(-1).send().join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("authorizationKey must be not negative");
+        .hasMessageContaining("authorizationKey must be greater than 0");
   }
 }
