@@ -132,6 +132,7 @@ import io.camunda.client.api.search.request.RolesByTenantSearchRequest;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
 import io.camunda.client.api.search.request.UserTaskVariableSearchRequest;
 import io.camunda.client.api.search.request.UsersByRoleSearchRequest;
+import io.camunda.client.api.search.request.UsersByTenantSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessInstanceElementStatisticsRequest;
@@ -1475,6 +1476,22 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the users by role search request
    */
   UsersByRoleSearchRequest newUsersByRoleSearchRequest(String roleId);
+
+  /**
+   * Executes a search request to query users by tenant.
+   *
+   * <pre>
+   * camundaClient
+   *  .newUsersByTenantSearchRequest("tenantId")
+   *  .sort((s) -> s.username().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @param tenantId the ID of the tenant
+   * @return a builder for the users by tenant search request
+   */
+  UsersByTenantSearchRequest newUsersByTenantSearchRequest(String tenantId);
 
   /**
    * Executes a search request to query users.
