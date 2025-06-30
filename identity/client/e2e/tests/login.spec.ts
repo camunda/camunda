@@ -28,7 +28,7 @@ test.describe("login page", () => {
     });
 
     await expect(
-      page.getByRole("alert").getByText("Username and password do not match"),
+      page.getByRole("alert").getByText("Username and password don't match"),
     ).toBeVisible();
 
     await expect(page).toHaveURL(relativizePath(Paths.login()));

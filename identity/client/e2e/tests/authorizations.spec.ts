@@ -20,10 +20,10 @@ test.beforeEach(async ({ page, loginPage, authorizationsPage }) => {
 });
 
 const NEW_USER = {
-  username: "testuser",
-  name: "Test User",
-  email: "testuser@camunda.com",
-  password: "testpassword",
+  username: "testuser-authorizations",
+  name: "Test User Authorizations",
+  email: "testuser-authorizations@camunda.com",
+  password: "testpassword-authorizations",
 };
 
 const NEW_AUTHORIZATION = {
