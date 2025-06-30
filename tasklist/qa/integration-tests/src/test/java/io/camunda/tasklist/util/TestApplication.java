@@ -37,9 +37,10 @@ import org.springframework.context.annotation.Profile;
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @Import({
-    UnifiedConfigurationHelper.class,
-    WebappsModuleConfiguration.class,
-    CommonsModuleConfiguration.class})
+  UnifiedConfigurationHelper.class,
+  WebappsModuleConfiguration.class,
+  CommonsModuleConfiguration.class
+})
 public class TestApplication {
 
   public static void main(final String[] args) throws Exception {
