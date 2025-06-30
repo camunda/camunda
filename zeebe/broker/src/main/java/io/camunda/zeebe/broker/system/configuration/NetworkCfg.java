@@ -25,6 +25,7 @@ public final class NetworkCfg implements ConfigurationEntry {
   private String host = DEFAULT_HOST;
   private int portOffset = 0;
   private DataSize maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
+  private String advertisedHost;
   private Duration heartbeatTimeout = Duration.ofSeconds(15);
   private Duration heartbeatInterval = Duration.ofSeconds(5);
   private DataSize socketSendBuffer = DEFAULT_BROKER_SOCKET_SEND_BUFFER;
