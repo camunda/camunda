@@ -1,3 +1,20 @@
+### Create Group Unauthorized
+# @name create-group-unauthorized
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups
+Content-Type: application/json
+Accept: application/json
+
+{
+  "groupId": "testGroup1",
+  "name": "TestGroup1"
+}
+
+> {%
+  client.test("Group creation should be unsuccessful", function () {
+    client.assert(response.status === 401, "Response status is not 401");
+  });
+%}
+
 ### Create Group
 # @name create-group
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups

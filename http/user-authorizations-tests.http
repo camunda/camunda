@@ -1,5 +1,5 @@
 ###
-# @name test-create-user-unathorized
+# @name test-create-user-unauthorized
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users
 Content-Type: application/json
 Accept: application/json
@@ -18,7 +18,7 @@ Accept: application/json
 %}
 
 ###
-# @name test-create-user-athorized
+# @name test-create-user-authorized
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
 Content-Type: application/json

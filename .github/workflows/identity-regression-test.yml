@@ -145,6 +145,10 @@ jobs:
           export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=${{ inputs.authorizations }} && \
           export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false && \
           export CAMUNDA_SECURITY_MULTITENANCY_ENABLED=${{ inputs.multi-tenancy }} && \
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME=demo && \
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD=demo && \
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Demo && \
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL=demo@example.com && \
           export CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo && \
           export SPRING_PROFILES_ACTIVE=identity,tasklist,operate,broker,consolidated-auth && \
           ./bin/camunda &
