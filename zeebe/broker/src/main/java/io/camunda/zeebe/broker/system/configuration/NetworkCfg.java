@@ -81,9 +81,6 @@ public final class NetworkCfg implements ConfigurationEntry {
     this.maxMessageSize = maxMessageSize;
   }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
   public Duration getHeartbeatTimeout() {
     return heartbeatTimeout;
   }
@@ -98,16 +95,10 @@ public final class NetworkCfg implements ConfigurationEntry {
 
   public void setHeartbeatInterval(final Duration heartbeatInterval) {
     this.heartbeatInterval = heartbeatInterval;
-=======
-  public int getSoSndbuf() {
-=======
-  public DataSize getSoSndbuf() {
->>>>>>> fbaf5df281d (refactor: change type of new parameters)
-    return soSndbuf;
-=======
+  }
+
   public DataSize getSocketSendBuffer() {
     return socketSendBuffer;
->>>>>>> 50997b015dc (refactor: improve name of parameters)
   }
 
   public void setSocketSendBuffer(final DataSize socketSendBuffer) {
@@ -118,14 +109,8 @@ public final class NetworkCfg implements ConfigurationEntry {
     return socketReceiveBuffer;
   }
 
-<<<<<<< HEAD
-  public void setSoRcvbuf(final DataSize soRcvbuf) {
-    this.soRcvbuf = soRcvbuf;
->>>>>>> fccda7f6c48 (feat: added socket buffers size parameters to config)
-=======
   public void setSocketReceiveBuffer(final DataSize socketReceiveBuffer) {
     this.socketReceiveBuffer = socketReceiveBuffer;
->>>>>>> 50997b015dc (refactor: improve name of parameters)
   }
 
   public CommandApiCfg getCommandApi() {
@@ -159,24 +144,14 @@ public final class NetworkCfg implements ConfigurationEntry {
         + '\''
         + ", maxMessageSize="
         + maxMessageSize
-<<<<<<< HEAD
-<<<<<<< HEAD
         + ", heartbeatTimeout="
         + heartbeatTimeout
         + ", heartbeatInterval="
         + heartbeatInterval
-=======
-        + ", so_sndbuf="
-        + soSndbuf
-        + ", so_rcvbuf="
-        + soRcvbuf
->>>>>>> fccda7f6c48 (feat: added socket buffers size parameters to config)
-=======
         + ", socketReceiveBuffer="
         + socketReceiveBuffer
         + ", socketSendBuffer="
         + socketSendBuffer
->>>>>>> 50997b015dc (refactor: improve name of parameters)
         + ", commandApi="
         + commandApi
         + ", internalApi="
