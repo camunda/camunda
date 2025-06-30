@@ -149,8 +149,14 @@ jobs:
   deploy-benchmark-cluster:
     name: Deploy
     needs:
+<<<<<<< HEAD
       - build-zeebe-image
       - build-benchmark-images
+=======
+      - calculate-image-tag
+      - build-benchmark-images
+      - build-zeebe-image
+>>>>>>> 0891fc90 (fix: Zeebe Benchmark deploy step only done after corresponding images are built)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
