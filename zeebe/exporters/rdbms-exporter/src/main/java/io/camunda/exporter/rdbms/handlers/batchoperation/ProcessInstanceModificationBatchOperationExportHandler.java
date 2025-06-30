@@ -8,6 +8,9 @@
 package io.camunda.exporter.rdbms.handlers.batchoperation;
 
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
+import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
@@ -18,12 +21,18 @@ public class ProcessInstanceModificationBatchOperationExportHandler
     extends RdbmsBatchOperationStatusExportHandler<ProcessInstanceModificationRecordValue> {
 
   public ProcessInstanceModificationBatchOperationExportHandler(
-      final BatchOperationWriter batchOperationWriter) {
-    super(batchOperationWriter);
+      final BatchOperationWriter batchOperationWriter,
+      final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache) {
+    super(batchOperationWriter, batchOperationCache, OperationType.MODIFY_PROCESS_INSTANCE);
   }
 
   @Override
   long getItemKey(final Record<ProcessInstanceModificationRecordValue> record) {
+    return record.getValue().getProcessInstanceKey();
+  }
+
+  @Override
+  long getProcessInstanceKey(final Record<ProcessInstanceModificationRecordValue> record) {
     return record.getValue().getProcessInstanceKey();
   }
 

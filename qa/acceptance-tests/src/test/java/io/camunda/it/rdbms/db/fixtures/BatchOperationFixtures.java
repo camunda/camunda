@@ -7,6 +7,7 @@
  */
 package io.camunda.it.rdbms.db.fixtures;
 
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.NOW;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.RANDOM;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.randomEnum;
 
@@ -54,11 +55,9 @@ public final class BatchOperationFixtures {
     return models;
   }
 
-  public static List<Long> createAndSaveRandomBatchOperationItems(
+  public static List<BatchOperationItemDbModel> createAndSaveRandomBatchOperationItems(
       final RdbmsWriter rdbmsWriter, final String batchOperationKey, final int count) {
-    return createSaveReturnRandomBatchOperationItems(rdbmsWriter, batchOperationKey, count).stream()
-        .map(BatchOperationItemDbModel::itemKey)
-        .toList();
+    return createSaveReturnRandomBatchOperationItems(rdbmsWriter, batchOperationKey, count);
   }
 
   public static List<BatchOperationItemDbModel> createSaveReturnRandomBatchOperationItems(
@@ -92,7 +91,12 @@ public final class BatchOperationFixtures {
             .map(
                 itemKey ->
                     new BatchOperationItemDbModel(
-                        batchOperationKey, itemKey, itemKey, BatchOperationItemState.ACTIVE))
+                        batchOperationKey,
+                        itemKey,
+                        itemKey,
+                        BatchOperationItemState.ACTIVE,
+                        NOW,
+                        null))
             .toList();
 
     rdbmsWriter.getBatchOperationWriter().updateBatchAndInsertItems(batchOperationKey, batchItems);

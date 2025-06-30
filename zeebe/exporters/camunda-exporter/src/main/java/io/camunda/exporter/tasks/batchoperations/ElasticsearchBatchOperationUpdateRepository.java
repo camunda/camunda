@@ -192,8 +192,7 @@ public class ElasticsearchBatchOperationUpdateRepository extends ElasticsearchRe
                 + "} "
                 + "ctx._source.operationsFinishedCount = params.operationsFinishedCount;"
                 + "ctx._source.operationsCompletedCount = params.operationsCompletedCount;"
-                + "ctx._source.operationsFailedCount = params.operationsFailedCount;"
-                + "ctx._source.operationsTotalCount = params.operationsTotalCount;")
+                + "ctx._source.operationsFailedCount = params.operationsFailedCount;")
         .lang("painless")
         .params(parameters)
         .build();

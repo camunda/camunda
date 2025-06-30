@@ -11,6 +11,9 @@ import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
+import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
@@ -25,9 +28,13 @@ public class BatchOperationCreatedExportHandler
     implements RdbmsExportHandler<BatchOperationCreationRecordValue> {
 
   private final BatchOperationWriter batchOperationWriter;
+  private final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache;
 
-  public BatchOperationCreatedExportHandler(final BatchOperationWriter batchOperationWriter) {
+  public BatchOperationCreatedExportHandler(
+      final BatchOperationWriter batchOperationWriter,
+      final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache) {
     this.batchOperationWriter = batchOperationWriter;
+    this.batchOperationCache = batchOperationCache;
   }
 
   @Override
@@ -39,6 +46,11 @@ public class BatchOperationCreatedExportHandler
   @Override
   public void export(final Record<BatchOperationCreationRecordValue> record) {
     batchOperationWriter.createIfNotAlreadyExists(map(record));
+    batchOperationCache.put(
+        String.valueOf(record.getKey()),
+        new CachedBatchOperationEntity(
+            String.valueOf(record.getValue().getBatchOperationKey()),
+            OperationType.valueOf(record.getValue().getBatchOperationType().name())));
   }
 
   private BatchOperationDbModel map(final Record<BatchOperationCreationRecordValue> record) {

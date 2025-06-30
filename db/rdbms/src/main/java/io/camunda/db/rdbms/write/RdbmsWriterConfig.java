@@ -17,7 +17,13 @@ public record RdbmsWriterConfig(
     Duration minHistoryCleanupInterval,
     Duration maxHistoryCleanupInterval,
     int historyCleanupBatchSize,
-    int batchOperationItemInsertBlockSize) {
+    int batchOperationItemInsertBlockSize,
+    /*
+     * Export the batch operation items when the initial chunk records are processed. If set to
+     * <code>false</code>, the batch operation items will be exported only when they have been
+     * processed and are completed or failed.
+     */
+    boolean exportBatchOperationItemsOnCreation) {
 
   public static final int DEFAULT_QUEUE_SIZE = -1;
   public static final Duration DEFAULT_HISTORY_TTL = Duration.ofDays(30);
@@ -25,6 +31,7 @@ public record RdbmsWriterConfig(
   public static final Duration DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL = Duration.ofMinutes(60);
   public static final int DEFAULT_HISTORY_CLEANUP_BATCH_SIZE = 1000;
   public static final int DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE = 10000;
+  public static final boolean DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION = true;
 
   public static Builder builder() {
     return new Builder();
@@ -39,6 +46,8 @@ public record RdbmsWriterConfig(
     private Duration maxHistoryCleanupInterval = DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL;
     private int historyCleanupBatchSize = DEFAULT_HISTORY_CLEANUP_BATCH_SIZE;
     private int batchOperationItemInsertBlockSize = DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE;
+    private boolean exportBatchOperationItemsOnCreation =
+        DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION;
 
     public Builder partitionId(final int partitionId) {
       this.partitionId = partitionId;
@@ -75,6 +84,12 @@ public record RdbmsWriterConfig(
       return this;
     }
 
+    public Builder exportBatchOperationItemsOnCreation(
+        final boolean exportBatchOperationItemsOnCreation) {
+      this.exportBatchOperationItemsOnCreation = exportBatchOperationItemsOnCreation;
+      return this;
+    }
+
     @Override
     public RdbmsWriterConfig build() {
       return new RdbmsWriterConfig(
@@ -84,7 +99,8 @@ public record RdbmsWriterConfig(
           minHistoryCleanupInterval,
           maxHistoryCleanupInterval,
           historyCleanupBatchSize,
-          batchOperationItemInsertBlockSize);
+          batchOperationItemInsertBlockSize,
+          exportBatchOperationItemsOnCreation);
     }
   }
 }

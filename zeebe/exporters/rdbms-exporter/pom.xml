@@ -40,6 +40,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>webapps-schema</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
     </dependency>
 
@@ -86,6 +91,12 @@
     </dependency>
 
     <!-- testing -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol-test-util</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-api</artifactId>

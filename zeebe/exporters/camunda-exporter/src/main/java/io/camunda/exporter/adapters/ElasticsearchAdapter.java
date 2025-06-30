@@ -12,15 +12,18 @@ import co.elastic.clients.elasticsearch.core.BulkRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
+import io.camunda.exporter.cache.batchoperation.ElasticSearchBatchOperationCacheLoader;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.cache.form.ElasticSearchFormCacheLoader;
 import io.camunda.exporter.cache.process.ElasticSearchProcessCacheLoader;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ElasticsearchBatchRequest;
+import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
+import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import java.io.IOException;
 
@@ -50,7 +53,8 @@ class ElasticsearchAdapter implements ClientAdapter {
 
   @Override
   public BatchRequest createBatchRequest() {
-    return new ElasticsearchBatchRequest(client, new BulkRequest.Builder());
+    return new ElasticsearchBatchRequest(
+        client, new BulkRequest.Builder(), new ElasticsearchScriptBuilder());
   }
 
   @Override
@@ -65,6 +69,12 @@ class ElasticsearchAdapter implements ClientAdapter {
 
   record ElasticsearchExporterEntityCacheProvider(ElasticsearchClient client)
       implements ExporterEntityCacheProvider {
+
+    @Override
+    public CacheLoader<String, CachedBatchOperationEntity> getBatchOperationCacheLoader(
+        final String batchOperationIndexName) {
+      return new ElasticSearchBatchOperationCacheLoader(client, batchOperationIndexName);
+    }
 
     @Override
     public CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(

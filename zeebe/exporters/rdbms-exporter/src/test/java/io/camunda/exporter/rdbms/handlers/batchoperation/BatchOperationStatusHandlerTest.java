@@ -5,16 +5,16 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.handlers.batchoperation;
+package io.camunda.exporter.rdbms.handlers.batchoperation;
 
 import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperationReferenceNullValue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
 
-import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
-import io.camunda.webapps.schema.entities.operation.OperationEntity;
-import io.camunda.webapps.schema.entities.operation.OperationState;
+import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
+import io.camunda.db.rdbms.write.service.BatchOperationWriter;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
@@ -34,28 +34,27 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValu
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import java.time.OffsetDateTime;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 class BatchOperationStatusHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = "test-index";
   private final long batchOperationKey = 42L;
 
   private final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache =
       mock(ExporterEntityCache.class);
+  private final BatchOperationWriter batchOperationWriter = mock(BatchOperationWriter.class);
 
   abstract class AbstractOperationStatusHandlerTest<T extends RecordValue> {
 
-    final AbstractOperationStatusHandler<T> handler;
+    final RdbmsBatchOperationStatusExportHandler<T> handler;
 
-    AbstractOperationStatusHandlerTest(final AbstractOperationStatusHandler<T> handler) {
+    AbstractOperationStatusHandlerTest(final RdbmsBatchOperationStatusExportHandler<T> handler) {
       this.handler = handler;
 
       Mockito.reset(batchOperationCache);
@@ -70,7 +69,7 @@ class BatchOperationStatusHandlerTest {
     void shouldHandleSuccessRecord() {
       final var record = createSuccessRecord();
 
-      assertThat(handler.handlesRecord(record)).isTrue();
+      assertThat(handler.canExport(record)).isTrue();
     }
 
     @Test
@@ -81,7 +80,7 @@ class BatchOperationStatusHandlerTest {
               .withBatchOperationReference(batchOperationReferenceNullValue())
               .build();
 
-      assertThat(handler.handlesRecord(record)).isFalse();
+      assertThat(handler.canExport(record)).isFalse();
     }
 
     @Test
@@ -105,14 +104,14 @@ class BatchOperationStatusHandlerTest {
               .withBatchOperationReference(batchOperationKey)
               .build();
 
-      assertThat(handler.handlesRecord(record)).isFalse();
+      assertThat(handler.canExport(record)).isFalse();
     }
 
     @Test
     void shouldHandleFailureRecord() {
       final var record = createFailureRecord();
 
-      assertThat(handler.handlesRecord(record)).isTrue();
+      assertThat(handler.canExport(record)).isTrue();
     }
 
     @Test
@@ -123,7 +122,7 @@ class BatchOperationStatusHandlerTest {
               .withBatchOperationReference(batchOperationReferenceNullValue())
               .build();
 
-      assertThat(handler.handlesRecord(record)).isFalse();
+      assertThat(handler.canExport(record)).isFalse();
     }
 
     @Test
@@ -147,77 +146,35 @@ class BatchOperationStatusHandlerTest {
               .withBatchOperationReference(batchOperationKey)
               .build();
 
-      assertThat(handler.handlesRecord(record)).isFalse();
-    }
-
-    @Test
-    void shouldNotHandleOtherRecord() {
-      final var record = factory.generateRecord(ValueType.VARIABLE);
-      assertThat(handler.handlesRecord((Record<T>) record)).isFalse();
+      assertThat(handler.canExport(record)).isFalse();
     }
 
     @Test
     void shouldUpdateEntityOnSuccess() {
       final var record = createSuccessRecord();
-      final var entity = new OperationEntity();
 
-      handler.updateEntity(record, entity);
+      handler.export(record);
 
-      assertThat(entity.getState()).isEqualTo(OperationState.COMPLETED);
-      assertThat(entity.getCompletedDate()).isNotNull();
-      assertThat(entity.getErrorMessage()).isNull();
+      final var itemCaptor = ArgumentCaptor.forClass(BatchOperationItemDbModel.class);
+      verify(batchOperationWriter).updateItem(itemCaptor.capture());
+
+      assertThat(itemCaptor.getValue().state()).isEqualTo(BatchOperationItemState.COMPLETED);
+      assertThat(itemCaptor.getValue().processedDate()).isNotNull();
+      assertThat(itemCaptor.getValue().errorMessage()).isNull();
     }
 
     @Test
     void shouldUpdateEntityOnFailure() {
       final var record = createFailureRecord();
-      final var entity = new OperationEntity();
 
-      handler.updateEntity(record, entity);
+      handler.export(record);
 
-      assertThat(entity.getState()).isEqualTo(OperationState.FAILED);
-      assertThat(entity.getErrorMessage())
-          .isEqualTo(record.getRejectionType() + ": " + record.getRejectionReason());
-      assertThat(entity.getCompletedDate()).isNull();
-    }
+      final var itemCaptor = ArgumentCaptor.forClass(BatchOperationItemDbModel.class);
+      verify(batchOperationWriter).updateItem(itemCaptor.capture());
 
-    @Test
-    void shouldFlushEntityFields() {
-      final var entity = new OperationEntity();
-      entity.setState(OperationState.COMPLETED);
-      entity.setBatchOperationId(String.valueOf(batchOperationKey));
-      entity.setItemKey(123L);
-      entity.setProcessInstanceKey(456L);
-      entity.setCompletedDate(OffsetDateTime.now());
-      entity.setErrorMessage("error message");
-
-      final var mockRequest = mock(BatchRequest.class);
-
-      // when
-      handler.flush(entity, mockRequest);
-
-      // then
-      verify(mockRequest, times(1))
-          .upsert(
-              indexName,
-              entity.getId(),
-              entity,
-              Map.of(
-                  OperationTemplate.STATE, entity.getState(),
-                  OperationTemplate.BATCH_OPERATION_ID, entity.getBatchOperationId(),
-                  OperationTemplate.ITEM_KEY, entity.getItemKey(),
-                  OperationTemplate.PROCESS_INSTANCE_KEY, entity.getProcessInstanceKey(),
-                  OperationTemplate.COMPLETED_DATE, entity.getCompletedDate(),
-                  OperationTemplate.ERROR_MSG, entity.getErrorMessage()));
-    }
-
-    @Test
-    void shouldGenerateCorrectId() {
-      final var record = createSuccessRecord();
-      final var generatedIds = handler.generateIds(record);
-
-      assertThat(generatedIds)
-          .containsExactly(batchOperationKey + "_" + handler.getItemKey(record));
+      assertThat(itemCaptor.getValue().state()).isEqualTo(BatchOperationItemState.FAILED);
+      assertThat(itemCaptor.getValue().processedDate()).isNotNull();
+      assertThat(itemCaptor.getValue().errorMessage()).isNotNull();
     }
 
     @Test
@@ -236,7 +193,9 @@ class BatchOperationStatusHandlerTest {
       extends AbstractOperationStatusHandlerTest<ProcessInstanceModificationRecordValue> {
 
     ProcessInstanceModificationOperationHandlerTest() {
-      super(new ProcessInstanceModificationOperationHandler(indexName, batchOperationCache));
+      super(
+          new ProcessInstanceModificationBatchOperationExportHandler(
+              batchOperationWriter, batchOperationCache));
     }
 
     @Override
@@ -280,7 +239,9 @@ class BatchOperationStatusHandlerTest {
       extends AbstractOperationStatusHandlerTest<ProcessInstanceMigrationRecordValue> {
 
     ProcessInstanceMigrationOperationHandlerTest() {
-      super(new ProcessInstanceMigrationOperationHandler(indexName, batchOperationCache));
+      super(
+          new ProcessInstanceMigrationBatchOperationExportHandler(
+              batchOperationWriter, batchOperationCache));
     }
 
     @Override
@@ -324,7 +285,9 @@ class BatchOperationStatusHandlerTest {
       extends AbstractOperationStatusHandlerTest<ProcessInstanceRecordValue> {
 
     ProcessInstanceCancellationOperationHandlerTest() {
-      super(new ProcessInstanceCancellationOperationHandler(indexName, batchOperationCache));
+      super(
+          new ProcessInstanceCancellationBatchOperationExportHandler(
+              batchOperationWriter, batchOperationCache));
     }
 
     @Test
@@ -341,7 +304,7 @@ class BatchOperationStatusHandlerTest {
                               .build())
                       .withBatchOperationReference(batchOperationKey));
 
-      assertThat(handler.handlesRecord(record)).isFalse();
+      assertThat(handler.canExport(record)).isFalse();
     }
 
     @Override
@@ -370,7 +333,7 @@ class BatchOperationStatusHandlerTest {
                       ImmutableProcessInstanceRecordValue.builder()
                           .from(factory.generateObject(ProcessInstanceRecordValue.class))
                           .withBpmnElementType(BpmnElementType.PROCESS)
-                          .withParentProcessInstanceKey(-1L)
+                          .withParentProcessInstanceKey(-1)
                           .build())
                   .withBatchOperationReference(batchOperationKey));
     }
@@ -385,7 +348,7 @@ class BatchOperationStatusHandlerTest {
                       ImmutableProcessInstanceRecordValue.builder()
                           .from(factory.generateObject(ProcessInstanceRecordValue.class))
                           .withBpmnElementType(BpmnElementType.PROCESS)
-                          .withParentProcessInstanceKey(-1L)
+                          .withParentProcessInstanceKey(-1)
                           .build())
                   .withIntent(ProcessInstanceIntent.CANCEL)
                   .withBatchOperationReference(batchOperationKey));
@@ -397,7 +360,7 @@ class BatchOperationStatusHandlerTest {
       extends AbstractOperationStatusHandlerTest<IncidentRecordValue> {
 
     ResolveIncidentOperationHandlerTest() {
-      super(new ResolveIncidentOperationHandler(indexName, batchOperationCache));
+      super(new IncidentBatchOperationExportHandler(batchOperationWriter, batchOperationCache));
     }
 
     @Override
