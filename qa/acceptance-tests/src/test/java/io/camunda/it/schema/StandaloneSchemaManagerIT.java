@@ -106,7 +106,9 @@ final class StandaloneSchemaManagerIT {
                         "connect",
                         Map.of("username", APP_USER, "password", APP_PASSWORD),
                         "createSchema",
-                        false));
+                        false,
+                        "history",
+                        Map.of("retention", Map.of("enabled", true))));
               })
           .withExporter(
               ElasticsearchExporter.class.getSimpleName(),
