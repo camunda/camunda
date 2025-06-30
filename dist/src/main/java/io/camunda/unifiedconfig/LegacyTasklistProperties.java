@@ -17,4 +17,4 @@ import org.springframework.stereotype.Component;
 @Configuration
 @ConfigurationProperties(TasklistProperties.PREFIX)
 @PropertySource("classpath:tasklist-version.properties")
-public class LegacyTasklistProperties extends TasklistProperties { }
+public class LegacyTasklistProperties extends TasklistProperties {}

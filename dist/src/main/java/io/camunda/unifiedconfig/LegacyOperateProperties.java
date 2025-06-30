@@ -20,6 +20,4 @@ import org.springframework.stereotype.Component;
 @PropertySource("classpath:operate-version.properties")
 @DependsOn(
     "databaseInfo") // as DatabaseInfo is used in #getIndexPrefix(), it should be loaded first
-public class LegacyOperateProperties extends OperateProperties {
-
-}
+public class LegacyOperateProperties extends OperateProperties {}

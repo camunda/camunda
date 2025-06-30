@@ -11,15 +11,9 @@ import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.conditions.DatabaseType;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
-import org.springframework.context.annotation.PropertySource;
-import org.springframework.stereotype.Component;
 
 /** This class contains all project configuration parameters. */
-
 public class OperateProperties {
 
   public static final String PREFIX = "camunda.operate";
@@ -280,8 +274,7 @@ public class OperateProperties {
     return persistentSessionsEnabled;
   }
 
-  public OperateProperties setPersistentSessionsEnabled(
-      final boolean persistentSessionsEnabled) {
+  public OperateProperties setPersistentSessionsEnabled(final boolean persistentSessionsEnabled) {
     this.persistentSessionsEnabled = persistentSessionsEnabled;
     return this;
   }

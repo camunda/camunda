@@ -9,11 +9,7 @@ package io.camunda.tasklist.property;
 
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
-import org.springframework.stereotype.Component;
 
 /** This class contains all project configuration parameters. */
 public class TasklistProperties {
@@ -202,8 +198,7 @@ public class TasklistProperties {
     return persistentSessionsEnabled;
   }
 
-  public TasklistProperties setPersistentSessionsEnabled(
-      final boolean persistentSessionsEnabled) {
+  public TasklistProperties setPersistentSessionsEnabled(final boolean persistentSessionsEnabled) {
     this.persistentSessionsEnabled = persistentSessionsEnabled;
     return this;
   }
@@ -271,8 +266,7 @@ public class TasklistProperties {
     return securityProperties;
   }
 
-  public TasklistProperties setSecurityProperties(
-      final SecurityProperties securityProperties) {
+  public TasklistProperties setSecurityProperties(final SecurityProperties securityProperties) {
     this.securityProperties = securityProperties;
     return this;
   }
@@ -362,8 +356,7 @@ public class TasklistProperties {
     return zeebeOpenSearch;
   }
 
-  public TasklistProperties setZeebeOpenSearch(
-      final ZeebeOpenSearchProperties zeebeOpenSearch) {
+  public TasklistProperties setZeebeOpenSearch(final ZeebeOpenSearchProperties zeebeOpenSearch) {
     this.zeebeOpenSearch = zeebeOpenSearch;
     return this;
   }

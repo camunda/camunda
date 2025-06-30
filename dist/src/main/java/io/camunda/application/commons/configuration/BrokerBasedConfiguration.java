@@ -24,7 +24,6 @@ import java.time.Duration;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.context.LifecycleProperties;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -103,8 +102,5 @@ public class BrokerBasedConfiguration {
     return configFactory.mapConfiguration(properties);
   }
 
-  @ConfigurationProperties("zeebe.broker")
-  public static class LegacyBrokerBasedProperties extends BrokerCfg {}
-
-  public static final class BrokerBasedProperties extends LegacyBrokerBasedProperties {}
+  public static class BrokerBasedProperties extends BrokerCfg {}
 }

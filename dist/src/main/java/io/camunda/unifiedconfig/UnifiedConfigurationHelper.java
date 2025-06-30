@@ -8,7 +8,6 @@
 package io.camunda.unifiedconfig;
 
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
-import io.camunda.application.commons.configuration.BrokerBasedConfiguration.LegacyBrokerBasedProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import java.util.HashMap;

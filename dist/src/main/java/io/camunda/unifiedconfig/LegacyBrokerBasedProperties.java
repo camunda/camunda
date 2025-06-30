@@ -7,8 +7,10 @@
  */
 package io.camunda.unifiedconfig;
 
-import io.camunda.operate.conditions.DatabaseInfo;
-import org.springframework.stereotype.Component;
+import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
 
-@Component("databaseInfo")
-public class LegacyDatabaseInfo extends DatabaseInfo {}
+@Configuration
+@ConfigurationProperties("zeebe.broker")
+public class LegacyBrokerBasedProperties extends BrokerBasedProperties {}
