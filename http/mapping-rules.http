@@ -18,6 +18,25 @@ Content-Type: application/x-www-form-urlencoded
   });
 %}
 
+### Create Mapping Rule Unauthorized
+# @name create-mapping-rule-unauthorized
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/mapping-rules
+Content-Type: application/json
+Accept: application/json
+
+{
+  "mappingId": "mapping3",
+  "claimName": "test11",
+  "claimValue": "7657916d-baf8-4032-b70d-156f338a0f18",
+  "name": "mapping3"
+}
+
+> {%
+  client.test("Mapping rule creation should be unsuccessful", function () {
+    client.assert(response.status === 401, "Response status is not 401");
+  });
+%}
+
 ### Create Mapping Rule
 # @name create-mapping-rule
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/mapping-rules

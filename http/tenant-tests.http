@@ -1,3 +1,21 @@
+### Create Tenant Unauthorized
+# @name create-tenant-unauthorized
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants
+Content-Type: application/json
+Accept: application/json
+
+{
+  "tenantId": "testTenant1",
+  "name": "TestTenant1",
+  "description": "A test tenant."
+}
+
+> {%
+  client.test("Tenant creation should be unsuccessful", function () {
+    client.assert(response.status === 401, "Response status is not 401");
+  });
+%}
+
 ### Create Tenant
 # @name create-tenant
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants
@@ -76,7 +94,7 @@ Accept: application/json
 # @name search-users-for-tenant
 < {%
   import {wait} from "js/wait";
-  wait(3);
+  wait(4);
 %}
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/users/search
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
