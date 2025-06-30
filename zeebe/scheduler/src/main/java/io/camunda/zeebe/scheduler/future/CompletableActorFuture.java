@@ -284,7 +284,15 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
 
   @Override
   public <U> ActorFuture<U> andThen(final Supplier<ActorFuture<U>> next, final Executor executor) {
-    return andThen(ignored -> next.get(), executor);
+    return andThen(
+        ignored -> {
+          try {
+            return next.get();
+          } catch (final Exception e) {
+            return CompletableActorFuture.completedExceptionally(e);
+          }
+        },
+        executor);
   }
 
   @Override
@@ -295,7 +303,11 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
           if (err != null) {
             return CompletableActorFuture.completedExceptionally(err);
           } else {
-            return next.apply(v);
+            try {
+              return next.apply(v);
+            } catch (final Exception e) {
+              return CompletableActorFuture.completedExceptionally(e);
+            }
           }
         },
         executor);
@@ -307,8 +319,12 @@ public final class CompletableActorFuture<V> implements ActorFuture<V> {
     final ActorFuture<U> nextFuture = new CompletableActorFuture<>();
     onComplete(
         (thisResult, thisError) -> {
-          final var future = next.apply(thisResult, thisError);
-          future.onComplete(nextFuture, executor);
+          try {
+            final var future = next.apply(thisResult, thisError);
+            future.onComplete(nextFuture, executor);
+          } catch (final Exception e) {
+            nextFuture.completeExceptionally(e);
+          }
         },
         executor);
     return nextFuture;
