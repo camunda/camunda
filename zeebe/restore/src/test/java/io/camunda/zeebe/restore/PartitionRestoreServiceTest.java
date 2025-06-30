@@ -156,6 +156,9 @@ class PartitionRestoreServiceTest {
     assertThat(dataDirectoryToRestore).isNotEmptyDirectory();
 
     final Set<String> restoredSegmentFiles = getRegularFiles(dataDirectoryToRestore);
+    // the Routing state file is not part of the backup, but it's generated from the RocksDB
+    // snapshot
+    restoredSegmentFiles.remove("routing-state-1.pb");
     assertThat(restoredSegmentFiles)
         .describedAs("All segment files has been restored")
         .containsExactlyInAnyOrderElementsOf(backup.segments().names());
