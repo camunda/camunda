@@ -856,6 +856,63 @@ final class ActorFutureTest {
   }
 
   @Test
+  void andThenSupplierShouldCompleteExceptionallyOnException() {
+    // given
+    final var expectedException = new RuntimeException("Supplier exception");
+    final var chained =
+        CompletableActorFuture.completed("input")
+            .andThen(
+                () -> {
+                  throw expectedException;
+                },
+                Runnable::run);
+
+    // then
+    assertThat(chained)
+        .failsWithin(Duration.ofSeconds(1))
+        .withThrowableThat()
+        .withCause(expectedException);
+  }
+
+  @Test
+  void andThenFunctionShouldCompleteExceptionallyOnException() {
+    // given
+    final var expectedException = new RuntimeException("Function exception");
+    final var chained =
+        CompletableActorFuture.completed("input")
+            .andThen(
+                input -> {
+                  throw expectedException;
+                },
+                Runnable::run);
+
+    // then
+    assertThat(chained)
+        .failsWithin(Duration.ofSeconds(1))
+        .withThrowableThat()
+        .withCause(expectedException);
+  }
+
+  @Test
+  void andThenBiFunctionShouldCompleteExceptionallyOnException() {
+    // given
+    final var expectedException = new RuntimeException("BiFunction exception");
+    final var chained =
+        CompletableActorFuture.completed("input")
+            .andThen(
+                (value, error) -> {
+                  throw expectedException;
+                },
+                Runnable::run);
+
+    // then
+    assertThat(chained)
+        .failsWithin(Duration.ofSeconds(1))
+        .withThrowableThat()
+        .withCause(expectedException);
+  }
+
+  @Test
   void shouldChainThenApply() {
     // given
     final var future = new CompletableActorFuture<Integer>();
