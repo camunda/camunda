@@ -12,7 +12,7 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.ConditionalOnOperateCompatibility;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.IncidentServices;
@@ -256,13 +256,13 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
   }
 
   private <T> T executeCamundaServiceAnonymously(
-      final Function<Authentication, CompletableFuture<T>> method) {
+      final Function<CamundaAuthentication, CompletableFuture<T>> method) {
     return executeCamundaService(method, RequestMapper.getAnonymousAuthentication());
   }
 
   private <T> T executeCamundaService(
-      final Function<Authentication, CompletableFuture<T>> method,
-      final Authentication authentication) {
+      final Function<CamundaAuthentication, CompletableFuture<T>> method,
+      final CamundaAuthentication authentication) {
     return method.apply(authentication).join();
   }
 

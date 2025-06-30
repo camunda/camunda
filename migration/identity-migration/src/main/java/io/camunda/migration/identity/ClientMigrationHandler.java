@@ -16,7 +16,7 @@ import io.camunda.migration.identity.console.ConsoleClient;
 import io.camunda.migration.identity.console.ConsoleClient.Client;
 import io.camunda.migration.identity.console.ConsoleClient.Members;
 import io.camunda.migration.identity.console.ConsoleClient.Permission;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
@@ -43,7 +43,7 @@ public class ClientMigrationHandler extends MigrationHandler<Members> {
   public ClientMigrationHandler(
       final ConsoleClient consoleClient,
       final AuthorizationServices authorizationServices,
-      final Authentication servicesAuthentication) {
+      final CamundaAuthentication servicesAuthentication) {
     this.consoleClient = consoleClient;
     this.authorizationServices = authorizationServices.withAuthentication(servicesAuthentication);
   }

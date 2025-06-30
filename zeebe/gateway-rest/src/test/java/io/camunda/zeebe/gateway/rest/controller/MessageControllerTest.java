@@ -12,7 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
@@ -53,7 +53,8 @@ public class MessageControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setup() {
-    when(messageServices.withAuthentication(any(Authentication.class))).thenReturn(messageServices);
+    when(messageServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(messageServices);
   }
 
   @Test

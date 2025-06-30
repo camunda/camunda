@@ -11,7 +11,7 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.SearchQueryBase;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ApiServices;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -22,7 +22,7 @@ public abstract class SearchQueryService<T extends ApiServices<T>, Q extends Sea
   protected SearchQueryService(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final Authentication authentication) {
+      final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
   }
 

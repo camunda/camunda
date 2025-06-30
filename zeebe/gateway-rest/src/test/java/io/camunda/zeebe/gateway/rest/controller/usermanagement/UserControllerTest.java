@@ -14,7 +14,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
@@ -44,7 +44,8 @@ public class UserControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setup() {
-    when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
+    when(userServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(userServices);
   }
 
   @ParameterizedTest

@@ -19,7 +19,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.UserSort;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -71,7 +71,8 @@ public class UserQueryControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setup() {
-    when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
+    when(userServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(userServices);
   }
 
   @Test

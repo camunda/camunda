@@ -16,7 +16,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.UpdateJobChangeset;
@@ -52,7 +52,7 @@ public class JobControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setup() {
-    when(jobServices.withAuthentication(any(Authentication.class))).thenReturn(jobServices);
+    when(jobServices.withAuthentication(any(CamundaAuthentication.class))).thenReturn(jobServices);
   }
 
   @Test

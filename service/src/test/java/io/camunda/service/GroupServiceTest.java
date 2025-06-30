@@ -18,7 +18,7 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
 import io.camunda.service.security.SecurityContextProvider;
@@ -41,12 +41,12 @@ public class GroupServiceTest {
 
   private GroupServices services;
   private GroupSearchClient client;
-  private Authentication authentication;
+  private CamundaAuthentication authentication;
   private StubbedBrokerClient stubbedBrokerClient;
 
   @BeforeEach
   public void before() {
-    authentication = Authentication.of(builder -> builder.user("foo"));
+    authentication = CamundaAuthentication.of(builder -> builder.user("foo"));
     stubbedBrokerClient = new StubbedBrokerClient();
     client = mock(GroupSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);

@@ -13,7 +13,7 @@ import io.camunda.migration.identity.dto.TenantMappingRule;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
 import io.camunda.search.entities.MappingEntity;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.MappingServices;
 import io.camunda.service.MappingServices.MappingDTO;
 import io.camunda.service.TenantServices;
@@ -29,7 +29,7 @@ public class TenantMappingRuleMigrationHandler extends MigrationHandler<TenantMa
   private final MappingServices mappingServices;
 
   public TenantMappingRuleMigrationHandler(
-      final Authentication authentication,
+      final CamundaAuthentication authentication,
       final ManagementIdentityClient managementIdentityClient,
       final ManagementIdentityTransformer managementIdentityTransformer,
       final TenantServices tenantServices,

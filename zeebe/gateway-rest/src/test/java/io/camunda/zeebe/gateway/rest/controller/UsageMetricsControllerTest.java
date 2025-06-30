@@ -14,7 +14,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.entities.UsageMetricsCount;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.UsageMetricsQuery;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
@@ -43,7 +43,7 @@ public class UsageMetricsControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setupUsageMetricsServices() {
-    when(usageMetricsServices.withAuthentication(any(Authentication.class)))
+    when(usageMetricsServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(usageMetricsServices);
   }
 

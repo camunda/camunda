@@ -15,7 +15,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import com.fasterxml.jackson.core.JsonParseException;
 import io.atomix.cluster.messaging.MessagingException.ConnectionClosed;
 import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
@@ -58,7 +58,7 @@ public class ErrorMapperTest extends RestControllerTest {
 
   @BeforeEach
   void setUp() {
-    Mockito.when(userTaskServices.withAuthentication(any(Authentication.class)))
+    Mockito.when(userTaskServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(userTaskServices);
   }
 

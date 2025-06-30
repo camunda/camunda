@@ -20,7 +20,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.VariableSort;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.VariableServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
@@ -109,7 +109,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setupServices() {
-    when(variableServices.withAuthentication(any(Authentication.class)))
+    when(variableServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(variableServices);
 
     when(variableServices.getByKey(VALID_VARIABLE_KEY))

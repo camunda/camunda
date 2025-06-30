@@ -12,7 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
@@ -57,7 +57,7 @@ public class ResourceControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setup() {
-    when(resourceServices.withAuthentication(any(Authentication.class)))
+    when(resourceServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(resourceServices);
   }
 

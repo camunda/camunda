@@ -19,8 +19,8 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.exception.ForbiddenException;
@@ -51,7 +51,8 @@ public class TenantServiceTest {
   @BeforeEach
   public void before() {
     stubbedBrokerClient = new StubbedBrokerClient();
-    final Authentication authentication = Authentication.of(builder -> builder.user("foo"));
+    final CamundaAuthentication authentication =
+        CamundaAuthentication.of(builder -> builder.user("foo"));
     client = mock(TenantSearchClient.class);
     final SecurityContextProvider securityContextProvider = mock(SecurityContextProvider.class);
     when(client.withSecurityContext(any())).thenReturn(client);
@@ -235,7 +236,8 @@ public class TenantServiceTest {
 
   @Test
   public void shouldThrowForbiddenIfNotAuthorized() {
-    final Authentication auth = Authentication.of(builder -> builder.user("unauthorizedUser"));
+    final CamundaAuthentication auth =
+        CamundaAuthentication.of(builder -> builder.user("unauthorizedUser"));
     final var contextProvider = mock(SecurityContextProvider.class);
     when(contextProvider.isAuthorized(any(), any(), any())).thenReturn(false);
 

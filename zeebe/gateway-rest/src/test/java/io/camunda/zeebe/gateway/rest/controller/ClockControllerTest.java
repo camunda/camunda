@@ -13,7 +13,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ClockServices;
 import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -42,7 +42,8 @@ public class ClockControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setup() {
-    when(clockServices.withAuthentication(any(Authentication.class))).thenReturn(clockServices);
+    when(clockServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(clockServices);
   }
 
   @Test

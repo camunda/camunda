@@ -16,6 +16,7 @@ import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.operate.webapp.security.permission.PermissionsService.ResourcesAllowed;
 import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
@@ -91,7 +92,7 @@ public class PermissionsServiceTest {
   @Test
   public void testGetProcessDefinitionPermission() {
 
-    final io.camunda.security.auth.Authentication authentication =
+    final CamundaAuthentication authentication =
         createCamundaAuthentication(username, List.of(tenantId), List.of(roleId), List.of(groupId));
 
     when(mockAuthorizationChecker.collectPermissionTypes(
@@ -113,7 +114,7 @@ public class PermissionsServiceTest {
   @Test
   public void testGetDecisionDefinitionPermission() {
 
-    final io.camunda.security.auth.Authentication authentication =
+    final CamundaAuthentication authentication =
         createCamundaAuthentication(username, List.of(tenantId), List.of(roleId), List.of(groupId));
 
     when(mockAuthorizationChecker.collectPermissionTypes(
@@ -142,12 +143,12 @@ public class PermissionsServiceTest {
     assertThat(resourceIds.isEmpty()).isTrue();
   }
 
-  private io.camunda.security.auth.Authentication createCamundaAuthentication(
+  private CamundaAuthentication createCamundaAuthentication(
       final String username,
       final List<String> tenants,
       final List<String> roleIds,
       final List<String> groupIds) {
-    return new io.camunda.security.auth.Authentication.Builder()
+    return new CamundaAuthentication.Builder()
         .user(username)
         .tenants(tenants)
         .roleIds(roleIds)

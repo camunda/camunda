@@ -18,7 +18,7 @@ import io.camunda.migration.identity.console.ConsoleClient.Member;
 import io.camunda.migration.identity.console.ConsoleClient.Role;
 import io.camunda.migration.identity.dto.Authorization;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -53,7 +53,10 @@ final class AuthorizationMigrationHandlerTest {
     this.consoleClient = consoleClient;
     migrationHandler =
         new AuthorizationMigrationHandler(
-            Authentication.none(), authorizationServices, consoleClient, managementIdentityClient);
+            CamundaAuthentication.none(),
+            authorizationServices,
+            consoleClient,
+            managementIdentityClient);
   }
 
   @Test

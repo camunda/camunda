@@ -23,8 +23,8 @@ import io.camunda.search.filter.Operation;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.util.ObjectBuilder;
@@ -102,7 +102,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setupServices() {
-    when(decisionInstanceServices.withAuthentication(any(Authentication.class)))
+    when(decisionInstanceServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(decisionInstanceServices);
   }
 

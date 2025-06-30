@@ -18,7 +18,7 @@ import io.camunda.search.entities.JobEntity.ListenerEventType;
 import io.camunda.search.filter.JobFilter;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
@@ -111,7 +111,7 @@ public class JobQueryControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setupJobServices() {
-    when(jobServices.withAuthentication(ArgumentMatchers.any(Authentication.class)))
+    when(jobServices.withAuthentication(ArgumentMatchers.any(CamundaAuthentication.class)))
         .thenReturn(jobServices);
   }
 

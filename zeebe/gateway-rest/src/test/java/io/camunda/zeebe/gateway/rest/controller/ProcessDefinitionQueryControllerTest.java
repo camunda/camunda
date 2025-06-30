@@ -20,8 +20,8 @@ import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.FormServices;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.exception.ForbiddenException;
@@ -121,10 +121,11 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setupProcessDefinitionServices() {
-    when(processDefinitionServices.withAuthentication(ArgumentMatchers.any(Authentication.class)))
+    when(processDefinitionServices.withAuthentication(
+            ArgumentMatchers.any(CamundaAuthentication.class)))
         .thenReturn(processDefinitionServices);
 
-    when(formServices.withAuthentication(ArgumentMatchers.any(Authentication.class)))
+    when(formServices.withAuthentication(ArgumentMatchers.any(CamundaAuthentication.class)))
         .thenReturn(formServices);
   }
 

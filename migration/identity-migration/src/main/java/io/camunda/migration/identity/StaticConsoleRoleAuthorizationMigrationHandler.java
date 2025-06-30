@@ -11,7 +11,7 @@ import static io.camunda.migration.identity.config.saas.StaticEntities.ROLE_PERM
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.dto.NoopDTO;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,7 +26,7 @@ public class StaticConsoleRoleAuthorizationMigrationHandler extends MigrationHan
 
   public StaticConsoleRoleAuthorizationMigrationHandler(
       final AuthorizationServices authorizationServices,
-      final Authentication servicesAuthentication) {
+      final CamundaAuthentication servicesAuthentication) {
     this.authorizationServices = authorizationServices.withAuthentication(servicesAuthentication);
   }
 

@@ -23,7 +23,7 @@ import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.FlowNodeInstanceSort;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -143,7 +143,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setupServices() {
-    when(elementInstanceServices.withAuthentication(any(Authentication.class)))
+    when(elementInstanceServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(elementInstanceServices);
     when(processCache.getElementName(any())).thenReturn("elementName");
     final var processCacheItem = mock(ProcessCacheItem.class);

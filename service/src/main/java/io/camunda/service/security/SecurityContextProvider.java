@@ -7,8 +7,8 @@
  */
 package io.camunda.service.security;
 
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.auth.SecurityContext.Builder;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -27,7 +27,7 @@ public class SecurityContextProvider {
   }
 
   public SecurityContext provideSecurityContext(
-      final Authentication authentication, final Authorization authorization) {
+      final CamundaAuthentication authentication, final Authorization authorization) {
     final SecurityContext.Builder securityContextbuilder =
         new Builder().withAuthentication(authentication);
     if (securityConfiguration.getAuthorizations().isEnabled()) {
@@ -36,13 +36,13 @@ public class SecurityContextProvider {
     return securityContextbuilder.build();
   }
 
-  public SecurityContext provideSecurityContext(final Authentication authentication) {
+  public SecurityContext provideSecurityContext(final CamundaAuthentication authentication) {
     return provideSecurityContext(authentication, null);
   }
 
   public boolean isAuthorized(
       final String resourceKey,
-      final Authentication authentication,
+      final CamundaAuthentication authentication,
       final Authorization authorization) {
     final var securityContext = provideSecurityContext(authentication, authorization);
     if (securityContext.requiresAuthorizationChecks()) {

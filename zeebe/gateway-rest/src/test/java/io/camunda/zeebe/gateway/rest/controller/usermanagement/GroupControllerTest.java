@@ -13,7 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
@@ -211,7 +211,8 @@ public class GroupControllerTest {
 
     @BeforeEach
     void setup() {
-      when(groupServices.withAuthentication(any(Authentication.class))).thenReturn(groupServices);
+      when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
+          .thenReturn(groupServices);
     }
 
     @ParameterizedTest

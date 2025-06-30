@@ -26,7 +26,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.sort.UserTaskSort;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.UserTaskServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCache;
@@ -210,7 +210,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setupServices() throws IOException {
-    when(userTaskServices.withAuthentication(any(Authentication.class)))
+    when(userTaskServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(userTaskServices);
 
     // Mock the behavior of userTaskServices for a valid key

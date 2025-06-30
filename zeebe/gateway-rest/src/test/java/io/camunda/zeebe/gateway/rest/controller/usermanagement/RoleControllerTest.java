@@ -13,7 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
@@ -53,10 +53,14 @@ public class RoleControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setup() {
-    when(roleServices.withAuthentication(any(Authentication.class))).thenReturn(roleServices);
-    when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
-    when(mappingServices.withAuthentication(any(Authentication.class))).thenReturn(mappingServices);
-    when(groupServices.withAuthentication(any(Authentication.class))).thenReturn(groupServices);
+    when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(roleServices);
+    when(userServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(userServices);
+    when(mappingServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(mappingServices);
+    when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(groupServices);
   }
 
   @ParameterizedTest

@@ -15,8 +15,8 @@ import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -34,7 +34,7 @@ public class ProcessDefinitionServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
-      final Authentication authentication) {
+      final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.processDefinitionSearchClient = processDefinitionSearchClient;
   }
@@ -60,7 +60,7 @@ public class ProcessDefinitionServices
   }
 
   @Override
-  public ProcessDefinitionServices withAuthentication(final Authentication authentication) {
+  public ProcessDefinitionServices withAuthentication(final CamundaAuthentication authentication) {
     return new ProcessDefinitionServices(
         brokerClient, securityContextProvider, processDefinitionSearchClient, authentication);
   }

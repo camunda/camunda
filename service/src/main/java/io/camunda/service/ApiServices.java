@@ -7,7 +7,7 @@
  */
 package io.camunda.service;
 
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -25,21 +25,22 @@ public abstract class ApiServices<T extends ApiServices<T>> {
 
   protected final BrokerClient brokerClient;
   protected final SecurityContextProvider securityContextProvider;
-  protected final Authentication authentication;
+  protected final CamundaAuthentication authentication;
 
   protected ApiServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final Authentication authentication) {
+      final CamundaAuthentication authentication) {
     this.brokerClient = brokerClient;
     this.securityContextProvider = securityContextProvider;
     this.authentication = authentication;
   }
 
-  public abstract T withAuthentication(final Authentication authentication);
+  public abstract T withAuthentication(final CamundaAuthentication authentication);
 
-  public T withAuthentication(final Function<Authentication.Builder, Authentication.Builder> fn) {
-    return withAuthentication(fn.apply(new Authentication.Builder()).build());
+  public T withAuthentication(
+      final Function<CamundaAuthentication.Builder, CamundaAuthentication.Builder> fn) {
+    return withAuthentication(fn.apply(new CamundaAuthentication.Builder()).build());
   }
 
   protected <R> CompletableFuture<R> sendBrokerRequest(final BrokerRequest<R> brokerRequest) {

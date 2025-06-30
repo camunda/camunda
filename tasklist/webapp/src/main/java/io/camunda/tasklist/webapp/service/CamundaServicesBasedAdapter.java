@@ -10,7 +10,7 @@ package io.camunda.tasklist.webapp.service;
 import static io.camunda.tasklist.webapp.util.ErrorHandlingUtils.getErrorMessageFromBrokerException;
 
 import io.camunda.client.impl.command.StreamUtil;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.JobServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
@@ -220,18 +220,18 @@ public class CamundaServicesBasedAdapter implements TasklistServicesAdapter {
   }
 
   private <T> T executeCamundaServiceAuthenticated(
-      final Function<Authentication, CompletableFuture<T>> method) {
+      final Function<CamundaAuthentication, CompletableFuture<T>> method) {
     return executeCamundaService(method, RequestMapper.getAuthentication());
   }
 
   private <T> T executeCamundaServiceAnonymously(
-      final Function<Authentication, CompletableFuture<T>> method) {
+      final Function<CamundaAuthentication, CompletableFuture<T>> method) {
     return executeCamundaService(method, RequestMapper.getAnonymousAuthentication());
   }
 
   private <T> T executeCamundaService(
-      final Function<Authentication, CompletableFuture<T>> method,
-      final Authentication authentication) {
+      final Function<CamundaAuthentication, CompletableFuture<T>> method,
+      final CamundaAuthentication authentication) {
     try {
       return method.apply(authentication).join();
     } catch (final Exception e) {

@@ -13,7 +13,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
@@ -95,7 +95,7 @@ public class UserTaskControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setupServices() {
-    Mockito.when(userTaskServices.withAuthentication(any(Authentication.class)))
+    Mockito.when(userTaskServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(userTaskServices);
   }
 

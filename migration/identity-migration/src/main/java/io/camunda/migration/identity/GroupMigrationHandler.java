@@ -12,7 +12,7 @@ import io.camunda.migration.identity.console.ConsoleClient;
 import io.camunda.migration.identity.console.ConsoleClient.Member;
 import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
@@ -35,7 +35,7 @@ public class GroupMigrationHandler extends MigrationHandler<Group> {
   private final AtomicInteger totalUserAssignmentAttempts = new AtomicInteger();
 
   public GroupMigrationHandler(
-      final Authentication authentication,
+      final CamundaAuthentication authentication,
       final ConsoleClient consoleClient,
       final ManagementIdentityClient managementIdentityClient,
       final GroupServices groupServices) {

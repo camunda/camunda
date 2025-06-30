@@ -18,7 +18,7 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.MappingSort;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.MappingServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
@@ -36,7 +36,8 @@ public class MappingQueryControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setup() {
-    when(mappingServices.withAuthentication(any(Authentication.class))).thenReturn(mappingServices);
+    when(mappingServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(mappingServices);
   }
 
   @Test

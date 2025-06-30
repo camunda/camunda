@@ -14,7 +14,7 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.AdHocSubProcessActivityQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -39,13 +39,14 @@ public class AdHocSubProcessActivityServices extends ApiServices<AdHocSubProcess
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ProcessDefinitionServices processDefinitionServices,
-      final Authentication authentication) {
+      final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.processDefinitionServices = processDefinitionServices;
   }
 
   @Override
-  public AdHocSubProcessActivityServices withAuthentication(final Authentication authentication) {
+  public AdHocSubProcessActivityServices withAuthentication(
+      final CamundaAuthentication authentication) {
     return new AdHocSubProcessActivityServices(
         brokerClient,
         securityContextProvider,

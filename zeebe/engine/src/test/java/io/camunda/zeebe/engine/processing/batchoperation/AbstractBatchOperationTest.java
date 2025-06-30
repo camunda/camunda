@@ -18,7 +18,7 @@ import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -100,7 +100,7 @@ abstract class AbstractBatchOperationTest {
 
     DirectBuffer authenticationBuffer = null;
     if (claims != null) {
-      authenticationBuffer = convertToBuffer(Authentication.of(b -> b.claims(claims)));
+      authenticationBuffer = convertToBuffer(CamundaAuthentication.of(b -> b.claims(claims)));
     }
 
     return engine
@@ -139,7 +139,7 @@ abstract class AbstractBatchOperationTest {
 
     DirectBuffer authenticationBuffer = null;
     if (claims != null) {
-      authenticationBuffer = convertToBuffer(Authentication.of(b -> b.claims(claims)));
+      authenticationBuffer = convertToBuffer(CamundaAuthentication.of(b -> b.claims(claims)));
     }
 
     return engine
@@ -199,7 +199,7 @@ abstract class AbstractBatchOperationTest {
 
     DirectBuffer authenticationBuffer = null;
     if (claims != null) {
-      authenticationBuffer = convertToBuffer(Authentication.of(b -> b.claims(claims)));
+      authenticationBuffer = convertToBuffer(CamundaAuthentication.of(b -> b.claims(claims)));
     }
 
     return engine
@@ -242,7 +242,7 @@ abstract class AbstractBatchOperationTest {
 
     DirectBuffer authenticationBuffer = null;
     if (claims != null) {
-      authenticationBuffer = convertToBuffer(Authentication.of(b -> b.claims(claims)));
+      authenticationBuffer = convertToBuffer(CamundaAuthentication.of(b -> b.claims(claims)));
     }
 
     return engine

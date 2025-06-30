@@ -14,8 +14,8 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -41,7 +41,7 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final TenantSearchClient tenantSearchClient,
-      final Authentication authentication) {
+      final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.tenantSearchClient = tenantSearchClient;
   }
@@ -72,7 +72,7 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
   }
 
   @Override
-  public TenantServices withAuthentication(final Authentication authentication) {
+  public TenantServices withAuthentication(final CamundaAuthentication authentication) {
     return new TenantServices(
         brokerClient, securityContextProvider, tenantSearchClient, authentication);
   }

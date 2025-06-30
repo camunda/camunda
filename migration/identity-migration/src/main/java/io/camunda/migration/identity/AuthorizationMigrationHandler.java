@@ -14,7 +14,7 @@ import io.camunda.migration.identity.console.ConsoleClient;
 import io.camunda.migration.identity.console.ConsoleClient.Member;
 import io.camunda.migration.identity.dto.Authorization;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
@@ -38,7 +38,7 @@ public class AuthorizationMigrationHandler extends MigrationHandler<Authorizatio
   private final AtomicInteger totalAuthorizationsCount = new AtomicInteger();
 
   public AuthorizationMigrationHandler(
-      final Authentication authentication,
+      final CamundaAuthentication authentication,
       final AuthorizationServices authorizationService,
       final ConsoleClient consoleClient,
       final ManagementIdentityClient managementIdentityClient) {

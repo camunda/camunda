@@ -12,7 +12,7 @@ import static io.camunda.security.auth.Authorization.WILDCARD;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -102,7 +102,7 @@ public class AuthorizationChecker {
   public Set<PermissionType> collectPermissionTypes(
       final String resourceId,
       final AuthorizationResourceType resourceType,
-      final Authentication authentication) {
+      final CamundaAuthentication authentication) {
     final var ownerIds = collectOwnerIds(authentication);
     final var authorizationEntities =
         authorizationSearchClient.findAllAuthorizations(
@@ -124,7 +124,7 @@ public class AuthorizationChecker {
         .collect(Collectors.toSet());
   }
 
-  private List<String> collectOwnerIds(final Authentication authentication) {
+  private List<String> collectOwnerIds(final CamundaAuthentication authentication) {
     final List<String> ownerIds = new ArrayList<>();
     if (authentication.authenticatedUsername() != null) {
       ownerIds.add(authentication.authenticatedUsername());
