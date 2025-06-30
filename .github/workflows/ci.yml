@@ -21,7 +21,7 @@ on:
 # Exception for main branch: complete builds for every commit needed for confidenence
 # Exception for deploy jobs that have to wait for each other to avoid overwriting
 concurrency:
-  cancel-in-progress: false
+  cancel-in-progress: true
   group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
 defaults:
