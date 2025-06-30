@@ -11,6 +11,7 @@ import io.camunda.identity.sdk.users.dto.User;
 import io.camunda.migration.identity.dto.Authorization;
 import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.dto.MappingRule.MappingRuleType;
+import io.camunda.migration.identity.dto.Permission;
 import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.dto.TenantMappingRule;
@@ -33,7 +34,8 @@ public class ManagementIdentityClient {
       "/api/groups/{0}/users?organizationId={1}";
   private static final String MIGRATION_AUTHORIZATION_ENDPOINT =
       "/api/authorizations?organizationId={0}";
-  private static final String MIGRATION_ROLES_ENDPOINT = "/api/roles?organizationId={0}";
+  private static final String MIGRATION_ROLES_ENDPOINT = "/api/roles";
+  private static final String MIGRATION_ROLES_PERMISSIONS_ENDPOINT = "/api/roles/{0}/permissions";
 
   private final String organizationId;
   private final RestTemplate restTemplate;
@@ -96,7 +98,15 @@ public class ManagementIdentityClient {
   public List<Role> fetchRoles() {
     return Arrays.stream(
             Objects.requireNonNull(
-                restTemplate.getForObject(MIGRATION_ROLES_ENDPOINT, Role[].class, organizationId)))
+                restTemplate.getForObject(MIGRATION_ROLES_ENDPOINT, Role[].class)))
+        .toList();
+  }
+
+  public List<Permission> fetchPermissions(final String roleName) {
+    return Arrays.stream(
+            Objects.requireNonNull(
+                restTemplate.getForObject(
+                    MIGRATION_ROLES_PERMISSIONS_ENDPOINT, Permission[].class, roleName)))
         .toList();
   }
 }

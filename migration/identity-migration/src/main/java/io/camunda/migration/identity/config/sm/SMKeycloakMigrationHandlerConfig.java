@@ -10,6 +10,7 @@ package io.camunda.migration.identity.config.sm;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
 import io.camunda.migration.identity.handler.sm.RoleMigrationHandler;
 import io.camunda.security.auth.Authentication;
+import io.camunda.service.AuthorizationServices;
 import io.camunda.service.RoleServices;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,8 +22,9 @@ public class SMKeycloakMigrationHandlerConfig {
   public RoleMigrationHandler roleMigrationHandler(
       final Authentication authentication,
       final ManagementIdentityClient managementIdentityClient,
-      final RoleServices roleServices) {
+      final RoleServices roleServices,
+      final AuthorizationServices authorizationServices) {
     return new RoleMigrationHandler(
-        authentication, managementIdentityClient, roleServices.withAuthentication(authentication));
+        authentication, managementIdentityClient, roleServices, authorizationServices);
   }
 }

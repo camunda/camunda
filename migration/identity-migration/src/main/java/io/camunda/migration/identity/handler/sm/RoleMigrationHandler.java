@@ -7,11 +7,15 @@
  */
 package io.camunda.migration.identity.handler.sm;
 
+import static io.camunda.migration.identity.MigrationUtil.extractCombinedPermissions;
+import static io.camunda.migration.identity.config.sm.StaticEntities.getAuthorizationsByAudience;
+
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
 import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.handler.MigrationHandler;
 import io.camunda.security.auth.Authentication;
+import io.camunda.service.AuthorizationServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import java.util.List;
@@ -21,6 +25,7 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
 
   private final ManagementIdentityClient managementIdentityClient;
   private final RoleServices roleServices;
+  private final AuthorizationServices authorizationServices;
 
   private final AtomicInteger createdRoleCount = new AtomicInteger();
   private final AtomicInteger totalRoleCount = new AtomicInteger();
@@ -28,9 +33,11 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
   public RoleMigrationHandler(
       final Authentication authentication,
       final ManagementIdentityClient managementIdentityClient,
-      final RoleServices roleServices) {
+      final RoleServices roleServices,
+      final AuthorizationServices authorizationServices) {
     this.managementIdentityClient = managementIdentityClient;
     this.roleServices = roleServices.withAuthentication(authentication);
+    this.authorizationServices = authorizationServices;
   }
 
   @Override
@@ -47,10 +54,12 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
     roles.forEach(
         role -> {
           try {
-            final var roleId = normalizeRoleID(role.name());
-            roleServices.createRole(new CreateRoleRequest(roleId, role.name(), role.description()));
+            final var roleName = role.name();
+            final var roleId = normalizeRoleID(roleName);
+            roleServices.createRole(new CreateRoleRequest(roleId, roleName, role.description()));
             createdRoleCount.incrementAndGet();
-            logger.info("Role '{}' with ID '{}' created successfully.", role.name(), roleId);
+            logger.debug("Role '{}' with ID '{}' created successfully.", roleName, roleId);
+            createAuthorizationsForRole(roleId, roleName);
           } catch (final Exception e) {
             if (!isConflictError(e)) {
               throw new MigrationException("Failed to migrate role with name: " + role.name(), e);
@@ -79,5 +88,54 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
       normalizedId = normalizedId.substring(0, 256);
     }
     return normalizedId;
+  }
+
+  private void createAuthorizationsForRole(final String roleId, final String roleName) {
+    final List<String> permissions = getFormattedPermissions(roleName);
+
+    if (permissions.isEmpty()) {
+      logger.debug(
+          "No permissions found for role '{}', skipping authorization creation.", roleName);
+      return;
+    }
+
+    final var authorizations =
+        permissions.stream()
+            .map(permission -> getAuthorizationsByAudience(permission, roleId))
+            .flatMap(List::stream)
+            .toList();
+
+    final var combinedPermissions = extractCombinedPermissions(authorizations);
+
+    for (final var request : combinedPermissions) {
+      try {
+        authorizationServices.createAuthorization(request).join();
+        logger.debug(
+            "Authorization created for role '{}' with permissions '{}'.",
+            roleName,
+            request.permissionTypes());
+      } catch (final Exception e) {
+        if (!isConflictError(e)) {
+          throw new MigrationException(
+              String.format(
+                  "Failed to create authorization for role '%s' with permissions '%s'",
+                  roleName, request.permissionTypes()),
+              e);
+        }
+        logger.debug(
+            "Authorization already exists for role '{}' with permissions '{}', skipping.",
+            roleName,
+            request.permissionTypes());
+      }
+    }
+  }
+
+  private List<String> getFormattedPermissions(final String roleName) {
+    return managementIdentityClient.fetchPermissions(roleName).stream()
+        .map(
+            permission ->
+                String.format(
+                    "%s:%s", permission.resourceServerAudience(), permission.definition()))
+        .toList();
   }
 }
