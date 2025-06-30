@@ -12,9 +12,9 @@ import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureFailureVideo, captureScreenshot} from '@setup';
 
 test.describe('settings', () => {
-  test.beforeEach(async ({page, taskListLoginPage}) => {
+  test.beforeEach(async ({page, loginPage}) => {
     await navigateToApp(page, 'tasklist');
-    await taskListLoginPage.login('demo', 'demo');
+    await loginPage.login('demo', 'demo');
     await expect(page).toHaveURL('/tasklist');
   });
 

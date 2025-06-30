@@ -21,11 +21,8 @@ test.describe.parallel('Login Tests', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('Basic Login on TaskList', async ({
-    taskListLoginPage,
-    taskPanelPage,
-  }) => {
-    await taskListLoginPage.login('demo', 'demo');
+  test('Basic Login on TaskList', async ({loginPage, taskPanelPage}) => {
+    await loginPage.login('demo', 'demo');
     await expect(taskPanelPage.taskListPageBanner).toBeVisible();
   });
 
@@ -37,13 +34,13 @@ test.describe.parallel('Login Tests', () => {
   });
 
   test('show error message on login failure', async ({
-    taskListLoginPage,
+    loginPage,
     makeAxeBuilder,
     page,
   }) => {
-    await taskListLoginPage.login('demo', 'wrong');
+    await loginPage.login('demo', 'wrong');
     await expect(page).toHaveURL('/tasklist/login');
-    await expect(taskListLoginPage.errorMessage).toContainText(
+    await expect(loginPage.errorMessage).toContainText(
       'Username and password do not match',
     );
 
@@ -53,37 +50,30 @@ test.describe.parallel('Login Tests', () => {
     expect(results.passes.length).toBeGreaterThan(0);
   });
 
-  test('block form submission with empty fields', async ({
-    taskListLoginPage,
-    page,
-  }) => {
-    await taskListLoginPage.loginButton.click();
+  test('block form submission with empty fields', async ({loginPage, page}) => {
+    await loginPage.loginButton.click();
     await expect(page).toHaveURL('/tasklist/login');
 
-    await taskListLoginPage.usernameInput.fill('demo');
-    await taskListLoginPage.loginButton.click();
+    await loginPage.usernameInput.fill('demo');
+    await loginPage.loginButton.click();
     await expect(page).toHaveURL('/tasklist/login');
 
-    await taskListLoginPage.usernameInput.fill(' ');
-    await taskListLoginPage.passwordInput.fill('demo');
-    await taskListLoginPage.loginButton.click();
+    await loginPage.usernameInput.fill(' ');
+    await loginPage.passwordInput.fill('demo');
+    await loginPage.loginButton.click();
     await expect(page).toHaveURL('/tasklist/login');
   });
 
-  test('log out redirect', async ({
-    taskListLoginPage,
-    tasklistHeader,
-    page,
-  }) => {
-    await taskListLoginPage.login('demo', 'demo');
+  test('log out redirect', async ({loginPage, tasklistHeader, page}) => {
+    await loginPage.login('demo', 'demo');
     await expect(page).toHaveURL('/tasklist');
 
     await tasklistHeader.logout();
     await expect(page).toHaveURL('/tasklist/login');
   });
 
-  test('persistency of a session', async ({taskListLoginPage, page}) => {
-    await taskListLoginPage.login('demo', 'demo');
+  test('persistency of a session', async ({loginPage, page}) => {
+    await loginPage.login('demo', 'demo');
 
     await expect(page).toHaveURL('/tasklist');
     await page.reload();
@@ -91,25 +81,25 @@ test.describe.parallel('Login Tests', () => {
   });
 
   test('redirect to the correct URL after login', async ({
-    taskListLoginPage,
+    loginPage,
     tasklistHeader,
     page,
   }) => {
     await page.goto('tasklist/123');
 
-    await taskListLoginPage.login('demo', 'demo');
+    await loginPage.login('demo', 'demo');
     await expect(page).toHaveURL('/tasklist/123');
 
     await tasklistHeader.logout();
 
     await page.goto('/tasklist?filter=unassigned');
-    await taskListLoginPage.login('demo', 'demo');
+    await loginPage.login('demo', 'demo');
     await expect(page).toHaveURL('/tasklist?filter=unassigned');
 
     await tasklistHeader.logout();
 
     await page.goto('/tasklist/123?filter=unassigned');
-    await taskListLoginPage.login('demo', 'demo');
+    await loginPage.login('demo', 'demo');
     await expect(page).toHaveURL('/tasklist/123?filter=unassigned');
   });
 });
