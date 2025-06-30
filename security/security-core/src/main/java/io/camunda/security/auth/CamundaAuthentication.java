@@ -11,6 +11,7 @@ import static java.util.Collections.unmodifiableList;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.camunda.zeebe.auth.Authorization;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,7 +29,11 @@ public record CamundaAuthentication(
     @JsonProperty("claims") Map<String, Object> claims) {
 
   public static CamundaAuthentication none() {
-    return new Builder().build();
+    return of(b -> b);
+  }
+
+  public static CamundaAuthentication anonymous() {
+    return of(b -> b.claims(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true)));
   }
 
   public static CamundaAuthentication of(final Function<Builder, Builder> builderFunction) {

@@ -21,6 +21,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.IncidentSort;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.IncidentServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
@@ -30,8 +31,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(value = IncidentController.class)
 public class IncidentQueryControllerTest extends RestControllerTest {
@@ -120,10 +121,13 @@ public class IncidentQueryControllerTest extends RestControllerTest {
   static final String INCIDENT_URL = "/v2/incidents/";
   static final String INCIDENT_SEARCH_URL = INCIDENT_URL + "search";
 
-  @MockBean IncidentServices incidentServices;
+  @MockitoBean IncidentServices incidentServices;
+  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setupIncidentServices() {
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(incidentServices.withAuthentication(ArgumentMatchers.any(CamundaAuthentication.class)))
         .thenReturn(incidentServices);
   }

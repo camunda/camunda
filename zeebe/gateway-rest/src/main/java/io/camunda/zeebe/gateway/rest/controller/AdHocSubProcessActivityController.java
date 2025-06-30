@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.AdHocSubProcessActivityQuery;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivateActivitiesInstruction;
@@ -30,10 +31,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class AdHocSubProcessActivityController {
 
   private final AdHocSubProcessActivityServices adHocSubProcessActivityServices;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
   public AdHocSubProcessActivityController(
-      final AdHocSubProcessActivityServices adHocSubProcessActivityServices) {
+      final AdHocSubProcessActivityServices adHocSubProcessActivityServices,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.adHocSubProcessActivityServices = adHocSubProcessActivityServices;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPostMapping(path = "/search")
@@ -57,7 +61,7 @@ public class AdHocSubProcessActivityController {
     try {
       final var activities =
           adHocSubProcessActivityServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(query);
 
       final var result = new AdHocSubProcessActivitySearchQueryResult();
@@ -77,7 +81,7 @@ public class AdHocSubProcessActivityController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             adHocSubProcessActivityServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .activateActivities(request));
   }
 }

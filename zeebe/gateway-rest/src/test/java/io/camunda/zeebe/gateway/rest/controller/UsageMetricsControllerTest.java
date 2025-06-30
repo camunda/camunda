@@ -15,6 +15,7 @@ import io.camunda.search.entities.UsageMetricsCount;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
@@ -22,8 +23,8 @@ import java.time.ZoneOffset;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(UsageMetricsController.class)
 public class UsageMetricsControllerTest extends RestControllerTest {
@@ -39,10 +40,13 @@ public class UsageMetricsControllerTest extends RestControllerTest {
 
   static final UsageMetricsCount USAGE_METRICS_COUNT_ENTITY = new UsageMetricsCount(5L, 23L, 17L);
 
-  @MockBean UsageMetricsServices usageMetricsServices;
+  @MockitoBean UsageMetricsServices usageMetricsServices;
+  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setupUsageMetricsServices() {
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(usageMetricsServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(usageMetricsServices);
   }

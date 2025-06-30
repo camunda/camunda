@@ -21,6 +21,7 @@ import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
@@ -73,9 +74,12 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Captor ArgumentCaptor<ProcessInstanceModifyRequest> modifyRequestCaptor;
   @MockitoBean ProcessInstanceServices processInstanceServices;
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
+  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setupServices() {
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(processInstanceServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(processInstanceServices);
   }
@@ -91,6 +95,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .setProcessInstanceKey(123L)
             .setTenantId("tenantId");
 
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
@@ -103,18 +109,15 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     // when / then
     final ResponseSpec response =
-        withMultiTenancy(
-            "tenantId",
-            client ->
-                client
-                    .post()
-                    .uri(PROCESS_INSTANCES_START_URL)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(request)
-                    .exchange()
-                    .expectStatus()
-                    .isOk());
+        webClient
+            .post()
+            .uri(PROCESS_INSTANCES_START_URL)
+            .accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus()
+            .isOk();
 
     response
         .expectHeader()
@@ -188,6 +191,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .setProcessInstanceKey(123L)
             .setTenantId("tenantId");
 
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
@@ -201,18 +206,15 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     // when / then
     final ResponseSpec response =
-        withMultiTenancy(
-            "tenantId",
-            client ->
-                client
-                    .post()
-                    .uri(PROCESS_INSTANCES_START_URL)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(request)
-                    .exchange()
-                    .expectStatus()
-                    .isOk());
+        webClient
+            .post()
+            .uri(PROCESS_INSTANCES_START_URL)
+            .accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus()
+            .isOk();
 
     response
         .expectHeader()
@@ -237,6 +239,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .setProcessInstanceKey(123L)
             .setTenantId("tenantId");
 
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
 
@@ -249,18 +253,15 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     // when / then
     final ResponseSpec response =
-        withMultiTenancy(
-            "tenantId",
-            client ->
-                client
-                    .post()
-                    .uri(PROCESS_INSTANCES_START_URL)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(request)
-                    .exchange()
-                    .expectStatus()
-                    .isOk());
+        webClient
+            .post()
+            .uri(PROCESS_INSTANCES_START_URL)
+            .accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus()
+            .isOk();
 
     response
         .expectHeader()
@@ -285,6 +286,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .setProcessInstanceKey(123L)
             .setTenantId("tenantId");
 
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(processInstanceServices.createProcessInstanceWithResult(
             any(ProcessInstanceCreateRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
@@ -299,18 +302,15 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     // when / then
     final ResponseSpec response =
-        withMultiTenancy(
-            "tenantId",
-            client ->
-                client
-                    .post()
-                    .uri(PROCESS_INSTANCES_START_URL)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(request)
-                    .exchange()
-                    .expectStatus()
-                    .isOk());
+        webClient
+            .post()
+            .uri(PROCESS_INSTANCES_START_URL)
+            .accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus()
+            .isOk();
 
     response
         .expectHeader()
@@ -335,6 +335,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .setProcessInstanceKey(123L)
             .setTenantId("tenantId");
 
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(processInstanceServices.createProcessInstanceWithResult(
             any(ProcessInstanceCreateRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
@@ -350,18 +352,15 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     // when / then
     final ResponseSpec response =
-        withMultiTenancy(
-            "tenantId",
-            client ->
-                client
-                    .post()
-                    .uri(PROCESS_INSTANCES_START_URL)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(request)
-                    .exchange()
-                    .expectStatus()
-                    .isOk());
+        webClient
+            .post()
+            .uri(PROCESS_INSTANCES_START_URL)
+            .accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus()
+            .isOk();
 
     response
         .expectHeader()
@@ -386,6 +385,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .setProcessInstanceKey(123L)
             .setTenantId("tenantId");
 
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(processInstanceServices.createProcessInstanceWithResult(
             any(ProcessInstanceCreateRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
@@ -400,18 +401,15 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
 
     // when / then
     final ResponseSpec response =
-        withMultiTenancy(
-            "tenantId",
-            client ->
-                client
-                    .post()
-                    .uri(PROCESS_INSTANCES_START_URL)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(request)
-                    .exchange()
-                    .expectStatus()
-                    .isOk());
+        webClient
+            .post()
+            .uri(PROCESS_INSTANCES_START_URL)
+            .accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus()
+            .isOk();
 
     response
         .expectHeader()

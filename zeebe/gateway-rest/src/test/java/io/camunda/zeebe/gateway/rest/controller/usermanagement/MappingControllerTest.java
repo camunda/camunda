@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.MappingServices;
 import io.camunda.service.MappingServices.MappingDTO;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateRequest;
@@ -27,18 +28,21 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(MappingController.class)
 public class MappingControllerTest extends RestControllerTest {
 
   private static final String MAPPING_RULES_PATH = "/v2/mapping-rules";
 
-  @MockBean private MappingServices mappingServices;
+  @MockitoBean private MappingServices mappingServices;
+  @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setup() {
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(mappingServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(mappingServices);
   }

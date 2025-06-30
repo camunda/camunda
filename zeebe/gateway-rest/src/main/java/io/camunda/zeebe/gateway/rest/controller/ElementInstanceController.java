@@ -11,6 +11,7 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.query.FlowNodeInstanceQuery;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceResult;
@@ -38,11 +39,15 @@ public class ElementInstanceController {
 
   private final ElementInstanceServices elementInstanceServices;
   private final ProcessCache processCache;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
   public ElementInstanceController(
-      final ElementInstanceServices elementInstanceServices, final ProcessCache processCache) {
+      final ElementInstanceServices elementInstanceServices,
+      final ProcessCache processCache,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.elementInstanceServices = elementInstanceServices;
     this.processCache = processCache;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPutMapping(
@@ -60,7 +65,7 @@ public class ElementInstanceController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             elementInstanceServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .setVariables(variablesRequest));
   }
 
@@ -77,7 +82,7 @@ public class ElementInstanceController {
     try {
       final FlowNodeInstanceEntity element =
           elementInstanceServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .getByKey(elementInstanceKey);
       final var name = processCache.getElementName(element);
       return ResponseEntity.ok().body(SearchQueryResponseMapper.toElementInstance(element, name));
@@ -91,7 +96,7 @@ public class ElementInstanceController {
     try {
       final var result =
           elementInstanceServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(query);
       final var processCacheItems = processCache.getElementNames(result.items());
       return ResponseEntity.ok(

@@ -13,6 +13,7 @@ import io.camunda.operate.util.ConditionalOnOperateCompatibility;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.service.IncidentServices;
@@ -32,7 +33,6 @@ import io.camunda.zeebe.broker.client.api.PartitionInactiveException;
 import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
 import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
-import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
@@ -66,6 +66,7 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
   private final JobServices<?> jobServices;
   private final IncidentServices incidentServices;
   private final FlowNodeInstanceReader flowNodeInstanceReader;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
   public ServicesBasedAdapter(
       final ProcessInstanceServices processInstanceServices,
@@ -73,13 +74,15 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
       final ElementInstanceServices elementInstanceServices,
       final JobServices<?> jobServices,
       final IncidentServices incidentServices,
-      final FlowNodeInstanceReader flowNodeInstanceReader) {
+      final FlowNodeInstanceReader flowNodeInstanceReader,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.processInstanceServices = processInstanceServices;
     this.resourceServices = resourceServices;
     this.elementInstanceServices = elementInstanceServices;
     this.jobServices = jobServices;
     this.incidentServices = incidentServices;
     this.flowNodeInstanceReader = flowNodeInstanceReader;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @Override
@@ -257,7 +260,8 @@ public class ServicesBasedAdapter implements OperateServicesAdapter {
 
   private <T> T executeCamundaServiceAnonymously(
       final Function<CamundaAuthentication, CompletableFuture<T>> method) {
-    return executeCamundaService(method, RequestMapper.getAnonymousAuthentication());
+    return executeCamundaService(
+        method, authenticationProvider.getAnonymousCamundaAuthentication());
   }
 
   private <T> T executeCamundaService(

@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.IncidentQuery;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.IncidentServices;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentResolutionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentResult;
@@ -34,9 +35,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class IncidentController {
 
   private final IncidentServices incidentServices;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
-  public IncidentController(final IncidentServices incidentServices) {
+  public IncidentController(
+      final IncidentServices incidentServices,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.incidentServices = incidentServices;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPostMapping(path = "/{incidentKey}/resolution")
@@ -50,7 +55,7 @@ public class IncidentController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             incidentServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .resolveIncident(incidentKey, operationReference));
   }
 
@@ -69,7 +74,7 @@ public class IncidentController {
           .body(
               SearchQueryResponseMapper.toIncident(
                   incidentServices
-                      .withAuthentication(RequestMapper.getAuthentication())
+                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
                       .getByKey(incidentKey)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -79,7 +84,9 @@ public class IncidentController {
   private ResponseEntity<IncidentSearchQueryResult> search(final IncidentQuery query) {
     try {
       final var result =
-          incidentServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
+          incidentServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toIncidentSearchQueryResponse(result));
     } catch (final ValidationException e) {
       final var problemDetail =

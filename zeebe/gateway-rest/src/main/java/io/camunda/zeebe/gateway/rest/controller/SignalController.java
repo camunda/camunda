@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.SignalServices;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastRequest;
@@ -27,12 +28,16 @@ public class SignalController {
 
   private final SignalServices signalServices;
   private final MultiTenancyConfiguration multiTenancyCfg;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
   @Autowired
   public SignalController(
-      final SignalServices signalServices, final MultiTenancyConfiguration multiTenancyCfg) {
+      final SignalServices signalServices,
+      final MultiTenancyConfiguration multiTenancyCfg,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.signalServices = signalServices;
     this.multiTenancyCfg = multiTenancyCfg;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPostMapping(path = "/broadcast")
@@ -47,7 +52,7 @@ public class SignalController {
     return RequestMapper.executeServiceMethod(
         () ->
             signalServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .broadcastSignal(request.signalName(), request.variables(), request.tenantId()),
         ResponseMapper::toSignalBroadcastResponse);
   }

@@ -27,6 +27,7 @@ import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.sort.UserTaskSort;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCache;
@@ -46,8 +47,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(value = UserTaskController.class)
 public class UserTaskQueryControllerTest extends RestControllerTest {
@@ -205,11 +206,14 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
           .endCursor("1")
           .build();
 
-  @MockBean UserTaskServices userTaskServices;
-  @MockBean ProcessCache processCache;
+  @MockitoBean UserTaskServices userTaskServices;
+  @MockitoBean ProcessCache processCache;
+  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setupServices() throws IOException {
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(userTaskServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(userTaskServices);
 

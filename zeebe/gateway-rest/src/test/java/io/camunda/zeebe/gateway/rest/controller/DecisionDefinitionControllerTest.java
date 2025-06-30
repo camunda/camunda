@@ -14,6 +14,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
@@ -26,8 +27,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @WebMvcTest(DecisionDefinitionController.class)
@@ -52,11 +53,14 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
              "evaluatedDecisions":[]
           }""";
 
-  @MockBean MultiTenancyConfiguration multiTenancyCfg;
-  @MockBean private DecisionDefinitionServices decisionServices;
+  @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
+  @MockitoBean private DecisionDefinitionServices decisionServices;
+  @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setupServices() {
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(decisionServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(decisionServices);
   }
@@ -65,6 +69,8 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
   void shouldEvaluateDecisionWithDecisionKey() {
     // given
     when(multiTenancyCfg.isEnabled()).thenReturn(true);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(decisionServices.evaluateDecision(anyString(), anyLong(), anyMap(), anyString()))
         .thenReturn((buildResponse("tenantId")));
 
@@ -80,18 +86,15 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
 
     // when/then
     final ResponseSpec response =
-        withMultiTenancy(
-            "tenantId",
-            client ->
-                client
-                    .post()
-                    .uri(EVALUATION_URL)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(request)
-                    .exchange()
-                    .expectStatus()
-                    .isOk());
+        webClient
+            .post()
+            .uri(EVALUATION_URL)
+            .accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus()
+            .isOk();
 
     response.expectBody().json(EXPECTED_EVALUATION_RESPONSE);
     Mockito.verify(decisionServices)
@@ -134,6 +137,8 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
   void shouldEvaluateDecisionWithDecisionId() {
     // given
     when(multiTenancyCfg.isEnabled()).thenReturn(true);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(decisionServices.evaluateDecision(anyString(), anyLong(), anyMap(), anyString()))
         .thenReturn((buildResponse("tenantId")));
 
@@ -149,18 +154,15 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
 
     // when/then
     final ResponseSpec response =
-        withMultiTenancy(
-            "tenantId",
-            client ->
-                client
-                    .post()
-                    .uri(EVALUATION_URL)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(request)
-                    .exchange()
-                    .expectStatus()
-                    .isOk());
+        webClient
+            .post()
+            .uri(EVALUATION_URL)
+            .accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus()
+            .isOk();
 
     response.expectBody().json(EXPECTED_EVALUATION_RESPONSE);
     Mockito.verify(decisionServices)

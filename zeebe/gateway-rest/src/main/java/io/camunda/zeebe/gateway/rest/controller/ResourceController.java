@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
@@ -35,11 +36,15 @@ public class ResourceController {
 
   private final ResourceServices resourceServices;
   private final MultiTenancyConfiguration multiTenancyCfg;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
   public ResourceController(
-      final ResourceServices resourceServices, final MultiTenancyConfiguration multiTenancyCfg) {
+      final ResourceServices resourceServices,
+      final MultiTenancyConfiguration multiTenancyCfg,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.resourceServices = resourceServices;
     this.multiTenancyCfg = multiTenancyCfg;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPostMapping(path = "/deployments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -78,7 +83,7 @@ public class ResourceController {
     return RequestMapper.executeServiceMethod(
         () ->
             resourceServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .deployResources(request),
         ResponseMapper::toDeployResourceResponse);
   }
@@ -87,13 +92,13 @@ public class ResourceController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             resourceServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .deleteResource(request));
   }
 
   private CompletableFuture<ResourceRecord> fetchResource(final long resourceKey) {
     return resourceServices
-        .withAuthentication(RequestMapper.getAuthentication())
+        .withAuthentication(authenticationProvider.getCamundaAuthentication())
         .fetchResource(new ResourceFetchRequest(resourceKey));
   }
 }

@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
@@ -40,22 +41,25 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(TenantController.class)
 public class TenantControllerTest extends RestControllerTest {
 
   private static final String TENANT_BASE_URL = "/v2/tenants";
 
-  @MockBean private TenantServices tenantServices;
-  @MockBean private UserServices userServices;
-  @MockBean private MappingServices mappingServices;
-  @MockBean private GroupServices groupServices;
-  @MockBean private RoleServices roleServices;
+  @MockitoBean private TenantServices tenantServices;
+  @MockitoBean private UserServices userServices;
+  @MockitoBean private MappingServices mappingServices;
+  @MockitoBean private GroupServices groupServices;
+  @MockitoBean private RoleServices roleServices;
+  @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setup() {
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(tenantServices);
   }

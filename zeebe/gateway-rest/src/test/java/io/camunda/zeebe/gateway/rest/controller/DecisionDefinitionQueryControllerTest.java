@@ -21,6 +21,7 @@ import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.DecisionDefinitionSort;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.service.exception.ForbiddenException;
@@ -35,8 +36,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(value = DecisionDefinitionController.class)
 public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
@@ -74,11 +75,14 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
   static final String DECISION_DEFINITIONS_GET_URL = "/v2/decision-definitions/%d";
   static final String DECISION_DEFINITIONS_GET_XML_URL = "/v2/decision-definitions/%d/xml";
 
-  @MockBean DecisionDefinitionServices decisionDefinitionServices;
-  @MockBean MultiTenancyConfiguration multiTenancyCfg;
+  @MockitoBean DecisionDefinitionServices decisionDefinitionServices;
+  @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
+  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setupServices() {
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(decisionDefinitionServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(decisionDefinitionServices);
   }

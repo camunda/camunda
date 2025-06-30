@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ClockServices;
 import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
@@ -24,9 +25,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class ClockController {
 
   private final ClockServices clockServices;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
-  public ClockController(final ClockServices clockServices) {
+  public ClockController(
+      final ClockServices clockServices,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.clockServices = clockServices;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPutMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -42,14 +47,17 @@ public class ClockController {
       consumes = {})
   public CompletableFuture<ResponseEntity<Object>> resetClock() {
     return RequestMapper.executeServiceMethodWithNoContentResult(
-        () -> clockServices.withAuthentication(RequestMapper.getAuthentication()).resetClock());
+        () ->
+            clockServices
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .resetClock());
   }
 
   private CompletableFuture<ResponseEntity<Object>> pinClock(final long pinnedEpoch) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             clockServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .pinClock(pinnedEpoch));
   }
 }

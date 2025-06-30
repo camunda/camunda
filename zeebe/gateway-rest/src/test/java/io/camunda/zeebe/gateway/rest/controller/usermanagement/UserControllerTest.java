@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
@@ -30,20 +31,23 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(UserController.class)
 public class UserControllerTest extends RestControllerTest {
 
   private static final String USER_BASE_URL = "/v2/users";
 
-  @MockBean private UserServices userServices;
+  @MockitoBean private UserServices userServices;
+  @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setup() {
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(userServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(userServices);
   }

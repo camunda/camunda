@@ -19,6 +19,7 @@ import io.camunda.search.filter.JobFilter;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
@@ -30,8 +31,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(value = JobController.class)
 public class JobQueryControllerTest extends RestControllerTest {
@@ -105,12 +106,15 @@ public class JobQueryControllerTest extends RestControllerTest {
           .startCursor("123base64")
           .endCursor("456base64")
           .build();
-  @MockBean JobServices<JobActivationResult> jobServices;
-  @MockBean MultiTenancyConfiguration multiTenancyCfg;
-  @MockBean ResponseObserverProvider responseObserverProvider;
+  @MockitoBean JobServices<JobActivationResult> jobServices;
+  @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
+  @MockitoBean ResponseObserverProvider responseObserverProvider;
+  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setupJobServices() {
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(jobServices.withAuthentication(ArgumentMatchers.any(CamundaAuthentication.class)))
         .thenReturn(jobServices);
   }

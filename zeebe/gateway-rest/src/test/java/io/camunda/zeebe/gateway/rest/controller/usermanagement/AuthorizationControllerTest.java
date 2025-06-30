@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
@@ -48,9 +49,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 public class AuthorizationControllerTest extends RestControllerTest {
 
   @MockitoBean private AuthorizationServices authorizationServices;
+  @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setup() {
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(authorizationServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(authorizationServices);
   }

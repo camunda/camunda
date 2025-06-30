@@ -10,9 +10,9 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.VariableQuery;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.VariableServices;
 import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQuery;
-import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
@@ -28,9 +28,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class VariableController {
 
   private final VariableServices variableServices;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
-  public VariableController(final VariableServices variableServices) {
+  public VariableController(
+      final VariableServices variableServices,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.variableServices = variableServices;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPostMapping(path = "/search")
@@ -43,7 +47,9 @@ public class VariableController {
   private ResponseEntity<Object> search(final VariableQuery query) {
     try {
       final var result =
-          variableServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
+          variableServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toVariableSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -58,7 +64,7 @@ public class VariableController {
           .body(
               SearchQueryResponseMapper.toVariableItem(
                   variableServices
-                      .withAuthentication(RequestMapper.getAuthentication())
+                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
                       .getByKey(variableKey)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);

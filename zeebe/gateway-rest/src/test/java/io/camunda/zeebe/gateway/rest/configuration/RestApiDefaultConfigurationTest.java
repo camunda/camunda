@@ -9,15 +9,27 @@ package io.camunda.zeebe.gateway.rest.configuration;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.zeebe.gateway.rest.controller.ProcessInstanceController;
 import io.camunda.zeebe.gateway.rest.controller.TopologyController;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(value = {ProcessInstanceController.class, TopologyController.class})
 public class RestApiDefaultConfigurationTest extends RestApiConfigurationTest {
+
+  @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+
+  @BeforeEach
+  void setUpServices() {
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+  }
 
   @Test
   void shouldYieldOkForQueryApiRequest() {
