@@ -7,6 +7,8 @@
  */
 package io.camunda.search.schema;
 
+import static io.camunda.search.schema.utils.SchemaTestUtil.createTestIndexDescriptor;
+import static io.camunda.search.schema.utils.SchemaTestUtil.createTestTemplateDescriptor;
 import static io.camunda.search.schema.utils.SchemaTestUtil.validateMappings;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -19,13 +21,11 @@ import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
-import io.camunda.search.schema.utils.SchemaTestUtil;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -92,21 +92,17 @@ public class ElasticsearchEngineClientIT {
   @Test
   void shouldCreateIndexTemplateCorrectly() throws IOException {
     // given, when
-    final var indexTemplate =
-        SchemaTestUtil.mockIndexTemplate(
-            "index_name",
-            "test*",
-            "alias",
-            Collections.emptyList(),
-            "template_name",
-            "/mappings.json");
+    final var indexTemplate = createTestTemplateDescriptor("template_name", "/mappings.json");
 
     final var settings = new IndexConfiguration();
     elsEngineClient.createIndexTemplate(indexTemplate, settings, true);
 
     // then
     final var indexTemplates =
-        elsClient.indices().getIndexTemplate(req -> req.name("template_name")).indexTemplates();
+        elsClient
+            .indices()
+            .getIndexTemplate(req -> req.name(indexTemplate.getTemplateName()))
+            .indexTemplates();
 
     assertThat(indexTemplates.size()).isEqualTo(1);
     validateMappings(
@@ -116,14 +112,7 @@ public class ElasticsearchEngineClientIT {
   @Test
   void shouldNotThrowIfTryingToCreateExistingTemplate() {
     // given
-    final var indexTemplate =
-        SchemaTestUtil.mockIndexTemplate(
-            "index_name",
-            "test*",
-            "alias",
-            Collections.emptyList(),
-            "template_name",
-            "/mappings.json");
+    final var indexTemplate = createTestTemplateDescriptor("template_name", "/mappings.json");
 
     final var settings = new IndexConfiguration();
     elsEngineClient.createIndexTemplate(indexTemplate, settings, true);
@@ -137,34 +126,33 @@ public class ElasticsearchEngineClientIT {
   @Test
   void shouldCreateIndexCorrectly() throws IOException {
     // given
-    final var qualifiedIndexName = "full_name";
-    final var descriptor =
-        SchemaTestUtil.mockIndex(qualifiedIndexName, "alias", "index_name", "/mappings.json");
+    final var descriptor = createTestIndexDescriptor("index_name", "/mappings.json");
 
     // when
     elsEngineClient.createIndex(descriptor, new IndexConfiguration());
 
     // then
     final var index =
-        elsClient.indices().get(req -> req.index(qualifiedIndexName)).get(qualifiedIndexName);
+        elsClient
+            .indices()
+            .get(req -> req.index(descriptor.getFullQualifiedName()))
+            .get(descriptor.getFullQualifiedName());
 
     validateMappings(index.mappings(), "/mappings.json");
   }
 
   @Test
   void shouldRetrieveAllIndexMappingsWithImplementationAgnosticReturnType() {
-    final var index =
-        SchemaTestUtil.mockIndex(
-            "index_qualified_name", "alias", "index_name", "/mappings-complex-property.json");
+    final var index = createTestIndexDescriptor("index_name", "/mappings-complex-property.json");
 
     elsEngineClient.createIndex(index, new IndexConfiguration());
 
     final var mappings = elsEngineClient.getMappings("*", MappingSource.INDEX);
 
     assertThat(mappings.size()).isEqualTo(1);
-    assertThat(mappings.get("index_qualified_name").dynamic()).isEqualTo("strict");
+    assertThat(mappings.get(index.getFullQualifiedName()).dynamic()).isEqualTo("strict");
 
-    assertThat(mappings.get("index_qualified_name").properties())
+    assertThat(mappings.get(index.getFullQualifiedName()).properties())
         .containsExactlyInAnyOrder(
             new IndexMappingProperty.Builder()
                 .name("hello")
@@ -180,8 +168,7 @@ public class ElasticsearchEngineClientIT {
   @Test
   void shouldNotThrowErrorIfRetrievingMappingsWhereOnlySubsetOfIndicesExist() {
     // given
-    final var index =
-        SchemaTestUtil.mockIndex("index_qualified_name", "alias", "index_name", "/mappings.json");
+    final var index = createTestIndexDescriptor("index_name", "/mappings.json");
 
     elsEngineClient.createIndex(index, new IndexConfiguration());
 
@@ -196,21 +183,15 @@ public class ElasticsearchEngineClientIT {
   @Test
   void shouldRetrieveAllIndexTemplateMappingsWithImplementationAgnosticReturnType() {
     final var template =
-        SchemaTestUtil.mockIndexTemplate(
-            "index_name",
-            "index_pattern.*",
-            "alias",
-            List.of(),
-            "template_name",
-            "/mappings-complex-property.json");
+        createTestTemplateDescriptor("template_name", "/mappings-complex-property.json");
 
     elsEngineClient.createIndexTemplate(template, new IndexConfiguration(), true);
 
     final var templateMappings =
-        elsEngineClient.getMappings("template_name", MappingSource.INDEX_TEMPLATE);
+        elsEngineClient.getMappings(template.getTemplateName(), MappingSource.INDEX_TEMPLATE);
 
     assertThat(templateMappings.size()).isEqualTo(1);
-    assertThat(templateMappings.get("template_name").properties())
+    assertThat(templateMappings.get(template.getTemplateName()).properties())
         .containsExactlyInAnyOrder(
             new IndexMappingProperty.Builder()
                 .name("hello")
@@ -226,18 +207,15 @@ public class ElasticsearchEngineClientIT {
   @Test
   void shouldCreateIndexTemplateIfSourceFileContainsSettings() throws IOException {
     final var template =
-        SchemaTestUtil.mockIndexTemplate(
-            "index_name",
-            "index_pattern.*",
-            "alias",
-            List.of(),
-            "template_name",
-            "/mappings-and-settings.json");
+        createTestTemplateDescriptor("template_name", "/mappings-and-settings.json");
 
     elsEngineClient.createIndexTemplate(template, new IndexConfiguration(), true);
 
     final var createdTemplate =
-        elsClient.indices().getIndexTemplate(req -> req.name("template_name")).indexTemplates();
+        elsClient
+            .indices()
+            .getIndexTemplate(req -> req.name(template.getTemplateName()))
+            .indexTemplates();
 
     assertThat(createdTemplate.size()).isEqualTo(1);
     assertThat(
@@ -254,37 +232,49 @@ public class ElasticsearchEngineClientIT {
 
   @Test
   void shouldUpdateSettingsWithPutSettingsRequest() throws IOException {
-    final var index =
-        SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "/mappings.json");
+    final var index = createTestIndexDescriptor("index_name", "/mappings.json");
 
     elsEngineClient.createIndex(index, new IndexConfiguration());
 
     final Map<String, String> newSettings = Map.of("index.lifecycle.name", "test");
     elsEngineClient.putSettings(List.of(index), newSettings);
 
-    final var indices = elsClient.indices().get(req -> req.index("index_name"));
+    final var indices = elsClient.indices().get(req -> req.index(index.getFullQualifiedName()));
 
     assertThat(indices.result().size()).isEqualTo(1);
-    assertThat(indices.result().get("index_name").settings().index().lifecycle().name())
+    assertThat(
+            indices
+                .result()
+                .get(index.getFullQualifiedName())
+                .settings()
+                .index()
+                .lifecycle()
+                .name())
         .isEqualTo("test");
   }
 
   @Test
   void shouldSetReplicasAndShardsFromConfigurationDuringIndexCreation() throws IOException {
-    final var index =
-        SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "/mappings.json");
+    final var index = createTestIndexDescriptor("index_name", "/mappings.json");
 
     final var settings = new IndexConfiguration();
     settings.setNumberOfReplicas(5);
     settings.setNumberOfShards(10);
     elsEngineClient.createIndex(index, settings);
 
-    final var indices = elsClient.indices().get(req -> req.index("index_name"));
+    final var indices = elsClient.indices().get(req -> req.index(index.getFullQualifiedName()));
 
     assertThat(indices.result().size()).isEqualTo(1);
-    assertThat(indices.result().get("index_name").settings().index().numberOfReplicas())
+    assertThat(
+            indices
+                .result()
+                .get(index.getFullQualifiedName())
+                .settings()
+                .index()
+                .numberOfReplicas())
         .isEqualTo("5");
-    assertThat(indices.result().get("index_name").settings().index().numberOfShards())
+    assertThat(
+            indices.result().get(index.getFullQualifiedName()).settings().index().numberOfShards())
         .isEqualTo("10");
   }
 
@@ -302,9 +292,7 @@ public class ElasticsearchEngineClientIT {
 
   @Test
   void shouldAccountForAllPropertyFieldsWhenGetMappings() {
-    final var index =
-        SchemaTestUtil.mockIndex(
-            "index_qualified_name", "alias", "index_name", "/mappings-complex-property.json");
+    final var index = createTestIndexDescriptor("index_name", "/mappings-complex-property.json");
 
     elsEngineClient.createIndex(index, new IndexConfiguration());
 

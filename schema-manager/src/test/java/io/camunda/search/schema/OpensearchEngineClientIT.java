@@ -7,6 +7,8 @@
  */
 package io.camunda.search.schema;
 
+import static io.camunda.search.schema.utils.SchemaTestUtil.createTestIndexDescriptor;
+import static io.camunda.search.schema.utils.SchemaTestUtil.createTestTemplateDescriptor;
 import static io.camunda.search.test.utils.SearchDBExtension.ENGINE_CLIENT_TEST_MARKERS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -22,7 +24,6 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -59,11 +60,7 @@ public class OpensearchEngineClientIT {
   void shouldCreateIndexNormally() throws IOException {
     // given
     final var descriptor =
-        SchemaTestUtil.mockIndex(
-            "qualified_name-" + ENGINE_CLIENT_TEST_MARKERS,
-            "alias-" + ENGINE_CLIENT_TEST_MARKERS,
-            "index_name-" + ENGINE_CLIENT_TEST_MARKERS,
-            "/mappings.json");
+        createTestIndexDescriptor("index_name-" + ENGINE_CLIENT_TEST_MARKERS, "/mappings.json");
 
     // when
     final var indexSettings = new IndexConfiguration();
@@ -73,12 +70,12 @@ public class OpensearchEngineClientIT {
     final var index =
         openSearchClient
             .indices()
-            .get(req -> req.index("qualified_name-" + ENGINE_CLIENT_TEST_MARKERS))
-            .get("qualified_name-" + ENGINE_CLIENT_TEST_MARKERS);
+            .get(req -> req.index(descriptor.getFullQualifiedName()))
+            .get(descriptor.getFullQualifiedName());
 
     SchemaTestUtil.validateMappings(index.mappings(), "/mappings.json");
 
-    assertThat(index.aliases().keySet()).isEqualTo(Set.of("alias-" + ENGINE_CLIENT_TEST_MARKERS));
+    assertThat(index.aliases().keySet()).isEqualTo(Set.of(descriptor.getAlias()));
     assertThat(index.settings().index().numberOfReplicas())
         .isEqualTo(indexSettings.getNumberOfReplicas().toString());
     assertThat(index.settings().index().numberOfShards())
@@ -89,13 +86,7 @@ public class OpensearchEngineClientIT {
   void shouldCreateIndexTemplate() throws IOException {
     // given
     final var template =
-        SchemaTestUtil.mockIndexTemplate(
-            "index_name",
-            "index_pattern.*",
-            "alias",
-            List.of(),
-            "template_name",
-            "/mappings-and-settings.json");
+        createTestTemplateDescriptor("template_name", "/mappings-and-settings.json");
 
     // when
     final var expectedIndexSettings = new IndexConfiguration();
@@ -105,7 +96,7 @@ public class OpensearchEngineClientIT {
     final var createdTemplate =
         openSearchClient
             .indices()
-            .getIndexTemplate(req -> req.name("template_name"))
+            .getIndexTemplate(req -> req.name(template.getTemplateName()))
             .indexTemplates();
 
     assertThat(createdTemplate.size()).isEqualTo(1);
@@ -134,14 +125,7 @@ public class OpensearchEngineClientIT {
   @Test
   void shouldNotThrowIfCreatingExistingTemplate() {
     // given
-    final var indexTemplate =
-        SchemaTestUtil.mockIndexTemplate(
-            "index_name",
-            "test*",
-            "alias",
-            Collections.emptyList(),
-            "template_name",
-            "/mappings.json");
+    final var indexTemplate = createTestTemplateDescriptor("template_name", "/mappings.json");
 
     final var settings = new IndexConfiguration();
     opensearchEngineClient.createIndexTemplate(indexTemplate, settings, true);
@@ -156,8 +140,7 @@ public class OpensearchEngineClientIT {
   @Test
   void shouldPutMappingCorrectly() throws IOException {
     // given
-    final var descriptor =
-        SchemaTestUtil.mockIndex("qualified_name", "alias", "index_name", "/mappings.json");
+    final var descriptor = createTestIndexDescriptor("index_name", "/mappings.json");
     opensearchEngineClient.createIndex(descriptor, new IndexConfiguration());
 
     final Set<IndexMappingProperty> newProperties = new HashSet<>();
@@ -185,25 +168,20 @@ public class OpensearchEngineClientIT {
   void shouldRetrieveAllIndexMappingsWithImplementationAgnosticReturnType() {
     // given
     final var index =
-        SchemaTestUtil.mockIndex(
-            "index_qualified_name_" + ENGINE_CLIENT_TEST_MARKERS,
-            "alias_" + ENGINE_CLIENT_TEST_MARKERS,
-            "index_name_" + ENGINE_CLIENT_TEST_MARKERS,
-            "/mappings-complex-property.json");
+        createTestIndexDescriptor(
+            "index_name_" + ENGINE_CLIENT_TEST_MARKERS, "/mappings-complex-property.json");
 
     opensearchEngineClient.createIndex(index, new IndexConfiguration());
 
     // when
     final var mappings =
-        opensearchEngineClient.getMappings(
-            "index_qualified_name_" + ENGINE_CLIENT_TEST_MARKERS, MappingSource.INDEX);
+        opensearchEngineClient.getMappings(index.getFullQualifiedName(), MappingSource.INDEX);
 
     // then
     assertThat(mappings.size()).isEqualTo(1);
-    assertThat(mappings.get("index_qualified_name_" + ENGINE_CLIENT_TEST_MARKERS).dynamic())
-        .isEqualTo("strict");
+    assertThat(mappings.get(index.getFullQualifiedName()).dynamic()).isEqualTo("strict");
 
-    assertThat(mappings.get("index_qualified_name_" + ENGINE_CLIENT_TEST_MARKERS).properties())
+    assertThat(mappings.get(index.getFullQualifiedName()).properties())
         .containsExactlyInAnyOrder(
             new IndexMappingProperty.Builder()
                 .name("hello")
@@ -220,24 +198,19 @@ public class OpensearchEngineClientIT {
   void shouldRetrieveAllIndexTemplateMappingsWithImplementationAgnosticReturnType() {
     // given
     final var template =
-        SchemaTestUtil.mockIndexTemplate(
-            "index_name_" + ENGINE_CLIENT_TEST_MARKERS,
-            "index_pattern_" + ENGINE_CLIENT_TEST_MARKERS + ".*",
-            "alias_" + ENGINE_CLIENT_TEST_MARKERS,
-            List.of(),
-            "template_name_" + ENGINE_CLIENT_TEST_MARKERS,
-            "/mappings-complex-property.json");
+        createTestTemplateDescriptor(
+            "template_name_" + ENGINE_CLIENT_TEST_MARKERS, "/mappings-complex-property.json");
 
     opensearchEngineClient.createIndexTemplate(template, new IndexConfiguration(), true);
 
     // when
     final var templateMappings =
         opensearchEngineClient.getMappings(
-            "template_name_" + ENGINE_CLIENT_TEST_MARKERS, MappingSource.INDEX_TEMPLATE);
+            template.getTemplateName(), MappingSource.INDEX_TEMPLATE);
 
     // then
     assertThat(templateMappings.size()).isEqualTo(1);
-    assertThat(templateMappings.get("template_name_" + ENGINE_CLIENT_TEST_MARKERS).properties())
+    assertThat(templateMappings.get(template.getTemplateName()).properties())
         .containsExactlyInAnyOrder(
             new IndexMappingProperty.Builder()
                 .name("hello")
@@ -253,8 +226,7 @@ public class OpensearchEngineClientIT {
   @Test
   void shouldNotThrowErrorIfRetrievingMappingsWhereOnlySubsetOfIndicesExist() {
     // given
-    final var index =
-        SchemaTestUtil.mockIndex("index_qualified_name", "alias", "index_name", "/mappings.json");
+    final var index = createTestIndexDescriptor("index_name", "/mappings.json");
 
     opensearchEngineClient.createIndex(index, new IndexConfiguration());
 
@@ -269,8 +241,7 @@ public class OpensearchEngineClientIT {
   @Test
   void shouldUpdateSettingsWithPutSettingsRequest() throws IOException {
     // given
-    final var index =
-        SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "/mappings.json");
+    final var index = createTestIndexDescriptor("index_name", "/mappings.json");
 
     opensearchEngineClient.createIndex(index, new IndexConfiguration());
 
@@ -279,10 +250,18 @@ public class OpensearchEngineClientIT {
     opensearchEngineClient.putSettings(List.of(index), newSettings);
 
     // then
-    final var indices = openSearchClient.indices().get(req -> req.index("index_name"));
+    final var indices =
+        openSearchClient.indices().get(req -> req.index(index.getFullQualifiedName()));
 
     assertThat(indices.result().size()).isEqualTo(1);
-    assertThat(indices.result().get("index_name").settings().index().refreshInterval().time())
+    assertThat(
+            indices
+                .result()
+                .get(index.getFullQualifiedName())
+                .settings()
+                .index()
+                .refreshInterval()
+                .time())
         .isEqualTo("5s");
   }
 

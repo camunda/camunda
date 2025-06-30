@@ -7,9 +7,9 @@
  */
 package io.camunda.search.schema;
 
+import static io.camunda.search.schema.utils.SchemaTestUtil.createTestIndexDescriptor;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.search.schema.utils.SchemaTestUtil;
 import io.camunda.search.test.utils.TestObjectMapper;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -19,8 +19,7 @@ public class IndexMappingTest {
   @Test
   void shouldReadIndexMappingsFileCorrectly() {
     // given
-    final var index =
-        SchemaTestUtil.mockIndex("index_name", "alias", "index_name", "/mappings.json");
+    final var index = createTestIndexDescriptor("index_name", "/mappings.json");
 
     // when
     final var indexMapping = IndexMapping.from(index, TestObjectMapper.objectMapper());
