@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.response.UserTaskProperties;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.HashMap;
 import java.util.Map;
@@ -43,6 +44,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
   private final int retries;
   private final long deadline;
   private final String variables;
+  private final UserTaskProperties userTask;
 
   private Map<String, Object> variablesAsMap;
 
@@ -68,6 +70,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
     elementId = job.getElementId();
     elementInstanceKey = job.getElementInstanceKey();
     tenantId = job.getTenantId();
+    userTask = job.hasUserTask() ? new UserTaskPropertiesImpl(job.getUserTask()) : null;
   }
 
   public ActivatedJobImpl(
@@ -99,6 +102,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
     elementId = getOrEmpty(job.getElementId());
     elementInstanceKey = parseLongOrEmpty(job.getElementInstanceKey());
     tenantId = getOrEmpty(job.getTenantId());
+    userTask = job.getUserTask() != null ? new UserTaskPropertiesImpl(job.getUserTask()) : null;
   }
 
   @Override
@@ -186,6 +190,11 @@ public final class ActivatedJobImpl implements ActivatedJob {
       throw new ClientException(String.format("The variable %s is not available", name));
     }
     return getVariablesAsMap().get(name);
+  }
+
+  @Override
+  public UserTaskProperties getUserTask() {
+    return userTask;
   }
 
   @Override
