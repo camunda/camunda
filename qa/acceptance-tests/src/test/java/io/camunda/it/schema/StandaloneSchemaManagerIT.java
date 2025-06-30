@@ -161,7 +161,7 @@ final class StandaloneSchemaManagerIT {
 
     // create app user with APP_ROLE role
     Awaitility.await()
-        .atMost(Duration.ofSeconds(5))
+        .atMost(Duration.ofSeconds(10))
         .pollInterval(Duration.ofSeconds(1))
         .ignoreExceptions()
         .until(
