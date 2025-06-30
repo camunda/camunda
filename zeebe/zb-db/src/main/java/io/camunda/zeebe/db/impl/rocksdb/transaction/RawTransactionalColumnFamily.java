@@ -109,6 +109,15 @@ public class RawTransactionalColumnFamily {
         keyLen);
   }
 
+  /**
+   * Iterates over the column family with prefix {@param prefixKey}
+   *
+   * @param iterator the underlying rocksDB iterator
+   * @param prefixKey the prefix key to filter the iteration
+   * @param prefixOffset the offset in the prefix key array
+   * @param prefixLength the length of the prefix key
+   * @param visitor the visitor to apply to each key-value pair
+   */
   public static void forEach(
       final RocksIterator iterator,
       final ZbColumnFamilies columnFamily,
@@ -139,6 +148,12 @@ public class RawTransactionalColumnFamily {
     }
   }
 
+  /**
+   * Similar to {@link foreach(RocksIterator, ZbColumnFamilies, byte[], int, int, Visitor)} but
+   * avoids allocating a new byte[] for each key & value. This reduces the allocations almost
+   * entirely. Use this method if you don't need to use the byte[] after the visitor returns. If
+   * that's not the case, use the other method, as you would avoid a copy.
+   */
   public static void forEachPreallocated(
       final RocksIterator iterator,
       final ZbColumnFamilies columnFamily,
@@ -189,6 +204,18 @@ public class RawTransactionalColumnFamily {
   }
 
   public interface Visitor {
+
+    /**
+     * Visits a key-value pair in the column family during iteration.
+     *
+     * @param key the key byte array
+     * @param keyOffset the offset in the key array
+     * @param keyLen the length of the key
+     * @param value the value byte array
+     * @param valueOffset the offset in the value array
+     * @param valueLen the length of the value
+     * @return true if iteration should continue, false otherwise
+     */
     boolean visit(
         byte[] key, int keyOffset, int keyLen, byte[] value, int valueOffset, int valueLen);
   }
