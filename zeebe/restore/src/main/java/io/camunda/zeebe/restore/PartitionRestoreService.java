@@ -263,6 +263,10 @@ public class PartitionRestoreService {
           try (final var db = factory.createDb(snapshotPath.toFile())) {
             final var ctx = db.createContext();
             final var state = new DbRoutingState(db, ctx);
+            if (!state.isInitialized()) {
+              LOG.warn("RoutingState is not initialized, skipping restore");
+              return;
+            }
             final var routingState = RoutingUtil.routingState(2L, state);
             LOG.debug(
                 "Restoring RoutingState for partition {}: {}", partition.id().id(), routingState);
@@ -287,6 +291,8 @@ public class PartitionRestoreService {
             } catch (final IOException e) {
               throw new RuntimeException(e);
             }
+          } catch (final Exception e) {
+            throw new RuntimeException(e);
           }
         });
   }
