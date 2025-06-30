@@ -11,13 +11,13 @@ on:
     outputs:
       version_tag:
         description: "Generated Docker version tag"
-        value: ${{  jobs.generate_docker_version_tag.outputs.tag }}
+        value: ${{  jobs.get-snapshot-docker-version-tag.outputs.tag }}
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
 
 jobs:
-  generate_docker_version_tag:
+  get-snapshot-docker-version-tag:
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.set_docker_snapshot_version_tag.outputs.tag }}
