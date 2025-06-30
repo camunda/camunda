@@ -94,6 +94,11 @@ public class AuthorizationServices
     return findAll(authorizationQuery).stream().map(AuthorizationEntity::resourceId).toList();
   }
 
+  public boolean hasAccessToApplication(final String applicationId) {
+    return securityContextProvider.isAuthorized(
+        applicationId, authentication, Authorization.of(a -> a.application().access()));
+  }
+
   public List<String> getAuthorizedApplications(
       final Map<EntityType, Set<String>> ownerTypeToOwnerIds) {
     if (!securityConfiguration.getAuthorizations().isEnabled()) {

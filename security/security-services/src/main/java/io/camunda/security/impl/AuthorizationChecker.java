@@ -15,9 +15,12 @@ import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -44,7 +47,7 @@ public class AuthorizationChecker {
    * @return a list of authorized resource keys for the user or group in the SecurityContext
    */
   public List<String> retrieveAuthorizedResourceKeys(final SecurityContext securityContext) {
-    final var ownerIds = collectOwnerIds(securityContext.authentication());
+    final var ownerTypeToOwnerIds = collectOwnerTypeToOwnerIds(securityContext.authentication());
     final var resourceType = securityContext.authorization().resourceType();
     final var permissionType = securityContext.authorization().permissionType();
     final var authorizationEntities =
@@ -53,7 +56,7 @@ public class AuthorizationChecker {
                 q ->
                     q.filter(
                         f ->
-                            f.ownerIds(ownerIds)
+                            f.ownerTypeToOwnerIds(ownerTypeToOwnerIds)
                                 .resourceType(resourceType.name())
                                 .permissionTypes(permissionType))));
     return authorizationEntities.stream()
@@ -72,7 +75,7 @@ public class AuthorizationChecker {
    * @return true if the resource key is authorized, false otherwise
    */
   public boolean isAuthorized(final String resourceId, final SecurityContext securityContext) {
-    final var ownerIds = collectOwnerIds(securityContext.authentication());
+    final var ownerTypeToOwnerIds = collectOwnerTypeToOwnerIds(securityContext.authentication());
     final var resourceType = securityContext.authorization().resourceType();
     final var permissionType = securityContext.authorization().permissionType();
     return authorizationSearchClient
@@ -81,7 +84,7 @@ public class AuthorizationChecker {
                     q ->
                         q.filter(
                                 f ->
-                                    f.ownerIds(ownerIds)
+                                    f.ownerTypeToOwnerIds(ownerTypeToOwnerIds)
                                         .resourceType(resourceType.name())
                                         .permissionTypes(permissionType)
                                         .resourceIds(List.of(WILDCARD, resourceId)))
@@ -103,14 +106,14 @@ public class AuthorizationChecker {
       final String resourceId,
       final AuthorizationResourceType resourceType,
       final CamundaAuthentication authentication) {
-    final var ownerIds = collectOwnerIds(authentication);
+    final var ownerTypeToOwnerIds = collectOwnerTypeToOwnerIds(authentication);
     final var authorizationEntities =
         authorizationSearchClient.findAllAuthorizations(
             AuthorizationQuery.of(
                 q ->
                     q.filter(
                         f ->
-                            f.ownerIds(ownerIds)
+                            f.ownerTypeToOwnerIds(ownerTypeToOwnerIds)
                                 .resourceType(resourceType.name())
                                 .resourceIds(List.of(WILDCARD, resourceId)))));
 
@@ -124,17 +127,31 @@ public class AuthorizationChecker {
         .collect(Collectors.toSet());
   }
 
-  private List<String> collectOwnerIds(final CamundaAuthentication authentication) {
-    final List<String> ownerIds = new ArrayList<>();
+  private Map<EntityType, Set<String>> collectOwnerTypeToOwnerIds(
+      final CamundaAuthentication authentication) {
+    final var ownerTypeToOwnerIds = new HashMap<EntityType, Set<String>>();
     if (authentication.authenticatedUsername() != null) {
-      ownerIds.add(authentication.authenticatedUsername());
+      ownerTypeToOwnerIds.put(EntityType.USER, Set.of(authentication.authenticatedUsername()));
     }
     if (authentication.authenticatedClientId() != null) {
-      ownerIds.add(authentication.authenticatedClientId());
+      ownerTypeToOwnerIds.put(EntityType.CLIENT, Set.of(authentication.authenticatedClientId()));
     }
-    ownerIds.addAll(authentication.authenticatedMappingIds());
-    ownerIds.addAll(authentication.authenticatedGroupIds());
-    ownerIds.addAll(authentication.authenticatedRoleIds());
-    return ownerIds;
+
+    final var authenticatedGroupIds = authentication.authenticatedGroupIds();
+    if (authenticatedGroupIds != null && !authenticatedGroupIds.isEmpty()) {
+      ownerTypeToOwnerIds.put(EntityType.GROUP, new HashSet<>(authenticatedGroupIds));
+    }
+
+    final var authenticatedRoleIds = authentication.authenticatedRoleIds();
+    if (authenticatedRoleIds != null && !authenticatedRoleIds.isEmpty()) {
+      ownerTypeToOwnerIds.put(EntityType.ROLE, new HashSet<>(authenticatedRoleIds));
+    }
+
+    final var authenticatedMappingIds = authentication.authenticatedMappingIds();
+    if (authenticatedMappingIds != null && !authenticatedMappingIds.isEmpty()) {
+      ownerTypeToOwnerIds.put(EntityType.MAPPING, new HashSet<>(authenticatedMappingIds));
+    }
+
+    return ownerTypeToOwnerIds;
   }
 }

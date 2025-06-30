@@ -16,7 +16,6 @@ import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnProtectedApi;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
 import io.camunda.authentication.filters.AdminUserCheckFilter;
-import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -201,12 +200,6 @@ public class WebSecurityConfig {
         .build();
   }
 
-  @Bean
-  public WebApplicationAuthorizationCheckFilter applicationAuthorizationFilterFilter(
-      final SecurityConfiguration securityConfiguration) {
-    return new WebApplicationAuthorizationCheckFilter(securityConfiguration);
-  }
-
   private static void noContentSuccessHandler(
       final HttpServletRequest request,
       final HttpServletResponse response,
@@ -364,7 +357,6 @@ public class WebSecurityConfig {
     public SecurityFilterChain httpBasicWebappAuthSecurityFilterChain(
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
-        final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter,
         final SecurityConfiguration securityConfiguration,
         final RoleServices roleServices)
         throws Exception {
@@ -405,7 +397,6 @@ public class WebSecurityConfig {
                   exceptionHandling
                       .authenticationEntryPoint(authFailureHandler)
                       .accessDeniedHandler(authFailureHandler))
-          .addFilterAfter(webApplicationAuthorizationCheckFilter, AuthorizationFilter.class)
           .addFilterBefore(
               new AdminUserCheckFilter(securityConfiguration, roleServices),
               AuthorizationFilter.class)
@@ -515,7 +506,6 @@ public class WebSecurityConfig {
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
         final ClientRegistrationRepository clientRegistrationRepository,
-        final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter,
         final JwtDecoder jwtDecoder,
         final CamundaJwtAuthenticationConverter converter,
         final SecurityConfiguration securityConfiguration)
@@ -561,7 +551,6 @@ public class WebSecurityConfig {
                       .logoutUrl(LOGOUT_URL)
                       .logoutSuccessHandler(WebSecurityConfig::noContentSuccessHandler)
                       .deleteCookies())
-          .addFilterAfter(webApplicationAuthorizationCheckFilter, AuthorizationFilter.class)
           .build();
     }
   }

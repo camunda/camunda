@@ -9,10 +9,11 @@ package io.camunda.operate.webapp.controllers;
 
 import static io.camunda.webapps.util.HttpUtils.getRequestedUrl;
 
+import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.service.AuthorizationServices;
 import io.camunda.webapps.controllers.WebappsRequestForwardManager;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,14 +22,41 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @Controller
 public class OperateIndexController {
 
-  @Autowired private ServletContext context;
+  private final ServletContext context;
+  private final WebappsRequestForwardManager webappsRequestForwardManager;
+  private final CamundaAuthenticationProvider authenticationProvider;
+  private final AuthorizationServices authorizationServices;
 
-  @Autowired private WebappsRequestForwardManager webappsRequestForwardManager;
+  public OperateIndexController(
+      final ServletContext context,
+      final WebappsRequestForwardManager webappsRequestForwardManager,
+      final CamundaAuthenticationProvider authenticationProvider,
+      final AuthorizationServices authorizationServices) {
+    this.context = context;
+    this.webappsRequestForwardManager = webappsRequestForwardManager;
+    this.authenticationProvider = authenticationProvider;
+    this.authorizationServices = authorizationServices;
+  }
 
   @GetMapping("/operate")
-  public String tasklist(final Model model) {
-    model.addAttribute("contextPath", context.getContextPath() + "/operate/");
-    return "operate/index";
+  public String operate(final Model model) {
+    final var hasAccessToOperate =
+        authorizationServices
+            .withAuthentication(authenticationProvider.getCamundaAuthentication())
+            .hasAccessToApplication("operate");
+
+    if (hasAccessToOperate) {
+      return getOperate(model);
+    } else {
+      // redirect to /operate/forbidden, so that the frontend
+      // shows the forbidden page eventually.
+      return "redirect:/operate/forbidden";
+    }
+  }
+
+  @GetMapping("/operate/forbidden")
+  public String forbidden(final Model model) {
+    return getOperate(model);
   }
 
   @RequestMapping(value = {"/operate/{regex:[\\w-]+}", "/operate/**/{regex:[\\w-]+}"})
@@ -43,5 +71,10 @@ public class OperateIndexController {
   @GetMapping({"/processes/*", "/decisions", "/decisions/*", "/instances", "/instances/*"})
   public String redirectOldRoutes(final HttpServletRequest request) {
     return "redirect:/operate" + getRequestedUrl(request);
+  }
+
+  private String getOperate(final Model model) {
+    model.addAttribute("contextPath", context.getContextPath() + "/operate/");
+    return "operate/index";
   }
 }
