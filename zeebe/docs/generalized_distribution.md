@@ -103,3 +103,13 @@ reached a maximum interval of 5 minutes.
 
 **Note** It is important to realise that this could result in a partition receiving a distribution
 more than once. This means the processor must always be idempotent!
+
+### Pausing redistribution
+
+In some cases we want to pause the redistribution of commands. This can be useful when a partition
+is under heavy load, and we want to prevent it from receiving more commands.
+
+To pause command redistribution we can set the `ZEEBE_BROKER_EXPERIMENTAL_ENGINE_DISTRIBUTION_PAUSECOMMANDDISTRIBUTION`
+(i.e. `zeebe.broker.experimental.engine.distribution.pauseCommandDistribution`) flag to `true` and
+restart the brokers. This will prevent the `CommandRedistributor` from scheduling the retry cycle
+and allow an engineer to investigate any issues.
