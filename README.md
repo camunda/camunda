@@ -39,7 +39,7 @@ To learn more about what we're currently working on, check the [GitHub issues](h
 ## Helpful Links
 
 * [Releases](https://github.com/camunda/camunda/releases)
-* [Pre-built Docker images](https://hub.docker.com/r/camunda/zeebe/tags?page=1&ordering=last_updated)
+* [Pre-built Docker images](https://hub.docker.com/r/camunda/camunda/tags?page=1&ordering=last_updated)
 * [Building Docker images for other platforms](docs/zeebe/building_docker_images.md)
 * [Blog](https://camunda.com/blog/category/process-automation-as-a-service/)
 * [Documentation Home](https://docs.camunda.io)
