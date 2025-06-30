@@ -9,9 +9,7 @@ package io.camunda.unifiedconfig;
 
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.LegacyBrokerBasedProperties;
-import io.camunda.operate.property.LegacyOperateProperties;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.tasklist.property.LegacyTasklistProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import java.util.HashMap;
 import java.util.Map;
@@ -19,12 +17,14 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.PropertySource;
 
+@ComponentScan(basePackages = "io.camunda.unifiedconfig")
 @Configuration
 @EnableConfigurationProperties(UnifiedConfiguration.class)
 public class UnifiedConfigurationHelper {
@@ -48,6 +48,7 @@ public class UnifiedConfigurationHelper {
   public TasklistProperties tasklistProperties(
       final LegacyTasklistProperties legacyTasklistProperties,
       final UnifiedConfiguration unifiedConfiguration) {
+
     final TasklistProperties patchedTasklistProperties = new TasklistProperties();
     BeanUtils.copyProperties(legacyTasklistProperties, patchedTasklistProperties);
 
