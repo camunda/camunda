@@ -773,6 +773,94 @@ final class ActorFutureTest {
   }
 
   @Test
+<<<<<<< HEAD
+=======
+  void andThenBiFunctionPropagatesValue() {
+    final var chained =
+        CompletableActorFuture.completed("expected")
+            .andThen((v, err) -> CompletableActorFuture.completed(v), Runnable::run);
+    assertThat(chained).isDone();
+    assertThat(chained).succeedsWithin(Duration.ZERO).isEqualTo("expected");
+  }
+
+  @Test
+  void andThenBiFunctionPropagatesError() {
+    final var chained =
+        CompletableActorFuture.completedExceptionally(new RuntimeException("expected"))
+            .andThen((v, err) -> CompletableActorFuture.completedExceptionally(err), Runnable::run);
+    assertThat(chained).isDone();
+    assertThat(chained).failsWithin(Duration.ZERO).withThrowableThat().withMessage("expected");
+  }
+
+  @Test
+  void andThenCanAbsolveAFailedFuture() {
+    // given
+    final var chained =
+        CompletableActorFuture.completedExceptionally(new RuntimeException(""))
+            .andThen((v, throwable) -> CompletableActorFuture.completed(1), Runnable::run);
+    assertThat(chained).isDone();
+    assertThat(chained).succeedsWithin(Duration.ZERO).isEqualTo(1);
+  }
+
+  @Test
+  void andThenSupplierShouldCompleteExceptionallyOnException() {
+    // given
+    final var expectedException = new RuntimeException("Supplier exception");
+    final var chained =
+        CompletableActorFuture.completed("input")
+            .andThen(
+                () -> {
+                  throw expectedException;
+                },
+                Runnable::run);
+
+    // then
+    assertThat(chained)
+        .failsWithin(Duration.ofSeconds(1))
+        .withThrowableThat()
+        .withCause(expectedException);
+  }
+
+  @Test
+  void andThenFunctionShouldCompleteExceptionallyOnException() {
+    // given
+    final var expectedException = new RuntimeException("Function exception");
+    final var chained =
+        CompletableActorFuture.completed("input")
+            .andThen(
+                input -> {
+                  throw expectedException;
+                },
+                Runnable::run);
+
+    // then
+    assertThat(chained)
+        .failsWithin(Duration.ofSeconds(1))
+        .withThrowableThat()
+        .withCause(expectedException);
+  }
+
+  @Test
+  void andThenBiFunctionShouldCompleteExceptionallyOnException() {
+    // given
+    final var expectedException = new RuntimeException("BiFunction exception");
+    final var chained =
+        CompletableActorFuture.completed("input")
+            .andThen(
+                (value, error) -> {
+                  throw expectedException;
+                },
+                Runnable::run);
+
+    // then
+    assertThat(chained)
+        .failsWithin(Duration.ofSeconds(1))
+        .withThrowableThat()
+        .withCause(expectedException);
+  }
+
+  @Test
+>>>>>>> 5be725b3 (fix: `andThen` completes exceptionally when `next` throws)
   void shouldChainThenApply() {
     // given
     final var future = new CompletableActorFuture<Integer>();
