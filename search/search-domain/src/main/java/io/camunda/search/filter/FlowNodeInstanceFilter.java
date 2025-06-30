@@ -14,6 +14,7 @@ import static io.camunda.util.CollectionUtil.collectValuesAsList;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -32,8 +33,8 @@ public record FlowNodeInstanceFilter(
     Boolean hasIncident,
     List<Long> incidentKeys,
     List<String> tenantIds,
-    List<String> startDates,
-    List<String> endDates)
+    List<Operation<OffsetDateTime>> startDateOperations,
+    List<Operation<OffsetDateTime>> endDateOperations)
     implements FilterBase {
 
   public static FlowNodeInstanceFilter of(
@@ -55,8 +56,8 @@ public record FlowNodeInstanceFilter(
     private Boolean hasIncident;
     private List<Long> incidentKeys;
     private List<String> tenantIds;
-    private List<String> startDates;
-    private List<String> endDates;
+    private List<Operation<OffsetDateTime>> startDateOperations;
+    private List<Operation<OffsetDateTime>> endDateOperations;
 
     public FlowNodeInstanceFilter.Builder flowNodeInstanceKeys(final List<Long> values) {
       flowNodeInstanceKeys = addValuesToList(flowNodeInstanceKeys, values);
@@ -169,22 +170,28 @@ public record FlowNodeInstanceFilter(
       return tenantIds(collectValuesAsList(values));
     }
 
-    public FlowNodeInstanceFilter.Builder startDates(final List<String> values) {
-      startDates = addValuesToList(startDates, values);
+    public FlowNodeInstanceFilter.Builder startDateOperations(
+        final List<Operation<OffsetDateTime>> operations) {
+      startDateOperations = addValuesToList(startDateOperations, operations);
       return this;
     }
 
-    public FlowNodeInstanceFilter.Builder startDates(final String... values) {
-      return startDates(collectValuesAsList(values));
+    @SafeVarargs
+    public final FlowNodeInstanceFilter.Builder startDateOperations(
+        final Operation<OffsetDateTime> operation, final Operation<OffsetDateTime>... operations) {
+      return startDateOperations(collectValues(operation, operations));
     }
 
-    public FlowNodeInstanceFilter.Builder endDates(final List<String> values) {
-      endDates = addValuesToList(endDates, values);
+    public FlowNodeInstanceFilter.Builder endDateOperations(
+        final List<Operation<OffsetDateTime>> operations) {
+      endDateOperations = addValuesToList(endDateOperations, operations);
       return this;
     }
 
-    public FlowNodeInstanceFilter.Builder endDates(final String... values) {
-      return endDates(collectValuesAsList(values));
+    @SafeVarargs
+    public final FlowNodeInstanceFilter.Builder endDateOperations(
+        final Operation<OffsetDateTime> operation, final Operation<OffsetDateTime>... operations) {
+      return endDateOperations(collectValues(operation, operations));
     }
 
     @Override
@@ -202,8 +209,8 @@ public record FlowNodeInstanceFilter(
           hasIncident,
           Objects.requireNonNullElse(incidentKeys, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
-          Objects.requireNonNullElse(startDates, Collections.emptyList()),
-          Objects.requireNonNullElse(endDates, Collections.emptyList()));
+          Objects.requireNonNullElse(startDateOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(endDateOperations, Collections.emptyList()));
     }
   }
 }

@@ -18,11 +18,14 @@ package io.camunda.client.impl.search.filter;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
+import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.ElementInstanceStateProperty;
+import io.camunda.client.impl.search.filter.builder.DateTimePropertyImpl;
 import io.camunda.client.impl.search.filter.builder.ElementInstanceStatePropertyImpl;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
+import java.time.OffsetDateTime;
 import java.util.function.Consumer;
 
 public class ElementInstanceFilterImpl
@@ -112,14 +115,30 @@ public class ElementInstanceFilterImpl
   }
 
   @Override
-  public ElementInstanceFilter startDate(final String value) {
-    filter.setStartDate(value);
+  public ElementInstanceFilter startDate(final OffsetDateTime startDate) {
+    startDate(b -> b.eq(startDate));
     return this;
   }
 
   @Override
-  public ElementInstanceFilter endDate(final String value) {
-    filter.setEndDate(value);
+  public ElementInstanceFilter startDate(final Consumer<DateTimeProperty> fn) {
+    final DateTimeProperty property = new DateTimePropertyImpl();
+    fn.accept(property);
+    filter.setStartDate(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
+  public ElementInstanceFilter endDate(final OffsetDateTime endDate) {
+    endDate(b -> b.eq(endDate));
+    return this;
+  }
+
+  @Override
+  public ElementInstanceFilter endDate(final Consumer<DateTimeProperty> fn) {
+    final DateTimeProperty property = new DateTimePropertyImpl();
+    fn.accept(property);
+    filter.setEndDate(provideSearchRequestProperty(property));
     return this;
   }
 

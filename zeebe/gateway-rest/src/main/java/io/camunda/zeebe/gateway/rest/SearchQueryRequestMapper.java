@@ -1028,8 +1028,12 @@ public final class SearchQueryRequestMapper {
                   .map(KeyUtil::keyToLong)
                   .ifPresent(builder::incidentKeys);
               Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
-              Optional.ofNullable(f.getStartDate()).ifPresent(builder::startDates);
-              Optional.ofNullable(f.getEndDate()).ifPresent(builder::endDates);
+              Optional.ofNullable(filter.getStartDate())
+                  .map(mapToOperations(OffsetDateTime.class))
+                  .ifPresent(builder::startDateOperations);
+              Optional.ofNullable(filter.getEndDate())
+                  .map(mapToOperations(OffsetDateTime.class))
+                  .ifPresent(builder::endDateOperations);
             });
     return builder.build();
   }

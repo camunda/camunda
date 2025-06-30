@@ -6567,11 +6567,13 @@ components:
           type: string
           description: The key of incident if field incident is true.
         startDate:
-          type: string
           description: The start date of this element instance.
+          allOf:
+            - $ref: "#/components/schemas/DateTimeFilterProperty"
         endDate:
-          type: string
-          description: The end date of this element instance.
+          description: The start date of this element instance.
+          allOf:
+            - $ref: "#/components/schemas/DateTimeFilterProperty"
     ElementInstanceSearchQueryResult:
       type: object
       allOf:
