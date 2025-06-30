@@ -19,6 +19,8 @@ env:
 jobs:
   get-snapshot-docker-version-tag:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: {}
     outputs:
       tag: ${{ steps.set_docker_snapshot_version_tag.outputs.tag }}
     steps:
