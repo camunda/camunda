@@ -149,9 +149,9 @@ final class SnapshotOnlyDb<ColumnFamilyType extends Enum<? extends EnumValue> & 
                               LOG.error(
                                   "Failed to copy column family '{}' on key {} and value with length {} terminating.",
                                   cf,
-                                  new String(key),
-                                  value.length);
-                              LOG.error("Exception", e);
+                                  new String(key, 0, keyLen),
+                                  value.length,
+                                  e);
                               abort.set(true);
                               return false;
                             }
