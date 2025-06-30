@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.BatchOperationQuery;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationSearchQuery;
@@ -31,9 +32,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class BatchOperationController {
 
   private final BatchOperationServices batchOperationServices;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
-  public BatchOperationController(final BatchOperationServices batchOperationServices) {
+  public BatchOperationController(
+      final BatchOperationServices batchOperationServices,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.batchOperationServices = batchOperationServices;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaGetMapping(path = "/{batchOperationId}")
@@ -44,7 +49,7 @@ public class BatchOperationController {
           .body(
               SearchQueryResponseMapper.toBatchOperation(
                   batchOperationServices
-                      .withAuthentication(RequestMapper.getAuthentication())
+                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
                       .getById(batchOperationId)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -63,7 +68,7 @@ public class BatchOperationController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
             () ->
                 batchOperationServices
-                    .withAuthentication(RequestMapper.getAuthentication())
+                    .withAuthentication(authenticationProvider.getCamundaAuthentication())
                     .cancel(batchOperationId))
         .join();
   }
@@ -73,7 +78,7 @@ public class BatchOperationController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
             () ->
                 batchOperationServices
-                    .withAuthentication(RequestMapper.getAuthentication())
+                    .withAuthentication(authenticationProvider.getCamundaAuthentication())
                     .suspend(batchOperationId))
         .join();
   }
@@ -83,7 +88,7 @@ public class BatchOperationController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
             () ->
                 batchOperationServices
-                    .withAuthentication(RequestMapper.getAuthentication())
+                    .withAuthentication(authenticationProvider.getCamundaAuthentication())
                     .resume(batchOperationId))
         .join();
   }
@@ -92,7 +97,7 @@ public class BatchOperationController {
     try {
       final var result =
           batchOperationServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toBatchOperationSearchQueryResult(result));
     } catch (final Exception e) {

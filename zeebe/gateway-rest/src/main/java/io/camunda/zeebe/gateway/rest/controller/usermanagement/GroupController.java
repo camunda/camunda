@@ -14,6 +14,7 @@ import io.camunda.authentication.ConditionalOnInternalGroupsEnabled;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.RoleQuery;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
@@ -56,14 +57,17 @@ public class GroupController {
   private final GroupServices groupServices;
   private final MappingServices mappingServices;
   private final RoleServices roleServices;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
   public GroupController(
       final GroupServices groupServices,
       final MappingServices mappingServices,
-      final RoleServices roleServices) {
+      final RoleServices roleServices,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.groupServices = groupServices;
     this.mappingServices = mappingServices;
     this.roleServices = roleServices;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPostMapping
@@ -86,7 +90,7 @@ public class GroupController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             groupServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .deleteGroup(groupId));
   }
 
@@ -187,7 +191,7 @@ public class GroupController {
           .body(
               SearchQueryResponseMapper.toGroup(
                   groupServices
-                      .withAuthentication(RequestMapper.getAuthentication())
+                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
                       .getGroup(groupId)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
@@ -204,7 +208,9 @@ public class GroupController {
   private ResponseEntity<GroupSearchQueryResult> search(final GroupQuery query) {
     try {
       final var result =
-          groupServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
+          groupServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toGroupSearchQueryResponse(result));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);
@@ -215,7 +221,7 @@ public class GroupController {
     return RequestMapper.executeServiceMethod(
         () ->
             groupServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .createGroup(groupDTO),
         ResponseMapper::toGroupCreateResponse);
   }
@@ -224,7 +230,7 @@ public class GroupController {
     return RequestMapper.executeServiceMethod(
         () ->
             groupServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .updateGroup(
                     updateGroupRequest.groupId(),
                     updateGroupRequest.name(),
@@ -236,7 +242,7 @@ public class GroupController {
     return RequestMapper.executeServiceMethodWithAcceptedResult(
         () ->
             groupServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .assignMember(request));
   }
 
@@ -245,7 +251,7 @@ public class GroupController {
     try {
       final var result =
           groupServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .searchMembers(buildGroupMemberQuery(groupId, EntityType.USER, groupQuery));
       return ResponseEntity.ok(SearchQueryResponseMapper.toGroupUserSearchQueryResponse(result));
     } catch (final Exception e) {
@@ -258,7 +264,7 @@ public class GroupController {
     try {
       final var result =
           groupServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .searchMembers(buildGroupMemberQuery(groupId, EntityType.CLIENT, groupQuery));
       return ResponseEntity.ok(SearchQueryResponseMapper.toGroupClientSearchQueryResponse(result));
     } catch (final Exception e) {
@@ -272,7 +278,7 @@ public class GroupController {
       final var composedMappingQuery = buildMappingQuery(groupId, mappingQuery);
       final var result =
           mappingServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(composedMappingQuery);
       return ResponseEntity.ok(SearchQueryResponseMapper.toMappingSearchQueryResponse(result));
     } catch (final Exception e) {
@@ -286,7 +292,7 @@ public class GroupController {
       final var composedRoleQuery = buildRoleQuery(groupId, roleQuery);
       final var result =
           roleServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(composedRoleQuery);
       return ResponseEntity.ok(SearchQueryResponseMapper.toRoleSearchQueryResponse(result));
     } catch (final Exception e) {
@@ -318,7 +324,7 @@ public class GroupController {
     return RequestMapper.executeServiceMethodWithAcceptedResult(
         () ->
             groupServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .removeMember(request));
   }
 }

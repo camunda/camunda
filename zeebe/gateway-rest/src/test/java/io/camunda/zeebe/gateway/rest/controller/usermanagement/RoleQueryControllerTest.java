@@ -24,6 +24,7 @@ import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.RoleSort;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
@@ -46,9 +47,12 @@ public class RoleQueryControllerTest extends RestControllerTest {
   @MockitoBean private UserServices userServices;
   @MockitoBean private MappingServices mappingsServices;
   @MockitoBean private GroupServices groupServices;
+  @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setup() {
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(roleServices);
     when(userServices.withAuthentication(any(CamundaAuthentication.class)))

@@ -10,10 +10,10 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.DecisionRequirementsQuery;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionRequirementsSearchQuery;
-import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
@@ -31,10 +31,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class DecisionRequirementsController {
 
   private final DecisionRequirementsServices decisionRequirementsServices;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
   public DecisionRequirementsController(
-      final DecisionRequirementsServices decisionRequirementsServices) {
+      final DecisionRequirementsServices decisionRequirementsServices,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.decisionRequirementsServices = decisionRequirementsServices;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPostMapping(path = "/search")
@@ -48,7 +51,7 @@ public class DecisionRequirementsController {
     try {
       final var result =
           decisionRequirementsServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(query);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionRequirementsSearchQueryResponse(result));
@@ -65,7 +68,7 @@ public class DecisionRequirementsController {
           .body(
               SearchQueryResponseMapper.toDecisionRequirements(
                   decisionRequirementsServices
-                      .withAuthentication(RequestMapper.getAuthentication())
+                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
                       .getByKey(decisionRequirementsKey)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -82,7 +85,7 @@ public class DecisionRequirementsController {
           .contentType(new MediaType(MediaType.TEXT_XML, StandardCharsets.UTF_8))
           .body(
               decisionRequirementsServices
-                  .withAuthentication(RequestMapper.getAuthentication())
+                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
                   .getDecisionRequirementsXml(decisionRequirementsKey));
     } catch (final Exception e) {
       return mapErrorToResponse(e);

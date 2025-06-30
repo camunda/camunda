@@ -17,6 +17,7 @@ import io.camunda.search.filter.Operation;
 import io.camunda.search.query.BatchOperationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.BatchOperationServices;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationTypeEnum;
@@ -38,9 +39,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 class BatchOperationControllerTest extends RestControllerTest {
 
   @MockitoBean private BatchOperationServices batchOperationServices;
+  @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setUpServices() {
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(batchOperationServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(batchOperationServices);
   }

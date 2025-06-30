@@ -22,6 +22,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.FormServices;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.exception.ForbiddenException;
@@ -37,8 +38,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentMatchers;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(value = ProcessDefinitionController.class)
 public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
@@ -115,12 +116,15 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
         "version": 1
       }
       """;
-  @MockBean ProcessDefinitionServices processDefinitionServices;
+  @MockitoBean ProcessDefinitionServices processDefinitionServices;
 
-  @MockBean FormServices formServices;
+  @MockitoBean FormServices formServices;
+  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setupProcessDefinitionServices() {
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(processDefinitionServices.withAuthentication(
             ArgumentMatchers.any(CamundaAuthentication.class)))
         .thenReturn(processDefinitionServices);

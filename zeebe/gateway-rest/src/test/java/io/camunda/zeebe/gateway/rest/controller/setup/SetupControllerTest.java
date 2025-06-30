@@ -13,13 +13,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
-import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.validator.IdentifierPatterns;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
@@ -34,27 +35,29 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Answers;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(SetupController.class)
 class SetupControllerTest extends RestControllerTest {
   private static final String BASE_PATH = "/v2/setup";
   private static final String USER_PATH = BASE_PATH + "/user";
-  @MockBean private UserServices userServices;
-  @MockBean private RoleServices roleServices;
+  @MockitoBean private UserServices userServices;
+  @MockitoBean private RoleServices roleServices;
+  @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 
-  @MockBean(answer = Answers.RETURNS_DEEP_STUBS)
+  @MockitoBean(answers = Answers.RETURNS_DEEP_STUBS)
   private SecurityConfiguration securityConfiguration;
 
   @BeforeEach
   void setup() {
-    when(userServices.withAuthentication(RequestMapper.getAnonymousAuthentication()))
-        .thenReturn(userServices);
-    when(roleServices.withAuthentication(RequestMapper.getAnonymousAuthentication()))
-        .thenReturn(roleServices);
+    final var anonymousAuthentication = CamundaAuthentication.anonymous();
+    when(authenticationProvider.getAnonymousCamundaAuthentication())
+        .thenReturn(anonymousAuthentication);
+    when(userServices.withAuthentication(anonymousAuthentication)).thenReturn(userServices);
+    when(roleServices.withAuthentication(anonymousAuthentication)).thenReturn(roleServices);
     when(securityConfiguration.getAuthentication().getMethod())
         .thenReturn(AuthenticationMethod.BASIC);
   }

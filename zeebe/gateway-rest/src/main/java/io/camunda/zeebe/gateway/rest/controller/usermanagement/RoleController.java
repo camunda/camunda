@@ -12,6 +12,7 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.RoleQuery;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
@@ -55,16 +56,19 @@ public class RoleController {
   private final UserServices userServices;
   private final MappingServices mappingServices;
   private final GroupServices groupServices;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
   public RoleController(
       final RoleServices roleServices,
       final UserServices userServices,
       final MappingServices mappingServices,
-      final GroupServices groupServices) {
+      final GroupServices groupServices,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.roleServices = roleServices;
     this.userServices = userServices;
     this.mappingServices = mappingServices;
     this.groupServices = groupServices;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPostMapping
@@ -79,7 +83,7 @@ public class RoleController {
     return RequestMapper.executeServiceMethod(
         () ->
             roleServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .createRole(createRoleRequest),
         ResponseMapper::toRoleCreateResponse);
   }
@@ -96,7 +100,7 @@ public class RoleController {
     return RequestMapper.executeServiceMethod(
         () ->
             roleServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .updateRole(updateRoleRequest),
         ResponseMapper::toRoleUpdateResponse);
   }
@@ -105,7 +109,9 @@ public class RoleController {
   public CompletableFuture<ResponseEntity<Object>> deleteRole(@PathVariable final String roleId) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
-            roleServices.withAuthentication(RequestMapper.getAuthentication()).deleteRole(roleId));
+            roleServices
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .deleteRole(roleId));
   }
 
   @CamundaGetMapping(path = "/{roleId}")
@@ -115,7 +121,7 @@ public class RoleController {
           .body(
               SearchQueryResponseMapper.toRole(
                   roleServices
-                      .withAuthentication(RequestMapper.getAuthentication())
+                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
                       .getRole(roleId)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
@@ -132,7 +138,9 @@ public class RoleController {
   private ResponseEntity<RoleSearchQueryResult> search(final RoleQuery query) {
     try {
       final var result =
-          roleServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
+          roleServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toRoleSearchQueryResponse(result));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);
@@ -154,7 +162,7 @@ public class RoleController {
     try {
       final var result =
           roleServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .searchMembers(buildRoleMemberQuery(roleId, EntityType.USER, query));
       return ResponseEntity.ok(SearchQueryResponseMapper.toRoleUserSearchQueryResponse(result));
     } catch (final Exception e) {
@@ -177,7 +185,7 @@ public class RoleController {
     try {
       final var result =
           roleServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .searchMembers(buildRoleMemberQuery(tenantId, EntityType.CLIENT, query));
       return ResponseEntity.ok(SearchQueryResponseMapper.toRoleClientSearchQueryResponse(result));
     } catch (final Exception e) {
@@ -208,7 +216,7 @@ public class RoleController {
       final var composedMappingQuery = buildMappingQuery(roleId, mappingQuery);
       final var result =
           mappingServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(composedMappingQuery);
       return ResponseEntity.ok(SearchQueryResponseMapper.toMappingSearchQueryResponse(result));
     } catch (final Exception e) {
@@ -253,7 +261,9 @@ public class RoleController {
       final RoleMemberRequest request) {
     return RequestMapper.executeServiceMethodWithAcceptedResult(
         () ->
-            roleServices.withAuthentication(RequestMapper.getAuthentication()).addMember(request));
+            roleServices
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .addMember(request));
   }
 
   @CamundaPutMapping(
@@ -310,7 +320,7 @@ public class RoleController {
       final var composedGroupQuery = buildGroupQuery(roleId, query);
       final var result =
           groupServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(composedGroupQuery);
       return ResponseEntity.ok(SearchQueryResponseMapper.toGroupSearchQueryResponse(result));
     } catch (final Exception e) {
@@ -330,7 +340,7 @@ public class RoleController {
     return RequestMapper.executeServiceMethodWithAcceptedResult(
         () ->
             roleServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .removeMember(request));
   }
 }

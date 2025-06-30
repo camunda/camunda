@@ -21,6 +21,7 @@ import io.camunda.search.entities.AdHocSubProcessActivityEntity.ActivityType;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.AdHocSubProcessActivityServices;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
@@ -50,9 +51,12 @@ class AdHocSubProcessActivityControllerTest extends RestControllerTest {
       AD_HOC_ACTIVITIES_URL + "/{adHocSubProcessInstanceKey}/activation";
 
   @MockitoBean private AdHocSubProcessActivityServices adHocSubProcessActivityServices;
+  @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setUpServices() {
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(adHocSubProcessActivityServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(adHocSubProcessActivityServices);
   }

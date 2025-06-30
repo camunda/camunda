@@ -8,17 +8,16 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import io.camunda.search.query.DecisionInstanceQuery;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceGetQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionInstanceSearchQueryResult;
-import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,7 +27,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/decision-instances")
 public class DecisionInstanceController {
 
-  @Autowired private DecisionInstanceServices decisionInstanceServices;
+  private final DecisionInstanceServices decisionInstanceServices;
+  private final CamundaAuthenticationProvider authenticationProvider;
+
+  public DecisionInstanceController(
+      final DecisionInstanceServices decisionInstanceServices,
+      final CamundaAuthenticationProvider authenticationProvider) {
+    this.decisionInstanceServices = decisionInstanceServices;
+    this.authenticationProvider = authenticationProvider;
+  }
 
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<DecisionInstanceSearchQueryResult> searchDecisionInstances(
@@ -44,7 +51,7 @@ public class DecisionInstanceController {
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionInstanceGetQueryResponse(
               decisionInstanceServices
-                  .withAuthentication(RequestMapper.getAuthentication())
+                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
                   .getById(decisionInstanceId)));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);
@@ -56,7 +63,7 @@ public class DecisionInstanceController {
     try {
       final var decisionInstances =
           decisionInstanceServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(query);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionInstanceSearchQueryResponse(decisionInstances));

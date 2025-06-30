@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.DecisionDefinitionQuery;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionResult;
@@ -38,12 +39,15 @@ public class DecisionDefinitionController {
 
   private final DecisionDefinitionServices decisionDefinitionServices;
   private final MultiTenancyConfiguration multiTenancyCfg;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
   public DecisionDefinitionController(
       final DecisionDefinitionServices decisionServices,
-      final MultiTenancyConfiguration multiTenancyCfg) {
+      final MultiTenancyConfiguration multiTenancyCfg,
+      final CamundaAuthenticationProvider authenticationProvider) {
     decisionDefinitionServices = decisionServices;
     this.multiTenancyCfg = multiTenancyCfg;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPostMapping(path = "/evaluation")
@@ -68,7 +72,7 @@ public class DecisionDefinitionController {
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionDefinition(
               decisionDefinitionServices
-                  .withAuthentication(RequestMapper.getAuthentication())
+                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
                   .getByKey(decisionDefinitionKey)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -85,7 +89,7 @@ public class DecisionDefinitionController {
           .contentType(new MediaType(MediaType.TEXT_XML, StandardCharsets.UTF_8))
           .body(
               decisionDefinitionServices
-                  .withAuthentication(RequestMapper.getAuthentication())
+                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
                   .getDecisionDefinitionXml(decisionDefinitionKey));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -97,7 +101,7 @@ public class DecisionDefinitionController {
     try {
       final var result =
           decisionDefinitionServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(query);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionDefinitionSearchQueryResponse(result));
@@ -111,7 +115,7 @@ public class DecisionDefinitionController {
     return RequestMapper.executeServiceMethod(
         () ->
             decisionDefinitionServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .evaluateDecision(
                     request.decisionId(),
                     request.decisionKey(),

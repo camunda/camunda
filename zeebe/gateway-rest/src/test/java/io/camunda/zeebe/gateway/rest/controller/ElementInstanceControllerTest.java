@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -25,20 +26,23 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(ElementInstanceController.class)
 public class ElementInstanceControllerTest extends RestControllerTest {
 
   static final String ELEMENTS_BASE_URL = "/v2/element-instances";
 
-  @MockBean ElementInstanceServices elementInstanceServices;
-  @MockBean ProcessCache processCache;
+  @MockitoBean ElementInstanceServices elementInstanceServices;
+  @MockitoBean ProcessCache processCache;
+  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @Captor ArgumentCaptor<SetVariablesRequest> requestCaptor;
 
   @BeforeEach
   void setup() {
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(elementInstanceServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(elementInstanceServices);
   }

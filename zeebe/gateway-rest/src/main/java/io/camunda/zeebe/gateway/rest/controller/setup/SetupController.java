@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.setup;
 
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.service.RoleServices;
@@ -37,14 +38,17 @@ public class SetupController {
   private final UserServices userServices;
   private final RoleServices roleServices;
   private final SecurityConfiguration securityConfiguration;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
   public SetupController(
       final UserServices userServices,
       final RoleServices roleServices,
-      final SecurityConfiguration securityConfiguration) {
+      final SecurityConfiguration securityConfiguration,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.userServices = userServices;
     this.roleServices = roleServices;
     this.securityConfiguration = securityConfiguration;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPostMapping(path = "/user")
@@ -57,7 +61,7 @@ public class SetupController {
     }
 
     if (roleServices
-        .withAuthentication(RequestMapper.getAnonymousAuthentication())
+        .withAuthentication(authenticationProvider.getAnonymousCamundaAuthentication())
         .hasMembersOfType(DefaultRole.ADMIN.getId(), EntityType.USER)) {
       final var exception = new ForbiddenException(ADMIN_EXISTS_ERROR_MESSAGE);
       return RestErrorMapper.mapProblemToCompletedResponse(
@@ -71,7 +75,8 @@ public class SetupController {
                 RequestMapper.executeServiceMethod(
                     () ->
                         userServices
-                            .withAuthentication(RequestMapper.getAnonymousAuthentication())
+                            .withAuthentication(
+                                authenticationProvider.getAnonymousCamundaAuthentication())
                             .createInitialAdminUser(dto),
                     ResponseMapper::toUserCreateResponse));
   }

@@ -11,6 +11,7 @@ import static io.camunda.tasklist.webapp.util.ErrorHandlingUtils.getErrorMessage
 
 import io.camunda.client.impl.command.StreamUtil;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.JobServices;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCreateRequest;
@@ -29,7 +30,6 @@ import io.camunda.tasklist.zeebe.TasklistServicesAdapter;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
-import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
@@ -54,6 +54,7 @@ public class CamundaServicesBasedAdapter implements TasklistServicesAdapter {
   private final UserTaskServices userTaskServices;
   private final JobServices<?> jobServices;
   private final TasklistPermissionServices permissionServices;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
   public CamundaServicesBasedAdapter(
       final TenantService tenantService,
@@ -61,13 +62,15 @@ public class CamundaServicesBasedAdapter implements TasklistServicesAdapter {
       final ResourceServices resourceServices,
       final UserTaskServices userTaskServices,
       final JobServices<?> jobServices,
-      final TasklistPermissionServices permissionServices) {
+      final TasklistPermissionServices permissionServices,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.tenantService = tenantService;
     this.processInstanceServices = processInstanceServices;
     this.resourceServices = resourceServices;
     this.userTaskServices = userTaskServices;
     this.jobServices = jobServices;
     this.permissionServices = permissionServices;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @Override
@@ -221,12 +224,13 @@ public class CamundaServicesBasedAdapter implements TasklistServicesAdapter {
 
   private <T> T executeCamundaServiceAuthenticated(
       final Function<CamundaAuthentication, CompletableFuture<T>> method) {
-    return executeCamundaService(method, RequestMapper.getAuthentication());
+    return executeCamundaService(method, authenticationProvider.getCamundaAuthentication());
   }
 
   private <T> T executeCamundaServiceAnonymously(
       final Function<CamundaAuthentication, CompletableFuture<T>> method) {
-    return executeCamundaService(method, RequestMapper.getAnonymousAuthentication());
+    return executeCamundaService(
+        method, authenticationProvider.getAnonymousCamundaAuthentication());
   }
 
   private <T> T executeCamundaService(

@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.AuthorizationQuery;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.AuthorizationServices.UpdateAuthorizationRequest;
@@ -36,9 +37,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/authorizations")
 public class AuthorizationController {
   private final AuthorizationServices authorizationServices;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
-  public AuthorizationController(final AuthorizationServices authorizationServices) {
+  public AuthorizationController(
+      final AuthorizationServices authorizationServices,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.authorizationServices = authorizationServices;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPostMapping()
@@ -55,7 +60,7 @@ public class AuthorizationController {
           .body(
               SearchQueryResponseMapper.toAuthorization(
                   authorizationServices
-                      .withAuthentication(RequestMapper.getAuthentication())
+                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
                       .getAuthorization(authorizationKey)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
@@ -68,7 +73,7 @@ public class AuthorizationController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             authorizationServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .deleteAuthorization(authorizationKey));
   }
 
@@ -90,7 +95,9 @@ public class AuthorizationController {
   private ResponseEntity<AuthorizationSearchResult> search(final AuthorizationQuery query) {
     try {
       final var result =
-          authorizationServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
+          authorizationServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .search(query);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toAuthorizationSearchQueryResponse(result));
     } catch (final Exception e) {
@@ -103,7 +110,7 @@ public class AuthorizationController {
     return RequestMapper.executeServiceMethod(
         () ->
             authorizationServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .createAuthorization(createAuthorizationRequest),
         ResponseMapper::toAuthorizationCreateResponse);
   }
@@ -113,7 +120,7 @@ public class AuthorizationController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             authorizationServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .updateAuthorization(authorizationRequest));
   }
 }

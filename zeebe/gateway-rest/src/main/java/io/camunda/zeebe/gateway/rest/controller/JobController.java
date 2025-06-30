@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.ActivateJobsRequest;
@@ -37,14 +38,17 @@ public class JobController {
   private final ResponseObserverProvider responseObserverProvider;
   private final JobServices<JobActivationResult> jobServices;
   private final MultiTenancyConfiguration multiTenancyCfg;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
   public JobController(
       final JobServices<JobActivationResult> jobServices,
       final ResponseObserverProvider responseObserverProvider,
-      final MultiTenancyConfiguration multiTenancyCfg) {
+      final MultiTenancyConfiguration multiTenancyCfg,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.jobServices = jobServices;
     this.responseObserverProvider = responseObserverProvider;
     this.multiTenancyCfg = multiTenancyCfg;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPostMapping(path = "/activation")
@@ -87,7 +91,7 @@ public class JobController {
     final var result = new CompletableFuture<ResponseEntity<Object>>();
     final var responseObserver = responseObserverProvider.apply(result);
     jobServices
-        .withAuthentication(RequestMapper.getAuthentication())
+        .withAuthentication(authenticationProvider.getCamundaAuthentication())
         .activateJobs(activationRequest, responseObserver, responseObserver::setCancelationHandler);
     return result.handleAsync(
         (res, ex) -> {
@@ -100,7 +104,7 @@ public class JobController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             jobServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .failJob(
                     failJobRequest.jobKey(),
                     failJobRequest.retries(),
@@ -114,7 +118,7 @@ public class JobController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             jobServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .errorJob(
                     errorJobRequest.jobKey(),
                     errorJobRequest.errorCode(),
@@ -127,7 +131,7 @@ public class JobController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             jobServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .completeJob(
                     completeJobRequest.jobKey(),
                     completeJobRequest.variables(),
@@ -139,7 +143,7 @@ public class JobController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             jobServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .updateJob(
                     updateJobRequest.jobKey(),
                     updateJobRequest.operationReference(),
