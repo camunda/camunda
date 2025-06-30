@@ -96,6 +96,8 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.RoleClientResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleClientSearchResult;
+import io.camunda.zeebe.gateway.protocol.rest.RoleGroupResult;
+import io.camunda.zeebe.gateway.protocol.rest.RoleGroupSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUserResult;
@@ -225,6 +227,16 @@ public final class SearchQueryResponseMapper {
         .page(page)
         .items(
             ofNullable(result.items()).map(SearchQueryResponseMapper::toRoles).orElseGet(List::of));
+  }
+
+  public static RoleGroupSearchResult toRoleGroupSearchQueryResponse(
+      final SearchQueryResult<RoleMemberEntity> result) {
+    return new RoleGroupSearchResult()
+        .page(toSearchQueryPageResponse(result))
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toRoleGroups)
+                .orElseGet(List::of));
   }
 
   public static RoleUserSearchResult toRoleUserSearchQueryResponse(
@@ -625,12 +637,20 @@ public final class SearchQueryResponseMapper {
     return new TenantClientResult().clientId(tenantMember.id());
   }
 
+  private static List<RoleGroupResult> toRoleGroups(final List<RoleMemberEntity> members) {
+    return members.stream().map(SearchQueryResponseMapper::toRoleGroup).toList();
+  }
+
   private static List<RoleUserResult> toRoleUsers(final List<RoleMemberEntity> members) {
     return members.stream().map(SearchQueryResponseMapper::toRoleUser).toList();
   }
 
   private static List<RoleClientResult> toRoleClients(final List<RoleMemberEntity> members) {
     return members.stream().map(SearchQueryResponseMapper::toRoleClient).toList();
+  }
+
+  private static RoleGroupResult toRoleGroup(final RoleMemberEntity roleMember) {
+    return new RoleGroupResult().groupId(roleMember.id());
   }
 
   private static RoleUserResult toRoleUser(final RoleMemberEntity roleMember) {

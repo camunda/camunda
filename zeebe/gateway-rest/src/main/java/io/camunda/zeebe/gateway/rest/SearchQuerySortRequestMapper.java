@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest;
 
 import io.camunda.zeebe.gateway.protocol.rest.*;
+import jakarta.validation.Valid;
 import java.util.List;
 
 public class SearchQuerySortRequestMapper {
@@ -36,6 +37,12 @@ public class SearchQuerySortRequestMapper {
 
   public static List<SearchQuerySortRequest<RoleUserSearchQuerySortRequest.FieldEnum>>
       fromRoleUserSearchQuerySortRequest(final List<RoleUserSearchQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
+  public static List<SearchQuerySortRequest<RoleGroupSearchQuerySortRequest.FieldEnum>>
+      fromRoleGroupSearchQuerySortRequest(
+          final @Valid List<RoleGroupSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 

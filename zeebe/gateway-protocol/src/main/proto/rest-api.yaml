@@ -3245,14 +3245,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/GroupSearchQueryRequest"
+              $ref: "#/components/schemas/RoleGroupSearchQueryRequest"
       responses:
         "200":
           description: The groups assigned to the role.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GroupSearchQueryResult"
+                $ref: "#/components/schemas/RoleGroupSearchResult"
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
@@ -7743,6 +7743,44 @@ components:
           type: string
           enum:
             - clientId
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
+    RoleGroupResult:
+      type: object
+      properties:
+        groupId:
+          description: The id of the group.
+          type: string
+    RoleGroupSearchResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          description: The matching users.
+          type: array
+          items:
+            $ref: "#/components/schemas/RoleGroupResult"
+    RoleGroupSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/RoleGroupSearchQuerySortRequest"
+    RoleGroupSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - groupId
         order:
           $ref: "#/components/schemas/SortOrderEnum"
       required:
