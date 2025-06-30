@@ -27,7 +27,7 @@ test.describe.parallel('login page', () => {
     await expect(page).toHaveURL('/tasklist');
   });
 
-  test('have no a11y violations', async ({makeAxeBuilder}) => {
+  test('havee no a11y violations', async ({makeAxeBuilder}) => {
     const results = await makeAxeBuilder().analyze();
 
     expect(results.violations).toHaveLength(0);
