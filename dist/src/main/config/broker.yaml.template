@@ -1296,6 +1296,12 @@
           # PS: The default value is 5m. Increasing it to a higher value would cause the engine to store more data thus require more disk space. Increasing it above 15m is not recommended.
           # exportInterval: 5m
 
+        # distribution:
+          # Allows pausing command redistribution. The flag can be used to prevent the redistribution of commands when
+          # the broker is under heavy load.  This setting can also be set using the environment variable ZEEBE_BROKER_EXPERIMENTAL_ENGINE_DISTRIBUTION_PAUSECOMMANDDISTRIBUTION.
+          # The default value is false, meaning that command redistribution is not paused.
+          # pauseCommandDistribution: false
+
         # Allows to configure the maximum depth of child process instances that can be created.
         # The root process instance is considered depth `1`, and each called instance is considered
         # to be one level deeper. If a call activity attempts to create a child process instance
