@@ -23,10 +23,12 @@ import io.camunda.client.protocol.rest.ActivatedJobResult;
 import io.camunda.client.protocol.rest.JobActivationRequest;
 import io.camunda.client.protocol.rest.JobActivationResult;
 import io.camunda.client.protocol.rest.ProblemDetail;
+import io.camunda.client.protocol.rest.UserTaskProperties;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
+import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.camunda.zeebe.client.impl.ZeebeObjectMapper;
 import io.camunda.zeebe.client.impl.response.ActivatedJobImpl;
@@ -37,7 +39,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public final class ActivateJobsRestTest extends ClientRestTest {
 
@@ -141,6 +147,84 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     assertThat(request.getMaxJobsToActivate()).isEqualTo(3);
     assertThat(request.getTimeout()).isEqualTo(1000);
     assertThat(request.getWorker()).isEqualTo("worker1");
+  }
+
+  private static Stream<ActivateJobWithUserTaskPropsTestCase> userTaskPropertiesProvider() {
+    return Stream.of(
+        new ActivateJobWithUserTaskPropsTestCase(
+            "should activate job with all user task properties set",
+            new UserTaskProperties()
+                .action("update")
+                .assignee("tony")
+                .addCandidateGroupsItem("assistants")
+                .addCandidateUsersItem("jarvis")
+                .addCandidateUsersItem("friday")
+                .addChangedAttributesItem("assignee")
+                .dueDate("2019-04-22T00:00:00Z")
+                .followUpDate("2018-04-23T00:00:00Z")
+                .formKey("formKey_007")
+                .priority(10)
+                .userTaskKey("userTaskKey_123"),
+            props -> {
+              assertThat(props.getAction()).isEqualTo("update");
+              assertThat(props.getAssignee()).isEqualTo("tony");
+              assertThat(props.getCandidateGroups()).containsExactly("assistants");
+              assertThat(props.getCandidateUsers()).containsExactly("jarvis", "friday");
+              assertThat(props.getChangedAttributes()).containsExactly("assignee");
+              assertThat(props.getDueDate()).isEqualTo("2019-04-22T00:00:00Z");
+              assertThat(props.getFollowUpDate()).isEqualTo("2018-04-23T00:00:00Z");
+              assertThat(props.getFormKey()).isEqualTo("formKey_007");
+              assertThat(props.getPriority()).isEqualTo(10);
+              assertThat(props.getUserTaskKey()).isEqualTo("userTaskKey_123");
+            }),
+        new ActivateJobWithUserTaskPropsTestCase(
+            "should activate job with empty user task properties",
+            new UserTaskProperties(),
+            props -> {
+              assertThat(props.getAction()).isNull();
+              assertThat(props.getAssignee()).isNull();
+              assertThat(props.getCandidateGroups()).isEmpty();
+              assertThat(props.getCandidateUsers()).isEmpty();
+              assertThat(props.getChangedAttributes()).isEmpty();
+              assertThat(props.getDueDate()).isNull();
+              assertThat(props.getFollowUpDate()).isNull();
+              assertThat(props.getFormKey()).isNull();
+              assertThat(props.getPriority()).isNull();
+              assertThat(props.getUserTaskKey()).isNull();
+            }),
+        new ActivateJobWithUserTaskPropsTestCase(
+            "should activate job with null user task properties",
+            null,
+            props -> assertThat(props).isNull()));
+  }
+
+  @ParameterizedTest
+  @MethodSource("userTaskPropertiesProvider")
+  public void shouldActivateJobsWithUserTaskProperties(
+      final ActivateJobWithUserTaskPropsTestCase testCase) {
+
+    // given
+    final ActivatedJobResult activatedJob =
+        new ActivatedJobResult().userTask(testCase.providedProperties);
+
+    gatewayService.onActivateJobsRequest(new JobActivationResult().addJobsItem(activatedJob));
+
+    // when
+    final ActivateJobsResponse response =
+        client
+            .newActivateJobsCommand()
+            .jobType("payment")
+            .maxJobsToActivate(10)
+            .workerName("paymentWorker")
+            .timeout(Duration.ofMillis(1000))
+            .send()
+            .join();
+
+    // then
+    assertThat(response.getJobs())
+        .singleElement()
+        .extracting(ActivatedJob::getUserTask)
+        .satisfies(testCase.assertions);
   }
 
   @Test
@@ -439,6 +523,27 @@ public final class ActivateJobsRestTest extends ClientRestTest {
     public VariablesPojo setA(final int a) {
       this.a = a;
       return this;
+    }
+  }
+
+  private static final class ActivateJobWithUserTaskPropsTestCase {
+
+    public final String testDescription;
+    public final UserTaskProperties providedProperties;
+    public final Consumer<io.camunda.zeebe.client.api.response.UserTaskProperties> assertions;
+
+    public ActivateJobWithUserTaskPropsTestCase(
+        final String testDescription,
+        final UserTaskProperties providedProperties,
+        final Consumer<io.camunda.zeebe.client.api.response.UserTaskProperties> assertions) {
+      this.testDescription = testDescription;
+      this.providedProperties = providedProperties;
+      this.assertions = assertions;
+    }
+
+    @Override
+    public String toString() {
+      return testDescription;
     }
   }
 }
