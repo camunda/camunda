@@ -7,9 +7,12 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.batchoperation;
 
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
+import io.camunda.zeebe.protocol.record.value.scaling.BatchOperationErrorValue;
+import java.util.List;
 
 public final class BatchOperationLifecycleManagementRecord extends UnifiedRecordValue
     implements BatchOperationLifecycleManagementRecordValue {
@@ -18,9 +21,13 @@ public final class BatchOperationLifecycleManagementRecord extends UnifiedRecord
 
   private final LongProperty batchOperationKeyProp = new LongProperty(PROP_BATCH_OPERATION_KEY);
 
+  private final ArrayProperty<BatchOperationError> errorsProp =
+      new ArrayProperty<>("errors", BatchOperationError::new);
+
   public BatchOperationLifecycleManagementRecord() {
-    super(1);
+    super(2);
     declareProperty(batchOperationKeyProp);
+    declareProperty(errorsProp);
   }
 
   @Override
@@ -38,6 +45,20 @@ public final class BatchOperationLifecycleManagementRecord extends UnifiedRecord
   public BatchOperationLifecycleManagementRecord wrap(
       final BatchOperationLifecycleManagementRecord record) {
     setBatchOperationKey(record.getBatchOperationKey());
+    setErrors(record.getErrors().stream().map(BatchOperationError.class::cast).toList());
+    return this;
+  }
+
+  @Override
+  public List<BatchOperationErrorValue> getErrors() {
+    return errorsProp.stream().map(BatchOperationErrorValue.class::cast).toList();
+  }
+
+  public BatchOperationLifecycleManagementRecord setErrors(final List<BatchOperationError> errors) {
+    errorsProp.reset();
+    for (final var error : errors) {
+      errorsProp.add().wrap(error);
+    }
     return this;
   }
 }
