@@ -24,7 +24,6 @@ public class TenantIndex extends AbstractIndexDescriptor implements Prio5Backup 
   public static final String JOIN = "join";
   public static final String MEMBER_TYPE = "memberType";
   public static final String MEMBER_ID = "memberId";
-  public static final String PARENT = "parent";
 
   public static final EntityJoinRelationFactory JOIN_RELATION_FACTORY =
       new EntityJoinRelationFactory(

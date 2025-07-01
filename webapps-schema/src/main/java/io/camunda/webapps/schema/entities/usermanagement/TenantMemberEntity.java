@@ -43,8 +43,4 @@ public class TenantMemberEntity extends AbstractExporterEntity<TenantMemberEntit
     this.join = join;
     return this;
   }
-
-  public static String getChildKey(final String tenantId, final String memberId) {
-    return String.format("%s-%s", tenantId, memberId);
-  }
 }
