@@ -92,6 +92,15 @@ schemas:
             format: int32
             description: The new replication factor. Can be omitted if the replication factor is not changed.
             example: 3
+          distribution:
+            type: object
+            description: The new partition distribution with the assigned brokers and corresponding priority values.
+            properties:
+              partitioning:
+                type: array
+                items:
+                  $ref: "components.yaml#/schemas/Partitioning"
+
 
   PlannedOperationsResponse:
     title: PlannedOperationsResponse
@@ -459,3 +468,28 @@ schemas:
     description: The ID of an exporter
     type: string
     example: "my-exporter"
+
+  Partitioning:
+    title: Partitioning
+    description: Brokers assigned to the partition
+    type: object
+    properties:
+      partitionId:
+        $ref: "components.yaml#/schemas/PartitionId"
+      nodes:
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/PartitionNode"
+
+  PartitionNode:
+    title: PartitionNode
+    type: object
+    description: Broker and respective priority for this partition
+    properties:
+      nodeId:
+        $ref: "components.yaml#/schemas/BrokerId"
+      priority:
+        type: integer
+        format: int32
+        description: The priority of the broker in the partition
+        example: 1
