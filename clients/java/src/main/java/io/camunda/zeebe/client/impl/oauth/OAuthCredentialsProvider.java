@@ -114,6 +114,22 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
 
   private static String createParams(final OAuthCredentialsProviderBuilder builder) {
     final Map<String, String> payload = new HashMap<>();
+<<<<<<< HEAD
+=======
+    if (builder.sslClientCertConfigurationProvided()) {
+      payload.put(
+          "client_assertion",
+          getClientAssertion(
+              builder.getSslClientCertPath().toAbsolutePath().toString(),
+              builder.getSslClientCertPassword(),
+              builder.getClientId(),
+              builder.getIssuer()));
+      payload.put("client_assertion_type", JWT_ASSERTION_TYPE);
+    } else {
+      payload.put("client_secret", builder.getClientSecret());
+    }
+
+>>>>>>> 6ba9c997 (fix: aud > iss)
     payload.put("client_id", builder.getClientId());
     payload.put("client_secret", builder.getClientSecret());
     payload.put("audience", builder.getAudience());
@@ -128,6 +144,59 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
         .collect(Collectors.joining("&"));
   }
 
+<<<<<<< HEAD
+=======
+  private static String getClientAssertion(
+      String certPath, String certStorePassword, String clientId, String issuer) {
+    final X509Certificate certificate;
+    final Algorithm algorithm;
+    try (FileInputStream stream = new FileInputStream(certPath)) {
+      final KeyStore keyStore = KeyStore.getInstance("PKCS12");
+      final char[] password = certStorePassword.toCharArray();
+      keyStore.load(stream, password);
+
+      final String alias = keyStore.aliases().nextElement();
+      final RSAPrivateKey privateKey = (RSAPrivateKey) keyStore.getKey(alias, password);
+      final X509Certificate keyStoreCertificate = (X509Certificate) keyStore.getCertificate(alias);
+      final RSAPublicKey publicKey = (RSAPublicKey) keyStoreCertificate.getPublicKey();
+
+      certificate = (X509Certificate) keyStore.getCertificate(alias);
+      algorithm = Algorithm.RSA256(publicKey, privateKey);
+    } catch (IOException | GeneralSecurityException e) {
+      throw new RuntimeException("Failed to create client assertion", e);
+    }
+
+    final Date now = new Date();
+    final String x5t = generateX5tThumbprint(certificate);
+
+    final Map<String, Object> header = new HashMap<>();
+    header.put("alg", "RSA256");
+    header.put("typ", "JWT");
+    header.put("x5t", x5t);
+
+    return JWT.create()
+        .withHeader(header)
+        .withIssuer(clientId)
+        .withSubject(clientId)
+        .withAudience(issuer)
+        .withIssuedAt(now)
+        .withNotBefore(now)
+        .withExpiresAt(new Date(now.getTime() + 5 * 60 * 1000))
+        .withJWTId(randomUUID().toString())
+        .sign(algorithm);
+  }
+
+  private static String generateX5tThumbprint(X509Certificate certificate) {
+    try {
+      final MessageDigest digest = MessageDigest.getInstance("SHA-1");
+      final byte[] encoded = digest.digest(certificate.getEncoded());
+      return Base64.getUrlEncoder().withoutPadding().encodeToString(encoded);
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to generate x5t thumbprint", e);
+    }
+  }
+
+>>>>>>> 6ba9c997 (fix: aud > iss)
   private static String encode(final String param) {
     try {
       return URLEncoder.encode(param, StandardCharsets.UTF_8.name());
