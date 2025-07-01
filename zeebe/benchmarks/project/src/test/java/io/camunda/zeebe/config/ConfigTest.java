@@ -78,7 +78,9 @@ public class ConfigTest {
     final var appCfg = AppConfigLoader.load("different-application.conf");
 
     // then
-    assertThat(appCfg.getBrokerUrl()).isEqualTo("localhost:26500");
+    assertThat(appCfg.getBrokerUrl()).isEqualTo("http://localhost:26500");
+    assertThat(appCfg.getBrokerRestUrl()).isEqualTo("http://localhost:8081");
+    assertThat(appCfg.isPreferRest()).isEqualTo(true);
     assertThat(appCfg.isTls()).isFalse();
     assertThat(appCfg.getMonitoringPort()).isEqualTo(9600);
 
