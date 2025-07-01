@@ -61,8 +61,4 @@ public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
     this.join = join;
     return this;
   }
-
-  public static String getChildKey(final String roleId, final String memberId) {
-    return "%s-%s".formatted(roleId, memberId);
-  }
 }
