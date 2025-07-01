@@ -15,7 +15,9 @@
  */
 package io.camunda.client.api.search.filter;
 
+import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
+import java.util.function.Consumer;
 
 public interface GroupFilter extends SearchRequestFilter {
 
@@ -27,6 +29,8 @@ public interface GroupFilter extends SearchRequestFilter {
    */
   GroupFilter groupId(final String groupId);
 
+  GroupFilter groupId(Consumer<StringProperty> fn);
+
   /**
    * Filters groups by the specified name.
    *
@@ -34,4 +38,6 @@ public interface GroupFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   GroupFilter name(final String name);
+
+  GroupFilter name(Consumer<StringProperty> fn);
 }
