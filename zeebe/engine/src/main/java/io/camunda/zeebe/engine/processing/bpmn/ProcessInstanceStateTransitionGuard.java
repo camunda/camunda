@@ -214,7 +214,6 @@ public final class ProcessInstanceStateTransitionGuard {
     if (context.getBpmnElementType() == BpmnElementType.PROCESS
         && context.getIntent() == ProcessInstanceIntent.ACTIVATE_ELEMENT) {
       // when activating a process instance, it cannot yet be suspended
-      // also, a suspended process instance can be cancelled
       return Either.right(null);
     }
     final var processInstance = stateBehavior.getElementInstance(context.getProcessInstanceKey());
