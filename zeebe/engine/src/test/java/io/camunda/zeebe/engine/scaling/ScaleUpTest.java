@@ -37,7 +37,7 @@ public class ScaleUpTest {
   public void beforeEach() {
     RecordingExporter.reset();
     clearInvocations(engine.getCommandResponseWriter());
-    index = 100;
+    index = 10012093;
   }
 
   @Test
@@ -219,7 +219,8 @@ public class ScaleUpTest {
             .getLast();
     assertThat(record.getValue().getDesiredPartitionCount()).isEqualTo(4);
     assertThat(record.getValue().getRedistributedPartitions()).containsExactly(1, 2);
-    assertThat(record.getValue().getBootstrappedAt()).isGreaterThanOrEqualTo(key);
+    // SCALE_UP command is the first command
+    assertThat(record.getValue().getBootstrappedAt()).isEqualTo(1);
 
     // when the partitions are marked as bootstrapped
     final var bootstrapPartition3 =

@@ -61,7 +61,7 @@ public class ScaleUpProcessor implements DistributedTypedRecordProcessor<ScaleRe
       return;
     }
     final var scalingKey = keyGenerator.nextKey();
-    scaleUp.setBootstrappedAt(command.getKey());
+    scaleUp.setScalingPosition(command.getPosition());
     stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.SCALING_UP, scaleUp);
     responseWriter.writeEventOnCommand(scalingKey, ScaleIntent.SCALING_UP, scaleUp, command);
     commandDistributionBehavior
