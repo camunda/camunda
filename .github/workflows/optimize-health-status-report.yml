@@ -34,7 +34,7 @@ jobs:
 
       - name: Generate config file
         run: |
-          cd ${{ github.workspace }}/.github/optimize/scripts/healthStatusReport_coreFeatures
+          cd ${{ github.workspace }}/.github/optimize/scripts/healthStatusReport
           yarn
           npx ts-node createHealthStatusConfig_coreFeatures.ts
           cat config.json
@@ -85,7 +85,7 @@ jobs:
 
       - name: Generate config file
         run: |
-          cd ${{ github.workspace }}/.github/optimize/scripts/healthStatusReport_dataLayer
+          cd ${{ github.workspace }}/.github/optimize/scripts/healthStatusReport
           yarn
           npx ts-node createHealthStatusConfig_dataLayer.ts
           cat config.json
