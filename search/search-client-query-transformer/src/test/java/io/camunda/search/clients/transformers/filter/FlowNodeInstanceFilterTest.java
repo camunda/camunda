@@ -9,13 +9,42 @@ package io.camunda.search.clients.transformers.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.clients.query.SearchBoolQuery;
+import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.FlowNodeInstanceFilter;
+import io.camunda.search.filter.Operation;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 public final class FlowNodeInstanceFilterTest extends AbstractTransformerTest {
+
+  @Test
+  public void shouldCreateDefaultFilter() {
+    // when
+    final var flowNodeInstanceFilter = (new FlowNodeInstanceFilter.Builder()).build();
+
+    // then
+    assertThat(flowNodeInstanceFilter.flowNodeInstanceKeys()).isEmpty();
+    assertThat(flowNodeInstanceFilter.processInstanceKeys()).isEmpty();
+    assertThat(flowNodeInstanceFilter.processDefinitionKeys()).isEmpty();
+    assertThat(flowNodeInstanceFilter.processDefinitionIds()).isEmpty();
+    assertThat(flowNodeInstanceFilter.stateOperations()).isEmpty();
+    assertThat(flowNodeInstanceFilter.types()).isEmpty();
+    assertThat(flowNodeInstanceFilter.flowNodeIds()).isEmpty();
+    assertThat(flowNodeInstanceFilter.flowNodeNames()).isEmpty();
+    assertThat(flowNodeInstanceFilter.treePaths()).isEmpty();
+    assertThat(flowNodeInstanceFilter.hasIncident()).isNull();
+    assertThat(flowNodeInstanceFilter.incidentKeys()).isEmpty();
+    assertThat(flowNodeInstanceFilter.tenantIds()).isEmpty();
+    assertThat(flowNodeInstanceFilter.startDateOperations()).isEmpty();
+    assertThat(flowNodeInstanceFilter.endDateOperations()).isEmpty();
+  }
 
   @Test
   public void shouldQueryByFlowNodeInstanceKey() {
@@ -187,6 +216,45 @@ public final class FlowNodeInstanceFilterTest extends AbstractTransformerTest {
             t -> {
               assertThat(t.field()).isEqualTo("tenantId");
               assertThat(t.value().stringValue()).isEqualTo("<default>");
+            });
+  }
+
+  @Test
+  public void shouldQueryByStartDateAndEndDate() {
+    // given
+    final var dateAfter = OffsetDateTime.of(2024, 3, 12, 10, 30, 15, 0, ZoneOffset.UTC);
+    final var dateBefore = OffsetDateTime.of(2024, 7, 15, 10, 30, 15, 0, ZoneOffset.UTC);
+    final var dateFilter = List.of(Operation.gte(dateAfter), Operation.lt(dateBefore));
+    final var filter =
+        FilterBuilders.flowNodeInstance(
+            f -> f.startDateOperations(dateFilter).endDateOperations(dateFilter));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant).isInstanceOf(SearchBoolQuery.class);
+    assertThat(((SearchBoolQuery) queryVariant).must()).hasSize(2);
+
+    assertThat(((SearchBoolQuery) queryVariant).must().get(0).queryOption())
+        .isInstanceOfSatisfying(
+            SearchRangeQuery.class,
+            (searchRangeQuery) -> {
+              assertThat(searchRangeQuery.field()).isEqualTo("startDate");
+              assertThat(searchRangeQuery.gte()).isEqualTo("2024-03-12T10:30:15.000+0000");
+              assertThat(searchRangeQuery.lt()).isEqualTo("2024-07-15T10:30:15.000+0000");
+              assertThat(searchRangeQuery.format()).isEqualTo("yyyy-MM-dd'T'HH:mm:ss.SSSZZ");
+            });
+
+    assertThat(((SearchBoolQuery) queryVariant).must().get(1).queryOption())
+        .isInstanceOfSatisfying(
+            SearchRangeQuery.class,
+            (searchRangeQuery) -> {
+              assertThat(searchRangeQuery.field()).isEqualTo("endDate");
+              assertThat(searchRangeQuery.gte()).isEqualTo("2024-03-12T10:30:15.000+0000");
+              assertThat(searchRangeQuery.lt()).isEqualTo("2024-07-15T10:30:15.000+0000");
+              assertThat(searchRangeQuery.format()).isEqualTo("yyyy-MM-dd'T'HH:mm:ss.SSSZZ");
             });
   }
 }
