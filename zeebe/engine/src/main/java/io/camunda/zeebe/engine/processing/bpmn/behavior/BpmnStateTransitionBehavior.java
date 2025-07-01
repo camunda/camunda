@@ -488,8 +488,9 @@ public final class BpmnStateTransitionBehavior {
    *
    * @param element the flow node element that is being processed
    * @param context the context of the process instance
-   * @return Either containing the context if the process instance is not suspended (left) or Void
-   *     if the process instance is suspended (right).
+   * @return an Either with the context (left) if the process instance is not suspended by this
+   *     call, or Void (right) if it is. If already suspended, returns the context (left) to allow
+   *     the processors to finish terminating elements.
    */
   public <T extends ExecutableFlowNode>
       Either<BpmnElementContext, Void> suspendProcessInstanceIfNeeded(
