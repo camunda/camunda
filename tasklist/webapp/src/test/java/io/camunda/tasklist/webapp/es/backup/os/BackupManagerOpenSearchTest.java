@@ -191,7 +191,7 @@ class BackupManagerOpenSearchTest {
   public void shouldWaitForSnapshotWithTimeout() throws IOException {
     // given
     final int timeout = 1;
-    final SnapshotState snapshotState = SnapshotState.STARTED;
+    final SnapshotState snapshotState = SnapshotState.IN_PROGRESS;
 
     final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class, RETURNS_DEEP_STUBS);
     when(snapshotInfo.state()).thenReturn(snapshotState.name());
@@ -231,8 +231,8 @@ class BackupManagerOpenSearchTest {
     for (int i = 0; i < numberOfSnapshots; i++) {
       final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class, RETURNS_DEEP_STUBS);
       when(snapshotInfo.state())
-          .thenReturn(SnapshotState.STARTED.name())
-          .thenReturn(SnapshotState.STARTED.name())
+          .thenReturn(SnapshotState.IN_PROGRESS.name())
+          .thenReturn(SnapshotState.IN_PROGRESS.name())
           .thenReturn(SnapshotState.SUCCESS.name());
       when(snapshotInfo.snapshot()).thenReturn(metadata.get(i).buildSnapshotName());
       snapshotInfos.add(snapshotInfo);
