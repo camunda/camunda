@@ -25,9 +25,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.oracle.OracleContainer;
 
 public class CamundaRdbmsInvocationContextProviderExtension
-    implements TestTemplateInvocationContextProvider,
-        BeforeAllCallback,
-        ExtensionContext.Store.CloseableResource {
+    implements TestTemplateInvocationContextProvider, BeforeAllCallback, AutoCloseable {
 
   private static boolean started = false;
 
@@ -138,7 +136,7 @@ public class CamundaRdbmsInvocationContextProviderExtension
    * surefire.rerunFailingTestsCount
    */
   @Override
-  public void close() throws Throwable {
+  public void close() {
     LOGGER.info("Resource closed - Close CamundaRdbmsInvocationContextProviderExtension");
     started = false;
   }

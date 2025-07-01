@@ -12,7 +12,6 @@ import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ExtensionContext.Store;
-import org.junit.jupiter.api.extension.ExtensionContext.Store.CloseableResource;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
@@ -20,7 +19,7 @@ import org.junit.jupiter.api.extension.ParameterResolver;
 /**
  * This extension injects a new {@link ContainerState} at runtime into any test which adds a {@link
  * ContainerState} parameter, and stores it in a {@link Store}. This ensures that the resource is
- * properly closed (since {@link ContainerState} implements {@link CloseableResource}).
+ * properly closed (since {@link ContainerState} implements {@link AutoCloseable}).
  *
  * <p>Note however that it currently only supports injecting a single state, since the stored state
  * will get overwritten.

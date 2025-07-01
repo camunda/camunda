@@ -23,7 +23,6 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ExtensionContext.Store;
-import org.junit.jupiter.api.extension.ExtensionContext.Store.CloseableResource;
 import org.junit.platform.commons.util.ExceptionUtils;
 import org.junit.platform.commons.util.ReflectionUtils;
 import org.junit.platform.commons.util.ReflectionUtils.HierarchyTraversalMode;
@@ -95,7 +94,7 @@ public class StreamPlatformExtension implements BeforeEachCallback {
             });
   }
 
-  private static final class StreamProcessorTestContext implements CloseableResource {
+  private static final class StreamProcessorTestContext implements AutoCloseable {
     private final ControlledActorClock clock = new ControlledActorClock();
     private StreamPlatform streamPlatform;
     private final ArrayList<AutoCloseable> closables;
