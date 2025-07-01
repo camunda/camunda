@@ -31,7 +31,6 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.web.filter.CompositeFilter;
 
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties(BrokerBasedProperties.class)
 @Profile(value = {"broker", "restore"})
 public class BrokerBasedConfiguration {
 
