@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.awaitility.Awaitility;
@@ -412,6 +413,27 @@ public final class TestHelper {
                   camundaClient.newBatchOperationGetRequest(batchOperationId).send().join();
               assertThat(batch).isNotNull();
               assertThat(batch.getStatus()).isEqualTo(expectedStatus);
+            });
+  }
+
+  public static void waitForBatchOperationStatus(
+      final CamundaClient camundaClient,
+      final String batchOperationId,
+      final Set<BatchOperationState> acceptedStates) {
+    Awaitility.await("batch operation should have state " + acceptedStates)
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              // and
+              final var batch =
+                  camundaClient.newBatchOperationGetRequest(batchOperationId).send().join();
+              assertThat(batch).isNotNull();
+              assertThat(batch.getStatus())
+                  .withFailMessage(
+                      "Expected batch operation to have one of the states %s, but was %s",
+                      acceptedStates, batch.getStatus())
+                  .isIn(acceptedStates);
             });
   }
 

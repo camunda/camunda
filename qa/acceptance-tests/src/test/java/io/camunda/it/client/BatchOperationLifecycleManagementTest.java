@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
@@ -147,7 +148,12 @@ public class BatchOperationLifecycleManagementTest {
     // when we resume the batch operation
     camundaClient.newResumeBatchOperationCommand(batchOperationId).send().join();
 
-    // then it's again active and can complete
-    waitForBatchOperationStatus(camundaClient, batchOperationId, BatchOperationState.ACTIVE);
+    // Then it should be activated again, and eventually completed
+    // Note: The batch operation might complete too fast, or take too long to complete. So we wait
+    // for either state.
+    waitForBatchOperationStatus(
+        camundaClient,
+        batchOperationId,
+        Set.of(BatchOperationState.ACTIVE, BatchOperationState.COMPLETED));
   }
 }
