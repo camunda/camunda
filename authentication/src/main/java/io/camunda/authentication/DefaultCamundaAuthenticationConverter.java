@@ -17,6 +17,7 @@ import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.zeebe.auth.Authorization;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.springframework.security.core.Authentication;
 
 public class DefaultCamundaAuthenticationConverter
@@ -24,45 +25,46 @@ public class DefaultCamundaAuthenticationConverter
 
   @Override
   public CamundaAuthentication convert(final Authentication springBasedAuthentication) {
+    return Optional.ofNullable(springBasedAuthentication)
+        .map(Authentication::getPrincipal)
+        .filter(CamundaPrincipal.class::isInstance)
+        .map(CamundaPrincipal.class::cast)
+        .map(this::convertCamundaPrincipal)
+        .orElseGet(CamundaAuthentication::none);
+  }
+
+  private CamundaAuthentication convertCamundaPrincipal(final CamundaPrincipal camundaPrincipal) {
     final Map<String, Object> claims = new HashMap<>();
     final var authenticationBuilder = new Builder();
+    final var authenticationContext = camundaPrincipal.getAuthenticationContext();
 
-    if (springBasedAuthentication != null) {
-      if (springBasedAuthentication.getPrincipal()
-          instanceof final CamundaPrincipal authenticatedPrincipal) {
-        final var authenticationContext = authenticatedPrincipal.getAuthenticationContext();
+    authenticationBuilder.roleIds(
+        authenticationContext.roles().stream().map(RoleEntity::roleId).toList());
 
-        authenticationBuilder.roleIds(
-            authenticationContext.roles().stream().map(RoleEntity::roleId).toList());
+    authenticationBuilder.tenants(
+        authenticationContext.tenants().stream().map(TenantDTO::tenantId).toList());
 
-        authenticationBuilder.tenants(
-            authenticationContext.tenants().stream().map(TenantDTO::tenantId).toList());
+    authenticationBuilder.groupIds(authenticationContext.groups());
 
-        authenticationBuilder.groupIds(authenticationContext.groups());
-
-        if (authenticationContext.groupsClaimEnabled()) {
-          claims.put(Authorization.USER_GROUPS_CLAIMS, authenticationContext.groups());
-        }
-
-        if (authenticationContext.username() != null) {
-          final var authenticatedUsername = authenticationContext.username();
-          claims.put(Authorization.AUTHORIZED_USERNAME, authenticatedUsername);
-          authenticationBuilder.user(authenticatedUsername);
-        } else {
-          final var authenticatedClientId = authenticationContext.clientId();
-          claims.put(Authorization.AUTHORIZED_CLIENT_ID, authenticatedClientId);
-          authenticationBuilder.clientId(authenticatedClientId);
-        }
-
-        if (authenticatedPrincipal instanceof final CamundaOAuthPrincipal principal) {
-          claims.put(Authorization.USER_TOKEN_CLAIMS, principal.getClaims());
-          authenticationBuilder.mapping(principal.getOAuthContext().mappingIds().stream().toList());
-        }
-
-        authenticationBuilder.claims(claims);
-      }
+    if (authenticationContext.groupsClaimEnabled()) {
+      claims.put(Authorization.USER_GROUPS_CLAIMS, authenticationContext.groups());
     }
 
-    return authenticationBuilder.build();
+    if (authenticationContext.username() != null) {
+      final var authenticatedUsername = authenticationContext.username();
+      claims.put(Authorization.AUTHORIZED_USERNAME, authenticatedUsername);
+      authenticationBuilder.user(authenticatedUsername);
+    } else {
+      final var authenticatedClientId = authenticationContext.clientId();
+      claims.put(Authorization.AUTHORIZED_CLIENT_ID, authenticatedClientId);
+      authenticationBuilder.clientId(authenticatedClientId);
+    }
+
+    if (camundaPrincipal instanceof final CamundaOAuthPrincipal principal) {
+      claims.put(Authorization.USER_TOKEN_CLAIMS, principal.getClaims());
+      authenticationBuilder.mapping(principal.getOAuthContext().mappingIds().stream().toList());
+    }
+
+    return authenticationBuilder.claims(claims).build();
   }
 }
