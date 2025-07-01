@@ -38,6 +38,4 @@ public interface GroupFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   GroupFilter name(final String name);
-
-  GroupFilter name(Consumer<StringProperty> fn);
 }

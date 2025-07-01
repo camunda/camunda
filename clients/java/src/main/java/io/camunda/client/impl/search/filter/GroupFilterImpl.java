@@ -40,20 +40,13 @@ public class GroupFilterImpl
   public GroupFilter groupId(final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
-    filter.setName(provideSearchRequestProperty(property));
+    filter.setGroupId(provideSearchRequestProperty(property));
     return this;
   }
 
   @Override
   public GroupFilter name(final String name) {
-    return name(b -> b.eq(name));
-  }
-
-  @Override
-  public GroupFilter name(final Consumer<StringProperty> fn) {
-    final StringProperty property = new StringPropertyImpl();
-    fn.accept(property);
-    filter.setName(provideSearchRequestProperty(property));
+    filter.setName(name);
     return this;
   }
 
