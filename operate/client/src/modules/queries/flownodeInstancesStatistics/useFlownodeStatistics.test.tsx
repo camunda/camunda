@@ -12,11 +12,15 @@ import {useFlownodeStatistics} from './useFlownodeStatistics';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {type GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas';
-import {mockProcessWithInputOutputMappingsXML} from 'modules/testUtils';
+import {
+  createProcessInstance,
+  mockProcessWithInputOutputMappingsXML,
+} from 'modules/testUtils';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
 describe('useFlownodeStatistics', () => {
   const Wrapper = ({children}: {children: React.ReactNode}) => {
@@ -37,6 +41,7 @@ describe('useFlownodeStatistics', () => {
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
+    mockFetchProcessInstance().withSuccess(createProcessInstance());
   });
 
   it('should fetch parsed flownode statistics successfully', async () => {
