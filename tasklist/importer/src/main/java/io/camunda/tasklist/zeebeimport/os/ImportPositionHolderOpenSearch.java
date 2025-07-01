@@ -9,12 +9,12 @@ package io.camunda.tasklist.zeebeimport.os;
 
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.util.Either;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.zeebeimport.ImportPositionHolder;
 import io.camunda.tasklist.zeebeimport.ImportPositionHolderAbstract;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
+import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
