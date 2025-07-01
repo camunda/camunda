@@ -638,7 +638,7 @@ public class BackupManagerOpenSearch extends BackupManager {
         // No need to continue
         return false;
       }
-      if (currentSnapshot.state().equals(SnapshotState.STARTED.name())) {
+      if (currentSnapshot.state().equals(SnapshotState.IN_PROGRESS.name())) {
         ThreadUtil.sleepFor(100);
         count++;
         if (count % 600 == 0) { // approx. 1 minute, depending on how long findSnapshots takes
