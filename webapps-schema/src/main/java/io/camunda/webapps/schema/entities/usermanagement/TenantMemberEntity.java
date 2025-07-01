@@ -15,7 +15,7 @@ public class TenantMemberEntity extends AbstractExporterEntity<TenantMemberEntit
   private String memberId;
   private EntityType memberType;
 
-  private EntityJoinRelation<String> join;
+  private EntityJoinRelation join;
 
   public String getMemberId() {
     return memberId;
@@ -35,11 +35,11 @@ public class TenantMemberEntity extends AbstractExporterEntity<TenantMemberEntit
     return this;
   }
 
-  public EntityJoinRelation<String> getJoin() {
+  public EntityJoinRelation getJoin() {
     return join;
   }
 
-  public TenantMemberEntity setJoin(final EntityJoinRelation<String> join) {
+  public TenantMemberEntity setJoin(final EntityJoinRelation join) {
     this.join = join;
     return this;
   }

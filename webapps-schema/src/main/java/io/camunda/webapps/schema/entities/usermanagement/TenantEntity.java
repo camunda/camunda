@@ -16,7 +16,7 @@ public class TenantEntity extends AbstractExporterEntity<TenantEntity> {
   private String name;
   private String description;
 
-  private EntityJoinRelation<String> join;
+  private EntityJoinRelation join;
 
   public Long getKey() {
     return key;
