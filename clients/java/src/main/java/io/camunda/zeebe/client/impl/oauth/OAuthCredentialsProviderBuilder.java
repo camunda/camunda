@@ -28,12 +28,33 @@ import io.camunda.zeebe.client.impl.util.Environment;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Consumer;
 
 public final class OAuthCredentialsProviderBuilder {
   public static final String INVALID_ARGUMENT_MSG = "Expected valid %s but none was provided.";
+<<<<<<< HEAD
+=======
+  public static final String OAUTH_ENV_CLIENT_ID = "ZEEBE_CLIENT_ID";
+  public static final String OAUTH_ENV_CLIENT_SECRET = "ZEEBE_CLIENT_SECRET";
+  public static final String OAUTH_ENV_TOKEN_AUDIENCE = "ZEEBE_TOKEN_AUDIENCE";
+  public static final String OAUTH_ENV_TOKEN_SCOPE = "ZEEBE_TOKEN_SCOPE";
+  public static final String OAUTH_ENV_AUTHORIZATION_SERVER = "ZEEBE_AUTHORIZATION_SERVER_URL";
+  public static final String OAUTH_ENV_CACHE_PATH = "ZEEBE_CLIENT_CONFIG_PATH";
+  public static final String OAUTH_ENV_CONNECT_TIMEOUT = "ZEEBE_AUTH_CONNECT_TIMEOUT";
+  public static final String OAUTH_ENV_READ_TIMEOUT = "ZEEBE_AUTH_READ_TIMEOUT";
+  public static final String OAUTH_ENV_SSL_CLIENT_CERT_PATH = "OAUTH_SSL_CLIENT_CERT_PATH";
+  public static final String OAUTH_ENV_SSL_CLIENT_CERT_PASSWORD = "OAUTH_SSL_CLIENT_CERT_PASSWORD";
+>>>>>>> 3e731140 (feat: add ms entra support)
   private static final String DEFAULT_AUTHZ_SERVER = "https://login.cloud.camunda.io/oauth/token/";
   private static final Duration DEFAULT_CONNECT_TIMEOUT = Duration.ofSeconds(5);
   private static final Duration DEFAULT_READ_TIMEOUT = DEFAULT_CONNECT_TIMEOUT;
@@ -48,6 +69,12 @@ public final class OAuthCredentialsProviderBuilder {
   private File credentialsCache;
   private Duration connectTimeout;
   private Duration readTimeout;
+<<<<<<< HEAD
+=======
+  private boolean applyEnvironmentOverrides = true;
+  private Path sslClientCertPath;
+  private String sslClientCertPassword;
+>>>>>>> 3e731140 (feat: add ms entra support)
 
   /** Client id to be used when requesting access token from OAuth authorization server. */
   public OAuthCredentialsProviderBuilder clientId(final String clientId) {
@@ -169,9 +196,15 @@ public final class OAuthCredentialsProviderBuilder {
   public OAuthCredentialsProvider build() {
     checkEnvironmentOverrides();
     applyDefaults();
+    applySSLClientCertConfiguration();
 
     validate();
     return new OAuthCredentialsProvider(this);
+  }
+
+  private void applySSLClientCertConfiguration() {
+    applyEnvironmentValueIfNotNull(this::sslClientCertPath, OAUTH_ENV_SSL_CLIENT_CERT_PATH);
+    applyEnvironmentValueIfNotNull(this::sslClientCertPassword, OAUTH_ENV_SSL_CLIENT_CERT_PASSWORD);
   }
 
   private void checkEnvironmentOverrides() {
@@ -241,7 +274,15 @@ public final class OAuthCredentialsProviderBuilder {
   private void validate() {
     try {
       Objects.requireNonNull(clientId, String.format(INVALID_ARGUMENT_MSG, "client id"));
-      Objects.requireNonNull(clientSecret, String.format(INVALID_ARGUMENT_MSG, "client secret"));
+      if (sslClientCertConfigurationProvided()) {
+        // loading the certificate from the provided path to ensure it exists and is valid
+        final KeyStore keyStore = KeyStore.getInstance("PKCS12");
+        keyStore.load(
+            Files.newInputStream(Paths.get(sslClientCertPath.toAbsolutePath().toString())),
+            sslClientCertPassword.toCharArray());
+      } else {
+        Objects.requireNonNull(clientSecret, String.format(INVALID_ARGUMENT_MSG, "client secret"));
+      }
       Objects.requireNonNull(audience, String.format(INVALID_ARGUMENT_MSG, "audience"));
       Objects.requireNonNull(
           authorizationServerUrl, String.format(INVALID_ARGUMENT_MSG, "authorization server URL"));
@@ -255,7 +296,11 @@ public final class OAuthCredentialsProviderBuilder {
       }
       validateTimeout(connectTimeout, "ConnectTimeout");
       validateTimeout(readTimeout, "ReadTimeout");
-    } catch (final NullPointerException | IOException e) {
+    } catch (final NullPointerException
+        | IOException
+        | KeyStoreException
+        | NoSuchAlgorithmException
+        | CertificateException e) {
       throw new IllegalArgumentException(e);
     }
   }
@@ -268,4 +313,56 @@ public final class OAuthCredentialsProviderBuilder {
               timeoutName, timeout.toMillis(), Integer.MAX_VALUE));
     }
   }
+<<<<<<< HEAD
+=======
+
+  public OAuthCredentialsProviderBuilder sslClientCertPath(final String entraCertificatePath) {
+    if (entraCertificatePath != null) {
+      this.sslClientCertPath = Paths.get(entraCertificatePath);
+    }
+    return this;
+  }
+
+  public Path getSslClientCertPath() {
+    return sslClientCertPath;
+  }
+
+  public OAuthCredentialsProviderBuilder sslClientCertPassword(
+      final String entraCertificatePassword) {
+    this.sslClientCertPassword = entraCertificatePassword;
+    return this;
+  }
+
+  public String getSslClientCertPassword() {
+    return sslClientCertPassword;
+  }
+
+  public boolean sslClientCertConfigurationProvided() {
+    return sslClientCertPassword != null
+        && !sslClientCertPassword.isEmpty()
+        && sslClientCertPath != null
+        && sslClientCertPath.toFile().exists();
+  }
+
+  public OAuthCredentialsProviderBuilder applyEnvironmentOverrides(
+      final boolean applyEnvironmentOverrides) {
+    this.applyEnvironmentOverrides = applyEnvironmentOverrides;
+    return this;
+  }
+
+  private static Optional<String> getEnvironmentVariableValue(final String envName) {
+    return Optional.ofNullable(Environment.system().get(envName));
+  }
+
+  private static void applyEnvironmentValueIfNotNull(
+      final Consumer<String> action, final String... envNames) {
+    for (final String envName : envNames) {
+      final Optional<String> value = getEnvironmentVariableValue(envName);
+      value.ifPresent(action);
+      if (value.isPresent()) {
+        break;
+      }
+    }
+  }
+>>>>>>> 3e731140 (feat: add ms entra support)
 }
