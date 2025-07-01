@@ -11,7 +11,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.AbstractMap;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -75,39 +79,31 @@ public final class DateOfArchivedDocumentsUtil {
       final CompletableFuture<List<String>> listOfIndexes, final String zeebeIndexPrefix) {
     final DateTimeFormatter formatterWithHour = DateTimeFormatter.ofPattern(DATE_AND_HOUR_PATTERN);
     final DateTimeFormatter formatterWithoutHour = DateTimeFormatter.ofPattern(DATE_PATTERN);
-    final LocalDateTime[] latest = {null};
-    final String[] latestDate = {null};
     final Pattern indexDatePattern = Pattern.compile("_(\\d{4}-\\d{2}-\\d{2}(?:-\\d{2})?)");
 
-    return listOfIndexes
-        .thenApply(
-            indexes ->
-                // we want to filter out zeebe records since the
-                // rollover interval does not apply to these.
-                indexes.stream().filter(index -> !index.contains(zeebeIndexPrefix)).toList())
-        .thenApply(
-            indexes -> {
-              for (final String index : indexes) {
-                final Matcher matcher = indexDatePattern.matcher(index);
-                if (matcher.find()) {
-                  final String dateStr = matcher.group(1);
-                  final LocalDateTime dateTime;
-
-                  if (dateStr.length() == 13) { // e.g., 2025-06-16-10
-                    dateTime = LocalDateTime.parse(dateStr, formatterWithHour);
-                  } else { // e.g., 2025-06-16
-                    dateTime = LocalDate.parse(dateStr, formatterWithoutHour).atStartOfDay();
-                  }
-
-                  if (latest[0] == null || dateTime.isAfter(latest[0])) {
-                    latest[0] = dateTime;
-                    latestDate[0] = dateStr;
-                  }
-                }
-              }
-              // if no date historical index exists we want to return null
-              return latestDate[0];
-            });
+    return listOfIndexes.thenApply(
+        indexes ->
+            indexes.stream()
+                .filter(index -> !index.contains(zeebeIndexPrefix))
+                .map(
+                    index -> {
+                      final Matcher matcher = indexDatePattern.matcher(index);
+                      if (matcher.find()) {
+                        final String dateStr = matcher.group(1);
+                        final LocalDateTime dateTime;
+                        if (dateStr.length() == 13) { // e.g., 2025-06-16-10
+                          dateTime = LocalDateTime.parse(dateStr, formatterWithHour);
+                        } else { // e.g., 2025-06-16
+                          dateTime = LocalDate.parse(dateStr, formatterWithoutHour).atStartOfDay();
+                        }
+                        return new AbstractMap.SimpleEntry<>(dateTime, dateStr);
+                      }
+                      return null;
+                    })
+                .filter(Objects::nonNull)
+                .max(Comparator.comparing(Map.Entry::getKey))
+                .map(Map.Entry::getValue)
+                .orElse(null));
   }
 
   private static Temp parseTemporalAmount(final String input) throws IllegalArgumentException {
