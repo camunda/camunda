@@ -21,8 +21,8 @@ import org.slf4j.LoggerFactory;
 public final class DateOfArchivedDocumentsUtil {
   private static final Logger LOGGER = LoggerFactory.getLogger(DateOfArchivedDocumentsUtil.class);
   private static final Pattern TEMPORAL_PATTERN = Pattern.compile("(\\d+)" + "([smhdwMy])");
-  private static final String DATE_PATTERN = "yyyy-mm-dd";
-  private static final String DATE_AND_HOUR_PATTERN = "yyyy-mm-dd-HH";
+  private static final String DATE_PATTERN = "yyyy-MM-dd";
+  private static final String DATE_AND_HOUR_PATTERN = "yyyy-MM-dd-HH";
 
   public static String calculateDateOfArchiveIndexForBatch(
       final String dateOfArchiveBatch,
