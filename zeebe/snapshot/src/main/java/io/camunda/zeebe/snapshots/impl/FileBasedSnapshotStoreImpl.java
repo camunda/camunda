@@ -117,6 +117,7 @@ public final class FileBasedSnapshotStoreImpl {
 
   public void close() {
     listeners.clear();
+    deleteBootstrapSnapshotsInternal();
   }
 
   private FileBasedSnapshot loadLatestSnapshot(final Path snapshotDirectory) {
@@ -796,10 +797,14 @@ public final class FileBasedSnapshotStoreImpl {
   ActorFuture<Void> deleteBootstrapSnapshots() {
     return actor.call(
         () -> {
-          bootstrapSnapshot.ifPresent(FileBasedSnapshot::delete);
-          bootstrapSnapshot = Optional.empty();
+          deleteBootstrapSnapshotsInternal();
           return null;
         });
+  }
+
+  private void deleteBootstrapSnapshotsInternal() {
+    bootstrapSnapshot.ifPresent(FileBasedSnapshot::delete);
+    bootstrapSnapshot = Optional.empty();
   }
 
   public Optional<PersistedSnapshot> getBootstrapSnapshot() {
