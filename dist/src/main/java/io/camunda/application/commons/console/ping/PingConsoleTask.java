@@ -19,6 +19,7 @@ import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,9 +43,15 @@ public class PingConsoleTask implements Runnable {
     this.pingConfiguration = pingConfiguration;
     this.client = client;
     final var retryConfiguration = new RetryConfiguration();
-    retryConfiguration.setMaxRetries(NUMBER_OF_MAX_RETRIES);
-    retryConfiguration.setRetryDelayMultiplier(RETRY_DELAY_MULTIPLIER);
-    retryConfiguration.setMaxRetryDelay(MAX_RETRY_DELAY);
+    retryConfiguration.setMaxRetries(
+        Optional.ofNullable(pingConfiguration.retryConfiguration().numberOfMaxRetries())
+            .orElse(NUMBER_OF_MAX_RETRIES));
+    retryConfiguration.setRetryDelayMultiplier(
+        Optional.ofNullable(pingConfiguration.retryConfiguration().retryDelayMultiplier())
+            .orElse(RETRY_DELAY_MULTIPLIER));
+    retryConfiguration.setMaxRetryDelay(
+        Optional.ofNullable(pingConfiguration.retryConfiguration().maxRetryDelay())
+            .orElse(MAX_RETRY_DELAY));
     retryDecorator = new RetryDecorator();
     this.licensePayload = licensePayload;
   }
