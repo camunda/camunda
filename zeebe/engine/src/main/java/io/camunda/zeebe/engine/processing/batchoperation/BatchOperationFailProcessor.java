@@ -67,7 +67,8 @@ public final class BatchOperationFailProcessor
     final var batchInternalFail =
         new BatchOperationPartitionLifecycleRecord()
             .setBatchOperationKey(recordValue.getBatchOperationKey())
-            .setSourcePartitionId(partitionId);
+            .setSourcePartitionId(partitionId)
+            .setError(recordValue.getError());
 
     LOGGER.debug(
         "Send internal fail command for batch operation {} to original partition {}",

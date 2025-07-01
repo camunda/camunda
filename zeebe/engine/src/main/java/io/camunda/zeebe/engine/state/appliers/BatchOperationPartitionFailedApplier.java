@@ -28,8 +28,8 @@ public class BatchOperationPartitionFailedApplier
   @Override
   public void applyState(final long recordKey, final BatchOperationPartitionLifecycleRecord value) {
     if (Protocol.decodePartitionId(value.getBatchOperationKey()) == partitionId) {
-      batchOperationState.finishPartition(
-          value.getBatchOperationKey(), value.getSourcePartitionId());
+      batchOperationState.failPartition(
+          value.getBatchOperationKey(), value.getSourcePartitionId(), value.getError());
     } else {
       batchOperationState.complete(value.getBatchOperationKey());
     }
