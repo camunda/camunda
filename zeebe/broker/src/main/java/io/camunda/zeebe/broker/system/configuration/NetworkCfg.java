@@ -19,6 +19,8 @@ public final class NetworkCfg implements ConfigurationEntry {
   public static final int DEFAULT_COMMAND_API_PORT = 26501;
   public static final int DEFAULT_INTERNAL_API_PORT = 26502;
   public static final DataSize DEFAULT_MAX_MESSAGE_SIZE = DataSize.ofMegabytes(4);
+  private static final DataSize DEFAULT_BROKER_SOCKET_SEND_BUFFER = DataSize.ofMegabytes(1);
+  private static final DataSize DEFAULT_BROKER_SOCKET_RECEIVE_BUFFER = DataSize.ofMegabytes(1);
 
   private String host = DEFAULT_HOST;
   private int portOffset = 0;
@@ -26,6 +28,8 @@ public final class NetworkCfg implements ConfigurationEntry {
   private String advertisedHost;
   private Duration heartbeatTimeout = Duration.ofSeconds(15);
   private Duration heartbeatInterval = Duration.ofSeconds(5);
+  private DataSize socketSendBuffer = DEFAULT_BROKER_SOCKET_SEND_BUFFER;
+  private DataSize socketReceiveBuffer = DEFAULT_BROKER_SOCKET_RECEIVE_BUFFER;
 
   private final CommandApiCfg commandApi = new CommandApiCfg();
   private InternalApiCfg internalApi = new InternalApiCfg();
@@ -94,6 +98,22 @@ public final class NetworkCfg implements ConfigurationEntry {
     this.heartbeatInterval = heartbeatInterval;
   }
 
+  public DataSize getSocketSendBuffer() {
+    return socketSendBuffer;
+  }
+
+  public void setSocketSendBuffer(final DataSize socketSendBuffer) {
+    this.socketSendBuffer = socketSendBuffer;
+  }
+
+  public DataSize getSocketReceiveBuffer() {
+    return socketReceiveBuffer;
+  }
+
+  public void setSocketReceiveBuffer(final DataSize socketReceiveBuffer) {
+    this.socketReceiveBuffer = socketReceiveBuffer;
+  }
+
   public CommandApiCfg getCommandApi() {
     return commandApi;
   }
@@ -129,6 +149,10 @@ public final class NetworkCfg implements ConfigurationEntry {
         + heartbeatTimeout
         + ", heartbeatInterval="
         + heartbeatInterval
+        + ", socketReceiveBuffer="
+        + socketReceiveBuffer
+        + ", socketSendBuffer="
+        + socketSendBuffer
         + ", commandApi="
         + commandApi
         + ", internalApi="
