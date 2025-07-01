@@ -86,6 +86,18 @@ public class PingConsoleRunner implements ApplicationRunner {
     if (pingConfiguration.pingPeriod().isZero() || pingConfiguration.pingPeriod().isNegative()) {
       throw new IllegalArgumentException("Ping period must be greater than zero.");
     }
+    if (pingConfiguration.retryConfiguration != null) {
+      if (pingConfiguration.retryConfiguration().numberOfMaxRetries() <= 0) {
+        throw new IllegalArgumentException("Number of max retries must be greater than zero.");
+      }
+      if (pingConfiguration.retryConfiguration().retryDelayMultiplier() <= 0) {
+        throw new IllegalArgumentException("Retry delay multiplier must be greater than zero.");
+      }
+      if (pingConfiguration.retryConfiguration().maxRetryDelay().isZero()
+          || pingConfiguration.retryConfiguration().maxRetryDelay().isNegative()) {
+        throw new IllegalArgumentException("Max retry delay must be greater than zero.");
+      }
+    }
     if (licensePayload.isLeft()) {
       throw new IllegalArgumentException(
           "Failed to parse license payload for Console ping task.", licensePayload.getLeft());
@@ -132,5 +144,9 @@ public class PingConsoleRunner implements ApplicationRunner {
       String clusterId,
       String clusterName,
       Duration pingPeriod,
-      Map<String, String> properties) {}
+      RetryConfiguration retryConfiguration,
+      Map<String, String> properties) {
+    public record RetryConfiguration(
+        int numberOfMaxRetries, int retryDelayMultiplier, Duration maxRetryDelay) {}
+  }
 }
