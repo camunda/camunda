@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.fail;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.client.CamundaClient;
 import io.camunda.management.backups.StateCode;
@@ -224,6 +225,48 @@ public class ScaleUpPartitionsTest {
             () -> {
               assertThat(bootstrapSnapshotDirectory).doesNotExist();
             });
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"partition1Leader", "bootstrapNode"})
+  public void shouldSucceedScaleUpWhenCriticalNodesRestart(final String restartTarget) {
+    // given - healthy cluster
+    cluster.awaitHealthyTopology();
+    deployProcessModel(camundaClient, JOB_TYPE, PROCESS_ID);
+    final var targetPartitionCount = PARTITIONS_COUNT + 1;
+
+    final var member0 = MemberId.from("0");
+    if ("bootstrapNode".equals(restartTarget)
+        && cluster.leaderForPartition(1).nodeId().equals(member0)) {
+      // if we need to restart the bootstrap node, make sure that it's not the same as the
+      // leader for partition 1`
+      LOG.info(
+          "Restarting node {} because it's the leader for partition 1 and the target node for bootstrapping ",
+          member0);
+      cluster.leaderForPartition(1).stop().start();
+      cluster.awaitHealthyTopology();
+    }
+    // when - start scaling up
+    scaleToPartitions(targetPartitionCount);
+
+    // Restart the appropriate node based on the test argument
+    final var brokerToRestart =
+        switch (restartTarget) {
+          case "partition1Leader" -> cluster.leaderForPartition(1);
+          case "bootstrapNode" -> cluster.brokers().get(member0);
+          default -> throw new IllegalArgumentException("Unknown restart target: " + restartTarget);
+        };
+
+    LOG.info("Restarting node {} ", brokerToRestart.nodeId());
+    brokerToRestart.stop().start();
+
+    // then - scale up should still complete successfully
+    awaitScaleUpCompletion(targetPartitionCount);
+
+    // Verify the new partition is functional
+    createInstanceWithAJobOnAllPartitions(
+        camundaClient, JOB_TYPE, targetPartitionCount, false, PROCESS_ID);
+    cluster.awaitHealthyTopology();
   }
 
   @ParameterizedTest
