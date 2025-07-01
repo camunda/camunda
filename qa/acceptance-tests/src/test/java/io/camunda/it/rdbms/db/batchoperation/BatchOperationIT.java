@@ -20,6 +20,8 @@ import static io.camunda.util.FilterUtil.mapDefaultToOperation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorDto;
+import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorsDto;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.BatchOperationDbModel;
 import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
@@ -39,6 +41,7 @@ import io.camunda.search.sort.BatchOperationItemSort;
 import io.camunda.search.sort.BatchOperationSort;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -400,6 +403,59 @@ public class BatchOperationIT {
         .isCloseTo(endDate, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(updatedBatchOperation.items().getFirst().state())
         .isEqualTo(BatchOperationState.COMPLETED);
+  }
+
+  @TestTemplate
+  public void shouldFinishBatchOperationWithErrors(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given
+    final RdbmsWriter writer = rdbmsService.createWriter(0);
+    final var batchOperation =
+        createAndSaveBatchOperation(writer, b -> b.state(BatchOperationState.ACTIVE).endDate(null));
+
+    final String batchOperationKey = batchOperation.batchOperationId();
+    createAndSaveRandomBatchOperationItems(writer, batchOperationKey, 2);
+
+    final var errors =
+        new BatchOperationErrorsDto(
+            batchOperationKey,
+            List.of(
+                new BatchOperationErrorDto(1, "QUERY_FAILED", "error message 1"),
+                new BatchOperationErrorDto(2, "QUERY_FAILED", "error message 2")));
+
+    // when
+    final OffsetDateTime endDate = OffsetDateTime.now();
+    writer.getBatchOperationWriter().finishWithErrors(batchOperationKey, endDate, errors);
+    writer.flush();
+
+    // then
+    final var updatedBatchOperation = getBatchOperation(rdbmsService, batchOperation);
+
+    assertThat(updatedBatchOperation).isNotNull();
+    final BatchOperationEntity batchOperationEntity = updatedBatchOperation.items().getFirst();
+    assertThat(batchOperationEntity.endDate())
+        .isCloseTo(endDate, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+    assertThat(batchOperationEntity.state()).isEqualTo(BatchOperationState.COMPLETED_WITH_ERRORS);
+    assertThat(batchOperationEntity.errors()).isNotNull();
+    assertThat(batchOperationEntity.errors()).hasSize(2);
+    final var error1 =
+        batchOperationEntity.errors().stream()
+            .filter(e -> e.partitionId() == 1)
+            .findFirst()
+            .orElseThrow();
+    assertThat(error1.partitionId()).isEqualTo(1);
+    assertThat(error1.type()).isEqualTo("QUERY_FAILED");
+    assertThat(error1.message()).isEqualTo("error message 1");
+    final var error2 =
+        batchOperationEntity.errors().stream()
+            .filter(e -> e.partitionId() == 2)
+            .findFirst()
+            .orElseThrow();
+    assertThat(error2.partitionId()).isEqualTo(2);
+    assertThat(error2.type()).isEqualTo("QUERY_FAILED");
+    assertThat(error2.message()).isEqualTo("error message 2");
   }
 
   @TestTemplate
