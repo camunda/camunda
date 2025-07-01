@@ -39,6 +39,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -206,17 +207,15 @@ class BatchOperationAuthorizationIT {
     waitForBatchOperation(camundaClient, batchOperationId, 1, BatchOperationState.COMPLETED);
 
     // then
-    final List<BatchOperationItem> batchOperationItems =
-        camundaClient
-            .newBatchOperationItemsSearchRequest()
-            .filter(f -> f.batchOperationId(String.valueOf(batchOperationId)))
-            .send()
-            .join()
-            .items();
-    assertThat(batchOperationItems).hasSize(1);
-    final BatchOperationItem batchOperationItem = batchOperationItems.getFirst();
-    assertThat(batchOperationItem.getProcessInstanceKey()).isEqualTo(serviceTaskV1Key);
-    assertThat(batchOperationItem.getStatus()).isEqualTo(BatchOperationItemState.COMPLETED);
+    waitForBatchOperationItems(
+        camundaClient,
+        batchOperationId,
+        (items) -> {
+          assertThat(items).hasSize(1);
+          final var item = items.getFirst();
+          assertThat(item.getProcessInstanceKey()).isEqualTo(serviceTaskV1Key);
+          assertThat(item.getStatus()).isEqualTo(BatchOperationItemState.COMPLETED);
+        });
   }
 
   @Test
@@ -236,20 +235,18 @@ class BatchOperationAuthorizationIT {
     waitForBatchOperation(camundaClient, batchOperationId, 1, BatchOperationState.COMPLETED);
 
     // then
-    final List<BatchOperationItem> batchOperationItems =
-        camundaClient
-            .newBatchOperationItemsSearchRequest()
-            .filter(f -> f.batchOperationId(String.valueOf(batchOperationId)))
-            .send()
-            .join()
-            .items();
-    assertThat(batchOperationItems).hasSize(1);
-    final BatchOperationItem batchOperationItem = batchOperationItems.getFirst();
-    assertThat(batchOperationItem.getProcessInstanceKey()).isEqualTo(serviceTaskV1Key);
-    assertThat(batchOperationItem.getStatus()).isEqualTo(BatchOperationItemState.FAILED);
-    assertThat(batchOperationItem.getErrorMessage())
-        .isEqualTo(
-            "FORBIDDEN: Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, service_tasks_v1]'");
+    waitForBatchOperationItems(
+        camundaClient,
+        batchOperationId,
+        (items) -> {
+          assertThat(items).hasSize(1);
+          final var item = items.getFirst();
+          assertThat(item.getProcessInstanceKey()).isEqualTo(serviceTaskV1Key);
+          assertThat(item.getStatus()).isEqualTo(BatchOperationItemState.FAILED);
+          assertThat(item.getErrorMessage())
+              .isEqualTo(
+                  "FORBIDDEN: Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, service_tasks_v1]'");
+        });
   }
 
   @Test
@@ -445,6 +442,22 @@ class BatchOperationAuthorizationIT {
                       totalItemsCount, batch.getOperationsTotalCount())
                   .isEqualTo(totalItemsCount);
             });
+  }
+
+  private void waitForBatchOperationItems(
+      final CamundaClient camundaClient,
+      final String batchOperationId,
+      final Consumer<List<BatchOperationItem>> assertions) {
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                camundaClient
+                    .newBatchOperationItemsSearchRequest()
+                    .filter(f -> f.batchOperationId(String.valueOf(batchOperationId)))
+                    .send()
+                    .join()
+                    .items(),
+            assertions);
   }
 
   private static CreateBatchOperationResponse createProcessInstanceCancelBatchOperation(
