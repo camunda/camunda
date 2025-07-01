@@ -20,10 +20,12 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
+import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import java.util.ArrayList;
 import java.util.List;
@@ -604,5 +606,36 @@ public class BatchOperationStateTest {
 
   private static UnsafeBuffer convertToBuffer(final Object object) {
     return new UnsafeBuffer(MsgPackConverter.convertToMsgPack(object));
+  }
+
+  @Test
+  void shouldFailPartitionAndTrackError() {
+    // given
+    final var batchOperationKey = 1L;
+    final var partitionId = 0;
+    final var errorType = BatchOperationErrorType.QUERY_FAILED;
+    final var stacktrace = "BANG";
+    final var batchRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.CANCEL_PROCESS_INSTANCE);
+    state.create(batchOperationKey, batchRecord);
+
+    final var error = new BatchOperationError();
+    error.setPartitionId(partitionId);
+    error.setType(errorType);
+    error.setMessage(stacktrace);
+
+    // when
+    state.failPartition(batchOperationKey, partitionId, error);
+
+    // then
+    final var batchOperation = state.get(batchOperationKey).get();
+    final var errors = batchOperation.getErrors();
+    assertThat(errors).hasSize(1);
+    final var firstError = errors.getFirst();
+    assertThat(firstError.getPartitionId()).isEqualTo(partitionId);
+    assertThat(firstError.getType()).isEqualTo(errorType);
+    assertThat(firstError.getMessage()).isEqualTo(stacktrace);
   }
 }
