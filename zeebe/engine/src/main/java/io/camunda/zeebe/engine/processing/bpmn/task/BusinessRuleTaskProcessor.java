@@ -112,7 +112,6 @@ public final class BusinessRuleTaskProcessor
   @Override
   public TransitionOutcome onTerminateInternal(
       final ExecutableBusinessRuleTask element, final BpmnElementContext context) {
-    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(context);
     }
@@ -141,5 +140,11 @@ public final class BusinessRuleTaskProcessor
               stateTransitionBehavior.onElementTerminated(element, terminated);
             });
     return TransitionOutcome.CONTINUE;
+  }
+
+  @Override
+  public void finalizeTermination(
+      final ExecutableBusinessRuleTask element, final BpmnElementContext context) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
   }
 }

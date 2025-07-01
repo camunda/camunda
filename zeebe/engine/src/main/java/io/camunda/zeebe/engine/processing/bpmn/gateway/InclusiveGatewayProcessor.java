@@ -88,7 +88,6 @@ public final class InclusiveGatewayProcessor
   @Override
   public TransitionOutcome onTerminate(
       final ExecutableInclusiveGateway element, final BpmnElementContext context) {
-    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
 
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(context);
@@ -99,6 +98,12 @@ public final class InclusiveGatewayProcessor
         stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
     stateTransitionBehavior.onElementTerminated(element, terminated);
     return TransitionOutcome.CONTINUE;
+  }
+
+  @Override
+  public void finalizeTermination(
+      final ExecutableInclusiveGateway element, final BpmnElementContext context) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
   }
 
   private Either<Failure, List<ExecutableSequenceFlow>> findSequenceFlowsToTake(

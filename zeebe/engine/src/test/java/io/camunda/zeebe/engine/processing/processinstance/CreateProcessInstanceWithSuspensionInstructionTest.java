@@ -439,7 +439,7 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
         RecordingExporter.processInstanceRecords()
             .withProcessInstanceKey(processInstanceKey)
             .onlyEvents()
-            .limit(elementBeforeSuspension, ProcessInstanceIntent.ELEMENT_TERMINATED)
+            .limit(processId, ProcessInstanceIntent.ELEMENT_SUSPENDED)
             .filter(
                 record ->
                     record.getValue().getElementId().equals(processId)
@@ -449,8 +449,8 @@ public class CreateProcessInstanceWithSuspensionInstructionTest {
         .extracting(Record::getIntent, record -> record.getValue().getElementId())
         .containsSequence(
             Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATING, elementBeforeSuspension),
-            Tuple.tuple(ProcessInstanceIntent.ELEMENT_SUSPENDED, processId),
-            Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATED, elementBeforeSuspension));
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_TERMINATED, elementBeforeSuspension),
+            Tuple.tuple(ProcessInstanceIntent.ELEMENT_SUSPENDED, processId));
   }
 
   @Test

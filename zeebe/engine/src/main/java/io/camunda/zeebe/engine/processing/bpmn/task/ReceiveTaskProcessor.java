@@ -92,8 +92,6 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
       final ExecutableReceiveTask element, final BpmnElementContext context) {
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
-    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
-
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(context);
     }
@@ -122,5 +120,11 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
             });
 
     return TransitionOutcome.CONTINUE;
+  }
+
+  @Override
+  public void finalizeTermination(
+      final ExecutableReceiveTask element, final BpmnElementContext context) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
   }
 }

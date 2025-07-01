@@ -118,7 +118,6 @@ public final class ScriptTaskProcessor
   @Override
   protected TransitionOutcome onTerminateInternal(
       final ExecutableScriptTask element, final BpmnElementContext context) {
-    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
     if (element.hasExecutionListeners()) {
@@ -146,6 +145,12 @@ public final class ScriptTaskProcessor
               stateTransitionBehavior.onElementTerminated(element, terminated);
             });
     return TransitionOutcome.CONTINUE;
+  }
+
+  @Override
+  public void finalizeTermination(
+      final ExecutableScriptTask element, final BpmnElementContext context) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
   }
 
   private void triggerProcessEventWithResultVariable(

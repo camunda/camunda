@@ -105,8 +105,6 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     incidentBehavior.resolveIncidents(context);
 
-    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
-
     eventSubscriptionBehavior
         .findEventTrigger(context)
         .filter(eventTrigger -> flowScopeInstance.isActive())
@@ -128,5 +126,11 @@ public final class JobWorkerTaskProcessor implements BpmnElementProcessor<Execut
             });
 
     return TransitionOutcome.CONTINUE;
+  }
+
+  @Override
+  public void finalizeTermination(
+      final ExecutableJobWorkerTask element, final BpmnElementContext context) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
   }
 }

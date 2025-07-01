@@ -112,8 +112,6 @@ public class AdHocSubProcessProcessor
   public TransitionOutcome onTerminate(
       final ExecutableAdHocSubProcess element, final BpmnElementContext terminating) {
 
-    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, terminating);
-
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(terminating);
     }
@@ -127,6 +125,12 @@ public class AdHocSubProcessProcessor
       terminate(element, terminating);
     }
     return TransitionOutcome.CONTINUE;
+  }
+
+  @Override
+  public void finalizeTermination(
+      final ExecutableAdHocSubProcess element, final BpmnElementContext terminated) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, terminated);
   }
 
   private void terminate(

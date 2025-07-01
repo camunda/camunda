@@ -92,7 +92,6 @@ public class IntermediateThrowEventProcessor
   @Override
   public TransitionOutcome onTerminate(
       final ExecutableIntermediateThrowEvent element, final BpmnElementContext terminating) {
-    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, terminating);
 
     eventBehaviorOf(element).onTerminate(element, terminating);
 
@@ -106,6 +105,12 @@ public class IntermediateThrowEventProcessor
     incidentBehavior.resolveIncidents(terminated);
     stateTransitionBehavior.onElementTerminated(element, terminated);
     return TransitionOutcome.CONTINUE;
+  }
+
+  @Override
+  public void finalizeTermination(
+      final ExecutableIntermediateThrowEvent element, final BpmnElementContext context) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
   }
 
   private IntermediateThrowEventBehavior eventBehaviorOf(
@@ -274,8 +279,12 @@ public class IntermediateThrowEventProcessor
           .transitionToCompleted(element, completing)
           .thenDo(
               completed ->
-                  stateTransitionBehavior.activateElementInstanceInFlowScope(
-                      completed, element.getLink().getCatchEventElement()));
+                  stateTransitionBehavior
+                      .suspendProcessInstanceIfNeeded(element, completed)
+                      .ifLeft(
+                          notSuspended ->
+                              stateTransitionBehavior.takeOutgoingSequenceFlows(
+                                  element, notSuspended)));
     }
   }
 

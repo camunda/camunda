@@ -124,8 +124,6 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   protected TransitionOutcome onTerminateInternal(
       final ExecutableUserTask element, final BpmnElementContext context) {
 
-    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
-
     if (element.hasExecutionListeners() || element.hasTaskListeners()) {
       jobBehavior.cancelJob(context);
     }
@@ -157,6 +155,8 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
   @Override
   public void onFinalizeTerminationInternal(
       final ExecutableUserTask element, final BpmnElementContext context) {
+
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
 
     final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
     eventSubscriptionBehavior

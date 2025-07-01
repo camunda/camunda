@@ -69,7 +69,6 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
   @Override
   public TransitionOutcome onTerminate(
       final ExecutableFlowNode element, final BpmnElementContext context) {
-    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(context);
     }
@@ -78,5 +77,11 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
         stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
     stateTransitionBehavior.onElementTerminated(element, terminated);
     return TransitionOutcome.CONTINUE;
+  }
+
+  @Override
+  public void finalizeTermination(
+      final ExecutableFlowNode element, final BpmnElementContext context) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
   }
 }

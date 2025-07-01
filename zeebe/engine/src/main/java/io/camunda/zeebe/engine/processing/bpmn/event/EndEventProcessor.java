@@ -94,7 +94,6 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
   @Override
   public TransitionOutcome onTerminate(
       final ExecutableEndEvent element, final BpmnElementContext terminating) {
-    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, terminating);
     eventBehaviorOf(element).onTerminate(element, terminating);
 
     if (element.hasExecutionListeners()) {
@@ -108,6 +107,12 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
         stateTransitionBehavior.transitionToTerminated(terminating, element.getEventType());
     stateTransitionBehavior.onElementTerminated(element, terminated);
     return TransitionOutcome.CONTINUE;
+  }
+
+  @Override
+  public void finalizeTermination(
+      final ExecutableEndEvent element, final BpmnElementContext context) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
   }
 
   private EndEventBehavior eventBehaviorOf(final ExecutableEndEvent element) {

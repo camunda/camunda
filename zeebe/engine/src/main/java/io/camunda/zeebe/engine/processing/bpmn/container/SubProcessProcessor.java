@@ -103,7 +103,6 @@ public final class SubProcessProcessor
   public TransitionOutcome onTerminate(
       final ExecutableFlowElementContainer element, final BpmnElementContext terminating) {
 
-    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, terminating);
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(terminating);
     }
@@ -117,6 +116,12 @@ public final class SubProcessProcessor
       onChildTerminated(element, terminating, null);
     }
     return TransitionOutcome.CONTINUE;
+  }
+
+  @Override
+  public void finalizeTermination(
+      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
   }
 
   @Override

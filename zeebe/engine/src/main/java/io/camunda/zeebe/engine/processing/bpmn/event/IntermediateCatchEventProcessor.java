@@ -86,8 +86,6 @@ public class IntermediateCatchEventProcessor
   @Override
   public TransitionOutcome onTerminate(
       final ExecutableCatchEventElement element, final BpmnElementContext terminating) {
-    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, terminating);
-
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(terminating);
     }
@@ -99,6 +97,12 @@ public class IntermediateCatchEventProcessor
         stateTransitionBehavior.transitionToTerminated(terminating, element.getEventType());
     stateTransitionBehavior.onElementTerminated(element, terminated);
     return TransitionOutcome.CONTINUE;
+  }
+
+  @Override
+  public void finalizeTermination(
+      final ExecutableCatchEventElement element, final BpmnElementContext context) {
+    stateTransitionBehavior.suspendProcessInstanceIfNeeded(element, context);
   }
 
   private IntermediateCatchEventBehavior eventBehaviorOf(
