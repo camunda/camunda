@@ -12,6 +12,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.index.GroupIndex.GROUP_ID;
@@ -24,6 +25,7 @@ import io.camunda.search.filter.GroupFilter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
+import java.util.ArrayList;
 
 public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> {
   public GroupFilterTransformer(final IndexDescriptor indexDescriptor) {
@@ -35,35 +37,46 @@ public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> 
     if (filter.memberIdsByType() != null && !filter.memberIdsByType().isEmpty()) {
       return createMultipleMemberTypeQuery(filter);
     }
-
-    return and(
-        filter.groupKey() == null ? null : term(KEY, filter.groupKey()),
-        filter.groupId() == null ? null : term(GroupIndex.GROUP_ID, filter.groupId()),
-        filter.name() == null ? null : term(NAME, filter.name()),
-        filter.description() == null ? null : term(GroupIndex.DESCRIPTION, filter.description()),
-        filter.memberIds() == null
-            ? null
-            : filter.memberIds().isEmpty()
-                ? matchNone()
-                : hasChildQuery(
-                    IdentityJoinRelationshipType.MEMBER.getType(),
-                    stringTerms(MEMBER_ID, filter.memberIds())),
-        filter.memberType() == null
-            ? null
-            : term(GroupIndex.MEMBER_TYPE, filter.memberType().name()),
+    final var queries = new ArrayList<SearchQuery>();
+    if (filter.groupKey() != null) {
+      queries.add(term(KEY, filter.groupKey()));
+    }
+    queries.addAll(stringOperations(GROUP_ID, filter.groupIdOperations()));
+    if (filter.name() != null) {
+      queries.add(term(NAME, filter.name()));
+    }
+    if (filter.description() != null) {
+      queries.add(term(GroupIndex.DESCRIPTION, filter.description()));
+    }
+    if (filter.memberIds() != null) {
+      queries.add(
+          filter.memberIds().isEmpty()
+              ? matchNone()
+              : hasChildQuery(
+                  IdentityJoinRelationshipType.MEMBER.getType(),
+                  stringTerms(MEMBER_ID, filter.memberIds())));
+    }
+    if (filter.memberType() != null) {
+      queries.add(term(GroupIndex.MEMBER_TYPE, filter.memberType().name()));
+    }
+    queries.add(
         filter.joinParentId() == null
             ? term(GroupIndex.JOIN, IdentityJoinRelationshipType.GROUP.getType())
             : hasParentQuery(
                 IdentityJoinRelationshipType.GROUP.getType(),
-                term(GROUP_ID, filter.joinParentId())),
-        filter.groupIds() == null
-            ? null
-            : filter.groupIds().isEmpty() ? matchNone() : stringTerms(GROUP_ID, filter.groupIds()),
-        filter.childMemberType() == null
-            ? null
-            : hasChildQuery(
-                IdentityJoinRelationshipType.MEMBER.getType(),
-                term(GroupIndex.MEMBER_TYPE, filter.childMemberType().name())));
+                term(GROUP_ID, filter.joinParentId())));
+    if (filter.groupIds() != null) {
+      queries.add(
+          filter.groupIds().isEmpty() ? matchNone() : stringTerms(GROUP_ID, filter.groupIds()));
+    }
+    if (filter.childMemberType() != null) {
+      queries.add(
+          hasChildQuery(
+              IdentityJoinRelationshipType.MEMBER.getType(),
+              term(GroupIndex.MEMBER_TYPE, filter.childMemberType().name())));
+    }
+
+    return and(queries);
   }
 
   private SearchQuery createMultipleMemberTypeQuery(final GroupFilter filter) {

@@ -126,7 +126,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   }
 
   public Optional<GroupEntity> findGroup(final String groupId) {
-    return search(SearchQueryBuilders.groupSearchQuery().filter(f -> f.groupId(groupId)).build())
+    return search(SearchQueryBuilders.groupSearchQuery().filter(f -> f.groupIds(groupId)).build())
         .items()
         .stream()
         .findFirst();

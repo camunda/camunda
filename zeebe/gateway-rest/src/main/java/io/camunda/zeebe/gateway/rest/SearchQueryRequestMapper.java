@@ -928,7 +928,9 @@ public final class SearchQueryRequestMapper {
       final io.camunda.zeebe.gateway.protocol.rest.GroupFilter filter) {
     final var builder = FilterBuilders.group();
     if (filter != null) {
-      ofNullable(filter.getGroupId()).ifPresent(builder::groupId);
+      ofNullable(filter.getGroupId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::groupIdOperations);
       ofNullable(filter.getName()).ifPresent(builder::name);
     }
     return builder.build();
