@@ -26,6 +26,10 @@ public class CamundaSecurityConfiguration {
   public static final String UNPROTECTED_API_ENV_VAR =
       "CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI";
 
+  @VisibleForTesting
+  public static final String AUTHORIZATION_CHECKS_ENV_VAR =
+      "CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED";
+
   private final CamundaSecurityProperties camundaSecurityProperties;
 
   @Autowired

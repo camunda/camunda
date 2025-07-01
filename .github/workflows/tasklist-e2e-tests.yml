@@ -133,6 +133,7 @@ jobs:
           CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL: demo@example.com
           CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0: demo
           CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI: true
+          CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED: false
         run: >
           ./mvnw -q -B spring-boot:start -pl dist
           -Dspring-boot.run.main-class=io.camunda.application.StandaloneCamunda

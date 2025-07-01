@@ -70,6 +70,7 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
         .withEnv(
             ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API,
             "true")
+        .withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED, "false")
         .withH2()
         .addExposedPorts(
             ContainerRuntimePorts.CAMUNDA_GATEWAY_API,
