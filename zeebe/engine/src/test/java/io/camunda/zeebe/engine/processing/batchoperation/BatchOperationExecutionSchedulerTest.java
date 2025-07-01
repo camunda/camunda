@@ -32,6 +32,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue.BatchOperationItemValue;
+import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.Task;
@@ -67,6 +68,7 @@ public class BatchOperationExecutionSchedulerTest {
 
   @Captor private ArgumentCaptor<Task> taskCaptor;
   @Captor private ArgumentCaptor<BatchOperationChunkRecord> chunkRecordCaptor;
+  @Captor private ArgumentCaptor<BatchOperationCreationRecord> creationRecordCaptor;
 
   private BatchOperationExecutionScheduler scheduler;
 
@@ -122,10 +124,7 @@ public class BatchOperationExecutionSchedulerTest {
             any());
     verify(taskResultBuilder)
         .appendCommandRecord(
-            anyLong(),
-            eq(BatchOperationIntent.FAIL),
-            any(BatchOperationCreationRecord.class),
-            any());
+            anyLong(), eq(BatchOperationIntent.FAIL), creationRecordCaptor.capture(), any());
 
     // and should NOT append an execute command
     verify(taskResultBuilder, times(0))
@@ -134,6 +133,13 @@ public class BatchOperationExecutionSchedulerTest {
             eq(BatchOperationExecutionIntent.EXECUTE),
             any(UnifiedRecordValue.class),
             any());
+
+    // and should contain an error
+    final var error = creationRecordCaptor.getValue().getError();
+    assertThat(error).isNotNull();
+    assertThat(error.getPartitionId()).isEqualTo(PARTITION_ID);
+    assertThat(error.getType()).isEqualTo(BatchOperationErrorType.QUERY_FAILED);
+    assertThat(error.getMessage()).contains("error");
   }
 
   @Test

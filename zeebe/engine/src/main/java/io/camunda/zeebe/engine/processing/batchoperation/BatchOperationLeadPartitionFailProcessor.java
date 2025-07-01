@@ -73,9 +73,10 @@ public final class BatchOperationLeadPartitionFailProcessor
   private void doProcessRecord(final TypedRecord<BatchOperationPartitionLifecycleRecord> command) {
     final var batchOperationKey = command.getValue().getBatchOperationKey();
     LOGGER.debug(
-        "Processing command from partition {} to mark batch operation {} as failed",
+        "Processing command from partition {} to mark batch operation {} as failed with error type {}",
         command.getValue().getSourcePartitionId(),
-        command.getValue().getBatchOperationKey());
+        command.getValue().getBatchOperationKey(),
+        command.getValue().getError().getType());
 
     final var oBatchOperation = batchOperationState.get(batchOperationKey);
     if (oBatchOperation.isPresent()) {
@@ -87,6 +88,10 @@ public final class BatchOperationLeadPartitionFailProcessor
             command.getValue().getSourcePartitionId());
       } else {
 
+        // we need this event for every partition that failed, so that the lead partition state can
+        // collect all of them.
+        // that's why in this case, we don't append this event in the normal FailProcessor. (Would
+        // be duplicated otherwise)
         stateWriter.appendFollowUpEvent(
             batchOperationKey,
             BatchOperationIntent.PARTITION_FAILED,
@@ -99,9 +104,10 @@ public final class BatchOperationLeadPartitionFailProcessor
               batchOperationKey);
           final var batchFinished = new BatchOperationLifecycleManagementRecord();
           batchFinished.setBatchOperationKey(batchOperationKey);
+          batchFinished.setErrors(bo.getErrors());
           stateWriter.appendFollowUpEvent(
               batchOperationKey,
-              BatchOperationIntent.COMPLETED,
+              BatchOperationIntent.COMPLETED_WITH_ERRORS,
               batchFinished,
               FollowUpEventMetadata.of(
                   b -> b.batchOperationReference(command.getValue().getBatchOperationKey())));
