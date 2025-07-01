@@ -518,6 +518,26 @@
       <column name="STATE" type="VARCHAR(20)" defaultValue="ACTIVE"/>
     </createTable>
 
+    <createTable tableName="${prefix}BATCH_OPERATION_ERROR">
+      <column name="BATCH_OPERATION_ID" type="VARCHAR(255)">
+        <constraints
+          foreignKeyName="${prefix}FK_BATCH_OPERATION_ERROR_BATCH_OPERATION"
+          referencedTableName="${prefix}BATCH_OPERATION"
+          referencedColumnNames="BATCH_OPERATION_ID"
+          deleteCascade="true"/>
+        />
+      </column>
+      <column name="PARTITION_ID" type="NUMBER"/>
+      <column name="TYPE" type="VARCHAR(255)"/>
+      <column name="MESSAGE" type="VARCHAR(4000)"/>
+    </createTable>
+
+    <createIndex tableName="${prefix}BATCH_OPERATION_ERROR"
+      indexName="${prefix}IDX_BATCH_OPERATION_ERROR_KEY">
+      <column name="BATCH_OPERATION_ID"/>
+      <column name="PARTITION_ID"/>
+    </createIndex>
+
     <modifySql dbms="mariadb">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>

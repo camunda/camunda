@@ -13,11 +13,13 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOperationState;
+import io.camunda.webapps.schema.entities.operation.BatchOperationErrorEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
+import io.camunda.zeebe.protocol.record.value.scaling.BatchOperationErrorValue;
 import io.camunda.zeebe.util.DateUtil;
 import java.util.HashMap;
 import java.util.List;
@@ -38,7 +40,8 @@ public class BatchOperationLifecycleManagementHandler
           BatchOperationIntent.CANCELED,
           BatchOperationIntent.SUSPENDED,
           BatchOperationIntent.RESUMED,
-          BatchOperationIntent.COMPLETED);
+          BatchOperationIntent.COMPLETED,
+          BatchOperationIntent.COMPLETED_WITH_ERRORS);
   private final String indexName;
 
   public BatchOperationLifecycleManagementHandler(final String indexName) {
@@ -87,6 +90,11 @@ public class BatchOperationLifecycleManagementHandler
     } else if (record.getIntent().equals(BatchOperationIntent.COMPLETED)) {
       // set the endDate to null so that the BatchOperationUpdateTask does run again
       entity.setEndDate(null).setState(BatchOperationState.COMPLETED);
+    } else if (record.getIntent().equals(BatchOperationIntent.COMPLETED_WITH_ERRORS)) {
+      entity
+          .setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
+          .setState(BatchOperationState.COMPLETED_WITH_ERRORS)
+          .setErrors(mapErrors(record.getValue().getErrors()));
     }
   }
 
@@ -96,11 +104,25 @@ public class BatchOperationLifecycleManagementHandler
     final Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(BatchOperationTemplate.STATE, entity.getState());
     updateFields.put(BatchOperationTemplate.END_DATE, entity.getEndDate());
+    if (entity.getErrors() != null && !entity.getErrors().isEmpty()) {
+      updateFields.put(BatchOperationTemplate.ERRORS, entity.getErrors());
+    }
     batchRequest.update(indexName, entity.getId(), updateFields);
   }
 
   @Override
   public String getIndexName() {
     return indexName;
+  }
+
+  private List<BatchOperationErrorEntity> mapErrors(final List<BatchOperationErrorValue> errors) {
+    return errors.stream()
+        .map(
+            e ->
+                new BatchOperationErrorEntity()
+                    .setPartitionId(e.getPartitionId())
+                    .setErrorType(e.getErrorType().name())
+                    .setStacktrace(e.getStacktrace()))
+        .toList();
   }
 }

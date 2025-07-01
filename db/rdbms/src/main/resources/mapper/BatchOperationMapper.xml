@@ -18,6 +18,12 @@
       <arg column="OPERATIONS_FAILED_COUNT" javaType="int"/>
       <arg column="OPERATIONS_COMPLETED_COUNT" javaType="int"/>
     </constructor>
+    <collection property="errors"
+      ofType="io.camunda.db.rdbms.write.domain.BatchOperationDbModel$BatchOperationErrorDbModel">
+      <result property="partitionId" column="PARTITION_ID"/>
+      <result property="type" column="TYPE"/>
+      <result property="message" column="MESSAGE"/>
+    </collection>
   </resultMap>
 
   <resultMap id="BatchOperationItemResultMap"
@@ -58,6 +64,16 @@
     VALUES
     <foreach collection="items" item="item" separator=",">
       (#{batchOperationId}, #{item.itemKey}, #{item.processInstanceKey}, #{item.state})
+    </foreach>
+  </insert>
+
+  <insert id="insertErrors"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationErrorDto">
+    INSERT INTO ${prefix}BATCH_OPERATION_ERROR
+    (BATCH_OPERATION_ID, PARTITION_ID, TYPE, MESSAGE)
+    VALUES
+    <foreach collection="errors" item="error" separator=",">
+      (#{batchOperationId}, #{error.partitionId}, #{error.type}, #{error.message})
     </foreach>
   </insert>
 
@@ -189,6 +205,20 @@ WHEN NOT MATCHED THEN
 
   SELECT * FROM (
     SELECT
+    bof.BATCH_OPERATION_ID,
+    bof.STATE,
+    bof.OPERATION_TYPE,
+    bof.START_DATE,
+    bof.END_DATE,
+    bof.OPERATIONS_TOTAL_COUNT,
+    bof.OPERATIONS_FAILED_COUNT,
+    bof.OPERATIONS_COMPLETED_COUNT,
+    boe.PARTITION_ID,
+    boe.TYPE,
+    boe.MESSAGE
+    FROM (
+    SELECT * FROM (
+    SELECT
     bo.BATCH_OPERATION_ID,
     bo.STATE,
     bo.OPERATION_TYPE,
@@ -203,6 +233,12 @@ WHEN NOT MATCHED THEN
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+    ) bof
+    LEFT JOIN ${prefix}BATCH_OPERATION_ERROR boe ON (boe.BATCH_OPERATION_ID =
+    bof.BATCH_OPERATION_ID)
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    ) sorted
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
   </select>
 
   <sql id="searchFilter">
