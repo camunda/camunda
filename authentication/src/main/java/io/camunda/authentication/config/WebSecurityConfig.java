@@ -16,9 +16,13 @@ import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnProtectedApi;
 import io.camunda.authentication.ConditionalOnUnprotectedApi;
 import io.camunda.authentication.filters.AdminUserCheckFilter;
+import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
 import io.camunda.authentication.filters.WebApplicationAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
+import io.camunda.authentication.oauth.ConditionalOnPersistentAuthorizedClientsEnabled;
+import io.camunda.authentication.oauth.PersistedOAuth2AuthorizedClientService;
+import io.camunda.search.clients.PersistentOAuth2AuthorizedClientsClient;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
 import io.camunda.security.configuration.headers.values.FrameOptionMode;
@@ -54,6 +58,8 @@ import org.springframework.security.config.annotation.web.configurers.HeadersCon
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -468,6 +474,22 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    @ConditionalOnPersistentAuthorizedClientsEnabled
+    public OAuth2AuthorizedClientService oAuth2AuthorizedClientRepository(
+        final ClientRegistrationRepository clientRegistrationRepository,
+        final PersistentOAuth2AuthorizedClientsClient authorizedClientsClient) {
+      return new PersistedOAuth2AuthorizedClientService(
+          authorizedClientsClient, clientRegistrationRepository);
+    }
+
+    @Bean
+    public OAuth2RefreshTokenFilter oauth2RefreshTokenFilter(
+        final OAuth2AuthorizedClientService authorizedClientService,
+        final OAuth2AuthorizedClientManager authorizedClientManager) {
+      return new OAuth2RefreshTokenFilter(authorizedClientService, authorizedClientManager);
+    }
+
+    @Bean
     @Order(ORDER_WEBAPP_API)
     @ConditionalOnProtectedApi
     public SecurityFilterChain oidcApiSecurity(
@@ -518,7 +540,9 @@ public class WebSecurityConfig {
         final WebApplicationAuthorizationCheckFilter webApplicationAuthorizationCheckFilter,
         final JwtDecoder jwtDecoder,
         final CamundaJwtAuthenticationConverter converter,
-        final SecurityConfiguration securityConfiguration)
+        final SecurityConfiguration securityConfiguration,
+        final OAuth2AuthorizedClientService authorizedClientService,
+        final OAuth2RefreshTokenFilter oauth2RefreshTokenFilter)
         throws Exception {
       return httpSecurity
           .securityMatcher(WEBAPP_PATHS.toArray(new String[0]))
@@ -550,6 +574,7 @@ public class WebSecurityConfig {
               oauthLoginConfigurer -> {
                 oauthLoginConfigurer
                     .clientRegistrationRepository(clientRegistrationRepository)
+                    .authorizedClientService(authorizedClientService)
                     .redirectionEndpoint(
                         redirectionEndpointConfig ->
                             redirectionEndpointConfig.baseUri("/sso-callback"));
@@ -562,6 +587,7 @@ public class WebSecurityConfig {
                       .logoutSuccessHandler(WebSecurityConfig::noContentSuccessHandler)
                       .deleteCookies())
           .addFilterAfter(webApplicationAuthorizationCheckFilter, AuthorizationFilter.class)
+          .addFilterAfter(oauth2RefreshTokenFilter, AuthorizationFilter.class)
           .build();
     }
   }
