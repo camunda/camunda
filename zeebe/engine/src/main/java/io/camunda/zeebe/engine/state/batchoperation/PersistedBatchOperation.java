@@ -22,6 +22,7 @@ import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceMigrationPlan;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationPlan;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue.BatchOperationProcessInstanceMigrationPlanValue;
@@ -55,9 +56,11 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
       new ArrayProperty<>("partitions", IntegerValue::new);
   private final ArrayProperty<IntegerValue> finishedPartitionsProp =
       new ArrayProperty<>("finishedPartitions", IntegerValue::new);
+  private final ArrayProperty<BatchOperationError> errorsProp =
+      new ArrayProperty<>("errors", BatchOperationError::new);
 
   public PersistedBatchOperation() {
-    super(13);
+    super(14);
     declareProperty(keyProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(statusProp)
@@ -70,7 +73,8 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
         .declareProperty(partitionsProp)
         .declareProperty(finishedPartitionsProp)
         .declareProperty(numTotalItemsProp)
-        .declareProperty(numExecutedItemsProp);
+        .declareProperty(numExecutedItemsProp)
+        .declareProperty(errorsProp);
   }
 
   public PersistedBatchOperation wrap(final BatchOperationCreationRecord record) {
@@ -212,6 +216,15 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
 
   public List<Integer> getFinishedPartitions() {
     return finishedPartitionsProp.stream().map(IntegerValue::getValue).toList();
+  }
+
+  public PersistedBatchOperation addError(final BatchOperationError error) {
+    errorsProp.add().wrap(error);
+    return this;
+  }
+
+  public List<BatchOperationError> getErrors() {
+    return errorsProp.stream().toList();
   }
 
   public int getNumTotalItems() {
