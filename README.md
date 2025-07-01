@@ -51,9 +51,9 @@ To learn more about what we're currently working on, check the [GitHub issues](h
 
 * [What is Camunda Platform 8?](https://docs.camunda.io/docs/components/)
 * [Getting Started Tutorial](https://docs.camunda.io/docs/guides/)
-* [Technical Concepts](https://docs.camunda.io/docs/components/zeebe/technical-concepts/technical-concepts-overview/)
+* [Technical Concepts](https://docs.camunda.io/docs/components/concepts/concepts-overview/)
 * [BPMN Processes](https://docs.camunda.io/docs/components/modeler/bpmn/bpmn-primer/)
-* [Installation and Configuration](https://docs.camunda.io/docs/next/self-managed/orchestration-cluster/)
+* [Installation and Configuration](https://docs.camunda.io/docs/self-managed/setup/overview/)
 * [Java Client](https://docs.camunda.io/docs/apis-tools/java-client/)
 * [Spring SDK](https://docs.camunda.io/docs/apis-tools/spring-zeebe-sdk/getting-started/)
 
