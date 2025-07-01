@@ -6,17 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {Children} from 'react';
+import React, {Children, useRef} from 'react';
 import {CSSTransition, TransitionGroup} from 'react-transition-group';
 
 type Props = {
-  children: React.ReactNode;
+  children: React.ReactElement;
 } & React.ComponentProps<typeof CSSTransition>;
 
-const Transition: React.FC<Props> = (props) => {
+const Transition: React.FC<Props> = ({children, ...props}) => {
+  const nodeRef = useRef<HTMLDivElement | null>(null);
+
   return (
-    <CSSTransition classNames="transition" {...props}>
-      {Children.only(props.children)}
+    <CSSTransition classNames="transition" nodeRef={nodeRef} {...props}>
+      {React.cloneElement(Children.only(children), {
+        ref: nodeRef,
+      })}
     </CSSTransition>
   );
 };
