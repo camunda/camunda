@@ -6,9 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-@use '@carbon/react' as * with (
-  $font-path: 'https://fonts.camunda.io'
-);
+@use '@carbon/react' as *;
 
 @use '@carbon/react/scss/themes';
 @use '@carbon/react/scss/theme';
