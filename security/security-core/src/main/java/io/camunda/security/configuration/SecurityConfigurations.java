@@ -10,12 +10,13 @@ package io.camunda.security.configuration;
 import io.camunda.security.entity.AuthenticationMethod;
 
 public class SecurityConfigurations {
-  public static SecurityConfiguration unauthenticated() {
+  public static SecurityConfiguration unauthenticatedAndUnauthorized() {
     final SecurityConfiguration securityConfiguration = new SecurityConfiguration();
     final AuthenticationConfiguration authenticationConfiguration =
         securityConfiguration.getAuthentication();
     authenticationConfiguration.setMethod(AuthenticationMethod.BASIC);
     authenticationConfiguration.setUnprotectedApi(true);
+    securityConfiguration.getAuthorizations().setEnabled(false);
     return securityConfiguration;
   }
 }

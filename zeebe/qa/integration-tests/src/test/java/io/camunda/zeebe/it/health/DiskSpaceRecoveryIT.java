@@ -8,6 +8,7 @@
 package io.camunda.zeebe.it.health;
 
 import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
+import static io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR;
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
 import static io.camunda.zeebe.it.util.ZeebeContainerUtil.newClientBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,7 +61,8 @@ final class DiskSpaceRecoveryIT {
           .withEnv("ZEEBE_BROKER_DATA_DISK_FREESPACE_REPLICATION", "1MB")
           .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
           .withEnv(UNPROTECTED_API_ENV_VAR, "true")
-          .withEnv(CREATE_SCHEMA_ENV_VAR, "false");
+          .withEnv(CREATE_SCHEMA_ENV_VAR, "false")
+          .withEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false");
 
   @SuppressWarnings("JUnitMalformedDeclaration")
   @RegisterExtension
