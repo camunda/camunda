@@ -14,7 +14,6 @@ public final class MsgPackToken {
   public static final MsgPackToken NIL = new MsgPackToken();
 
   private MsgPackType type = MsgPackType.NIL;
-  private int totalLength;
 
   // string
   private final UnsafeBuffer valueBuffer = new UnsafeBuffer(0, 0);
@@ -30,14 +29,6 @@ public final class MsgPackToken {
 
   // float32/float64
   private double floatValue;
-
-  public int getTotalLength() {
-    return totalLength;
-  }
-
-  public void setTotalLength(final int totalLength) {
-    this.totalLength = totalLength;
-  }
 
   public int getSize() {
     return size;
@@ -58,14 +49,8 @@ public final class MsgPackToken {
   public void setValue(final DirectBuffer buffer, final int offset, final int length) {
     if (length == 0) {
       valueBuffer.wrap(0, 0);
-    } else if (offset + length <= buffer.capacity()) {
-      valueBuffer.wrap(buffer, offset, length);
     } else {
-      final int result = offset + length;
-      throw new MsgpackReaderException(
-          String.format(
-              "Reading %d bytes past buffer capacity(%d) in range [%d:%d]",
-              result - buffer.capacity(), buffer.capacity(), offset, result));
+      valueBuffer.wrap(buffer, offset, length);
     }
   }
 
