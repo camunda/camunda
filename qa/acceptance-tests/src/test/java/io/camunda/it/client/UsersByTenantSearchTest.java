@@ -10,6 +10,7 @@ package io.camunda.it.client;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.PermissionType;
@@ -18,6 +19,7 @@ import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
+import io.camunda.client.api.search.response.TenantUser;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.io.IOException;
@@ -30,6 +32,7 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Base64;
 import java.util.List;
 import org.junit.jupiter.api.AutoClose;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -39,6 +42,11 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 public class UsersByTenantSearchTest {
 
   private static final String BASE_PATH = "v2/tenants";
+  private static CamundaClient camundaClient;
+
+  private static final String USER_USERNAME_1 = "Alice" + Strings.newRandomValidUsername();
+  private static final String USER_USERNAME_2 = "Bob" + Strings.newRandomValidUsername();
+  private static final String USER_USERNAME_3 = Strings.newRandomValidUsername();
   private static final String TENANT_ID = Strings.newRandomValidIdentityId();
   private static final String ADMIN_USER_NAME = "foo";
   private static final String USER_USERNAME_2 = "testUser1";
@@ -124,11 +132,23 @@ public class UsersByTenantSearchTest {
 
   private static void createTenant(final CamundaClient adminClient, final String tenantId) {
     adminClient.newCreateTenantCommand().tenantId(tenantId).name("name").send().join();
+  @Test
+  void shouldRejectIfMissingTenantId() {
+    // when / then
+    assertThatThrownBy(() -> camundaClient.newUsersByTenantSearchRequest(null).send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("tenantId must not be null");
   }
 
   private static void assignUserToTenant(
       final CamundaClient adminClient, final String username, final String tenantId) {
     adminClient.newAssignUserToTenantCommand().username(username).tenantId(tenantId).send().join();
+  @Test
+  void shouldRejectIfEmptyTenantId() {
+    // when / then
+    assertThatThrownBy(() -> camundaClient.newUsersByTenantSearchRequest("").send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("tenantId must not be empty");
   }
 
   private static HttpResponse<String> searchForUsersByTenant(
@@ -157,6 +177,7 @@ public class UsersByTenantSearchTest {
       final String... usernames) {
     await("should wait until the expected users are in the secondary storage.")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
               // we're passing the username of the searching user explicitly here. Once a client
