@@ -8,11 +8,9 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
-import io.camunda.zeebe.protocol.impl.record.value.processinstance.RuntimeInstructionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import java.util.List;
@@ -53,11 +51,12 @@ public class BrokerCreateProcessInstanceRequest
   }
 
   public BrokerCreateProcessInstanceRequest setStartInstructions(
-      final List<GatewayOuterClass.ProcessInstanceCreationStartInstruction> startInstructionsList) {
+      final List<ProcessInstanceCreationStartInstruction> startInstructionsList) {
     startInstructionsList.stream()
         .map(
             startInstructionReq ->
-                new ProcessInstanceCreationStartInstruction()
+                new io.camunda.zeebe.protocol.impl.record.value.processinstance
+                        .ProcessInstanceCreationStartInstruction()
                     .setElementId(startInstructionReq.getElementId()))
         .forEach(requestDto::addStartInstruction);
 
@@ -65,24 +64,15 @@ public class BrokerCreateProcessInstanceRequest
   }
 
   public BrokerCreateProcessInstanceRequest setStartInstructionsFromRecord(
-      final List<ProcessInstanceCreationStartInstruction> instructions) {
+      final List<
+              io.camunda.zeebe.protocol.impl.record.value.processinstance
+                  .ProcessInstanceCreationStartInstruction>
+          instructions) {
     requestDto.addStartInstructions(instructions);
     return this;
   }
 
   public BrokerCreateProcessInstanceRequest setRuntimeInstructions(
-      final List<GatewayOuterClass.ProcessInstanceCreationRuntimeInstruction> runtimeInstructions) {
-    runtimeInstructions.stream()
-        .map(
-            instruction ->
-                new ProcessInstanceCreationRuntimeInstruction()
-                    .setAfterElementId(instruction.getAfterElementId())
-                    .setType(RuntimeInstructionType.SUSPEND_PROCESS_INSTANCE))
-        .forEach(requestDto::addRuntimeInstruction);
-    return this;
-  }
-
-  public BrokerCreateProcessInstanceRequest setRuntimeInstructionsFromRecord(
       final List<ProcessInstanceCreationRuntimeInstruction> runtimeInstructions) {
     requestDto.addRuntimeInstructions(runtimeInstructions);
     return this;
