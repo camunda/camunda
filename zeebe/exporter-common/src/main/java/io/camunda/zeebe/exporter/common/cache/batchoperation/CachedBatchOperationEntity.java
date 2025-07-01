@@ -9,4 +9,5 @@ package io.camunda.zeebe.exporter.common.cache.batchoperation;
 
 import io.camunda.webapps.schema.entities.operation.OperationType;
 
-public record CachedBatchOperationEntity(String batchOperationId, OperationType type) {}
+public record CachedBatchOperationEntity(
+    String batchOperationId, OperationType type, boolean exportItemsOnCreation) {}
