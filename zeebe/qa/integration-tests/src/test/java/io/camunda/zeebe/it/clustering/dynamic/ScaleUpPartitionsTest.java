@@ -315,7 +315,7 @@ public class ScaleUpPartitionsTest {
 
   private void awaitScaleUpCompletion(final int desiredPartitionCount) {
     Awaitility.await("until scaling is done")
-        .timeout(Duration.ofMinutes(5))
+        .timeout(Duration.ofMinutes(1))
         .untilAsserted(
             () -> {
               final var topology = clusterActuator.getTopology();
