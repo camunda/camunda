@@ -9,7 +9,9 @@ package io.camunda.search.clients.transformers.entity;
 
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.entities.BatchOperationEntity;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
+import java.util.Collections;
 import org.apache.commons.lang3.StringUtils;
 
 public class BatchOperationEntityTransformer
@@ -48,7 +50,14 @@ public class BatchOperationEntityTransformer
         source.getEndDate(),
         source.getOperationsTotalCount(),
         source.getOperationsFailedCount(),
-        source.getOperationsCompletedCount());
+        source.getOperationsCompletedCount(),
+        source.getErrors().stream().map(this::mapBatchOperationError).toList());
+  }
+
+  private BatchOperationErrorEntity mapBatchOperationError(
+      final io.camunda.webapps.schema.entities.operation.BatchOperationErrorEntity source) {
+    return new BatchOperationErrorEntity(
+        source.getPartitionId(), source.getType(), source.getMessage());
   }
 
   private BatchOperationEntity mapLegacyBatchOperation(
@@ -61,6 +70,7 @@ public class BatchOperationEntityTransformer
         source.getEndDate(),
         source.getOperationsTotalCount(),
         0,
-        source.getOperationsFinishedCount());
+        source.getOperationsFinishedCount(),
+        Collections.emptyList());
   }
 }

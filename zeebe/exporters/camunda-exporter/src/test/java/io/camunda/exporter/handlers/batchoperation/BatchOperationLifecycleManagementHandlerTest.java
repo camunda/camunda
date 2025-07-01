@@ -22,6 +22,7 @@ import io.camunda.zeebe.util.DateUtil;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -171,6 +172,39 @@ class BatchOperationLifecycleManagementHandlerTest {
     // then
     assertThat(entity.getState()).isEqualTo(BatchOperationState.COMPLETED);
     assertThat(entity.getEndDate()).isNull();
+  }
+
+  @Test
+  void shouldUpdateEntityForCompletedWithErrorsIntent() {
+    // given
+    final Record<BatchOperationLifecycleManagementRecordValue> record =
+        factory.generateRecord(
+            ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
+            r -> r.withIntent(BatchOperationIntent.COMPLETED_WITH_ERRORS));
+
+    final var entity = new BatchOperationEntity();
+
+    // when
+    handler.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getState()).isEqualTo(BatchOperationState.COMPLETED_WITH_ERRORS);
+    assertThat(entity.getEndDate()).isNull();
+    record
+        .getValue()
+        .getErrors()
+        .forEach(
+            error -> {
+              entity.getErrors().stream()
+                  .filter(e -> e.getPartitionId() == error.getPartitionId())
+                  .findFirst()
+                  .ifPresentOrElse(
+                      be -> {
+                        assertThat(be.getType()).isEqualTo(error.getType().name());
+                        assertThat(be.getMessage()).isEqualTo(error.getMessage());
+                      },
+                      () -> Assertions.fail("Error not found in entity: " + error));
+            });
   }
 
   @Test

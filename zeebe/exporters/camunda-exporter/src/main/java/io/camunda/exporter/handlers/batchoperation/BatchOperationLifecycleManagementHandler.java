@@ -92,7 +92,7 @@ public class BatchOperationLifecycleManagementHandler
       entity.setEndDate(null).setState(BatchOperationState.COMPLETED);
     } else if (record.getIntent().equals(BatchOperationIntent.COMPLETED_WITH_ERRORS)) {
       entity
-          .setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
+          .setEndDate(null)
           .setState(BatchOperationState.COMPLETED_WITH_ERRORS)
           .setErrors(mapErrors(record.getValue().getErrors()));
     }
@@ -121,8 +121,8 @@ public class BatchOperationLifecycleManagementHandler
             e ->
                 new BatchOperationErrorEntity()
                     .setPartitionId(e.getPartitionId())
-                    .setErrorType(e.getErrorType().name())
-                    .setStacktrace(e.getStacktrace()))
+                    .setType(e.getType().name())
+                    .setMessage(e.getMessage()))
         .toList();
   }
 }
