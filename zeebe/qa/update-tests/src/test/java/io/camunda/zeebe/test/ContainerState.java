@@ -24,7 +24,6 @@ import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import org.agrona.LangUtil;
 import org.agrona.Strings;
-import org.junit.jupiter.api.extension.ExtensionContext.Store.CloseableResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.ContainerFetchException;
@@ -32,7 +31,7 @@ import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.Network;
 import org.testcontainers.utility.DockerImageName;
 
-final class ContainerState implements CloseableResource {
+final class ContainerState implements AutoCloseable {
 
   private static final RetryPolicy<Void> CONTAINER_START_RETRY_POLICY =
       new RetryPolicy<Void>().withMaxRetries(5).withBackoff(3, 30, ChronoUnit.SECONDS);

@@ -35,7 +35,6 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ExtensionContext.Store;
-import org.junit.jupiter.api.extension.ExtensionContext.Store.CloseableResource;
 import org.junit.platform.commons.util.ExceptionUtils;
 import org.junit.platform.commons.util.ReflectionUtils;
 import org.junit.platform.commons.util.ReflectionUtils.HierarchyTraversalMode;
@@ -144,7 +143,7 @@ public class ProcessingStateExtension implements BeforeEachCallback {
     return context.getStore(Namespace.create(getClass(), context.getUniqueId()));
   }
 
-  private static final class ProcessingStateExtensionState implements CloseableResource {
+  private static final class ProcessingStateExtensionState implements AutoCloseable {
 
     private Path tempFolder;
     private ZeebeDb<ZbColumnFamilies> zeebeDb;
@@ -176,7 +175,7 @@ public class ProcessingStateExtension implements BeforeEachCallback {
     }
 
     @Override
-    public void close() throws Throwable {
+    public void close() throws Exception {
       transactionContext.getCurrentTransaction().rollback();
       zeebeDb.close();
 

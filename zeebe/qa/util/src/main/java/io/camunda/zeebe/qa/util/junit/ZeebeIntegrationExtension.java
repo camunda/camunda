@@ -31,7 +31,6 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ExtensionContext.Store;
-import org.junit.jupiter.api.extension.ExtensionContext.Store.CloseableResource;
 import org.junit.jupiter.api.extension.TestWatcher;
 import org.junit.platform.commons.support.AnnotationSupport;
 import org.junit.platform.commons.support.HierarchyTraversalMode;
@@ -266,7 +265,7 @@ final class ZeebeIntegrationExtension
   }
 
   private record ClusterResource(Object testInstance, Field field, TestZeebe annotation)
-      implements TestZeebeResource, CloseableResource {
+      implements TestZeebeResource, AutoCloseable {
 
     public TestCluster cluster() {
       try {
@@ -316,7 +315,7 @@ final class ZeebeIntegrationExtension
   }
 
   private record ApplicationResource(Object testInstance, Field field, TestZeebe annotation)
-      implements TestZeebeResource, CloseableResource {
+      implements TestZeebeResource, AutoCloseable {
 
     public TestApplication<?> app() {
       try {
@@ -361,7 +360,7 @@ final class ZeebeIntegrationExtension
     }
   }
 
-  private record DirectoryResource(Path directory) implements CloseableResource {
+  private record DirectoryResource(Path directory) implements AutoCloseable {
 
     @Override
     public void close() {
