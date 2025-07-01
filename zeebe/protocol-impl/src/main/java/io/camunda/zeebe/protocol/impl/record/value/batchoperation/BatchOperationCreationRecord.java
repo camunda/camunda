@@ -48,16 +48,19 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
   private final DocumentProperty authenticationProp = new DocumentProperty(PROP_AUTHENTICATION);
   private final ArrayProperty<IntegerValue> partitionIdsProp =
       new ArrayProperty<>(PROP_PARTITION_IDS, IntegerValue::new);
+  private final ObjectProperty<BatchOperationError> errorProp =
+      new ObjectProperty<>("error", new BatchOperationError());
 
   public BatchOperationCreationRecord() {
-    super(7);
+    super(8);
     declareProperty(batchOperationKeyProp)
         .declareProperty(batchOperationTypeProp)
         .declareProperty(entityFilterProp)
         .declareProperty(migrationPlanProp)
         .declareProperty(modificationPlanProp)
         .declareProperty(authenticationProp)
-        .declareProperty(partitionIdsProp);
+        .declareProperty(partitionIdsProp)
+        .declareProperty(errorProp);
   }
 
   @Override
@@ -143,6 +146,15 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
     return entityFilterProp.getValue();
   }
 
+  public BatchOperationError getError() {
+    return errorProp.getValue();
+  }
+
+  public BatchOperationCreationRecord setError(final BatchOperationError error) {
+    errorProp.getValue().wrap(error);
+    return this;
+  }
+
   public BatchOperationCreationRecord wrap(final BatchOperationCreationRecord record) {
     batchOperationKeyProp.setValue(record.getBatchOperationKey());
     batchOperationTypeProp.setValue(record.getBatchOperationType());
@@ -150,6 +162,7 @@ public final class BatchOperationCreationRecord extends UnifiedRecordValue
     migrationPlanProp.getValue().wrap(record.getMigrationPlan());
     modificationPlanProp.getValue().wrap(record.getModificationPlan());
     authenticationProp.setValue(record.getAuthenticationBuffer());
+    errorProp.getValue().wrap(record.getError());
     setPartitionIds(record.getPartitionIds());
 
     return this;

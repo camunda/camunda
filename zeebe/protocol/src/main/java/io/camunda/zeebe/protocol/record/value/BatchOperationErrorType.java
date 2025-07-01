@@ -15,17 +15,8 @@
  */
 package io.camunda.zeebe.protocol.record.value;
 
-import io.camunda.zeebe.protocol.record.ImmutableProtocol;
-import io.camunda.zeebe.protocol.record.RecordValue;
-import io.camunda.zeebe.protocol.record.value.scaling.BatchOperationErrorValue;
-import java.util.List;
-import org.immutables.value.Value;
-
-/** Will be used by lifecycle operations like cancel, suspend and resume of batch operations. */
-@Value.Immutable
-@ImmutableProtocol(builder = ImmutableBatchOperationLifecycleManagementRecordValue.Builder.class)
-public interface BatchOperationLifecycleManagementRecordValue
-    extends BatchOperationRelated, RecordValue {
-
-  List<BatchOperationErrorValue> getErrors();
+public enum BatchOperationErrorType {
+  QUERY_FAILED,
+  APPEND_CHUNKS_FAILED,
+  UNKNOWN
 }
