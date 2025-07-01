@@ -117,7 +117,8 @@ public final class EngineRule extends ExternalResource {
 
   private final FeatureFlags featureFlags = FeatureFlags.createDefaultForTests();
   private ArrayList<TestInterPartitionCommandSender> interPartitionCommandSenders;
-  private Consumer<SecurityConfiguration> securityConfigModifier = cfg -> {};
+  private Consumer<SecurityConfiguration> securityConfigModifier =
+      cfg -> cfg.getAuthorizations().setEnabled(false);
   private Consumer<EngineConfiguration> engineConfigModifier = cfg -> {};
   private SearchClientsProxy searchClientsProxy;
 

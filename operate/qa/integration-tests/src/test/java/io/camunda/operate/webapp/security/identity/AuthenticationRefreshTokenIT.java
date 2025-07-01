@@ -57,6 +57,7 @@ import org.springframework.test.util.ReflectionTestUtils;
       "camunda.identity.audience=test-client",
       "camunda.identity.clientId=test-client",
       "camunda.identity.clientSecret=secret",
+      "camunda.security.authorizations.enabled=false"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({IDENTITY_AUTH_PROFILE, "test"})

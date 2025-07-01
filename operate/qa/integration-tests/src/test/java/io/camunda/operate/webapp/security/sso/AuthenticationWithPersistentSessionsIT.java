@@ -124,7 +124,8 @@ import org.springframework.web.client.RestTemplate;
       "camunda.operate.cloud.permissionaudience=audience",
       "camunda.operate.cloud.permissionurl=https://permissionurl",
       "camunda.operate.cloud.consoleUrl=https://consoleUrl",
-      "camunda.operate.auth0.claimName=claimName"
+      "camunda.operate.auth0.claimName=claimName",
+      "camunda.security.authorizations.enabled=false"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles({SSO_AUTH_PROFILE, "test"})

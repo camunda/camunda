@@ -8,6 +8,7 @@
 package io.camunda.zeebe.it.smoke;
 
 import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_ENV_VAR;
+import static io.camunda.application.commons.security.CamundaSecurityConfiguration.AUTHORIZATION_CHECKS_ENV_VAR;
 import static io.camunda.application.commons.security.CamundaSecurityConfiguration.UNPROTECTED_API_ENV_VAR;
 import static io.camunda.zeebe.it.util.ZeebeContainerUtil.newClientBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,12 +36,14 @@ final class ContainerClusterSmokeIT {
               zeebeBrokerNode -> {
                 zeebeBrokerNode.addEnv(CREATE_SCHEMA_ENV_VAR, "false");
                 zeebeBrokerNode.addEnv(UNPROTECTED_API_ENV_VAR, "true");
+                zeebeBrokerNode.addEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false");
               })
           .withGatewaysCount(1)
           .withGatewayConfig(
               gateway -> {
                 gateway.addEnv(CREATE_SCHEMA_ENV_VAR, "false");
                 gateway.addEnv(UNPROTECTED_API_ENV_VAR, "true");
+                gateway.addEnv(AUTHORIZATION_CHECKS_ENV_VAR, "false");
               })
           .withPartitionsCount(1)
           .withEmbeddedGateway(false)

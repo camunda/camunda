@@ -99,7 +99,7 @@ final class InterceptorIT {
     gateway =
         new Gateway(
             config,
-            SecurityConfigurations.unauthenticated(),
+            SecurityConfigurations.unauthenticatedAndUnauthorized(),
             brokerClient,
             scheduler,
             jobStreamClient.streamer(),

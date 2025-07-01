@@ -226,7 +226,7 @@ final class PartitionLeaveTest {
             actorScheduler,
             atomixCluster,
             brokerClient,
-            SecurityConfigurations.unauthenticated(),
+            SecurityConfigurations.unauthenticatedAndUnauthorized(),
             null,
             null,
             null);

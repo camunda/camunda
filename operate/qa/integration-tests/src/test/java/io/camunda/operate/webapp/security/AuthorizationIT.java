@@ -42,7 +42,8 @@ import org.springframework.test.context.web.WebAppConfiguration;
       OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       OperateProperties.PREFIX + ".zeebe.compatibility.enabled = true",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
-      OperateProperties.PREFIX + ".multiTenancy.enabled = false"
+      OperateProperties.PREFIX + ".multiTenancy.enabled = false",
+      "camunda.security.authorizations.enabled = false"
     })
 @WebAppConfiguration
 @WithMockUser(username = AuthorizationIT.USER)
