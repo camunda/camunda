@@ -400,6 +400,7 @@ public class CompatibilityModeOperateZeebeAuthorizationIT {
         startProcessInstance(adminClient, PROCESS_WITH_VARIABLE).getProcessInstanceKey();
     final String variableScopeId = String.valueOf(processInstanceKey);
     final String variableName = "process01";
+    final var variableValue = 3;
     waitForProcessInstancesToStart(
         adminClient, filter -> filter.processInstanceKey(processInstanceKey), 1);
 
@@ -409,7 +410,7 @@ public class CompatibilityModeOperateZeebeAuthorizationIT {
       // when
       final var response =
           operateRestClient.updateVariable(
-              processInstanceKey, variableScopeId, variableName, "\"update\"");
+              processInstanceKey, variableScopeId, variableName, variableValue);
 
       // then
       assertThat(response).isRight();
@@ -418,13 +419,15 @@ public class CompatibilityModeOperateZeebeAuthorizationIT {
       assertThat(responseBody.statusCode()).isEqualTo(expectedResponseCode);
       if (expectedResponseCode == 200) {
         // if the request is successful, we expect the variable to be updated
-        assertThat(
-                RecordingExporter.variableRecords()
-                    .withIntent(VariableIntent.UPDATED)
-                    .withScopeKey(processInstanceKey)
-                    .withName(variableName)
-                    .count())
-            .isEqualTo(1L);
+        final var variableUpdateRecord =
+            RecordingExporter.variableRecords()
+                .withIntent(VariableIntent.UPDATED)
+                .withScopeKey(processInstanceKey)
+                .withName(variableName)
+                .limit(1L)
+                .getFirst();
+        assertThat(variableUpdateRecord).isNotNull();
+        assertThat(variableUpdateRecord.getValue().getValue()).isEqualTo("3");
       }
     }
   }
