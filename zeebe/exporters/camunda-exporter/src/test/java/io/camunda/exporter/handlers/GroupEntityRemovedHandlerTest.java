@@ -62,7 +62,9 @@ public class GroupEntityRemovedHandlerTest {
     // then
     final var value = groupRecord.getValue();
     assertThat(idList)
-        .containsExactly(GroupMemberEntity.getChildKey(value.getGroupId(), value.getEntityId()));
+        .containsExactly(
+            GroupIndex.JOIN_RELATION_FACTORY.createChildId(
+                value.getGroupId(), value.getEntityId()));
   }
 
   @Test
