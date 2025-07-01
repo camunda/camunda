@@ -9,6 +9,7 @@ package io.camunda.it.operate;
 
 import static io.camunda.client.api.search.enums.PermissionType.CREATE;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE_PROCESS_INSTANCE;
+import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_INSTANCE;
 import static io.camunda.client.api.search.enums.PermissionType.UPDATE;
 import static io.camunda.client.api.search.enums.ResourceType.AUTHORIZATION;
 import static io.camunda.client.api.search.enums.ResourceType.GROUP;
@@ -78,7 +79,8 @@ public class OperateInternalApiGroupPermissionsIT {
               new Permissions(GROUP, UPDATE, List.of("*")),
               new Permissions(AUTHORIZATION, CREATE, List.of("*")),
               new Permissions(RESOURCE, CREATE, List.of("*")),
-              new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*"))));
+              new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
+              new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*"))));
 
   @UserDefinition
   private static final TestUser AUTHORIZED_USER =
