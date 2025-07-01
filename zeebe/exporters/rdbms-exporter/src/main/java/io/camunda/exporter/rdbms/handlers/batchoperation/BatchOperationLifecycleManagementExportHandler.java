@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.rdbms.handlers.batchoperation;
 
+import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorDto;
+import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorsDto;
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.zeebe.protocol.record.Record;
@@ -14,7 +16,9 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
+import io.camunda.zeebe.protocol.record.value.scaling.BatchOperationErrorValue;
 import io.camunda.zeebe.util.DateUtil;
+import java.util.List;
 import java.util.Set;
 
 public class BatchOperationLifecycleManagementExportHandler
@@ -25,7 +29,8 @@ public class BatchOperationLifecycleManagementExportHandler
           BatchOperationIntent.CANCELED,
           BatchOperationIntent.SUSPENDED,
           BatchOperationIntent.RESUMED,
-          BatchOperationIntent.COMPLETED);
+          BatchOperationIntent.COMPLETED,
+          BatchOperationIntent.COMPLETED_WITH_ERRORS);
 
   private final BatchOperationWriter batchOperationWriter;
 
@@ -52,8 +57,26 @@ public class BatchOperationLifecycleManagementExportHandler
     } else if (record.getIntent().equals(BatchOperationIntent.COMPLETED)) {
       batchOperationWriter.finish(
           batchOperationId, DateUtil.toOffsetDateTime(record.getTimestamp()));
+    } else if (record.getIntent().equals(BatchOperationIntent.COMPLETED_WITH_ERRORS)) {
+      batchOperationWriter.finishWithErrors(
+          batchOperationId,
+          DateUtil.toOffsetDateTime(record.getTimestamp()),
+          mapErrors(batchOperationId, value.getErrors()));
     } else if (record.getIntent().equals(BatchOperationIntent.RESUMED)) {
       batchOperationWriter.resume(batchOperationId);
     }
+  }
+
+  private BatchOperationErrorsDto mapErrors(
+      final String batchOperationId, final List<BatchOperationErrorValue> errors) {
+    final var errorsDto =
+        errors.stream()
+            .map(
+                e ->
+                    new BatchOperationErrorDto(
+                        e.getPartitionId(), e.getType().name(), e.getMessage()))
+            .toList();
+
+    return new BatchOperationErrorsDto(batchOperationId, errorsDto);
   }
 }
