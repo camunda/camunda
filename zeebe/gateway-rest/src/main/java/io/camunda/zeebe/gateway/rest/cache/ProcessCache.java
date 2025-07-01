@@ -97,6 +97,10 @@ public class ProcessCache {
     cache.invalidateAll();
   }
 
+  public void invalidate() {
+    cache.invalidateAll();
+  }
+
   private final class ProcessCacheLoader implements CacheLoader<Long, ProcessCacheItem> {
 
     @Override

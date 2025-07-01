@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ExporterPurgeException;
 import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.gateway.rest.cache.ProcessCache;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.StreamClock;
@@ -44,6 +45,9 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
     concurrencyControl.run(
         () -> {
           try {
+            ProcessCacheProvider.tryFetchProcessCacheBean()
+                .thenAccept(ProcessCache::invalidate)
+                .join();
             exporterRepository.getExporters().forEach(this::purgeExporter);
             result.complete(null);
           } catch (final Exception e) {
