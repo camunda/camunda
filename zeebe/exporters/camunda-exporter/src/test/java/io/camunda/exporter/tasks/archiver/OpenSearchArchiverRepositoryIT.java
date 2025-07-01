@@ -456,6 +456,34 @@ final class OpenSearchArchiverRepositoryIT {
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(3))));
   }
 
+  @Test
+  void shouldFetchHistoricalDatesOnStartAndExcludeZeebePrefix() throws IOException {
+    final var dateFormatter =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+    final var now = Instant.now();
+    final var documents =
+        List.of(
+            new TestBatchOperation("1", now.minus(Duration.ofDays(1)).toString()),
+            new TestBatchOperation("2", now.minus(Duration.ofDays(1)).toString()));
+
+    final var repository = createRepository();
+    // we have an already existing Zeebe index with a date of 3 days ago.
+    testClient
+        .indices()
+        .create(
+            r -> r.index(zeebeIndex + "_" + dateFormatter.format(now.minus(Duration.ofDays(3)))));
+
+    createBatchOperationIndex();
+    documents.forEach(doc -> index(batchOperationIndex, doc));
+    testClient.indices().refresh(r -> r.index(batchOperationIndex));
+    config.setRolloverInterval("3d");
+
+    // then the batch finish date should update since zeebe index should be excluded:
+    final var batch = repository.getBatchOperationsNextBatch().join();
+    assertThat(batch.ids()).containsAll(List.of("1", "2"));
+    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(1))));
+  }
+
   private void createBatchOperationIndex() throws IOException {
     final var idProp = Property.of(p -> p.keyword(k -> k.index(true)));
     final var endDateProp =
