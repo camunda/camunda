@@ -28,7 +28,6 @@ public record GroupFilter(
     Set<String> memberIds,
     EntityType memberType,
     String tenantId,
-    Set<String> groupIds,
     EntityType childMemberType,
     String roleId,
     Map<EntityType, Set<String>> memberIdsByType)
@@ -44,7 +43,6 @@ public record GroupFilter(
         .memberIds(memberIds)
         .memberType(memberType)
         .tenantId(tenantId)
-        .groupIds(groupIds)
         .childMemberType(childMemberType)
         .roleId(roleId)
         .memberIdsByType(memberIdsByType);
@@ -59,7 +57,6 @@ public record GroupFilter(
     private Set<String> memberIds;
     private EntityType memberType;
     private String tenantId;
-    private Set<String> groupIds;
     private EntityType childMemberType;
     private String roleId;
     private Map<EntityType, Set<String>> memberIdsByType;
@@ -148,7 +145,6 @@ public record GroupFilter(
           memberIds,
           memberType,
           tenantId,
-          groupIds,
           childMemberType,
           roleId,
           memberIdsByType);
