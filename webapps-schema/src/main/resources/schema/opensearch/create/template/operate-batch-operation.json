@@ -39,6 +39,9 @@
       },
       "operationsCompletedCount": {
         "type": "long"
+      },
+      "exportItemsOnCreation": {
+        "type": "boolean"
       }
 		}
 	}
