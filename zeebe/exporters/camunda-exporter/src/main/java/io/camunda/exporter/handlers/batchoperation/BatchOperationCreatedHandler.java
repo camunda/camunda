@@ -26,12 +26,15 @@ public class BatchOperationCreatedHandler
 
   private final String indexName;
   private final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache;
+  private final boolean exportItemsOnCreation;
 
   public BatchOperationCreatedHandler(
       final String indexName,
-      final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache) {
+      final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache,
+      final boolean exportItemsOnCreation) {
     this.indexName = indexName;
     this.batchOperationCache = batchOperationCache;
+    this.exportItemsOnCreation = exportItemsOnCreation;
   }
 
   @Override
@@ -66,11 +69,14 @@ public class BatchOperationCreatedHandler
     entity
         .setId(String.valueOf(value.getBatchOperationKey()))
         .setType(OperationType.valueOf(value.getBatchOperationType().name()))
-        .setState(BatchOperationState.CREATED);
+        .setState(BatchOperationState.CREATED)
+        .setExportItemsOnCreation(exportItemsOnCreation);
 
     // update local cache so that the batch operation info is available immediately to operation
     // status handlers
-    final var cachedEntity = new CachedBatchOperationEntity(entity.getId(), entity.getType());
+    final var cachedEntity =
+        new CachedBatchOperationEntity(
+            entity.getId(), entity.getType(), entity.isExportItemsOnCreation());
     batchOperationCache.put(cachedEntity.batchOperationId(), cachedEntity);
   }
 

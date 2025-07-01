@@ -83,7 +83,10 @@ class BatchOperationCacheIT {
       final BatchOperationCacheArgument batchOperationCacheArgument) throws IOException {
     // given
     final var batchOperationEntity =
-        new BatchOperationEntity().setId("3").setType(OperationType.RESOLVE_INCIDENT);
+        new BatchOperationEntity()
+            .setId("3")
+            .setType(OperationType.RESOLVE_INCIDENT)
+            .setExportItemsOnCreation(true);
     batchOperationCacheArgument.indexer().accept(batchOperationEntity);
 
     // when
@@ -91,7 +94,7 @@ class BatchOperationCacheIT {
 
     // then
     final var expectedCachedBatchOperationEntity =
-        new CachedBatchOperationEntity("3", OperationType.RESOLVE_INCIDENT);
+        new CachedBatchOperationEntity("3", OperationType.RESOLVE_INCIDENT, true);
     assertThat(batchOperation).isPresent().get().isEqualTo(expectedCachedBatchOperationEntity);
   }
 

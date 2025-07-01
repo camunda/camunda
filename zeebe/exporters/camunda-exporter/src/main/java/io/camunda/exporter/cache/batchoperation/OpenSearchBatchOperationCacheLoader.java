@@ -37,7 +37,10 @@ public class OpenSearchBatchOperationCacheLoader
     final var idQuery = QueryBuilders.ids().values(batchOperationId).build();
     final var sourceFilter =
         SourceConfigBuilders.filter()
-            .includes(BatchOperationTemplate.ID, BatchOperationTemplate.TYPE)
+            .includes(
+                BatchOperationTemplate.ID,
+                BatchOperationTemplate.TYPE,
+                BatchOperationTemplate.EXPORT_ITEMS_ON_CREATION)
             .build();
     final var response =
         client.search(
@@ -50,7 +53,8 @@ public class OpenSearchBatchOperationCacheLoader
             BatchOperationEntity.class);
     if (response.hits() != null && !response.hits().hits().isEmpty()) {
       final var entity = response.hits().hits().getFirst().source();
-      return new CachedBatchOperationEntity(entity.getId(), entity.getType());
+      return new CachedBatchOperationEntity(
+          entity.getId(), entity.getType(), entity.isExportItemsOnCreation());
     } else {
       LOG.debug("BatchOperation '{}' not found in OpenSearch", batchOperationId);
       return null;

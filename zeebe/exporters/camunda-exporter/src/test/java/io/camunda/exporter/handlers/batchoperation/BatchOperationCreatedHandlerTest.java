@@ -34,7 +34,7 @@ class BatchOperationCreatedHandlerTest {
 
   private final ExporterEntityCache batchOperationCache = mock(ExporterEntityCache.class);
   private final BatchOperationCreatedHandler underTest =
-      new BatchOperationCreatedHandler(indexName, batchOperationCache);
+      new BatchOperationCreatedHandler(indexName, batchOperationCache, true);
 
   @Test
   void testGetHandledValueType() {

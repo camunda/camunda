@@ -63,7 +63,7 @@ class BatchOperationStatusHandlerTest {
           .thenReturn(
               Optional.of(
                   new CachedBatchOperationEntity(
-                      String.valueOf(batchOperationKey), handler.relevantOperationType)));
+                      String.valueOf(batchOperationKey), handler.relevantOperationType, false)));
     }
 
     @Test
@@ -97,7 +97,7 @@ class BatchOperationStatusHandlerTest {
           .thenReturn(
               Optional.of(
                   new CachedBatchOperationEntity(
-                      String.valueOf(batchOperationKey), otherOperationType)));
+                      String.valueOf(batchOperationKey), otherOperationType, false)));
 
       final var record =
           ImmutableRecord.<T>builder()
@@ -139,7 +139,7 @@ class BatchOperationStatusHandlerTest {
           .thenReturn(
               Optional.of(
                   new CachedBatchOperationEntity(
-                      String.valueOf(batchOperationKey), otherOperationType)));
+                      String.valueOf(batchOperationKey), otherOperationType, false)));
 
       final var record =
           ImmutableRecord.<T>builder()
