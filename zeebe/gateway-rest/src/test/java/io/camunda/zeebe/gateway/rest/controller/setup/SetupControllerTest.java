@@ -190,46 +190,6 @@ class SetupControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldRejectUserCreationWithEmptyName() {
-    // given
-    final var request = validUserWithPasswordRequest().name(null);
-
-    // when then
-    assertRequestRejectedExceptionally(
-        request,
-        """
-            {
-              "type": "about:blank",
-              "status": 400,
-              "title": "INVALID_ARGUMENT",
-              "detail": "No name provided.",
-              "instance": "%s"
-            }"""
-            .formatted(USER_PATH));
-    verifyNoInteractions(userServices);
-  }
-
-  @Test
-  void shouldRejectUserCreationWithBlankName() {
-    // given
-    final var request = validUserWithPasswordRequest().name("");
-
-    // when then
-    assertRequestRejectedExceptionally(
-        request,
-        """
-            {
-              "type": "about:blank",
-              "status": 400,
-              "title": "INVALID_ARGUMENT",
-              "detail": "No name provided.",
-              "instance": "%s"
-            }"""
-            .formatted(USER_PATH));
-    verifyNoInteractions(userServices);
-  }
-
-  @Test
   void shouldRejectUserCreationWithEmptyPassword() {
     // given
     final var request = validUserWithPasswordRequest().password(null);
@@ -270,43 +230,37 @@ class SetupControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldRejectUserCreationWithEmptyEmail() {
+  void shouldCreateUserWithEmptyNameAndEmail() {
     // given
-    final var request = validUserWithPasswordRequest().email(null);
+    final var dto = new UserDTO("foo", null, null, "zabraboof");
+    final var userRecord = new UserRecord().setUsername(dto.username()).setPassword(dto.password());
+    whenNoAdminUserExists();
+    when(userServices.createInitialAdminUser(dto))
+        .thenReturn(CompletableFuture.completedFuture(userRecord));
 
-    // when then
-    assertRequestRejectedExceptionally(
-        request,
+    // when
+    webClient
+        .post()
+        .uri(USER_PATH)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(dto)
+        .exchange()
+        .expectStatus()
+        .isCreated()
+        .expectBody()
+        .json(
+            """
+          {
+            "username": "%s",
+            "name": "",
+            "email": ""
+          }
         """
-            {
-              "type": "about:blank",
-              "status": 400,
-              "title": "INVALID_ARGUMENT",
-              "detail": "No email provided.",
-              "instance": "%s"
-            }"""
-            .formatted(USER_PATH));
-    verifyNoInteractions(userServices);
-  }
+                .formatted(dto.username()));
 
-  @Test
-  void shouldRejectUserCreationWithBlankEmail() {
-    // given
-    final var request = validUserWithPasswordRequest().email("");
-
-    // when then
-    assertRequestRejectedExceptionally(
-        request,
-        """
-            {
-              "type": "about:blank",
-              "status": 400,
-              "title": "INVALID_ARGUMENT",
-              "detail": "No email provided.",
-              "instance": "%s"
-            }"""
-            .formatted(USER_PATH));
-    verifyNoInteractions(userServices);
+    // then
+    verify(userServices, times(1)).createInitialAdminUser(dto);
   }
 
   @Test

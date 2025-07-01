@@ -28,9 +28,7 @@ public final class UserValidator {
 
   public static Optional<ProblemDetail> validateUserUpdateRequest(final UserUpdateRequest request) {
     return validate(
-        violations -> {
-          violations.addAll(validateUserNameAndEmail(request.getName(), request.getEmail()));
-        });
+        violations -> violations.addAll(validateUserEmail(request.getName(), request.getEmail())));
   }
 
   public static Optional<ProblemDetail> validateUserCreateRequest(final UserRequest request) {
@@ -40,7 +38,7 @@ public final class UserValidator {
           if (request.getPassword() == null || request.getPassword().isBlank()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("password"));
           }
-          violations.addAll(validateUserNameAndEmail(request.getName(), request.getEmail()));
+          violations.addAll(validateUserEmail(request.getName(), request.getEmail()));
         });
   }
 
@@ -55,15 +53,9 @@ public final class UserValidator {
     }
   }
 
-  private static List<String> validateUserNameAndEmail(final String name, final String email) {
+  private static List<String> validateUserEmail(final String name, final String email) {
     final List<String> violations = new ArrayList<>();
-    if (name == null || name.isBlank()) {
-      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
-    }
-
-    if (email == null || email.isBlank()) {
-      violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("email"));
-    } else if (!EmailValidator.getInstance().isValid(email)) {
+    if (email != null && !email.isBlank() && !EmailValidator.getInstance().isValid(email)) {
       violations.add(ERROR_MESSAGE_INVALID_EMAIL.formatted(email));
     }
 
