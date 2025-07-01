@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.entities.usermanagement.TenantEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -44,7 +45,8 @@ public class TenantDeletedHandler implements ExportHandler<TenantEntity, TenantR
 
   @Override
   public List<String> generateIds(final Record<TenantRecordValue> record) {
-    return List.of(record.getValue().getTenantId());
+    return List.of(
+        TenantIndex.JOIN_RELATION_FACTORY.createParentId(record.getValue().getTenantId()));
   }
 
   @Override
