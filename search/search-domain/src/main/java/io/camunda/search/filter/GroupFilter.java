@@ -67,7 +67,9 @@ public record GroupFilter(
     }
 
     public Builder groupIdOperations(final List<Operation<String>> operations) {
-      groupIdOperations = addValuesToList(groupIdOperations, operations);
+      if (operations != null) {
+        groupIdOperations = addValuesToList(groupIdOperations, operations);
+      }
       return this;
     }
 
