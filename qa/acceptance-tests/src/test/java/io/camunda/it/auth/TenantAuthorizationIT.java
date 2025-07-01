@@ -9,12 +9,17 @@ package io.camunda.it.auth;
 
 import static io.camunda.client.api.search.enums.PermissionType.CREATE;
 import static io.camunda.client.api.search.enums.PermissionType.READ;
+import static io.camunda.client.api.search.enums.PermissionType.UPDATE;
 import static io.camunda.client.api.search.enums.ResourceType.TENANT;
+import static io.camunda.client.api.search.enums.ResourceType.USER;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.client.api.search.response.TenantUser;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
@@ -22,6 +27,7 @@ import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.io.IOException;
@@ -35,6 +41,7 @@ import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
+import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
@@ -66,7 +73,9 @@ class TenantAuthorizationIT {
           PASSWORD,
           List.of(
               new Permissions(TENANT, CREATE, List.of("*")),
-              new Permissions(TENANT, READ, List.of("*"))));
+              new Permissions(TENANT, READ, List.of("*")),
+              new Permissions(TENANT, UPDATE, List.of("*")),
+              new Permissions(USER, CREATE, List.of("*"))));
 
   @UserDefinition
   private static final TestUser RESTRICTED_USER =
@@ -142,6 +151,43 @@ class TenantAuthorizationIT {
     assertThat(statusCode).isEqualTo(HttpStatus.FORBIDDEN);
     assertThat(responseBody)
         .contains("Unauthorized to perform operation 'READ' on resource 'TENANT'");
+  }
+
+  @Test
+  void searchUsersByTenantShouldReturnEmptyListIfUnauthorized(
+      @Authenticated(UNAUTHORIZED) final CamundaClient camundaClient) {
+    final SearchResponse<TenantUser> response =
+        camundaClient.newUsersByTenantSearchRequest("tenant1").send().join();
+    Assertions.assertThat(response.items()).isEmpty();
+  }
+
+  @Test
+  void shouldSearchUsersByTenantIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    // given
+    final String userName = Strings.newRandomValidIdentityId();
+
+    adminClient
+        .newCreateUserCommand()
+        .username(userName)
+        .name("user name")
+        .password("password")
+        .email("some@email.com")
+        .send()
+        .join();
+
+    adminClient.newAssignUserToTenantCommand().username(userName).tenantId("tenant1").send().join();
+
+    // when/then
+    Awaitility.await("Search returns correct users")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final SearchResponse<TenantUser> response =
+                  adminClient.newUsersByTenantSearchRequest("tenant1").send().join();
+              Assertions.assertThat(response.items().stream().map(TenantUser::getUsername).toList())
+                  .contains(userName);
+            });
   }
 
   private static void createTenant(final CamundaClient adminClient, final String tenantId) {
