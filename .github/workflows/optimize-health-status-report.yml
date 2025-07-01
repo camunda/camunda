@@ -1,8 +1,8 @@
-# description: Sends a daily report of Optimize tests to the #optimize-status slack channel
+# description: Sends a daily report of Optimize tests to the #team-data-layer and #team-core-features slack channel. The script for the status report lives in .github/optimize/healthStatusReport
 # test location: /optimize
 # type: CI Helper
 # owner: @camunda/core-features
-name: Optimize health status report
+name: Optimize Health Status Report
 
 on:
   workflow_dispatch:
@@ -15,7 +15,7 @@ permissions:
   pull-requests: read
 
 jobs:
-  health-status-report:
+  health-status-report-core-features:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -34,9 +34,9 @@ jobs:
 
       - name: Generate config file
         run: |
-          cd ${{ github.workspace }}/.github/optimize/scripts/healthStatusReport
+          cd ${{ github.workspace }}/.github/optimize/scripts/healthStatusReport_coreFeatures
           yarn
-          npx ts-node createHealthStatusConfig.ts
+          npx ts-node createHealthStatusConfig_coreFeatures.ts
           cat config.json
 
         env:
@@ -46,7 +46,7 @@ jobs:
         uses: misiekhardcore/infra-report-action@42096709b605df6eb1a5d4630dffb5350d915187 # v1.5.0
         id: get-report
         with:
-          config_file_path: ${{ github.workspace }}/.github/optimize/scripts/healthStatusReport/config.json
+          config_file_path: ${{ github.workspace }}/.github/optimize/scripts/healthStatusReport/config_cf.json
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Format infra report for Slack
@@ -58,9 +58,60 @@ jobs:
         with:
           method: chat.postMessage
           token: ${{ steps.secrets.outputs.SLACK_API_KEY }}
-          # "C04FM0DRJT0" is the ID of the #optimize-status channel
+          # "C04FM0DRJT0" is the ID of the #team-core-features channel
           payload: |
             {
-              "channel": "C04FM0DRJT0",
+              "channel": "C08G19SQ1BM",
+              "text": "${{ env.formatted_report }}"
+            }
+
+
+  health-status-report-data-layer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Import secrets
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/products/optimize/ci/camunda-optimize SLACK_API_KEY;
+
+      - name: Generate config file
+        run: |
+          cd ${{ github.workspace }}/.github/optimize/scripts/healthStatusReport_dataLayer
+          yarn
+          npx ts-node createHealthStatusConfig_dataLayer.ts
+          cat config.json
+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get health status report
+        uses: misiekhardcore/infra-report-action@42096709b605df6eb1a5d4630dffb5350d915187 # v1.5.0
+        id: get-report
+        with:
+          config_file_path: ${{ github.workspace }}/.github/optimize/scripts/healthStatusReport/config_dl.json
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Format infra report for Slack
+        id: format-report
+        run: echo "formatted_report=${{ steps.get-report.outputs.infra_report }}" | sed ':a;N;$!ba;s/\n/\\n/g' >> "$GITHUB_ENV"
+
+      - name: Send report to slack channel
+        uses: slackapi/slack-github-action@b0fa283ad8fea605de13dc3f449259339835fc52 # v2.1.0
+        with:
+          method: chat.postMessage
+          token: ${{ steps.secrets.outputs.SLACK_API_KEY }}
+          # "C04FM0DRJT0" is the ID of the #team-data-layer channel
+          payload: |
+            {
+              "channel": "C08GPP57D8R",
               "text": "${{ env.formatted_report }}"
             }

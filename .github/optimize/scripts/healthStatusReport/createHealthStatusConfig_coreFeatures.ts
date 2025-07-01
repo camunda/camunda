@@ -14,9 +14,9 @@ const GITHUB_ORG = 'camunda';
 const GITHUB_REPO = 'camunda';
 const MAIN_BRANCH = 'main';
 
-const CONFIG_FILE_NAME = 'config.json';
+const CONFIG_FILE_NAME = 'config_cf.json';
 
-async function createHealthStatusConfig() {
+async function createHealthStatusConfig_coreFeatures() {
   const githubService = new GitHubService(GITHUB_TOKEN, GITHUB_ORG, GITHUB_REPO);
   const releaseBranches = await githubService.getBranchesWithPrefix('release/optimize-');
   const optimizeStableBranches = await githubService.getBranchesWithPrefix('stable/optimize-');
@@ -35,10 +35,6 @@ async function createHealthStatusConfig() {
           branches: ciBranches,
         },
         {
-          name: 'optimize-ci-data-layer',
-          branches: ciBranches,
-        },
-        {
           name: 'optimize-ci',
           branches: ciBranches,
         },
@@ -51,4 +47,4 @@ async function createHealthStatusConfig() {
   return createJsonFile(CONFIG_FILE_NAME, config);
 }
 
-createHealthStatusConfig();
+createHealthStatusConfig_coreFeatures();
