@@ -27,6 +27,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.CreateBatchOperationResponse;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
+import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
@@ -202,14 +203,9 @@ class BatchOperationAuthorizationIT {
     // and we wait for it
     assertThat(batchOperationCreatedResponse).isNotNull();
     final var batchOperationId = batchOperationCreatedResponse.getBatchOperationId();
-    waitForBatchOperation(camundaClient, batchOperationId, 1);
+    waitForBatchOperation(camundaClient, batchOperationId, 1, BatchOperationState.COMPLETED);
 
     // then
-    final var batchOperationResponse =
-        camundaClient.newBatchOperationGetRequest(batchOperationId).send().join();
-    assertThat(batchOperationResponse).isNotNull();
-    assertThat(batchOperationResponse.getOperationsTotalCount()).isEqualTo(1);
-
     final List<BatchOperationItem> batchOperationItems =
         camundaClient
             .newBatchOperationItemsSearchRequest()
@@ -237,14 +233,9 @@ class BatchOperationAuthorizationIT {
     // and we wait for it
     assertThat(batchOperationCreatedResponse).isNotNull();
     final var batchOperationId = batchOperationCreatedResponse.getBatchOperationId();
-    waitForBatchOperation(camundaClient, batchOperationId, 1);
+    waitForBatchOperation(camundaClient, batchOperationId, 1, BatchOperationState.COMPLETED);
 
     // then
-    final var batchOperationResponse =
-        camundaClient.newBatchOperationGetRequest(batchOperationId).send().join();
-    assertThat(batchOperationResponse).isNotNull();
-    assertThat(batchOperationResponse.getOperationsTotalCount()).isEqualTo(1);
-
     final List<BatchOperationItem> batchOperationItems =
         camundaClient
             .newBatchOperationItemsSearchRequest()
@@ -426,6 +417,33 @@ class BatchOperationAuthorizationIT {
                   camundaClient.newBatchOperationGetRequest(batchOperationId).send().join();
               assertThat(batch).isNotNull();
               assertThat(batch.getOperationsTotalCount()).isEqualTo(itemsCount);
+            });
+  }
+
+  public static void waitForBatchOperation(
+      final CamundaClient camundaClient,
+      final String batchOperationId,
+      final long totalItemsCount,
+      final BatchOperationState expectedState) {
+    Awaitility.await("should wait for started batch operation")
+        .atMost(Duration.ofSeconds(15))
+        .pollInterval(Duration.ofMillis(100))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var batch =
+                  camundaClient.newBatchOperationGetRequest(batchOperationId).send().join();
+              assertThat(batch).isNotNull();
+              assertThat(batch.getStatus())
+                  .withFailMessage(
+                      "Expected batch operation to be in state '%s', but was '%s'",
+                      expectedState, batch.getStatus())
+                  .isEqualTo(expectedState);
+              assertThat(batch.getOperationsTotalCount())
+                  .withFailMessage(
+                      "Expected batch operation to have %d items, but had %d",
+                      totalItemsCount, batch.getOperationsTotalCount())
+                  .isEqualTo(totalItemsCount);
             });
   }
 
