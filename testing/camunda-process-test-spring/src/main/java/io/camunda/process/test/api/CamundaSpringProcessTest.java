@@ -59,6 +59,64 @@ import org.springframework.test.context.TestExecutionListeners.MergeMode;
  *   }
  * }
  * </pre>
+ *
+ * <p>Depending on a test class' configuration, the CPT may create a local Camunda container runtime
+ * or use the global container runtime. You may configure the global runtime in your Spring
+ * application configuration ({@see CamundaProcessTestGlobalRuntimeConfiguration} for more
+ * information) like so:
+ *
+ * <pre>
+ *   io:
+ *     camunda:
+ *       process:
+ *         test:
+ *           global:
+ *             camunda-docker-image-name: "custom-image"
+ *             connectors-enabled: true
+ * </pre>
+ *
+ * Then, whenever a new CPT test class is initialized, the test's configuration is compared with
+ * that of the global runtime. If they're compatible, the global runtime is preferred over creating
+ * a new one.
+ *
+ * <p>However, the global runtime can be ignored on a per-class basis or disabled entirely. To force
+ * the extension to create a new Camunda runtime, regardless of its configuration, set the
+ * `ignore-global-runtime` property to `true`:
+ *
+ * <pre>
+ *   @SpringBootTest(
+ *     classes = {CamundaSpringProcessTestConnectorsIT.class},
+ *     properties = {
+ *       "io.camunda.process.test.ignore-global-runtime=true"
+ *     })
+ * </pre>
+ *
+ * You can also disable the global runtime. All test classes will then always create a new runtime.
+ * You can set the flag in your Maven POM, as a Maven flag, or by editing the
+ * `camunda-container-runtime.properties` file:
+ *
+ * <p>Editing the Maven POM:
+ *
+ * <pre>
+ *   <properties>
+ *     <io.camunda.process.test.globalRuntimeEnabled>false</io.camunda.process.test.globalRuntimeEnabled>
+ *   </properties>
+ * </pre>
+ *
+ * Adding a Maven flag:
+ *
+ * <pre>
+ *    -Dio.camunda.process.test.globalRuntimeEnabled="false"
+ * </pre>
+ *
+ * Changing the Camunda Container Runtime properties file:
+ *
+ * <pre>
+ *   camunda.process.test.globalRuntimeEnabled=false
+ * </pre>
+ *
+ * <p>Please note that disabling the global Camunda runtime may incur significant performance
+ * penalties as every test class must start and stop its own runtime.
  */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
