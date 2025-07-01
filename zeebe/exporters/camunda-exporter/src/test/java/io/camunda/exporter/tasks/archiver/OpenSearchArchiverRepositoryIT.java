@@ -31,14 +31,12 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.UUID;
 import org.apache.http.HttpHost;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -52,9 +50,7 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.core.search.Hit;
-import org.opensearch.client.opensearch.generic.Body;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
-import org.opensearch.client.opensearch.generic.Request;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.transport.aws.AwsSdk2Transport;
 import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
@@ -84,6 +80,15 @@ final class OpenSearchArchiverRepositoryIT {
       ARCHIVER_IDX_PREFIX + "batch-operation-" + UUID.randomUUID();
   private final OpenSearchClient testClient = createOpenSearchClient();
   private final String zeebeIndexPrefix = "zeebe-record";
+  private final String zeebeIndex = zeebeIndexPrefix + "-" + UUID.randomUUID();
+
+  @AfterEach
+  void afterEach() throws IOException {
+    // wipes all data in OS between tests
+    final var response =
+        transport.restClient().performRequest(new org.opensearch.client.Request("DELETE", "_all"));
+    assertThat(response.getStatusLine().getStatusCode()).isEqualTo(200);
+  }
 
   @Test
   void shouldDeleteDocuments() throws IOException {
@@ -626,34 +631,6 @@ final class OpenSearchArchiverRepositoryIT {
 
   private record TestProcessInstance(
       String id, String endDate, String joinRelation, int partitionId) implements TDocument {}
-
-  private record DeleteRequest(String endpoint) implements Request {
-
-    @Override
-    public String getMethod() {
-      return "DELETE";
-    }
-
-    @Override
-    public String getEndpoint() {
-      return endpoint;
-    }
-
-    @Override
-    public Map<String, String> getParameters() {
-      return Map.of();
-    }
-
-    @Override
-    public Collection<Entry<String, String>> getHeaders() {
-      return List.of();
-    }
-
-    @Override
-    public Optional<Body> getBody() {
-      return Optional.empty();
-    }
-  }
 
   private interface TDocument {
     String id();
