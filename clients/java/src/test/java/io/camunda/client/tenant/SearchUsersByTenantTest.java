@@ -38,7 +38,7 @@ public class SearchUsersByTenantTest extends ClientRestTest {
   }
 
   @Test
-  void shouldIncludeFiltersInSearchRequestBody() {
+  void shouldIncludeSortInSearchRequestBody() {
     // when
     client.newUsersByTenantSearchRequest(TENANT_ID).sort(f -> f.username().desc()).send().join();
 
