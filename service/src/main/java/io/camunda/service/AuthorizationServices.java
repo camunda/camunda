@@ -71,29 +71,6 @@ public class AuthorizationServices
         .searchAuthorizations(query);
   }
 
-  public List<AuthorizationEntity> findAll(final AuthorizationQuery query) {
-    return authorizationSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.authorization().read())))
-        .findAllAuthorizations(query);
-  }
-
-  public List<String> getAuthorizedResources(
-      final Set<String> ownerIds,
-      final PermissionType permissionType,
-      final AuthorizationResourceType resourceType) {
-    final var authorizationQuery =
-        SearchQueryBuilders.authorizationSearchQuery(
-            fn ->
-                fn.filter(
-                    f ->
-                        f.ownerIds(ownerIds.stream().toList())
-                            .permissionTypes(permissionType)
-                            .resourceType(resourceType.name())));
-    return findAll(authorizationQuery).stream().map(AuthorizationEntity::resourceId).toList();
-  }
-
   public List<String> getAuthorizedApplications(
       final Map<EntityType, Set<String>> ownerTypeToOwnerIds) {
     if (!securityConfiguration.getAuthorizations().isEnabled()) {
@@ -124,29 +101,6 @@ public class AuthorizationServices
               return authorizationEntity.resourceId();
             })
         .collect(Collectors.toList());
-  }
-
-  public Set<String> fetchAssignedPermissions(
-      final String ownerId, final AuthorizationResourceType resourceType, final String resourceId) {
-    final SearchQueryResult<AuthorizationEntity> result =
-        search(
-            SearchQueryBuilders.authorizationSearchQuery(
-                fn ->
-                    fn.filter(
-                            f ->
-                                f.resourceType(resourceType.name())
-                                    .resourceIds(
-                                        resourceId != null && !resourceId.isEmpty()
-                                            ? resourceId
-                                            : null)
-                                    .ownerIds(ownerId))
-                        .page(p -> p.size(1))));
-    // TODO logic to fetch indirect authorizations via roles/groups should be added later
-    return result.items().stream()
-        .filter(authorization -> authorization.resourceId().contains(resourceId))
-        .flatMap(authorization -> authorization.permissionTypes().stream())
-        .map(PermissionType::name)
-        .collect(Collectors.toSet());
   }
 
   public CompletableFuture<AuthorizationRecord> createAuthorization(
