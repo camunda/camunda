@@ -19,7 +19,21 @@ public record BatchOperationDbModel(
     OffsetDateTime endDate,
     Integer operationsTotalCount,
     Integer operationsFailedCount,
-    Integer operationsCompletedCount) {
+    Integer operationsCompletedCount,
+    Boolean exportItemsOnCreation) {
+
+  public Builder toBuilder() {
+    return new Builder()
+        .batchOperationId(batchOperationId)
+        .state(state)
+        .operationType(operationType)
+        .startDate(startDate)
+        .endDate(endDate)
+        .operationsTotalCount(operationsTotalCount)
+        .operationsFailedCount(operationsFailedCount)
+        .operationsCompletedCount(operationsCompletedCount)
+        .exportItemsOnCreation(exportItemsOnCreation);
+  }
 
   // Builder class
   public static class Builder implements ObjectBuilder<BatchOperationDbModel> {
@@ -32,6 +46,7 @@ public record BatchOperationDbModel(
     private Integer operationsTotalCount = 0;
     private Integer operationsFailedCount = 0;
     private Integer operationsCompletedCount = 0;
+    private Boolean exportItemsOnCreation = false;
 
     public Builder() {}
 
@@ -75,6 +90,11 @@ public record BatchOperationDbModel(
       return this;
     }
 
+    public Builder exportItemsOnCreation(final Boolean exportItemsOnCreation) {
+      this.exportItemsOnCreation = exportItemsOnCreation;
+      return this;
+    }
+
     @Override
     public BatchOperationDbModel build() {
       return new BatchOperationDbModel(
@@ -85,7 +105,8 @@ public record BatchOperationDbModel(
           endDate,
           operationsTotalCount,
           operationsFailedCount,
-          operationsCompletedCount);
+          operationsCompletedCount,
+          exportItemsOnCreation);
     }
   }
 }

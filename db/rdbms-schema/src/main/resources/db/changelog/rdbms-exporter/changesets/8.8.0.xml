@@ -496,6 +496,7 @@
       <column name="OPERATIONS_TOTAL_COUNT" type="INT"/>
       <column name="OPERATIONS_FAILED_COUNT" type="INT"/>
       <column name="OPERATIONS_COMPLETED_COUNT" type="INT"/>
+      <column name="EXPORT_ITEMS_ON_CREATION" type="BOOLEAN"/>
     </createTable>
 
     <createTable tableName="${prefix}BATCH_OPERATION_ITEM">

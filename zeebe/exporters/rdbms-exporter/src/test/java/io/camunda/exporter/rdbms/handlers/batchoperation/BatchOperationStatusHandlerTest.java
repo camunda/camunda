@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordV
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -62,7 +63,7 @@ class BatchOperationStatusHandlerTest {
           .thenReturn(
               Optional.of(
                   new CachedBatchOperationEntity(
-                      String.valueOf(batchOperationKey), handler.relevantOperationType)));
+                      String.valueOf(batchOperationKey), handler.relevantOperationType, true)));
     }
 
     @Test
@@ -96,7 +97,7 @@ class BatchOperationStatusHandlerTest {
           .thenReturn(
               Optional.of(
                   new CachedBatchOperationEntity(
-                      String.valueOf(batchOperationKey), otherOperationType)));
+                      String.valueOf(batchOperationKey), otherOperationType, false)));
 
       final var record =
           ImmutableRecord.<T>builder()
@@ -138,7 +139,7 @@ class BatchOperationStatusHandlerTest {
           .thenReturn(
               Optional.of(
                   new CachedBatchOperationEntity(
-                      String.valueOf(batchOperationKey), otherOperationType)));
+                      String.valueOf(batchOperationKey), otherOperationType, false)));
 
       final var record =
           ImmutableRecord.<T>builder()
@@ -175,6 +176,25 @@ class BatchOperationStatusHandlerTest {
       assertThat(itemCaptor.getValue().state()).isEqualTo(BatchOperationItemState.FAILED);
       assertThat(itemCaptor.getValue().processedDate()).isNotNull();
       assertThat(itemCaptor.getValue().errorMessage()).isNotNull();
+    }
+
+    @Test
+    void shouldInsertNewItemOnFailure() {
+      Mockito.reset(batchOperationCache);
+      when(batchOperationCache.get(Mockito.anyString()))
+          .thenReturn(
+              Optional.of(
+                  new CachedBatchOperationEntity(
+                      String.valueOf(batchOperationKey), handler.relevantOperationType, false)));
+      final var record = createSuccessRecord();
+
+      handler.export(record);
+
+      final var itemCaptor = ArgumentCaptor.forClass(List.class);
+      verify(batchOperationWriter)
+          .insertItems(eq(String.valueOf(batchOperationKey)), itemCaptor.capture());
+      final List<BatchOperationItemDbModel> list = itemCaptor.getValue();
+      assertThat(list.getFirst().state()).isEqualTo(BatchOperationItemState.COMPLETED);
     }
 
     @Test

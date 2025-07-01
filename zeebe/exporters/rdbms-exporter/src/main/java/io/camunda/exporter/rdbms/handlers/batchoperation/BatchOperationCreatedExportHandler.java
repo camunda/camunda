@@ -29,12 +29,15 @@ public class BatchOperationCreatedExportHandler
 
   private final BatchOperationWriter batchOperationWriter;
   private final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache;
+  private final boolean exportItemsOnCreation;
 
   public BatchOperationCreatedExportHandler(
       final BatchOperationWriter batchOperationWriter,
-      final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache) {
+      final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache,
+      final boolean exportItemsOnCreation) {
     this.batchOperationWriter = batchOperationWriter;
     this.batchOperationCache = batchOperationCache;
+    this.exportItemsOnCreation = exportItemsOnCreation;
   }
 
   @Override
@@ -50,7 +53,8 @@ public class BatchOperationCreatedExportHandler
         String.valueOf(record.getKey()),
         new CachedBatchOperationEntity(
             String.valueOf(record.getValue().getBatchOperationKey()),
-            OperationType.valueOf(record.getValue().getBatchOperationType().name())));
+            OperationType.valueOf(record.getValue().getBatchOperationType().name()),
+            exportItemsOnCreation));
   }
 
   private BatchOperationDbModel map(final Record<BatchOperationCreationRecordValue> record) {
@@ -61,6 +65,7 @@ public class BatchOperationCreatedExportHandler
         .state(BatchOperationState.ACTIVE)
         .operationType(value.getBatchOperationType().name())
         .startDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
+        .exportItemsOnCreation(exportItemsOnCreation)
         .build();
   }
 }

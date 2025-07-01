@@ -8,6 +8,7 @@
 package io.camunda.exporter.rdbms.handlers.batchoperation;
 
 import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperationReferenceNullValue;
+import static org.slf4j.LoggerFactory.getLogger;
 
 import io.camunda.db.rdbms.write.domain.BatchOperationItemDbModel;
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
@@ -20,10 +21,13 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.util.DateUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
+import java.util.List;
+import org.slf4j.Logger;
 
 public abstract class RdbmsBatchOperationStatusExportHandler<T extends RecordValue>
     implements RdbmsExportHandler<T> {
   public static final String ERROR_MSG = "%s: %s";
+  private static final Logger LOGGER = getLogger(RdbmsBatchOperationStatusExportHandler.class);
   @VisibleForTesting final OperationType relevantOperationType;
   private final BatchOperationWriter batchOperationWriter;
   private final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache;
@@ -47,7 +51,7 @@ public abstract class RdbmsBatchOperationStatusExportHandler<T extends RecordVal
   @Override
   public void export(final Record<T> record) {
     if (isCompleted(record)) {
-      batchOperationWriter.updateItem(
+      upsertItem(
           new BatchOperationItemDbModel(
               String.valueOf(record.getBatchOperationReference()),
               getItemKey(record),
@@ -56,7 +60,7 @@ public abstract class RdbmsBatchOperationStatusExportHandler<T extends RecordVal
               DateUtil.toOffsetDateTime(record.getTimestamp()),
               null));
     } else if (isFailed(record)) {
-      batchOperationWriter.updateItem(
+      upsertItem(
           new BatchOperationItemDbModel(
               String.valueOf(record.getBatchOperationReference()),
               getItemKey(record),
@@ -67,7 +71,7 @@ public abstract class RdbmsBatchOperationStatusExportHandler<T extends RecordVal
     }
   }
 
-  boolean isRelevantForBatchOperation(final Record<T> record) {
+  private boolean isRelevantForBatchOperation(final Record<T> record) {
     final var cachedEntity =
         batchOperationCache.get(String.valueOf(record.getBatchOperationReference()));
 
@@ -76,6 +80,27 @@ public abstract class RdbmsBatchOperationStatusExportHandler<T extends RecordVal
             cachedBatchOperationEntity ->
                 cachedBatchOperationEntity.type() == relevantOperationType)
         .isPresent();
+  }
+
+  private void upsertItem(final BatchOperationItemDbModel item) {
+
+    final var exportItemsOnCreation =
+        batchOperationCache
+            .get(item.batchOperationId())
+            .map(CachedBatchOperationEntity::exportItemsOnCreation)
+            .orElseGet(
+                () -> {
+                  LOGGER.warn(
+                      "Batch operation with key {} not found in cache, using default 'true'.",
+                      item.batchOperationId());
+                  return true;
+                });
+
+    if (exportItemsOnCreation) {
+      batchOperationWriter.updateItem(item);
+    } else {
+      batchOperationWriter.insertItems(item.batchOperationId(), List.of(item));
+    }
   }
 
   abstract long getItemKey(Record<T> record);

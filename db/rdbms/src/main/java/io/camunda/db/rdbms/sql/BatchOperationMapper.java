@@ -16,8 +16,11 @@ import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface BatchOperationMapper {
+
+  Optional<BatchOperationDbModel> findById(String batchOperationId);
 
   void insert(BatchOperationDbModel batchOperationDbModel);
 
@@ -27,11 +30,11 @@ public interface BatchOperationMapper {
 
   void updateItemsWithState(BatchOperationItemStatusUpdateDto dto);
 
-  void incrementOperationsTotalCount(BatchOperationUpdateTotalCountDto dto);
+  void incrementOperationsTotalCount(BatchOperationUpdateCountDto dto);
 
-  void incrementFailedOperationsCount(String batchOperationId);
+  void incrementFailedOperationsCount(BatchOperationUpdateCountDto dto);
 
-  void incrementCompletedOperationsCount(String batchOperationId);
+  void incrementCompletedOperationsCount(BatchOperationUpdateCountDto dto);
 
   Long count(BatchOperationDbQuery query);
 
@@ -44,9 +47,7 @@ public interface BatchOperationMapper {
   record BatchOperationUpdateDto(
       String batchOperationId, BatchOperationState state, OffsetDateTime endDate) {}
 
-  record BatchOperationUpdateTotalCountDto(String batchOperationId, int operationsTotalCount) {}
-
-  record BatchOperationUpdateCountsDto(String batchOperationId, long itemKey) {}
+  record BatchOperationUpdateCountDto(String batchOperationId, int count) {}
 
   record BatchOperationItemsDto(String batchOperationId, List<BatchOperationItemDbModel> items) {}
 

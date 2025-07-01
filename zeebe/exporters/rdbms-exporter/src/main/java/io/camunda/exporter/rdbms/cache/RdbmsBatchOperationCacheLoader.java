@@ -27,12 +27,13 @@ public class RdbmsBatchOperationCacheLoader
 
   @Override
   public CachedBatchOperationEntity load(final @NotNull String key) throws Exception {
-    final var response = reader.findOne(key);
+    final var response = reader.findOneDbModel(key);
     if (response.isPresent()) {
-      final var batchOperationEntity = response.get();
+      final var batchOperation = response.get();
       return new CachedBatchOperationEntity(
-          batchOperationEntity.batchOperationId(),
-          OperationType.valueOf(batchOperationEntity.operationType()));
+          batchOperation.batchOperationId(),
+          OperationType.valueOf(batchOperation.operationType()),
+          batchOperation.exportItemsOnCreation());
     }
     LOG.debug("BatchOperation '{}' not found in RDBMS", key);
     return null;

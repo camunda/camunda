@@ -38,9 +38,10 @@ public final class BatchOperationFixtures {
             .operationType("some-operation" + RANDOM.nextInt(1000))
             .startDate(OffsetDateTime.now())
             .endDate(OffsetDateTime.now().plusSeconds(1))
-            .operationsTotalCount(RANDOM.nextInt(1000))
-            .operationsFailedCount(RANDOM.nextInt(1000))
-            .operationsCompletedCount(RANDOM.nextInt(1000));
+            .operationsTotalCount(0)
+            .operationsFailedCount(0)
+            .operationsCompletedCount(0)
+            .exportItemsOnCreation(true);
     return builderFunction.apply(builder).build();
   }
 
@@ -66,7 +67,8 @@ public final class BatchOperationFixtures {
         IntStream.range(0, count)
             .mapToObj(i -> CommonFixtures.nextKey())
             .collect(Collectors.toSet());
-    return insertBatchOperationsItems(rdbmsWriter, batchOperationKey, itemKeys);
+    return insertBatchOperationsItems(
+        rdbmsWriter, batchOperationKey, BatchOperationItemState.ACTIVE, itemKeys);
   }
 
   public static BatchOperationDbModel createAndSaveBatchOperation(
@@ -85,21 +87,19 @@ public final class BatchOperationFixtures {
   }
 
   public static List<BatchOperationItemDbModel> insertBatchOperationsItems(
-      final RdbmsWriter rdbmsWriter, final String batchOperationKey, final Set<Long> itemKeys) {
+      final RdbmsWriter rdbmsWriter,
+      final String batchOperationKey,
+      final BatchOperationItemState state,
+      final Set<Long> itemKeys) {
     final var batchItems =
         itemKeys.stream()
             .map(
                 itemKey ->
                     new BatchOperationItemDbModel(
-                        batchOperationKey,
-                        itemKey,
-                        itemKey,
-                        BatchOperationItemState.ACTIVE,
-                        NOW,
-                        null))
+                        batchOperationKey, itemKey, itemKey, state, NOW, null))
             .toList();
 
-    rdbmsWriter.getBatchOperationWriter().updateBatchAndInsertItems(batchOperationKey, batchItems);
+    rdbmsWriter.getBatchOperationWriter().insertItems(batchOperationKey, batchItems);
     rdbmsWriter.flush();
 
     return batchItems;
