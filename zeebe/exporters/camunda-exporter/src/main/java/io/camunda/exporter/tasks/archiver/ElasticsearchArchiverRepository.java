@@ -59,6 +59,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private final String batchOperationIndex;
   private final CamundaExporterMetrics metrics;
   private String lastHistoricalArchiverDate = null;
+  private final String zeebeIndexPrefix;
 
   public ElasticsearchArchiverRepository(
       final int partitionId,
@@ -67,6 +68,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final String indexPrefix,
       final String processInstanceIndex,
       final String batchOperationIndex,
+      final String zeebeIndexPrefix,
       @WillCloseWhenClosed final ElasticsearchAsyncClient client,
       final Executor executor,
       final CamundaExporterMetrics metrics,
@@ -79,6 +81,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     this.processInstanceIndex = processInstanceIndex;
     this.batchOperationIndex = batchOperationIndex;
     this.metrics = metrics;
+    this.zeebeIndexPrefix = zeebeIndexPrefix;
   }
 
   @Override
@@ -236,7 +239,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     final CompletableFuture<String> dateFuture =
         (lastHistoricalArchiverDate == null)
             ? DateOfArchivedDocumentsUtil.getLastHistoricalArchiverDate(
-                fetchMatchingIndexes(ALL_INDICES_PATTERN))
+                fetchMatchingIndexes(ALL_INDICES_PATTERN), zeebeIndexPrefix)
             : CompletableFuture.completedFuture(lastHistoricalArchiverDate);
 
     return dateFuture.thenApply(

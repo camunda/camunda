@@ -72,7 +72,7 @@ public final class DateOfArchivedDocumentsUtil {
   }
 
   public static CompletableFuture<String> getLastHistoricalArchiverDate(
-      final CompletableFuture<List<String>> listOfIndexes) {
+      final CompletableFuture<List<String>> listOfIndexes, final String zeebeIndexPrefix) {
     final DateTimeFormatter formatterWithHour = DateTimeFormatter.ofPattern(DATE_AND_HOUR_PATTERN);
     final DateTimeFormatter formatterWithoutHour = DateTimeFormatter.ofPattern(DATE_PATTERN);
     final LocalDateTime[] latest = {null};
@@ -84,7 +84,7 @@ public final class DateOfArchivedDocumentsUtil {
             indexes ->
                 // we want to filter out zeebe records since the
                 // rollover interval does not apply to these.
-                indexes.stream().filter(index -> !index.contains("zeebe-record")).toList())
+                indexes.stream().filter(index -> !index.contains(zeebeIndexPrefix)).toList())
         .thenApply(
             indexes -> {
               for (final String index : indexes) {

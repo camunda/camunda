@@ -66,6 +66,7 @@ final class ElasticsearchArchiverRepositoryIT {
   private final HistoryConfiguration config = new HistoryConfiguration();
   private final RetentionConfiguration retention = new RetentionConfiguration();
   private String indexPrefix = "testPrefix";
+  private final String zeebeIndexPrefix = "zeebe-record";
   private final String processInstanceIndex = "process-instance-" + UUID.randomUUID();
   private final String batchOperationIndex = "batch-operation-" + UUID.randomUUID();
   private final ElasticsearchClient testClient = new ElasticsearchClient(transport);
@@ -492,6 +493,7 @@ final class ElasticsearchArchiverRepositoryIT {
         indexPrefix,
         processInstanceIndex,
         batchOperationIndex,
+        zeebeIndexPrefix,
         client,
         Runnable::run,
         metrics,

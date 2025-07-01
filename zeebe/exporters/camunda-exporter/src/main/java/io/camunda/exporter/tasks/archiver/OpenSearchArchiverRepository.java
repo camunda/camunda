@@ -63,6 +63,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private final CamundaExporterMetrics metrics;
   private final OpenSearchGenericClient genericClient;
   private String lastHistoricalArchiverDate = null;
+  private final String zeebeIndexPrefix;
 
   public OpenSearchArchiverRepository(
       final int partitionId,
@@ -71,6 +72,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       final String indexPrefix,
       final String processInstanceIndex,
       final String batchOperationIndex,
+      final String zeebeIndexPrefix,
       @WillCloseWhenClosed final OpenSearchAsyncClient client,
       final Executor executor,
       final CamundaExporterMetrics metrics,
@@ -83,6 +85,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     this.processInstanceIndex = processInstanceIndex;
     this.batchOperationIndex = batchOperationIndex;
     this.metrics = metrics;
+    this.zeebeIndexPrefix = zeebeIndexPrefix;
 
     genericClient = new OpenSearchGenericClient(client._transport(), client._transportOptions());
   }
@@ -249,7 +252,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       dateFuture =
           (lastHistoricalArchiverDate == null)
               ? DateOfArchivedDocumentsUtil.getLastHistoricalArchiverDate(
-                  fetchIndexMatchingIndexes(ALL_INDICES_PATTERN))
+                  fetchIndexMatchingIndexes(ALL_INDICES_PATTERN), zeebeIndexPrefix)
               : CompletableFuture.completedFuture(lastHistoricalArchiverDate);
     } catch (final IOException e) {
       return CompletableFuture.failedFuture(new ExporterException("Failed to fetch indexes:", e));

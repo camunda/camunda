@@ -83,6 +83,7 @@ final class OpenSearchArchiverRepositoryIT {
   private final String batchOperationIndex =
       ARCHIVER_IDX_PREFIX + "batch-operation-" + UUID.randomUUID();
   private final OpenSearchClient testClient = createOpenSearchClient();
+  private final String zeebeIndexPrefix = "zeebe-record";
 
   @Test
   void shouldDeleteDocuments() throws IOException {
@@ -522,6 +523,7 @@ final class OpenSearchArchiverRepositoryIT {
         connectConfiguration.getIndexPrefix(),
         processInstanceIndex,
         batchOperationIndex,
+        zeebeIndexPrefix,
         client,
         Runnable::run,
         metrics,
