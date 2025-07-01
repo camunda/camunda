@@ -7,6 +7,7 @@
  */
 package io.camunda.security.auth;
 
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.APPLICATION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.BATCH_OPERATION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_DEFINITION;
@@ -17,6 +18,7 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.P
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.ROLE;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.TENANT;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.ACCESS;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.CREATE_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_DECISION_DEFINITION;
@@ -132,6 +134,14 @@ public record Authorization(
 
     public Builder batchOperation() {
       return resourceType(BATCH_OPERATION);
+    }
+
+    public Builder application() {
+      return resourceType(APPLICATION);
+    }
+
+    public Builder access() {
+      return permissionType(ACCESS);
     }
 
     public Authorization build() {

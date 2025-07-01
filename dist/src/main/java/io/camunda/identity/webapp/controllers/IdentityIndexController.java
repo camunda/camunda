@@ -7,8 +7,10 @@
  */
 package io.camunda.identity.webapp.controllers;
 
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.entity.AuthenticationMethod;
+import io.camunda.service.AuthorizationServices;
 import io.camunda.webapps.controllers.WebappsRequestForwardManager;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,41 +29,44 @@ public class IdentityIndexController {
   private static final String CONTENT_SECURITY_POLICY_HEADER = "Content-Security-Policy";
 
   private final ServletContext context;
-
   private final WebappsRequestForwardManager webappsRequestForwardManager;
-
+  private final CamundaAuthenticationProvider authenticationProvider;
+  private final AuthorizationServices authorizationServices;
   private final SecurityConfiguration securityConfiguration;
 
   public IdentityIndexController(
       final ServletContext context,
       final WebappsRequestForwardManager webappsRequestForwardManager,
+      final CamundaAuthenticationProvider authenticationProvider,
+      final AuthorizationServices authorizationServices,
       final SecurityConfiguration securityConfiguration) {
     this.context = context;
     this.webappsRequestForwardManager = webappsRequestForwardManager;
+    this.authenticationProvider = authenticationProvider;
+    this.authorizationServices = authorizationServices;
     this.securityConfiguration = securityConfiguration;
   }
 
   @GetMapping("/identity")
   public String identity(final Model model, final HttpServletResponse response) throws IOException {
-    final var envJsNonce = generateNonce();
-    model.addAttribute("contextPath", context.getContextPath() + "/identity/");
-    model.addAttribute("clientConfigNonce", envJsNonce);
+    final var hasAccessToIdentity =
+        authorizationServices
+            .withAuthentication(authenticationProvider.getCamundaAuthentication())
+            .hasAccessToApplication("identity");
 
-    final var clientConfigMap =
-        Map.of(
-            "VITE_IS_OIDC",
-            String.valueOf(
-                AuthenticationMethod.OIDC.equals(
-                    securityConfiguration.getAuthentication().getMethod())),
-            "VITE_INTERNAL_GROUPS_ENABLED",
-            String.valueOf(
-                securityConfiguration.getAuthentication().getOidc() == null
-                    || securityConfiguration.getAuthentication().getOidc().getGroupsClaim()
-                        == null));
+    if (hasAccessToIdentity) {
+      return getIdentity(model, response);
+    } else {
+      // redirect to /identity/forbidden, so that the frontend
+      // shows the forbidden page eventually.
+      return "redirect:/identity/forbidden";
+    }
+  }
 
-    model.addAttribute("clientConfig", clientConfigMap);
-    setContentSecurePolicyHeader(response, envJsNonce);
-    return "identity/index";
+  @GetMapping("/identity/forbidden")
+  public String forbidden(final Model model, final HttpServletResponse response)
+      throws IOException {
+    return getIdentity(model, response);
   }
 
   @RequestMapping(
@@ -90,5 +95,31 @@ public class IdentityIndexController {
     secureRandom.nextBytes(secureBytes);
 
     return Base64.getEncoder().encodeToString(secureBytes);
+  }
+
+  public String getIdentity(final Model model, final HttpServletResponse response) {
+    final var envJsNonce = generateNonce();
+    model.addAttribute("contextPath", context.getContextPath() + "/identity/");
+    model.addAttribute("clientConfigNonce", envJsNonce);
+
+    final var clientConfigMap =
+        Map.of(
+            "VITE_IS_OIDC",
+            String.valueOf(
+                AuthenticationMethod.OIDC.equals(
+                    securityConfiguration.getAuthentication().getMethod())),
+            "VITE_INTERNAL_GROUPS_ENABLED",
+            String.valueOf(
+                securityConfiguration.getAuthentication().getOidc() == null
+                    || securityConfiguration.getAuthentication().getOidc().getGroupsClaim()
+                        == null));
+
+    model.addAttribute("clientConfig", clientConfigMap);
+    setContentSecurePolicyHeader(response, envJsNonce);
+
+    // return index; based on the request path /forbidden, the frontend
+    // will open the forbidden page.
+    model.addAttribute("contextPath", context.getContextPath() + "/identity/");
+    return "identity/index";
   }
 }
