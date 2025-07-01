@@ -15,10 +15,12 @@ const ELEMENT_INSTANCE_QUERY_KEY = 'elementInstance';
 function getQueryKey(elementInstanceKey?: string) {
   return [ELEMENT_INSTANCE_QUERY_KEY, elementInstanceKey];
 }
-
 const useElementInstance = <T = ElementInstance>(
   elementInstanceKey: string,
-  select?: (data: ElementInstance) => T,
+  options?: {
+    select?: (data: ElementInstance) => T;
+    enabled?: boolean;
+  },
 ) => {
   return useQuery({
     queryKey: getQueryKey(elementInstanceKey),
@@ -27,12 +29,12 @@ const useElementInstance = <T = ElementInstance>(
           const {response, error} = await fetchElementInstance({
             elementInstanceKey,
           });
-
           if (response !== null) return response;
           throw error;
         }
       : skipToken,
-    select,
+    select: options?.select,
+    enabled: options?.enabled,
   });
 };
 

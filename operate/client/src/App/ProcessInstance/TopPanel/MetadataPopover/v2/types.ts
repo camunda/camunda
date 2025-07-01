@@ -7,10 +7,10 @@
  */
 
 import {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
-import {ElementInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {ElementInstance} from '@vzeta/camunda-api-zod-schemas';
 
 // V2 Element Instance Metadata - extends the old structure but with v2 element instance fields will be removed after other components migration
-export type V2InstanceMetadata = {
+type V2InstanceMetadata = {
   elementInstanceKey: string;
   elementId: string;
   elementName?: string;
@@ -40,12 +40,12 @@ export type V2InstanceMetadata = {
   jobId?: string | null;
 };
 
-export type V2MetaDataDto = Omit<MetaDataDto, 'instanceMetadata'> & {
+type V2MetaDataDto = Omit<MetaDataDto, 'instanceMetadata'> & {
   instanceMetadata: V2InstanceMetadata | null;
 };
 
 // Utility function to create V2 instance metadata from old metadata + migrated element instance
-export function createV2InstanceMetadata(
+function createV2InstanceMetadata(
   oldMetadata: MetaDataDto['instanceMetadata'],
   elementInstance: ElementInstance,
 ): V2InstanceMetadata {
@@ -75,3 +75,6 @@ export function createV2InstanceMetadata(
     flowNodeType: elementInstance.type,
   };
 }
+
+export type {V2InstanceMetadata, V2MetaDataDto};
+export {createV2InstanceMetadata};

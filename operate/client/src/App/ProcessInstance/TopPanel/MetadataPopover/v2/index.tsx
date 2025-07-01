@@ -23,6 +23,7 @@ import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesS
 import {useMemo} from 'react';
 import {Details} from './Details';
 import {createV2InstanceMetadata} from './types';
+import {QueryElementInstancesRequestBody} from '@vzeta/camunda-api-zod-schemas';
 
 type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;
@@ -58,7 +59,9 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     !!elementId;
 
   const {data: elementInstance, isLoading: isFetchingInstance} =
-    useElementInstance(elementInstanceId ?? '');
+    useElementInstance(elementInstanceId ?? '', {
+      enabled: !!elementInstanceId && !!elementId,
+    });
 
   const {data: elementInstancesSearchResult, isLoading: isSearchingInstances} =
     useElementInstancesSearch(
@@ -68,9 +71,9 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
               elementId,
               processInstanceKey: processInstance.processInstanceKey,
             },
-            page: {size: 1},
+            page: {limit: 1},
           }
-        : ({} as any),
+        : ({} as QueryElementInstancesRequestBody),
     );
 
   const elementInstanceMetadata = useMemo(() => {
