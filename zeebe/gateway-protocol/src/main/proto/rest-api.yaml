@@ -131,6 +131,34 @@ paths:
           $ref: "#/components/responses/InvalidData"
         "500":
           $ref: "#/components/responses/InternalServerError"
+  /jobs/search:
+    post:
+      tags:
+        - Job
+      operationId: searchJobs
+      summary: Search jobs
+      description: Search for jobs based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JobSearchQuery"
+      responses:
+        "200":
+          description: The job search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobSearchQueryResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /jobs/{jobKey}/failure:
     post:
       tags:
@@ -5955,16 +5983,7 @@ components:
         - type: object
           properties:
             $like:
-              description: |
-                Checks if the property matches the provided like value.
-
-                Supported wildcard characters are:
-
-                * `*`: matches zero, one, or multiple characters.
-                * `?`: matches one, single character.
-
-                Wildcard characters can be escaped with backslash, for instance: `\*`.
-              type: string
+              $ref: "#/components/schemas/LikeFilterProperty"
     AdvancedProcessInstanceStateFilter:
       title: Advanced filter
       description: Advanced ProcessInstanceStateEnum filter.
@@ -5987,16 +6006,7 @@ components:
           items:
             $ref: "#/components/schemas/ProcessInstanceStateEnum"
         $like:
-          description: |
-            Checks if the property matches the provided like value.
-
-            Supported wildcard characters are:
-
-            * `*`: matches zero, one, or multiple characters.
-            * `?`: matches one, single character.
-
-            Wildcard characters can be escaped with backslash, for instance: `\*`.
-          type: string
+          $ref: "#/components/schemas/LikeFilterProperty"
     AdvancedElementInstanceStateFilter:
       title: Advanced filter
       description: Advanced ElementInstanceStateEnum filter.
@@ -6019,16 +6029,7 @@ components:
           items:
             $ref: "#/components/schemas/ElementInstanceStateEnum"
         $like:
-          description: |
-            Checks if the property matches the provided like value.
-
-            Supported wildcard characters are:
-
-            * `*`: matches zero, one, or multiple characters.
-            * `?`: matches one, single character.
-
-            Wildcard characters can be escaped with backslash, for instance: `\*`.
-          type: string
+          $ref: "#/components/schemas/LikeFilterProperty"
     AdvancedDateTimeFilter:
       title: Advanced filter
       description: Advanced date-time filter.
@@ -6083,6 +6084,17 @@ components:
           title: Exact match
           description: Matches the value exactly.
         - $ref: "#/components/schemas/AdvancedStringFilter"
+    LikeFilterProperty:
+      type: string
+      description: |
+        Checks if the property matches the provided like value.
+
+        Supported wildcard characters are:
+
+        * `*`: matches zero, one, or multiple characters.
+        * `?`: matches one, single character.
+
+        Wildcard characters can be escaped with backslash, for instance: `\*`.
     ProcessInstanceStateFilterProperty:
       description: ProcessInstanceStateEnum property with full advanced search capabilities.
       type: object
@@ -8451,6 +8463,345 @@ components:
           format: int64
           description: The duration of the new timeout in ms, starting from the current moment.
           nullable: true
+    JobSearchQuery:
+      description: Job search request.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/JobSearchQuerySortRequest"
+        filter:
+          description: The job search filters.
+          allOf:
+            - $ref: "#/components/schemas/JobFilter"
+    JobSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - deadline
+            - deniedReason
+            - elementId
+            - elementInstanceKey
+            - endTime
+            - errorCode
+            - errorMessage
+            - hasFailedWithRetriesLeft
+            - isDenied
+            - jobKey
+            - kind
+            - listenerEventType
+            - processDefinitionId
+            - processDefinitionKey
+            - processInstanceKey
+            - retries
+            - state
+            - tenantId
+            - type
+            - worker
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+          - field
+    JobFilter:
+      description: Job search filter.
+      type: object
+      properties:
+        deadline:
+          description: When the job can be activated.
+          allOf:
+            - $ref: "#/components/schemas/DateTimeFilterProperty"
+        deniedReason:
+          description: The reason provided by the user task listener for denying the work.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        elementId:
+            description: The element ID associated with the job.
+            allOf:
+                - $ref: "#/components/schemas/StringFilterProperty"
+        elementInstanceKey:
+            description: The element instance key associated with the job.
+            allOf:
+                - $ref: "#/components/schemas/BasicStringFilterProperty"
+        endTime:
+            description: When the job ended.
+            allOf:
+                - $ref: "#/components/schemas/DateTimeFilterProperty"
+        errorCode:
+            description: The error code provided for the failed job.
+            allOf:
+                - $ref: "#/components/schemas/StringFilterProperty"
+        errorMessage:
+            description: The error message that provides additional context for a failed job.
+            allOf:
+                - $ref: "#/components/schemas/StringFilterProperty"
+        hasFailedWithRetriesLeft:
+            description: Indicates whether the job has failed with retries left.
+            type: boolean
+        isDenied:
+          description: Indicates whether the user task listener denies the work.
+          type: boolean
+        jobKey:
+          description: The key, a unique identifier for the job.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        kind:
+          description: The kind of the job.
+          allOf:
+            - $ref: "#/components/schemas/JobKindFilterProperty"
+        listenerEventType:
+          description: The listener event type of the job.
+          allOf:
+            - $ref: "#/components/schemas/JobListenerEventTypeFilterProperty"
+        processDefinitionId:
+          description: The process definition ID associated with the job.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        processDefinitionKey:
+          description: The process definition key associated with the job.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        processInstanceKey:
+          description: The process instance key associated with the job.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        retries:
+          description: The number of retries left.
+          allOf:
+            - $ref: "#/components/schemas/IntegerFilterProperty"
+        state:
+          description: The state of the job.
+          allOf:
+            - $ref: "#/components/schemas/JobStateFilterProperty"
+        tenantId:
+          description: The tenant ID.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        type:
+          description: The type of the job.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        worker:
+          description: The name of the worker for this job.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+    JobSearchQueryResult:
+      description: Job search response.
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          description: The matching jobs.
+          type: array
+          items:
+            $ref: "#/components/schemas/JobSearchResult"
+    JobSearchResult:
+      type: object
+      properties:
+        customHeaders:
+          description: A set of custom headers defined during modelling.
+          type: object
+          additionalProperties:
+            type: string
+        deadline:
+          description: When the job can be activated.
+          type: string
+          format: date-time
+        deniedReason:
+          description: The reason provided by the user task listener for denying the work.
+          type: string
+          nullable: true
+        elementId:
+          description: The element ID associated with the job.
+          type: string
+        elementInstanceKey:
+          description: The element instance key associated with the job.
+          type: string
+        endTime:
+          description: When the job ended.
+          type: string
+          format: date-time
+        errorCode:
+          description: The error code provided for the failed job.
+          type: string
+          nullable: true
+        errorMessage:
+          description: The error message that provides additional context for a failed job.
+          type: string
+          nullable: true
+        hasFailedWithRetriesLeft:
+          description: Indicates whether the job has failed with retries left.
+          type: boolean
+        isDenied:
+          description: Indicates whether the user task listener denies the work.
+          type: boolean
+          nullable: true
+        jobKey:
+          description: The key, a unique identifier for the job.
+          type: string
+        kind:
+          $ref: "#/components/schemas/JobKindEnum"
+        listenerEventType:
+          $ref: "#/components/schemas/JobListenerEventTypeEnum"
+        processDefinitionId:
+          description: The process definition ID associated with the job.
+          type: string
+        processDefinitionKey:
+          description: The process definition key associated with the job.
+          type: string
+        processInstanceKey:
+          description: The process instance key associated with the job.
+          type: string
+        retries:
+          description: The amount of retries left to this job.
+          type: integer
+          format: int32
+        state:
+          $ref: "#/components/schemas/JobStateEnum"
+        tenantId:
+          description: The tenant ID.
+          type: string
+        type:
+          description: The type of the job.
+          type: string
+        worker:
+          description: The name of the worker of this job.
+          type: string
+    JobStateEnum:
+      description: The state of the job.
+      enum:
+        - CANCELED
+        - COMPLETED
+        - CREATED
+        - ERROR_THROWN
+        - FAILED
+        - MIGRATED
+        - RETRIES_UPDATED
+        - TIMED_OUT
+    JobKindEnum:
+      description: The job kind.
+      enum:
+        - BPMN_ELEMENT
+        - EXECUTION_LISTENER
+        - TASK_LISTENER
+    JobListenerEventTypeEnum:
+      description: The listener event type of the job.
+      enum:
+        - ASSIGNING
+        - CANCELING
+        - COMPLETING
+        - CREATING
+        - END
+        - START
+        - UNSPECIFIED
+        - UPDATING
+    JobStateFilterProperty:
+      description: JobStateEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/JobStateEnum"
+        - $ref: "#/components/schemas/AdvancedJobStateFilter"
+    AdvancedJobStateFilter:
+      title: Advanced filter
+      description: Advanced JobStateEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/JobStateEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/JobStateEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/JobStateEnum"
+        $like:
+          $ref: "#/components/schemas/LikeFilterProperty"
+    JobKindFilterProperty:
+      description: JobKindEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/JobKindEnum"
+        - $ref: "#/components/schemas/AdvancedJobKindFilter"
+    AdvancedJobKindFilter:
+      title: Advanced filter
+      description: Advanced JobKindEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/JobKindEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/JobKindEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/JobKindEnum"
+        $like:
+          $ref: "#/components/schemas/LikeFilterProperty"
+    JobListenerEventTypeFilterProperty:
+      description: JobListenerEventTypeEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/JobListenerEventTypeEnum"
+        - $ref: "#/components/schemas/AdvancedJobListenerEventTypeFilter"
+    AdvancedJobListenerEventTypeFilter:
+      title: Advanced filter
+      description: Advanced JobListenerEventTypeEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/JobListenerEventTypeEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/JobListenerEventTypeEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/JobListenerEventTypeEnum"
+        $like:
+          $ref: "#/components/schemas/LikeFilterProperty"
+
     ProblemDetail:
       description: >
         A Problem detail object as described in [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457).
@@ -9711,16 +10062,7 @@ components:
           items:
             $ref: "#/components/schemas/BatchOperationTypeEnum"
         $like:
-          description: |
-            Checks if the property matches the provided like value.
-
-            Supported wildcard characters are:
-
-            * `*`: matches zero, one, or multiple characters.
-            * `?`: matches one, single character.
-
-            Wildcard characters can be escaped with backslash, for instance: `\*`.
-          type: string
+          $ref: "#/components/schemas/LikeFilterProperty"
     BatchOperationStateFilterProperty:
       description: BatchOperationStateEnum property with full advanced search capabilities.
       type: object
@@ -9753,16 +10095,7 @@ components:
           items:
             $ref: "#/components/schemas/BatchOperationStateEnum"
         $like:
-          description: |
-            Checks if the property matches the provided like value.
-
-            Supported wildcard characters are:
-
-            * `*`: matches zero, one, or multiple characters.
-            * `?`: matches one, single character.
-
-            Wildcard characters can be escaped with backslash, for instance: `\*`.
-          type: string
+          $ref: "#/components/schemas/LikeFilterProperty"
     BatchOperationStateEnum:
       description: The state, one of ACTIVE, COMPLETED, TERMINATED.
       enum:
@@ -9856,16 +10189,7 @@ components:
           items:
             $ref: "#/components/schemas/BatchOperationItemStateEnum"
         $like:
-          description: |
-            Checks if the property matches the provided like value.
-
-            Supported wildcard characters are:
-
-            * `*`: matches zero, one, or multiple characters.
-            * `?`: matches one, single character.
-
-            Wildcard characters can be escaped with backslash, for instance: `\*`.
-          type: string
+          $ref: "#/components/schemas/LikeFilterProperty"
     BatchOperationItemStateEnum:
       description: The state, one of ACTIVE, COMPLETED, TERMINATED.
       enum:
