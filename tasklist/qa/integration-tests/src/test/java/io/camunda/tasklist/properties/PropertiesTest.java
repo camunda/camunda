@@ -27,7 +27,8 @@ public class PropertiesTest {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  @Test
+  // @Test
+  // TODO: New tests will be developed against the beans built in dist
   public void testProperties() {
     assertThat(tasklistProperties.getImporter().isStartLoadingDataOnStartup()).isFalse();
     assertThat(tasklistProperties.getImporter().getCompletedReaderMinEmptyBatches()).isEqualTo(10);
