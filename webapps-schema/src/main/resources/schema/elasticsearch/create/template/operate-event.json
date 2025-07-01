@@ -90,6 +90,9 @@
       "positionJob": {
         "type": "long",
         "index": false
+      },
+      "fake": {
+        "type": "keyword"
       }
 		}
 	}

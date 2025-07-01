@@ -33,6 +33,9 @@
 			},
       "processInstanceKey": {
         "type": "long"
+      },
+      "fake": {
+        "type": "keyword"
       }
     }
 	}

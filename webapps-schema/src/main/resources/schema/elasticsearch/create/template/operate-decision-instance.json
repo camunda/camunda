@@ -118,6 +118,9 @@
             "type": "integer"
           }
         }
+      },
+      "fake": {
+        "type": "keyword"
       }
     }
   }

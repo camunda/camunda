@@ -40,6 +40,9 @@
       },
       "tenantId": {
         "type": "keyword"
+      },
+      "fake": {
+        "type": "keyword"
       }
     }
   }
