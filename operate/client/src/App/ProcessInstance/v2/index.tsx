@@ -73,7 +73,6 @@ const ProcessInstance: React.FC = observer(() => {
   const {data: processTitle} = useProcessTitle();
   const {data: callHierarchy} = useCallHierarchy();
   const {processInstanceId = ''} = useProcessInstancePageParams();
-  const {data: processInstanceData} = useProcessInstance();
   const isRootNodeSelected = useIsRootNodeSelected();
   const rootNode = useRootNode();
   const navigate = useNavigate();
@@ -108,14 +107,14 @@ const ProcessInstance: React.FC = observer(() => {
           stopPolling();
         } else {
           instanceHistoryModificationStore.reset();
-          startPolling(processInstanceData);
+          startPolling(processInstance);
         }
       },
     );
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        startPolling(processInstanceData);
+        startPolling(processInstance);
       } else {
         stopPolling();
       }
@@ -127,7 +126,7 @@ const ProcessInstance: React.FC = observer(() => {
       disposer();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [processInstanceData]);
+  }, [processInstance]);
 
   const isInitialized = useRef(false);
   useEffect(() => {
