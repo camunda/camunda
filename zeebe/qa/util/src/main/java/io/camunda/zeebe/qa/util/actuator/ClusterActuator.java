@@ -21,6 +21,7 @@ import feign.jackson.JacksonEncoder;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
 import io.camunda.zeebe.management.cluster.GetTopologyResponse;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
+import io.camunda.zeebe.management.cluster.RoutingState;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.zeebe.containers.ZeebeNode;
@@ -203,4 +204,12 @@ public interface ClusterActuator {
   @RequestLine("POST /purge?dryRun={dryRun}")
   @Headers({"Content-Type: application/json"})
   PlannedOperationsResponse purge(@Param boolean dryRun);
+
+  @RequestLine("PATCH /routing-state?dryRun={dryRun}&force={force}")
+  @Headers({"Content-Type: application/json", "accept: application/json"})
+  void patchRoutingState(@RequestBody final RoutingState routingState, @Param boolean dryRun);
+
+  @RequestLine("PATCH /routing-state?dryRun={dryRun}&force={force}")
+  @Headers({"Content-Type: application/json", "accept: application/json"})
+  void patchRoutingState(@Param boolean dryRun);
 }

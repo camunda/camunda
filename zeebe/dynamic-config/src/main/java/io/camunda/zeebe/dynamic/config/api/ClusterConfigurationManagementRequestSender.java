@@ -20,6 +20,7 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.UpdateRoutingStateRequest;
 import io.camunda.zeebe.dynamic.config.serializer.ClusterConfigurationRequestsSerializer;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.util.Either;
@@ -204,6 +205,17 @@ public final class ClusterConfigurationManagementRequestSender {
         request,
         serializer::encodeCancelChangeRequest,
         serializer::decodeClusterTopologyResponse,
+        coordinatorSupplier.getDefaultCoordinator(),
+        TIMEOUT);
+  }
+
+  public CompletableFuture<Either<ErrorResponse, ClusterConfigurationChangeResponse>>
+      updateRoutingState(final UpdateRoutingStateRequest updateRoutingStateRequest) {
+    return communicationService.send(
+        ClusterConfigurationRequestTopics.UPDATE_ROUTING_STATE.topic(),
+        updateRoutingStateRequest,
+        serializer::encodeUpdateRoutingStateRequest,
+        serializer::decodeTopologyChangeResponse,
         coordinatorSupplier.getDefaultCoordinator(),
         TIMEOUT);
   }

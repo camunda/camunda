@@ -41,11 +41,16 @@ public class UpdateRoutingStateApplier implements ClusterOperationApplier {
             : executor.getRoutingState();
 
     return routingState.thenApply(
-        state ->
-            config -> {
+        state -> {
+          if (state == null) {
+            return UnaryOperator.identity();
+          } else {
+            return config -> {
               final var previousVersion =
                   config.routingState().map(RoutingState::version).orElse(0L);
               return config.setRoutingState(state.withVersion(previousVersion + 1));
-            });
+            };
+          }
+        });
   }
 }
