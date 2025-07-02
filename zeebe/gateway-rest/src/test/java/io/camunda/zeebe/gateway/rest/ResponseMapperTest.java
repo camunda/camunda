@@ -27,156 +27,162 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class ResponseMapperTest {
 
-  static Stream<TestCase> testCasesProvider() {
-    return Stream.of(
-        new TestCase(
-            "TASK_LISTENER job with valid user task properties in headers",
-            JobKind.TASK_LISTENER,
-            Map.of(
-                Protocol.USER_TASK_ACTION_HEADER_NAME, "complete",
-                Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "john",
-                Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME, "[\"group1\",\"group2\"]",
-                Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, "[\"user1\"]",
-                Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME, "[\"assignee\"]",
-                Protocol.USER_TASK_DUE_DATE_HEADER_NAME, "2024-07-01",
-                Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME, "2024-07-02",
-                Protocol.USER_TASK_FORM_KEY_HEADER_NAME, "formKey",
-                Protocol.USER_TASK_PRIORITY_HEADER_NAME, "10",
-                Protocol.USER_TASK_KEY_HEADER_NAME, "utKey"),
-            props -> {
-              // Verify all user task properties are correctly mapped
-              assertThat(props.getAction()).isEqualTo("complete");
-              assertThat(props.getAssignee()).isEqualTo("john");
-              assertThat(props.getCandidateGroups()).containsExactly("group1", "group2");
-              assertThat(props.getCandidateUsers()).containsExactly("user1");
-              assertThat(props.getChangedAttributes()).containsExactly("assignee");
-              assertThat(props.getDueDate()).isEqualTo("2024-07-01");
-              assertThat(props.getFollowUpDate()).isEqualTo("2024-07-02");
-              assertThat(props.getFormKey()).isEqualTo("formKey");
-              assertThat(props.getPriority()).isEqualTo(10);
-              assertThat(props.getUserTaskKey()).isEqualTo("utKey");
-            }),
-        new TestCase(
-            "TASK_LISTENER job with invalid or empty header values",
-            JobKind.TASK_LISTENER,
-            Map.of(
-                Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME, "",
-                Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, "invalid_string",
-                Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME, "132",
-                Protocol.USER_TASK_PRIORITY_HEADER_NAME, "<not_a_number>"),
-            props -> {
-              // Verify invalid or empty headers result in empty or null properties
-              assertThat(props.getAction()).as("Action should be null").isNull();
-              assertThat(props.getAssignee()).as("Assignee should be null").isNull();
-              assertThat(props.getCandidateGroups())
-                  .as("Candidate groups should be empty for invalid input")
-                  .isEmpty();
-              assertThat(props.getCandidateUsers())
-                  .as("Candidate users should be empty for invalid input")
-                  .isEmpty();
-              assertThat(props.getChangedAttributes())
-                  .as("Changed attributes should be empty for invalid input")
-                  .isEmpty();
-              assertThat(props.getDueDate()).as("Due date should be null").isNull();
-              assertThat(props.getFollowUpDate()).as("Follow-up date should be null").isNull();
-              assertThat(props.getFormKey()).as("Form key should be null").isNull();
-              assertThat(props.getPriority()).as("Priority should be null").isNull();
-              assertThat(props.getUserTaskKey()).as("User task key should be null").isNull();
-            }),
-        new TestCase(
-            "TASK_LISTENER job with empty headers map",
-            JobKind.TASK_LISTENER,
-            Collections.emptyMap(),
-            props ->
-                assertThat(props)
-                    .as(
-                        "User task properties should be null for TASK_LISTENER jobs with no headers")
-                    .isNull()),
-        new TestCase(
-            "BPMN_ELEMENT with no user task properties",
-            JobKind.BPMN_ELEMENT,
-            Collections.singletonMap("someHeader", "someValue"),
-            props ->
-                assertThat(props)
-                    .as("User task properties should be null for BPMN_ELEMENT jobs")
-                    .isNull()),
-        new TestCase(
-            "EXECUTION_LISTENER with no user task properties",
-            JobKind.EXECUTION_LISTENER,
-            Collections.emptyMap(),
-            props ->
-                assertThat(props)
-                    .as("User task properties should be null for EXECUTION_LISTENER jobs")
-                    .isNull()));
-  }
+  @Nested
+  class ActivatedJobMappingTest {
 
-  @ParameterizedTest
-  @MethodSource("testCasesProvider")
-  void shouldMapActivatedJobWithUserTaskPropertiesBasedOnJobKind(final TestCase testCase) {
-    // given
-    final JobRecord jobRecord = mockJobRecord(testCase);
+    static Stream<ActivatedJobWithUserTaskPropsCase> activatedJobWithUserTaskPropsCases() {
+      return Stream.of(
+          new ActivatedJobWithUserTaskPropsCase(
+              "TASK_LISTENER job with valid user task properties in headers",
+              JobKind.TASK_LISTENER,
+              Map.of(
+                  Protocol.USER_TASK_ACTION_HEADER_NAME, "complete",
+                  Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "john",
+                  Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME, "[\"group1\",\"group2\"]",
+                  Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, "[\"user1\"]",
+                  Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME, "[\"assignee\"]",
+                  Protocol.USER_TASK_DUE_DATE_HEADER_NAME, "2024-07-01",
+                  Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME, "2024-07-02",
+                  Protocol.USER_TASK_FORM_KEY_HEADER_NAME, "formKey",
+                  Protocol.USER_TASK_PRIORITY_HEADER_NAME, "10",
+                  Protocol.USER_TASK_KEY_HEADER_NAME, "utKey"),
+              props -> {
+                // Verify all user task properties are correctly mapped
+                assertThat(props.getAction()).isEqualTo("complete");
+                assertThat(props.getAssignee()).isEqualTo("john");
+                assertThat(props.getCandidateGroups()).containsExactly("group1", "group2");
+                assertThat(props.getCandidateUsers()).containsExactly("user1");
+                assertThat(props.getChangedAttributes()).containsExactly("assignee");
+                assertThat(props.getDueDate()).isEqualTo("2024-07-01");
+                assertThat(props.getFollowUpDate()).isEqualTo("2024-07-02");
+                assertThat(props.getFormKey()).isEqualTo("formKey");
+                assertThat(props.getPriority()).isEqualTo(10);
+                assertThat(props.getUserTaskKey()).isEqualTo("utKey");
+              }),
+          new ActivatedJobWithUserTaskPropsCase(
+              "TASK_LISTENER job with invalid or empty header values",
+              JobKind.TASK_LISTENER,
+              Map.of(
+                  Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME, "",
+                  Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, "invalid_string",
+                  Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME, "132",
+                  Protocol.USER_TASK_PRIORITY_HEADER_NAME, "<not_a_number>"),
+              props -> {
+                // Verify invalid or empty headers result in empty or null properties
+                assertThat(props.getAction()).as("Action should be null").isNull();
+                assertThat(props.getAssignee()).as("Assignee should be null").isNull();
+                assertThat(props.getCandidateGroups())
+                    .as("Candidate groups should be empty for invalid input")
+                    .isEmpty();
+                assertThat(props.getCandidateUsers())
+                    .as("Candidate users should be empty for invalid input")
+                    .isEmpty();
+                assertThat(props.getChangedAttributes())
+                    .as("Changed attributes should be empty for invalid input")
+                    .isEmpty();
+                assertThat(props.getDueDate()).as("Due date should be null").isNull();
+                assertThat(props.getFollowUpDate()).as("Follow-up date should be null").isNull();
+                assertThat(props.getFormKey()).as("Form key should be null").isNull();
+                assertThat(props.getPriority()).as("Priority should be null").isNull();
+                assertThat(props.getUserTaskKey()).as("User task key should be null").isNull();
+              }),
+          new ActivatedJobWithUserTaskPropsCase(
+              "TASK_LISTENER job with empty headers map",
+              JobKind.TASK_LISTENER,
+              Collections.emptyMap(),
+              props ->
+                  assertThat(props)
+                      .as(
+                          "User task properties should be null for TASK_LISTENER jobs with no headers")
+                      .isNull()),
+          new ActivatedJobWithUserTaskPropsCase(
+              "BPMN_ELEMENT with no user task properties",
+              JobKind.BPMN_ELEMENT,
+              Collections.singletonMap("someHeader", "someValue"),
+              props ->
+                  assertThat(props)
+                      .as("User task properties should be null for BPMN_ELEMENT jobs")
+                      .isNull()),
+          new ActivatedJobWithUserTaskPropsCase(
+              "EXECUTION_LISTENER with no user task properties",
+              JobKind.EXECUTION_LISTENER,
+              Collections.emptyMap(),
+              props ->
+                  assertThat(props)
+                      .as("User task properties should be null for EXECUTION_LISTENER jobs")
+                      .isNull()));
+    }
 
-    final JobBatchRecord batchRecordMock = mock(JobBatchRecord.class);
-    final ValueArray<JobRecord> jobsValueArrayMock = mockValueArray(jobRecord);
-    when(batchRecordMock.jobs()).thenReturn(jobsValueArrayMock);
-    final LongValue jobKey = mock(LongValue.class);
-    when(jobKey.getValue()).thenReturn(123L);
-    final ValueArray<LongValue> jobKeysValueArrayMock = mockValueArray(jobKey);
-    when(batchRecordMock.jobKeys()).thenReturn(jobKeysValueArrayMock);
-    final JobActivationResponse activationResponse =
-        new JobActivationResponse(123L, batchRecordMock, 10L);
+    @ParameterizedTest
+    @MethodSource("activatedJobWithUserTaskPropsCases")
+    void shouldMapActivatedJobWithUserTaskPropertiesBasedOnJobKind(
+        final ActivatedJobWithUserTaskPropsCase testCase) {
+      // given
+      final JobRecord jobRecord = mockJobRecord(testCase);
 
-    // when
-    final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
+      final JobBatchRecord batchRecordMock = mock(JobBatchRecord.class);
+      final ValueArray<JobRecord> jobsValueArrayMock = mockValueArray(jobRecord);
+      when(batchRecordMock.jobs()).thenReturn(jobsValueArrayMock);
+      final LongValue jobKey = mock(LongValue.class);
+      when(jobKey.getValue()).thenReturn(123L);
+      final ValueArray<LongValue> jobKeysValueArrayMock = mockValueArray(jobKey);
+      when(batchRecordMock.jobKeys()).thenReturn(jobKeysValueArrayMock);
+      final JobActivationResponse activationResponse =
+          new JobActivationResponse(123L, batchRecordMock, 10L);
 
-    // then
-    final var jobs = result.getActivateJobsResponse().getJobs();
-    assertThat(jobs)
-        .singleElement()
-        .extracting(ActivatedJobResult::getUserTask)
-        .satisfies(testCase.assertions);
-  }
+      // when
+      final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
 
-  private static JobRecord mockJobRecord(final TestCase testCase) {
-    final JobRecord jobRecord = mock(JobRecord.class);
-    when(jobRecord.getJobKind()).thenReturn(testCase.jobKind);
-    when(jobRecord.getCustomHeaders()).thenReturn(testCase.headers);
-    when(jobRecord.getType()).thenReturn("type");
-    when(jobRecord.getBpmnProcessId()).thenReturn("procId");
-    when(jobRecord.getElementId()).thenReturn("elementId");
-    when(jobRecord.getProcessInstanceKey()).thenReturn(1L);
-    when(jobRecord.getProcessDefinitionVersion()).thenReturn(1);
-    when(jobRecord.getProcessDefinitionKey()).thenReturn(2L);
-    when(jobRecord.getElementInstanceKey()).thenReturn(3L);
-    when(jobRecord.getWorkerBuffer()).thenReturn(BufferUtil.wrapString("worker"));
-    when(jobRecord.getRetries()).thenReturn(3);
-    when(jobRecord.getDeadline()).thenReturn(0L);
-    when(jobRecord.getVariables()).thenReturn(Map.of());
-    when(jobRecord.getTenantId()).thenReturn(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    when(jobRecord.getLength()).thenReturn(1);
-    return jobRecord;
-  }
+      // then
+      final var jobs = result.getActivateJobsResponse().getJobs();
+      assertThat(jobs)
+          .singleElement()
+          .extracting(ActivatedJobResult::getUserTask)
+          .satisfies(testCase.assertions);
+    }
 
-  private static <T> ValueArray<T> mockValueArray(final T... values) {
-    final ValueArray<T> valueArrayMock = mock(ValueArray.class);
-    when(valueArrayMock.iterator()).thenReturn(List.of(values).iterator());
-    return valueArrayMock;
-  }
+    private static JobRecord mockJobRecord(final ActivatedJobWithUserTaskPropsCase testCase) {
+      final JobRecord jobRecord = mock(JobRecord.class);
+      when(jobRecord.getJobKind()).thenReturn(testCase.jobKind);
+      when(jobRecord.getCustomHeaders()).thenReturn(testCase.headers);
+      when(jobRecord.getType()).thenReturn("type");
+      when(jobRecord.getBpmnProcessId()).thenReturn("procId");
+      when(jobRecord.getElementId()).thenReturn("elementId");
+      when(jobRecord.getProcessInstanceKey()).thenReturn(1L);
+      when(jobRecord.getProcessDefinitionVersion()).thenReturn(1);
+      when(jobRecord.getProcessDefinitionKey()).thenReturn(2L);
+      when(jobRecord.getElementInstanceKey()).thenReturn(3L);
+      when(jobRecord.getWorkerBuffer()).thenReturn(BufferUtil.wrapString("worker"));
+      when(jobRecord.getRetries()).thenReturn(3);
+      when(jobRecord.getDeadline()).thenReturn(0L);
+      when(jobRecord.getVariables()).thenReturn(Map.of());
+      when(jobRecord.getTenantId()).thenReturn(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+      when(jobRecord.getLength()).thenReturn(1);
+      return jobRecord;
+    }
 
-  private record TestCase(
-      String name,
-      JobKind jobKind,
-      Map<String, String> headers,
-      Consumer<UserTaskProperties> assertions) {
+    private static <T> ValueArray<T> mockValueArray(final T... values) {
+      final ValueArray<T> valueArrayMock = mock(ValueArray.class);
+      when(valueArrayMock.iterator()).thenReturn(List.of(values).iterator());
+      return valueArrayMock;
+    }
 
-    @Override
-    public String toString() {
-      return name;
+    private record ActivatedJobWithUserTaskPropsCase(
+        String name,
+        JobKind jobKind,
+        Map<String, String> headers,
+        Consumer<UserTaskProperties> assertions) {
+
+      @Override
+      public String toString() {
+        return name;
+      }
     }
   }
 }
