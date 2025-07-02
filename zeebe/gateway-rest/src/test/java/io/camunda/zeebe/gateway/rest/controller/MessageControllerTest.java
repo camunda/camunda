@@ -12,7 +12,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
@@ -30,8 +31,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @WebMvcTest(MessageController.class)
@@ -46,14 +47,18 @@ public class MessageControllerTest extends RestControllerTest {
             "messageKey": "123",
             "tenantId": "<default>"
           }""";
-  @MockBean MessageServices messageServices;
-  @MockBean MultiTenancyConfiguration multiTenancyCfg;
+  @MockitoBean MessageServices messageServices;
+  @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
+  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @Captor ArgumentCaptor<CorrelateMessageRequest> correlationRequestCaptor;
   @Captor ArgumentCaptor<PublicationMessageRequest> publicationRequestCaptor;
 
   @BeforeEach
   void setup() {
-    when(messageServices.withAuthentication(any(Authentication.class))).thenReturn(messageServices);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(messageServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(messageServices);
   }
 
   @Test
@@ -112,6 +117,8 @@ public class MessageControllerTest extends RestControllerTest {
   @Test
   void shouldCorrelateMessageWithMultiTenancyEnabled() {
     // given
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(multiTenancyCfg.isEnabled()).thenReturn(true);
     when(messageServices.correlateMessage(any()))
         .thenReturn(
@@ -134,18 +141,15 @@ public class MessageControllerTest extends RestControllerTest {
 
     // when then
     final ResponseSpec response =
-        withMultiTenancy(
-            "tenantId",
-            client ->
-                client
-                    .post()
-                    .uri(CORRELATION_ENDPOINT)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(request)
-                    .exchange()
-                    .expectStatus()
-                    .isOk());
+        webClient
+            .post()
+            .uri(CORRELATION_ENDPOINT)
+            .accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus()
+            .isOk();
 
     Mockito.verify(messageServices).correlateMessage(correlationRequestCaptor.capture());
     final var capturedRequest = correlationRequestCaptor.getValue();

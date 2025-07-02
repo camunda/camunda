@@ -23,7 +23,8 @@ import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.RoleSort;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
@@ -46,14 +47,20 @@ public class RoleQueryControllerTest extends RestControllerTest {
   @MockitoBean private UserServices userServices;
   @MockitoBean private MappingServices mappingsServices;
   @MockitoBean private GroupServices groupServices;
+  @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setup() {
-    when(roleServices.withAuthentication(any(Authentication.class))).thenReturn(roleServices);
-    when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
-    when(mappingsServices.withAuthentication(any(Authentication.class)))
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(roleServices);
+    when(userServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(userServices);
+    when(mappingsServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(mappingsServices);
-    when(groupServices.withAuthentication(any(Authentication.class))).thenReturn(groupServices);
+    when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(groupServices);
   }
 
   @Test

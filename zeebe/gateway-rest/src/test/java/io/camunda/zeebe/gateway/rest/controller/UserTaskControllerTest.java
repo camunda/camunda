@@ -12,8 +12,10 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
@@ -36,9 +38,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(UserTaskController.class)
 public class UserTaskControllerTest extends RestControllerTest {
@@ -48,8 +50,9 @@ public class UserTaskControllerTest extends RestControllerTest {
   static final String TEST_TIME =
       OffsetDateTime.of(2023, 11, 11, 11, 11, 11, 11, ZoneOffset.of("Z")).toString();
 
-  @MockBean UserTaskServices userTaskServices;
-  @MockBean ProcessCache processCache;
+  @MockitoBean UserTaskServices userTaskServices;
+  @MockitoBean ProcessCache processCache;
+  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
   static Stream<String> urls() {
     return Stream.of("/v1/user-tasks", "/v2/user-tasks");
@@ -95,7 +98,9 @@ public class UserTaskControllerTest extends RestControllerTest {
 
   @BeforeEach
   void setupServices() {
-    Mockito.when(userTaskServices.withAuthentication(any(Authentication.class)))
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    Mockito.when(userTaskServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(userTaskServices);
   }
 

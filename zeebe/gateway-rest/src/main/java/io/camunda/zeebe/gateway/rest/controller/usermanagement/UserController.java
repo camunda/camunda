@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.UserQuery;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
@@ -36,9 +37,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/users")
 public class UserController {
   private final UserServices userServices;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
-  public UserController(final UserServices userServices) {
+  public UserController(
+      final UserServices userServices, final CamundaAuthenticationProvider authenticationProvider) {
     this.userServices = userServices;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPostMapping
@@ -55,7 +59,7 @@ public class UserController {
           .body(
               SearchQueryResponseMapper.toUser(
                   userServices
-                      .withAuthentication(RequestMapper.getAuthentication())
+                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
                       .getUser(username)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
@@ -67,14 +71,16 @@ public class UserController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             userServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .deleteUser(username));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createUser(final UserDTO request) {
     return RequestMapper.executeServiceMethod(
         () ->
-            userServices.withAuthentication(RequestMapper.getAuthentication()).createUser(request),
+            userServices
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .createUser(request),
         ResponseMapper::toUserCreateResponse);
   }
 
@@ -88,7 +94,9 @@ public class UserController {
   private CompletableFuture<ResponseEntity<Object>> updateUser(final UserDTO request) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
-            userServices.withAuthentication(RequestMapper.getAuthentication()).updateUser(request));
+            userServices
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                .updateUser(request));
   }
 
   @CamundaPostMapping(path = "/search")
@@ -101,7 +109,9 @@ public class UserController {
   private ResponseEntity<UserSearchResult> search(final UserQuery query) {
     try {
       final var result =
-          userServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
+          userServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);

@@ -22,7 +22,8 @@ import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.ProcessInstanceSort;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
@@ -40,8 +41,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(value = ProcessInstanceController.class)
 public class ProcessInstanceQueryControllerTest extends RestControllerTest {
@@ -134,13 +135,16 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           .endCursor("v")
           .build();
 
-  @MockBean ProcessInstanceServices processInstanceServices;
-  @MockBean MultiTenancyConfiguration multiTenancyCfg;
+  @MockitoBean ProcessInstanceServices processInstanceServices;
+  @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
+  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @Captor ArgumentCaptor<ProcessInstanceQuery> queryCaptor;
 
   @BeforeEach
   void setupServices() {
-    when(processInstanceServices.withAuthentication(any(Authentication.class)))
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(processInstanceServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(processInstanceServices);
   }
 

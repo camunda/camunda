@@ -12,6 +12,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.jayway.jsonpath.JsonPath;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.JobServices;
@@ -44,10 +45,10 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 import org.springframework.util.unit.DataSize;
 
@@ -59,11 +60,14 @@ public class JobControllerLongPollingTest extends RestControllerTest {
   @Autowired ActivateJobsHandler<JobActivationResult> activateJobsHandler;
   @Autowired StubbedBrokerClient stubbedBrokerClient;
   @SpyBean ResettableJobActivationRequestResponseObserver responseObserver;
-  @MockBean MultiTenancyConfiguration multiTenancyCfg;
+  @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
+  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setup() {
     responseObserver.reset();
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
   }
 
   @Test
@@ -278,6 +282,9 @@ public class JobControllerLongPollingTest extends RestControllerTest {
     final ActivateJobsStub stub = new ActivateJobsStub();
     stub.registerWith(stubbedBrokerClient);
 
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
+
     final var request =
         """
         {
@@ -298,18 +305,15 @@ public class JobControllerLongPollingTest extends RestControllerTest {
 
     // when then
     final ResponseSpec response =
-        withMultiTenancy(
-            "tenantId",
-            client ->
-                client
-                    .post()
-                    .uri(JOBS_BASE_URL + "/activation")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(request)
-                    .exchange()
-                    .expectStatus()
-                    .isOk());
+        webClient
+            .post()
+            .uri(JOBS_BASE_URL + "/activation")
+            .accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus()
+            .isOk();
 
     response.expectHeader().contentType(MediaType.APPLICATION_JSON).expectBody().json(expectedBody);
   }

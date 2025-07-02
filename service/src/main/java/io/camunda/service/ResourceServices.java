@@ -7,7 +7,7 @@
  */
 package io.camunda.service;
 
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteResourceRequest;
@@ -24,12 +24,12 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
   public ResourceServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final Authentication authentication) {
+      final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
   }
 
   @Override
-  public ResourceServices withAuthentication(final Authentication authentication) {
+  public ResourceServices withAuthentication(final CamundaAuthentication authentication) {
     return new ResourceServices(brokerClient, securityContextProvider, authentication);
   }
 

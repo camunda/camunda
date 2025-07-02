@@ -12,7 +12,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
@@ -36,10 +37,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(ResourceController.class)
 public class ResourceControllerTest extends RestControllerTest {
@@ -50,14 +51,17 @@ public class ResourceControllerTest extends RestControllerTest {
   static final String GET_RESOURCE_ENDPOINT = RESOURCES_BASE_URL + "/resources/%s";
   static final String GET_RESOURCE_CONTENT_ENDPOINT = RESOURCES_BASE_URL + "/resources/%s/content";
 
-  @MockBean ResourceServices resourceServices;
-  @MockBean MultiTenancyConfiguration multiTenancyCfg;
+  @MockitoBean ResourceServices resourceServices;
+  @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
+  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @Captor ArgumentCaptor<DeployResourcesRequest> deployRequestCaptor;
   @Captor ArgumentCaptor<ResourceDeletionRequest> deleteRequestCaptor;
 
   @BeforeEach
   void setup() {
-    when(resourceServices.withAuthentication(any(Authentication.class)))
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(resourceServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(resourceServices);
   }
 
@@ -189,6 +193,8 @@ public class ResourceControllerTest extends RestControllerTest {
   @Test
   void shouldDeployResourceWithMultitenancyEnabled() {
     // given
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(multiTenancyCfg.isEnabled()).thenReturn(true);
     final var filename = "process.bpmn";
     final var contentType = MediaType.APPLICATION_OCTET_STREAM;
@@ -214,18 +220,15 @@ public class ResourceControllerTest extends RestControllerTest {
 
     // when/then
     final var response =
-        withMultiTenancy(
-            "tenantId",
-            client ->
-                client
-                    .post()
-                    .uri(DEPLOY_RESOURCES_ENDPOINT)
-                    .contentType(MediaType.MULTIPART_FORM_DATA)
-                    .bodyValue(multipartBodyBuilder.build())
-                    .accept(MediaType.APPLICATION_JSON)
-                    .exchange()
-                    .expectStatus()
-                    .isOk());
+        webClient
+            .post()
+            .uri(DEPLOY_RESOURCES_ENDPOINT)
+            .contentType(MediaType.MULTIPART_FORM_DATA)
+            .bodyValue(multipartBodyBuilder.build())
+            .accept(MediaType.APPLICATION_JSON)
+            .exchange()
+            .expectStatus()
+            .isOk();
 
     verify(resourceServices).deployResources(deployRequestCaptor.capture());
     final var capturedRequest = deployRequestCaptor.getValue();

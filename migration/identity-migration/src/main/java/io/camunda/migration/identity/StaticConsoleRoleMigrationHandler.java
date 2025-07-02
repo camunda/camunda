@@ -12,7 +12,7 @@ import static io.camunda.migration.identity.config.saas.StaticEntities.ROLES;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.console.ConsoleClient;
 import io.camunda.migration.identity.dto.NoopDTO;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.RoleMemberRequest;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -29,7 +29,7 @@ public class StaticConsoleRoleMigrationHandler extends MigrationHandler<NoopDTO>
 
   public StaticConsoleRoleMigrationHandler(
       final RoleServices roleServices,
-      final Authentication servicesAuthentication,
+      final CamundaAuthentication servicesAuthentication,
       final ConsoleClient consoleClient) {
     this.roleServices = roleServices.withAuthentication(servicesAuthentication);
     this.consoleClient = consoleClient;

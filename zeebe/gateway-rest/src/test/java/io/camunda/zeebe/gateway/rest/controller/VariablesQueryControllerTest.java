@@ -20,7 +20,8 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.VariableSort;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.VariableServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
@@ -33,8 +34,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(value = VariableController.class)
 public class VariablesQueryControllerTest extends RestControllerTest {
@@ -104,12 +105,15 @@ public class VariablesQueryControllerTest extends RestControllerTest {
           .startCursor("0")
           .endCursor("1")
           .build();
-  @MockBean VariableServices variableServices;
+  @MockitoBean VariableServices variableServices;
+  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
   @Captor ArgumentCaptor<VariableQuery> variableQueryCaptor;
 
   @BeforeEach
   void setupServices() {
-    when(variableServices.withAuthentication(any(Authentication.class)))
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(variableServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(variableServices);
 
     when(variableServices.getByKey(VALID_VARIABLE_KEY))

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.batchoperation;
 
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
@@ -165,11 +165,12 @@ public class PersistedBatchOperation extends UnpackedObject implements DbValue {
     return this;
   }
 
-  public Authentication getAuthentication() {
+  public CamundaAuthentication getAuthentication() {
     if (authenticationProp.getValue() != null) {
-      return MsgPackConverter.convertToObject(authenticationProp.getValue(), Authentication.class);
+      return MsgPackConverter.convertToObject(
+          authenticationProp.getValue(), CamundaAuthentication.class);
     } else {
-      return Authentication.none();
+      return CamundaAuthentication.none();
     }
   }
 

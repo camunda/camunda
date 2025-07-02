@@ -11,6 +11,7 @@ import io.camunda.authentication.entity.CamundaPrincipal;
 import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
@@ -258,12 +259,12 @@ public class PermissionsService {
     return new SecurityContext(getAuthentication(), authorization);
   }
 
-  private io.camunda.security.auth.Authentication getAuthentication() {
+  private CamundaAuthentication getAuthentication() {
     final var authenticatedUsername = getAuthenticatedUsername();
     final List<String> authenticatedRoleIds = getAuthenticatedUserRoleIds();
     final List<String> authenticatedTenantIds = getAuthenticatedUserTenantIds();
     final List<String> authenticatedGroupIds = getAuthenticatedUserGroupIds();
-    return new io.camunda.security.auth.Authentication.Builder()
+    return new CamundaAuthentication.Builder()
         .user(authenticatedUsername)
         .roleIds(authenticatedRoleIds)
         .tenants(authenticatedTenantIds)

@@ -25,7 +25,8 @@ import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.sort.TenantSort;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.MappingServices;
 import io.camunda.service.RoleServices;
@@ -224,14 +225,22 @@ public class TenantQueryControllerTest extends RestControllerTest {
   @MockitoBean private MappingServices mappingServices;
   @MockitoBean private GroupServices groupServices;
   @MockitoBean private RoleServices roleServices;
+  @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setup() {
-    when(tenantServices.withAuthentication(any(Authentication.class))).thenReturn(tenantServices);
-    when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
-    when(mappingServices.withAuthentication(any(Authentication.class))).thenReturn(mappingServices);
-    when(groupServices.withAuthentication(any(Authentication.class))).thenReturn(groupServices);
-    when(roleServices.withAuthentication(any(Authentication.class))).thenReturn(roleServices);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(tenantServices);
+    when(userServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(userServices);
+    when(mappingServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(mappingServices);
+    when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(groupServices);
+    when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(roleServices);
   }
 
   @Test

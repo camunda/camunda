@@ -8,6 +8,10 @@
 package io.camunda.application.commons.rest;
 
 import io.camunda.application.commons.rest.RestApiConfiguration.GatewayRestProperties;
+import io.camunda.authentication.DefaultCamundaAuthenticationConverter;
+import io.camunda.authentication.DefaultCamundaAuthenticationProvider;
+import io.camunda.security.auth.CamundaAuthenticationConverter;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
@@ -20,6 +24,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.core.Authentication;
 
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(basePackages = "io.camunda.zeebe.gateway.rest")
@@ -42,6 +47,17 @@ public class RestApiConfiguration {
 
     return new ProcessCache(
         configuration, processElementProvider, brokerTopologyManager, meterRegistry);
+  }
+
+  @Bean
+  public CamundaAuthenticationConverter<Authentication> camundaAuthenticationConverter() {
+    return new DefaultCamundaAuthenticationConverter();
+  }
+
+  @Bean
+  public CamundaAuthenticationProvider camundaAuthenticationProvider(
+      final CamundaAuthenticationConverter<Authentication> converter) {
+    return new DefaultCamundaAuthenticationProvider(converter);
   }
 
   @ConfigurationProperties("camunda.rest")

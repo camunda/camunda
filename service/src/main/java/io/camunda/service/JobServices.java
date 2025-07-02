@@ -11,8 +11,8 @@ import io.camunda.search.clients.JobSearchClient;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -40,14 +40,14 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final SecurityContextProvider securityContextProvider,
       final ActivateJobsHandler<T> activateJobsHandler,
       final JobSearchClient jobSearchClient,
-      final Authentication authentication) {
+      final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.activateJobsHandler = activateJobsHandler;
     this.jobSearchClient = jobSearchClient;
   }
 
   @Override
-  public JobServices<T> withAuthentication(final Authentication authentication) {
+  public JobServices<T> withAuthentication(final CamundaAuthentication authentication) {
     return new JobServices<>(
         brokerClient,
         securityContextProvider,

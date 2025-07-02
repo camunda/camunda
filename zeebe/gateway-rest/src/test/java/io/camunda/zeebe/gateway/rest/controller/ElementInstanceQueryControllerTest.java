@@ -23,7 +23,8 @@ import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.FlowNodeInstanceSort;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -42,8 +43,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(value = ElementInstanceController.class)
 public class ElementInstanceQueryControllerTest extends RestControllerTest {
@@ -137,13 +138,16 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
   static final String ELEMENT_INSTANCES_URL = "/v2/element-instances/";
   static final String ELEMENT_INSTANCES_SEARCH_URL = ELEMENT_INSTANCES_URL + "search";
 
-  @MockBean ElementInstanceServices elementInstanceServices;
-  @MockBean ProcessCache processCache;
+  @MockitoBean ElementInstanceServices elementInstanceServices;
+  @MockitoBean ProcessCache processCache;
   @Captor ArgumentCaptor<FlowNodeInstanceQuery> queryCaptor;
+  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setupServices() {
-    when(elementInstanceServices.withAuthentication(any(Authentication.class)))
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(elementInstanceServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(elementInstanceServices);
     when(processCache.getElementName(any())).thenReturn("elementName");
     final var processCacheItem = mock(ProcessCacheItem.class);

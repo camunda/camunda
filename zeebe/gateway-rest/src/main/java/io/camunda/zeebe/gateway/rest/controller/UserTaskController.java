@@ -12,6 +12,7 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
 import io.camunda.zeebe.gateway.protocol.rest.FormResult;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
@@ -47,11 +48,15 @@ public class UserTaskController {
 
   private final UserTaskServices userTaskServices;
   private final ProcessCache processCache;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
   public UserTaskController(
-      final UserTaskServices userTaskServices, final ProcessCache processCache) {
+      final UserTaskServices userTaskServices,
+      final ProcessCache processCache,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.userTaskServices = userTaskServices;
     this.processCache = processCache;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPostMapping(path = "/{userTaskKey}/completion")
@@ -101,7 +106,7 @@ public class UserTaskController {
     try {
       final var userTask =
           userTaskServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .getByKey(userTaskKey);
       final var name = processCache.getUserTaskName(userTask);
       return ResponseEntity.ok().body(SearchQueryResponseMapper.toUserTask(userTask, name));
@@ -116,7 +121,7 @@ public class UserTaskController {
     try {
       final Optional<FormEntity> form =
           userTaskServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .getUserTaskForm(userTaskKey);
       return form.map(SearchQueryResponseMapper::toFormItem)
           .map(ResponseEntity::ok)
@@ -141,7 +146,9 @@ public class UserTaskController {
   private ResponseEntity<UserTaskSearchQueryResult> search(final UserTaskQuery query) {
     try {
       final var result =
-          userTaskServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
+          userTaskServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .search(query);
       final var processCacheItems = processCache.getUserTaskNames(result.items());
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toUserTaskSearchQueryResponse(result, processCacheItems));
@@ -155,7 +162,7 @@ public class UserTaskController {
     try {
       final var result =
           userTaskServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .searchUserTaskVariables(userTaskKey, query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toVariableSearchQueryResponse(result));
     } catch (final Exception e) {
@@ -168,7 +175,7 @@ public class UserTaskController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             userTaskServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .assignUserTask(
                     request.userTaskKey(),
                     request.assignee(),
@@ -181,7 +188,7 @@ public class UserTaskController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             userTaskServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .completeUserTask(request.userTaskKey(), request.variables(), request.action()));
   }
 
@@ -190,7 +197,7 @@ public class UserTaskController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             userTaskServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .unassignUserTask(request.userTaskKey(), request.action()));
   }
 
@@ -199,7 +206,7 @@ public class UserTaskController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             userTaskServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .updateUserTask(request.userTaskKey(), request.changeset(), request.action()));
   }
 }

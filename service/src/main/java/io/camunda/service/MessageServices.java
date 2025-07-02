@@ -7,7 +7,7 @@
  */
 package io.camunda.service;
 
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
@@ -23,12 +23,12 @@ public final class MessageServices extends ApiServices<MessageServices> {
   public MessageServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final Authentication authentication) {
+      final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
   }
 
   @Override
-  public MessageServices withAuthentication(final Authentication authentication) {
+  public MessageServices withAuthentication(final CamundaAuthentication authentication) {
     return new MessageServices(brokerClient, securityContextProvider, authentication);
   }
 

@@ -13,7 +13,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
@@ -39,10 +40,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 public class GroupControllerTest {
 
@@ -204,14 +205,18 @@ public class GroupControllerTest {
   @WebMvcTest(GroupController.class)
   @TestPropertySource(properties = "camunda.security.authentication.oidc.groupsClaim=")
   public class InternalGroupsEnabledTest extends RestControllerTest {
-    @MockBean private GroupServices groupServices;
-    @MockBean private UserServices userServices;
-    @MockBean private RoleServices roleServices;
-    @MockBean private MappingServices mappingServices;
+    @MockitoBean private GroupServices groupServices;
+    @MockitoBean private UserServices userServices;
+    @MockitoBean private RoleServices roleServices;
+    @MockitoBean private MappingServices mappingServices;
+    @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 
     @BeforeEach
     void setup() {
-      when(groupServices.withAuthentication(any(Authentication.class))).thenReturn(groupServices);
+      when(authenticationProvider.getCamundaAuthentication())
+          .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+      when(groupServices.withAuthentication(any(CamundaAuthentication.class)))
+          .thenReturn(groupServices);
     }
 
     @ParameterizedTest

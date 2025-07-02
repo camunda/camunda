@@ -7,15 +7,15 @@
  */
 package io.camunda.tasklist.webapp.permission;
 
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.util.LazySupplier;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
-import io.camunda.zeebe.gateway.rest.RequestMapper;
 import java.util.List;
 import java.util.function.Supplier;
 import org.springframework.stereotype.Component;
@@ -35,14 +35,17 @@ public class TasklistPermissionServices {
   private final SecurityConfiguration securityConfiguration;
   private final SecurityContextProvider securityContextProvider;
   private final AuthorizationChecker authorizationChecker;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
   public TasklistPermissionServices(
       final SecurityConfiguration securityConfiguration,
       final SecurityContextProvider securityContextProvider,
-      final AuthorizationChecker authorizationChecker) {
+      final AuthorizationChecker authorizationChecker,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.securityConfiguration = securityConfiguration;
     this.securityContextProvider = securityContextProvider;
     this.authorizationChecker = authorizationChecker;
+    this.authenticationProvider = authenticationProvider;
   }
 
   public boolean hasPermissionToCreateProcessInstance(final String bpmnProcessId) {
@@ -58,7 +61,8 @@ public class TasklistPermissionServices {
   }
 
   public List<String> getProcessDefinitionsWithCreateProcessInstancePermission() {
-    final var authenticationSupplier = LazySupplier.of(RequestMapper::getAuthentication);
+    final var authenticationSupplier =
+        LazySupplier.of(authenticationProvider::getCamundaAuthentication);
     if (isAuthorizationCheckDisabled(authenticationSupplier)) {
       return WILD_CARD_PERMISSION;
     }
@@ -72,7 +76,8 @@ public class TasklistPermissionServices {
   private boolean isAuthorizedForResource(
       final String resourceId, final Authorization authorization) {
 
-    final var authenticationSupplier = LazySupplier.of(RequestMapper::getAuthentication);
+    final var authenticationSupplier =
+        LazySupplier.of(authenticationProvider::getCamundaAuthentication);
     if (isAuthorizationCheckDisabled(authenticationSupplier)) {
       return true;
     }
@@ -81,7 +86,8 @@ public class TasklistPermissionServices {
         resourceId, authenticationSupplier.get(), authorization);
   }
 
-  private boolean isAuthorizationCheckDisabled(final Supplier<Authentication> authentication) {
+  private boolean isAuthorizationCheckDisabled(
+      final Supplier<CamundaAuthentication> authentication) {
     return isAuthorizationDisabled() || isWithoutAuthenticatedUserKey(authentication.get());
   }
 
@@ -89,7 +95,7 @@ public class TasklistPermissionServices {
     return !securityConfiguration.getAuthorizations().isEnabled();
   }
 
-  private boolean isWithoutAuthenticatedUserKey(final Authentication authentication) {
+  private boolean isWithoutAuthenticatedUserKey(final CamundaAuthentication authentication) {
     // when the provided authentication does not contain a username,
     // then the authorization check cannot be performed.
     // the authorization key is only provided when running with the BASIC authentication method

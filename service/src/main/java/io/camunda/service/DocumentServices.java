@@ -17,7 +17,7 @@ import io.camunda.document.api.DocumentReference;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreRecord;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.util.Either;
@@ -38,14 +38,14 @@ public class DocumentServices extends ApiServices<DocumentServices> {
   public DocumentServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final Authentication authentication,
+      final CamundaAuthentication authentication,
       final SimpleDocumentStoreRegistry registry) {
     super(brokerClient, securityContextProvider, authentication);
     this.registry = registry;
   }
 
   @Override
-  public DocumentServices withAuthentication(final Authentication authentication) {
+  public DocumentServices withAuthentication(final CamundaAuthentication authentication) {
     return new DocumentServices(brokerClient, securityContextProvider, authentication, registry);
   }
 

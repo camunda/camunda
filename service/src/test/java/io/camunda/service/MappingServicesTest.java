@@ -22,7 +22,7 @@ import io.camunda.search.filter.MappingFilter;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.MappingServices.MappingDTO;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -47,12 +47,12 @@ public class MappingServicesTest {
   ArgumentCaptor<BrokerMappingUpdateRequest> mappingUpdateRequestArgumentCaptor;
   private MappingServices services;
   private MappingSearchClient client;
-  private Authentication authentication;
+  private CamundaAuthentication authentication;
   private StubbedBrokerClient stubbedBrokerClient;
 
   @BeforeEach
   public void before() {
-    authentication = Authentication.of(builder -> builder.user("foo"));
+    authentication = CamundaAuthentication.of(builder -> builder.user("foo"));
     stubbedBrokerClient = new StubbedBrokerClient();
     client = mock(MappingSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
@@ -143,7 +143,7 @@ public class MappingServicesTest {
   @Test
   public void shouldTriggerDeleteRequest() {
     // given
-    final Authentication testAuthentication = mock(Authentication.class);
+    final CamundaAuthentication testAuthentication = mock(CamundaAuthentication.class);
     when(testAuthentication.claims()).thenReturn(Map.of());
     final BrokerClient mockBrokerClient = mock(BrokerClient.class);
     final MappingServices testMappingServices =
@@ -167,7 +167,7 @@ public class MappingServicesTest {
   @Test
   public void shouldTriggerUpdateRequest() {
     // given
-    final Authentication testAuthentication = mock(Authentication.class);
+    final CamundaAuthentication testAuthentication = mock(CamundaAuthentication.class);
     when(testAuthentication.claims()).thenReturn(Map.of());
     final BrokerClient mockBrokerClient = mock(BrokerClient.class);
     final MappingServices testMappingServices =

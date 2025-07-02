@@ -11,6 +11,7 @@ import static java.util.Collections.unmodifiableList;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.camunda.zeebe.auth.Authorization;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -18,7 +19,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-public record Authentication(
+public record CamundaAuthentication(
     @JsonProperty("authenticated_username") String authenticatedUsername,
     @JsonProperty("authenticated_client_id") String authenticatedClientId,
     @JsonProperty("authenticated_group_ids") List<String> authenticatedGroupIds,
@@ -27,11 +28,15 @@ public record Authentication(
     @JsonProperty("authenticated_mapping_ids") List<String> authenticatedMappingIds,
     @JsonProperty("claims") Map<String, Object> claims) {
 
-  public static Authentication none() {
-    return new Builder().build();
+  public static CamundaAuthentication none() {
+    return of(b -> b);
   }
 
-  public static Authentication of(final Function<Builder, Builder> builderFunction) {
+  public static CamundaAuthentication anonymous() {
+    return of(b -> b.claims(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true)));
+  }
+
+  public static CamundaAuthentication of(final Function<Builder, Builder> builderFunction) {
     return builderFunction.apply(new Builder()).build();
   }
 
@@ -104,8 +109,8 @@ public record Authentication(
       return this;
     }
 
-    public Authentication build() {
-      return new Authentication(
+    public CamundaAuthentication build() {
+      return new CamundaAuthentication(
           username,
           clientId,
           unmodifiableList(groupIds),
