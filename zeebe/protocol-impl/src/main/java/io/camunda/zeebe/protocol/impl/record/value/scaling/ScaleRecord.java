@@ -36,11 +36,12 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
   private final LongProperty scalingPosition = new LongProperty("scalingPosition", -1L);
 
   public ScaleRecord() {
-    super(4);
+    super(5);
     declareProperty(desiredPartitionCountProp)
         .declareProperty(redistributedPartitions)
         .declareProperty(relocatedPartitions)
-        .declareProperty(bootstrappedAt);
+        .declareProperty(bootstrappedAt)
+        .declareProperty(scalingPosition);
   }
 
   @Override
