@@ -204,17 +204,17 @@
     <result column="TENANT_ID" property="tenantId" javaType="java.lang.String" />
     <result column="TYPE" property="type" javaType="java.lang.String" />
     <result column="WORKER" property="worker" javaType="java.lang.String" />
-    <result column="STATE" property="state" javaType="io.camunda.db.rdbms.write.domain.JobDbModel$JobState" />
+    <result column="STATE" property="state" javaType="io.camunda.search.entities.JobEntity$JobState" />
     <result column="RETRIES" property="retries" javaType="java.lang.Integer" />
     <result column="ERROR_MESSAGE" property="errorMessage" javaType="java.lang.String" />
     <result column="ERROR_CODE" property="errorCode" javaType="java.lang.String" />
     <result column="END_TIME" property="endTime" javaType="java.time.OffsetDateTime" />
     <result column="CUSTOM_HEADERS" property="serializedCustomHeaders" javaType="java.lang.String" />
-    <result column="KIND" property="kind" javaType="io.camunda.db.rdbms.write.domain.JobDbModel$JobKind" />
+    <result column="KIND" property="kind" javaType="io.camunda.search.entities.JobEntity$JobKind" />
     <result column="ELEMENT_ID" property="elementId" javaType="java.lang.String" />
     <result column="IS_DENIED" property="isDenied" javaType="java.lang.Boolean" />
     <result column="DENIED_REASON" property="deniedReason" javaType="java.lang.String" />
-    <result column="LISTENER_EVENT_TYPE" property="listenerEventType" javaType="io.camunda.db.rdbms.write.domain.JobDbModel$ListenerEventType" />
+    <result column="LISTENER_EVENT_TYPE" property="listenerEventType" javaType="io.camunda.search.entities.JobEntity$ListenerEventType" />
     <result column="DEADLINE" property="deadline" javaType="java.time.OffsetDateTime" />
     <result column="HAS_FAILED_WITH_RETRIES_LEFT" property="hasFailedWithRetriesLeft" javaType="java.lang.Boolean" />
     <result column="HISTORY_CLEANUP_DATE" property="historyCleanupDate" javaType="java.time.OffsetDateTime" />
