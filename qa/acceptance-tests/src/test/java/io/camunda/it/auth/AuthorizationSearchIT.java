@@ -19,15 +19,11 @@ import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.CreateAuthorizationResponse;
 import io.camunda.client.api.response.DeleteAuthorizationResponse;
-import io.camunda.client.api.search.enums.OwnerType;
-import io.camunda.client.api.search.enums.PermissionType;
-import io.camunda.client.api.search.enums.ResourceType;
+import io.camunda.client.api.search.response.Authorization;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
@@ -35,17 +31,9 @@ import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -58,12 +46,9 @@ class AuthorizationSearchIT {
   static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker().withBasicAuth().withAuthorizationsEnabled();
 
-  private static final ObjectMapper OBJECT_MAPPER =
-      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
   private static final String ADMIN = "admin";
   private static final String RESTRICTED = "restrictedUser";
   private static final String DEFAULT_PASSWORD = "password";
-  private static final String AUTH_SEARCH_ENDPOINT = "v2/authorizations/search";
 
   @UserDefinition
   private static final TestUser ADMIN_USER =
@@ -78,8 +63,6 @@ class AuthorizationSearchIT {
   @UserDefinition
   private static final TestUser RESTRICTED_USER =
       new TestUser(RESTRICTED, DEFAULT_PASSWORD, List.of());
-
-  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
   @Test
   void getAuthorizationByAuthorizationKeyShouldReturnAuthorizationIfAuthorized(
@@ -122,18 +105,25 @@ class AuthorizationSearchIT {
   }
 
   @Test
-  void searchShouldReturnAuthorizations(@Authenticated(ADMIN) final CamundaClient adminClient)
-      throws Exception {
+  void searchShouldReturnAuthorizationsIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
     final var response =
-        searchAuthorizations(adminClient.getConfiguration().getRestAddress().toString(), ADMIN);
-    assertThat(response.items()).isNotEmpty();
+        adminClient
+            .newAuthorizationSearchRequest()
+            .filter(f -> f.ownerId(RESTRICTED))
+            .send()
+            .join();
+
+    assertThat(response.items())
+        .isNotEmpty()
+        .map(Authorization::getOwnerId)
+        .containsExactly(RESTRICTED);
   }
 
   @Test
   void searchShouldReturnEmptyListForRestrictedUser(
       @Authenticated(RESTRICTED) final CamundaClient client) throws Exception {
-    final var response =
-        searchAuthorizations(client.getConfiguration().getRestAddress().toString(), RESTRICTED);
+    final var response = client.newAuthorizationSearchRequest().send().join();
     assertThat(response.items()).isEmpty();
   }
 
@@ -159,14 +149,14 @@ class AuthorizationSearchIT {
         .untilAsserted(
             () ->
                 assertThat(
-                        searchAuthorizations(
-                                adminClient.getConfiguration().getRestAddress().toString(), ADMIN)
+                        adminClient
+                            .newAuthorizationSearchRequest()
+                            .filter(f -> f.ownerId(ADMIN))
+                            .filter(f -> f.resourceType(PROCESS_DEFINITION))
+                            .filter(f -> f.resourceIds(List.of(resourceId)))
+                            .send()
+                            .join()
                             .items())
-                    .filteredOn(
-                        auth ->
-                            auth.resourceId().equals(resourceId)
-                                && auth.resourceType().equals(PROCESS_DEFINITION)
-                                && auth.ownerId().equals(ADMIN))
                     .isEmpty());
   }
 
@@ -191,14 +181,16 @@ class AuthorizationSearchIT {
         .untilAsserted(
             () ->
                 assertThat(
-                        searchAuthorizations(
-                                adminClient.getConfiguration().getRestAddress().toString(), ADMIN)
+                        adminClient
+                            .newAuthorizationSearchRequest()
+                            .filter(f -> f.ownerId(ADMIN))
+                            .filter(f -> f.resourceType(PROCESS_DEFINITION))
+                            .filter(f -> f.resourceIds(List.of(resourceId)))
+                            .send()
+                            .join()
                             .items())
-                    .anyMatch(
-                        auth ->
-                            auth.resourceId().equals(resourceId)
-                                && auth.resourceType().equals(PROCESS_DEFINITION)
-                                && auth.ownerId().equals(ADMIN)));
+                    .map(Authorization::getAuthorizationKey)
+                    .containsExactly(String.valueOf(createResponse.getAuthorizationKey())));
 
     // When
     final DeleteAuthorizationResponse deleteResponse =
@@ -212,42 +204,14 @@ class AuthorizationSearchIT {
         .untilAsserted(
             () ->
                 assertThat(
-                        searchAuthorizations(
-                                adminClient.getConfiguration().getRestAddress().toString(), ADMIN)
+                        adminClient
+                            .newAuthorizationSearchRequest()
+                            .filter(f -> f.ownerId(ADMIN))
+                            .filter(f -> f.resourceType(PROCESS_DEFINITION))
+                            .filter(f -> f.resourceIds(List.of(resourceId)))
+                            .send()
+                            .join()
                             .items())
-                    .noneMatch(
-                        auth ->
-                            auth.resourceId().equals(resourceId)
-                                && auth.resourceType().equals(PROCESS_DEFINITION)
-                                && auth.ownerId().equals(ADMIN)));
+                    .isEmpty());
   }
-
-  // TODO: refactor this once https://github.com/camunda/camunda/issues/32721 is implemented
-  private static AuthorizationSearchResponse searchAuthorizations(
-      final String restAddress, final String username)
-      throws URISyntaxException, IOException, InterruptedException {
-    final var encodedCredentials =
-        Base64.getEncoder()
-            .encodeToString("%s:%s".formatted(username, DEFAULT_PASSWORD).getBytes());
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(new URI("%s%s".formatted(restAddress, AUTH_SEARCH_ENDPOINT)))
-            .POST(HttpRequest.BodyPublishers.ofString(""))
-            .header("Authorization", "Basic %s".formatted(encodedCredentials))
-            .build();
-
-    final HttpResponse<String> response =
-        HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-    return OBJECT_MAPPER.readValue(response.body(), AuthorizationSearchResponse.class);
-  }
-
-  private record AuthorizationSearchResponse(List<AuthorizationResponse> items) {}
-
-  private record AuthorizationResponse(
-      String ownerId,
-      OwnerType ownerType,
-      ResourceType resourceType,
-      String resourceId,
-      List<PermissionType> permissionTypes,
-      String authorizationKey) {}
 }
