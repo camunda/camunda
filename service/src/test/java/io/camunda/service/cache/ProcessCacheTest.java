@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.rest.cache;
+package io.camunda.service.cache;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.entry;
@@ -18,10 +18,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import com.github.benmanes.caffeine.cache.LoadingCache;
+import io.camunda.service.cache.ProcessCache.Configuration;
+import io.camunda.service.cache.ProcessElementProvider.ProcessElement;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
-import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
-import io.camunda.zeebe.gateway.rest.util.ProcessElementProvider;
-import io.camunda.zeebe.gateway.rest.util.ProcessElementProvider.ProcessElement;
 import io.camunda.zeebe.util.collection.Tuple;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -33,19 +32,18 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
-import org.springframework.test.util.ReflectionTestUtils;
 
 class ProcessCacheTest {
 
   private ProcessCache processCache;
-  private GatewayRestConfiguration configuration;
+  private ProcessCache.Configuration configuration;
   private ProcessElementProvider processElementProvider;
   private BrokerTopologyManager brokerTopologyManager;
   private MeterRegistry meterRegistry;
 
   @BeforeEach
   public void setUp() {
-    configuration = new GatewayRestConfiguration();
+    configuration = ProcessCache.Configuration.getDefault();
     processElementProvider = mock(ProcessElementProvider.class);
     brokerTopologyManager = mock(BrokerTopologyManager.class);
     meterRegistry = new SimpleMeterRegistry();
@@ -63,8 +61,7 @@ class ProcessCacheTest {
   }
 
   private LoadingCache<Long, ProcessCacheItem> getCache() {
-    return (LoadingCache<Long, ProcessCacheItem>)
-        ReflectionTestUtils.getField(processCache, "cache");
+    return processCache.getRawCache();
   }
 
   private ConcurrentMap<Long, ProcessCacheItem> getCacheMap() {
@@ -172,7 +169,7 @@ class ProcessCacheTest {
   @Test
   void shouldRefreshReadItemAndRemoveLeastRecentlyUsed() {
     // given
-    configuration.getProcessCache().setMaxSize(2);
+    configuration = new Configuration(2, 100L);
     processCache =
         new ProcessCache(
             configuration, processElementProvider, brokerTopologyManager, meterRegistry);
