@@ -14,7 +14,7 @@ import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
 import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.handler.MigrationHandler;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.CreateRoleRequest;
@@ -31,7 +31,7 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
   private final AtomicInteger totalRoleCount = new AtomicInteger();
 
   public RoleMigrationHandler(
-      final Authentication authentication,
+      final CamundaAuthentication authentication,
       final ManagementIdentityClient managementIdentityClient,
       final RoleServices roleServices,
       final AuthorizationServices authorizationServices) {
@@ -56,7 +56,9 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
           try {
             final var roleName = role.name();
             final var roleId = normalizeRoleID(roleName);
-            roleServices.createRole(new CreateRoleRequest(roleId, roleName, role.description()));
+            roleServices
+                .createRole(new CreateRoleRequest(roleId, roleName, role.description()))
+                .join();
             createdRoleCount.incrementAndGet();
             logger.debug("Role '{}' with ID '{}' created successfully.", roleName, roleId);
             createAuthorizationsForRole(roleId, roleName);

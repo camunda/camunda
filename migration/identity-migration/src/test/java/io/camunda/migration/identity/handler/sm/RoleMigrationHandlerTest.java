@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.migration.identity.client.ManagementIdentityClient;
 import io.camunda.migration.identity.dto.Permission;
 import io.camunda.migration.identity.dto.Role;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.RoleServices;
@@ -60,7 +60,10 @@ public class RoleMigrationHandlerTest {
     this.authorizationServices = authorizationServices;
     roleMigrationHandler =
         new RoleMigrationHandler(
-            Authentication.none(), managementIdentityClient, roleServices, authorizationServices);
+            CamundaAuthentication.none(),
+            managementIdentityClient,
+            roleServices,
+            authorizationServices);
   }
 
   @Test
