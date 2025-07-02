@@ -9,23 +9,41 @@
 import {render, screen} from 'common/testing/testing-library';
 import {TextViewer} from '.';
 
+// Mock Monaco Editor since it requires complex setup for testing
+vi.mock('@monaco-editor/react', () => ({
+  default: ({value, language, ...props}: any) => (
+    <div 
+      data-testid="monaco-editor"
+      data-language={language}
+      data-value={value}
+      {...props}
+    >
+      Monaco Editor Mock: {value}
+    </div>
+  ),
+}));
+
 describe('<TextViewer />', () => {
   it('should render text content', () => {
     const textValue = 'Hello, this is a test file\nwith multiple lines.';
     
     render(<TextViewer value={textValue} />);
     
-    expect(screen.getByDisplayValue(textValue)).toBeInTheDocument();
+    const editor = screen.getByTestId('monaco-editor');
+    expect(editor).toBeInTheDocument();
+    expect(editor).toHaveAttribute('data-language', 'plaintext');
+    expect(editor).toHaveAttribute('data-value', textValue);
   });
 
   it('should apply custom height', () => {
     const textValue = 'Simple text';
     const customHeight = '400px';
     
-    const {container} = render(<TextViewer value={textValue} height={customHeight} />);
+    render(<TextViewer value={textValue} height={customHeight} />);
     
-    // Check that the component renders without error
-    expect(container).toBeInTheDocument();
+    const editor = screen.getByTestId('monaco-editor');
+    expect(editor).toBeInTheDocument();
+    expect(editor).toHaveAttribute('height', customHeight);
   });
 
   it('should have proper test id', () => {
@@ -39,6 +57,8 @@ describe('<TextViewer />', () => {
   it('should handle empty text', () => {
     render(<TextViewer value="" />);
     
-    expect(screen.getByDisplayValue('')).toBeInTheDocument();
+    const editor = screen.getByTestId('monaco-editor');
+    expect(editor).toBeInTheDocument();
+    expect(editor).toHaveAttribute('data-value', '');
   });
 });
