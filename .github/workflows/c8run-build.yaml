@@ -34,6 +34,50 @@ permissions:
   statuses: write
 
 jobs:
+<<<<<<< HEAD
+=======
+  linting:
+    name: C8Run linting
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION}}
+          cache: false # disabling since not working anyways without a cache-dependency-path specified
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@55c2c1448f86e01eaae002a5a3a9624417608d84 # v6.5.2
+        with:
+          working-directory: ./c8run
+          skip-cache: true
+
+  test_c8run_unittests:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, macos-13, windows-latest]
+    name: C8Run Unit Tests ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 2
+    defaults:
+      run:
+        working-directory: ./c8run
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION}}
+          cache: false
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Unit tests
+        run: go test ./...
+
+>>>>>>> 5ccbcb59 (ci: disable cache of golangci-lint)
   camunda-dist-build:
     name: Build camunda-dist
     runs-on: gcp-perf-core-16-default
