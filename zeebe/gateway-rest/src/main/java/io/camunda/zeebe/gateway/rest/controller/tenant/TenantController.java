@@ -62,6 +62,7 @@ public class TenantController {
   private final MappingServices mappingServices;
   private final GroupServices groupServices;
   private final RoleServices roleServices;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
   public TenantController(
       final TenantServices tenantServices,
@@ -229,7 +230,7 @@ public class TenantController {
     try {
       final var result =
           tenantServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .searchMembers(buildTenantMemberQuery(tenantId, EntityType.GROUP, query));
       return ResponseEntity.ok(SearchQueryResponseMapper.toTenantGroupSearchQueryResponse(result));
     } catch (final Exception e) {
@@ -314,7 +315,7 @@ public class TenantController {
     try {
       final var result =
           tenantServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .searchMembers(buildTenantMemberQuery(tenantId, EntityType.CLIENT, query));
       return ResponseEntity.ok(SearchQueryResponseMapper.toTenantClientSearchQueryResponse(result));
     } catch (final Exception e) {
@@ -328,7 +329,7 @@ public class TenantController {
       final var composedMappingQuery = buildMappingQuery(tenantId, mappingQuery);
       final var result =
           mappingServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(composedMappingQuery);
       return ResponseEntity.ok(SearchQueryResponseMapper.toMappingSearchQueryResponse(result));
     } catch (final Exception e) {
@@ -342,7 +343,7 @@ public class TenantController {
       final var composedUserQuery = buildUserQuery(tenantId, userQuery);
       final var result =
           userServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(composedUserQuery);
       return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
     } catch (final Exception e) {

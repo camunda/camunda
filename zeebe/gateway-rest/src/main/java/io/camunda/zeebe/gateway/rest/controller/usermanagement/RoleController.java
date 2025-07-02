@@ -319,7 +319,7 @@ public class RoleController {
     try {
       final var result =
           roleServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .searchMembers(buildRoleMemberQuery(roleId, EntityType.GROUP, query));
       return ResponseEntity.ok(SearchQueryResponseMapper.toRoleGroupSearchQueryResponse(result));
     } catch (final Exception e) {
