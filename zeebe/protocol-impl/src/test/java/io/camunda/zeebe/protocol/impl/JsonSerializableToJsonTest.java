@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationError;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationItem;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
@@ -84,6 +85,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
@@ -3254,7 +3256,8 @@ final class JsonSerializableToJsonTest {
     "partitionIds": [1, 2, 3],
     "migrationPlan":{"targetProcessDefinitionKey":-1,"mappingInstructions":[],"empty":false,"encodedLength":50},
     "modificationPlan":{"moveInstructions":[],"empty":false,"encodedLength":19},
-    "authenticationBuffer": {"expandable":false}
+    "authenticationBuffer": {"expandable":false},
+    "error": {"message":"","partitionId":0,"type":"UNKNOWN","empty":false,"encodedLength":36}
     }
   }
   """
@@ -3300,7 +3303,12 @@ final class JsonSerializableToJsonTest {
                       'department': 'engineering'
                     }
                   }
-                  """)),
+                  """))
+                    .setError(
+                        new BatchOperationError()
+                            .setPartitionId(1)
+                            .setType(BatchOperationErrorType.QUERY_FAILED)
+                            .setMessage("stacktrace")),
         """
   {
      "batchOperationKey": 12345,
@@ -3335,7 +3343,8 @@ final class JsonSerializableToJsonTest {
      },
      "authenticationBuffer": {
        "expandable": false
-     }
+     },
+     "error":{"partitionId":1,"type":"QUERY_FAILED","message":"stacktrace","empty":false,"encodedLength":51}
    }
   """
       },
@@ -3426,7 +3435,8 @@ final class JsonSerializableToJsonTest {
             () -> new BatchOperationLifecycleManagementRecord().setBatchOperationKey(12345L),
         """
   {
-    "batchOperationKey": 12345
+    "batchOperationKey": 12345,
+    "errors":[]
   }
   """
       },
