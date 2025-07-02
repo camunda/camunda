@@ -10,6 +10,7 @@ package io.camunda.migration.identity.handler.sm;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -21,8 +22,12 @@ import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.CreateRoleRequest;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -251,5 +256,54 @@ public class RoleMigrationHandlerTest {
                     PermissionType.UPDATE_USER_TASK,
                     PermissionType.CREATE_PROCESS_INSTANCE,
                     PermissionType.DELETE_PROCESS_INSTANCE)));
+  }
+
+  @Test
+  public void shouldNotBlockTheMigrationIfRolesOrAuthorizationsAlreadyExists() {
+    // given
+    when(managementIdentityClient.fetchRoles())
+        .thenReturn(
+            List.of(
+                new Role("Role 1", "Description for Role 1"),
+                new Role(
+                    "Role@Name#With$Special%Chars", "Description for Role with special chars")));
+    when(roleServices.createRole(any(CreateRoleRequest.class)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new BrokerRejectionException(
+                    new BrokerRejection(
+                        AuthorizationIntent.CREATE,
+                        -1,
+                        RejectionType.ALREADY_EXISTS,
+                        "role already exists"))));
+    when(managementIdentityClient.fetchPermissions(any()))
+        .thenReturn(
+            List.of(
+                new Permission("read", "camunda-identity-resource-server"),
+                new Permission("read:users", "camunda-identity-resource-server"),
+                new Permission("write", "camunda-identity-resource-server"),
+                new Permission("read:*", "operate-api"),
+                new Permission("write:*", "operate-api")))
+        .thenReturn(
+            List.of(
+                new Permission("read:*", "tasklist-api"),
+                new Permission("write:*", "tasklist-api"),
+                new Permission("write:*", "zeebe-api")));
+    when(authorizationServices.createAuthorization(any(CreateAuthorizationRequest.class)))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new BrokerRejectionException(
+                    new BrokerRejection(
+                        AuthorizationIntent.CREATE,
+                        -1,
+                        RejectionType.ALREADY_EXISTS,
+                        "authorization already exists"))));
+
+    // when
+    roleMigrationHandler.migrate();
+
+    // then
+    verify(managementIdentityClient, times(2)).fetchPermissions(any());
+    verify(authorizationServices, times(20)).createAuthorization(any());
   }
 }
