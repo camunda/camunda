@@ -90,7 +90,7 @@ test.describe.parallel('Login Tests', () => {
     await expect(page).toHaveURL('/tasklist');
   });
 
-  test('redirectt to the correct URL after login', async ({
+  test('redirect to the correct URL after login', async ({
     taskListLoginPage,
     tasklistHeader,
     page,
