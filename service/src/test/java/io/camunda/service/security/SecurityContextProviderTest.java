@@ -14,8 +14,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
@@ -40,7 +40,7 @@ class SecurityContextProviderTest {
   @Test
   void shouldProvideSecurityContextWithAuthorizationWhenDisabled() {
     // given
-    final var authentication = mock(Authentication.class);
+    final var authentication = mock(CamundaAuthentication.class);
     final var authorization = mock(Authorization.class);
     when(securityConfiguration.getAuthorizations().isEnabled()).thenReturn(true);
 
@@ -57,7 +57,7 @@ class SecurityContextProviderTest {
   @Test
   void shouldProvideSecurityContextWithoutAuthorizationWhenDisabled() {
     // given
-    final var authentication = mock(Authentication.class);
+    final var authentication = mock(CamundaAuthentication.class);
     final var authorization = mock(Authorization.class);
     when(securityConfiguration.getAuthorizations().isEnabled()).thenReturn(false);
 
@@ -74,7 +74,7 @@ class SecurityContextProviderTest {
   @Test
   void isAuthorizedShouldReturnTrueWhenAuthorizationIsDisabled() {
     // given
-    final var authentication = mock(Authentication.class);
+    final var authentication = mock(CamundaAuthentication.class);
     final var authorization = mock(Authorization.class);
     when(securityConfiguration.getAuthorizations().isEnabled()).thenReturn(false);
 
@@ -90,7 +90,7 @@ class SecurityContextProviderTest {
   @Test
   void isAuthorizedShouldReturnTrueWhenAuthorizationCheckerReturnsTrue() {
     // given
-    final var authentication = mock(Authentication.class);
+    final var authentication = mock(CamundaAuthentication.class);
     final var authorization = mock(Authorization.class);
     when(securityConfiguration.getAuthorizations().isEnabled()).thenReturn(true);
     when(authorizationChecker.isAuthorized(any(), any())).thenReturn(true);
@@ -111,7 +111,7 @@ class SecurityContextProviderTest {
   @Test
   void isAuthorizedShouldReturnFalseWhenAuthorizationCheckerReturnsFalse() {
     // given
-    final var authentication = mock(Authentication.class);
+    final var authentication = mock(CamundaAuthentication.class);
     final var authorization = mock(Authorization.class);
     when(securityConfiguration.getAuthorizations().isEnabled()).thenReturn(true);
     when(authorizationChecker.isAuthorized(any(), any())).thenReturn(false);

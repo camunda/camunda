@@ -7,18 +7,16 @@
  */
 package io.camunda.search.schema;
 
-import static io.camunda.search.schema.utils.SchemaManagerITInvocationProvider.CONFIG_PREFIX;
 import static io.camunda.search.schema.utils.SchemaTestUtil.createSchemaManager;
+import static io.camunda.search.schema.utils.SchemaTestUtil.createTestIndexDescriptor;
+import static io.camunda.search.schema.utils.SchemaTestUtil.createTestTemplateDescriptor;
 import static io.camunda.search.schema.utils.SchemaTestUtil.mappingsMatch;
-import static io.camunda.search.schema.utils.SchemaTestUtil.mockIndex;
-import static io.camunda.search.schema.utils.SchemaTestUtil.mockIndexTemplate;
 import static io.camunda.search.schema.utils.SchemaTestUtil.searchEngineClientFromConfig;
 import static io.camunda.search.test.utils.SearchDBExtension.CUSTOM_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,6 +26,8 @@ import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.search.schema.utils.SchemaManagerITInvocationProvider;
+import io.camunda.search.schema.utils.TestIndexDescriptor;
+import io.camunda.search.schema.utils.TestTemplateDescriptor;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
@@ -39,7 +39,6 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -60,26 +59,15 @@ import org.opensearch.client.opensearch._types.OpenSearchException;
 @ExtendWith(SchemaManagerITInvocationProvider.class)
 public class SchemaManagerIT {
 
-  private IndexDescriptor index;
-  private IndexTemplateDescriptor indexTemplate;
+  private TestIndexDescriptor index;
+  private TestTemplateDescriptor indexTemplate;
   private ObjectMapper objectMapper;
 
   @BeforeEach
   public void refresh() throws IOException {
     objectMapper = TestObjectMapper.objectMapper();
-    indexTemplate =
-        mockIndexTemplate(
-            "index_name",
-            "test*",
-            "template_alias",
-            Collections.emptyList(),
-            CONFIG_PREFIX + "-template_name",
-            "/mappings.json");
-
-    index =
-        mockIndex(CONFIG_PREFIX + "-index-qualified_name", "alias", "index_name", "/mappings.json");
-
-    when(indexTemplate.getFullQualifiedName()).thenReturn(CONFIG_PREFIX + "-qualified_name");
+    indexTemplate = createTestTemplateDescriptor("template_name", "/mappings.json");
+    index = createTestIndexDescriptor("index_name", "/mappings.json");
   }
 
   @TestTemplate
@@ -182,7 +170,7 @@ public class SchemaManagerIT {
     schemaManager.initialiseResources();
 
     // when
-    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+    indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
 
     final Map<IndexDescriptor, Collection<IndexMappingProperty>> schemasToChange =
         Map.of(indexTemplate, Set.of());
@@ -243,8 +231,8 @@ public class SchemaManagerIT {
     schemaManager.startup();
 
     // when
-    when(index.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
-    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+    index.setMappingsClasspathFilename("/mappings-added-property.json");
+    indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
 
     schemaManager.startup();
 
@@ -281,23 +269,11 @@ public class SchemaManagerIT {
     schemaManager.startup();
 
     // when
-    final var newIndex =
-        mockIndex("new_index_qualified", "new_alias", "new_index", "/mappings-added-property.json");
+    final var newIndex = createTestIndexDescriptor("new_index", "/mappings-added-property.json");
     final var newIndexTemplate =
-        mockIndexTemplate(
-            "new_template_name",
-            "new_test*",
-            "new_template_alias",
-            Collections.emptyList(),
-            "new_template_name",
-            "/mappings-added-property.json");
-
-    when(newIndexTemplate.getFullQualifiedName())
-        .thenReturn(config.connect().getIndexPrefix() + "new_template_index_qualified_name");
-
+        createTestTemplateDescriptor("new_template_name", "/mappings-added-property.json");
     indices.add(newIndex);
     indexTemplates.add(newIndexTemplate);
-
     schemaManager.startup();
 
     // then
@@ -409,7 +385,7 @@ public class SchemaManagerIT {
     assertThat(mappingsMatch(retrievedIndex.get("mappings"), currentMappingsFile)).isTrue();
 
     // when
-    when(indexTemplate.getMappingsClasspathFilename()).thenReturn(newMappingsFile);
+    indexTemplate.setMappingsClasspathFilename(newMappingsFile);
 
     schemaManager.startup();
 
@@ -448,8 +424,7 @@ public class SchemaManagerIT {
     assertThat(initialMatchingIndex.at(indexSettingsToBeAppended).asText()).isEqualTo("");
 
     // when
-    when(indexTemplate.getMappingsClasspathFilename())
-        .thenReturn("/mappings-and-updated-settings.json");
+    indexTemplate.setMappingsClasspathFilename("/mappings-and-updated-settings.json");
 
     // change index template schema to have new updated settings and trigger update
     schemaManager.startup();
@@ -582,7 +557,7 @@ public class SchemaManagerIT {
     schemaManager.startup();
 
     // update the index template with a different mapping
-    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+    indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
 
     // when, then
     assertThat(schemaManager.isSchemaReadyForUse()).isFalse();
@@ -611,8 +586,7 @@ public class SchemaManagerIT {
     assertThat(initialTemplate.at(replicaSettingPath).asInt()).isEqualTo(0);
     assertThat(initialTemplate.at(shardsSettingPath).asInt()).isEqualTo(1);
 
-    when(indexTemplate.getMappingsClasspathFilename())
-        .thenReturn("/mappings-settings-replica-and-shards.json");
+    indexTemplate.setMappingsClasspathFilename("/mappings-settings-replica-and-shards.json");
 
     config.index().setNumberOfReplicas(5);
     config.index().setNumberOfShards(5);
@@ -730,8 +704,8 @@ public class SchemaManagerIT {
     final var schemaManager1 = createSchemaManager(Set.of(index), Set.of(indexTemplate), config);
     final var schemaManager2 = createSchemaManager(Set.of(index), Set.of(indexTemplate), config);
 
-    when(index.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
-    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+    index.setMappingsClasspathFilename("/mappings-added-property.json");
+    indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
 
     // when
     schemaManager1.startup();
@@ -763,8 +737,8 @@ public class SchemaManagerIT {
     final var schemaManager1 = createSchemaManager(Set.of(index), Set.of(indexTemplate), config);
     final var schemaManager2 = createSchemaManager(Set.of(index), Set.of(indexTemplate), config);
 
-    when(index.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
-    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+    index.setMappingsClasspathFilename("/mappings-added-property.json");
+    indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
 
     // when
     schemaManager1.startup();
@@ -809,7 +783,7 @@ public class SchemaManagerIT {
     assertThat(mappingsMatch(initialArchiveIndex.get("mappings"), "/mappings.json")).isTrue();
 
     // when
-    when(indexTemplate.getMappingsClasspathFilename()).thenReturn("/mappings-added-property.json");
+    indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
     schemaManager.startup();
 
     // then
@@ -969,5 +943,80 @@ public class SchemaManagerIT {
     final var measuredTime = registry.find("camunda.schema.init.time").timer();
     assertThat(measuredTime.count()).isEqualTo(0);
     assertThat(measuredTime.totalTime(TimeUnit.MILLISECONDS)).isEqualTo(0);
+  }
+
+  @TestTemplate
+  void shouldSkipDynamicPropertyMappingsDifferences(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws IOException {
+    // given
+    // in Opensearch, "dynamic" field is stored String, while in Elasticsearch it is saved as
+    // boolean this gives different results in diff comparison :(
+    final var mappingsFileNamePrefix = config.connect().getTypeEnum().isOpenSearch() ? "/os" : "";
+    final var indexTemplate =
+        createTestTemplateDescriptor(
+            "template_name", mappingsFileNamePrefix + "/mappings-dynamic-property.json");
+
+    final var schemaManager =
+        new SchemaManager(
+            searchEngineClientFromConfig(config),
+            Set.of(),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    schemaManager.startup();
+
+    final var runtimeIndexName = indexTemplate.getFullQualifiedName();
+    final var archiveIndexName1 = indexTemplate.getIndexPattern().replace("*", "-archived_1");
+    final var archiveIndexName2 = indexTemplate.getIndexPattern().replace("*", "-archived_2");
+
+    // index some data to the runtime and archive indices. "world" is a dynamic property
+    searchClientAdapter.index(
+        "123", runtimeIndexName, Map.of("hello", "a", "world", Map.of("header1", 1, "header2", 2)));
+    searchClientAdapter.index(
+        "123", archiveIndexName1, Map.of("hello", "a", "world", Map.of("header3", true)));
+    searchClientAdapter.index("123", archiveIndexName2, Map.of("hello", "a"));
+
+    var retrievedRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
+    assertThat(retrievedRuntimeIndex.at("/mappings/properties/world/properties").toString())
+        .isEqualTo("{\"header2\":{\"type\":\"long\"},\"header1\":{\"type\":\"long\"}}");
+    var retrievedArchiveIndex1 = searchClientAdapter.getIndexAsNode(archiveIndexName1);
+    assertThat(retrievedArchiveIndex1.at("/mappings/properties/world/properties").toString())
+        .isEqualTo("{\"header3\":{\"type\":\"boolean\"}}");
+
+    // when
+    schemaManager.startup();
+
+    // then
+    // no exception should be thrown
+    retrievedRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
+    assertThat(retrievedRuntimeIndex.at("/mappings/properties/world/properties").toString())
+        .isEqualTo("{\"header2\":{\"type\":\"long\"},\"header1\":{\"type\":\"long\"}}");
+    retrievedArchiveIndex1 = searchClientAdapter.getIndexAsNode(archiveIndexName1);
+    assertThat(retrievedArchiveIndex1.at("/mappings/properties/world/properties").toString())
+        .isEqualTo("{\"header3\":{\"type\":\"boolean\"}}");
+
+    // when
+    // update mappings
+    indexTemplate.setMappingsClasspathFilename(
+        mappingsFileNamePrefix + "/mappings-dynamic-property-added.json");
+    schemaManager.startup();
+
+    // then
+    // assert all indices have the updated mapping
+    retrievedRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
+    assertThat(retrievedRuntimeIndex.at("/mappings/properties/foo/type").asText())
+        .isEqualTo("keyword");
+    assertThat(retrievedRuntimeIndex.at("/mappings/properties/world/properties").toString())
+        .isEqualTo("{\"header2\":{\"type\":\"long\"},\"header1\":{\"type\":\"long\"}}");
+    retrievedArchiveIndex1 = searchClientAdapter.getIndexAsNode(archiveIndexName1);
+    assertThat(retrievedArchiveIndex1.at("/mappings/properties/foo/type").asText())
+        .isEqualTo("keyword");
+    assertThat(retrievedArchiveIndex1.at("/mappings/properties/world/properties").toString())
+        .isEqualTo("{\"header3\":{\"type\":\"boolean\"}}");
+    final var retrievedArchiveIndex2 = searchClientAdapter.getIndexAsNode(archiveIndexName2);
+    assertThat(retrievedArchiveIndex2.at("/mappings/properties/foo/type").asText())
+        .isEqualTo("keyword");
   }
 }

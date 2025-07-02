@@ -7,6 +7,10 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
+
+import io.camunda.search.query.JobQuery;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.ActivateJobsRequest;
@@ -15,6 +19,8 @@ import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
+import io.camunda.zeebe.gateway.protocol.rest.JobSearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.JobSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.JobUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RequestMapper.CompleteJobRequest;
@@ -22,6 +28,8 @@ import io.camunda.zeebe.gateway.rest.RequestMapper.ErrorJobRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper.FailJobRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper.UpdateJobRequest;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
+import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPatchMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import java.util.concurrent.CompletableFuture;
@@ -37,14 +45,17 @@ public class JobController {
   private final ResponseObserverProvider responseObserverProvider;
   private final JobServices<JobActivationResult> jobServices;
   private final MultiTenancyConfiguration multiTenancyCfg;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
   public JobController(
       final JobServices<JobActivationResult> jobServices,
       final ResponseObserverProvider responseObserverProvider,
-      final MultiTenancyConfiguration multiTenancyCfg) {
+      final MultiTenancyConfiguration multiTenancyCfg,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.jobServices = jobServices;
     this.responseObserverProvider = responseObserverProvider;
     this.multiTenancyCfg = multiTenancyCfg;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPostMapping(path = "/activation")
@@ -82,12 +93,19 @@ public class JobController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateJob);
   }
 
+  @CamundaPostMapping(path = "/search")
+  public ResponseEntity<JobSearchQueryResult> searchJobs(
+      @RequestBody(required = false) final JobSearchQuery request) {
+    return SearchQueryRequestMapper.toJobQuery(request)
+        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+  }
+
   private CompletableFuture<ResponseEntity<Object>> activateJobs(
       final ActivateJobsRequest activationRequest) {
     final var result = new CompletableFuture<ResponseEntity<Object>>();
     final var responseObserver = responseObserverProvider.apply(result);
     jobServices
-        .withAuthentication(RequestMapper.getAuthentication())
+        .withAuthentication(authenticationProvider.getCamundaAuthentication())
         .activateJobs(activationRequest, responseObserver, responseObserver::setCancelationHandler);
     return result.handleAsync(
         (res, ex) -> {
@@ -100,7 +118,7 @@ public class JobController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             jobServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .failJob(
                     failJobRequest.jobKey(),
                     failJobRequest.retries(),
@@ -114,7 +132,7 @@ public class JobController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             jobServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .errorJob(
                     errorJobRequest.jobKey(),
                     errorJobRequest.errorCode(),
@@ -127,7 +145,7 @@ public class JobController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             jobServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .completeJob(
                     completeJobRequest.jobKey(),
                     completeJobRequest.variables(),
@@ -139,10 +157,22 @@ public class JobController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             jobServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .updateJob(
                     updateJobRequest.jobKey(),
                     updateJobRequest.operationReference(),
                     updateJobRequest.changeset()));
+  }
+
+  private ResponseEntity<JobSearchQueryResult> search(final JobQuery query) {
+    try {
+      final var result =
+          jobServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .search(query);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toJobSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
   }
 }

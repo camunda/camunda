@@ -18,7 +18,7 @@ import io.camunda.migration.identity.console.ConsoleClient;
 import io.camunda.migration.identity.console.ConsoleClient.Client;
 import io.camunda.migration.identity.console.ConsoleClient.Members;
 import io.camunda.migration.identity.console.ConsoleClient.Permission;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
@@ -52,7 +52,8 @@ public class ClientMigrationHandlerTest {
     this.authorizationServices = authorizationServices;
     this.consoleClient = consoleClient;
     migrationHandler =
-        new ClientMigrationHandler(consoleClient, authorizationServices, Authentication.none());
+        new ClientMigrationHandler(
+            consoleClient, authorizationServices, CamundaAuthentication.none());
   }
 
   @Test

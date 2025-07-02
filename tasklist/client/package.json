@@ -21,7 +21,7 @@
     "event-source-polyfill": "1.0.31",
     "final-form": "4.20.10",
     "final-form-arrays": "4.0.0",
-    "i18next": "25.2.1",
+    "i18next": "25.3.0",
     "i18next-browser-languagedetector": "8.2.0",
     "lodash": "4.17.21",
     "mixpanel-browser": "2.65.0",
@@ -45,8 +45,6 @@
     "build": "tsc && vite build && node ./renameProdIndex.mjs",
     "test": "TZ=utc vitest",
     "test:ci": "CI=true yarn test",
-    "test:e2e": "IS_E2E=true playwright test --project=e2e",
-    "test:e2e:ci": "CI=true IS_E2E=true playwright test --project=e2e",
     "test:visual": "playwright test --project=visual",
     "test:a11y": "IS_A11Y=true playwright test --project=a11y",
     "test:docs": "CI=true IS_E2E=true playwright test --project=docs",
@@ -56,7 +54,7 @@
     "lint": "yarn ts-check && yarn eslint && yarn stylelint",
     "coverage": "yarn test run --coverage --changed",
     "analyze-bundle": "yarn build && source-map-explorer 'build/assets/*.js'",
-    "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.53.1 /bin/bash",
+    "start-visual-regression-docker": "docker run --rm --network host -v $(pwd):/work/ -w /work/ -it mcr.microsoft.com/playwright:v1.53.2 /bin/bash",
     "start:visual-regression": "serve build/ -p 8081 -n -s -L",
     "build:visual-regression": "VITE_VERSION=0.0.0-SNAPSHOT vite build --mode visual-regression",
     "extract-sbom": "vite build --mode sbom"
@@ -69,8 +67,8 @@
   ],
   "devDependencies": {
     "@axe-core/playwright": "4.10.2",
-    "@eslint/js": "9.29.0",
-    "@playwright/test": "1.53.1",
+    "@eslint/js": "9.30.0",
+    "@playwright/test": "1.53.2",
     "@tanstack/react-query-devtools": "5.81.2",
     "@testing-library/dom": "10.4.0",
     "@testing-library/jest-dom": "6.6.3",
@@ -93,7 +91,7 @@
     "browserslist": "4.25.1",
     "browserslist-to-esbuild": "2.1.1",
     "diagram-js": "15.3.0",
-    "eslint": "9.29.0",
+    "eslint": "9.30.0",
     "eslint-config-prettier": "10.1.5",
     "eslint-plugin-license-header": "0.8.0",
     "eslint-plugin-prettier": "5.5.0",
@@ -115,8 +113,7 @@
     "vite": "7.0.0",
     "vite-plugin-svgr": "4.3.0",
     "vite-tsconfig-paths": "5.1.4",
-    "vitest": "3.2.4",
-    "zeebe-node": "8.3.2"
+    "vitest": "3.2.4"
   },
   "scarfSettings": {
     "enabled": false

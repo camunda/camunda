@@ -1,91 +1,53 @@
-# description: This is a workflow for 'Tasklist Backup and Restore' tests (supported only for 8.7 and lower versions).
-# test location: /tasklist/qa/backup-restore-tests
+# description: Reusable workflow (for ElasticSearch and Opensearch) that runs the backup restore tests for Tasklist
+# test location: tasklist/qa/backup-restore-tests
 # type: CI
 # owner: @camunda/data-layer
-name: Tasklist Backup and restore tests (reusable)
+name: "[Legacy] Tasklist / Backup and restore tests (reusable)"
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       database:
-        description: "Database type"
-        required: true
-        type: choice
-        options:
-          - elasticsearch
-          - opensearch
-      branch:
-        description: 'Specifies the branch, for which the tests should be executed. Note that the workflow is supported only for 8.7 and lower versions'
-        default: 'stable/8.7'
+        description: "Database name ('elasticsearch' or 'opensearch')"
         required: true
         type: string
 
-# define constants for later use
-env:
-  JAVA_VERSION: "21"
-
 jobs:
-  build-and-test:
+  run-backup-restore-tests:
     name: "with '${{ inputs.database }}'"
+    timeout-minutes: 15
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    permissions: {}  # GITHUB_TOKEN unused in this job
+    env:
+      DOCKER_IMAGE_TAG: current-test
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
     steps:
-      # Setup: checkout
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-build
         with:
-          ref: ${{ inputs.branch }}
-
-      # Setup: import secrets from vault
-      - name: Import Secrets
-        id: secrets # important to refer to it in later steps
-        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
         with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false # we rely on step outputs, no need for environment variables
-          secrets: |
-            secret/data/github.com/organizations/camunda NEXUS_USR;
-            secret/data/github.com/organizations/camunda NEXUS_PSW;
-
-      # Setup: configure Java, Maven, settings.xml
-      - name: Setup Java ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
+          maven-extra-args: -T1C -PskipFrontendBuild
+      - uses: ./.github/actions/build-platform-docker
+        id: build-tasklist-docker
         with:
-          distribution: "adopt"
-          java-version: ${{ env.JAVA_VERSION }}
-
-      - name: Setup Maven
-        uses: ./.github/actions/setup-maven-dist
+          repository: localhost:5000/camunda/tasklist
+          version: ${{ env.DOCKER_IMAGE_TAG }}
+          dockerfile: tasklist.Dockerfile
+          push: true
+          distball: ${{ steps.build-zeebe.outputs.distball }}
+      - name: Run Tasklist backup restore Tests
+        run: ./mvnw -B -pl tasklist/qa/backup-restore-tests -DskipChecks -DtasklistDatabase=${{ inputs.database }} -DskipTests=false verify
+      - name: Upload Test Report
+        if: failure()
+        uses: ./.github/actions/collect-test-artifacts
         with:
-          maven-version: 3.8.6
-          set-mvnw: true
-
-      - name: Configure Maven
-        uses: ./.github/actions/setup-maven-cache
-        with:
-          maven-cache-key-modifier: tasklist-tests
-
-      # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
-      - name: Create Maven settings.xml
-        uses: s4u/maven-settings-action@v3.1.0
-        with:
-          githubServer: false
-          servers: |
-            [{
-              "id": "camunda-nexus",
-              "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
-              "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
-            }]
-          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
-
-      # Build: maven artifacts
-      - name: Build backend
-        run: |
-          ./mvnw clean install -B -T1C -DskipChecks -P skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
-
-      # Tests: run backup and restore tests
-      - name: Run backup and restore tests
-        run: |
-          ./mvnw -B -pl tasklist/qa/backup-restore-tests -DskipChecks -DtasklistDatabase=${{ inputs.database }} -P-skipTests verify
+          name: "[Legacy] Tasklist Test Backup Restore"

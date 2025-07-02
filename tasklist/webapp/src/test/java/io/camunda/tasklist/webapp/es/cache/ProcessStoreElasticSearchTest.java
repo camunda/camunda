@@ -20,6 +20,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.authentication.entity.AuthenticationContext;
 import io.camunda.authentication.entity.CamundaUser;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -73,6 +74,7 @@ class ProcessStoreElasticSearchTest {
   @Mock private io.camunda.identity.autoconfigure.IdentityProperties identityProperties;
   @Mock private SecurityContextProvider securityContextProvider;
   @Mock private AuthorizationChecker authorizationChecker;
+  @Mock private CamundaAuthenticationProvider authenticationProvider;
   @InjectMocks private TasklistPermissionServices permissionServices;
 
   @BeforeEach
@@ -81,6 +83,8 @@ class ProcessStoreElasticSearchTest {
     when(securityConfiguration.getMultiTenancy()).thenReturn(new MultiTenancyConfiguration());
     ReflectionTestUtils.setField(
         permissionServices, "securityConfiguration", securityConfiguration);
+    ReflectionTestUtils.setField(
+        permissionServices, "authenticationProvider", authenticationProvider);
   }
 
   // ** Test Get Process by BPMN Process Id ** //

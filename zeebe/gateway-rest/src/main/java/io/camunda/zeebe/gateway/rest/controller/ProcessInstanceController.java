@@ -11,6 +11,7 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceCancelRequest;
@@ -50,12 +51,15 @@ public class ProcessInstanceController {
 
   private final ProcessInstanceServices processInstanceServices;
   private final MultiTenancyConfiguration multiTenancyCfg;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
   public ProcessInstanceController(
       final ProcessInstanceServices processInstanceServices,
-      final MultiTenancyConfiguration multiTenancyCfg) {
+      final MultiTenancyConfiguration multiTenancyCfg,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.processInstanceServices = processInstanceServices;
     this.multiTenancyCfg = multiTenancyCfg;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPostMapping
@@ -105,7 +109,7 @@ public class ProcessInstanceController {
           .body(
               SearchQueryResponseMapper.toProcessInstance(
                   processInstanceServices
-                      .withAuthentication(RequestMapper.getAuthentication())
+                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
                       .getByKey(processInstanceKey)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -120,7 +124,7 @@ public class ProcessInstanceController {
           .body(
               SearchQueryResponseMapper.toProcessInstanceCallHierarchyEntries(
                   processInstanceServices
-                      .withAuthentication(RequestMapper.getAuthentication())
+                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
                       .callHierarchy(processInstanceKey)));
 
     } catch (final Exception e) {
@@ -136,7 +140,7 @@ public class ProcessInstanceController {
           .body(
               SearchQueryResponseMapper.toProcessInstanceElementStatisticsResult(
                   processInstanceServices
-                      .withAuthentication(RequestMapper.getAuthentication())
+                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
                       .elementStatistics(processInstanceKey)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -151,7 +155,7 @@ public class ProcessInstanceController {
           .body(
               SearchQueryResponseMapper.toSequenceFlowsResult(
                   processInstanceServices
-                      .withAuthentication(RequestMapper.getAuthentication())
+                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
                       .sequenceFlows(processInstanceKey)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -211,7 +215,7 @@ public class ProcessInstanceController {
     try {
       final var result =
           processInstanceServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(query);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(result));
@@ -225,7 +229,7 @@ public class ProcessInstanceController {
     try {
       final var result =
           processInstanceServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .searchIncidents(processInstanceKey, query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toIncidentSearchQueryResponse(result));
     } catch (final Exception e) {
@@ -238,7 +242,7 @@ public class ProcessInstanceController {
     return RequestMapper.executeServiceMethod(
         () ->
             processInstanceServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .cancelProcessInstanceBatchOperationWithResult(filter),
         ResponseMapper::toBatchOperationCreatedWithResultResponse);
   }
@@ -248,7 +252,7 @@ public class ProcessInstanceController {
     return RequestMapper.executeServiceMethod(
         () ->
             processInstanceServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .resolveIncidentsBatchOperationWithResult(filter),
         ResponseMapper::toBatchOperationCreatedWithResultResponse);
   }
@@ -258,7 +262,7 @@ public class ProcessInstanceController {
     return RequestMapper.executeServiceMethod(
         () ->
             processInstanceServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .migrateProcessInstancesBatchOperation(request),
         ResponseMapper::toBatchOperationCreatedWithResultResponse);
   }
@@ -268,7 +272,7 @@ public class ProcessInstanceController {
     return RequestMapper.executeServiceMethod(
         () ->
             processInstanceServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .modifyProcessInstancesBatchOperation(request),
         ResponseMapper::toBatchOperationCreatedWithResultResponse);
   }
@@ -279,14 +283,14 @@ public class ProcessInstanceController {
       return RequestMapper.executeServiceMethod(
           () ->
               processInstanceServices
-                  .withAuthentication(RequestMapper.getAuthentication())
+                  .withAuthentication(authenticationProvider.getCamundaAuthentication())
                   .createProcessInstanceWithResult(request),
           ResponseMapper::toCreateProcessInstanceWithResultResponse);
     }
     return RequestMapper.executeServiceMethod(
         () ->
             processInstanceServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .createProcessInstance(request),
         ResponseMapper::toCreateProcessInstanceResponse);
   }
@@ -296,7 +300,7 @@ public class ProcessInstanceController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             processInstanceServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .cancelProcessInstance(request));
   }
 
@@ -305,7 +309,7 @@ public class ProcessInstanceController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             processInstanceServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .migrateProcessInstance(request));
   }
 
@@ -314,7 +318,7 @@ public class ProcessInstanceController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             processInstanceServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .modifyProcessInstance(request));
   }
 }

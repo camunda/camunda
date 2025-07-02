@@ -10,9 +10,9 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.UsageMetricsQuery;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UsageMetricsServices;
 import io.camunda.zeebe.gateway.protocol.rest.UsageMetricsResponse;
-import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
@@ -26,9 +26,13 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class UsageMetricsController {
 
   private final UsageMetricsServices usageMetricsServices;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
-  public UsageMetricsController(final UsageMetricsServices usageMetricsServices) {
+  public UsageMetricsController(
+      final UsageMetricsServices usageMetricsServices,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.usageMetricsServices = usageMetricsServices;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaGetMapping
@@ -43,7 +47,9 @@ public class UsageMetricsController {
   private ResponseEntity<UsageMetricsResponse> getMetrics(final UsageMetricsQuery query) {
     try {
       final var result =
-          usageMetricsServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
+          usageMetricsServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toUsageMetricsResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);

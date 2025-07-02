@@ -70,6 +70,7 @@ final class ElasticsearchArchiverRepositoryTest {
         "testPrefix",
         "instance",
         "batch",
+        "zeebe-record",
         client,
         Runnable::run,
         metrics,

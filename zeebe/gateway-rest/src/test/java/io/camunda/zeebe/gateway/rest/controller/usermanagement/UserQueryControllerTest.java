@@ -19,7 +19,8 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.sort.UserSort;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -32,9 +33,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(value = UserController.class)
 public class UserQueryControllerTest extends RestControllerTest {
@@ -65,13 +66,17 @@ public class UserQueryControllerTest extends RestControllerTest {
           .endCursor("v")
           .build();
 
-  @MockBean UserServices userServices;
-  @MockBean RoleServices roleServices;
-  @MockBean PasswordEncoder passwordEncoder;
+  @MockitoBean UserServices userServices;
+  @MockitoBean RoleServices roleServices;
+  @MockitoBean PasswordEncoder passwordEncoder;
+  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setup() {
-    when(userServices.withAuthentication(any(Authentication.class))).thenReturn(userServices);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(userServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(userServices);
   }
 
   @Test

@@ -11,6 +11,9 @@
   <artifactId>identity-parent</artifactId>
   <packaging>pom</packaging>
   <name>Identity Parent</name>
+  <!-- When adding modules here, keep in mind that the Management Identity 
+    codebase (https://github.com/camunda-cloud/identity/) uses
+    the same groupId; accordingly, do not pick conflicting artifactIds -->
   <modules>
     <module>client</module>
   </modules>

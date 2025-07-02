@@ -18,25 +18,30 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.MappingSort;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.MappingServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(value = MappingController.class)
 public class MappingQueryControllerTest extends RestControllerTest {
   private static final String MAPPING_BASE_URL = "/v2/mapping-rules";
 
-  @MockBean private MappingServices mappingServices;
+  @MockitoBean private MappingServices mappingServices;
+  @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setup() {
-    when(mappingServices.withAuthentication(any(Authentication.class))).thenReturn(mappingServices);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(mappingServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(mappingServices);
   }
 
   @Test

@@ -12,6 +12,7 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.FormServices;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.gateway.protocol.rest.FormResult;
@@ -19,7 +20,6 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatistics
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
-import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
@@ -39,11 +39,15 @@ public class ProcessDefinitionController {
 
   private final ProcessDefinitionServices processDefinitionServices;
   private final FormServices formServices;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
   public ProcessDefinitionController(
-      final ProcessDefinitionServices processDefinitionServices, final FormServices formServices) {
+      final ProcessDefinitionServices processDefinitionServices,
+      final FormServices formServices,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.processDefinitionServices = processDefinitionServices;
     this.formServices = formServices;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPostMapping(path = "/search")
@@ -58,7 +62,7 @@ public class ProcessDefinitionController {
     try {
       final var result =
           processDefinitionServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(query);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessDefinitionSearchQueryResponse(result));
@@ -77,7 +81,7 @@ public class ProcessDefinitionController {
           .body(
               SearchQueryResponseMapper.toProcessDefinition(
                   processDefinitionServices
-                      .withAuthentication(RequestMapper.getAuthentication())
+                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
                       .getByKey(processDefinitionKey)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -91,7 +95,7 @@ public class ProcessDefinitionController {
       @PathVariable("processDefinitionKey") final long processDefinitionKey) {
     try {
       return processDefinitionServices
-          .withAuthentication(RequestMapper.getAuthentication())
+          .withAuthentication(authenticationProvider.getCamundaAuthentication())
           .getProcessDefinitionXml(processDefinitionKey)
           .map(
               s ->
@@ -110,7 +114,7 @@ public class ProcessDefinitionController {
     try {
       final ProcessDefinitionEntity processDefinition =
           processDefinitionServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .getByKey(processDefinitionKey);
 
       if (processDefinition.formId() != null) {
@@ -118,7 +122,7 @@ public class ProcessDefinitionController {
             .body(
                 SearchQueryResponseMapper.toFormItem(
                     formServices
-                        .withAuthentication(RequestMapper.getAuthentication())
+                        .withAuthentication(authenticationProvider.getCamundaAuthentication())
                         .getLatestVersionByFormId(processDefinition.formId())
                         .get()));
       } else {
@@ -142,7 +146,7 @@ public class ProcessDefinitionController {
     try {
       final var result =
           processDefinitionServices
-              .withAuthentication(RequestMapper.getAuthentication())
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .elementStatistics(filter);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessDefinitionElementStatisticsResult(result));

@@ -18,7 +18,7 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
@@ -38,14 +38,14 @@ public class UserServiceTest {
   private UserServices services;
   private UserSearchClient client;
   private BrokerClient brokerClient;
-  private Authentication authentication;
+  private CamundaAuthentication authentication;
 
   @BeforeEach
   public void before() {
     client = mock(UserSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
     brokerClient = mock(BrokerClient.class);
-    authentication = mock(Authentication.class);
+    authentication = mock(CamundaAuthentication.class);
     final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
     userDeleteRequestArgumentCaptor = ArgumentCaptor.forClass(BrokerUserDeleteRequest.class);
     services =

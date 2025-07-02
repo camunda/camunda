@@ -15,8 +15,8 @@ import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.value.DefaultRole;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -41,7 +42,7 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final RoleSearchClient roleSearchClient,
-      final Authentication authentication) {
+      final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.roleSearchClient = roleSearchClient;
   }
@@ -87,6 +88,15 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
         RoleQuery.of(q -> q.filter(f -> f.memberId(memberId).childMemberType(entityType))));
   }
 
+  public List<RoleEntity> getRolesByMemberTypeAndMemberIds(
+      final Map<EntityType, Set<String>> memberTypesToMemberIds) {
+    return findAll(
+        RoleQuery.of(
+            roleQuery ->
+                roleQuery.filter(
+                    roleFilter -> roleFilter.memberIdsByType(memberTypesToMemberIds))));
+  }
+
   public List<RoleEntity> getRolesByUserAndGroups(
       final String username, final Set<String> groupIds) {
     final var roles = new ArrayList<>(getRolesByMemberId(username, EntityType.USER));
@@ -105,7 +115,7 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
   }
 
   @Override
-  public RoleServices withAuthentication(final Authentication authentication) {
+  public RoleServices withAuthentication(final CamundaAuthentication authentication) {
     return new RoleServices(
         brokerClient, securityContextProvider, roleSearchClient, authentication);
   }

@@ -47,7 +47,6 @@ test.beforeAll(async () => {
     './resources/create_invoice.form',
     './resources/zeebe_and_job_worker_process.bpmn',
   ]);
-
   await sleep(1000);
 
   await Promise.all([

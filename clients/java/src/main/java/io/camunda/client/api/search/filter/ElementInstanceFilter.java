@@ -17,8 +17,10 @@ package io.camunda.client.api.search.filter;
 
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ElementInstanceType;
+import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.api.search.filter.builder.ElementInstanceStateProperty;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
+import java.time.OffsetDateTime;
 import java.util.function.Consumer;
 
 public interface ElementInstanceFilter extends SearchRequestFilter {
@@ -114,4 +116,36 @@ public interface ElementInstanceFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   ElementInstanceFilter tenantId(final String value);
+
+  /**
+   * Filters element instances by start date.
+   *
+   * @param value the start date of the element instance
+   * @return the updated filter
+   */
+  ElementInstanceFilter startDate(final OffsetDateTime value);
+
+  /**
+   * Filters element instances by the specified {@link DateTimeProperty} start date.
+   *
+   * @param startDate the start date of the element instance
+   * @return the updated filter
+   */
+  ElementInstanceFilter startDate(final Consumer<DateTimeProperty> startDate);
+
+  /**
+   * Filters element instances by end date.
+   *
+   * @param value the end date of the element instance
+   * @return the updated filter
+   */
+  ElementInstanceFilter endDate(final OffsetDateTime value);
+
+  /**
+   * Filters element instances by the specified {@link DateTimeProperty} end date.
+   *
+   * @param endDate the end date of the element instance
+   * @return the updated filter
+   */
+  ElementInstanceFilter endDate(final Consumer<DateTimeProperty> endDate);
 }

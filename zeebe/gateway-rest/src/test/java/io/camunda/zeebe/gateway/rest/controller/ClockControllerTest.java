@@ -13,7 +13,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ClockServices;
 import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -27,10 +28,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(ClockController.class)
 public class ClockControllerTest extends RestControllerTest {
@@ -38,11 +39,15 @@ public class ClockControllerTest extends RestControllerTest {
   private static final String CLOCK_URL = "/v2/clock";
   private static final String RESET_CLOCK_URL = CLOCK_URL.concat("/reset");
 
-  @MockBean private ClockServices clockServices;
+  @MockitoBean private ClockServices clockServices;
+  @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setup() {
-    when(clockServices.withAuthentication(any(Authentication.class))).thenReturn(clockServices);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(clockServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(clockServices);
   }
 
   @Test

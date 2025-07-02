@@ -11,7 +11,7 @@ import static io.camunda.migration.identity.config.saas.StaticEntities.ROLE_PERM
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -35,7 +35,7 @@ public class StaticConsoleRoleAuthorizationMigrationHandlerTest {
     this.authorizationServices = authorizationServices;
     migrationHandler =
         new StaticConsoleRoleAuthorizationMigrationHandler(
-            authorizationServices, Authentication.none());
+            authorizationServices, CamundaAuthentication.none());
   }
 
   @Test

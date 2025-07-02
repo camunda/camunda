@@ -17,7 +17,7 @@ import io.camunda.search.entities.UsageMetricsCount;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.UsageMetricsQuery;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.time.OffsetDateTime;
@@ -29,7 +29,7 @@ public final class UsageMetricsServiceTest {
   private UsageMetricsServices services;
   private UsageMetricsSearchClient client;
   private SecurityContextProvider securityContextProvider;
-  private Authentication authentication;
+  private CamundaAuthentication authentication;
 
   @BeforeEach
   public void before() {

@@ -14,8 +14,8 @@ import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -38,7 +38,7 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final UserSearchClient userSearchClient,
-      final Authentication authentication,
+      final CamundaAuthentication authentication,
       final PasswordEncoder passwordEncoder) {
     super(brokerClient, securityContextProvider, authentication);
     this.userSearchClient = userSearchClient;
@@ -55,7 +55,7 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
   }
 
   @Override
-  public UserServices withAuthentication(final Authentication authentication) {
+  public UserServices withAuthentication(final CamundaAuthentication authentication) {
     return new UserServices(
         brokerClient, securityContextProvider, userSearchClient, authentication, passwordEncoder);
   }

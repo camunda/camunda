@@ -17,8 +17,8 @@ import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -32,14 +32,14 @@ public final class ElementInstanceServiceTest {
   private ElementInstanceServices services;
   private FlowNodeInstanceSearchClient client;
   private SecurityContextProvider securityContextProvider;
-  private Authentication authentication;
+  private CamundaAuthentication authentication;
 
   @BeforeEach
   public void before() {
     client = mock(FlowNodeInstanceSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
     securityContextProvider = mock(SecurityContextProvider.class);
-    authentication = mock(Authentication.class);
+    authentication = mock(CamundaAuthentication.class);
     services =
         new ElementInstanceServices(
             mock(BrokerClient.class), securityContextProvider, client, authentication);

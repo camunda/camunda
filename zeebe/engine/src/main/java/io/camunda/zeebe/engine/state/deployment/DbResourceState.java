@@ -241,8 +241,7 @@ public class DbResourceState implements MutableResourceState {
       final long resourceKey, final String tenantId) {
     tenantIdKey.wrapString(tenantId);
     dbResourceKey.wrapLong(resourceKey);
-    return Optional.ofNullable(resourcesByKey.get(tenantAwareResourceKey))
-        .map(PersistedResource::copy);
+    return Optional.ofNullable(resourcesByKey.get(tenantAwareResourceKey, PersistedResource::new));
   }
 
   @Override
@@ -290,9 +289,7 @@ public class DbResourceState implements MutableResourceState {
         Optional.ofNullable(resourceByIdAndVersionColumnFamily.get(tenantAwareIdAndVersionKey))
             .flatMap(key -> findResourceByKey(key.inner().wrappedKey().getValue(), tenantId));
 
-    return persistedResource
-        .map(PersistedResource::copy)
-        .orElseThrow(ResourceNotFoundException::new);
+    return persistedResource.orElseThrow(ResourceNotFoundException::new);
   }
 
   private Optional<PersistedResource> getResourceFromCache(

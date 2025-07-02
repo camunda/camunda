@@ -8,22 +8,28 @@
 package io.camunda.exporter.handlers.batchoperation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationItem;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 class BatchOperationChunkCreatedHandlerTest {
 
@@ -80,7 +86,10 @@ class BatchOperationChunkCreatedHandlerTest {
   @Test
   void shouldUpdateEntityFromRecord() {
     // given
-    final var recordValue = factory.generateObject(BatchOperationChunkRecordValue.class);
+    final var recordValue =
+        new BatchOperationChunkRecord()
+            .setBatchOperationKey(123L)
+            .setItems(List.of(new BatchOperationItem(1L, 11L)));
     final Record<BatchOperationChunkRecordValue> record =
         factory.generateRecord(
             ValueType.BATCH_OPERATION_CHUNK,
@@ -92,22 +101,34 @@ class BatchOperationChunkCreatedHandlerTest {
     underTest.updateEntity(record, entity);
 
     // then
+    assertThat(entity.getOperationsTotalCount()).isEqualTo(1);
     assertThat(entity.getEndDate()).isNull();
   }
 
   @Test
   void shouldUpdateEntityOnFlush() throws PersistenceException {
     // given
-    final var entity = new BatchOperationEntity().setId("123").setEndDate(null);
+    final var entity =
+        new BatchOperationEntity().setId("123").setOperationsTotalCount(123).setEndDate(null);
     final var mockRequest = mock(BatchRequest.class);
 
     // when
     underTest.flush(entity, mockRequest);
 
     final Map<String, Object> updateFields = new HashMap<>();
-    updateFields.put("endDate", null);
+    updateFields.put(BatchOperationTemplate.OPERATIONS_TOTAL_COUNT, 123);
 
     // then
-    verify(mockRequest, times(1)).update(indexName, entity.getId(), updateFields);
+    final var scriptCaptor = ArgumentCaptor.forClass(String.class);
+    verify(mockRequest, times(1))
+        .updateWithScript(
+            eq(indexName), eq(entity.getId()), scriptCaptor.capture(), eq(updateFields));
+
+    final var script = scriptCaptor.getValue();
+
+    assertThat(script)
+        .contains(
+            "ctx._source.operationsTotalCount = ctx._source.operationsTotalCount + params.operationsTotalCount");
+    assertThat(script).contains("ctx._source.endDate = null");
   }
 }

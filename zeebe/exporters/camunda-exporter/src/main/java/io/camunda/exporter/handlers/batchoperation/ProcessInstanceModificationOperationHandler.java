@@ -7,6 +7,9 @@
  */
 package io.camunda.exporter.handlers.batchoperation;
 
+import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
+import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -16,8 +19,14 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordV
 public class ProcessInstanceModificationOperationHandler
     extends AbstractOperationStatusHandler<ProcessInstanceModificationRecordValue> {
 
-  public ProcessInstanceModificationOperationHandler(final String indexName) {
-    super(indexName, ValueType.PROCESS_INSTANCE_MODIFICATION);
+  public ProcessInstanceModificationOperationHandler(
+      final String indexName,
+      final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache) {
+    super(
+        indexName,
+        ValueType.PROCESS_INSTANCE_MODIFICATION,
+        OperationType.MODIFY_PROCESS_INSTANCE,
+        batchOperationCache);
   }
 
   @Override
@@ -27,6 +36,11 @@ public class ProcessInstanceModificationOperationHandler
 
   @Override
   long getItemKey(final Record<ProcessInstanceModificationRecordValue> record) {
+    return record.getValue().getProcessInstanceKey();
+  }
+
+  @Override
+  long getProcessInstanceKey(final Record<ProcessInstanceModificationRecordValue> record) {
     return record.getValue().getProcessInstanceKey();
   }
 

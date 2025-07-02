@@ -14,8 +14,8 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
@@ -40,7 +41,7 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final TenantSearchClient tenantSearchClient,
-      final Authentication authentication) {
+      final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.tenantSearchClient = tenantSearchClient;
   }
@@ -71,7 +72,7 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
   }
 
   @Override
-  public TenantServices withAuthentication(final Authentication authentication) {
+  public TenantServices withAuthentication(final CamundaAuthentication authentication) {
     return new TenantServices(
         brokerClient, securityContextProvider, tenantSearchClient, authentication);
   }
@@ -135,6 +136,11 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
     tenants.addAll(groupTenants);
     tenants.addAll(roleTenants);
     return tenants.stream().distinct().toList();
+  }
+
+  public List<TenantEntity> getTenantsByMemberTypeAndMemberIds(
+      final Map<EntityType, Set<String>> memberTypesToMemberIds) {
+    return findAll(TenantQuery.of(q -> q.filter(f -> f.memberIdsByType(memberTypesToMemberIds))));
   }
 
   public TenantEntity getById(final String tenantId) {

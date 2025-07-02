@@ -25,6 +25,7 @@ import io.camunda.process.test.api.CamundaProcessTest;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.DecisionSelectors;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
+import io.camunda.process.test.impl.assertions.util.AssertionJsonMapper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.ByteArrayInputStream;
@@ -47,6 +48,8 @@ import org.camunda.bpm.model.dmn.instance.OutputEntry;
 import org.camunda.bpm.model.dmn.instance.Rule;
 import org.camunda.bpm.model.dmn.instance.Text;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @CamundaProcessTest
 public class CamundaProcessTestContextIT {
@@ -192,6 +195,19 @@ public class CamundaProcessTestContextIT {
     assertThat(processInstanceEvent).isCompleted();
     assertThat(processInstanceEvent).hasCompletedElements("success-end");
     assertThat(processInstanceEvent).hasVariables(variables);
+  }
+
+  @Test
+  void shouldGiveClearErrorMessageWhenJobIsMissing() {
+    // Given
+    final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+
+    // Then
+    Assertions.assertThatThrownBy(() -> processTestContext.completeJob("not-found"))
+        .hasMessage(
+            "Expected to complete a job with the type 'not-found' " + "but no job is available.");
   }
 
   @Test
@@ -360,6 +376,20 @@ public class CamundaProcessTestContextIT {
     assertThat(processInstanceEvent).isCompleted();
     assertThat(processInstanceEvent).hasCompletedElements("success-end");
     assertThat(processInstanceEvent).hasVariables(variables);
+  }
+
+  @Test
+  void shouldGiveHelpfulErrorMessageWhenCompleteUserTaskFails() {
+    // Given
+    final long processDefinitionKey = deployProcessModel(processModelWithUserTask());
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+
+    // When
+    Assertions.assertThatThrownBy(
+            () ->
+                processTestContext.completeUserTask(UserTaskSelectors.byElementId("unknown-task")))
+        .hasMessage("Expected to complete user task [unknown-task] but no job is available.");
   }
 
   @Test
@@ -796,8 +826,18 @@ public class CamundaProcessTestContextIT {
         .done();
   }
 
-  @Test
-  void shouldMockBusinessRule() {
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "\"test_value\"",
+        "[]",
+        "[1, 2, 3]",
+        "[\"a\", \"b\", \"c\"]",
+        "{}",
+        "{\"key\": \"value\"}",
+        "{\"key\": 1, \"foo\": \"bar\", \"list\": [1, 2, 3, \"a\", \"b\", \"c\"]}"
+      })
+  void shouldMockBusinessRule(final String decisionOutputJson) {
 
     // Given
     final BpmnModelInstance instance = processModelWithBusinessRule();
@@ -812,12 +852,10 @@ public class CamundaProcessTestContextIT {
     inputVariables.put("experience", 11);
     inputVariables.put("type", "luxury");
 
-    final Map<String, Object> resultValues = new HashMap<>();
-    resultValues.put("code", "pink");
-    resultValues.put("description", "Pink");
+    final Object decisionOutput = AssertionJsonMapper.readJson(decisionOutputJson);
 
     // When
-    processTestContext.mockDmnDecision(decisionId, resultValues);
+    processTestContext.mockDmnDecision(decisionId, decisionOutput);
 
     final ProcessInstanceEvent processInstanceEvent =
         client
@@ -830,7 +868,7 @@ public class CamundaProcessTestContextIT {
     // Then
     assertThat(processInstanceEvent).isCompleted();
     final Map<String, Object> expectedVariables = new HashMap<>();
-    expectedVariables.put("result", resultValues);
+    expectedVariables.put("result", decisionOutput);
     assertThat(processInstanceEvent).hasVariables(expectedVariables);
   }
 

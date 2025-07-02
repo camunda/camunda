@@ -1,3 +1,20 @@
+### Create Role Unauthorized
+# @name create-role-unauthorized
+POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/roles
+Content-Type: application/json
+Accept: application/json
+
+{
+  "roleId": "testRole",
+  "name": "TestRole"
+}
+
+> {%
+  client.test("Role creation should be unsuccessful", function () {
+    client.assert(response.status === 401, "Response status is not 401");
+  });
+%}
+
 ### Create Role
 # @name create-role
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/roles
@@ -80,14 +97,14 @@ Accept: application/json
   });
 %}
 
-### Assign User to Role
-# @name assign-user-to-role
+### Assign Role to User
+# @name assign-role-to-user
 PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/roles/{{ROLE_ID}}/users/{{USERNAME}}
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
 Accept: application/json
 
 > {%
-  client.test("User assignment should be successful", function () {
+  client.test("Role assignment should be successful", function () {
     client.assert(response.status === 202, "Response status is not 202");
   });
 %}
@@ -123,8 +140,8 @@ Accept: application/json
   });
 %}
 
-### Remove User from Role
-# @name remove-user-from-role
+### Remove Role from User
+# @name remove-role-from-user
 < {%
   import {wait} from "js/wait";
   wait(2);
@@ -134,7 +151,7 @@ Authorization: Basic {{BASIC_AUTH_TOKEN}}
 Accept: application/json
 
 > {%
-  client.test("User removal should be successful", function () {
+  client.test("Role removal should be successful", function () {
     client.assert(response.status === 202, "Response status is not 202");
   });
 %}
@@ -171,26 +188,26 @@ Accept: application/json
   });
 %}
 
-### Assign Client to Role
-# @name assign-client-to-role
+### Assign Role to Client
+# @name assign-role-to-client
 PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/roles/{{ROLE_ID}}/clients/{{CLIENT}}
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
 Accept: application/json
 
 > {%
-  client.test("Client assignment should be successful", function () {
+  client.test("Role assignment should be successful", function () {
     client.assert(response.status === 202, "Response status is not 202");
   });
 %}
 
-### Remove Client from a Role
-# @name remove-client-from-role
+### Remove Role from a Client
+# @name remove-role-from-client
 DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/roles/{{ROLE_ID}}/clients/{{CLIENT}}
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
 Accept: application/json
 
 > {%
-  client.test("Client deletion should be successful", function () {
+  client.test("Role deletion should be successful", function () {
     client.assert(response.status === 202, "Response status is not 202");
   });
 %}
@@ -222,7 +239,7 @@ Authorization: Basic {{BASIC_AUTH_TOKEN}}
 Accept: application/json
 
 > {%
-  client.test("Mapping rule assignment should be successful", function () {
+  client.test("Role assignment should be successful", function () {
     client.assert(response.status === 204, "Response status is not 204");
   });
 %}
@@ -299,14 +316,14 @@ Accept: application/json
   });
 %}
 
-### Assign Group to Role
-# @name assign-group-to-role
+### Assign Role to Group
+# @name assign-role-to-group
 PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/roles/{{ROLE_ID}}/groups/{{GROUP_ID}}
 Authorization: Basic {{BASIC_AUTH_TOKEN}}
 Accept: application/json
 
 > {%
-  client.test("Group assignment should be successful", function () {
+  client.test("Role assignment should be successful", function () {
     client.assert(response.status === 202, "Response status is not 202");
   });
 %}

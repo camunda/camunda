@@ -11,6 +11,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
+import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.index.TenantIndex.KEY;
@@ -31,10 +32,12 @@ public class TenantFilterTransformer extends IndexFilterTransformer<TenantFilter
 
   @Override
   public SearchQuery toSearchQuery(final TenantFilter filter) {
+    if (filter.memberIdsByType() != null && !filter.memberIdsByType().isEmpty()) {
+      return createMultipleMemberTypeQueries(filter);
+    }
+
     return and(
-        filter.key() == null ? null : term(KEY, filter.key()),
-        filter.tenantId() == null ? null : term(TENANT_ID, filter.tenantId()),
-        filter.name() == null ? null : term(NAME, filter.name()),
+        buildCoreFilters(filter),
         filter.memberIds() == null
             ? null
             : filter.memberIds().isEmpty()
@@ -45,15 +48,37 @@ public class TenantFilterTransformer extends IndexFilterTransformer<TenantFilter
         filter.entityType() == null
             ? null
             : term(TenantIndex.MEMBER_TYPE, filter.entityType().name()),
-        filter.joinParentId() == null
-            ? term(TenantIndex.JOIN, IdentityJoinRelationshipType.TENANT.getType())
-            : hasParentQuery(
-                IdentityJoinRelationshipType.TENANT.getType(),
-                term(TENANT_ID, filter.joinParentId())),
         filter.childMemberType() == null
             ? null
             : hasChildQuery(
                 IdentityJoinRelationshipType.MEMBER.getType(),
                 term(TenantIndex.MEMBER_TYPE, filter.childMemberType().name())));
+  }
+
+  private SearchQuery createMultipleMemberTypeQueries(final TenantFilter filter) {
+    return or(
+        filter.memberIdsByType().entrySet().stream()
+            .map(
+                entry ->
+                    and(
+                        buildCoreFilters(filter),
+                        hasChildQuery(
+                            IdentityJoinRelationshipType.MEMBER.getType(),
+                            and(
+                                term(TenantIndex.MEMBER_TYPE, entry.getKey().name()),
+                                stringTerms(TenantIndex.MEMBER_ID, entry.getValue())))))
+            .toList());
+  }
+
+  private SearchQuery buildCoreFilters(final TenantFilter filter) {
+    return and(
+        filter.key() == null ? null : term(KEY, filter.key()),
+        filter.tenantId() == null ? null : term(TENANT_ID, filter.tenantId()),
+        filter.name() == null ? null : term(NAME, filter.name()),
+        filter.joinParentId() == null
+            ? term(TenantIndex.JOIN, IdentityJoinRelationshipType.TENANT.getType())
+            : hasParentQuery(
+                IdentityJoinRelationshipType.TENANT.getType(),
+                term(TENANT_ID, filter.joinParentId())));
   }
 }

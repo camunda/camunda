@@ -26,6 +26,7 @@ import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
@@ -71,6 +72,11 @@ import io.camunda.zeebe.gateway.protocol.rest.GroupUserResult;
 import io.camunda.zeebe.gateway.protocol.rest.GroupUserSearchResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentResult;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.JobKindEnum;
+import io.camunda.zeebe.gateway.protocol.rest.JobListenerEventTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.JobSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.JobSearchResult;
+import io.camunda.zeebe.gateway.protocol.rest.JobStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.MappingResult;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
@@ -196,6 +202,17 @@ public final class SearchQueryResponseMapper {
         .items(
             ofNullable(result.items())
                 .map(SearchQueryResponseMapper::toProcessInstances)
+                .orElseGet(Collections::emptyList));
+  }
+
+  public static JobSearchQueryResult toJobSearchQueryResponse(
+      final SearchQueryResult<JobEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new JobSearchQueryResult()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toJobs)
                 .orElseGet(Collections::emptyList));
   }
 
@@ -431,6 +448,35 @@ public final class SearchQueryResponseMapper {
   private static List<ProcessInstanceResult> toProcessInstances(
       final List<ProcessInstanceEntity> instances) {
     return instances.stream().map(SearchQueryResponseMapper::toProcessInstance).toList();
+  }
+
+  private static List<JobSearchResult> toJobs(final List<JobEntity> jobs) {
+    return jobs.stream().map(SearchQueryResponseMapper::toJob).toList();
+  }
+
+  private static JobSearchResult toJob(final JobEntity job) {
+    return new JobSearchResult()
+        .jobKey(KeyUtil.keyToString(job.jobKey()))
+        .type(job.type())
+        .worker(job.worker())
+        .state(JobStateEnum.fromValue(job.state().name()))
+        .kind(JobKindEnum.fromValue(job.kind().name()))
+        .listenerEventType(JobListenerEventTypeEnum.fromValue(job.listenerEventType().name()))
+        .retries(job.retries())
+        .isDenied(job.isDenied())
+        .deniedReason(job.deniedReason())
+        .hasFailedWithRetriesLeft(job.hasFailedWithRetriesLeft())
+        .errorCode(job.errorCode())
+        .errorMessage(job.errorMessage())
+        .customHeaders(job.customHeaders())
+        .deadline(formatDate(job.deadline()))
+        .endTime(formatDate(job.endTime()))
+        .processDefinitionId(job.processDefinitionId())
+        .processDefinitionKey(KeyUtil.keyToString(job.processDefinitionKey()))
+        .processInstanceKey(KeyUtil.keyToString(job.processInstanceKey()))
+        .elementId(job.elementId())
+        .elementInstanceKey(KeyUtil.keyToString(job.elementInstanceKey()))
+        .tenantId(job.tenantId());
   }
 
   public static ProcessInstanceResult toProcessInstance(final ProcessInstanceEntity p) {

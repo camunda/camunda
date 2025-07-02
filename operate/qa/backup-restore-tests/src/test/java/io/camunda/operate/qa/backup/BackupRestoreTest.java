@@ -7,12 +7,13 @@
  */
 package io.camunda.operate.qa.backup;
 
+import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME;
 import static io.camunda.operate.util.CollectionUtil.asMap;
 import static io.camunda.webapps.backup.BackupStateDto.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.CamundaClient;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
 import io.camunda.operate.util.RetryOperation;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
@@ -46,12 +47,12 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 @ContextConfiguration(classes = {TestConfig.class})
 public class BackupRestoreTest {
 
-  public static final String ZEEBE_INDEX_PREFIX = "backup-restore-test";
-  public static final String VERSION = "SNAPSHOT";
+  public static final String INDEX_PREFIX = "backup-restore-test";
+  public static final String VERSION = "current-test";
   public static final String REPOSITORY_NAME = "testRepository";
   public static final Long BACKUP_ID = 123L;
   private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreTest.class);
-  private static final String OPERATE_TEST_DOCKER_IMAGE = "camunda/operate";
+  private static final String OPERATE_TEST_DOCKER_IMAGE = "localhost:5000/camunda/operate";
   @Autowired private OperateAPICaller operateAPICaller;
 
   @Autowired private DataGenerator dataGenerator;
@@ -64,7 +65,7 @@ public class BackupRestoreTest {
 
   @Before
   public void setup() {
-    testContext = new BackupRestoreTestContext().setZeebeIndexPrefix(ZEEBE_INDEX_PREFIX);
+    testContext = new BackupRestoreTestContext().setZeebeIndexPrefix(INDEX_PREFIX);
   }
 
   @Test
@@ -87,13 +88,7 @@ public class BackupRestoreTest {
       testContext
           .getEsClient()
           .indices()
-          .delete(new DeleteIndexRequest("operate*"), RequestOptions.DEFAULT);
-      // we need to remove Zeebe indices as otherwise Operate will start importing data at once and
-      // we won't be able to assert the older state of data (from backup)
-      testContext
-          .getEsClient()
-          .indices()
-          .delete(new DeleteIndexRequest(ZEEBE_INDEX_PREFIX + "*"), RequestOptions.DEFAULT);
+          .delete(new DeleteIndexRequest(INDEX_PREFIX + "*"), RequestOptions.DEFAULT);
       RetryOperation.newBuilder()
           .noOfRetry(10)
           .delayInterval(2000, TimeUnit.MILLISECONDS)
@@ -103,9 +98,7 @@ public class BackupRestoreTest {
                   !testContext
                       .getEsClient()
                       .indices()
-                      .exists(
-                          new GetIndexRequest("operate*", ZEEBE_INDEX_PREFIX + "*"),
-                          RequestOptions.DEFAULT))
+                      .exists(new GetIndexRequest(INDEX_PREFIX + "*"), RequestOptions.DEFAULT))
           .build()
           .retry();
       LOGGER.info("************ Operate indices deleted ************");
@@ -144,18 +137,18 @@ public class BackupRestoreTest {
                 new HttpHost(testContext.getExternalElsHost(), testContext.getExternalElsPort()))));
     createSnapshotRepository(testContext);
 
-    String zeebeVersion = CamundaClient.class.getPackage().getImplementationVersion();
-    // zeebeVersion can be null if tests are launched from the IDE
-    if (zeebeVersion == null || zeebeVersion.toLowerCase().contains("snapshot")) {
-      zeebeVersion = "SNAPSHOT";
-    }
+    final String zeebeVersion =
+        ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_DOCKER_PROPERTY_NAME);
     testContainerUtil.startZeebe(zeebeVersion, testContext);
 
     operateContainer =
         testContainerUtil
             .createOperateContainer(OPERATE_TEST_DOCKER_IMAGE, VERSION, testContext)
-            .withLogConsumer(new Slf4jLogConsumer(LOGGER));
-    operateContainer.withEnv("CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME", REPOSITORY_NAME);
+            .withLogConsumer(new Slf4jLogConsumer(LOGGER))
+            .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", INDEX_PREFIX)
+            .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_INDEXPREFIX", INDEX_PREFIX)
+            .withEnv("CAMUNDA_OPERATE_IMPORTERENABLED", "false")
+            .withEnv("CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME", REPOSITORY_NAME);
 
     startOperate();
   }

@@ -14,7 +14,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult.Builder;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -36,7 +36,7 @@ abstract class RestApiConfigurationTest extends RestControllerTest {
 
   @BeforeEach
   void setupServices() {
-    when(processInstanceServices.withAuthentication(any(Authentication.class)))
+    when(processInstanceServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(processInstanceServices);
     when(brokerClient.getTopologyManager()).thenReturn(topologyManager);
     when(processInstanceServices.search(any(ProcessInstanceQuery.class)))

@@ -17,7 +17,6 @@ import io.camunda.authentication.entity.OAuthContext;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.RoleEntity;
-import io.camunda.search.query.RoleQuery;
 import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.auth.OidcPrincipalLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -128,19 +127,14 @@ public class CamundaOAuthPrincipalServiceImpl implements CamundaOAuthPrincipalSe
       ownerTypeToIds.put(GROUP, groups);
     }
 
-    final var roles =
-        roleServices.findAll(
-            RoleQuery.of(
-                roleQuery ->
-                    roleQuery.filter(roleFilter -> roleFilter.memberIdsByType(ownerTypeToIds))));
+    final var roles = roleServices.getRolesByMemberTypeAndMemberIds(ownerTypeToIds);
     final var roleIds = roles.stream().map(RoleEntity::roleId).collect(Collectors.toSet());
     if (!roleIds.isEmpty()) {
       ownerTypeToIds.put(EntityType.ROLE, roleIds);
     }
 
-    // TODO: Get tenants for username and clientId https://github.com/camunda/camunda/issues/26572
     final var tenants =
-        tenantServices.getTenantsByMappingsAndGroupsAndRoles(mappingIds, groups, roleIds).stream()
+        tenantServices.getTenantsByMemberTypeAndMemberIds(ownerTypeToIds).stream()
             .map(TenantDTO::fromEntity)
             .toList();
 

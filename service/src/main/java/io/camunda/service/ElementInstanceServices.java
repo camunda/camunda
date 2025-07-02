@@ -13,8 +13,8 @@ import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -36,13 +36,13 @@ public final class ElementInstanceServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
-      final Authentication authentication) {
+      final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.flowNodeInstanceSearchClient = flowNodeInstanceSearchClient;
   }
 
   @Override
-  public ElementInstanceServices withAuthentication(final Authentication authentication) {
+  public ElementInstanceServices withAuthentication(final CamundaAuthentication authentication) {
     return new ElementInstanceServices(
         brokerClient, securityContextProvider, flowNodeInstanceSearchClient, authentication);
   }

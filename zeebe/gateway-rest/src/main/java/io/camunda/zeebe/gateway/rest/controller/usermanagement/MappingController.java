@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.MappingQuery;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.MappingServices;
 import io.camunda.service.MappingServices.MappingDTO;
 import io.camunda.zeebe.gateway.protocol.rest.MappingResult;
@@ -37,9 +38,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/mapping-rules")
 public class MappingController {
   private final MappingServices mappingServices;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
-  public MappingController(final MappingServices mappingServices) {
+  public MappingController(
+      final MappingServices mappingServices,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.mappingServices = mappingServices;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPostMapping
@@ -63,7 +68,7 @@ public class MappingController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             mappingServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .deleteMapping(mappingId));
   }
 
@@ -74,7 +79,7 @@ public class MappingController {
           .body(
               SearchQueryResponseMapper.toMapping(
                   mappingServices
-                      .withAuthentication(RequestMapper.getAuthentication())
+                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
                       .getMapping(mappingId)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
@@ -92,7 +97,7 @@ public class MappingController {
     return RequestMapper.executeServiceMethod(
         () ->
             mappingServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .createMapping(request),
         ResponseMapper::toMappingCreateResponse);
   }
@@ -101,7 +106,7 @@ public class MappingController {
     return RequestMapper.executeServiceMethod(
         () ->
             mappingServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .updateMapping(request),
         ResponseMapper::toMappingUpdateResponse);
   }
@@ -109,7 +114,9 @@ public class MappingController {
   private ResponseEntity<MappingSearchQueryResult> search(final MappingQuery query) {
     try {
       final var result =
-          mappingServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
+          mappingServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toMappingSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);

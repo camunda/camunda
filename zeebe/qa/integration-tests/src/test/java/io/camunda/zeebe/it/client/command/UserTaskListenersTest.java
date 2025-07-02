@@ -30,6 +30,7 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -280,16 +281,28 @@ public class UserTaskListenersTest {
 
     // then
     final var handledJobs = recordingHandler.getHandledJobs();
+    final long listenerJobKey = handledJobs.getFirst().getKey();
     assertThat(handledJobs)
         .hasSize(jobRetries)
-        .allSatisfy(job -> assertThat(job.getType()).isEqualTo(listenerType));
+        .allSatisfy(
+            job -> {
+              assertThat(job.getType())
+                  .as("Expecting jobs to have same job type")
+                  .isEqualTo(listenerType);
+              assertThat(job.getKey())
+                  .as("Expecting jobs to have same job key")
+                  .isEqualTo(listenerJobKey);
+            });
 
     final var rejectionReason =
         "Task Listener job completion with variables payload provided is not yet supported";
     assertThat(
             RecordingExporter.records()
                 .limit(r -> r.getIntent().equals(IncidentIntent.CREATED))
-                .onlyCommandRejections())
+                .onlyCommandRejections()
+                .withValueType(ValueType.JOB)
+                .withIntent(JobIntent.COMPLETE)
+                .withRecordKey(listenerJobKey))
         .describedAs(
             "Expected to have %d `COMPLETE` job command rejections all having same rejection type and reason",
             jobRetries)
@@ -297,7 +310,6 @@ public class UserTaskListenersTest {
         .allSatisfy(
             rejection ->
                 Assertions.assertThat(rejection)
-                    .hasIntent(JobIntent.COMPLETE)
                     .hasRejectionType(RejectionType.INVALID_ARGUMENT)
                     .extracting(Record::getRejectionReason, as(InstanceOfAssertFactories.STRING))
                     .startsWith(rejectionReason));

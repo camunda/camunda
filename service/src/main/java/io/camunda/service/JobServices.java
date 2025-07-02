@@ -7,7 +7,13 @@
  */
 package io.camunda.service;
 
-import io.camunda.security.auth.Authentication;
+import io.camunda.search.clients.JobSearchClient;
+import io.camunda.search.entities.JobEntity;
+import io.camunda.search.query.JobQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
@@ -24,23 +30,30 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-public final class JobServices<T> extends ApiServices<JobServices<T>> {
+public final class JobServices<T> extends SearchQueryService<JobServices<T>, JobQuery, JobEntity> {
 
   private final ActivateJobsHandler<T> activateJobsHandler;
+  private final JobSearchClient jobSearchClient;
 
   public JobServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ActivateJobsHandler<T> activateJobsHandler,
-      final Authentication authentication) {
+      final JobSearchClient jobSearchClient,
+      final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.activateJobsHandler = activateJobsHandler;
+    this.jobSearchClient = jobSearchClient;
   }
 
   @Override
-  public JobServices<T> withAuthentication(final Authentication authentication) {
+  public JobServices<T> withAuthentication(final CamundaAuthentication authentication) {
     return new JobServices<>(
-        brokerClient, securityContextProvider, activateJobsHandler, authentication);
+        brokerClient,
+        securityContextProvider,
+        activateJobsHandler,
+        jobSearchClient,
+        authentication);
   }
 
   public void activateJobs(
@@ -98,6 +111,15 @@ public final class JobServices<T> extends ApiServices<JobServices<T>> {
       brokerRequest.setOperationReference(operationReference);
     }
     return sendBrokerRequest(brokerRequest);
+  }
+
+  @Override
+  public SearchQueryResult<JobEntity> search(final JobQuery query) {
+    return jobSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
+        .searchJobs(query);
   }
 
   public record ActivateJobsRequest(

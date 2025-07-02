@@ -85,7 +85,7 @@ jobs:
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
     container:
-      image: mcr.microsoft.com/playwright:v1.53.1
+      image: mcr.microsoft.com/playwright:v1.53.2
       options: --user 1001:1000
     defaults:
       run:
@@ -124,13 +124,58 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  operate-fe-visual-regression-tests:
+    name: Visual regression tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {} # GITHUB_TOKEN unused in this job
+    container:
+      image: mcr.microsoft.com/playwright:v1.53.2
+      options: --user 1001:1000
+    defaults:
+      run:
+        working-directory: operate/client
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        with:
+          directory: operate/client
+      - name: Install node dependencies
+        run: yarn
+      - name: Build frontend
+        run: yarn build:visual-regression
+      - name: Start server
+        run: yarn start:visual-regression &
+      - name: Run Visual regression tests
+        run: yarn test:visual
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: operate-visual-regression-report
+          path: operate/client/playwright-report/
+          retention-days: 30
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   operate-update-screenshots:
     name: Update Screenshots
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    permissions: { } # GITHUB_TOKEN unused in this job
+    permissions: {} # GITHUB_TOKEN unused in this job
     container:
-      image: mcr.microsoft.com/playwright:v1.53.1
+      image: mcr.microsoft.com/playwright:v1.53.2
       options: --user 1001:1000
     defaults:
       run:

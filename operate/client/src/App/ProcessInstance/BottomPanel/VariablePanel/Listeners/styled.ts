@@ -41,6 +41,7 @@ const WarningFilled = styled(BaseWarningFilled)`
 
 const Dropdown = styled(BaseDropdown)`
   width: 200px;
+  margin-bottom: ${spacing03};
 `;
 
 const EmptyMessageWrapper = styled.div`
@@ -55,11 +56,9 @@ const EmptyMessageWrapper = styled.div`
   }
 `;
 
-const dropdownHeight = '32px';
-
-const Stack = styled(BaseStack)<{$isUserTask: boolean}>`
-  height: ${({$isUserTask}) =>
-    $isUserTask ? `calc(100% - ${dropdownHeight})` : '100%'};
+const Stack = styled(BaseStack)`
+  height: 100%;
+  overflow-y: auto;
 `;
 
 export {

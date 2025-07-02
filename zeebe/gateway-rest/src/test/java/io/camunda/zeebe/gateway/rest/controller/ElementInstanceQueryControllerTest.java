@@ -18,12 +18,15 @@ import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.FlowNodeInstanceSort;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
+import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCache;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCacheItem;
@@ -31,11 +34,17 @@ import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(value = ElementInstanceController.class)
 public class ElementInstanceQueryControllerTest extends RestControllerTest {
@@ -129,12 +138,16 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
   static final String ELEMENT_INSTANCES_URL = "/v2/element-instances/";
   static final String ELEMENT_INSTANCES_SEARCH_URL = ELEMENT_INSTANCES_URL + "search";
 
-  @MockBean ElementInstanceServices elementInstanceServices;
-  @MockBean ProcessCache processCache;
+  @MockitoBean ElementInstanceServices elementInstanceServices;
+  @MockitoBean ProcessCache processCache;
+  @Captor ArgumentCaptor<FlowNodeInstanceQuery> queryCaptor;
+  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setupServices() {
-    when(elementInstanceServices.withAuthentication(any(Authentication.class)))
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(elementInstanceServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(elementInstanceServices);
     when(processCache.getElementName(any())).thenReturn("elementName");
     final var processCacheItem = mock(ProcessCacheItem.class);
@@ -210,7 +223,9 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                 "elementName": "name",
                 "hasIncident": true,
                 "incidentKey": "2251799813685320",
-                "tenantId": "default"
+                "tenantId": "default",
+                "startDate": "2023-05-17T10:10:10Z",
+                "endDate": "2023-05-23T10:10:10.000Z"
               }
             }
             """;
@@ -244,6 +259,10 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                         .hasIncident(true)
                         .incidentKeys(2251799813685320L)
                         .tenantIds("default")
+                        .startDateOperations(
+                            Operation.eq(OffsetDateTime.parse("2023-05-17T10:10:10Z")))
+                        .endDateOperations(
+                            Operation.eq(OffsetDateTime.parse("2023-05-23T10:10:10.000Z")))
                         .build())
                 .build());
   }
@@ -360,5 +379,65 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
 
     verify(elementInstanceServices).getByKey(5L);
     verify(processCache, never()).getElementName(any());
+  }
+
+  private static Stream<Arguments> provideAdvancedSearchParameters() {
+    final var streamBuilder = Stream.<Arguments>builder();
+
+    customOperationTestCases(
+        streamBuilder,
+        "state",
+        ops -> new FlowNodeInstanceFilter.Builder().stateOperations(ops).build(),
+        List.of(
+            List.of(Operation.eq(String.valueOf(ElementInstanceStateEnum.ACTIVE))),
+            List.of(Operation.neq(String.valueOf(ElementInstanceStateEnum.COMPLETED))),
+            List.of(
+                Operation.in(
+                    String.valueOf(ElementInstanceStateEnum.COMPLETED),
+                    String.valueOf(ElementInstanceStateEnum.ACTIVE)),
+                Operation.like("act"))),
+        true);
+    dateTimeOperationTestCases(
+        streamBuilder,
+        "startDate",
+        ops -> new FlowNodeInstanceFilter.Builder().startDateOperations(ops).build());
+    dateTimeOperationTestCases(
+        streamBuilder,
+        "endDate",
+        ops -> new FlowNodeInstanceFilter.Builder().endDateOperations(ops).build());
+    return streamBuilder.build();
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideAdvancedSearchParameters")
+  void shouldSearchFlowNodeInstancesWithAdvancedFilter(
+      final String filterString, final FlowNodeInstanceFilter filter) {
+    // given
+    final var request =
+        """
+            {
+                "filter": %s
+            }"""
+            .formatted(filterString);
+    System.out.println("request = " + request);
+    when(elementInstanceServices.search(queryCaptor.capture())).thenReturn(SEARCH_QUERY_RESULT);
+
+    // when / then
+    webClient
+        .post()
+        .uri(ELEMENT_INSTANCES_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE);
+
+    verify(elementInstanceServices)
+        .search(new FlowNodeInstanceQuery.Builder().filter(filter).build());
   }
 }

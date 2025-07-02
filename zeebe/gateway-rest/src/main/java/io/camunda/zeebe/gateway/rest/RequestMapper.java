@@ -40,14 +40,9 @@ import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUser
 import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUserUpdateRequest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.authentication.entity.CamundaOAuthPrincipal;
-import io.camunda.authentication.entity.CamundaPrincipal;
 import io.camunda.document.api.DocumentMetadataModel;
-import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.filter.AdHocSubProcessActivityFilter;
 import io.camunda.search.query.AdHocSubProcessActivityQuery;
-import io.camunda.security.auth.Authentication;
-import io.camunda.security.auth.Authentication.Builder;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest;
 import io.camunda.service.AdHocSubProcessActivityServices.AdHocSubProcessActivateActivitiesRequest.AdHocSubProcessActivateActivityReference;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
@@ -76,7 +71,6 @@ import io.camunda.service.RoleServices.UpdateRoleRequest;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.TenantServices.TenantMemberRequest;
 import io.camunda.service.UserServices.UserDTO;
-import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivateActivitiesInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivitySearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
@@ -153,7 +147,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.multipart.MultipartFile;
 
 public class RequestMapper {
@@ -608,54 +601,6 @@ public class RequestMapper {
     return validationResponse.map(
         tenantId ->
             new BroadcastSignalRequest(request.getSignalName(), request.getVariables(), tenantId));
-  }
-
-  public static Authentication getAuthentication() {
-    final Map<String, Object> claims = new HashMap<>();
-    final var authenticationBuilder = new Builder();
-
-    final var requestAuthentication = SecurityContextHolder.getContext().getAuthentication();
-    if (requestAuthentication != null) {
-      if (requestAuthentication.getPrincipal()
-          instanceof final CamundaPrincipal authenticatedPrincipal) {
-        final var authenticationContext = authenticatedPrincipal.getAuthenticationContext();
-
-        authenticationBuilder.roleIds(
-            authenticationContext.roles().stream().map(RoleEntity::roleId).toList());
-
-        authenticationBuilder.tenants(
-            authenticationContext.tenants().stream().map(TenantDTO::tenantId).toList());
-
-        authenticationBuilder.groupIds(authenticationContext.groups());
-
-        if (authenticationContext.groupsClaimEnabled()) {
-          claims.put(Authorization.USER_GROUPS_CLAIMS, authenticationContext.groups());
-        }
-
-        if (authenticationContext.username() != null) {
-          final var authenticatedUsername = authenticationContext.username();
-          claims.put(Authorization.AUTHORIZED_USERNAME, authenticatedUsername);
-          authenticationBuilder.user(authenticatedUsername);
-        } else {
-          final var authenticatedClientId = authenticationContext.clientId();
-          claims.put(Authorization.AUTHORIZED_CLIENT_ID, authenticatedClientId);
-          authenticationBuilder.clientId(authenticatedClientId);
-        }
-
-        if (authenticatedPrincipal instanceof final CamundaOAuthPrincipal principal) {
-          claims.put(Authorization.USER_TOKEN_CLAIMS, principal.getClaims());
-          authenticationBuilder.mapping(principal.getOAuthContext().mappingIds().stream().toList());
-        }
-
-        authenticationBuilder.claims(claims);
-      }
-    }
-
-    return authenticationBuilder.build();
-  }
-
-  public static Authentication getAnonymousAuthentication() {
-    return new Builder().claims(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true)).build();
   }
 
   public static <T> Either<ProblemDetail, T> getResult(

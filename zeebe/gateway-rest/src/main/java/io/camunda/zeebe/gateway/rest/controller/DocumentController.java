@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DocumentServices;
 import io.camunda.service.DocumentServices.DocumentContentResponse;
 import io.camunda.service.DocumentServices.DocumentException;
@@ -42,11 +43,15 @@ public class DocumentController {
 
   private final DocumentServices documentServices;
   private final ObjectMapper objectMapper;
+  private final CamundaAuthenticationProvider authenticationProvider;
 
   public DocumentController(
-      final DocumentServices documentServices, final ObjectMapper objectMapper) {
+      final DocumentServices documentServices,
+      final ObjectMapper objectMapper,
+      final CamundaAuthenticationProvider authenticationProvider) {
     this.documentServices = documentServices;
     this.objectMapper = objectMapper;
+    this.authenticationProvider = authenticationProvider;
   }
 
   @CamundaPostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -75,7 +80,7 @@ public class DocumentController {
     return RequestMapper.executeServiceMethod(
         () ->
             documentServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .createDocument(request),
         ResponseMapper::toDocumentReference);
   }
@@ -86,7 +91,7 @@ public class DocumentController {
     return RequestMapper.executeServiceMethod(
         () ->
             documentServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .createDocumentBatch(requests),
         ResponseMapper::toDocumentReferenceBatch);
   }
@@ -149,7 +154,7 @@ public class DocumentController {
   private DocumentContentResponse getDocumentContentResponse(
       final String documentId, final String storeId, final String contentHash) {
     return documentServices
-        .withAuthentication(RequestMapper.getAuthentication())
+        .withAuthentication(authenticationProvider.getCamundaAuthentication())
         .getDocumentContent(documentId, storeId, contentHash);
   }
 
@@ -160,7 +165,7 @@ public class DocumentController {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             documentServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .deleteDocument(documentId, storeId));
   }
 
@@ -186,7 +191,7 @@ public class DocumentController {
     return RequestMapper.executeServiceMethod(
         () ->
             documentServices
-                .withAuthentication(RequestMapper.getAuthentication())
+                .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .createLink(documentId, storeId, contentHash, params),
         ResponseMapper::toDocumentLinkResponse);
   }

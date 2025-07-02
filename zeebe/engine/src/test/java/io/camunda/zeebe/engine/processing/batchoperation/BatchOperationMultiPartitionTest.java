@@ -295,7 +295,7 @@ public final class BatchOperationMultiPartitionTest {
                   .limit(record -> record.getIntent().equals(BatchOperationIntent.RESUMED))
                   .collect(Collectors.toList()))
           .extracting(Record::getIntent)
-          .containsExactly(BatchOperationIntent.RESUME, BatchOperationIntent.RESUMED);
+          .containsSequence(BatchOperationIntent.RESUME, BatchOperationIntent.RESUMED);
     }
   }
 

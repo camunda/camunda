@@ -24,6 +24,7 @@ import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCo
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.StarterCfg;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import java.net.URI;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -219,7 +220,9 @@ public class Starter extends App {
   private CamundaClient createCamundaClient() {
     final CamundaClientBuilder builder =
         CamundaClient.newClientBuilder()
-            .gatewayAddress(appCfg.getBrokerUrl())
+            .grpcAddress(URI.create(appCfg.getBrokerUrl()))
+            .restAddress(URI.create(appCfg.getBrokerRestUrl()))
+            .preferRestOverGrpc(appCfg.isPreferRest())
             .numJobWorkerExecutionThreads(0)
             .withProperties(System.getProperties())
             .withInterceptors(monitoringInterceptor);

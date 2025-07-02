@@ -20,8 +20,9 @@ import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.DecisionRequirementsSort;
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionRequirementsServices;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -35,8 +36,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @WebMvcTest(value = DecisionRequirementsController.class)
 public class DecisionRequirementsQueryControllerTest extends RestControllerTest {
@@ -86,11 +87,14 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
             "resourceName": "rN"
           }
           """;
-  @MockBean DecisionRequirementsServices decisionRequirementsServices;
+  @MockitoBean DecisionRequirementsServices decisionRequirementsServices;
+  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setupServices() {
-    when(decisionRequirementsServices.withAuthentication(any(Authentication.class)))
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(decisionRequirementsServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(decisionRequirementsServices);
 
     when(decisionRequirementsServices.getByKey(VALID_DECISION_REQUIREMENTS_KEY))

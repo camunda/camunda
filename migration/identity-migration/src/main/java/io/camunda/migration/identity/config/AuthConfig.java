@@ -7,7 +7,7 @@
  */
 package io.camunda.migration.identity.config;
 
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.zeebe.auth.Authorization;
 import java.util.Map;
 import org.springframework.context.annotation.Bean;
@@ -17,8 +17,8 @@ import org.springframework.context.annotation.Configuration;
 public class AuthConfig {
 
   @Bean
-  public Authentication servicesAuthentication() {
-    return new Authentication.Builder()
+  public CamundaAuthentication servicesAuthentication() {
+    return new CamundaAuthentication.Builder()
         .claims(Map.of(Authorization.AUTHORIZED_ANONYMOUS_USER, true))
         .build();
   }

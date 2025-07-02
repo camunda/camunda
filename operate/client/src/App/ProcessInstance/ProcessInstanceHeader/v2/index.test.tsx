@@ -12,36 +12,22 @@ import {
   waitForElementToBeRemoved,
   waitFor,
 } from 'modules/testing-library';
-import {getProcessName} from 'modules/utils/instance';
+import {getProcessDefinitionName} from 'modules/utils/instance';
 import {ProcessInstanceHeader} from './index';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {variablesStore} from 'modules/stores/variables';
 import {
-  mockInstanceWithActiveOperation,
-  mockInstanceWithoutOperations,
+  mockInstance,
   mockInstanceWithParentInstance,
   mockOperationCreated,
-  mockCanceledInstance,
   Wrapper,
-  mockProcessInstance,
+  mockInstanceDeprecated,
 } from './index.setup';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 
-import {
-  createBatchOperation,
-  createOperation,
-  createVariable,
-  mockCallActivityProcessXML,
-  mockProcessXML,
-} from 'modules/testUtils';
+import {mockCallActivityProcessXML, mockProcessXML} from 'modules/testUtils';
 import {authenticationStore} from 'modules/stores/authentication';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-import {mockFetchVariables} from 'modules/mocks/api/processInstances/fetchVariables';
 import {mockApplyOperation} from 'modules/mocks/api/processInstances/operations';
-import {mockGetOperation} from 'modules/mocks/api/getOperation';
-import * as operationApi from 'modules/api/getOperation';
-import {act} from 'react';
 import {notificationsStore} from 'modules/stores/notifications';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchCallHierarchy} from 'modules/mocks/api/v2/processInstances/fetchCallHierarchy';
@@ -52,18 +38,18 @@ jest.mock('modules/stores/notifications', () => ({
   },
 }));
 
-const getOperationSpy = jest.spyOn(operationApi, 'getOperation');
-
 describe('InstanceHeader', () => {
+  beforeEach(() => {
+    mockFetchCallHierarchy().withSuccess([]);
+  });
   afterEach(() => {
     window.clientConfig = undefined;
   });
 
-  it('should show skeleton before instance data is available', async () => {
-    mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
+  it('should render process instance data', async () => {
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
-    render(<ProcessInstanceHeader processInstance={mockProcessInstance} />, {
+    render(<ProcessInstanceHeader processInstance={mockInstance} />, {
       wrapper: Wrapper,
     });
 
@@ -72,52 +58,24 @@ describe('InstanceHeader', () => {
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton'),
     );
-  });
 
-  it('should render instance data', async () => {
-    mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
-    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    const processDefinitionName = getProcessDefinitionName(mockInstance);
 
-    render(
-      <ProcessInstanceHeader
-        processInstance={{
-          ...mockProcessInstance,
-          processInstanceKey: mockInstanceWithActiveOperation.id,
-        }}
-      />,
-      {
-        wrapper: Wrapper,
-      },
-    );
-
-    processInstanceDetailsStore.init({
-      id: mockInstanceWithActiveOperation.id,
-    });
-    await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
-    );
-
-    const processName = getProcessName(mockInstanceWithActiveOperation);
-
-    expect(screen.getByText(processName)).toBeInTheDocument();
+    expect(screen.getByText(processDefinitionName)).toBeInTheDocument();
     expect(
-      screen.getByText(mockInstanceWithActiveOperation.id),
+      screen.getByText(mockInstance.processInstanceKey),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('link', {
-        description: `View process "${getProcessName(
-          mockInstanceWithActiveOperation,
-        )} version ${
-          mockInstanceWithActiveOperation.processVersion
+        description: `View process "${processDefinitionName} version ${
+          mockInstance.processDefinitionVersion
         }" instances`,
       }),
-    ).toHaveTextContent(
-      mockInstanceWithActiveOperation.processVersion.toString(),
-    );
+    ).toHaveTextContent(mockInstance.processDefinitionVersion.toString());
     expect(screen.getByText(MOCK_TIMESTAMP)).toBeInTheDocument();
     expect(screen.getByText('--')).toBeInTheDocument();
     expect(
-      screen.getByTestId(`${mockInstanceWithActiveOperation.state}-icon`),
+      screen.getByTestId(`${mockInstance.state}-icon`),
     ).toBeInTheDocument();
     expect(screen.getByText('Process Name')).toBeInTheDocument();
     expect(screen.getByText('Process Instance Key')).toBeInTheDocument();
@@ -133,19 +91,18 @@ describe('InstanceHeader', () => {
   });
 
   it('should render "View All" link for call activity process', async () => {
-    mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockCallActivityProcessXML);
 
-    render(<ProcessInstanceHeader processInstance={mockProcessInstance} />, {
+    render(<ProcessInstanceHeader processInstance={mockInstance} />, {
       wrapper: Wrapper,
     });
 
-    processInstanceDetailsStore.init({
-      id: mockInstanceWithActiveOperation.id,
-    });
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton'),
     );
+
     expect(
       await screen.findByRole('link', {name: /view all/i}),
     ).toBeInTheDocument();
@@ -155,17 +112,15 @@ describe('InstanceHeader', () => {
     jest.useFakeTimers();
     panelStatesStore.toggleFiltersPanel();
 
-    mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockCallActivityProcessXML);
 
     const {user} = render(
-      <ProcessInstanceHeader processInstance={mockProcessInstance} />,
+      <ProcessInstanceHeader processInstance={mockInstance} />,
       {wrapper: Wrapper},
     );
 
-    processInstanceDetailsStore.init({
-      id: mockInstanceWithActiveOperation.id,
-    });
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton'),
     );
@@ -185,13 +140,14 @@ describe('InstanceHeader', () => {
   });
 
   it('should render parent Process Instance Key', async () => {
-    mockFetchProcessInstance().withSuccess(mockInstanceWithParentInstance);
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     render(
       <ProcessInstanceHeader
         processInstance={{
-          ...mockProcessInstance,
+          ...mockInstance,
           parentProcessInstanceKey: '8724390842390124',
         }}
       />,
@@ -200,228 +156,54 @@ describe('InstanceHeader', () => {
       },
     );
 
-    processInstanceDetailsStore.init({id: mockInstanceWithParentInstance.id});
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton'),
     );
 
     expect(
       screen.getByRole('link', {
-        description: `View parent instance ${mockInstanceWithParentInstance.parentInstanceId}`,
+        description: `View parent instance ${mockInstanceWithParentInstance.parentProcessInstanceKey}`,
       }),
     ).toBeInTheDocument();
   });
 
-  it('should show spinner based on instance having active operations', async () => {
-    render(<ProcessInstanceHeader processInstance={mockProcessInstance} />, {
+  it('should show spinner when instance has active operations', async () => {
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
+    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+
+    render(<ProcessInstanceHeader processInstance={mockInstance} />, {
       wrapper: Wrapper,
     });
 
-    mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
-    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-
-    jest.useFakeTimers();
-    processInstanceDetailsStore.init({id: mockInstanceWithoutOperations.id});
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton'),
     );
-
-    expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
-
-    mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
-
-    jest.runOnlyPendingTimers();
 
     expect(await screen.findByTestId('operation-spinner')).toBeInTheDocument();
-
-    jest.clearAllTimers();
-    jest.useRealTimers();
   });
 
-  it('should show spinner when operation is applied', async () => {
-    mockFetchCallHierarchy().withSuccess([]);
-    mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
-    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-    mockApplyOperation().withSuccess(mockOperationCreated);
-
-    const {user} = render(
-      <ProcessInstanceHeader
-        processInstance={{
-          ...mockProcessInstance,
-          processInstanceKey: mockInstanceWithoutOperations.id,
-        }}
-      />,
-      {wrapper: Wrapper},
-    );
-
-    jest.useFakeTimers();
-
-    await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
-    );
-
-    expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
-
-    mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
-    mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
-    await user.click(screen.getByRole('button', {name: /Cancel Instance/}));
-    await user.click(screen.getByRole('button', {name: 'Apply'}));
-
-    expect(await screen.findByTestId('operation-spinner')).toBeInTheDocument();
-
-    mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
-    mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
-    await waitForElementToBeRemoved(screen.getByTestId('operation-spinner'));
-
-    jest.clearAllTimers();
-    jest.useRealTimers();
-  });
-
-  it('should show spinner when variables is added', async () => {
-    jest.useFakeTimers();
-    const mockVariable = createVariable();
-
-    mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
-    mockFetchVariables().withSuccess([mockVariable]);
+  it('should not show spinner when instance has no active operations', async () => {
+    // TODO: remove mockFetchProcessInstance once useHasActiveOperations is refactored
+    mockFetchProcessInstance().withSuccess({
+      ...mockInstanceDeprecated,
+      operations: [],
+    });
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
-    mockApplyOperation().withSuccess(
-      createBatchOperation({id: 'batch-operation-id', type: 'ADD_VARIABLE'}),
-    );
-
-    render(
-      <ProcessInstanceHeader
-        processInstance={{
-          ...mockProcessInstance,
-          processInstanceKey: mockInstanceWithoutOperations.id,
-        }}
-      />,
-      {
-        wrapper: Wrapper,
-      },
-    );
-    await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
-    );
-
-    expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
-
-    act(() => {
-      variablesStore.addVariable({
-        id: mockInstanceWithoutOperations.id,
-        name: mockVariable.name,
-        value: mockVariable.value,
-        onSuccess: () => {},
-        onError: () => {},
-      });
+    render(<ProcessInstanceHeader processInstance={mockInstance} />, {
+      wrapper: Wrapper,
     });
 
-    mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
-    mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
-    expect(await screen.findByTestId('operation-spinner')).toBeInTheDocument();
-
-    mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
-    mockGetOperation().withSuccess([createOperation({state: 'COMPLETED'})]);
-
-    jest.runOnlyPendingTimers();
-    expect(getOperationSpy).toHaveBeenCalledWith('batch-operation-id');
-
-    jest.clearAllTimers();
-    jest.useRealTimers();
-  });
-
-  it('should remove spinner when operation fails', async () => {
-    mockFetchCallHierarchy().withSuccess([]);
-    mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
-    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-    mockApplyOperation().withDelayedServerError();
-
-    const {user} = render(
-      <ProcessInstanceHeader
-        processInstance={{
-          ...mockProcessInstance,
-          processInstanceKey: mockInstanceWithoutOperations.id,
-        }}
-      />,
-      {wrapper: Wrapper},
-    );
-
-    jest.useFakeTimers();
-
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton'),
     );
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
-
-    mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
-    mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
-    await user.click(screen.getByRole('button', {name: /Cancel Instance/}));
-    await user.click(screen.getByRole('button', {name: /Apply/}));
-    expect(await screen.findByTestId('operation-spinner')).toBeInTheDocument();
-
-    mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
-    mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
-    await waitForElementToBeRemoved(screen.getByTestId('operation-spinner'));
-
-    jest.clearAllTimers();
-    jest.useRealTimers();
-  });
-
-  it('should display error notification when operation fails', async () => {
-    mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
-    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-    mockApplyOperation().withServerError();
-
-    const {user} = render(
-      <ProcessInstanceHeader processInstance={mockProcessInstance} />,
-      {wrapper: Wrapper},
-    );
-    processInstanceDetailsStore.init({id: mockInstanceWithoutOperations.id});
-    await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
-    );
-
-    await user.click(screen.getByRole('button', {name: /Cancel Instance/}));
-    await user.click(screen.getByRole('button', {name: /Apply/}));
-
-    await waitFor(() =>
-      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-        isDismissable: true,
-        kind: 'error',
-        title: 'Operation could not be created',
-      }),
-    );
-  });
-
-  it('should display error notification when operation fails with auth error', async () => {
-    mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
-    mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-    mockApplyOperation().withServerError(403);
-
-    const {user} = render(
-      <ProcessInstanceHeader processInstance={mockProcessInstance} />,
-      {wrapper: Wrapper},
-    );
-    await waitForElementToBeRemoved(
-      screen.getByTestId('instance-header-skeleton'),
-    );
-
-    await user.click(screen.getByRole('button', {name: /Cancel Instance/}));
-    await user.click(screen.getByRole('button', {name: /Apply/}));
-
-    await waitFor(() =>
-      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
-        isDismissable: true,
-        kind: 'error',
-        title: 'Operation could not be created',
-        subtitle: 'You do not have permission',
-      }),
-    );
   });
 
   it('should show operation buttons for running process instance when user has permission', async () => {
-    mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     authenticationStore.setUser({
@@ -434,15 +216,11 @@ describe('InstanceHeader', () => {
       tenants: [],
     });
 
-    render(<ProcessInstanceHeader processInstance={mockProcessInstance} />, {
+    render(<ProcessInstanceHeader processInstance={mockInstance} />, {
       wrapper: Wrapper,
     });
 
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
-
-    processInstanceDetailsStore.init({
-      id: mockInstanceWithActiveOperation.id,
-    });
 
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton'),
@@ -458,7 +236,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should show operation buttons for finished process instance when user has permission', async () => {
-    mockFetchProcessInstance().withSuccess(mockCanceledInstance);
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     authenticationStore.setUser({
@@ -473,7 +251,7 @@ describe('InstanceHeader', () => {
 
     render(
       <ProcessInstanceHeader
-        processInstance={{...mockProcessInstance, state: 'TERMINATED'}}
+        processInstance={{...mockInstance, state: 'TERMINATED'}}
       />,
       {
         wrapper: Wrapper,
@@ -481,10 +259,6 @@ describe('InstanceHeader', () => {
     );
 
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
-
-    processInstanceDetailsStore.init({
-      id: mockCanceledInstance.id,
-    });
 
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton'),
@@ -495,8 +269,8 @@ describe('InstanceHeader', () => {
     ).toBeInTheDocument();
   });
 
-  it.only('should redirect and show notification when "Delete Instance" is clicked', async () => {
-    mockFetchProcessInstance().withSuccess(mockCanceledInstance);
+  it('should redirect and show notification when "Delete Instance" is clicked', async () => {
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     authenticationStore.setUser({
@@ -511,25 +285,23 @@ describe('InstanceHeader', () => {
 
     const {user} = render(
       <ProcessInstanceHeader
-        processInstance={{...mockProcessInstance, state: 'TERMINATED'}}
+        processInstance={{...mockInstance, state: 'TERMINATED'}}
       />,
       {
         wrapper: Wrapper,
       },
     );
 
-    processInstanceDetailsStore.init({
-      id: mockCanceledInstance.id,
-    });
-
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton'),
     );
 
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     await user.click(screen.getByRole('button', {name: /Delete Instance/}));
 
     mockApplyOperation().withSuccess(mockOperationCreated);
 
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     await user.click(screen.getByRole('button', {name: /danger delete/i}));
 
     await waitFor(() =>
@@ -548,7 +320,7 @@ describe('InstanceHeader', () => {
       resourcePermissionsEnabled: true,
     };
 
-    mockFetchProcessInstance().withSuccess(mockCanceledInstance);
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     authenticationStore.setUser({
@@ -563,7 +335,7 @@ describe('InstanceHeader', () => {
 
     render(
       <ProcessInstanceHeader
-        processInstance={{...mockProcessInstance, state: 'TERMINATED'}}
+        processInstance={{...mockInstance, state: 'TERMINATED'}}
       />,
       {
         wrapper: Wrapper,
@@ -571,10 +343,6 @@ describe('InstanceHeader', () => {
     );
 
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
-
-    processInstanceDetailsStore.init({
-      id: mockCanceledInstance.id,
-    });
 
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton'),
@@ -590,7 +358,7 @@ describe('InstanceHeader', () => {
       resourcePermissionsEnabled: true,
     };
 
-    mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     authenticationStore.setUser({
@@ -603,15 +371,11 @@ describe('InstanceHeader', () => {
       tenants: [],
     });
 
-    render(<ProcessInstanceHeader processInstance={mockProcessInstance} />, {
+    render(<ProcessInstanceHeader processInstance={mockInstance} />, {
       wrapper: Wrapper,
     });
 
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
-
-    processInstanceDetailsStore.init({
-      id: mockInstanceWithActiveOperation.id,
-    });
 
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton'),

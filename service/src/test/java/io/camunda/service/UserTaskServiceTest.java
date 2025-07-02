@@ -30,8 +30,8 @@ import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.UserTaskFilter.Builder;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -48,7 +48,7 @@ public class UserTaskServiceTest {
   private FlowNodeInstanceSearchClient flowNodeInstanceSearchClient;
   private VariableSearchClient variableSearchClient;
   private SecurityContextProvider securityContextProvider;
-  private Authentication authentication;
+  private CamundaAuthentication authentication;
 
   @BeforeEach
   public void before() {
@@ -62,7 +62,7 @@ public class UserTaskServiceTest {
     variableSearchClient = mock(VariableSearchClient.class);
     when(variableSearchClient.withSecurityContext(any())).thenReturn(variableSearchClient);
     securityContextProvider = mock(SecurityContextProvider.class);
-    authentication = mock(Authentication.class);
+    authentication = mock(CamundaAuthentication.class);
     services =
         new UserTaskServices(
             mock(BrokerClient.class),

@@ -16,8 +16,8 @@ import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.page.SearchQueryPageBuilders;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.util.FilterUtil;
 import io.camunda.zeebe.engine.EngineConfiguration;
@@ -77,7 +77,7 @@ public class BatchOperationItemProvider {
   public Set<Item> fetchProcessInstanceItems(
       final int partitionId,
       final ProcessInstanceFilter filter,
-      final Authentication authentication,
+      final CamundaAuthentication authentication,
       final Supplier<Boolean> shouldAbort) {
     final var processInstanceFilter = filter.toBuilder().partitionId(partitionId).build();
 
@@ -102,7 +102,7 @@ public class BatchOperationItemProvider {
    */
   public Set<Item> fetchIncidentItems(
       final IncidentFilter filter,
-      final Authentication authentication,
+      final CamundaAuthentication authentication,
       final Supplier<Boolean> shouldAbort) {
 
     LOG.debug("Fetching incident items with filter: {}", filter);
@@ -123,7 +123,7 @@ public class BatchOperationItemProvider {
   public Set<Item> fetchIncidentItems(
       final int partitionId,
       final ProcessInstanceFilter filter,
-      final Authentication authentication,
+      final CamundaAuthentication authentication,
       final Supplier<Boolean> shouldAbort) {
     // first fetch all matching processInstances
     final var processInstanceKeys =
@@ -139,7 +139,7 @@ public class BatchOperationItemProvider {
   private <F extends FilterBase> Set<Item> fetchEntityItems(
       final ItemPageFetcher<F> itemPageFetcher,
       final F filter,
-      final Authentication authentication,
+      final CamundaAuthentication authentication,
       final Supplier<Boolean> shouldAbort) {
     final var items = new LinkedHashSet<Item>();
 
@@ -170,7 +170,7 @@ public class BatchOperationItemProvider {
 
   private Set<Item> getIncidentItemsOfProcessInstanceKeys(
       final List<Long> processInstanceKeys,
-      final Authentication authentication,
+      final CamundaAuthentication authentication,
       final Supplier<Boolean> shouldAbort) {
     final Set<Item> incidents = new LinkedHashSet<>();
 
@@ -219,7 +219,7 @@ public class BatchOperationItemProvider {
      * @param searchAfter the current searchAfter
      * @return the fetched items and pagination information
      */
-    ItemPage fetchItems(F filter, String searchAfter, Authentication authentication);
+    ItemPage fetchItems(F filter, String searchAfter, CamundaAuthentication authentication);
 
     /**
      * Creates a security context for the given authentication and authorization.
@@ -230,7 +230,7 @@ public class BatchOperationItemProvider {
      * @return the security context
      */
     default SecurityContext createSecurityContext(
-        final Authentication authentication, final Authorization authorization) {
+        final CamundaAuthentication authentication, final Authorization authorization) {
       return SecurityContext.of(
           b -> b.withAuthentication(authentication).withAuthorization(authorization));
     }
@@ -241,7 +241,7 @@ public class BatchOperationItemProvider {
     public ItemPage fetchItems(
         final ProcessInstanceFilter filter,
         final String searchAfter,
-        final Authentication authentication) {
+        final CamundaAuthentication authentication) {
       final var securityContext =
           createSecurityContext(
               authentication, Authorization.of(a -> a.processDefinition().readProcessInstance()));
@@ -271,7 +271,7 @@ public class BatchOperationItemProvider {
     public ItemPage fetchItems(
         final IncidentFilter filter,
         final String searchAfter,
-        final Authentication authentication) {
+        final CamundaAuthentication authentication) {
       final var securityContext =
           createSecurityContext(
               authentication, Authorization.of(a -> a.processDefinition().readProcessInstance()));

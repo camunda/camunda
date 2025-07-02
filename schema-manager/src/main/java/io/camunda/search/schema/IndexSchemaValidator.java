@@ -107,6 +107,9 @@ public class IndexSchemaValidator {
       } else if (!difference.entriesOnlyOnLeft().isEmpty()) {
         // Collect the new fields
         newFields.put(indexDescriptor, difference.entriesOnlyOnLeft());
+      } else {
+        LOGGER.debug(
+            "Index fields are up to date for Index '{}'.", indexDescriptor.getFullQualifiedName());
       }
     } else {
       LOGGER.debug(
@@ -122,6 +125,7 @@ public class IndexSchemaValidator {
         indexMappingsGroup.values().stream()
             .map(mapping -> IndexMappingDifference.of(indexMappingMustBe, mapping))
             .filter(difference -> !difference.equal())
+            .map(this::filterOutDynamicProperties)
             .distinct()
             .toList();
 
@@ -137,6 +141,15 @@ public class IndexSchemaValidator {
     }
 
     return differences.getFirst();
+  }
+
+  /** Filters out differences that are only related to dynamic properties. */
+  private IndexMappingDifference filterOutDynamicProperties(
+      final IndexMappingDifference difference) {
+    return difference
+        .filterEntriesInCommon(indexMappingProperty -> !isDynamicProperty(indexMappingProperty))
+        .filterEntriesDiffering(
+            propertyDifference -> !isDynamicProperty(propertyDifference.leftValue()));
   }
 
   /**
@@ -170,5 +183,10 @@ public class IndexSchemaValidator {
       LOGGER.error(errorMsg);
       throw new IndexSchemaValidationException(errorMsg);
     }
+  }
+
+  private boolean isDynamicProperty(final IndexMappingProperty indexMappingProperty) {
+    return indexMappingProperty.typeDefinition() instanceof final Map typeDefMap
+        && Boolean.parseBoolean(typeDefMap.getOrDefault("dynamic", "false").toString());
   }
 }

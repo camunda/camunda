@@ -14,8 +14,8 @@ import io.camunda.search.exception.ErrorMessages;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -45,7 +45,7 @@ public class AuthorizationServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final AuthorizationSearchClient authorizationSearchClient,
-      final Authentication authentication,
+      final CamundaAuthentication authentication,
       final SecurityConfiguration securityConfiguration) {
     super(brokerClient, securityContextProvider, authentication);
     this.authorizationSearchClient = authorizationSearchClient;
@@ -53,7 +53,7 @@ public class AuthorizationServices
   }
 
   @Override
-  public AuthorizationServices withAuthentication(final Authentication authentication) {
+  public AuthorizationServices withAuthentication(final CamundaAuthentication authentication) {
     return new AuthorizationServices(
         brokerClient,
         securityContextProvider,
@@ -69,29 +69,6 @@ public class AuthorizationServices
             securityContextProvider.provideSecurityContext(
                 authentication, Authorization.of(a -> a.authorization().read())))
         .searchAuthorizations(query);
-  }
-
-  public List<AuthorizationEntity> findAll(final AuthorizationQuery query) {
-    return authorizationSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.authorization().read())))
-        .findAllAuthorizations(query);
-  }
-
-  public List<String> getAuthorizedResources(
-      final Set<String> ownerIds,
-      final PermissionType permissionType,
-      final AuthorizationResourceType resourceType) {
-    final var authorizationQuery =
-        SearchQueryBuilders.authorizationSearchQuery(
-            fn ->
-                fn.filter(
-                    f ->
-                        f.ownerIds(ownerIds.stream().toList())
-                            .permissionTypes(permissionType)
-                            .resourceType(resourceType.name())));
-    return findAll(authorizationQuery).stream().map(AuthorizationEntity::resourceId).toList();
   }
 
   public List<String> getAuthorizedApplications(
@@ -124,29 +101,6 @@ public class AuthorizationServices
               return authorizationEntity.resourceId();
             })
         .collect(Collectors.toList());
-  }
-
-  public Set<String> fetchAssignedPermissions(
-      final String ownerId, final AuthorizationResourceType resourceType, final String resourceId) {
-    final SearchQueryResult<AuthorizationEntity> result =
-        search(
-            SearchQueryBuilders.authorizationSearchQuery(
-                fn ->
-                    fn.filter(
-                            f ->
-                                f.resourceType(resourceType.name())
-                                    .resourceIds(
-                                        resourceId != null && !resourceId.isEmpty()
-                                            ? resourceId
-                                            : null)
-                                    .ownerIds(ownerId))
-                        .page(p -> p.size(1))));
-    // TODO logic to fetch indirect authorizations via roles/groups should be added later
-    return result.items().stream()
-        .filter(authorization -> authorization.resourceId().contains(resourceId))
-        .flatMap(authorization -> authorization.permissionTypes().stream())
-        .map(PermissionType::name)
-        .collect(Collectors.toSet());
   }
 
   public CompletableFuture<AuthorizationRecord> createAuthorization(

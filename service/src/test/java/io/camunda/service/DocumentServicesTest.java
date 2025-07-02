@@ -19,7 +19,7 @@ import io.camunda.document.api.DocumentReference;
 import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreRecord;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.DocumentServices.DocumentCreateRequest;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
 import io.camunda.service.security.SecurityContextProvider;
@@ -44,7 +44,7 @@ public class DocumentServicesTest {
         new DocumentServices(
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
-            mock(Authentication.class),
+            mock(CamundaAuthentication.class),
             registry);
   }
 

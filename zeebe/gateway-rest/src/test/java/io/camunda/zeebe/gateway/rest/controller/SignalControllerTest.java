@@ -12,7 +12,8 @@ import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.SignalServices;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
@@ -25,8 +26,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @WebMvcTest(SignalController.class)
@@ -41,17 +42,23 @@ public class SignalControllerTest extends RestControllerTest {
             "tenantId": "tenantId"
           }""";
 
-  @MockBean MultiTenancyConfiguration multiTenancyCfg;
-  @MockBean SignalServices signalServices;
+  @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
+  @MockitoBean SignalServices signalServices;
+  @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
   void setup() {
-    when(signalServices.withAuthentication(any(Authentication.class))).thenReturn(signalServices);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
+    when(signalServices.withAuthentication(any(CamundaAuthentication.class)))
+        .thenReturn(signalServices);
   }
 
   @Test
   void shouldBroadcastSignal() {
     // given
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(multiTenancyCfg.isEnabled()).thenReturn(true);
     when(signalServices.broadcastSignal(anyString(), anyMap(), anyString()))
         .thenReturn(buildSignalResponse("tenantId"));
@@ -68,18 +75,15 @@ public class SignalControllerTest extends RestControllerTest {
 
     // when then
     final ResponseSpec response =
-        withMultiTenancy(
-            "tenantId",
-            client ->
-                client
-                    .post()
-                    .uri(BROADCAST_SIGNAL_ENDPOINT)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(request)
-                    .exchange()
-                    .expectStatus()
-                    .isOk());
+        webClient
+            .post()
+            .uri(BROADCAST_SIGNAL_ENDPOINT)
+            .accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus()
+            .isOk();
 
     response.expectBody().json(EXPECTED_PUBLICATION_RESPONSE);
     Mockito.verify(signalServices)
@@ -122,6 +126,8 @@ public class SignalControllerTest extends RestControllerTest {
   @Test
   void shouldBroadcastSignalWithEmptySignalName() {
     // given
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(multiTenancyCfg.isEnabled()).thenReturn(true);
     when(signalServices.broadcastSignal(anyString(), anyMap(), anyString()))
         .thenReturn(buildSignalResponse("tenantId"));
@@ -138,18 +144,15 @@ public class SignalControllerTest extends RestControllerTest {
 
     // when then
     final ResponseSpec response =
-        withMultiTenancy(
-            "tenantId",
-            client ->
-                client
-                    .post()
-                    .uri(BROADCAST_SIGNAL_ENDPOINT)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(request)
-                    .exchange()
-                    .expectStatus()
-                    .isOk());
+        webClient
+            .post()
+            .uri(BROADCAST_SIGNAL_ENDPOINT)
+            .accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus()
+            .isOk();
 
     response.expectBody().json(EXPECTED_PUBLICATION_RESPONSE);
     Mockito.verify(signalServices).broadcastSignal("", Map.of("key", "value"), "tenantId");

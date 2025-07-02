@@ -8,9 +8,12 @@
 package io.camunda.db.rdbms.write.domain;
 
 import io.camunda.search.entities.BatchOperationEntity;
+import java.time.OffsetDateTime;
 
 public record BatchOperationItemDbModel(
     String batchOperationId,
     long itemKey,
     long processInstanceKey,
-    BatchOperationEntity.BatchOperationItemState state) {}
+    BatchOperationEntity.BatchOperationItemState state,
+    OffsetDateTime processedDate,
+    String errorMessage) {}

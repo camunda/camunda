@@ -10,7 +10,7 @@ package io.camunda.service;
 import io.camunda.search.clients.UsageMetricsSearchClient;
 import io.camunda.search.entities.UsageMetricsCount;
 import io.camunda.search.query.UsageMetricsQuery;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 
@@ -22,7 +22,7 @@ public final class UsageMetricsServices extends ApiServices<UsageMetricsServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final UsageMetricsSearchClient usageMetricsSearchClient,
-      final Authentication authentication) {
+      final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.usageMetricsSearchClient = usageMetricsSearchClient;
   }
@@ -54,7 +54,7 @@ public final class UsageMetricsServices extends ApiServices<UsageMetricsServices
   }
 
   @Override
-  public UsageMetricsServices withAuthentication(final Authentication authentication) {
+  public UsageMetricsServices withAuthentication(final CamundaAuthentication authentication) {
     return new UsageMetricsServices(
         brokerClient, securityContextProvider, usageMetricsSearchClient, authentication);
   }

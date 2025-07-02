@@ -67,10 +67,12 @@ and [partition](https://docs.camunda.io/docs/product-manuals/zeebe/technical-con
 
 #### Contributing
 
-If you modify the dashboard, you can modify it using Grafana, then make
-sure to export as described
-[here](https://grafana.com/docs/grafana/latest/reference/export_import/#exporting-a-dashboard),
-checking `Export for sharing externally` as you do.
+If you modify the dashboard, you can modify it using Grafana.
+
+1) In edit mode, save it as a a copy
+2) Then exit edit mode and make sure to export as described
+[here](https://grafana.com/docs/grafana/latest/dashboards/share-dashboards-panels/#export-a-dashboard-as-json),
+checking `Export the dashboard to use in another instance` as you do.
 
 #### Preview
 

@@ -23,7 +23,7 @@ import io.camunda.migration.identity.console.ConsoleClient.Member;
 import io.camunda.migration.identity.console.ConsoleClient.Members;
 import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.GroupServices;
 import io.camunda.service.GroupServices.GroupDTO;
 import io.camunda.service.GroupServices.GroupMemberDTO;
@@ -60,7 +60,7 @@ public class GroupMigrationHandlerTest {
     this.groupService = groupService;
     migrationHandler =
         new GroupMigrationHandler(
-            Authentication.none(), consoleClient, managementIdentityClient, groupService);
+            CamundaAuthentication.none(), consoleClient, managementIdentityClient, groupService);
   }
 
   @Test

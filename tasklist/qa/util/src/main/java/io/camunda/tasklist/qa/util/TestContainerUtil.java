@@ -291,6 +291,7 @@ public class TestContainerUtil {
             .withNetwork(Network.SHARED)
             .withEnv("xpack.security.enabled", "false")
             .withEnv("path.repo", "~/")
+            .withEnv("action.destructive_requires_name", "false")
             .withNetworkAliases(ELS_NETWORK_ALIAS)
             .withExposedPorts(ELS_PORT);
     elsContainer.setWaitStrategy(
@@ -507,40 +508,30 @@ public class TestContainerUtil {
   }
 
   protected void addConfig(final ZeebeContainer zeebeBroker, final TestContext testContext) {
-    if (TestUtil.isOpenSearch()) {
-      final String osHost = testContext.getInternalOsHost();
-      final Integer osPort = testContext.getInternalOsPort();
-      final String osUrl = String.format("http://%s:%s", osHost, osPort);
+    final var url =
+        TestUtil.isOpenSearch()
+            ? "http://%s:%s"
+                .formatted(testContext.getInternalOsHost(), testContext.getInternalOsPort())
+            : "http://%s:%s"
+                .formatted(testContext.getInternalElsHost(), testContext.getInternalElsPort());
+    final var type = TestUtil.isOpenSearch() ? "opensearch" : "elasticsearch";
+
+    zeebeBroker
+        .withEnv("CAMUNDA_DATABASE_URL", url)
+        .withEnv("CAMUNDA_DATABASE_TYPE", type)
+        .withEnv(
+            "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME",
+            "io.camunda.exporter.CamundaExporter")
+        .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL", url)
+        .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE", type)
+        .withEnv(
+            "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_HISTORY_WAITPERIODBEFOREARCHIVING", "1s");
+    if (testContext.getZeebeIndexPrefix() != null) {
       zeebeBroker
-          .withEnv("CAMUNDA_DATABASE_URL", osUrl)
-          .withEnv("CAMUNDA_DATABASE_TYPE", "opensearch")
+          .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", testContext.getZeebeIndexPrefix())
           .withEnv(
-              "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME",
-              "io.camunda.zeebe.exporter.opensearch.OpensearchExporter")
-          .withEnv("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL", osUrl)
-          .withEnv("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_BULK_SIZE", "1");
-      if (testContext.getZeebeIndexPrefix() != null) {
-        zeebeBroker.withEnv(
-            "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_INDEX_PREFIX",
-            testContext.getZeebeIndexPrefix());
-      }
-    } else {
-      final String elsHost = testContext.getInternalElsHost();
-      final Integer elsPort = testContext.getInternalElsPort();
-      final String esUrl = String.format("http://%s:%s", elsHost, elsPort);
-      zeebeBroker
-          .withEnv("CAMUNDA_DATABASE_URL", esUrl)
-          .withEnv("CAMUNDA_DATABASE_TYPE", "elasticsearch")
-          .withEnv(
-              "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
-              "io.camunda.zeebe.exporter.ElasticsearchExporter")
-          .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", esUrl)
-          .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1");
-      if (testContext.getZeebeIndexPrefix() != null) {
-        zeebeBroker.withEnv(
-            "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX",
-            testContext.getZeebeIndexPrefix());
-      }
+              "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX",
+              testContext.getZeebeIndexPrefix());
     }
   }
 

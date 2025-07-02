@@ -9,7 +9,7 @@ package io.camunda.zeebe.gateway.rest;
 
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.zeebe.gateway.rest.config.JacksonConfig;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -18,13 +18,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.provider.Arguments;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @TestPropertySource(
     properties = {
@@ -74,18 +71,13 @@ public abstract class RestControllerTest {
               Operation.gte(OffsetDateTime.now().minusHours(1)),
               Operation.lte(OffsetDateTime.now())),
           List.of(Operation.in(OffsetDateTime.now(), OffsetDateTime.now().minusDays(1))));
-  @Autowired protected WebTestClient webClient;
 
-  public ResponseSpec withMultiTenancy(
-      final String tenantId, final Function<WebTestClient, ResponseSpec> function) {
-    try (final MockedStatic<RequestMapper> mockRequestMapper =
-        Mockito.mockStatic(RequestMapper.class, Mockito.CALLS_REAL_METHODS)) {
-      mockRequestMapper
-          .when(RequestMapper::getAuthentication)
-          .thenReturn(Authentication.of(a -> a.user("foo").group("groupId").tenant(tenantId)));
-      return function.apply(webClient);
-    }
-  }
+  protected static final CamundaAuthentication AUTHENTICATION_WITH_DEFAULT_TENANT =
+      CamundaAuthentication.of(a -> a.user("foo").group("groupId").tenant("<default>"));
+  protected static final CamundaAuthentication AUTHENTICATION_WITH_NON_DEFAULT_TENANT =
+      CamundaAuthentication.of(a -> a.user("foo").group("groupId").tenant("tenantId"));
+
+  @Autowired protected WebTestClient webClient;
 
   protected static <T> Arguments generateParameterizedArguments(
       final String filterKey,

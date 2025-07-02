@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.startsWith;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.impl.DbBytes;
+import io.camunda.zeebe.db.impl.rocksdb.DbNullKey;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.ReadOptions;
@@ -24,16 +25,13 @@ public class RawTransactionalColumnFamily {
   protected final ZeebeTransactionDb<ZbColumnFamilies> transactionDb;
   protected final ZbColumnFamilies columnFamily;
   protected final ColumnFamilyContext columnFamilyContext;
-  protected final TransactionContext context;
 
   public RawTransactionalColumnFamily(
       final ZeebeTransactionDb<ZbColumnFamilies> transactionDb,
-      final ZbColumnFamilies columnFamily,
-      final TransactionContext context) {
+      final ZbColumnFamilies columnFamily) {
     this.transactionDb = transactionDb;
     this.columnFamily = columnFamily;
     columnFamilyContext = new ColumnFamilyContext(columnFamily.getValue());
-    this.context = context;
   }
 
   /**
@@ -43,7 +41,7 @@ public class RawTransactionalColumnFamily {
    *     the column family prefix. In order to get access to the key without the prefix, you need to
    *     use {@link ColumnFamilyContext#wrapKeyView(byte[])}
    */
-  public void forEach(final Visitor visitor) {
+  public void forEach(final TransactionContext context, final Visitor visitor) {
     context.runInTransaction(
         () -> {
           columnFamilyContext.withPrefixKey(
@@ -51,7 +49,7 @@ public class RawTransactionalColumnFamily {
               (prefixKey, prefixLength) -> {
                 try (final RocksIterator iterator =
                     newIterator(context, transactionDb.getPrefixReadOptions())) {
-                  forEach(iterator, prefixKey, 0, prefixLength, visitor);
+                  forEach(iterator, columnFamily, prefixKey, 0, prefixLength, visitor);
                 }
               });
         });
@@ -111,20 +109,30 @@ public class RawTransactionalColumnFamily {
         keyLen);
   }
 
-  private void forEach(
+  /**
+   * Iterates over the column family with prefix {@param prefixKey}
+   *
+   * @param iterator the underlying rocksDB iterator
+   * @param prefixKey the prefix key to filter the iteration
+   * @param prefixOffset the offset in the prefix key array
+   * @param prefixLength the length of the prefix key
+   * @param visitor the visitor to apply to each key-value pair
+   */
+  public static void forEach(
       final RocksIterator iterator,
+      final ZbColumnFamilies columnFamily,
       final byte[] prefixKey,
       final int prefixOffset,
       final int prefixLength,
       final Visitor visitor) {
     final var seekTarget = new DbNullKey();
     boolean shouldVisitNext = true;
-
+    final var columnFamilyContext = new ColumnFamilyContext(columnFamily.getValue());
     for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
         iterator.isValid() && shouldVisitNext;
         iterator.next()) {
-      final byte[] keyBytes = iterator.key();
-      final byte[] valueBytes = iterator.value();
+      final var keyBytes = iterator.key();
+      final var valueBytes = iterator.value();
 
       if (!startsWith(prefixKey, prefixOffset, prefixLength, keyBytes, 0, keyBytes.length)) {
         break;
@@ -140,12 +148,74 @@ public class RawTransactionalColumnFamily {
     }
   }
 
+  /**
+   * Similar to {@link foreach(RocksIterator, ZbColumnFamilies, byte[], int, int, Visitor)} but
+   * avoids allocating a new byte[] for each key & value. This reduces the allocations almost
+   * entirely. Use this method if you don't need to use the byte[] after the visitor returns. If
+   * that's not the case, use the other method, as you would avoid a copy.
+   */
+  public static void forEachPreallocated(
+      final RocksIterator iterator,
+      final ZbColumnFamilies columnFamily,
+      final byte[] prefixKey,
+      final int prefixOffset,
+      final int prefixLength,
+      final Visitor visitor) {
+    byte[] keyBytes = new byte[256];
+    var keyLen = 0;
+    byte[] valueBytes = new byte[1024];
+    var valueLen = 0;
+    final var seekTarget = new DbNullKey();
+    boolean shouldVisitNext = true;
+    final var columnFamilyContext = new ColumnFamilyContext(columnFamily.getValue());
+    for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
+        iterator.isValid() && shouldVisitNext;
+        iterator.next()) {
+      keyLen = iterator.key(keyBytes);
+      if (keyLen > keyBytes.length) {
+        keyBytes = new byte[2 * keyLen];
+        iterator.key(keyBytes);
+      }
+      valueLen = iterator.value(valueBytes);
+      if (valueLen > valueBytes.length) {
+        valueBytes = new byte[2 * valueLen];
+        iterator.value(valueBytes);
+      }
+
+      if (!startsWith(prefixKey, prefixOffset, prefixLength, keyBytes, 0, keyLen)) {
+        break;
+      }
+      try {
+        shouldVisitNext = visitor.visit(keyBytes, 0, keyLen, valueBytes, 0, valueLen);
+      } catch (final Exception e) {
+        LOG.error(
+            "Error visiting key {} in column family {}",
+            new String(keyBytes, 0, keyLen),
+            columnFamily,
+            e);
+        shouldVisitNext = false;
+      }
+    }
+  }
+
   RocksIterator newIterator(final TransactionContext context, final ReadOptions options) {
     final var currentTransaction = (ZeebeTransaction) context.getCurrentTransaction();
     return currentTransaction.newIterator(options, transactionDb.getDefaultHandle());
   }
 
   public interface Visitor {
+
+    /**
+     * Visits a key-value pair in the column family during iteration.
+     *
+     * @param key the key byte array
+     * @param keyOffset the offset in the key array
+     * @param keyLen the length of the key
+     * @param value the value byte array
+     * @param valueOffset the offset in the value array
+     * @param valueLen the length of the value
+     * @return true if iteration should continue, false otherwise
+     */
     boolean visit(
         byte[] key, int keyOffset, int keyLen, byte[] value, int valueOffset, int valueLen);
   }

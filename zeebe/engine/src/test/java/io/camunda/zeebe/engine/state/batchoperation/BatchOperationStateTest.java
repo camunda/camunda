@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.filter.ProcessInstanceFilter;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.BatchOperationStatus;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -56,7 +56,7 @@ public class BatchOperationStateTest {
             .processDefinitionVersions(1)
             .build();
     final String username = "bud spencer";
-    final var authentication = Authentication.of(b -> b.user(username));
+    final var authentication = CamundaAuthentication.of(b -> b.user(username));
     final var record =
         new BatchOperationCreationRecord()
             .setBatchOperationKey(batchOperationKey)

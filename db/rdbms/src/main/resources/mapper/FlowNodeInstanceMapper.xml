@@ -100,6 +100,23 @@
       AND TENANT_ID IN
       <foreach collection="filter.tenantIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
+
+    <!-- Start Date Filters -->
+    <if test="filter.startDateOperations != null and !filter.startDateOperations.isEmpty()">
+      <foreach collection="filter.startDateOperations" item="operation">
+        AND START_DATE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+
+    <!-- End Date Filters -->
+    <if test="filter.endDateOperations != null and !filter.endDateOperations.isEmpty()">
+      <foreach collection="filter.endDateOperations" item="operation">
+        AND END_DATE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+
   </sql>
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.FlowNodeInstanceEntity">

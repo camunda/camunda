@@ -7,18 +7,25 @@
  */
 package io.camunda.application;
 
-import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration;
+import static io.camunda.zeebe.protocol.impl.record.RecordMetadata.CURRENT_BROKER_VERSION;
+
+import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.initializers.StandaloneSchemaManagerInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
+import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration;
+import io.camunda.zeebe.exporter.ElasticsearchExporterSchemaManager;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.SpringApplication;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
-import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 
 /**
  * Soley create or update Schema for ElasticSearch by running this standalone application.
@@ -40,11 +47,15 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
  * All of those porperties can also be handed over via environment variables, e.g.
  * `CAMUNDA_DATABASE_URL`
  */
-@SpringBootConfiguration
-@EnableConfigurationProperties
-public class StandaloneSchemaManager {
+@SpringBootConfiguration(proxyBeanMethods = false)
+public class StandaloneSchemaManager implements CommandLineRunner {
 
   private static final Logger LOG = LoggerFactory.getLogger(StandaloneSchemaManager.class);
+  private final BrokerBasedProperties brokerProperties;
+
+  public StandaloneSchemaManager(final BrokerBasedProperties brokerProperties) {
+    this.brokerProperties = brokerProperties;
+  }
 
   public static void main(final String[] args) throws IOException {
 
@@ -60,21 +71,39 @@ public class StandaloneSchemaManager {
     MainSupport.putSystemPropertyIfAbsent(
         "spring.banner.location", "classpath:/assets/camunda_banner.txt");
 
-    final SpringApplication standaloneSchemaManagerApplication =
-        new SpringApplicationBuilder()
-            .web(WebApplicationType.NONE)
-            .logStartupInfo(true)
-            .sources(StandaloneSchemaManager.class, SearchEngineDatabaseConfiguration.class)
-            .initializers(new StandaloneSchemaManagerInitializer())
-            .addCommandLineProperties(true)
-            .listeners(new ApplicationErrorListener())
-            .build(args);
-
     LOG.info("Creating/updating Elasticsearch schema for Camunda ...");
 
-    standaloneSchemaManagerApplication.run(args);
+    MainSupport.createDefaultApplicationBuilder()
+        .web(WebApplicationType.NONE)
+        .logStartupInfo(true)
+        .sources(StandaloneSchemaManagerConfiguration.class)
+        .initializers(new StandaloneSchemaManagerInitializer())
+        .addCommandLineProperties(true)
+        .listeners(new ApplicationErrorListener())
+        .run(args);
 
-    LOG.info("... finished creating/updating schema for Camunda");
+    // Explicit exit needed because there are daemon threads (at least from the ES client) that are
+    // blocking shutdown.
     System.exit(0);
   }
+
+  @Override
+  public void run(final String... args) throws Exception {
+    if (brokerProperties.getExporters().containsKey("elasticsearch")) {
+      final var elasticsearchConfig =
+          new ExporterConfiguration(
+                  "elasticsearch", brokerProperties.getExporters().get("elasticsearch").getArgs())
+              .instantiate(ElasticsearchExporterConfiguration.class);
+      new ElasticsearchExporterSchemaManager(elasticsearchConfig)
+          .createSchema(CURRENT_BROKER_VERSION.toString());
+    }
+    LOG.info("... finished creating/updating Elasticsearch schema for Camunda");
+  }
+
+  @EnableAutoConfiguration
+  @EnableConfigurationProperties(BrokerBasedProperties.class)
+  @ComponentScan(
+      basePackages = "io.camunda.application.commons.search",
+      nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
+  public static class StandaloneSchemaManagerConfiguration {}
 }

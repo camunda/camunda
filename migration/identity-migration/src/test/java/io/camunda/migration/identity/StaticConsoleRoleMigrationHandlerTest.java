@@ -18,7 +18,7 @@ import io.camunda.migration.identity.console.ConsoleClient;
 import io.camunda.migration.identity.console.ConsoleClient.Member;
 import io.camunda.migration.identity.console.ConsoleClient.Members;
 import io.camunda.migration.identity.console.ConsoleClient.Role;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
@@ -50,7 +50,8 @@ public class StaticConsoleRoleMigrationHandlerTest {
     this.roleServices = roleServices;
     this.consoleClient = consoleClient;
     migrationHandler =
-        new StaticConsoleRoleMigrationHandler(roleServices, Authentication.none(), consoleClient);
+        new StaticConsoleRoleMigrationHandler(
+            roleServices, CamundaAuthentication.none(), consoleClient);
   }
 
   @Test

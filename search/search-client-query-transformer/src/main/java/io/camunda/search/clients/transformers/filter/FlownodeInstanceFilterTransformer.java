@@ -8,6 +8,7 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
@@ -47,6 +48,8 @@ public class FlownodeInstanceFilterTransformer
     ofNullable(stringTerms(TREE_PATH, filter.treePaths())).ifPresent(queries::add);
     ofNullable(filter.hasIncident()).ifPresent(f -> queries.add(term(INCIDENT, f)));
     ofNullable(stringTerms(TENANT_ID, filter.tenantIds())).ifPresent(queries::add);
+    queries.addAll(dateTimeOperations(START_DATE, filter.startDateOperations()));
+    queries.addAll(dateTimeOperations(END_DATE, filter.endDateOperations()));
     return and(queries);
   }
 

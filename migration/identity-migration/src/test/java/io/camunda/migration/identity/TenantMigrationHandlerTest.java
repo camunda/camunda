@@ -21,7 +21,7 @@ import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
 import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
-import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.TenantServices;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
@@ -49,7 +49,7 @@ final class TenantMigrationHandlerTest {
     this.tenantServices = tenantServices;
     migrationHandler =
         new TenantMigrationHandler(
-            Authentication.none(),
+            CamundaAuthentication.none(),
             managementIdentityClient,
             new ManagementIdentityTransformer(),
             this.tenantServices);

@@ -12,15 +12,13 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.qa.util.cluster.TestSpringApplication;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.extension.ExtensionContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.JdbcDatabaseContainer;
 
 public final class CamundaRdbmsTestApplication
-    extends TestSpringApplication<CamundaRdbmsTestApplication>
-    implements ExtensionContext.Store.CloseableResource {
+    extends TestSpringApplication<CamundaRdbmsTestApplication> implements AutoCloseable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaRdbmsTestApplication.class);
 
