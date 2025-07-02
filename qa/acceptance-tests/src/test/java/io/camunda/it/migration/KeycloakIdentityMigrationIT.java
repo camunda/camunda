@@ -1,0 +1,180 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.it.migration;
+
+import static io.camunda.it.migration.IdentityMigrationTestUtil.CAMUNDA_IDENTITY_RESOURCE_SERVER;
+import static io.camunda.it.migration.IdentityMigrationTestUtil.IDENTITY_CLIENT;
+import static io.camunda.it.migration.IdentityMigrationTestUtil.IDENTITY_CLIENT_SECRET;
+import static io.camunda.it.migration.IdentityMigrationTestUtil.externalIdentityUrl;
+import static io.camunda.it.migration.IdentityMigrationTestUtil.externalKeycloakUrl;
+import static io.camunda.zeebe.qa.util.cluster.TestZeebePort.CLUSTER;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
+
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
+import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import dasniko.testcontainers.keycloak.KeycloakContainer;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.response.RoleUser;
+import io.camunda.migration.identity.config.IdentityMigrationProperties;
+import io.camunda.migration.identity.config.IdentityMigrationProperties.Mode;
+import io.camunda.migration.identity.console.ConsoleClient.Role;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneIdentityMigration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import java.net.http.HttpClient;
+import java.time.Duration;
+import java.util.List;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
+import org.testcontainers.elasticsearch.ElasticsearchContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+@WireMockTest
+@ZeebeIntegration
+@Testcontainers(parallel = true)
+public class KeycloakIdentityMigrationIT {
+
+  @TestZeebe(autoStart = false)
+  static final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker()
+          .withAdditionalProfile("identity")
+          .withBasicAuth()
+          .withAuthorizationsEnabled();
+
+  @Container
+  private static final ElasticsearchContainer ELASTIC = IdentityMigrationTestUtil.getElastic();
+
+  @Container
+  private static final KeycloakContainer KEYCLOAK = IdentityMigrationTestUtil.getKeycloak();
+
+  private static final GenericContainer<?> IDENTITY =
+      IdentityMigrationTestUtil.getManagementIdentitySMKeycloak(KEYCLOAK)
+          // create groups
+          .withEnv("KEYCLOAK_GROUPS_0_NAME", "groupA")
+          .withEnv("KEYCLOAK_GROUPS_1_NAME", "groupB")
+          .withEnv("KEYCLOAK_GROUPS_2_NAME", "groupC")
+          // create users and assign them to groups
+          .withEnv("KEYCLOAK_USERS_0_EMAIL", "user0@email.com")
+          .withEnv("KEYCLOAK_USERS_0_FIRST-NAME", "user0")
+          .withEnv("KEYCLOAK_USERS_0_LAST-NAME", "user0")
+          .withEnv("KEYCLOAK_USERS_0_USERNAME", "user0")
+          .withEnv("KEYCLOAK_USERS_0_PASSWORD", "password")
+          .withEnv("KEYCLOAK_USERS_0_GROUPS_0", "groupA")
+          .withEnv("KEYCLOAK_USERS_0_GROUPS_1", "groupB")
+          .withEnv("KEYCLOAK_USERS_0_ROLES_0", "Identity")
+          .withEnv("KEYCLOAK_USERS_1_EMAIL", "user1@email.com")
+          .withEnv("KEYCLOAK_USERS_1_FIRST-NAME", "user1")
+          .withEnv("KEYCLOAK_USERS_1_LAST-NAME", "user1")
+          .withEnv("KEYCLOAK_USERS_1_USERNAME", "user1")
+          .withEnv("KEYCLOAK_USERS_1_PASSWORD", "password")
+          .withEnv("KEYCLOAK_USERS_1_GROUPS_0", "groupC")
+          .waitingFor(
+              new HttpWaitStrategy()
+                  .forPort(8082)
+                  .forPath("/actuator/health/readiness")
+                  .allowInsecure()
+                  .forStatusCode(200)
+                  .withReadTimeout(Duration.ofSeconds(10))
+                  .withStartupTimeout(Duration.ofMinutes(5)));
+
+  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
+  private static final ObjectMapper OBJECT_MAPPER =
+      new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+  private TestStandaloneIdentityMigration migration;
+  private CamundaClient client;
+
+  @BeforeAll
+  static void init() {
+    BROKER.withCamundaExporter("http://" + ELASTIC.getHttpHostAddress()).start();
+
+    IDENTITY
+        .withEnv(
+            "IDENTITY_AUTH_PROVIDER_ISSUER_URL",
+            "http://localhost:%d/realms/camunda-platform".formatted(KEYCLOAK.getMappedPort(8080)))
+        .withEnv("IDENTITY_URL", "http://localhost:8081")
+        .start();
+  }
+
+  @AfterAll
+  static void afterAll() {
+    BROKER.stop();
+    IDENTITY.stop();
+  }
+
+  @BeforeEach
+  public void setup(final WireMockRuntimeInfo wmRuntimeInfo) throws Exception {
+    // given
+    final IdentityMigrationProperties migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setMode(Mode.KEYCLOAK);
+    migrationProperties.getManagementIdentity().setBaseUrl(externalIdentityUrl(IDENTITY));
+    migrationProperties
+        .getManagementIdentity()
+        .setIssuerBackendUrl(externalKeycloakUrl(KEYCLOAK) + "/realms/camunda-platform/");
+    migrationProperties.getManagementIdentity().setIssuerType("KEYCLOAK");
+    migrationProperties.getManagementIdentity().setClientId(IDENTITY_CLIENT);
+    migrationProperties.getManagementIdentity().setClientSecret(IDENTITY_CLIENT_SECRET);
+    migrationProperties.getManagementIdentity().setAudience(CAMUNDA_IDENTITY_RESOURCE_SERVER);
+    // Console properties
+    migrationProperties.setOrganizationId("org123");
+    migrationProperties.getConsole().setBaseUrl(wmRuntimeInfo.getHttpBaseUrl());
+    migrationProperties
+        .getConsole()
+        .setIssuerBackendUrl(wmRuntimeInfo.getHttpBaseUrl() + "/oauth/token");
+    migrationProperties.getConsole().setClientId("client-id");
+    migrationProperties.getConsole().setClientSecret("client-secret");
+    migrationProperties.getConsole().setAudience("test-audience");
+    migrationProperties.getConsole().setClusterId("cluster123");
+    migrationProperties.getConsole().setInternalClientId("client123");
+
+    migration =
+        new TestStandaloneIdentityMigration(migrationProperties)
+            .withAppConfig(
+                config -> {
+                  config
+                      .getCluster()
+                      .setInitialContactPoints(List.of("localhost:" + BROKER.mappedPort(CLUSTER)));
+                });
+
+    client = BROKER.newClientBuilder().build();
+  }
+
+  @Test
+  public void canMigrateRoles() {
+    // when
+    migration.start();
+
+    // then
+    assertThat(migration.getExitCode()).isEqualTo(0);
+
+    final var roles = client.newRolesSearchRequest().send().join();
+    assertThat(roles.items())
+        .map(
+            io.camunda.client.api.search.response.Role::getRoleId,
+            io.camunda.client.api.search.response.Role::getName)
+        .contains(
+            tuple(Role.DEVELOPER.getName(), "Developer"),
+            tuple(Role.OPERATIONS_ENGINEER.getName(), "Operations Engineer"),
+            tuple(Role.TASK_USER.getName(), "Task User"),
+            tuple(Role.VISITOR.getName(), "Visitor"));
+    final var members = client.newUsersByRoleSearchRequest("admin").send().join();
+    assertThat(members.items()).map(RoleUser::getUsername).contains("user@example.com");
+    final var members2 = client.newUsersByRoleSearchRequest("developer").send().join();
+    assertThat(members2.items().size()).isEqualTo(1);
+    assertThat(members2.items().getFirst().getUsername()).isEqualTo("user@example.com");
+  }
+}
