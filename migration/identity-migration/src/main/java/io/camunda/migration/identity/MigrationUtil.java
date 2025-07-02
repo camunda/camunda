@@ -16,11 +16,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.jetbrains.annotations.NotNull;
 
 public class MigrationUtil {
 
-  public static @NotNull List<CreateAuthorizationRequest> extractCombinedPermissions(
+  public static List<CreateAuthorizationRequest> extractCombinedPermissions(
       final List<CreateAuthorizationRequest> allPermissions) {
     // Key used to group permission sets
     record PermissionKey(

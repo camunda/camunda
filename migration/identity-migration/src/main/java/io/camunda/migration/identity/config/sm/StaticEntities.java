@@ -17,6 +17,10 @@ import java.util.Set;
 
 public class StaticEntities {
 
+  private static final String IDENTITY_RESOURCE_ID = "identity";
+  private static final String OPERATE_RESOURCE_ID = "operate";
+  private static final String TASKLIST_RESOURCE_ID = "tasklist";
+
   public static List<CreateAuthorizationRequest> getAuthorizationsByAudience(
       final String audience, final String roleId) {
     final var authorizations =
@@ -32,7 +36,7 @@ public class StaticEntities {
                 new CreateAuthorizationRequest(
                     roleId,
                     AuthorizationOwnerType.ROLE,
-                    "identity",
+                    IDENTITY_RESOURCE_ID,
                     AuthorizationResourceType.APPLICATION,
                     Set.of(PermissionType.ACCESS)),
                 new CreateAuthorizationRequest(
@@ -64,7 +68,7 @@ public class StaticEntities {
                 new CreateAuthorizationRequest(
                     roleId,
                     AuthorizationOwnerType.ROLE,
-                    "identity",
+                    IDENTITY_RESOURCE_ID,
                     AuthorizationResourceType.APPLICATION,
                     Set.of(PermissionType.ACCESS)),
                 new CreateAuthorizationRequest(
@@ -90,7 +94,7 @@ public class StaticEntities {
                 new CreateAuthorizationRequest(
                     roleId,
                     AuthorizationOwnerType.ROLE,
-                    "identity",
+                    IDENTITY_RESOURCE_ID,
                     AuthorizationResourceType.APPLICATION,
                     Set.of(PermissionType.ACCESS)),
                 new CreateAuthorizationRequest(
@@ -134,7 +138,7 @@ public class StaticEntities {
                 new CreateAuthorizationRequest(
                     roleId,
                     AuthorizationOwnerType.ROLE,
-                    "operate",
+                    OPERATE_RESOURCE_ID,
                     AuthorizationResourceType.APPLICATION,
                     Set.of(PermissionType.ACCESS)),
                 new CreateAuthorizationRequest(
@@ -182,7 +186,7 @@ public class StaticEntities {
                 new CreateAuthorizationRequest(
                     roleId,
                     AuthorizationOwnerType.ROLE,
-                    "operate",
+                    OPERATE_RESOURCE_ID,
                     AuthorizationResourceType.APPLICATION,
                     Set.of(PermissionType.ACCESS)),
                 new CreateAuthorizationRequest(
@@ -222,7 +226,7 @@ public class StaticEntities {
                 new CreateAuthorizationRequest(
                     roleId,
                     AuthorizationOwnerType.ROLE,
-                    "tasklist",
+                    TASKLIST_RESOURCE_ID,
                     AuthorizationResourceType.APPLICATION,
                     Set.of(PermissionType.ACCESS)),
                 new CreateAuthorizationRequest(
@@ -242,7 +246,7 @@ public class StaticEntities {
                 new CreateAuthorizationRequest(
                     roleId,
                     AuthorizationOwnerType.ROLE,
-                    "tasklist",
+                    TASKLIST_RESOURCE_ID,
                     AuthorizationResourceType.APPLICATION,
                     Set.of(PermissionType.ACCESS)),
                 new CreateAuthorizationRequest(
