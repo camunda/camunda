@@ -11,6 +11,7 @@ import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.time.Duration;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.FixedHostPortGenericContainer;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
@@ -26,7 +27,7 @@ final class IdentityMigrationTestUtil {
   public static final String IDENTITY_CLIENT_SECRET = "secret";
   public static final String CAMUNDA_IDENTITY_RESOURCE_SERVER = "camunda-identity-resource-server";
   public static final String ZEEBE_CLIENT_AUDIENCE = "zeebe-api";
-  private static final int IDENTITY_PORT = 8080;
+  private static final int IDENTITY_PORT = 8081;
   private static final String KEYCLOAK_HOST = "keycloak";
   private static final int KEYCLOAK_PORT = 8080;
   private static final String KEYCLOAK_USER = "admin";
@@ -73,7 +74,8 @@ final class IdentityMigrationTestUtil {
   }
 
   static GenericContainer<?> getManagementIdentitySMKeycloak(final KeycloakContainer keycloak) {
-    return new GenericContainer<>(DockerImageName.parse("camunda/identity:SNAPSHOT"))
+    return new FixedHostPortGenericContainer<>(
+            DockerImageName.parse("camunda/identity:SNAPSHOT").asCanonicalNameString())
         .withImagePullPolicy(PullPolicy.alwaysPull())
         .dependsOn(keycloak)
         .withEnv("SERVER_PORT", Integer.toString(IDENTITY_PORT))
@@ -83,7 +85,6 @@ final class IdentityMigrationTestUtil {
             "http://%s:%d/realms/camunda-platform".formatted(KEYCLOAK_HOST, KEYCLOAK_PORT))
         .withEnv("KEYCLOAK_SETUP_USER", KEYCLOAK_USER)
         .withEnv("KEYCLOAK_SETUP_PASSWORD", KEYCLOAK_PASSWORD)
-        .withEnv("KEYCLOAK_INIT_ZEEBE_SECRET", IDENTITY_CLIENT_SECRET)
         .withEnv("KEYCLOAK_CLIENTS_0_NAME", IDENTITY_CLIENT)
         .withEnv("KEYCLOAK_CLIENTS_0_ID", IDENTITY_CLIENT)
         .withEnv("KEYCLOAK_CLIENTS_0_SECRET", IDENTITY_CLIENT_SECRET)
@@ -101,6 +102,7 @@ final class IdentityMigrationTestUtil {
         .withNetworkAliases("identity")
         .withNetwork(NETWORK)
         .withExposedPorts(IDENTITY_PORT, 8082)
+        .withFixedExposedPort(IDENTITY_PORT, IDENTITY_PORT)
         .withLogConsumer(
             new Slf4jLogConsumer(LoggerFactory.getLogger(IdentityMigrationTestUtil.class)));
   }
