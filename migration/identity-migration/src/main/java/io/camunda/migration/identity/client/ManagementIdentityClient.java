@@ -5,28 +5,25 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.identity.midentity;
+package io.camunda.migration.identity.client;
 
 import io.camunda.identity.sdk.users.dto.User;
 import io.camunda.migration.identity.dto.Authorization;
 import io.camunda.migration.identity.dto.Group;
 import io.camunda.migration.identity.dto.MappingRule.MappingRuleType;
-import io.camunda.migration.identity.dto.MigrationStatusUpdateRequest;
+import io.camunda.migration.identity.dto.Permission;
+import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.dto.TenantMappingRule;
 import io.camunda.migration.identity.dto.UserTenants;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
 import org.springframework.web.client.RestTemplate;
 
 public class ManagementIdentityClient {
 
   private static final String URL_PARAMS = "pageSize={0}";
-  private static final String MIGRATION_MARK_STATUS_ENDPOINT = "/api/migration";
   private static final String MIGRATION_TENANTS_ENDPOINT = "/api/migration/tenant?" + URL_PARAMS;
   private static final String MIGRATION_USER_TENANTS_ENDPOINT =
       "/api/migration/tenant/user?" + URL_PARAMS;
@@ -37,6 +34,8 @@ public class ManagementIdentityClient {
       "/api/groups/{0}/users?organizationId={1}";
   private static final String MIGRATION_AUTHORIZATION_ENDPOINT =
       "/api/authorizations?organizationId={0}";
+  private static final String MIGRATION_ROLES_ENDPOINT = "/api/roles";
+  private static final String MIGRATION_ROLES_PERMISSIONS_ENDPOINT = "/api/roles/{0}/permissions";
 
   private final String organizationId;
   private final RestTemplate restTemplate;
@@ -96,12 +95,18 @@ public class ManagementIdentityClient {
         .toList();
   }
 
-  public void updateMigrationStatus(final Collection<MigrationStatusUpdateRequest> migrations) {
-    if (migrations != null && !migrations.isEmpty()) {
-      final HttpEntity<Collection<MigrationStatusUpdateRequest>> requestEntity =
-          new HttpEntity<>(migrations, null);
-      restTemplate.exchange(
-          MIGRATION_MARK_STATUS_ENDPOINT, HttpMethod.POST, requestEntity, Void.class);
-    }
+  public List<Role> fetchRoles() {
+    return Arrays.stream(
+            Objects.requireNonNull(
+                restTemplate.getForObject(MIGRATION_ROLES_ENDPOINT, Role[].class)))
+        .toList();
+  }
+
+  public List<Permission> fetchPermissions(final String roleName) {
+    return Arrays.stream(
+            Objects.requireNonNull(
+                restTemplate.getForObject(
+                    MIGRATION_ROLES_PERMISSIONS_ENDPOINT, Permission[].class, roleName)))
+        .toList();
   }
 }

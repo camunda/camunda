@@ -7,11 +7,4 @@
  */
 package io.camunda.migration.identity.dto;
 
-import io.camunda.migration.identity.midentity.MigrationEntityType;
-
-public record MigrationStatusUpdateRequest(
-    String entityId,
-    MigrationEntityType entityType,
-    String organizationId,
-    boolean success,
-    String error) {}
+public record Permission(String definition, String resourceServerAudience) {}

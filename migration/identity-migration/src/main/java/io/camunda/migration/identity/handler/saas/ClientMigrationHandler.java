@@ -5,29 +5,24 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.identity;
+package io.camunda.migration.identity.handler.saas;
 
+import static io.camunda.migration.identity.MigrationUtil.extractCombinedPermissions;
 import static io.camunda.migration.identity.config.saas.StaticEntities.getOperateClientPermissions;
 import static io.camunda.migration.identity.config.saas.StaticEntities.getTasklistClientPermissions;
 import static io.camunda.migration.identity.config.saas.StaticEntities.getZeebeClientPermissions;
 
 import io.camunda.migration.api.MigrationException;
-import io.camunda.migration.identity.console.ConsoleClient;
-import io.camunda.migration.identity.console.ConsoleClient.Client;
-import io.camunda.migration.identity.console.ConsoleClient.Members;
-import io.camunda.migration.identity.console.ConsoleClient.Permission;
+import io.camunda.migration.identity.client.ConsoleClient;
+import io.camunda.migration.identity.client.ConsoleClient.Client;
+import io.camunda.migration.identity.client.ConsoleClient.Members;
+import io.camunda.migration.identity.client.ConsoleClient.Permission;
+import io.camunda.migration.identity.handler.MigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
-import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -104,15 +99,6 @@ public class ClientMigrationHandler extends MigrationHandler<Members> {
   public static List<CreateAuthorizationRequest> getCombinedPermissions(
       final String clientId, final List<Permission> clientTypes) {
 
-    // Key used to group permission sets
-    record PermissionKey(
-        String ownerId,
-        AuthorizationOwnerType ownerType,
-        String resourceId,
-        AuthorizationResourceType resourceType) {}
-
-    final Map<PermissionKey, Set<PermissionType>> permissionMap = new HashMap<>();
-
     final List<CreateAuthorizationRequest> allPermissions = new ArrayList<>();
 
     if (clientTypes.contains(Permission.ZEEBE)) {
@@ -125,29 +111,6 @@ public class ClientMigrationHandler extends MigrationHandler<Members> {
       allPermissions.addAll(getTasklistClientPermissions(clientId));
     }
 
-    for (final CreateAuthorizationRequest request : allPermissions) {
-      final PermissionKey key =
-          new PermissionKey(
-              request.ownerId(), request.ownerType(), request.resourceId(), request.resourceType());
-
-      permissionMap.merge(
-          key,
-          new HashSet<>(request.permissionTypes()),
-          (existing, incoming) -> {
-            existing.addAll(incoming);
-            return existing;
-          });
-    }
-
-    return permissionMap.entrySet().stream()
-        .map(
-            entry ->
-                new CreateAuthorizationRequest(
-                    entry.getKey().ownerId(),
-                    entry.getKey().ownerType(),
-                    entry.getKey().resourceId(),
-                    entry.getKey().resourceType(),
-                    entry.getValue()))
-        .toList();
+    return extractCombinedPermissions(allPermissions);
   }
 }

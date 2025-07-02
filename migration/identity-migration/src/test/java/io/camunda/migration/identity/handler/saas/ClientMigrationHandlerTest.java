@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.identity;
+package io.camunda.migration.identity.handler.saas;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -14,10 +14,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.migration.identity.console.ConsoleClient;
-import io.camunda.migration.identity.console.ConsoleClient.Client;
-import io.camunda.migration.identity.console.ConsoleClient.Members;
-import io.camunda.migration.identity.console.ConsoleClient.Permission;
+import io.camunda.migration.identity.client.ConsoleClient;
+import io.camunda.migration.identity.client.ConsoleClient.Client;
+import io.camunda.migration.identity.client.ConsoleClient.Members;
+import io.camunda.migration.identity.client.ConsoleClient.Permission;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;

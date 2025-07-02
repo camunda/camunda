@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.identity;
+package io.camunda.migration.identity.handler.saas;
 
 import static io.camunda.migration.identity.config.saas.StaticEntities.ROLE_PERMISSIONS;
 import static org.assertj.core.api.Assertions.assertThat;

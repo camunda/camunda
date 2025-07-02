@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.identity;
+package io.camunda.migration.identity.handler.saas;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -13,11 +13,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.migration.identity.console.ConsoleClient;
-import io.camunda.migration.identity.console.ConsoleClient.Member;
-import io.camunda.migration.identity.console.ConsoleClient.Role;
+import io.camunda.migration.identity.client.ConsoleClient;
+import io.camunda.migration.identity.client.ConsoleClient.Member;
+import io.camunda.migration.identity.client.ConsoleClient.Role;
+import io.camunda.migration.identity.client.ManagementIdentityClient;
 import io.camunda.migration.identity.dto.Authorization;
-import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
