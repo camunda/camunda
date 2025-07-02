@@ -8,14 +8,11 @@
 package io.camunda.authentication.csrf;
 
 import io.camunda.authentication.config.WebSecurityConfig;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -72,26 +69,11 @@ public class CsrfProtectionRequestMatcher implements RequestMatcher {
       return false;
     }
 
-    // we don't need CSRF protection if authorized with Authorization header
-    if (authZHeaderPresent(request)) {
-      return false;
-    }
-
     return apiCallComingFromBrowser(request);
   }
 
   private boolean apiCallComingFromBrowser(final HttpServletRequest request) {
-    return Optional.ofNullable(request.getCookies())
-        .map(Arrays::stream)
-        .orElse(Arrays.stream(new Cookie[] {}))
-        .anyMatch(cookie -> WebSecurityConfig.SESSION_COOKIE.equals(cookie.getName()));
-  }
-
-  private boolean authZHeaderPresent(final HttpServletRequest request) {
-    // If is authenticated from as API user using Bearer token or Basic auth
-    final String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-    return authorizationHeader != null
-        && (authorizationHeader.startsWith("Bearer ") || authorizationHeader.startsWith("Basic "));
+    return request.getSession(false) != null;
   }
 
   private Pattern allowedPathsToPattern(final Set<String> paths) {

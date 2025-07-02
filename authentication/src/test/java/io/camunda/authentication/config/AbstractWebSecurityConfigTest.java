@@ -30,6 +30,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
@@ -102,5 +103,14 @@ public class AbstractWebSecurityConfigTest {
                 PERMISSIONS_POLICY,
                 List.of(PermissionsPolicyConfig.DEFAULT_PERMISSIONS_POLICY_VALUE)))
         .doesNotContainKeys(CONTENT_SECURITY_POLICY_REPORT_ONLY);
+  }
+
+  protected void assertMissingCsrfToken(final MvcTestResult response) {
+    assertThat(response)
+        .hasStatus(HttpStatus.UNAUTHORIZED)
+        .bodyJson()
+        .extractingPath("detail")
+        .isEqualTo(
+            "Could not verify the provided CSRF token because no token was found to compare.");
   }
 }

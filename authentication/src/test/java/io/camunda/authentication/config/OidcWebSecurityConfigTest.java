@@ -8,13 +8,18 @@
 package io.camunda.authentication.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 
 import io.camunda.authentication.CamundaJwtAuthenticationConverter;
+import io.camunda.authentication.config.controllers.TestApiController;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
@@ -81,5 +86,60 @@ public class OidcWebSecurityConfigTest extends AbstractWebSecurityConfigTest {
     // then
     assertThat(testResult).hasStatusOk();
     assertDefaultSecurityHeaders(testResult);
+  }
+
+  @Test
+  public void shouldRequireCsrfTokenWithSessionAuthentication() {
+    // given
+    final MockHttpSession mockHttpSession = new MockHttpSession();
+
+    // when
+    final MvcTestResult result =
+        mockMvcTester
+            .post()
+            .session(mockHttpSession)
+            .with(user("demo"))
+            .uri("https://localhost" + TestApiController.DUMMY_V2_API_ENDPOINT)
+            .exchange();
+
+    // then
+    assertMissingCsrfToken(result);
+  }
+
+  @Test
+  public void shouldNotRequireCsrfTokenWithGetEndpoint() {
+    // given
+    final MockHttpSession mockHttpSession = new MockHttpSession();
+
+    // when
+    final MvcTestResult result =
+        mockMvcTester
+            .get()
+            .session(mockHttpSession)
+            .with(user("demo"))
+            .uri("https://localhost" + TestApiController.DUMMY_V2_API_ENDPOINT)
+            .exchange();
+
+    // then
+    assertThat(result).hasStatusOk();
+  }
+
+  @Test
+  public void shouldSucceedWithCsrfTokenAndSessionAuthentication() {
+    // given
+    final MockHttpSession mockHttpSession = new MockHttpSession();
+
+    // when
+    final MvcTestResult result =
+        mockMvcTester
+            .post()
+            .session(mockHttpSession)
+            .with(user("demo"))
+            .with(csrf())
+            .uri("https://localhost" + TestApiController.DUMMY_V2_API_ENDPOINT)
+            .exchange();
+
+    // then
+    assertThat(result).hasStatusOk();
   }
 }

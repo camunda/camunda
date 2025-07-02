@@ -14,7 +14,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.security.configuration.AuthenticationConfiguration;
-import jakarta.servlet.http.Cookie;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -49,7 +48,7 @@ class CsrfProtectionRequestMatcherTest {
   @ValueSource(strings = {"POST", "PUT", "PATCH", "DELETE"})
   void whenUnprotectedApiIsOffAndApiCalledFromBrowser(final String method) {
     final var request = prepareMockRequest();
-    request.setCookies(new Cookie(WebSecurityConfig.SESSION_COOKIE, "ABCDEF"));
+    request.getSession(true);
     request.setMethod(method);
     assertTrue(matcher.matches(request));
   }
@@ -75,7 +74,7 @@ class CsrfProtectionRequestMatcherTest {
     authConfig.setUnprotectedApi(true);
     final var unprotectedApiMatcher = new CsrfProtectionRequestMatcher();
     final var request = prepareMockRequest();
-    request.setCookies(new Cookie(WebSecurityConfig.SESSION_COOKIE, "ABCDEF"));
+    request.getSession(true);
     request.setServletPath(protectedUrls);
     assertTrue(unprotectedApiMatcher.matches(request));
   }
@@ -98,7 +97,7 @@ class CsrfProtectionRequestMatcherTest {
   void swaggerReferrerDoesNotMatchForCsrf() {
     final var request = prepareMockRequest();
     request.addHeader(REFERER, "http://localhost/swagger-ui/index.html");
-    request.setCookies(new Cookie(WebSecurityConfig.SESSION_COOKIE, "ABCDEF"));
+    request.getSession(true);
     assertFalse(matcher.matches(request));
   }
 
@@ -106,7 +105,7 @@ class CsrfProtectionRequestMatcherTest {
   void arbitraryReferrerMatchesForCsrf() {
     final var request = prepareMockRequest();
     request.addHeader(REFERER, "http://localhost/fake-swagger/index.html");
-    request.setCookies(new Cookie(WebSecurityConfig.SESSION_COOKIE, "ABCDEF"));
+    request.getSession(true);
     assertTrue(matcher.matches(request));
   }
 
@@ -136,7 +135,7 @@ class CsrfProtectionRequestMatcherTest {
   @MethodSource("protectedPaths")
   void protectedPathsMatchForCsrfFromBrowser(final String path) {
     final var request = prepareMockRequest();
-    request.setCookies(new Cookie(WebSecurityConfig.SESSION_COOKIE, "ABCDEF"));
+    request.getSession(true);
     request.setServletPath(path.replace("**", "/some/path").replace("*", "/some-path"));
     assertTrue(matcher.matches(request));
   }
