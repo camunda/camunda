@@ -41,7 +41,9 @@ public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> 
     if (filter.groupKey() != null) {
       queries.add(term(KEY, filter.groupKey()));
     }
-    queries.addAll(stringOperations(GROUP_ID, filter.groupIdOperations()));
+    if (filter.groupIdOperations() != null && !filter.groupIdOperations().isEmpty()) {
+      queries.addAll(stringOperations(GROUP_ID, filter.groupIdOperations()));
+    }
     if (filter.name() != null) {
       queries.add(term(NAME, filter.name()));
     }

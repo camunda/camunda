@@ -74,11 +74,19 @@ public record GroupFilter(
     }
 
     public Builder groupIds(final Set<String> value) {
-      return groupIdOperations(FilterUtil.mapDefaultToOperation(new ArrayList<>(value)));
+      final var vals = FilterUtil.mapDefaultToOperation(new ArrayList<>(value));
+      if (vals != null) {
+        return groupIdOperations(vals);
+      }
+      return this;
     }
 
     public Builder groupIds(final String value, final String... values) {
-      return groupIdOperations(FilterUtil.mapDefaultToOperation(value, values));
+      final var vals = FilterUtil.mapDefaultToOperation(value, values);
+      if (vals != null) {
+        return groupIdOperations(vals);
+      }
+      return this;
     }
 
     @SafeVarargs
