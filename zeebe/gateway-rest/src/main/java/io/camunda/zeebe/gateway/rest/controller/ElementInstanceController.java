@@ -14,7 +14,6 @@ import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
-import io.camunda.service.cache.ProcessCache;
 import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceResult;
 import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceSearchQueryResult;
@@ -38,15 +37,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class ElementInstanceController {
 
   private final ElementInstanceServices elementInstanceServices;
-  private final ProcessCache processCache;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public ElementInstanceController(
       final ElementInstanceServices elementInstanceServices,
-      final ProcessCache processCache,
       final CamundaAuthenticationProvider authenticationProvider) {
     this.elementInstanceServices = elementInstanceServices;
-    this.processCache = processCache;
     this.authenticationProvider = authenticationProvider;
   }
 
@@ -84,8 +80,8 @@ public class ElementInstanceController {
           elementInstanceServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .getByKey(elementInstanceKey);
-      final var name = processCache.getElementName(element);
-      return ResponseEntity.ok().body(SearchQueryResponseMapper.toElementInstance(element, name));
+
+      return ResponseEntity.ok().body(SearchQueryResponseMapper.toElementInstance(element));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -98,12 +94,9 @@ public class ElementInstanceController {
           elementInstanceServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(query);
-      final var unnamedItems =
-          result.items().stream().filter(item -> (item.flowNodeName() == null)).toList();
-      final var processCacheItems = processCache.getElementNames(unnamedItems);
+
       return ResponseEntity.ok(
-          SearchQueryResponseMapper.toElementInstanceSearchQueryResponse(
-              result, processCacheItems));
+          SearchQueryResponseMapper.toElementInstanceSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

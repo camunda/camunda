@@ -93,10 +93,10 @@ public final class UserTaskServices
                     authentication, Authorization.of(a -> a.processDefinition().readUserTask())))
             .searchUserTasks(query);
 
-    return getCacheEnrichedItems(result);
+    return toCacheEnrichedResult(result);
   }
 
-  private SearchQueryResult<UserTaskEntity> getCacheEnrichedItems(
+  private SearchQueryResult<UserTaskEntity> toCacheEnrichedResult(
       final SearchQueryResult<UserTaskEntity> result) {
     final var itemsWithoutName = result.items().stream().filter(u -> !u.hasName()).toList();
 
@@ -110,22 +110,17 @@ public final class UserTaskServices
                 .map(UserTaskEntity::processDefinitionKey)
                 .collect(Collectors.toSet()));
 
-    return new SearchQueryResult.Builder<UserTaskEntity>()
-        .total(result.total())
-        .startCursor(result.startCursor())
-        .endCursor(result.endCursor())
-        .items(
-            result.items().stream()
-                .map(
-                    item ->
-                        item.hasName()
-                            ? item
-                            : item.withName(
-                                cacheResult
-                                    .getProcessItem(item.processDefinitionKey())
-                                    .getElementName(item.elementId())))
-                .collect(Collectors.toList()))
-        .build();
+    return result.withItems(
+        result.items().stream()
+            .map(
+                item ->
+                    item.hasName()
+                        ? item
+                        : item.withName(
+                            cacheResult
+                                .getProcessItem(item.processDefinitionKey())
+                                .getElementName(item.elementId())))
+            .collect(Collectors.toList()));
   }
 
   public SearchQueryResult<UserTaskEntity> search(
@@ -165,14 +160,14 @@ public final class UserTaskServices
 
   public UserTaskEntity getByKey(final long userTaskKey) {
     final var result = search(UserTaskQuery.of(q -> q.filter(f -> f.userTaskKeys(userTaskKey))));
-    final var entity = getSingleResultOrThrow(result, userTaskKey, "User task");
+    final var userTask = getSingleResultOrThrow(result, userTaskKey, "User task");
 
     final var authorization = Authorization.of(a -> a.processDefinition().readUserTask());
     if (!securityContextProvider.isAuthorized(
-        entity.processDefinitionId(), authentication, authorization)) {
+        userTask.processDefinitionId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);
     }
-    return entity;
+    return userTask;
   }
 
   public Optional<FormEntity> getUserTaskForm(final long userTaskKey) {
