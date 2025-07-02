@@ -15,6 +15,7 @@ import {
 } from '@bpmn-io/form-js-viewer';
 import {isEqual} from 'lodash';
 import {commonApi} from 'common/api';
+import {CamundaDocumentRendererModule} from './CustomDocumentRenderer/module';
 
 const DOCUMENT_ID_PLACEHOLDER = '{documentId}';
 const DOCUMENT_ENDPOINT = decodeURIComponent(
@@ -50,7 +51,7 @@ const DEFAULT_FORM_OPTIONS: Omit<CreateFormOptions, 'schema'> = {
   properties: {
     textLinkTarget: '_blank',
   },
-  additionalModules: [CamundaDocumentEndpointModule],
+  additionalModules: [CamundaDocumentEndpointModule, CamundaDocumentRendererModule],
 };
 
 type OnSubmitReturn = ReturnType<Form['submit']>;
