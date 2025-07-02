@@ -9,7 +9,7 @@ package io.camunda.search.query;
 
 /**
  * Marker interface for aggregation queries that support pagination. This interface is used to
- * indicate that a query can be paginated when retrieving aggregation results.
+ * indicate that query pagination will be handled in the aggregation.
  *
  * <p>If not used, pagination is typically handled in TypedSearchQueryTransformer.
  */

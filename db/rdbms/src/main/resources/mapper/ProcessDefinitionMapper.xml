@@ -31,10 +31,23 @@
     FROM ${prefix}PROCESS_DEFINITION
     <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.searchFilter"/>
     ) t
+    <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.join"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
   </select>
+
+  <sql id="join">
+    <if test="filter.isLatestVersion != null and filter.isLatestVersion == true">
+      JOIN (
+        SELECT process_definition_id, MAX(version) AS max_version
+        FROM ${prefix}PROCESS_DEFINITION pd
+        GROUP BY pd.process_definition_id
+      ) lv
+      ON t.process_definition_id = lv.process_definition_id
+      AND t.version = lv.max_version
+    </if>
+  </sql>
 
   <sql id="searchFilter">
     WHERE 1 = 1

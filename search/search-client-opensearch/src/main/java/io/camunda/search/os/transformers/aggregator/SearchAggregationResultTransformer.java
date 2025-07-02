@@ -144,7 +144,8 @@ public class SearchAggregationResultTransformer<T>
     if (aggregate instanceof final CompositeAggregate compositeAggregate) {
       return compositeAggregate.afterKey() != null
           ? compositeAggregate.afterKey().entrySet().stream()
-              .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().toString()))
+              .collect(
+                  Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().to(String.class)))
               .entrySet()
               .toArray()
           : null;

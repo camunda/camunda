@@ -306,6 +306,55 @@ public class ProcessDefinitionSearchTest {
   }
 
   @Test
+  void shouldRetrieveAllLatestProcessDefinitionsWhenPaginated() {
+    // given
+    final var expectedProcessDefinitionIds =
+        PROCESSES_LATEST_VERSION.entrySet().stream()
+            .filter(Map.Entry::getValue)
+            .map(Map.Entry::getKey)
+            .map(process -> process.replace(".bpmn", ""))
+            .toList();
+
+    // when
+    final var processDefinitions = new ArrayList<ProcessDefinition>();
+    var endCursor = "";
+    do {
+      final String finalEndCursor = endCursor;
+      final var result =
+          camundaClient
+              .newProcessDefinitionSearchRequest()
+              .filter(f -> f.isLatestVersion(true))
+              .page(
+                  p -> {
+                    p.limit(1);
+                    if (!Objects.equals(finalEndCursor, "")) {
+                      p.after(finalEndCursor);
+                    }
+                  })
+              .send()
+              .join();
+      if (!result.items().isEmpty()) {
+        processDefinitions.addAll(result.items());
+        endCursor = result.page().endCursor();
+      } else {
+        endCursor = null; // No more items to fetch
+      }
+    } while (endCursor != null && !endCursor.isEmpty());
+
+    // then
+    assertThat(processDefinitions.size()).isEqualTo(expectedProcessDefinitionIds.size());
+    assertThat(processDefinitions.stream().map(ProcessDefinition::getProcessDefinitionId).toList())
+        .containsExactlyInAnyOrderElementsOf(
+            List.of(
+                "processWithVersionTag",
+                "Process_11hxie4",
+                "service_tasks_v1",
+                "service_tasks_v2",
+                "processA_ID",
+                "processB_ID"));
+  }
+
+  @Test
   void shouldRetrieveProcessDefinitionsByProcessDefinitionId() {
     // given
     final var processDefinitionId = "service_tasks_v1";
