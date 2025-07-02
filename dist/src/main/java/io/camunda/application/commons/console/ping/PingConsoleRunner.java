@@ -7,12 +7,17 @@
  */
 package io.camunda.application.commons.console.ping;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
+import io.camunda.application.commons.console.ping.PingConsoleTask.LicensePayload;
 import io.camunda.service.ManagementServices;
+import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.net.URI;
 import java.time.Duration;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -31,8 +36,10 @@ import org.springframework.stereotype.Component;
 @ConditionalOnProperty(prefix = "camunda.console.ping", name = "enabled", havingValue = "true")
 public class PingConsoleRunner implements ApplicationRunner {
   private static final Logger LOGGER = LoggerFactory.getLogger(PingConsoleRunner.class);
+  private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
   private final ConsolePingConfiguration pingConfiguration;
   private final ManagementServices managementServices;
+  private final Either<Exception, String> licensePayload;
 
   @Autowired
   public PingConsoleRunner(
@@ -40,6 +47,7 @@ public class PingConsoleRunner implements ApplicationRunner {
       final ManagementServices managementServices) {
     pingConfiguration = pingConfigurationProperties;
     this.managementServices = managementServices;
+    licensePayload = getLicensePayload();
   }
 
   @Override
@@ -52,7 +60,7 @@ public class PingConsoleRunner implements ApplicationRunner {
           pingConfiguration.pingPeriod());
       final var executor = createTaskExecutor();
       executor.scheduleAtFixedRate(
-          new PingConsoleTask(managementServices, pingConfiguration),
+          new PingConsoleTask(pingConfiguration, licensePayload.get()),
           1000,
           pingConfiguration.pingPeriod.toMillis(),
           TimeUnit.MILLISECONDS);
@@ -80,6 +88,10 @@ public class PingConsoleRunner implements ApplicationRunner {
     if (pingConfiguration.pingPeriod().isZero() || pingConfiguration.pingPeriod().isNegative()) {
       throw new IllegalArgumentException("Ping period must be greater than zero.");
     }
+    if (licensePayload.isLeft()) {
+      throw new IllegalArgumentException(
+          "Failed to parse license payload for Console ping task.", licensePayload.getLeft());
+    }
   }
 
   public ScheduledThreadPoolExecutor createTaskExecutor() {
@@ -94,6 +106,29 @@ public class PingConsoleRunner implements ApplicationRunner {
     executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     executor.setRemoveOnCancelPolicy(true);
     return executor;
+  }
+
+  private Either<Exception, String> getLicensePayload() {
+    final ObjectMapper objectMapper = new ObjectMapper();
+    final LicensePayload.License license =
+        new LicensePayload.License(
+            managementServices.isCamundaLicenseValid(),
+            managementServices.getCamundaLicenseType().toString(),
+            managementServices.isCommercialCamundaLicense(),
+            managementServices.getCamundaLicenseExpiresAt() == null
+                ? null
+                : DATE_TIME_FORMATTER.format(managementServices.getCamundaLicenseExpiresAt()));
+    final LicensePayload payload =
+        new LicensePayload(
+            license,
+            pingConfiguration.clusterId(),
+            pingConfiguration.clusterName(),
+            pingConfiguration.properties());
+    try {
+      return Either.right(objectMapper.writeValueAsString(payload));
+    } catch (final JsonProcessingException exception) {
+      return Either.left(exception);
+    }
   }
 
   @ConfigurationProperties("camunda.console.ping")
