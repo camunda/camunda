@@ -372,6 +372,9 @@ public class WebSecurityConfig {
       return httpSecurity
           .securityMatcher(WEBAPP_PATHS.toArray(String[]::new))
           // webapps are accessible without any authentication required
+          // reasoning: in basic auth setups, we redirect to the login page
+          // on client side; for that to happen, we first need to deliver
+          // the index html resource to the browser
           .authorizeHttpRequests(
               (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().permitAll())
           .headers(
@@ -383,8 +386,6 @@ public class WebSecurityConfig {
           .csrf(AbstractHttpConfigurer::disable)
           .cors(AbstractHttpConfigurer::disable)
           .anonymous(AbstractHttpConfigurer::disable)
-          // http basic auth is possible to obtain a session
-          .httpBasic(Customizer.withDefaults())
           // login/logout is still possible to obtain a session
           // the session grants access to the API as well, via #httpBasicApiAuthSecurityFilterChain
           .formLogin(
@@ -523,12 +524,7 @@ public class WebSecurityConfig {
       return httpSecurity
           .securityMatcher(WEBAPP_PATHS.toArray(new String[0]))
           .authorizeHttpRequests(
-              (authorizeHttpRequests) ->
-                  authorizeHttpRequests
-                      .requestMatchers(UNPROTECTED_PATHS.toArray(String[]::new))
-                      .permitAll()
-                      .anyRequest()
-                      .authenticated())
+              (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().authenticated())
           .headers(
               headers ->
                   setupSecureHeaders(
