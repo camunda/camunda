@@ -9,7 +9,6 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.search.query.SearchQueryBuilders.variableSearchQuery;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -29,14 +28,11 @@ import io.camunda.search.sort.UserTaskSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
-import io.camunda.service.cache.ProcessCache;
-import io.camunda.service.cache.ProcessCacheItem;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -207,7 +203,6 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
           .build();
 
   @MockitoBean UserTaskServices userTaskServices;
-  @MockitoBean ProcessCache processCache;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
   @BeforeEach
@@ -248,12 +243,6 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
             new CamundaSearchException(
                 String.format("User Task with key %d not found", INVALID_USER_TASK_KEY),
                 CamundaSearchException.Reason.NOT_FOUND));
-    when(processCache.getUserTaskName(any())).thenReturn("name");
-    final var processCacheItem = mock(ProcessCacheItem.class);
-    when(processCacheItem.getElementName(any())).thenReturn("name");
-    final Map<Long, ProcessCacheItem> processDefinitionMap = mock(HashMap.class);
-    when(processDefinitionMap.getOrDefault(any(), any())).thenReturn(processCacheItem);
-    when(processCache.getUserTaskNames(any())).thenReturn(processDefinitionMap);
   }
 
   @Test
@@ -273,7 +262,6 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(userTaskServices).search(new UserTaskQuery.Builder().build());
-    verify(processCache).getUserTaskNames(any());
   }
 
   @Test
@@ -297,7 +285,6 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(userTaskServices).search(new UserTaskQuery.Builder().build());
-    verify(processCache).getUserTaskNames(any());
   }
 
   @Test
@@ -339,7 +326,6 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 .sort(
                     new UserTaskSort.Builder().creationDate().desc().completionDate().asc().build())
                 .build());
-    verify(processCache).getUserTaskNames(any());
   }
 
   @Test
@@ -384,7 +370,6 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(expectedResponse);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
-    verify(processCache, never()).getUserTaskName(any());
   }
 
   @Test
@@ -428,7 +413,6 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(expectedResponse);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
-    verify(processCache, never()).getUserTaskName(any());
   }
 
   @Test
@@ -473,7 +457,6 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(expectedResponse);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
-    verify(processCache, never()).getUserTaskName(any());
   }
 
   @Test
@@ -517,7 +500,6 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(expectedResponse);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
-    verify(processCache, never()).getUserTaskName(any());
   }
 
   @Test
@@ -560,7 +542,6 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(expectedResponse);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
-    verify(processCache, never()).getUserTaskName(any());
   }
 
   @Test
@@ -603,7 +584,6 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(expectedResponse);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
-    verify(processCache, never()).getUserTaskName(any());
   }
 
   @Test
@@ -645,7 +625,6 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(expectedResponse);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
-    verify(processCache, never()).getUserTaskName(any());
   }
 
   @Test
@@ -686,7 +665,6 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(expectedResponse);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
-    verify(processCache, never()).getUserTaskName(any());
   }
 
   @Test
@@ -704,7 +682,6 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
 
     // Verify that the service was called with the invalid userTaskKey
     verify(userTaskServices).getByKey(VALID_USER_TASK_KEY);
-    verify(processCache).getUserTaskName(any());
   }
 
   @Test
@@ -730,7 +707,6 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
 
     // Verify that the service was called with the invalid userTaskKey
     verify(userTaskServices).getByKey(INVALID_USER_TASK_KEY);
-    verify(processCache, never()).getUserTaskName(any());
   }
 
   @Test
@@ -888,6 +864,5 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(userTaskServices).search(new UserTaskQuery.Builder().filter(filter).build());
-    verify(processCache).getUserTaskNames(any());
   }
 }

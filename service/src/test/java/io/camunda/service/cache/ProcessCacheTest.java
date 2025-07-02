@@ -137,12 +137,10 @@ class ProcessCacheTest {
 
     // then
     verify(processElementProvider).extractElementNames(eq(Set.of(1L, 2L, 3L)), any());
-    assertThat(actual).hasSize(3);
-    assertThat(actual.keySet()).containsOnly(1L, 2L, 3L);
-    assertThat(actual.get(1L).elementIdNameMap()).containsOnly(entry("id1", "Name 1"));
-    assertThat(actual.get(2L).elementIdNameMap())
+    assertThat(actual.getProcessItem(1L).elementIdNameMap()).containsOnly(entry("id1", "Name 1"));
+    assertThat(actual.getProcessItem(2L).elementIdNameMap())
         .containsOnly(entry("id21", "Name 21"), entry("id22", "Name 22"));
-    assertThat(actual.get(3L).elementIdNameMap()).containsOnly(entry("id3", "Name 3"));
+    assertThat(actual.getProcessItem(3L).elementIdNameMap()).containsOnly(entry("id3", "Name 3"));
     final var cacheMap = getCacheMap();
     assertThat(cacheMap).hasSize(3);
     assertThat(cacheMap).containsOnlyKeys(1L, 2L, 3L);

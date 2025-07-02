@@ -11,7 +11,6 @@ import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
-import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
@@ -63,24 +62,16 @@ public class ProcessCache {
     return cache.get(processDefinitionKey);
   }
 
-  public Map<Long, ProcessCacheItem> getCacheItems(final Set<Long> processDefinitionKeys) {
-    return cache.getAll(processDefinitionKeys);
-  }
-
-  public Map<Long, ProcessCacheItem> getUserTaskNames(final List<UserTaskEntity> items) {
-    return getCacheItems(
-        items.stream().map(UserTaskEntity::processDefinitionKey).collect(Collectors.toSet()));
-  }
-
-  public String getUserTaskName(final UserTaskEntity userTask) {
-    return getCacheItem(userTask.processDefinitionKey()).getElementName(userTask.elementId());
+  public ProcessCacheResult getCacheItems(final Set<Long> processDefinitionKeys) {
+    return new ProcessCacheResult(cache.getAll(processDefinitionKeys));
   }
 
   public Map<Long, ProcessCacheItem> getElementNames(final List<FlowNodeInstanceEntity> items) {
     return getCacheItems(
-        items.stream()
-            .map(FlowNodeInstanceEntity::processDefinitionKey)
-            .collect(Collectors.toSet()));
+            items.stream()
+                .map(FlowNodeInstanceEntity::processDefinitionKey)
+                .collect(Collectors.toSet()))
+        .cachedProcesses();
   }
 
   public String getElementName(final FlowNodeInstanceEntity element) {

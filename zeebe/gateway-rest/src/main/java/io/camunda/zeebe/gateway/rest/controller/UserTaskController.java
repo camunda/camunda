@@ -14,7 +14,6 @@ import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
-import io.camunda.service.cache.ProcessCache;
 import io.camunda.zeebe.gateway.protocol.rest.FormResult;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
@@ -47,15 +46,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class UserTaskController {
 
   private final UserTaskServices userTaskServices;
-  private final ProcessCache processCache;
   private final CamundaAuthenticationProvider authenticationProvider;
 
   public UserTaskController(
       final UserTaskServices userTaskServices,
-      final ProcessCache processCache,
       final CamundaAuthenticationProvider authenticationProvider) {
     this.userTaskServices = userTaskServices;
-    this.processCache = processCache;
     this.authenticationProvider = authenticationProvider;
   }
 
@@ -108,8 +104,8 @@ public class UserTaskController {
           userTaskServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .getByKey(userTaskKey);
-      final var name = processCache.getUserTaskName(userTask);
-      return ResponseEntity.ok().body(SearchQueryResponseMapper.toUserTask(userTask, name));
+
+      return ResponseEntity.ok().body(SearchQueryResponseMapper.toUserTask(userTask));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -149,10 +145,8 @@ public class UserTaskController {
           userTaskServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(query);
-      final var processCacheItems = processCache.getUserTaskNames(result.items());
 
-      return ResponseEntity.ok(
-          SearchQueryResponseMapper.toUserTaskSearchQueryResponse(result, processCacheItems));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toUserTaskSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

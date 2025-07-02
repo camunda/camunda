@@ -56,6 +56,7 @@ import io.camunda.service.UsageMetricsServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.VariableServices;
+import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
@@ -212,7 +213,8 @@ public class CamundaServicesConfiguration {
       final UserTaskSearchClient userTaskSearchClient,
       final FormSearchClient formSearchClient,
       final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
-      final VariableSearchClient variableSearchClient) {
+      final VariableSearchClient variableSearchClient,
+      final ProcessCache processCache) {
     return new UserTaskServices(
         brokerClient,
         securityContextProvider,
@@ -220,6 +222,7 @@ public class CamundaServicesConfiguration {
         formSearchClient,
         flowNodeInstanceSearchClient,
         variableSearchClient,
+        processCache,
         null);
   }
 
