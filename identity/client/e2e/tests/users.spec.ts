@@ -42,7 +42,7 @@ test.describe.serial("users CRUD", () => {
       usersPage.usersList.getByRole("cell", { name: NEW_USER.email }),
     ).not.toBeVisible();
 
-    usersPage.createUser(NEW_USER);
+    await usersPage.createUser(NEW_USER);
 
     await expect(
       usersPage.usersList.getByRole("cell", { name: NEW_USER.email }),

@@ -6,9 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { Page, Locator } from "@playwright/test";
+import { Page, Locator, expect } from "@playwright/test";
+import { Paths } from "../../utils/paths";
+import { relativizePath } from "../../utils/relativizePaths";
+import { waitForItemInList } from "../../utils/waitForItemInList";
 
 export class RolesPage {
+  private page: Page;
   readonly rolesList: Locator;
   readonly createRoleButton: Locator;
   readonly editRoleButton: (rowName?: string) => Locator;
@@ -33,6 +37,7 @@ export class RolesPage {
   readonly deleteRoleModalDeleteButton: Locator;
 
   constructor(page: Page) {
+    this.page = page;
     // List page
     this.rolesList = page.getByRole("table");
     this.createRoleButton = page.getByRole("button", {
@@ -106,5 +111,39 @@ export class RolesPage {
         name: /delete role/i,
       },
     );
+  }
+
+  async navigateToRoles() {
+    await this.page.goto(relativizePath(Paths.roles()));
+  }
+
+  async createRole(role: { id: string; name: string }) {
+    await this.createRoleButton.click();
+    await expect(this.createRoleModal).toBeVisible();
+    await this.createIdField.fill(role.id);
+    await this.createNameField.fill(role.name);
+    await this.createRoleModalCreateButton.click();
+    await expect(this.createRoleModal).not.toBeVisible();
+
+    const item = this.rolesList.getByRole("cell", {
+      name: role.name,
+    });
+
+    await waitForItemInList(this.page, item);
+  }
+
+  async deleteRole(name) {
+    await this.deleteRoleButton(name).click();
+    await expect(this.deleteRoleModal).toBeVisible();
+    await this.deleteRoleModalDeleteButton.click();
+    await expect(this.deleteRoleModal).not.toBeVisible();
+
+    const item = this.rolesList.getByRole("cell", {
+      name,
+    });
+
+    await waitForItemInList(this.page, item, {
+      shouldBeVisible: false,
+    });
   }
 }
