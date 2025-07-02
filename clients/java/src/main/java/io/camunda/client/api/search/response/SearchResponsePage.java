@@ -33,7 +33,9 @@ public interface SearchResponsePage {
    *
    * @return {@code true} if more than 10,000 items exist in ES or OS; {@code false} otherwise.
    */
-  Boolean hasMoreTotalItems();
+  default Boolean hasMoreTotalItems() {
+    return false;
+  }
 
   /** The cursor to the first item in the returned page. */
   String startCursor();
