@@ -23,6 +23,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
@@ -33,6 +34,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class PingConsoleConfigurationTest {
 
+  private static final ManagementServices MANAGEMENT_SERVICES = mock(ManagementServices.class);
   private final ConsolePingConfiguration pingConfiguration =
       new ConsolePingConfiguration(
           true,
@@ -41,8 +43,17 @@ class PingConsoleConfigurationTest {
           "clusterName",
           Duration.ofMillis(1000),
           null);
-  @Mock private ManagementServices managementServices;
+  private final String licensePayload =
+      "{\"type\":\"SAAS\",\"valid\":true,\"expiresAt\":null,\"commercial\":true}";
   @Mock private HttpClient mockClient;
+
+  @BeforeAll
+  static void setUp() {
+    when(MANAGEMENT_SERVICES.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
+    when(MANAGEMENT_SERVICES.isCamundaLicenseValid()).thenReturn(true);
+    when(MANAGEMENT_SERVICES.isCommercialCamundaLicense()).thenReturn(true);
+    when(MANAGEMENT_SERVICES.getCamundaLicenseExpiresAt()).thenReturn(null);
+  }
 
   @Test
   void endpointShouldNotBeNull() {
@@ -55,7 +66,7 @@ class PingConsoleConfigurationTest {
     final IllegalArgumentException exception =
         assertThrows(
             IllegalArgumentException.class,
-            new PingConsoleRunner(consolePingConfiguration, managementServices)
+            new PingConsoleRunner(consolePingConfiguration, MANAGEMENT_SERVICES)
                 ::validateConfiguration);
     assertEquals("Ping endpoint must not be null.", exception.getMessage());
   }
@@ -71,7 +82,7 @@ class PingConsoleConfigurationTest {
     final IllegalArgumentException exception =
         assertThrows(
             IllegalArgumentException.class,
-            new PingConsoleRunner(consolePingConfiguration, managementServices)
+            new PingConsoleRunner(consolePingConfiguration, MANAGEMENT_SERVICES)
                 ::validateConfiguration);
     assertEquals("Ping endpoint 123 must be a valid URI.", exception.getMessage());
   }
@@ -92,7 +103,7 @@ class PingConsoleConfigurationTest {
     final IllegalArgumentException exception =
         assertThrows(
             IllegalArgumentException.class,
-            new PingConsoleRunner(consolePingConfiguration, managementServices)
+            new PingConsoleRunner(consolePingConfiguration, MANAGEMENT_SERVICES)
                 ::validateConfiguration);
     assertEquals("Cluster ID must not be null or empty.", exception.getMessage());
   }
@@ -113,7 +124,7 @@ class PingConsoleConfigurationTest {
     final IllegalArgumentException exception =
         assertThrows(
             IllegalArgumentException.class,
-            new PingConsoleRunner(consolePingConfiguration, managementServices)
+            new PingConsoleRunner(consolePingConfiguration, MANAGEMENT_SERVICES)
                 ::validateConfiguration);
     assertEquals("Cluster name must not be null or empty.", exception.getMessage());
   }
@@ -134,7 +145,7 @@ class PingConsoleConfigurationTest {
     final IllegalArgumentException exception =
         assertThrows(
             IllegalArgumentException.class,
-            new PingConsoleRunner(consolePingConfiguration, managementServices)
+            new PingConsoleRunner(consolePingConfiguration, MANAGEMENT_SERVICES)
                 ::validateConfiguration);
     assertEquals("Ping period must be greater than zero.", exception.getMessage());
   }
@@ -151,7 +162,7 @@ class PingConsoleConfigurationTest {
             Duration.ofMillis(5000),
             null);
     // then
-    assertDoesNotThrow(() -> new PingConsoleRunner(consolePingConfiguration, managementServices));
+    assertDoesNotThrow(() -> new PingConsoleRunner(consolePingConfiguration, MANAGEMENT_SERVICES));
   }
 
   @Test
@@ -162,7 +173,7 @@ class PingConsoleConfigurationTest {
             false, URI.create("123"), "", null, Duration.ofMillis(-300), null);
 
     // then we assert that it is not throwing an exception due to the feature being disabled
-    assertDoesNotThrow(() -> new PingConsoleRunner(consolePingConfiguration, managementServices));
+    assertDoesNotThrow(() -> new PingConsoleRunner(consolePingConfiguration, MANAGEMENT_SERVICES));
   }
 
   @Test
@@ -178,13 +189,8 @@ class PingConsoleConfigurationTest {
             ArgumentMatchers.<HttpResponse.BodyHandler<String>>any()))
         .thenReturn(mockResponse);
 
-    when(managementServices.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
-    when(managementServices.isCamundaLicenseValid()).thenReturn(true);
-    when(managementServices.isCommercialCamundaLicense()).thenReturn(true);
-    when(managementServices.getCamundaLicenseExpiresAt()).thenReturn(null);
-
     final PingConsoleTask realTask =
-        new PingConsoleTask(managementServices, pingConfiguration, mockClient);
+        new PingConsoleTask(pingConfiguration, mockClient, licensePayload);
 
     final PingConsoleTask spyTask = Mockito.spy(realTask);
 
@@ -208,13 +214,8 @@ class PingConsoleConfigurationTest {
         .thenThrow(new InterruptedException("Interrupted connection error"))
         .thenReturn(mockResponse); // 3rd try succeeds
 
-    when(managementServices.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
-    when(managementServices.isCamundaLicenseValid()).thenReturn(true);
-    when(managementServices.isCommercialCamundaLicense()).thenReturn(true);
-    when(managementServices.getCamundaLicenseExpiresAt()).thenReturn(null);
-
     final PingConsoleTask realTask =
-        new PingConsoleTask(managementServices, pingConfiguration, mockClient);
+        new PingConsoleTask(pingConfiguration, mockClient, licensePayload);
 
     final PingConsoleTask spyTask = Mockito.spy(realTask);
 
@@ -236,11 +237,6 @@ class PingConsoleConfigurationTest {
     when(secondMockResponse.statusCode()).thenReturn(429);
     when(thirdMockResponse.statusCode()).thenReturn(200);
 
-    when(managementServices.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
-    when(managementServices.isCamundaLicenseValid()).thenReturn(true);
-    when(managementServices.isCommercialCamundaLicense()).thenReturn(true);
-    when(managementServices.getCamundaLicenseExpiresAt()).thenReturn(null);
-
     when(mockClient.send(
             ArgumentMatchers.<HttpRequest>any(),
             ArgumentMatchers.<HttpResponse.BodyHandler<String>>any()))
@@ -249,7 +245,7 @@ class PingConsoleConfigurationTest {
         .thenReturn(thirdMockResponse);
 
     final PingConsoleTask realTask =
-        new PingConsoleTask(managementServices, pingConfiguration, mockClient);
+        new PingConsoleTask(pingConfiguration, mockClient, licensePayload);
 
     final PingConsoleTask spyTask = Mockito.spy(realTask);
 

@@ -8,11 +8,7 @@
 package io.camunda.application.commons.console.ping;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
-import io.camunda.service.ManagementServices;
-import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
 import io.camunda.zeebe.util.retry.RetryDecorator;
@@ -22,31 +18,27 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
-import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class PingConsoleTask implements Runnable {
 
-  public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
   private static final Logger LOGGER = LoggerFactory.getLogger(PingConsoleTask.class);
   private static final int NUMBER_OF_MAX_RETRIES = 10;
   private static final int RETRY_DELAY_MULTIPLIER = 2;
   private static final Duration MAX_RETRY_DELAY = Duration.ofMinutes(2);
   private static final int MAX_RESPONSE_BODY_LENGTH = 1000;
   private final HttpClient client;
-  private final ManagementServices managementServices;
   private final ConsolePingConfiguration pingConfiguration;
   private final RetryDecorator retryDecorator;
-  private final Either<Exception, String> licensePayload;
+  private final String licensePayload;
 
   @VisibleForTesting
   public PingConsoleTask(
-      final ManagementServices managementServices,
       final ConsolePingConfiguration pingConfiguration,
-      final HttpClient client) {
-    this.managementServices = managementServices;
+      final HttpClient client,
+      final String licensePayload) {
     this.pingConfiguration = pingConfiguration;
     this.client = client;
     final var retryConfiguration = new RetryConfiguration();
@@ -54,27 +46,21 @@ public class PingConsoleTask implements Runnable {
     retryConfiguration.setRetryDelayMultiplier(RETRY_DELAY_MULTIPLIER);
     retryConfiguration.setMaxRetryDelay(MAX_RETRY_DELAY);
     retryDecorator = new RetryDecorator();
-    licensePayload = getLicensePayload();
+    this.licensePayload = licensePayload;
   }
 
   public PingConsoleTask(
-      final ManagementServices managementServices,
-      final ConsolePingConfiguration pingConfiguration) {
-    this(managementServices, pingConfiguration, HttpClient.newHttpClient());
+      final ConsolePingConfiguration pingConfiguration, final String licensePayload) {
+    this(pingConfiguration, HttpClient.newHttpClient(), licensePayload);
   }
 
   @Override
   public void run() {
     try {
-      if (licensePayload.isLeft()) {
-        LOGGER.warn(
-            "Failed to parse license payload for Console ping task.", licensePayload.getLeft());
-        return;
-      }
       final HttpRequest request =
           HttpRequest.newBuilder()
               .uri(pingConfiguration.endpoint())
-              .POST(HttpRequest.BodyPublishers.ofString(licensePayload.get()))
+              .POST(HttpRequest.BodyPublishers.ofString(licensePayload))
               .build();
 
       retryDecorator.decorate("Ping console.", () -> tryPingConsole(request));
@@ -106,29 +92,6 @@ public class PingConsoleTask implements Runnable {
       // Should not retry for the remaining 4xx errors, but we log them.
       LOGGER.debug(
           "Received client error response: {}. No retry will be attempted.", resp.statusCode());
-    }
-  }
-
-  private Either<Exception, String> getLicensePayload() {
-    final ObjectMapper objectMapper = new ObjectMapper();
-    final LicensePayload.License license =
-        new LicensePayload.License(
-            managementServices.isCamundaLicenseValid(),
-            managementServices.getCamundaLicenseType().toString(),
-            managementServices.isCommercialCamundaLicense(),
-            managementServices.getCamundaLicenseExpiresAt() == null
-                ? null
-                : DATE_TIME_FORMATTER.format(managementServices.getCamundaLicenseExpiresAt()));
-    final LicensePayload payload =
-        new LicensePayload(
-            license,
-            pingConfiguration.clusterId(),
-            pingConfiguration.clusterName(),
-            pingConfiguration.properties());
-    try {
-      return Either.right(objectMapper.writeValueAsString(payload));
-    } catch (final JsonProcessingException exception) {
-      return Either.left(exception);
     }
   }
 
