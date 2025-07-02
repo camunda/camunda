@@ -56,6 +56,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordVa
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -784,7 +785,7 @@ public class CompactRecordLogger {
         .append(
             summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
         .append(summarizeVariables(value.getVariables()))
-        .append(" (tenant: %s)".formatted(value.getTenantId()));
+        .append(formatTenant(value));
 
     return result.toString();
   }
@@ -819,12 +820,12 @@ public class CompactRecordLogger {
   private String summarizeVariableDocument(final Record<?> record) {
     final var value = (VariableDocumentRecordValue) record.getValue();
 
-    return "[%s] in <scope [%s]>%s (tenant: %s)"
+    return "[%s] in <scope [%s]>%s%s"
         .formatted(
             value.getUpdateSemantics(),
             shortenKey(value.getScopeKey()),
             summarizeVariables(value.getVariables()),
-            value.getTenantId());
+            formatTenant(value));
   }
 
   private StringBuilder summarizeRejection(final Record<?> record) {
@@ -1164,6 +1165,12 @@ public class CompactRecordLogger {
   private String formatPinnedTime(final long time) {
     final var dateTime = Instant.ofEpochMilli(time).atZone(ZoneId.systemDefault());
     return "%s (timestamp: %d)".formatted(shortenDateTime(dateTime), time);
+  }
+
+  private String formatTenant(final TenantOwned value) {
+    return TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(value.getTenantId())
+        ? ""
+        : " (tenant: %s)".formatted(value.getTenantId());
   }
 
   /**
