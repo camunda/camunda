@@ -23,38 +23,38 @@ test.describe.parallel('login page', () => {
   });
 
   test('Log in with invalid user account', async ({loginPage, page}) => {
-    expect(await loginPage.passwordInput.getAttribute('type')).toEqual(
-      'password',
-    );
+    await expect(loginPage.passwordInput).toHaveAttribute('type', 'password');
 
     await loginPage.login('demo', 'wrong-password');
-    await expect(page).toHaveURL('/identity/login');
+    await expect(page).toHaveURL(`${relativizePath(Paths.login('identity'))}`);
 
     await expect(loginPage.errorMessage).toContainText(
-      'Username and password do not match',
+      "Username and password don't match",
     );
 
-    await expect(page).toHaveURL('/identity/login');
+    await expect(page).toHaveURL(`${relativizePath(Paths.login('identity'))}`);
   });
 
   test('Log in with valid user account', async ({loginPage, page}) => {
     await loginPage.login('demo', 'demo');
 
-    await expect(page).toHaveURL('/identity/users');
+    await expect(page).toHaveURL(`${relativizePath(Paths.users())}`);
   });
 
   test('Log out', async ({loginPage, identityHeader, page}) => {
     await loginPage.login('demo', 'demo');
-    await expect(page).toHaveURL('/identity/users');
+    await expect(page).toHaveURL(`${relativizePath(Paths.users())}`);
     await identityHeader.logout();
-    await expect(page).toHaveURL('identity/login?next=/identity');
+    await expect(page).toHaveURL(
+      `${relativizePath(Paths.login('identity'))}?next=/identity/`,
+    );
   });
 
   test('Redirect to initial page after login', async ({loginPage, page}) => {
-    await expect(page).toHaveURL('/identity/login');
-    await page.goto(relativizePath(Paths.users()));
+    await expect(page).toHaveURL(`${relativizePath(Paths.login('identity'))}`);
+    await page.goto(`${relativizePath(Paths.users())}`);
     await expect(page).toHaveURL(
-      `${relativizePath(Paths.login())}?next=/identity${Paths.users()}`,
+      `${relativizePath(Paths.login('identity'))}?next=${Paths.users()}`,
     );
 
     await loginPage.login('demo', 'demo');

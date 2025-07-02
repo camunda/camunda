@@ -1,27 +1,35 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
 export const Paths = {
-  login() {
-    return '/login';
+  login(application: string): string {
+    return `/${application}/login`;
   },
   forbidden() {
     return '/forbidden';
   },
   mappings() {
-    return '/mappings';
+    return '/identity/mappings';
   },
   users() {
-    return '/users';
+    return '/identity/users';
   },
   groups() {
-    return '/groups';
+    return '/identity/groups';
   },
   roles() {
-    return '/roles';
+    return '/identity/roles';
   },
   tenants() {
-    return '/tenants';
+    return '/identity/tenants';
   },
   authorizations() {
-    return '/authorizations';
+    return '/identity/authorizations';
   },
 } as const;
 
