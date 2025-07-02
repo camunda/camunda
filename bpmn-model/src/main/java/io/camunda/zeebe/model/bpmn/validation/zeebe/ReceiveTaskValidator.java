@@ -21,6 +21,7 @@ import io.camunda.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.camunda.zeebe.model.bpmn.instance.ReceiveTask;
 import io.camunda.zeebe.model.bpmn.util.ModelUtil;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
@@ -38,6 +39,7 @@ public class ReceiveTaskValidator implements ModelElementValidator<ReceiveTask> 
     final Message message = element.getMessage();
     if (message == null) {
       validationResultCollector.addError(0, "Must reference a message");
+      return;
     }
 
     final List<EventDefinition> eventDefinitions =
@@ -46,6 +48,7 @@ public class ReceiveTaskValidator implements ModelElementValidator<ReceiveTask> 
     final Stream<String> messageNames =
         ModelUtil.getEventDefinition(eventDefinitions, MessageEventDefinition.class)
             .map(MessageEventDefinition::getMessage)
+            .filter(Objects::nonNull)
             .filter(m -> m.getName() != null && !m.getName().isEmpty())
             .map(Message::getName);
 
