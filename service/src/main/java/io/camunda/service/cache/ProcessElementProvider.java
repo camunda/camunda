@@ -30,27 +30,40 @@ public class ProcessElementProvider {
   public void extractElementNames(
       final Long processDefinitionKey,
       final BiConsumer<Long, ProcessElement> processDefinitionKeyElementConsumer) {
-    final var processDefinition = processDefinitionServices.getByKey(processDefinitionKey);
-    extractElementNames(processDefinition, processDefinitionKeyElementConsumer);
+    try {
+      final var processDefinition = processDefinitionServices.getByKey(processDefinitionKey);
+      extractElementNames(processDefinition, processDefinitionKeyElementConsumer);
+    } catch (final Exception e) {
+      LOG.warn(
+          "Could not load process definition with key {} into cache. Skipping element extraction.",
+          processDefinitionKey,
+          e);
+    }
   }
 
   public void extractElementNames(
       final Set<Long> processDefinitionKeys,
       final BiConsumer<Long, ProcessElement> processDefinitionKeyElementConsumer) {
     final var keysList = new ArrayList<>(processDefinitionKeys);
-    final var result =
-        processDefinitionServices.search(
-            ProcessDefinitionQuery.of(
-                q ->
-                    q.filter(f -> f.processDefinitionKeys(keysList))
-                        .page(p -> p.size(processDefinitionKeys.size()))));
 
-    if (result.total() < processDefinitionKeys.size()) {
-      LOG.warn("Could not load all required process definitions");
-    }
+    try {
+      final var result =
+          processDefinitionServices.search(
+              ProcessDefinitionQuery.of(
+                  q ->
+                      q.filter(f -> f.processDefinitionKeys(keysList))
+                          .page(p -> p.size(keysList.size()))));
 
-    for (final ProcessDefinitionEntity processDefinition : result.items()) {
-      extractElementNames(processDefinition, processDefinitionKeyElementConsumer);
+      if (result.total() < processDefinitionKeys.size()) {
+        LOG.warn("Could not load all required process definitions into the cache");
+      }
+
+      for (final ProcessDefinitionEntity processDefinition : result.items()) {
+        extractElementNames(processDefinition, processDefinitionKeyElementConsumer);
+      }
+    } catch (final Exception e) {
+      LOG.warn(
+          "Could not load process definitions into the cache. Skipping element extraction.", e);
     }
   }
 
