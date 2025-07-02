@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
+import org.assertj.core.api.ThrowingConsumer;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 import org.awaitility.core.TerminalFailureException;
@@ -74,6 +75,58 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
               actual,
               AssertFormatUtil.formatNames(variableNames),
               AssertFormatUtil.formatNames(missingVariableNames));
+      fail(failureMessage);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  public <T> void hasVariableSatisfies(
+      final long processInstanceKey,
+      final String variableName,
+      final Class<T> jsonMappedClass,
+      final List<ThrowingConsumer<T>> requirements) {
+
+    final AtomicReference<String> assertionError = new AtomicReference<>("");
+    final AtomicReference<Map<String, String>> reference =
+        new AtomicReference<>(Collections.emptyMap());
+
+    try {
+      Awaitility.await()
+          .untilAsserted(
+              () -> {
+                final Map<String, String> variables =
+                    getProcessInstanceVariables(processInstanceKey);
+                reference.set(variables);
+
+                assertThat(variables).containsKey(variableName);
+
+                final T actualValue =
+                    AssertionJsonMapper.readJson(variables.get(variableName), jsonMappedClass);
+
+                try {
+                  final ThrowingConsumer<T>[] reqs =
+                      requirements.stream().toArray(ThrowingConsumer[]::new);
+
+                  assertThat(actualValue).satisfies(reqs);
+                } catch (final AssertionError e) {
+                  assertionError.set(e.getMessage());
+                  throw e;
+                }
+              });
+    } catch (final ConditionTimeoutException | TerminalFailureException e) {
+
+      final Map<String, String> actualVariables = reference.get();
+
+      final String failureReason =
+          Optional.ofNullable(actualVariables.get(variableName))
+              .map(value -> assertionError.get())
+              .orElse(
+                  String.format(
+                      "%s should have a variable '%s', but the variable doesn't exist",
+                      actual, variableName));
+
+      final String failureMessage =
+          String.format("%s failed to satisfy all conditions, reason: %s.", actual, failureReason);
       fail(failureMessage);
     }
   }

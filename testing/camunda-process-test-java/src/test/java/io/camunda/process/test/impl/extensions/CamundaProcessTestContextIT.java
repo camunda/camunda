@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Decision;
@@ -277,6 +278,46 @@ public class CamundaProcessTestContextIT {
     assertThat(processInstanceEvent).isCompleted();
     assertThat(processInstanceEvent).hasCompletedElements("success-end");
     assertThat(processInstanceEvent).hasVariables(variables);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  void shouldCompleteUserTaskWithVariablesSatisfies() {
+    // Given
+    final long processDefinitionKey = deployProcessModel(processModelWithUserTask());
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+    final Map<String, Object> variables = new HashMap<>();
+    final Map<String, Object> nestedVariables = new HashMap<>();
+    nestedVariables.put("string", "value");
+    nestedVariables.put("number", 123);
+    nestedVariables.put("boolean", true);
+    nestedVariables.put("list", Arrays.asList(1, "a", null, true));
+    variables.put("complex_result", nestedVariables);
+
+    // When
+    processTestContext.completeUserTask("user-task", variables);
+
+    // Then
+    assertThat(processInstanceEvent).isCompleted();
+    assertThat(processInstanceEvent).hasCompletedElements("success-end");
+    assertThat(processInstanceEvent)
+        .hasVariableSatisfies(
+            "complex_result",
+            Map.class,
+            Arrays.asList(
+                value ->
+                    Assertions.assertThat(value)
+                        .hasSize(4)
+                        .containsEntry("string", "value")
+                        .containsEntry("number", 123)
+                        .containsEntry("boolean", true),
+                value ->
+                    Assertions.assertThat(value)
+                        .extracting("list", InstanceOfAssertFactories.list(Object.class))
+                        .asList()
+                        .containsExactlyInAnyOrder(1, "a", null, true)
+            ));
   }
 
   @Test

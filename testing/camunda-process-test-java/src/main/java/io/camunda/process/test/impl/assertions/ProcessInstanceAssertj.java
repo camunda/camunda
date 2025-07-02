@@ -26,6 +26,7 @@ import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -35,6 +36,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
+import org.assertj.core.api.ThrowingConsumer;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 import org.awaitility.core.TerminalFailureException;
@@ -247,6 +249,29 @@ public class ProcessInstanceAssertj
   @Override
   public ProcessInstanceAssert hasVariable(final String variableName, final Object variableValue) {
     variableAssertj.hasVariable(getProcessInstanceKey(), variableName, variableValue);
+    return this;
+  }
+
+  @Override
+  public <T> ProcessInstanceAssert hasVariableSatisfies(
+      String variableName,
+      final Class<T> jsonMappedClass,
+      final List<ThrowingConsumer<T>> requirements) {
+
+    variableAssertj.hasVariableSatisfies(
+        getProcessInstanceKey(), variableName, jsonMappedClass, requirements);
+    return this;
+  }
+
+  @Override
+  public <T> ProcessInstanceAssert hasVariableSatisfies(
+      String variableName, final Class<T> jsonMappedClass, final ThrowingConsumer<T> requirement) {
+
+    variableAssertj.hasVariableSatisfies(
+        getProcessInstanceKey(),
+        variableName,
+        jsonMappedClass,
+        Collections.singletonList(requirement));
     return this;
   }
 

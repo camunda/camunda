@@ -15,7 +15,9 @@
  */
 package io.camunda.process.test.api.assertions;
 
+import java.util.List;
 import java.util.Map;
+import org.assertj.core.api.ThrowingConsumer;
 
 /** The assertion object to verify a process instance. */
 public interface ProcessInstanceAssert {
@@ -320,6 +322,31 @@ public interface ProcessInstanceAssert {
    * @return the assertion object
    */
   ProcessInstanceAssert hasVariable(String variableName, Object variableValue);
+
+  /**
+   * TODO
+   *
+   * @param variableName
+   * @param jsonMappedClass
+   * @param requirements
+   * @return
+   * @param <T>
+   */
+  @SuppressWarnings("unchecked")
+  <T> ProcessInstanceAssert hasVariableSatisfies(
+      String variableName,
+      final Class<T> jsonMappedClass,
+      final List<ThrowingConsumer<T>> requirements);
+
+  /**
+   * @param variableName
+   * @param jsonMappedClass
+   * @param requirement
+   * @return
+   * @param <T>
+   */
+  <T> ProcessInstanceAssert hasVariableSatisfies(
+      String variableName, final Class<T> jsonMappedClass, final ThrowingConsumer<T> requirement);
 
   /**
    * Verifies that the process instance has the given variables. The verification fails if at least
