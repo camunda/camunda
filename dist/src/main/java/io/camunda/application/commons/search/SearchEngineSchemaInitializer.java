@@ -51,19 +51,17 @@ public class SearchEngineSchemaInitializer implements InitializingBean {
                   clientAdapter.objectMapper())
               .withMetrics(schemaManagerMetrics);
       if (!addShutdownHook(executor)) {
-        LOGGER.info("skipping schema initialization, JVM is shutting down");
+        // skipping schema initialization as JVM is shutting down
         return;
       }
       executor.submit(schemaManager::startup).get();
     } catch (final InterruptedException ie) {
-      LOGGER.warn("Schema initialization task was interrupted");
-      LOGGER.debug("Stack trace:", ie);
+      LOGGER.debug("Schema initialization task was interrupted.", ie);
       Thread.currentThread().interrupt();
       return;
     } catch (final Exception e) {
       if (isShutdown.get()) {
-        LOGGER.warn("Schema initialization interrupted with shutdown. Message: {}", e.getMessage());
-        LOGGER.debug("Stack trace:", e);
+        LOGGER.debug("Schema initialization interrupted with shutdown.", e);
         Thread.currentThread().interrupt();
         return;
       }
@@ -84,7 +82,7 @@ public class SearchEngineSchemaInitializer implements InitializingBean {
           .addShutdownHook(
               new Thread(
                   () -> {
-                    LOGGER.debug("Shutdown hook triggered");
+                    LOGGER.trace("Shutdown hook triggered");
                     if (isShutdown.compareAndSet(false, true)) {
                       executor.shutdownNow();
                     }
@@ -93,8 +91,7 @@ public class SearchEngineSchemaInitializer implements InitializingBean {
     } catch (final IllegalStateException e) {
       // This can happen if the shutdown hook is added after the JVM has started shutting down.
       // In this case, we just ignore the exception.
-      LOGGER.info("JVM is shutting down, cannot add shutdown hook: {}", e.getMessage());
-      LOGGER.debug("Stack trace:", e);
+      LOGGER.debug("JVM is shutting down, cannot add the schema initializer shutdown hook", e);
       return false;
     }
   }

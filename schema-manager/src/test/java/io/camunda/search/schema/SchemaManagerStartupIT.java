@@ -13,10 +13,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.containers.ZeebeContainer;
 import java.time.Duration;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -38,25 +36,28 @@ class SchemaManagerStartupIT {
 
   private static final String CAMUNDA_TEST_IMAGE_NAME =
       Optional.ofNullable(System.getenv("CAMUNDA_TEST_DOCKER_IMAGE"))
-          .orElse("camunda/camunda:SNAPSHOT");
+          .orElse("camunda/camunda:current-test");
 
-  private final AtomicBoolean isShutdown = new AtomicBoolean(false);
+  private final CountDownLatch shutdownLatch = new CountDownLatch(1);
 
   @AutoClose
   private final ZeebeContainer camunda =
       new ZeebeContainer(DockerImageName.parse(CAMUNDA_TEST_IMAGE_NAME))
           .withEnv("CAMUNDA_DATABASE_URL", "http://test-elasticsearch:9200")
           .withEnv("SPRING_PROFILES_ACTIVE", "broker")
+          .withEnv("LOGGING_LEVEL_IO_CAMUNDA", "DEBUG")
           .withNetwork(Network.SHARED)
           .waitingFor(
               new WaitStrategy() {
                 @Override
                 public void waitUntilReady(final WaitStrategyTarget waitStrategyTarget) {
                   // Wait until the application is shutdown
-                  Awaitility.await()
-                      .timeout(Duration.ofSeconds(60))
-                      .pollDelay(Duration.ofSeconds(1))
-                      .untilTrue(isShutdown);
+                  try {
+                    shutdownLatch.await(60, TimeUnit.SECONDS);
+                  } catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Interrupted while waiting for shutdown", e);
+                  }
                 }
 
                 @Override
@@ -74,8 +75,6 @@ class SchemaManagerStartupIT {
           .withNetwork(Network.SHARED)
           .withNetworkAliases("test-elasticsearch");
 
-  @AutoClose private final ExecutorService executor = Executors.newSingleThreadExecutor();
-
   @ParameterizedTest
   @ValueSource(booleans = {false, true})
   // false is to test the case when the shutdown is before the schema startup is started
@@ -83,27 +82,25 @@ class SchemaManagerStartupIT {
   void shouldGracefullyShutdownWhenSchemaStartupStillRunning(final boolean waitForSchemaStartup)
       throws InterruptedException {
     // given
-    executor.submit(() -> camunda.start());
+    final var thread = Thread.ofVirtual().start(() -> camunda.start());
 
     final var logToWaitFor =
         waitForSchemaStartup
-            ? "Initializing search engine schema"
-            : "Root WebApplicationContext: initialization completed";
+            ? "Retrying operation for 'init schema'"
+            : "io.camunda.zeebe.broker.system - Starting broker";
 
     // just wait until the container is running (but not ready)
     Awaitility.await()
         .atMost(Duration.ofSeconds(60))
         .until(() -> camunda.isRunning() && camunda.getLogs().contains(logToWaitFor));
-    // Let the startup proceed a little
-    Thread.sleep(2_000);
 
     // when
     // Simulate external shutdown signal
     LOG.info("Start graceful shutdown of the container");
     camunda.shutdownGracefully(Duration.ofSeconds(30)); // as default Kubernetes shutdown timeout
-    isShutdown.set(true);
+    shutdownLatch.countDown();
 
-    executor.awaitTermination(5, TimeUnit.SECONDS);
+    thread.join(Duration.ofSeconds(5));
 
     // then
     final var logs = camunda.getLogs();
