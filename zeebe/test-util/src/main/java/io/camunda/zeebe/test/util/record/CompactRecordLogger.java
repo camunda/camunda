@@ -51,6 +51,7 @@ import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecor
 import io.camunda.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.MultiInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationStartInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
@@ -173,6 +174,7 @@ public class CompactRecordLogger {
         ValueType.MESSAGE_START_EVENT_SUBSCRIPTION, this::summarizeMessageStartEventSubscription);
     valueLoggers.put(ValueType.MESSAGE_SUBSCRIPTION, this::summarizeMessageSubscription);
     valueLoggers.put(ValueType.PROCESS_INSTANCE, this::summarizeProcessInstance);
+    valueLoggers.put(ValueType.PROCESS_INSTANCE_BATCH, this::summarizeProcessInstanceBatch);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_CREATION, this::summarizeProcessInstanceCreation);
     valueLoggers.put(
         ValueType.PROCESS_INSTANCE_MODIFICATION, this::summarizeProcessInstanceModification);
@@ -673,6 +675,21 @@ public class CompactRecordLogger {
             summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
         .append(summarizeTreePath(value))
         .toString();
+  }
+
+  private String summarizeProcessInstanceBatch(final Record<?> record) {
+    final var value = (ProcessInstanceBatchRecordValue) record.getValue();
+    final var elementKey = value.getBatchElementInstanceKey();
+    final var processKey = value.getProcessInstanceKey();
+    final var result = new StringBuilder();
+
+    result.append("idx:").append(value.getIndex());
+    result.append(" PI:").append(shortenKey(processKey));
+    if (elementKey != processKey) {
+      result.append(" EI:").append(shortenKey(elementKey));
+    }
+
+    return result.append(formatTenant(value)).toString();
   }
 
   private String summarizeTreePath(final ProcessInstanceRecordValue value) {
