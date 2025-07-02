@@ -26,6 +26,7 @@ import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
+import io.atomix.raft.storage.log.entry.UnknownEntry;
 import io.atomix.raft.storage.serializer.ConfigurationEntryDecoder.NewMembersDecoder;
 import io.atomix.raft.storage.serializer.ConfigurationEntryDecoder.OldMembersDecoder;
 import io.camunda.zeebe.journal.file.RecordDataEncoder;
@@ -187,7 +188,7 @@ public class RaftEntrySBESerializer implements RaftEntrySerializer {
             yield readConfigurationEntry(buffer, entryOffset);
           }
           case InitialEntry -> new InitialEntry();
-          default -> throw new IllegalStateException("Unexpected entry type " + type);
+          default -> new UnknownEntry();
         };
 
     return new RaftLogEntry(term, entry);

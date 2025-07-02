@@ -26,6 +26,7 @@ import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitialEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
+import io.atomix.raft.storage.log.entry.UnknownEntry;
 import java.time.Instant;
 import java.util.Set;
 import org.agrona.ExpandableArrayBuffer;
@@ -263,5 +264,22 @@ public class RaftEntrySBESerializerTest {
     // then
     assertThat(serializer.getConfigurationEntrySerializedLength(configurationEntry))
         .isEqualTo(writtenBytes);
+  }
+
+  @Test
+  public void shouldReturnUnknownEntryType() {
+    // given - an arbitrary entry as a basis
+    serializer.writeConfigurationEntry(
+        5, new ConfigurationEntry(1234L, Set.of(), Set.of()), buffer, 0);
+
+    // when - overwriting the entry type to be unknown
+    new RaftLogEntryEncoder()
+        .wrap(buffer, MessageHeaderEncoder.ENCODED_LENGTH)
+        // It doesn't matter that we are using `SBE_UNKNOWN` here, it's just more convenient
+        // than writing an arbitrary, unknown ordinal to the right byte.
+        .type(EntryType.SBE_UNKNOWN);
+
+    // then - we can read the entry but get an `UnknownEntry` back
+    assertThat(serializer.readRaftLogEntry(buffer).entry()).isInstanceOf(UnknownEntry.class);
   }
 }
