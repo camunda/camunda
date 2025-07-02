@@ -28,6 +28,7 @@ import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
+import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
@@ -57,6 +58,7 @@ import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.ProcessDefinitionFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
@@ -270,6 +272,11 @@ public class DocumentBasedSearchClients implements SearchClientsProxy, Closeable
                 new ProcessInstanceStatisticsFilter(processInstanceKey)),
             ProcessInstanceFlowNodeStatisticsAggregationResult.class)
         .items();
+  }
+
+  @Override
+  public SearchQueryResult<JobEntity> searchJobs(final JobQuery query) {
+    return getSearchExecutor().search(query, io.camunda.webapps.schema.entities.JobEntity.class);
   }
 
   public SearchQueryResult<ProcessInstanceEntity> executeSearchProcessInstances(

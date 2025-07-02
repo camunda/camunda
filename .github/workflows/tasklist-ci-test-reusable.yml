@@ -46,6 +46,7 @@ jobs:
   integration-tests:
     name: Test
     runs-on: gcp-perf-core-16-default
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:

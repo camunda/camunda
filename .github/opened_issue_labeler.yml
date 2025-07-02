@@ -2,6 +2,10 @@ component/c8-api:
   '(C8-API-)'
 component/C8Run:
   '(C8Run-)'
+component/camunda-process-test:
+  '(Camunda Process Test-)'
+component/clients:
+  '(Clients-)'
 component/data-layer:
   '(Data Layer-)'
 component/feel-js:
@@ -14,6 +18,8 @@ component/operate:
   '(Operate-)'
 component/optimize:
   '(Optimize-)'
+component/spring-sdk:
+  '(Spring SDK-)'
 component/tasklist:
   '(Tasklist-)'
 component/zeebe:
