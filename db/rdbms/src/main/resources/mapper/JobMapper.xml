@@ -12,18 +12,247 @@
 
 <mapper namespace="io.camunda.db.rdbms.sql.JobMapper">
 
+  <select id="count" resultType="java.lang.Long">
+    SELECT COUNT(*)
+    FROM ${prefix}JOB
+    <where>
+      <include refid="io.camunda.db.rdbms.sql.JobMapper.searchFilter" />
+    </where>
+  </select>
+
+  <!-- default search statement for databases supporting LIMIT/OFFSET-->
+  <select id="search"
+    parameterType="io.camunda.db.rdbms.read.domain.JobDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.JobMapper.searchResultMap"
+    statementType="PREPARED">
+    SELECT * FROM (
+      SELECT
+        JOB_KEY,
+        PARTITION_ID,
+        PROCESS_INSTANCE_KEY,
+        ELEMENT_INSTANCE_KEY,
+        PROCESS_DEFINITION_ID,
+        PROCESS_DEFINITION_KEY,
+        TENANT_ID,
+        TYPE,
+        WORKER,
+        STATE,
+        RETRIES,
+        ERROR_MESSAGE,
+        ERROR_CODE,
+        END_TIME,
+        CUSTOM_HEADERS,
+        KIND,
+        ELEMENT_ID,
+        IS_DENIED,
+        DENIED_REASON,
+        LISTENER_EVENT_TYPE,
+        DEADLINE,
+        HAS_FAILED_WITH_RETRIES_LEFT,
+        HISTORY_CLEANUP_DATE
+      FROM ${prefix}JOB
+    <where>
+      <include refid="io.camunda.db.rdbms.sql.JobMapper.searchFilter" />
+    </where>
+
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter" />
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy" />
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging" />
+  </select>
+
+
+  <sql id="searchFilter">
+    WHERE 1 = 1
+    <!-- basic filter -->
+    <if test="filter.jobKeyOperations != null and !filter.jobKeyOperations.isEmpty()">
+      <foreach collection="filter.jobKeyOperations" item="operation">
+        AND JOB_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.typeOperations != null and !filter.typeOperations.isEmpty()">
+      <foreach collection="filter.typeOperations" item="operation">
+        AND TYPE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.workerOperations != null and !filter.workerOperations.isEmpty()">
+      <foreach collection="filter.workerOperations" item="operation">
+        AND WORKER
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.stateOperations != null and !filter.stateOperations.isEmpty()">
+      <foreach collection="filter.stateOperations" item="operation">
+        AND STATE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.kindOperations != null and !filter.kindOperations.isEmpty()">
+      <foreach collection="filter.kindOperations" item="operation">
+        AND KIND
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if
+      test="filter.listenerEventTypeOperations != null and !filter.listenerEventTypeOperations.isEmpty()">
+      <foreach collection="filter.listenerEventTypeOperations" item="operation">
+        AND LISTENER_EVENT_TYPE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if
+      test="filter.processInstanceKeyOperations != null and !filter.processInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.processInstanceKeyOperations" item="operation">
+        AND PROCESS_INSTANCE_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if
+      test="filter.processDefinitionKeyOperations != null and !filter.processDefinitionKeyOperations.isEmpty()">
+      <foreach collection="filter.processDefinitionKeyOperations" item="operation">
+        AND PROCESS_DEFINITION_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if
+      test="filter.processDefinitionIdOperations != null and !filter.processDefinitionIdOperations.isEmpty()">
+      <foreach collection="filter.processDefinitionIdOperations" item="operation">
+        AND PROCESS_DEFINITION_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.elementIdOperations != null and !filter.elementIdOperations.isEmpty()">
+      <foreach collection="filter.elementIdOperations" item="operation">
+        AND ELEMENT_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if
+      test="filter.elementInstanceKeyOperations != null and !filter.elementInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.elementInstanceKeyOperations" item="operation">
+        AND ELEMENT_INSTANCE_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.tenantIdOperations != null and !filter.tenantIdOperations.isEmpty()">
+      <foreach collection="filter.tenantIdOperations" item="operation">
+        AND TENANT_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.deadlineOperations != null and !filter.deadlineOperations.isEmpty()">
+      <foreach collection="filter.deadlineOperations" item="operation">
+        AND DEADLINE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.deniedReasonOperations != null and !filter.deniedReasonOperations.isEmpty()">
+      <foreach collection="filter.deniedReasonOperations" item="operation">
+        AND DENIED_REASON
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.endTimeOperations != null and !filter.endTimeOperations.isEmpty()">
+      <foreach collection="filter.endTimeOperations" item="operation">
+        AND END_TIME
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.errorCodeOperations != null and !filter.errorCodeOperations.isEmpty()">
+      <foreach collection="filter.errorCodeOperations" item="operation">
+        AND ERROR_CODE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.errorMessageOperations != null and !filter.errorMessageOperations.isEmpty()">
+      <foreach collection="filter.errorMessageOperations" item="operation">
+        AND ERROR_MESSAGE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.hasFailedWithRetriesLeft == true">
+      AND HAS_FAILED_WITH_RETRIES_LEFT = TRUE
+    </if>
+    <if test="filter.hasFailedWithRetriesLeft == false">
+      AND HAS_FAILED_WITH_RETRIES_LEFT = FALSE
+    </if>
+    <if test="filter.isDenied == true">
+      AND IS_DENIED = TRUE
+    </if>
+    <if test="filter.isDenied == false">
+      AND IS_DENIED = FALSE
+    </if>
+    <if test="filter.retriesOperations != null and !filter.retriesOperations.isEmpty()">
+      <foreach collection="filter.retriesOperations" item="operation">
+        AND RETRIES
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+  </sql>
+
+  <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.JobDbModel">
+    <constructor>
+    <idArg column="JOB_KEY" javaType="java.lang.Long" />
+    </constructor>
+    <result column="PARTITION_ID" property="partitionId" javaType="java.lang.Integer" />
+    <result column="PROCESS_INSTANCE_KEY" property="processInstanceKey" javaType="java.lang.Long" />
+    <result column="ELEMENT_INSTANCE_KEY" property="elementInstanceKey" javaType="java.lang.Long" />
+    <result column="PROCESS_DEFINITION_ID" property="processDefinitionId" javaType="java.lang.String" />
+    <result column="PROCESS_DEFINITION_KEY" property="processDefinitionKey" javaType="java.lang.Long" />
+    <result column="TENANT_ID" property="tenantId" javaType="java.lang.String" />
+    <result column="TYPE" property="type" javaType="java.lang.String" />
+    <result column="WORKER" property="worker" javaType="java.lang.String" />
+    <result column="STATE" property="state" javaType="io.camunda.search.entities.JobEntity$JobState" />
+    <result column="RETRIES" property="retries" javaType="java.lang.Integer" />
+    <result column="ERROR_MESSAGE" property="errorMessage" javaType="java.lang.String" />
+    <result column="ERROR_CODE" property="errorCode" javaType="java.lang.String" />
+    <result column="END_TIME" property="endTime" javaType="java.time.OffsetDateTime" />
+    <result column="CUSTOM_HEADERS" property="serializedCustomHeaders" javaType="java.lang.String" />
+    <result column="KIND" property="kind" javaType="io.camunda.search.entities.JobEntity$JobKind" />
+    <result column="ELEMENT_ID" property="elementId" javaType="java.lang.String" />
+    <result column="IS_DENIED" property="isDenied" javaType="java.lang.Boolean" />
+    <result column="DENIED_REASON" property="deniedReason" javaType="java.lang.String" />
+    <result column="LISTENER_EVENT_TYPE" property="listenerEventType" javaType="io.camunda.search.entities.JobEntity$ListenerEventType" />
+    <result column="DEADLINE" property="deadline" javaType="java.time.OffsetDateTime" />
+    <result column="HAS_FAILED_WITH_RETRIES_LEFT" property="hasFailedWithRetriesLeft" javaType="java.lang.Boolean" />
+    <result column="HISTORY_CLEANUP_DATE" property="historyCleanupDate" javaType="java.time.OffsetDateTime" />
+  </resultMap>
+
+
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.JobDbModel">
-    INSERT INTO ${prefix}JOB (JOB_KEY, PROCESS_INSTANCE_KEY, RETRIES, STATE, PARTITION_ID,  HISTORY_CLEANUP_DATE)
-    VALUES (#{jobKey}, #{processInstanceKey}, #{retries}, #{state}, #{partitionId}, #{historyCleanupDate, jdbcType=TIMESTAMP})
+    INSERT INTO ${prefix}JOB (JOB_KEY, PARTITION_ID, PROCESS_INSTANCE_KEY, ELEMENT_INSTANCE_KEY, PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY,
+    TENANT_ID, TYPE, WORKER, STATE, RETRIES, ERROR_MESSAGE, ERROR_CODE, END_TIME, CUSTOM_HEADERS, KIND, ELEMENT_ID, IS_DENIED, DENIED_REASON, LISTENER_EVENT_TYPE,
+    DEADLINE, HAS_FAILED_WITH_RETRIES_LEFT, HISTORY_CLEANUP_DATE)
+    VALUES (#{jobKey}, #{partitionId}, #{processInstanceKey}, #{elementInstanceKey}, #{processDefinitionId},
+    #{processDefinitionKey}, #{tenantId}, #{type}, #{worker}, #{state}, #{retries}, #{errorMessage}, #{errorCode}, #{endTime}, #{serializedCustomHeaders}, #{kind}, #{elementId}, #{isDenied},
+    #{deniedReason}, #{listenerEventType}, #{deadline}, #{hasFailedWithRetriesLeft}, #{historyCleanupDate, jdbcType=TIMESTAMP})
   </insert>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.JobDbModel">
     UPDATE ${prefix}JOB
-    SET JOB_KEY = #{jobKey},
-        PROCESS_INSTANCE_KEY = #{processInstanceKey},
+    SET PROCESS_INSTANCE_KEY = #{processInstanceKey},
+        ELEMENT_INSTANCE_KEY = #{elementInstanceKey},
+        PROCESS_DEFINITION_ID = #{processDefinitionId},
+        PROCESS_DEFINITION_KEY =  #{processDefinitionKey},
+        TENANT_ID = #{tenantId},
         RETRIES = #{retries},
         STATE  = #{state},
-        HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+        HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP},
+        TYPE = #{type},
+        WORKER = #{worker},
+        ERROR_MESSAGE = #{errorMessage},
+        ERROR_CODE = #{errorCode},
+        END_TIME = #{endTime},
+        CUSTOM_HEADERS = #{serializedCustomHeaders},
+        KIND = #{kind},
+        ELEMENT_ID = #{elementId},
+        IS_DENIED = #{isDenied},
+        DENIED_REASON = #{deniedReason},
+        LISTENER_EVENT_TYPE = #{listenerEventType},
+        DEADLINE = #{deadline},
+        HAS_FAILED_WITH_RETRIES_LEFT = #{hasFailedWithRetriesLeft}
     WHERE JOB_KEY = #{jobKey}
   </update>
 
