@@ -8,8 +8,6 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -26,14 +24,10 @@ import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
-import io.camunda.service.cache.ProcessCache;
-import io.camunda.service.cache.ProcessCacheItem;
 import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -109,7 +103,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                    "startDate": "2023-05-17T10:10:10.000Z",
                    "endDate":"2023-05-23T10:10:10.000Z",
                    "elementId":"startEvent_1",
-                   "elementName":"elementName",
+                   "elementName":"StartEvent_1",
                    "type":"SERVICE_TASK",
                    "state":"ACTIVE",
                    "hasIncident":true,
@@ -139,9 +133,8 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
   static final String ELEMENT_INSTANCES_SEARCH_URL = ELEMENT_INSTANCES_URL + "search";
 
   @MockitoBean ElementInstanceServices elementInstanceServices;
-  @MockitoBean ProcessCache processCache;
-  @Captor ArgumentCaptor<FlowNodeInstanceQuery> queryCaptor;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+  @Captor ArgumentCaptor<FlowNodeInstanceQuery> queryCaptor;
 
   @BeforeEach
   void setupServices() {
@@ -149,12 +142,6 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
         .thenReturn(AUTHENTICATION_WITH_DEFAULT_TENANT);
     when(elementInstanceServices.withAuthentication(any(CamundaAuthentication.class)))
         .thenReturn(elementInstanceServices);
-    when(processCache.getElementName(any())).thenReturn("elementName");
-    final var processCacheItem = mock(ProcessCacheItem.class);
-    when(processCacheItem.getElementName(any())).thenReturn("elementName");
-    final Map<Long, ProcessCacheItem> processDefinitionMap = mock(HashMap.class);
-    when(processDefinitionMap.getOrDefault(any(), any())).thenReturn(processCacheItem);
-    when(processCache.getElementNames(any())).thenReturn(processDefinitionMap);
   }
 
   @Test
@@ -175,7 +162,6 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(elementInstanceServices).search(new FlowNodeInstanceQuery.Builder().build());
-    verify(processCache).getElementNames(any());
   }
 
   @Test
@@ -200,7 +186,6 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(elementInstanceServices).search(new FlowNodeInstanceQuery.Builder().build());
-    verify(processCache).getElementNames(any());
   }
 
   @Test
@@ -333,7 +318,6 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                         .asc()
                         .build())
                 .build());
-    verify(processCache).getElementNames(any());
   }
 
   @Test
@@ -350,7 +334,6 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_GET_RESPONSE);
 
     verify(elementInstanceServices).getByKey(23L);
-    verify(processCache).getElementName(any());
   }
 
   @Test
@@ -378,7 +361,6 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                 """);
 
     verify(elementInstanceServices).getByKey(5L);
-    verify(processCache, never()).getElementName(any());
   }
 
   private static Stream<Arguments> provideAdvancedSearchParameters() {

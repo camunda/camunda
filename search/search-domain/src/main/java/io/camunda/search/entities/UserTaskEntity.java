@@ -62,7 +62,7 @@ public record UserTaskEntity(
   }
 
   public boolean hasName() {
-    return name != null && !name.isEmpty();
+    return name != null && !name.isBlank();
   }
 
   public enum UserTaskState {

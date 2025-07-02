@@ -25,6 +25,14 @@ public record SearchQueryResult<T>(
     return new SearchQueryResult<>(0, false, Collections.emptyList(), null, null);
   }
 
+  public static <T> SearchQueryResult<T> of(final T... items) {
+    return new SearchQueryResult<>(items.length, List.of(items), null, null);
+  }
+
+  public SearchQueryResult<T> withItems(final List<T> items) {
+    return new SearchQueryResult<>(total, items, startCursor, endCursor);
+  }
+
   public static final class Builder<T> implements ObjectBuilder<SearchQueryResult<T>> {
 
     private long total;
