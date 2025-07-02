@@ -17,7 +17,6 @@ import static org.mockito.Mockito.when;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
-import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -51,7 +50,6 @@ public class UserTaskControllerTest extends RestControllerTest {
       OffsetDateTime.of(2023, 11, 11, 11, 11, 11, 11, ZoneOffset.of("Z")).toString();
 
   @MockitoBean UserTaskServices userTaskServices;
-  @MockitoBean ProcessCache processCache;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
   static Stream<String> urls() {

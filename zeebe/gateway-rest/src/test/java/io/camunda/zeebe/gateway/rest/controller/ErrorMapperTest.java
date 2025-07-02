@@ -57,6 +57,7 @@ public class ErrorMapperTest extends RestControllerTest {
   @MockitoBean UserTaskServices userTaskServices;
   @MockitoBean ProcessCache processCache;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
+
   @Autowired private View error;
 
   @BeforeEach
