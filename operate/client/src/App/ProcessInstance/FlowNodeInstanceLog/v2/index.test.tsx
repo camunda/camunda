@@ -34,6 +34,8 @@ import {init} from 'modules/utils/flowNodeInstance';
 import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
+import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 
 jest.mock('modules/utils/bpmn');
 
@@ -90,6 +92,7 @@ describe('FlowNodeInstanceLog', () => {
       mockDeprecatedProcessInstance,
     );
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
 
     processInstanceDetailsStore.init({id: '1'});
   });
@@ -173,6 +176,8 @@ describe('FlowNodeInstanceLog', () => {
       }),
     );
     mockFetchFlowNodeInstances().withServerError();
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
 
     jest.runOnlyPendingTimers();
 
@@ -186,6 +191,8 @@ describe('FlowNodeInstanceLog', () => {
       }),
     );
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1Poll);
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
 
     jest.runOnlyPendingTimers();
 
