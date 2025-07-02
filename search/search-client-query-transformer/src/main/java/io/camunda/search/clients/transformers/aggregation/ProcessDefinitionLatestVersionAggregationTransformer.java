@@ -11,6 +11,7 @@ import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggreg
 import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.AGGREGATION_MAX_VERSION;
 import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.AGGREGATION_NAME_BY_PROCESS_ID;
 import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.AGGREGATION_NAME_LATEST_DEFINITION;
+import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.AGGREGATION_SOURCE_NAME_BPMN_PROCESS_ID;
 import static io.camunda.search.aggregation.ProcessDefinitionLatestVersionAggregation.AGGREGATION_TERMS_SIZE;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.composite;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.terms;
@@ -43,9 +44,9 @@ public class ProcessDefinitionLatestVersionAggregationTransformer
             .build();
 
     // aggregate terms by process id
-    final SearchTermsAggregator byProcessIdAgg =
+    final SearchTermsAggregator byProcessIdAggSource =
         terms()
-            .name(AGGREGATION_NAME_BY_PROCESS_ID)
+            .name(AGGREGATION_SOURCE_NAME_BPMN_PROCESS_ID)
             .field(AGGREGATION_GROUP_BPMN_PROCESS_ID)
             .build();
 
@@ -55,7 +56,7 @@ public class ProcessDefinitionLatestVersionAggregationTransformer
             .size(
                 Optional.ofNullable(page).map(SearchQueryPage::size).orElse(AGGREGATION_TERMS_SIZE))
             .after(Optional.ofNullable(page).map(SearchQueryPage::after).orElse(null))
-            .sources(List.of(byProcessIdAgg))
+            .sources(List.of(byProcessIdAggSource))
             .aggregations(maxVersionsAgg)
             .build();
 
