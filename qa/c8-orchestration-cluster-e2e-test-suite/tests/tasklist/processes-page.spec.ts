@@ -23,9 +23,9 @@ test.beforeAll(async () => {
 });
 
 test.describe('process page', () => {
-  test.beforeEach(async ({page, taskListLoginPage, taskPanelPage}) => {
+  test.beforeEach(async ({page, loginPage, taskPanelPage}) => {
     await navigateToApp(page, 'tasklist');
-    await taskListLoginPage.login('demo', 'demo');
+    await loginPage.login('demo', 'demo');
     await expect(taskPanelPage.taskListPageBanner).toBeVisible();
   });
 
