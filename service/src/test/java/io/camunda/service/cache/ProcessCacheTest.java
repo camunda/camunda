@@ -8,49 +8,60 @@
 package io.camunda.service.cache;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.entry;
+import static org.instancio.Select.field;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anySet;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.github.benmanes.caffeine.cache.LoadingCache;
+import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.cache.ProcessCache.Configuration;
-import io.camunda.service.cache.ProcessElementProvider.ProcessElement;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
-import io.camunda.zeebe.util.collection.Tuple;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.util.Arrays;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.BiConsumer;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.mockito.stubbing.Answer;
 
 class ProcessCacheTest {
 
   private ProcessCache processCache;
   private ProcessCache.Configuration configuration;
-  private ProcessElementProvider processElementProvider;
+  private ProcessDefinitionServices processDefinitionServices;
   private BrokerTopologyManager brokerTopologyManager;
   private MeterRegistry meterRegistry;
 
+  private ProcessDefinitionEntity entity;
+
   @BeforeEach
-  public void setUp() {
+  public void setUp() throws IOException {
+    entity =
+        Instancio.of(ProcessDefinitionEntity.class)
+            .set(field(ProcessDefinitionEntity::bpmnXml), loadBpmn("xmlUtil-test1.bpmn"))
+            .set(field(ProcessDefinitionEntity::processDefinitionId), "testProcess")
+            .create();
+
     configuration = ProcessCache.Configuration.getDefault();
-    processElementProvider = mock(ProcessElementProvider.class);
+    processDefinitionServices = mock(ProcessDefinitionServices.class);
     brokerTopologyManager = mock(BrokerTopologyManager.class);
     meterRegistry = new SimpleMeterRegistry();
     processCache =
         new ProcessCache(
-            configuration, processElementProvider, brokerTopologyManager, meterRegistry);
-    mockLoad(Tuple.of(1L, new ProcessElement("id1", "Name 1")));
+            configuration, processDefinitionServices, brokerTopologyManager, meterRegistry);
+
+    when(processDefinitionServices.getByKey(entity.processDefinitionKey())).thenReturn(entity);
   }
 
   @AfterEach
@@ -68,109 +79,71 @@ class ProcessCacheTest {
     return getCache().asMap();
   }
 
-  @SafeVarargs
-  private void mockLoad(final Tuple<Long, ProcessElement>... nodes) {
-    doAnswer(mockLoadAnswer(nodes))
-        .when(processElementProvider)
-        .extractElementNames(anyLong(), any());
-  }
-
-  @SafeVarargs
-  private <T> Answer<T> mockLoadAnswer(final Tuple<Long, ProcessElement>... nodes) {
-    return invocation -> {
-      final var consumer = invocation.<BiConsumer<Long, ProcessElement>>getArgument(1);
-      Arrays.stream(nodes).forEach(t -> consumer.accept(t.getLeft(), t.getRight()));
-      return null;
-    };
-  }
-
   @Test
-  void shouldNotLoadIfAvailable() {
-    // given
-    mockLoad(Tuple.of(1L, new ProcessElement("id1", "Name 1")));
-    processCache.getCacheItem(1L);
-    getCache().cleanUp();
-
+  void shouldPopulateCache() {
     // when
-    processCache.getCacheItem(1L);
+    final var cacheItem = processCache.getCacheItem(entity.processDefinitionKey());
 
     // then - extractElementNames not called again
-    verify(processElementProvider).extractElementNames(eq(1L), any());
+    verify(processDefinitionServices, times(1)).getByKey(entity.processDefinitionKey());
+    assertThat(cacheItem).isNotEqualTo(ProcessCacheItem.EMPTY);
   }
 
   @Test
-  void shouldLoadElementsForProcessDefinition() {
+  void shouldNotPopulateCacheWhenNotFound() {
     // given
-    mockLoad(
-        Tuple.of(1L, new ProcessElement("id1", "Name 1")),
-        Tuple.of(1L, new ProcessElement("id2", "Name 2")));
+    when(processDefinitionServices.getByKey(entity.processDefinitionKey()))
+        .thenThrow(new NoSuchElementException());
 
     // when
-    final var actual = processCache.getCacheItem(1L);
+    final var cacheItem = processCache.getCacheItem(entity.processDefinitionKey());
+
+    // then - extractElementNames not called again
+    verify(processDefinitionServices, times(1)).getByKey(entity.processDefinitionKey());
+    assertThat(cacheItem).isEqualTo(ProcessCacheItem.EMPTY);
+  }
+
+  @Test
+  void shouldNotRepopulateWhenAlreadyCached() {
+    // when
+    processCache.getCacheItem(entity.processDefinitionKey());
+    getCache().cleanUp();
+    processCache.getCacheItem(entity.processDefinitionKey());
+
+    // then - extractElementNames not called again
+    verify(processDefinitionServices, times(1)).getByKey(entity.processDefinitionKey());
+  }
+
+  @Test
+  void shouldPopulateCacheWithMultiple() throws IOException {
+    final var otherEntity =
+        Instancio.of(ProcessDefinitionEntity.class)
+            .set(field(ProcessDefinitionEntity::bpmnXml), loadBpmn("xmlUtil-test2.bpmn"))
+            .set(field(ProcessDefinitionEntity::processDefinitionId), "parent_process_v1")
+            .create();
+
+    when(processDefinitionServices.search(any()))
+        .thenReturn(SearchQueryResult.of(entity, otherEntity));
+
+    // when
+    final var cacheResult =
+        processCache.getCacheItems(
+            Set.of(entity.processDefinitionKey(), otherEntity.processDefinitionKey()));
 
     // then
-    verify(processElementProvider).extractElementNames(eq(1L), any());
-    assertThat(actual.elementIdNameMap()).hasSize(2);
-    assertThat(actual.elementIdNameMap())
-        .containsOnly(entry("id1", "Name 1"), entry("id2", "Name 2"));
+    verify(processDefinitionServices, times(1)).search(any());
     final var cacheMap = getCacheMap();
-    assertThat(cacheMap).hasSize(1);
-    assertThat(cacheMap).containsOnlyKeys(1L);
-    assertThat(cacheMap.get(1L).elementIdNameMap())
-        .containsOnly(entry("id1", "Name 1"), entry("id2", "Name 2"));
+    assertThat(cacheMap)
+        .containsOnlyKeys(entity.processDefinitionKey(), otherEntity.processDefinitionKey());
   }
 
   @Test
-  void shouldLoadElementsForProcessDefinitions() {
-    // given
-    doAnswer(
-            mockLoadAnswer(
-                Tuple.of(1L, new ProcessElement("id1", "Name 1")),
-                Tuple.of(2L, new ProcessElement("id21", "Name 21")),
-                Tuple.of(2L, new ProcessElement("id22", "Name 22")),
-                Tuple.of(3L, new ProcessElement("id3", "Name 3"))))
-        .when(processElementProvider)
-        .extractElementNames(anySet(), any());
-
-    // when
-    final var actual = processCache.getCacheItems(Set.of(1L, 2L, 3L));
-
-    // then
-    verify(processElementProvider).extractElementNames(eq(Set.of(1L, 2L, 3L)), any());
-    assertThat(actual.getProcessItem(1L).elementIdNameMap()).containsOnly(entry("id1", "Name 1"));
-    assertThat(actual.getProcessItem(2L).elementIdNameMap())
-        .containsOnly(entry("id21", "Name 21"), entry("id22", "Name 22"));
-    assertThat(actual.getProcessItem(3L).elementIdNameMap()).containsOnly(entry("id3", "Name 3"));
-    final var cacheMap = getCacheMap();
-    assertThat(cacheMap).hasSize(3);
-    assertThat(cacheMap).containsOnlyKeys(1L, 2L, 3L);
-    assertThat(cacheMap.get(1L).elementIdNameMap()).containsOnly(entry("id1", "Name 1"));
-    assertThat(cacheMap.get(2L).elementIdNameMap())
-        .containsOnly(entry("id21", "Name 21"), entry("id22", "Name 22"));
-    assertThat(cacheMap.get(3L).elementIdNameMap()).containsOnly(entry("id3", "Name 3"));
-  }
-
-  @Test
-  void shouldResolveAnyElement() {
-    // given
-    mockLoad(Tuple.of(1L, new ProcessElement("id1", "Name 1")));
-    final var cacheItem = processCache.getCacheItem(1L);
-
-    // when
-    final var actual = cacheItem.getElementName("non-existing");
-
-    // then
-    assertThat(actual).isNotNull();
-    assertThat(actual).isEqualTo("non-existing");
-  }
-
-  @Test
-  void shouldRefreshReadItemAndRemoveLeastRecentlyUsed() {
+  void shouldRepopulateAndRemoveLeastRecentlyUsed() {
     // given
     configuration = new Configuration(2, 100L);
     processCache =
         new ProcessCache(
-            configuration, processElementProvider, brokerTopologyManager, meterRegistry);
+            configuration, processDefinitionServices, brokerTopologyManager, meterRegistry);
     processCache.getCacheItem(1L);
     processCache.getCacheItem(2L);
     getCache().cleanUp();
@@ -185,5 +158,64 @@ class ProcessCacheTest {
     final var cacheMap = getCacheMap();
     assertThat(cacheMap).hasSize(2);
     assertThat(cacheMap.keySet()).containsExactlyInAnyOrder(1L, 3L);
+  }
+
+  private String loadBpmn(final String name) throws IOException {
+    try (final InputStream inputStream = getClass().getClassLoader().getResourceAsStream(name)) {
+      assert inputStream != null;
+      return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+    }
+  }
+
+  @Nested
+  class GetElementName {
+    @Test
+    void shouldResolveName() {
+      // when
+      final var cacheItem = processCache.getCacheItem(entity.processDefinitionKey());
+
+      // then - extractElementNames not called again
+      assertThat(cacheItem.getElementName("StartEvent_1")).isEqualTo("Start");
+      assertThat(cacheItem.getElementName("taskB")).isEqualTo("Task B");
+    }
+
+    @Test
+    void shouldResolveDefaultName() {
+      // given
+      final var cacheItem = processCache.getCacheItem(entity.processDefinitionKey());
+
+      // then - extractElementNames not called again
+      assertThat(cacheItem.getElementName("non-existing")).isEqualTo("non-existing");
+    }
+
+    @Test
+    void shouldResolveMultiple() throws IOException {
+      final var otherEntity =
+          Instancio.of(ProcessDefinitionEntity.class)
+              .set(field(ProcessDefinitionEntity::bpmnXml), loadBpmn("xmlUtil-test2.bpmn"))
+              .set(field(ProcessDefinitionEntity::processDefinitionId), "parent_process_v1")
+              .create();
+
+      when(processDefinitionServices.search(any()))
+          .thenReturn(SearchQueryResult.of(entity, otherEntity));
+
+      // when
+      final var cacheResult =
+          processCache.getCacheItems(
+              Set.of(entity.processDefinitionKey(), otherEntity.processDefinitionKey()));
+
+      // then
+      assertThat(
+              cacheResult
+                  .getProcessItem(entity.processDefinitionKey())
+                  .getElementName("StartEvent_1"))
+          .isEqualTo("Start");
+
+      assertThat(
+              cacheResult
+                  .getProcessItem(otherEntity.processDefinitionKey())
+                  .getElementName("call_activity"))
+          .isEqualTo("Call Activity");
+    }
   }
 }

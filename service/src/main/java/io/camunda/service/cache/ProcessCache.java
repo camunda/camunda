@@ -10,14 +10,13 @@ package io.camunda.service.cache;
 import com.github.benmanes.caffeine.cache.CacheLoader;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
-import io.camunda.search.entities.FlowNodeInstanceEntity;
+import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.util.cache.CaffeineCacheStatsCounter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -41,10 +40,10 @@ public class ProcessCache {
 
   public ProcessCache(
       final Configuration configuration,
-      final ProcessElementProvider processElementProvider,
+      final ProcessDefinitionServices processDefinitionServices,
       final BrokerTopologyManager brokerTopologyManager,
       final MeterRegistry meterRegistry) {
-    this.processElementProvider = processElementProvider;
+    processElementProvider = new ProcessElementProvider(processDefinitionServices);
 
     final var statsCounter = new CaffeineCacheStatsCounter(NAMESPACE, "process", meterRegistry);
     final var cacheBuilder =
@@ -64,18 +63,6 @@ public class ProcessCache {
 
   public ProcessCacheResult getCacheItems(final Set<Long> processDefinitionKeys) {
     return new ProcessCacheResult(cache.getAll(processDefinitionKeys));
-  }
-
-  public Map<Long, ProcessCacheItem> getElementNames(final List<FlowNodeInstanceEntity> items) {
-    return getCacheItems(
-            items.stream()
-                .map(FlowNodeInstanceEntity::processDefinitionKey)
-                .collect(Collectors.toSet()))
-        .cachedProcesses();
-  }
-
-  public String getElementName(final FlowNodeInstanceEntity element) {
-    return getCacheItem(element.processDefinitionKey()).getElementName(element.flowNodeId());
   }
 
   public void invalidate() {
