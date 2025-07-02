@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
@@ -444,14 +445,6 @@ public class CompactRecordLogger {
     return String.format(" in <process %s[%s]>", formattedDefinitionKey, formattedInstanceKey);
   }
 
-  private String summarizeVariables(final Map<String, Object> variables) {
-    if (variables != null && !variables.isEmpty()) {
-      return " vars: " + variables;
-    } else {
-      return " (no vars)";
-    }
-  }
-
   private String summarizeIncident(final Record<?> record) {
     final var value = (IncidentRecordValue) record.getValue();
 
@@ -509,9 +502,7 @@ public class CompactRecordLogger {
       result.append(" ").append(value.getErrorCode()).append(":").append(value.getErrorMessage());
     }
 
-    result
-        .append(summarizeCustomHeaders(value.getCustomHeaders()))
-        .append(summarizeVariables(value.getVariables()));
+    result.append(summarizeCustomHeaders(value.getCustomHeaders())).append(formatVariables(value));
 
     return result.toString();
   }
@@ -613,7 +604,7 @@ public class CompactRecordLogger {
       result.append(" correlationKey: ").append(value.getCorrelationKey());
     }
 
-    result.append(summarizeVariables(value.getVariables()));
+    result.append(formatVariables(value));
 
     return result.toString();
   }
@@ -641,7 +632,7 @@ public class CompactRecordLogger {
         .append("\"")
         .append(" starting <process ")
         .append(formatId(value.getBpmnProcessId()))
-        .append(summarizeVariables(value.getVariables()))
+        .append(formatVariables(value))
         .toString();
   }
 
@@ -668,7 +659,7 @@ public class CompactRecordLogger {
         .append("]")
         .append(
             summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
-        .append(summarizeVariables(value.getVariables()));
+        .append(formatVariables(value));
     return result.toString();
   }
 
@@ -716,7 +707,7 @@ public class CompactRecordLogger {
         .append(formatId(value.getBpmnProcessId()))
         .append(">")
         .append(summarizeStartInstructions(value.getStartInstructions()))
-        .append(summarizeVariables(value.getVariables()))
+        .append(formatVariables(value))
         .toString();
   }
 
@@ -800,7 +791,7 @@ public class CompactRecordLogger {
         .append("]")
         .append(
             summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
-        .append(summarizeVariables(value.getVariables()))
+        .append(formatVariables(value))
         .append(formatTenant(value));
 
     return result.toString();
@@ -824,7 +815,7 @@ public class CompactRecordLogger {
 
     final var builder = new StringBuilder();
     builder
-        .append(String.format("%s->%s", value.getName(), value.getValue()))
+        .append(String.format("%s->%s", value.getName(), formatVariableValue(value.getValue())))
         .append(String.format(" in <process [%s]", shortenKey(value.getProcessInstanceKey())));
     if (value.getProcessInstanceKey() != value.getScopeKey()) {
       // only add if they're different, no need to state things twice
@@ -840,7 +831,7 @@ public class CompactRecordLogger {
         .formatted(
             value.getUpdateSemantics(),
             shortenKey(value.getScopeKey()),
-            summarizeVariables(value.getVariables()),
+            formatVariables(value),
             formatTenant(value));
   }
 
@@ -894,7 +885,7 @@ public class CompactRecordLogger {
     return summarizeElementInformation(value.getTargetElementId(), value.getScopeKey())
         + summarizeProcessInformation(
             value.getProcessDefinitionKey(), value.getProcessInstanceKey())
-        + summarizeVariables(value.getVariables());
+        + formatVariables(value);
   }
 
   private String summarizeDecisionRequirements(final Record<?> record) {
@@ -921,7 +912,7 @@ public class CompactRecordLogger {
     return new StringBuilder()
         .append(value.getDecisionOutput())
         .append(summarizeDecisionInformation(value.getDecisionId(), value.getDecisionKey()))
-        .append(summarizeVariables(value.getVariables()))
+        .append(formatVariables(value))
         .append(
             summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
         .append(summarizeElementInformation(value.getElementId(), value.getElementInstanceKey()))
@@ -939,7 +930,7 @@ public class CompactRecordLogger {
         .append("\"")
         .append(value.getSignalName())
         .append("\"")
-        .append(summarizeVariables(value.getVariables()))
+        .append(formatVariables(value))
         .toString();
   }
 
@@ -991,7 +982,7 @@ public class CompactRecordLogger {
           summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()));
     }
 
-    result.append(summarizeVariables(value.getVariables()));
+    result.append(formatVariables(value));
 
     return result.toString();
   }
@@ -1034,7 +1025,7 @@ public class CompactRecordLogger {
     result
         .append(" processInstanceKey: ")
         .append(value.getProcessInstanceKey())
-        .append(summarizeVariables(value.getVariables()));
+        .append(formatVariables(value));
 
     return result.toString();
   }
@@ -1227,6 +1218,56 @@ public class CompactRecordLogger {
     return TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(value.getTenantId())
         ? ""
         : " (tenant: %s)".formatted(value.getTenantId());
+  }
+
+  private String formatVariables(final RecordValueWithVariables value) {
+    final var variables = value.getVariables();
+    if (variables == null || variables.isEmpty()) {
+      return " (no vars)";
+    }
+
+    return " vars: "
+        + variables.entrySet().stream()
+            .sorted(Entry.comparingByKey())
+            .map(entry -> entry.getKey() + "=" + formatVariableValue(entry.getValue()))
+            .collect(Collectors.joining(", ", "{", "}"));
+  }
+
+  /**
+   * Formats a variable value for logging.
+   *
+   * <ul>
+   *   <li>If the value is {@code null}, returns {@code "null"}.
+   *   <li>If the value is a {@code String}, it is wrapped in double quotes and shortened to a
+   *       maximum of 15 characters if necessary. The original string length is appended in the
+   *       format {@code "..(len)"}.
+   *   <li>All other types are converted to string without shortening or quotes.
+   * </ul>
+   *
+   * @param value the variable value to format
+   * @return a formatted string representation for logging
+   */
+  private String formatVariableValue(final Object value) {
+    if (value == null) {
+      return "null";
+    }
+
+    if (value instanceof String str) {
+      final int length = str.length();
+
+      // strip outer quotes, if present
+      if (length >= 2 && str.startsWith("\"") && str.endsWith("\"")) {
+        str = str.substring(1, length - 1);
+      }
+
+      final int maxLength = 15;
+      final var shortened =
+          length > maxLength ? str.substring(0, maxLength) + "..(" + length + ")" : str;
+
+      return "\"" + shortened + "\"";
+    }
+
+    return value.toString();
   }
 
   /**
