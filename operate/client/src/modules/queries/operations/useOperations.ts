@@ -12,7 +12,15 @@ const operationsParser = (data: ProcessInstanceEntity) => {
   return data.operations;
 };
 
-const useOperations = () =>
-  useProcessInstanceDeprecated<InstanceOperationEntity[]>(operationsParser);
+type Options = {
+  enabled?: boolean;
+};
+
+const useOperations = (options?: Options) => {
+  return useProcessInstanceDeprecated<InstanceOperationEntity[]>(
+    operationsParser,
+    options?.enabled,
+  );
+};
 
 export {useOperations};

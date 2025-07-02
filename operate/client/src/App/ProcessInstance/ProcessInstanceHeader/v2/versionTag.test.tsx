@@ -13,9 +13,9 @@ import {
 } from 'modules/testing-library';
 import {ProcessInstanceHeader} from './index';
 import {
-  mockInstanceWithActiveOperation,
+  mockInstanceDeprecated,
   mockProcess,
-  mockProcessInstance,
+  mockInstance,
   Wrapper,
 } from './index.setup';
 import {mockProcessXML} from 'modules/testUtils';
@@ -26,7 +26,7 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 
 describe('InstanceHeader', () => {
   beforeEach(() => {
-    mockFetchProcessInstance().withSuccess(mockInstanceWithActiveOperation);
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
   });
   afterEach(() => {
@@ -36,12 +36,12 @@ describe('InstanceHeader', () => {
   it('should render version tag', async () => {
     mockFetchProcess().withSuccess(mockProcess);
 
-    render(<ProcessInstanceHeader processInstance={mockProcessInstance} />, {
+    render(<ProcessInstanceHeader processInstance={mockInstance} />, {
       wrapper: Wrapper,
     });
 
     processInstanceDetailsStore.init({
-      id: mockInstanceWithActiveOperation.id,
+      id: mockInstanceDeprecated.id,
     });
 
     await waitForElementToBeRemoved(
@@ -58,7 +58,7 @@ describe('InstanceHeader', () => {
     render(
       <ProcessInstanceHeader
         processInstance={{
-          ...mockProcessInstance,
+          ...mockInstance,
           processDefinitionVersionTag: undefined,
         }}
       />,
@@ -68,7 +68,7 @@ describe('InstanceHeader', () => {
     );
 
     processInstanceDetailsStore.init({
-      id: mockInstanceWithActiveOperation.id,
+      id: mockInstanceDeprecated.id,
     });
 
     await waitForElementToBeRemoved(
@@ -85,7 +85,7 @@ describe('InstanceHeader', () => {
     render(
       <ProcessInstanceHeader
         processInstance={{
-          ...mockProcessInstance,
+          ...mockInstance,
           processDefinitionVersionTag: undefined,
         }}
       />,
@@ -95,7 +95,7 @@ describe('InstanceHeader', () => {
     );
 
     processInstanceDetailsStore.init({
-      id: mockInstanceWithActiveOperation.id,
+      id: mockInstanceDeprecated.id,
     });
 
     await waitForElementToBeRemoved(

@@ -14,10 +14,7 @@ import {
 import {ProcessInstanceHeader} from './index';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {operationsStore} from 'modules/stores/operations';
-import {
-  mockInstanceWithoutOperations,
-  mockProcessInstance,
-} from './index.setup';
+import {mockInstanceDeprecated, mockInstance} from './index.setup';
 import {MemoryRouter} from 'react-router-dom';
 import {createUser, mockProcessXML} from 'modules/testUtils';
 import {authenticationStore} from 'modules/stores/authentication';
@@ -66,7 +63,7 @@ describe('InstanceHeader', () => {
       multiTenancyEnabled: true,
     };
 
-    mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockMe().withSuccess(
       createUser({
@@ -77,12 +74,12 @@ describe('InstanceHeader', () => {
       }),
     );
 
-    render(<ProcessInstanceHeader processInstance={mockProcessInstance} />, {
+    render(<ProcessInstanceHeader processInstance={mockInstance} />, {
       wrapper: Wrapper,
     });
 
     processInstanceDetailsStore.init({
-      id: mockInstanceWithoutOperations.id,
+      id: mockInstanceDeprecated.id,
     });
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton'),
@@ -107,7 +104,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should hide multi tenancy column and exclude tenant from version link', async () => {
-    mockFetchProcessInstance().withSuccess(mockInstanceWithoutOperations);
+    mockFetchProcessInstance().withSuccess(mockInstanceDeprecated);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockMe().withSuccess(
       createUser({
@@ -118,12 +115,12 @@ describe('InstanceHeader', () => {
       }),
     );
 
-    render(<ProcessInstanceHeader processInstance={mockProcessInstance} />, {
+    render(<ProcessInstanceHeader processInstance={mockInstance} />, {
       wrapper: Wrapper,
     });
 
     processInstanceDetailsStore.init({
-      id: mockInstanceWithoutOperations.id,
+      id: mockInstanceDeprecated.id,
     });
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton'),

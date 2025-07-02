@@ -28,6 +28,10 @@ const isInstanceRunning = (processInstance: ProcessInstance): boolean => {
   return processInstance.state === 'ACTIVE' || processInstance.hasIncident;
 };
 
+/**
+ * @deprecated this function is used for data from internal API responses.
+ * Prefer to use getProcessDefinitionName to get the name from v2 API data.
+ */
 const getProcessName = (instance: ProcessInstanceEntity | null) => {
   if (instance === null) {
     return '';

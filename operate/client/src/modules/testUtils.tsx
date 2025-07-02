@@ -13,6 +13,7 @@ import {ProcessInstanceByNameDto} from './api/incidents/fetchProcessInstancesByN
 import {ProcessDto} from './api/processes/fetchGroupedProcesses';
 import {IncidentDto} from './api/processInstances/fetchProcessInstanceIncidents';
 import {BatchOperationDto} from './api/sharedTypes';
+import {ProcessInstance} from '@vzeta/camunda-api-zod-schemas';
 
 /**
  * @returns a jest mock function that resolves with given value
@@ -98,6 +99,7 @@ const createBatchOperation = (
 /**
  * @returns a mocked instance Object with a unique id
  * @param {*} customProps Obj with any type of custom property
+ * @deprecated this function is used to create data in the format of internal API responses.
  */
 export const createInstance = (
   options: Partial<ProcessInstanceEntity> = {},
@@ -118,6 +120,24 @@ export const createInstance = (
     rootInstanceId: null,
     callHierarchy: [],
     tenantId: '<default>',
+    ...options,
+  };
+};
+
+const createProcessInstance = (
+  options: Partial<ProcessInstance> = {},
+): ProcessInstance => {
+  return {
+    processInstanceKey: '2251799813685294',
+    processDefinitionName: 'someProcessName',
+    state: 'ACTIVE',
+    processDefinitionVersion: 1,
+    processDefinitionVersionTag: 'myVersionTag',
+    processDefinitionId: 'someKey',
+    processDefinitionKey: '2223894723423800',
+    tenantId: '<default>',
+    startDate: '2018-06-21',
+    hasIncident: false,
     ...options,
   };
 };
@@ -1193,4 +1213,9 @@ export const createEventSubProcessFlowNodeInstances = (
   };
 };
 
-export {createVariable, createBatchOperation, createUser};
+export {
+  createVariable,
+  createBatchOperation,
+  createUser,
+  createProcessInstance,
+};
