@@ -50,30 +50,6 @@ jobs:
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: true
       dryRun: true
-  dry-run-release-84:
-    name: "Release from stable/8.4"
-    uses: camunda/camunda/.github/workflows/zeebe-release.yml@stable/8.4
-    secrets: inherit
-    strategy:
-      fail-fast: false
-    with:
-      releaseBranch: stable/8.4
-      releaseVersion: 0.8.4
-      nextDevelopmentVersion: 0.0.0-SNAPSHOT
-      isLatest: true
-      dryRun: true
-  dry-run-release-83:
-    name: "Release from stable/8.3"
-    uses: camunda/camunda/.github/workflows/zeebe-release.yml@stable/8.3
-    secrets: inherit
-    strategy:
-      fail-fast: false
-    with:
-      releaseBranch: stable/8.3
-      releaseVersion: 0.8.3
-      nextDevelopmentVersion: 0.0.0-SNAPSHOT
-      isLatest: true
-      dryRun: true
 
   notify-camunda:
     name: Send Slack notification for 8.6+
