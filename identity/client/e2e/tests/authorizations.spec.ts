@@ -20,23 +20,40 @@ test.beforeEach(async ({ page, loginPage, authorizationsPage }) => {
 });
 
 const NEW_USER = {
-  username: "testuser-authorizations",
-  name: "Test User Authorizations",
-  email: "testuser-authorizations@camunda.com",
-  password: "testpassword-authorizations",
+  username: "authtest",
+  name: "Auth Test",
+  email: "auth@test.com",
+  password: "authtest123",
 };
 
-const NEW_AUTHORIZATION = {
-  owner: NEW_USER.name,
-  ownerId: NEW_USER.username,
-  resourceId: "identity",
+const NEW_AUTH_ROLE = {
+  id: "authrole",
+  name: "Auth role",
 };
 
-test.describe.skip("authorizations CRUD", () => {
-  test("create an authorization", async ({
+const NEW_USER_AUTHORIZATION = {
+  ownerType: "Role",
+  ownerId: NEW_AUTH_ROLE.name,
+  resourceType: "User",
+  resourceId: "*",
+  accessPermissions: ["update", "create", "read", "delete"],
+};
+
+const NEW_APPLICATION_AUTHORIZATION = {
+  ownerType: "Role",
+  ownerId: NEW_AUTH_ROLE.name,
+  resourceType: "Application",
+  resourceId: "*",
+  accessPermissions: ["access"],
+};
+
+test.describe.serial("authorizations CRUD", () => {
+  test("create user authorization", async ({
     page,
-    authorizationsPage,
     usersPage,
+    rolesPage,
+    rolesDetailsPage,
+    authorizationsPage,
     header,
     loginPage,
   }) => {
@@ -44,37 +61,54 @@ test.describe.skip("authorizations CRUD", () => {
     await usersPage.createUser(NEW_USER);
 
     await header.logout();
+
     await loginPage.login(NEW_USER);
-    await expect(page).toHaveURL(relativizePath(Paths.forbidden()));
+    await expect(page).toHaveURL(relativizePath(Paths.users()));
+
+    await expect(
+      usersPage.usersList.getByRole("cell", { name: "demo@example.com" }),
+    ).not.toBeVisible();
+    await expect(
+      usersPage.usersList.getByRole("cell", { name: NEW_USER.email }),
+    ).toBeVisible();
+
     await header.logout();
+
     await loginPage.login(LOGIN_CREDENTIALS);
     await expect(page).toHaveURL(relativizePath(Paths.users()));
+    await rolesPage.navigateToRoles();
+    await expect(page).toHaveURL(relativizePath(Paths.roles()));
+
+    await rolesPage.createRole(NEW_AUTH_ROLE);
+    await rolesPage.rolesList.getByText(NEW_AUTH_ROLE.id).click();
+
+    await rolesDetailsPage.assignUser(NEW_USER);
+
     await authorizationsPage.navigateToAuthorizations();
     await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
-    await authorizationsPage.createAuthorizationButton.click();
-    await expect(authorizationsPage.createAuthorizationModal).toBeVisible();
-    await authorizationsPage.createAuthorizationOwnerComboBox.click();
-    await authorizationsPage
-      .createAuthorizationOwnerOption(NEW_AUTHORIZATION.owner)
-      .click();
-    await authorizationsPage.createAuthorizationResourceIdField.fill(
-      NEW_AUTHORIZATION.resourceId,
-    );
-    await authorizationsPage
-      .createAuthorizationAccessPermission("Access")
-      .check({ force: true });
-    await authorizationsPage.createAuthorizationSubmitButton.click();
 
-    const newAuthorizationItem =
-      authorizationsPage.authorizationsList.getByRole("cell", {
-        name: NEW_AUTHORIZATION.ownerId,
-      });
-
-    await waitForItemInList(page, newAuthorizationItem);
+    await authorizationsPage.createAuthorization(NEW_USER_AUTHORIZATION);
 
     await header.logout();
     await loginPage.login(NEW_USER);
-    await expect(page).toHaveURL(relativizePath(Paths.users()));
+    await expect(page).toHaveURL(relativizePath(Paths.forbidden()));
+  });
+
+  test("create application authorization", async ({
+    usersPage,
+    authorizationsPage,
+    header,
+    loginPage,
+  }) => {
+    await authorizationsPage.createAuthorization(NEW_APPLICATION_AUTHORIZATION);
+    await header.logout();
+    await loginPage.login(NEW_USER);
+    await expect(
+      usersPage.usersList.getByRole("cell", { name: NEW_USER.email }),
+    ).toBeVisible();
+    await expect(
+      usersPage.usersList.getByRole("cell", { name: "demo@example.com" }),
+    ).toBeVisible();
   });
 
   test("delete an authorization", async ({
@@ -86,19 +120,19 @@ test.describe.skip("authorizations CRUD", () => {
   }) => {
     await expect(
       authorizationsPage.authorizationsList.getByRole("cell", {
-        name: NEW_AUTHORIZATION.ownerId,
+        name: NEW_AUTH_ROLE.id,
       }),
     ).toBeVisible();
 
     await authorizationsPage
-      .deleteAuthorizationButton(NEW_AUTHORIZATION.ownerId)
+      .deleteAuthorizationButton(NEW_AUTH_ROLE.id)
       .click();
     await expect(authorizationsPage.deleteAuthorizationModal).toBeVisible();
     await authorizationsPage.deleteAuthorizationModalDeleteButton.click();
     await expect(authorizationsPage.deleteAuthorizationModal).not.toBeVisible();
 
     const item = authorizationsPage.authorizationsList.getByRole("cell", {
-      name: NEW_AUTHORIZATION.ownerId,
+      name: NEW_AUTH_ROLE.id,
     });
 
     await waitForItemInList(page, item, { shouldBeVisible: false });

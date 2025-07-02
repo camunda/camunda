@@ -13,7 +13,7 @@ import { relativizePath } from "../utils/relativizePaths";
 import { LOGIN_CREDENTIALS } from "../utils/constants";
 import { waitForItemInList } from "../utils/waitForItemInList";
 
-const NEW_Role = {
+const NEW_ROLE = {
   id: "testRoleID",
   name: "Test role",
 };
@@ -30,34 +30,14 @@ test.describe.serial("roles CRUD", () => {
       rolesPage.rolesList.getByRole("cell", { name: "Admin", exact: true }),
     ).toBeVisible();
 
-    await rolesPage.createRoleButton.click();
-    await expect(rolesPage.createRoleModal).toBeVisible();
-    await rolesPage.createIdField.fill(NEW_Role.id);
-    await rolesPage.createNameField.fill(NEW_Role.name);
-    await rolesPage.createRoleModalCreateButton.click();
-    await expect(rolesPage.createRoleModal).not.toBeVisible();
-
-    const item = rolesPage.rolesList.getByRole("cell", {
-      name: NEW_Role.name,
-    });
-
-    await waitForItemInList(page, item);
+    await rolesPage.createRole(NEW_ROLE);
   });
 
   test("deletes a role", async ({ page, rolesPage }) => {
     await expect(
-      rolesPage.rolesList.getByRole("cell", { name: NEW_Role.name }),
+      rolesPage.rolesList.getByRole("cell", { name: NEW_ROLE.name }),
     ).toBeVisible();
 
-    await rolesPage.deleteRoleButton(NEW_Role.name).click();
-    await expect(rolesPage.deleteRoleModal).toBeVisible();
-    await rolesPage.deleteRoleModalDeleteButton.click();
-    await expect(rolesPage.deleteRoleModal).not.toBeVisible();
-
-    const item = rolesPage.rolesList.getByRole("cell", {
-      name: NEW_Role.name,
-    });
-
-    await waitForItemInList(page, item, { shouldBeVisible: false });
+    await rolesPage.deleteRole(NEW_ROLE.name);
   });
 });
