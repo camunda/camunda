@@ -13,11 +13,11 @@ import io.camunda.authentication.DefaultCamundaAuthenticationProvider;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ProcessDefinitionServices;
+import io.camunda.service.cache.ProcessCache;
+import io.camunda.service.cache.ProcessElementProvider;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
-import io.camunda.zeebe.gateway.rest.cache.ProcessCache;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
-import io.camunda.zeebe.gateway.rest.util.ProcessElementProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -45,8 +45,13 @@ public class RestApiConfiguration {
       final BrokerTopologyManager brokerTopologyManager,
       final MeterRegistry meterRegistry) {
 
+    final var cacheConfiguration =
+        new ProcessCache.Configuration(
+            configuration.getProcessCache().getMaxSize(),
+            configuration.getProcessCache().getExpirationIdleMillis());
+
     return new ProcessCache(
-        configuration, processElementProvider, brokerTopologyManager, meterRegistry);
+        cacheConfiguration, processElementProvider, brokerTopologyManager, meterRegistry);
   }
 
   @Bean
