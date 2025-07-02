@@ -7,21 +7,11 @@
  */
 package io.camunda.tasklist.property;
 
-import java.util.Map;
-
 public class TasklistOpenSearchProperties extends OpenSearchProperties {
 
   public static final String DEFAULT_INDEX_PREFIX = "";
-  private static final int DEFAULT_NUMBER_OF_SHARDS = 1;
-  private static final int DEFAULT_NUMBER_OF_REPLICAS = 0;
-  private static final String DEFAULT_REFRESH_INTERVAL = "1s";
-  private String indexPrefix = DEFAULT_INDEX_PREFIX;
-  private int numberOfShards = DEFAULT_NUMBER_OF_SHARDS;
-  private int numberOfReplicas = DEFAULT_NUMBER_OF_REPLICAS;
-  private Map<String, Integer> numberOfShardsPerIndex = Map.of();
-  private Map<String, Integer> numberOfReplicasPerIndex = Map.of();
 
-  private String refreshInterval = DEFAULT_REFRESH_INTERVAL;
+  private String indexPrefix = DEFAULT_INDEX_PREFIX;
 
   public String getIndexPrefix() {
     return indexPrefix;
@@ -29,49 +19,5 @@ public class TasklistOpenSearchProperties extends OpenSearchProperties {
 
   public void setIndexPrefix(final String indexPrefix) {
     this.indexPrefix = indexPrefix;
-  }
-
-  public void setDefaultIndexPrefix() {
-    setIndexPrefix(DEFAULT_INDEX_PREFIX);
-  }
-
-  public int getNumberOfShards() {
-    return numberOfShards;
-  }
-
-  public void setNumberOfShards(final int numberOfShards) {
-    this.numberOfShards = numberOfShards;
-  }
-
-  public int getNumberOfReplicas() {
-    return numberOfReplicas;
-  }
-
-  public void setNumberOfReplicas(final int numberOfReplicas) {
-    this.numberOfReplicas = numberOfReplicas;
-  }
-
-  public String getRefreshInterval() {
-    return refreshInterval;
-  }
-
-  public void setRefreshInterval(final String refreshInterval) {
-    this.refreshInterval = refreshInterval;
-  }
-
-  public Map<String, Integer> getNumberOfShardsPerIndex() {
-    return numberOfShardsPerIndex;
-  }
-
-  public void setNumberOfShardsPerIndex(final Map<String, Integer> numberOfShardsPerIndex) {
-    this.numberOfShardsPerIndex = numberOfShardsPerIndex;
-  }
-
-  public Map<String, Integer> getNumberOfReplicasPerIndex() {
-    return numberOfReplicasPerIndex;
-  }
-
-  public void setNumberOfReplicasPerIndex(final Map<String, Integer> numberOfReplicasPerIndex) {
-    this.numberOfReplicasPerIndex = numberOfReplicasPerIndex;
   }
 }
