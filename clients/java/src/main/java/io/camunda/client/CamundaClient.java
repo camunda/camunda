@@ -84,6 +84,7 @@ import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateUserCommandStep1;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.client.api.fetch.AuthorizationGetRequest;
+import io.camunda.client.api.fetch.AuthorizationsSearchRequest;
 import io.camunda.client.api.fetch.BatchOperationGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.client.api.fetch.DecisionDefinitionGetXmlRequest;
@@ -2157,6 +2158,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the request to get an authorization
    */
   AuthorizationGetRequest newAuthorizationGetRequest(long authorizationKey);
+
+  /**
+   * Executes a search request to query authorizations.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newAuthorizationSearchRequest()
+   *  .filter((f) -> f.ownerType("ownerType"))
+   *  .sort((s) -> s.ownerId().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the authorizations search request
+   */
+  AuthorizationsSearchRequest newAuthorizationSearchRequest();
 
   /**
    * Command to delete an authorization
