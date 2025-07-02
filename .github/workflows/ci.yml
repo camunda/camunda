@@ -692,6 +692,7 @@ jobs:
 
   # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) based on branch name
   get-snapshot-docker-version-tag:
+    needs: [ check-results ]
     uses: ./.github/workflows/snapshot-docker-version-tag.yml
     secrets: inherit
 
