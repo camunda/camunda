@@ -329,6 +329,7 @@ jobs:
           artifacts: "release-artifacts/*"
           artifactErrorsFailBuild: true
           draft: false
+          makeLatest: ${{ inputs.isLatest }}
           body: ${{ steps.gen-changelog.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
           prerelease: ${{ steps.pre-release.outputs.result }}
