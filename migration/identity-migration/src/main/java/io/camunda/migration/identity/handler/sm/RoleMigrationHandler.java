@@ -53,21 +53,21 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
 
     roles.forEach(
         role -> {
+          final var roleName = role.name();
+          final var roleId = normalizeRoleID(roleName);
           try {
-            final var roleName = role.name();
-            final var roleId = normalizeRoleID(roleName);
             roleServices
                 .createRole(new CreateRoleRequest(roleId, roleName, role.description()))
                 .join();
             createdRoleCount.incrementAndGet();
             logger.debug("Role '{}' with ID '{}' created successfully.", roleName, roleId);
-            createAuthorizationsForRole(roleId, roleName);
           } catch (final Exception e) {
             if (!isConflictError(e)) {
               throw new MigrationException("Failed to migrate role with name: " + role.name(), e);
             }
             logger.debug("Role with name '{}' already exists, skipping creation.", role.name());
           }
+          createAuthorizationsForRole(roleId, roleName);
         });
   }
 
