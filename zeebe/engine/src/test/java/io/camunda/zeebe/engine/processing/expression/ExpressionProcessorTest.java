@@ -297,5 +297,54 @@ class ExpressionProcessorTest {
 
       assertThat(result).isRight().right().isEqualTo(System.getenv(envVariable));
     }
+
+    @Test
+    void testReferenceSecretFromEnvVar() {
+      final var fakeSecretsContext =
+          new ScopedEvaluationContext() {
+            @Override
+            public Object getVariable(final String variableName) {
+              return switch (variableName) {
+                case "aws_key" -> "secret";
+                default -> null;
+              };
+            }
+          };
+
+      final var fakeEnvContext =
+          new ScopedEvaluationContext() {
+            final Map<String, String> envVars = Map.of("test", "camunda.secrets.aws_key");
+
+            @Override
+            public Object getVariable(final String variableName) {
+              final var result = envVars.get(variableName);
+              if (result.startsWith("camunda.secrets.")) {
+                return fakeSecretsContext.getVariable(
+                    result.substring("camunda.secrets.".length()));
+              }
+              return result;
+            }
+          };
+
+      final var processor =
+          new ExpressionProcessor(
+              EXPRESSION_LANGUAGE,
+              NamespacedContext.create()
+                  .register(
+                      "camunda",
+                      NamespacedContext.create()
+                          .register("secret", fakeSecretsContext)
+                          .register("env", fakeEnvContext)));
+
+      final var result =
+          processor.evaluateStringExpression(
+              EXPRESSION_LANGUAGE.parseExpression("=camunda.secret.aws_key"), -1L);
+      assertThat(result).isRight().right().isEqualTo("secret");
+
+      final var result2 =
+          processor.evaluateStringExpression(
+              EXPRESSION_LANGUAGE.parseExpression("=camunda.env.test"), -1L);
+      assertThat(result2).isRight().right().isEqualTo("secret");
+    }
   }
 }
