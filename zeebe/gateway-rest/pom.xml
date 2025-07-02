@@ -202,11 +202,6 @@
       <artifactId>camunda-authentication</artifactId>
     </dependency>
 
-    <dependency>
-      <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-core</artifactId>
-    </dependency>
-
     <!-- dependencies required for OpenAPI model generation -->
     <dependency>
       <groupId>jakarta.validation</groupId>
@@ -232,16 +227,6 @@
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
       <scope>provided</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>com.github.ben-manes.caffeine</groupId>
-      <artifactId>caffeine</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-bpmn-model</artifactId>
     </dependency>
 
     <!-- test dependencies -->
