@@ -19,7 +19,6 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
-import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.exception.CamundaBrokerException;
 import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
 import io.camunda.zeebe.broker.client.api.RequestRetriesExhaustedException;
@@ -55,7 +54,6 @@ public class ErrorMapperTest extends RestControllerTest {
   private static final String USER_TASKS_BASE_URL = "/v1/user-tasks";
 
   @MockitoBean UserTaskServices userTaskServices;
-  @MockitoBean ProcessCache processCache;
   @MockitoBean CamundaAuthenticationProvider authenticationProvider;
 
   @Autowired private View error;
