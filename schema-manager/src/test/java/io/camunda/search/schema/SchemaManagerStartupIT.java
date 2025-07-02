@@ -36,7 +36,7 @@ class SchemaManagerStartupIT {
 
   private static final String CAMUNDA_TEST_IMAGE_NAME =
       Optional.ofNullable(System.getenv("CAMUNDA_TEST_DOCKER_IMAGE"))
-          .orElse("camunda/camunda:current-test");
+          .orElse("camunda/camunda:SNAPSHOT");
 
   private final CountDownLatch shutdownLatch = new CountDownLatch(1);
 
