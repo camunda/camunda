@@ -27,8 +27,7 @@ import org.springframework.http.ProblemDetail;
 public final class UserValidator {
 
   public static Optional<ProblemDetail> validateUserUpdateRequest(final UserUpdateRequest request) {
-    return validate(
-        violations -> violations.addAll(validateUserEmail(request.getName(), request.getEmail())));
+    return validate(violations -> violations.addAll(validateUserEmail(request.getEmail())));
   }
 
   public static Optional<ProblemDetail> validateUserCreateRequest(final UserRequest request) {
@@ -38,7 +37,7 @@ public final class UserValidator {
           if (request.getPassword() == null || request.getPassword().isBlank()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("password"));
           }
-          violations.addAll(validateUserEmail(request.getName(), request.getEmail()));
+          violations.addAll(validateUserEmail(request.getEmail()));
         });
   }
 
@@ -53,7 +52,7 @@ public final class UserValidator {
     }
   }
 
-  private static List<String> validateUserEmail(final String name, final String email) {
+  private static List<String> validateUserEmail(final String email) {
     final List<String> violations = new ArrayList<>();
     if (email != null && !email.isBlank() && !EmailValidator.getInstance().isValid(email)) {
       violations.add(ERROR_MESSAGE_INVALID_EMAIL.formatted(email));
