@@ -20,6 +20,7 @@ import static java.util.Collections.singletonList;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractCatchEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.camunda.zeebe.model.bpmn.instance.IntermediateThrowEvent;
 import io.camunda.zeebe.model.bpmn.instance.Message;
@@ -242,6 +243,17 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
             expect(
                 IntermediateThrowEvent.class,
                 "Must have either one 'zeebe:publishMessage' or one 'zeebe:taskDefinition' extension element"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .receiveTask(
+                "receive_task",
+                r -> r.message(m -> m.name("wait").zeebeCorrelationKeyExpression("123")))
+            .boundaryEvent("boundary_event", AbstractCatchEventBuilder::messageEventDefinition)
+            .endEvent("test")
+            .done(),
+        singletonList(expect(MessageEventDefinition.class, "Must reference a message"))
       }
     };
   }
