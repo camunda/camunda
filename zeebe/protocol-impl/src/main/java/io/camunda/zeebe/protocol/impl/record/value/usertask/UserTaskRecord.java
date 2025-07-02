@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.usertask;
 
-import static io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.PROP_PROCESS_BPMN_PROCESS_ID;
-import static io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.PROP_PROCESS_INSTANCE_KEY;
+import static io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.BPMN_PROCESS_ID_KEY;
+import static io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord.PROCESS_INSTANCE_KEY_KEY;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -95,9 +95,9 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private final PackedProperty customHeadersProp = new PackedProperty("customHeaders", NO_HEADERS);
 
   private final LongProperty processInstanceKeyProp =
-      new LongProperty(PROP_PROCESS_INSTANCE_KEY, -1L);
+      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
   private final StringProperty bpmnProcessIdProp =
-      new StringProperty(PROP_PROCESS_BPMN_PROCESS_ID, EMPTY_STRING);
+      new StringProperty(BPMN_PROCESS_ID_KEY, EMPTY_STRING);
   private final IntegerProperty processDefinitionVersionProp =
       new IntegerProperty("processDefinitionVersion", -1);
   private final LongProperty processDefinitionKeyProp =

@@ -10,6 +10,7 @@ package io.camunda.zeebe.msgpack.property;
 import io.camunda.zeebe.msgpack.MsgpackPropertyException;
 import io.camunda.zeebe.msgpack.value.ArrayValue;
 import io.camunda.zeebe.msgpack.value.BaseValue;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import java.util.Iterator;
 import java.util.function.Supplier;
@@ -20,6 +21,11 @@ public final class ArrayProperty<T extends BaseValue> extends BaseProperty<Array
     implements ValueArray<T> {
   public ArrayProperty(final String keyString, final Supplier<T> innerValueFactory) {
     super(keyString, new ArrayValue<>(innerValueFactory));
+    isSet = true;
+  }
+
+  public ArrayProperty(final StringValue key, final Supplier<T> innerValueFactory) {
+    super(key, new ArrayValue<>(innerValueFactory));
     isSet = true;
   }
 

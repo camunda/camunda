@@ -18,6 +18,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ArrayValue;
 import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.msgpack.value.LongValue;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
@@ -30,35 +31,36 @@ import org.agrona.DirectBuffer;
 public final class ProcessInstanceRecord extends UnifiedRecordValue
     implements ProcessInstanceRecordValue {
 
-  public static final String PROP_PROCESS_BPMN_PROCESS_ID = "bpmnProcessId";
-  public static final String PROP_PROCESS_INSTANCE_KEY = "processInstanceKey";
-  public static final String PROP_PROCESS_ELEMENT_ID = "elementId";
-  public static final String PROP_PROCESS_VERSION = "version";
-  public static final String PROP_PROCESS_KEY = "processDefinitionKey";
-  public static final String PROP_PROCESS_BPMN_TYPE = "bpmnElementType";
-  public static final String PROP_PROCESS_SCOPE_KEY = "flowScopeKey";
-  public static final String PROP_PROCESS_EVENT_TYPE = "bpmnEventType";
-  public static final String PROP_TENANT_ID = "tenantId";
+  // Static StringValue keys for property names
+  public static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
+  public static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
+  public static final StringValue ELEMENT_ID_KEY = new StringValue("elementId");
+  public static final StringValue VERSION_KEY = new StringValue("version");
+  public static final StringValue PROCESS_DEFINITION_KEY_KEY =
+      new StringValue("processDefinitionKey");
+  public static final StringValue BPMN_ELEMENT_TYPE_KEY = new StringValue("bpmnElementType");
+  public static final StringValue FLOW_SCOPE_KEY_KEY = new StringValue("flowScopeKey");
+  public static final StringValue BPMN_EVENT_TYPE_KEY = new StringValue("bpmnEventType");
+  public static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
 
-  private final StringProperty bpmnProcessIdProp =
-      new StringProperty(PROP_PROCESS_BPMN_PROCESS_ID, "");
-  private final IntegerProperty versionProp = new IntegerProperty(PROP_PROCESS_VERSION, -1);
+  private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
+  private final IntegerProperty versionProp = new IntegerProperty(VERSION_KEY, -1);
   private final StringProperty tenantIdProp =
-      new StringProperty(PROP_TENANT_ID, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty processDefinitionKeyProp = new LongProperty(PROP_PROCESS_KEY, -1L);
+      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty processDefinitionKeyProp =
+      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1L);
 
   private final LongProperty processInstanceKeyProp =
-      new LongProperty(PROP_PROCESS_INSTANCE_KEY, -1L);
-  private final StringProperty elementIdProp = new StringProperty(PROP_PROCESS_ELEMENT_ID, "");
+      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
+  private final StringProperty elementIdProp = new StringProperty(ELEMENT_ID_KEY, "");
 
-  private final LongProperty flowScopeKeyProp = new LongProperty(PROP_PROCESS_SCOPE_KEY, -1L);
+  private final LongProperty flowScopeKeyProp = new LongProperty(FLOW_SCOPE_KEY_KEY, -1L);
 
   private final EnumProperty<BpmnElementType> bpmnElementTypeProp =
-      new EnumProperty<>(
-          PROP_PROCESS_BPMN_TYPE, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
+      new EnumProperty<>(BPMN_ELEMENT_TYPE_KEY, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
 
   private final EnumProperty<BpmnEventType> bpmnEventTypeProp =
-      new EnumProperty<>(PROP_PROCESS_EVENT_TYPE, BpmnEventType.class, BpmnEventType.UNSPECIFIED);
+      new EnumProperty<>(BPMN_EVENT_TYPE_KEY, BpmnEventType.class, BpmnEventType.UNSPECIFIED);
 
   private final LongProperty parentProcessInstanceKeyProp =
       new LongProperty("parentProcessInstanceKey", -1L);

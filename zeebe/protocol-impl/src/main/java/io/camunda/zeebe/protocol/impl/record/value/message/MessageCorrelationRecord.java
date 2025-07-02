@@ -14,6 +14,7 @@ import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
@@ -24,16 +25,28 @@ import org.agrona.DirectBuffer;
 public final class MessageCorrelationRecord extends UnifiedRecordValue
     implements MessageCorrelationRecordValue {
 
-  private final StringProperty nameProp = new StringProperty("name");
-  private final StringProperty correlationKeyProp = new StringProperty("correlationKey");
-  private final DocumentProperty variablesProp = new DocumentProperty("variables");
-  private final StringProperty tenantIdProp =
-      new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  // Static StringValue keys to avoid memory waste
+  private static final StringValue NAME_KEY = new StringValue("name");
+  private static final StringValue CORRELATION_KEY_KEY = new StringValue("correlationKey");
+  private static final StringValue VARIABLES_KEY = new StringValue("variables");
+  private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+  private static final StringValue MESSAGE_KEY_KEY = new StringValue("messageKey");
+  private static final StringValue REQUEST_ID_KEY = new StringValue("requestId");
+  private static final StringValue REQUEST_STREAM_ID_KEY = new StringValue("requestStreamId");
+  private static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
 
-  private final LongProperty messageKey = new LongProperty("messageKey", -1L);
-  private final LongProperty requestIdProp = new LongProperty("requestId", -1L);
-  private final IntegerProperty requestStreamIdProp = new IntegerProperty("requestStreamId", -1);
-  private final LongProperty processInstanceKeyProp = new LongProperty("processInstanceKey", -1L);
+  private final StringProperty nameProp = new StringProperty(NAME_KEY);
+  private final StringProperty correlationKeyProp = new StringProperty(CORRELATION_KEY_KEY);
+  private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
+  private final StringProperty tenantIdProp =
+      new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+  private final LongProperty messageKey = new LongProperty(MESSAGE_KEY_KEY, -1L);
+  private final LongProperty requestIdProp = new LongProperty(REQUEST_ID_KEY, -1L);
+  private final IntegerProperty requestStreamIdProp =
+      new IntegerProperty(REQUEST_STREAM_ID_KEY, -1);
+  private final LongProperty processInstanceKeyProp =
+      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1L);
 
   public MessageCorrelationRecord() {
     super(7);

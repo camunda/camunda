@@ -9,17 +9,25 @@ package io.camunda.zeebe.protocol.impl.record.value.authorization;
 
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 public class MappingRecord extends UnifiedRecordValue implements MappingRecordValue {
 
-  private final LongProperty mappingKeyProp = new LongProperty("mappingKey", -1L);
-  private final StringProperty mappingIdProp = new StringProperty("mappingId");
-  private final StringProperty claimNameProp = new StringProperty("claimName", "");
-  private final StringProperty claimValueProp = new StringProperty("claimValue", "");
-  private final StringProperty nameProp = new StringProperty("name", "");
+  // Static StringValue keys for property names
+  private static final StringValue MAPPING_KEY_KEY = new StringValue("mappingKey");
+  private static final StringValue MAPPING_ID_KEY = new StringValue("mappingId");
+  private static final StringValue CLAIM_NAME_KEY = new StringValue("claimName");
+  private static final StringValue CLAIM_VALUE_KEY = new StringValue("claimValue");
+  private static final StringValue NAME_KEY = new StringValue("name");
+
+  private final LongProperty mappingKeyProp = new LongProperty(MAPPING_KEY_KEY, -1L);
+  private final StringProperty mappingIdProp = new StringProperty(MAPPING_ID_KEY);
+  private final StringProperty claimNameProp = new StringProperty(CLAIM_NAME_KEY, "");
+  private final StringProperty claimValueProp = new StringProperty(CLAIM_VALUE_KEY, "");
+  private final StringProperty nameProp = new StringProperty(NAME_KEY, "");
 
   public MappingRecord() {
     super(5);
