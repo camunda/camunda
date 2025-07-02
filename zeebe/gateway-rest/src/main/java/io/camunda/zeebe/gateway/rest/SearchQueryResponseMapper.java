@@ -394,14 +394,13 @@ public final class SearchQueryResponseMapper {
   }
 
   public static UserTaskSearchQueryResult toUserTaskSearchQueryResponse(
-      final SearchQueryResult<UserTaskEntity> result,
-      final Map<Long, ProcessCacheItem> processCacheItems) {
+      final SearchQueryResult<UserTaskEntity> result) {
     final var page = toSearchQueryPageResponse(result);
     return new UserTaskSearchQueryResult()
         .page(page)
         .items(
             ofNullable(result.items())
-                .map(tasks -> toUserTasks(tasks, processCacheItems))
+                .map(tasks -> toUserTasks(tasks))
                 .orElseGet(Collections::emptyList));
   }
 
@@ -769,18 +768,11 @@ public final class SearchQueryResponseMapper {
         .decisionRequirementsId(d.decisionRequirementsId());
   }
 
-  private static List<UserTaskResult> toUserTasks(
-      final List<UserTaskEntity> tasks, final Map<Long, ProcessCacheItem> processCacheItems) {
+  private static List<UserTaskResult> toUserTasks(final List<UserTaskEntity> tasks) {
     return tasks.stream()
         .map(
             (final UserTaskEntity t) -> {
-              final var name =
-                  (t.name() != null)
-                      ? t.name()
-                      : processCacheItems
-                          .getOrDefault(t.processDefinitionKey(), ProcessCacheItem.EMPTY)
-                          .getElementName(t.elementId());
-              return toUserTask(t, name);
+              return toUserTask(t);
             })
         .toList();
   }
@@ -830,11 +822,11 @@ public final class SearchQueryResponseMapper {
         .tenantId(messageSubscription.tenantId());
   }
 
-  public static UserTaskResult toUserTask(final UserTaskEntity t, final String name) {
+  public static UserTaskResult toUserTask(final UserTaskEntity t) {
     return new UserTaskResult()
         .tenantId(t.tenantId())
         .userTaskKey(KeyUtil.keyToString(t.userTaskKey()))
-        .name(name)
+        .name(t.name())
         .processInstanceKey(KeyUtil.keyToString(t.processInstanceKey()))
         .processDefinitionKey(KeyUtil.keyToString(t.processDefinitionKey()))
         .elementInstanceKey(KeyUtil.keyToString(t.elementInstanceKey()))
@@ -845,7 +837,6 @@ public final class SearchQueryResponseMapper {
         .candidateGroups(t.candidateGroups())
         .formKey(KeyUtil.keyToString(t.formKey()))
         .elementId(t.elementId())
-        .name(t.name())
         .creationDate(formatDate(t.creationDate()))
         .completionDate(formatDate(t.completionDate()))
         .dueDate(formatDate(t.dueDate()))
