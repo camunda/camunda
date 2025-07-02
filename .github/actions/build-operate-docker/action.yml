@@ -53,8 +53,6 @@ runs:
         tags: ${{ inputs.tags }}
         load: ${{ inputs.push != 'true' }}
         push: ${{ inputs.push }}
-        cache-from: type=gha,ignore-error=true
-        cache-to: type=gha,mode=max,ignore-error=true
         no-cache-filters: build,distball,dist
         provenance: false
         platforms: ${{ inputs.platforms }}
