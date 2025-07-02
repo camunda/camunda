@@ -37,8 +37,10 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
+import io.camunda.client.api.search.response.Authorization;
 import io.camunda.client.api.search.response.Group;
 import io.camunda.client.api.search.response.RoleUser;
+import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.migration.identity.client.ConsoleClient.Role;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -56,7 +58,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.text.MessageFormat;
 import java.time.Duration;
-import java.util.Base64;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -245,17 +247,17 @@ public class SaaSIdentityMigrationIT {
   public void canMigratePermissions() throws URISyntaxException, IOException, InterruptedException {
     // when
     migration.start();
-    final var restAddress = client.getConfiguration().getRestAddress().toString();
 
     Awaitility.await()
         .atMost(Duration.ofSeconds(5))
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var authorizations = searchAuthorizations(restAddress);
+              final var authorizations =
+                  client.newAuthorizationSearchRequest().send().join().items();
               final var migratedAuthorizations =
-                  authorizations.items().stream()
-                      .map(AuthorizationResponse::ownerId)
+                  authorizations.stream()
+                      .map(Authorization::getOwnerId)
                       .filter(ROLE_IDS::contains)
                       .toList();
               assertThat(migratedAuthorizations.size()).isEqualTo(ROLE_PERMISSIONS.size());
@@ -264,14 +266,15 @@ public class SaaSIdentityMigrationIT {
     // then
     assertThat(migration.getExitCode()).isEqualTo(0);
 
-    final var authorizations = searchAuthorizations(restAddress);
-    assertThat(authorizations.items())
+    final SearchResponse<Authorization> newResponse =
+        client.newAuthorizationSearchRequest().send().join();
+    assertThat(newResponse.items())
         .extracting(
-            AuthorizationResponse::ownerId,
-            AuthorizationResponse::ownerType,
-            AuthorizationResponse::resourceId,
-            AuthorizationResponse::resourceType,
-            AuthorizationResponse::permissionTypes)
+            Authorization::getOwnerId,
+            Authorization::getOwnerType,
+            Authorization::getResourceId,
+            Authorization::getResourceType,
+            a -> new HashSet<>(a.getPermissionTypes()))
         .contains(
             // Role permissions
             tuple(
@@ -408,17 +411,17 @@ public class SaaSIdentityMigrationIT {
     createAuthorizations();
 
     migration.start();
-    final var restAddress = client.getConfiguration().getRestAddress().toString();
 
     Awaitility.await()
         .atMost(Duration.ofSeconds(5))
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var authorizations = searchAuthorizations(restAddress);
+              final SearchResponse<Authorization> authorizations =
+                  client.newAuthorizationSearchRequest().send().join();
               final var migratedAuthorizations =
                   authorizations.items().stream()
-                      .map(AuthorizationResponse::ownerId)
+                      .map(Authorization::getOwnerId)
                       .filter(id -> List.of("user0@email.com", "user1@email.com").contains(id))
                       .toList();
               assertThat(migratedAuthorizations.size()).isEqualTo(2);
@@ -427,14 +430,15 @@ public class SaaSIdentityMigrationIT {
     // then
     assertThat(migration.getExitCode()).isEqualTo(0);
 
-    final var authorizations = searchAuthorizations(restAddress);
-    assertThat(authorizations.items())
-        .extracting(
-            AuthorizationResponse::ownerId,
-            AuthorizationResponse::ownerType,
-            AuthorizationResponse::resourceId,
-            AuthorizationResponse::resourceType,
-            AuthorizationResponse::permissionTypes)
+    final SearchResponse<Authorization> response =
+        client.newAuthorizationSearchRequest().send().join();
+    assertThat(response.items())
+        .map(
+            Authorization::getOwnerId,
+            Authorization::getOwnerType,
+            Authorization::getResourceId,
+            Authorization::getResourceType,
+            a -> new HashSet<>(a.getPermissionTypes()))
         .contains(
             tuple(
                 "user0@email.com",
@@ -462,7 +466,6 @@ public class SaaSIdentityMigrationIT {
   public void canMigrateClients() throws IOException, URISyntaxException, InterruptedException {
     // when
     migration.start();
-    final var restAddress = client.getConfiguration().getRestAddress().toString();
 
     Awaitility.await()
         .atMost(Duration.ofSeconds(10))
@@ -470,8 +473,8 @@ public class SaaSIdentityMigrationIT {
         .untilAsserted(
             () -> {
               final var authorizations =
-                  searchAuthorizations(restAddress).items().stream()
-                      .map(AuthorizationResponse::ownerType)
+                  client.newAuthorizationSearchRequest().send().join().items().stream()
+                      .map(Authorization::getOwnerType)
                       .filter(OwnerType.CLIENT::equals)
                       .toList();
               assertThat(authorizations.size()).isEqualTo(9);
@@ -480,13 +483,13 @@ public class SaaSIdentityMigrationIT {
     // then
     assertThat(migration.getExitCode()).isEqualTo(0);
 
-    final var authorizations = searchAuthorizations(restAddress);
+    final var authorizations = client.newAuthorizationSearchRequest().send().join();
     assertThat(authorizations.items())
         .extracting(
-            AuthorizationResponse::ownerId,
-            AuthorizationResponse::ownerType,
-            AuthorizationResponse::resourceType,
-            AuthorizationResponse::permissionTypes)
+            Authorization::getOwnerId,
+            Authorization::getOwnerType,
+            Authorization::getResourceType,
+            a -> new HashSet<>(a.getPermissionTypes()))
         .contains(
             tuple(
                 "client123",
@@ -620,7 +623,7 @@ public class SaaSIdentityMigrationIT {
             .uri(new URI("%s%s".formatted(externalIdentityUrl(IDENTITY), "/api/groups")))
             .POST(
                 HttpRequest.BodyPublishers.ofString(
-                    """
+                        """
                     {
                       "name": "%s",
                       "organizationId": "org123"
@@ -654,7 +657,7 @@ public class SaaSIdentityMigrationIT {
                             "/api/groups/%s/users".formatted(groupId))))
             .POST(
                 HttpRequest.BodyPublishers.ofString(
-                    """
+                        """
                     {
                       "userId": "%s",
                       "organizationId": "org123"
@@ -762,31 +765,4 @@ public class SaaSIdentityMigrationIT {
       throw new RuntimeException(e);
     }
   }
-
-  // TODO: refactor this once https://github.com/camunda/camunda/issues/32721 is implemented
-  private AuthorizationSearchResponse searchAuthorizations(final String restAddress)
-      throws URISyntaxException, IOException, InterruptedException {
-    final var encodedCredentials =
-        Base64.getEncoder().encodeToString("%s:%s".formatted("demo", "demo").getBytes());
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(new URI("%s%s".formatted(restAddress, "v2/authorizations/search")))
-            .POST(HttpRequest.BodyPublishers.ofString(""))
-            .header("Authorization", "Basic %s".formatted(encodedCredentials))
-            .build();
-
-    final HttpResponse<String> response =
-        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-    return OBJECT_MAPPER.readValue(response.body(), AuthorizationSearchResponse.class);
-  }
-
-  private record AuthorizationSearchResponse(List<AuthorizationResponse> items) {}
-
-  private record AuthorizationResponse(
-      String ownerId,
-      OwnerType ownerType,
-      ResourceType resourceType,
-      String resourceId,
-      Set<PermissionType> permissionTypes,
-      String authorizationKey) {}
 }
