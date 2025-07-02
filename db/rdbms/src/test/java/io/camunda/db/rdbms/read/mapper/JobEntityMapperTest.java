@@ -11,8 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.write.domain.JobDbModel;
 import io.camunda.db.rdbms.write.domain.JobDbModel.Builder;
-import io.camunda.db.rdbms.write.domain.JobDbModel.JobState;
 import io.camunda.search.entities.JobEntity;
+import io.camunda.search.entities.JobEntity.JobKind;
+import io.camunda.search.entities.JobEntity.JobState;
+import io.camunda.search.entities.JobEntity.ListenerEventType;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
@@ -30,8 +32,8 @@ public class JobEntityMapperTest {
             .type("testJobType")
             .worker("testWorker")
             .state(JobState.CREATED)
-            .kind(JobDbModel.JobKind.BPMN_ELEMENT)
-            .listenerEventType(JobDbModel.ListenerEventType.START)
+            .kind(JobKind.BPMN_ELEMENT)
+            .listenerEventType(ListenerEventType.START)
             .retries(3)
             .isDenied(true)
             .deniedReason("testDeniedReason")
@@ -73,9 +75,9 @@ public class JobEntityMapperTest {
             .jobKey(1L)
             .type(null)
             .worker(null)
-            .state(JobState.CREATED)
-            .kind(JobDbModel.JobKind.BPMN_ELEMENT)
-            .listenerEventType(JobDbModel.ListenerEventType.START)
+            .state(JobState.COMPLETED)
+            .kind(JobKind.BPMN_ELEMENT)
+            .listenerEventType(ListenerEventType.START)
             .retries(0)
             .isDenied(false)
             .deniedReason(null)

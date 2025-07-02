@@ -16,27 +16,28 @@ import io.camunda.search.entities.JobEntity.ListenerEventType;
 public class JobEntityMapper {
 
   public static JobEntity toEntity(final JobDbModel jobDbModel) {
-    return new JobEntity(
-        jobDbModel.jobKey(),
-        jobDbModel.type(),
-        jobDbModel.worker(),
-        JobState.valueOf(jobDbModel.state().name()),
-        JobKind.valueOf(jobDbModel.kind().name()),
-        ListenerEventType.valueOf(jobDbModel.listenerEventType().name()),
-        jobDbModel.retries(),
-        jobDbModel.isDenied(),
-        jobDbModel.deniedReason(),
-        jobDbModel.hasFailedWithRetriesLeft(),
-        jobDbModel.errorCode(),
-        jobDbModel.errorMessage(),
-        jobDbModel.customHeaders(),
-        jobDbModel.deadline(),
-        jobDbModel.endTime(),
-        jobDbModel.processDefinitionId(),
-        jobDbModel.processDefinitionKey(),
-        jobDbModel.processInstanceKey(),
-        jobDbModel.elementId(),
-        jobDbModel.elementInstanceKey(),
-        jobDbModel.tenantId());
+    return new JobEntity.Builder()
+        .jobKey(jobDbModel.jobKey())
+        .type(jobDbModel.type())
+        .worker(jobDbModel.worker())
+        .state(JobState.valueOf(jobDbModel.state().name()))
+        .kind(JobKind.valueOf(jobDbModel.kind().name()))
+        .listenerEventType(ListenerEventType.valueOf(jobDbModel.listenerEventType().name()))
+        .retries(jobDbModel.retries())
+        .isDenied(jobDbModel.isDenied())
+        .deniedReason(jobDbModel.deniedReason())
+        .hasFailedWithRetriesLeft(jobDbModel.hasFailedWithRetriesLeft())
+        .errorCode(jobDbModel.errorCode())
+        .errorMessage(jobDbModel.errorMessage())
+        .customHeaders(jobDbModel.customHeaders())
+        .deadline(jobDbModel.deadline())
+        .endTime(jobDbModel.endTime())
+        .processDefinitionId(jobDbModel.processDefinitionId())
+        .processDefinitionKey(jobDbModel.processDefinitionKey())
+        .processInstanceKey(jobDbModel.processInstanceKey())
+        .elementId(jobDbModel.elementId())
+        .elementInstanceKey(jobDbModel.elementInstanceKey())
+        .tenantId(jobDbModel.tenantId())
+        .build();
   }
 }

@@ -61,6 +61,7 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.paging" />
   </select>
 
+
   <sql id="searchFilter">
     WHERE 1 = 1
     <!-- basic filter -->
@@ -83,7 +84,7 @@
       </foreach>
     </if>
     <if test="filter.stateOperations != null and !filter.stateOperations.isEmpty()">
-      <foreach collection="filter.states" item="operation">
+      <foreach collection="filter.stateOperations" item="operation">
         AND STATE
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
@@ -136,8 +137,56 @@
       </foreach>
     </if>
     <if test="filter.tenantIdOperations != null and !filter.tenantIdOperations.isEmpty()">
-      <foreach collection="filter.tenantIdOperations" item="value" open="(" separator="," close=")">
+      <foreach collection="filter.tenantIdOperations" item="operation">
         AND TENANT_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.deadlineOperations != null and !filter.deadlineOperations.isEmpty()">
+      <foreach collection="filter.deadlineOperations" item="operation">
+        AND DEADLINE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.deniedReasonOperations != null and !filter.deniedReasonOperations.isEmpty()">
+      <foreach collection="filter.deniedReasonOperations" item="operation">
+        AND DENIED_REASON
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.endTimeOperations != null and !filter.endTimeOperations.isEmpty()">
+      <foreach collection="filter.endTimeOperations" item="operation">
+        AND END_TIME
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.errorCodeOperations != null and !filter.errorCodeOperations.isEmpty()">
+      <foreach collection="filter.errorCodeOperations" item="operation">
+        AND ERROR_CODE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.errorMessageOperations != null and !filter.errorMessageOperations.isEmpty()">
+      <foreach collection="filter.errorMessageOperations" item="operation">
+        AND ERROR_MESSAGE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.hasFailedWithRetriesLeft == true">
+      AND HAS_FAILED_WITH_RETRIES_LEFT = TRUE
+    </if>
+    <if test="filter.hasFailedWithRetriesLeft == false">
+      AND HAS_FAILED_WITH_RETRIES_LEFT = FALSE
+    </if>
+    <if test="filter.isDenied == true">
+      AND IS_DENIED = TRUE
+    </if>
+    <if test="filter.isDenied == false">
+      AND IS_DENIED = FALSE
+    </if>
+    <if test="filter.retriesOperations != null and !filter.retriesOperations.isEmpty()">
+      <foreach collection="filter.retriesOperations" item="operation">
+        AND RETRIES
         <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
     </if>
@@ -183,8 +232,7 @@
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.JobDbModel">
     UPDATE ${prefix}JOB
-    SET JOB_KEY = #{jobKey},
-        PROCESS_INSTANCE_KEY = #{processInstanceKey},
+    SET PROCESS_INSTANCE_KEY = #{processInstanceKey},
         ELEMENT_INSTANCE_KEY = #{elementInstanceKey},
         PROCESS_DEFINITION_ID = #{processDefinitionId},
         PROCESS_DEFINITION_KEY =  #{processDefinitionKey},

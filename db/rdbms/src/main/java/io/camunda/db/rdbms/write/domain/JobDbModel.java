@@ -8,6 +8,9 @@
 package io.camunda.db.rdbms.write.domain;
 
 import io.camunda.db.rdbms.write.util.CustomHeaderSerializer;
+import io.camunda.search.entities.JobEntity.JobKind;
+import io.camunda.search.entities.JobEntity.JobState;
+import io.camunda.search.entities.JobEntity.ListenerEventType;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.Map;
@@ -483,33 +486,5 @@ public class JobDbModel implements Copyable<JobDbModel> {
           partitionId,
           historyCleanupDate);
     }
-  }
-
-  public enum JobState {
-    CREATED,
-    COMPLETED,
-    FAILED,
-    RETRIES_UPDATED,
-    TIMED_OUT,
-    CANCELED,
-    ERROR_THROWN,
-    MIGRATED,
-  }
-
-  public enum JobKind {
-    BPMN_ELEMENT,
-    EXECUTION_LISTENER,
-    TASK_LISTENER
-  }
-
-  public enum ListenerEventType {
-    UNSPECIFIED,
-    START,
-    END,
-    CREATING,
-    ASSIGNING,
-    UPDATING,
-    COMPLETING,
-    CANCELING
   }
 }

@@ -18,28 +18,29 @@ public class JobEntityTransformer
 
   @Override
   public JobEntity apply(final io.camunda.webapps.schema.entities.JobEntity value) {
-    return new JobEntity(
-        value.getKey(),
-        value.getType(),
-        value.getWorker(),
-        toState(value.getState()),
-        toJobKind(value.getJobKind()),
-        toListenerEventType(value.getListenerEventType()),
-        value.getRetries(),
-        value.isDenied(),
-        value.getDeniedReason(),
-        value.isJobFailedWithRetriesLeft(),
-        value.getErrorCode(),
-        value.getErrorMessage(),
-        value.getCustomHeaders(),
-        value.getDeadline(),
-        value.getEndTime(),
-        value.getBpmnProcessId(),
-        value.getProcessDefinitionKey(),
-        value.getProcessInstanceKey(),
-        value.getFlowNodeId(),
-        value.getFlowNodeInstanceId(),
-        value.getTenantId());
+    return new JobEntity.Builder()
+        .jobKey(value.getKey())
+        .type(value.getType())
+        .worker(value.getWorker())
+        .state(toState(value.getState()))
+        .kind(toJobKind(value.getJobKind()))
+        .listenerEventType(toListenerEventType(value.getListenerEventType()))
+        .retries(value.getRetries())
+        .isDenied(value.isDenied())
+        .deniedReason(value.getDeniedReason())
+        .hasFailedWithRetriesLeft(value.isJobFailedWithRetriesLeft())
+        .errorCode(value.getErrorCode())
+        .errorMessage(value.getErrorMessage())
+        .customHeaders(value.getCustomHeaders())
+        .deadline(value.getDeadline())
+        .endTime(value.getEndTime())
+        .processDefinitionId(value.getBpmnProcessId())
+        .processDefinitionKey(value.getProcessDefinitionKey())
+        .processInstanceKey(value.getProcessInstanceKey())
+        .elementId(value.getFlowNodeId())
+        .elementInstanceKey(value.getFlowNodeInstanceId())
+        .tenantId(value.getTenantId())
+        .build();
   }
 
   private ListenerEventType toListenerEventType(final String value) {

@@ -9,12 +9,12 @@ package io.camunda.exporter.rdbms.handlers;
 
 import io.camunda.db.rdbms.write.domain.JobDbModel;
 import io.camunda.db.rdbms.write.domain.JobDbModel.Builder;
-import io.camunda.db.rdbms.write.domain.JobDbModel.JobKind;
-import io.camunda.db.rdbms.write.domain.JobDbModel.JobState;
-import io.camunda.db.rdbms.write.domain.JobDbModel.ListenerEventType;
 import io.camunda.db.rdbms.write.service.JobWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.exporter.rdbms.utils.DateUtil;
+import io.camunda.search.entities.JobEntity.JobKind;
+import io.camunda.search.entities.JobEntity.JobState;
+import io.camunda.search.entities.JobEntity.ListenerEventType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -99,7 +99,6 @@ public class JobExportHandler implements RdbmsExportHandler<JobRecordValue> {
     }
 
     if (intent.equals(JobIntent.FAILED) || intent.equals(JobIntent.ERROR_THROWN)) {
-      // set flowNodeId to null to not overwrite it (because zeebe puts an error message there)
       builder.elementId(null);
       builder.hasFailedWithRetriesLeft(value.getRetries() > 0);
     }
