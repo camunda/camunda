@@ -100,14 +100,14 @@ public final class BatchOperationLeadPartitionFailProcessor
 
         if (bo.getFinishedPartitions().size() == bo.getPartitions().size()) {
           LOGGER.debug(
-              "All partitions finished, appending COMPLETED event for batch operation {}",
+              "All partitions finished, but some with errors, appending PARTIALLY_COMPLETED event for batch operation {}",
               batchOperationKey);
           final var batchFinished = new BatchOperationLifecycleManagementRecord();
           batchFinished.setBatchOperationKey(batchOperationKey);
           batchFinished.setErrors(bo.getErrors());
           stateWriter.appendFollowUpEvent(
               batchOperationKey,
-              BatchOperationIntent.COMPLETED_WITH_ERRORS,
+              BatchOperationIntent.PARTIALLY_COMPLETED,
               batchFinished,
               FollowUpEventMetadata.of(
                   b -> b.batchOperationReference(command.getValue().getBatchOperationKey())));

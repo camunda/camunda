@@ -35,7 +35,7 @@ public class BatchOperationLifecycleManagementHandler
           BatchOperationIntent.SUSPENDED,
           BatchOperationIntent.RESUMED,
           BatchOperationIntent.COMPLETED,
-          BatchOperationIntent.COMPLETED_WITH_ERRORS);
+          BatchOperationIntent.PARTIALLY_COMPLETED);
   private final String indexName;
 
   public BatchOperationLifecycleManagementHandler(final String indexName) {
@@ -82,10 +82,10 @@ public class BatchOperationLifecycleManagementHandler
       entity.setEndDate(null).setState(BatchOperationState.ACTIVE);
     } else if (record.getIntent().equals(BatchOperationIntent.COMPLETED)) {
       entity.setEndDate(null).setState(BatchOperationState.COMPLETED);
-    } else if (record.getIntent().equals(BatchOperationIntent.COMPLETED_WITH_ERRORS)) {
+    } else if (record.getIntent().equals(BatchOperationIntent.PARTIALLY_COMPLETED)) {
       entity
           .setEndDate(null)
-          .setState(BatchOperationState.COMPLETED_WITH_ERRORS)
+          .setState(BatchOperationState.PARTIALLY_COMPLETED)
           .setErrors(mapErrors(record.getValue().getErrors()));
     }
   }

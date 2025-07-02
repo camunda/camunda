@@ -64,7 +64,7 @@ public record BatchOperationEntity(
     ACTIVE,
     SUSPENDED,
     COMPLETED,
-    COMPLETED_WITH_ERRORS,
+    PARTIALLY_COMPLETED,
     CANCELED,
     INCOMPLETED // This is just used for running legacy batch operations
   }

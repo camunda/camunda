@@ -175,12 +175,12 @@ class BatchOperationLifecycleManagementHandlerTest {
   }
 
   @Test
-  void shouldUpdateEntityForCompletedWithErrorsIntent() {
+  void shouldUpdateEntityForPartiallyCompletedIntent() {
     // given
     final Record<BatchOperationLifecycleManagementRecordValue> record =
         factory.generateRecord(
             ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
-            r -> r.withIntent(BatchOperationIntent.COMPLETED_WITH_ERRORS));
+            r -> r.withIntent(BatchOperationIntent.PARTIALLY_COMPLETED));
 
     final var entity = new BatchOperationEntity();
 
@@ -188,7 +188,7 @@ class BatchOperationLifecycleManagementHandlerTest {
     handler.updateEntity(record, entity);
 
     // then
-    assertThat(entity.getState()).isEqualTo(BatchOperationState.COMPLETED_WITH_ERRORS);
+    assertThat(entity.getState()).isEqualTo(BatchOperationState.PARTIALLY_COMPLETED);
     assertThat(entity.getEndDate()).isNull();
     record
         .getValue()

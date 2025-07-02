@@ -144,7 +144,7 @@ public final class BatchOperationMultiPartitionTest {
   }
 
   @Test
-  public void shouldTreatFailedAsCompletedWithErrors() {
+  public void shouldTreatFailedAsPartiallyCompleted() {
     // given
     final long batchOperationKey = createDistributedBatchOperation();
 
@@ -190,10 +190,10 @@ public final class BatchOperationMultiPartitionTest {
                 .withBatchOperationKey(batchOperationKey)
                 .withPartitionId(1)
                 .limit(
-                    record -> record.getIntent().equals(BatchOperationIntent.COMPLETED_WITH_ERRORS))
+                    record -> record.getIntent().equals(BatchOperationIntent.PARTIALLY_COMPLETED))
                 .collect(Collectors.toList()))
         .extracting(Record::getIntent)
-        .contains(BatchOperationIntent.COMPLETED_WITH_ERRORS);
+        .contains(BatchOperationIntent.PARTIALLY_COMPLETED);
 
     // partitions 1 and 2 are completed
     for (int i = 1; i < PARTITION_COUNT; i++) {
