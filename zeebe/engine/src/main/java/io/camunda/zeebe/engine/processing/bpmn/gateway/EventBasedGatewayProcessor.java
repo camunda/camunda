@@ -81,9 +81,9 @@ public final class EventBasedGatewayProcessor
                         notSuspended ->
                             eventSubscriptionBehavior.activateTriggeredEvent(
                                 context.getElementInstanceKey(),
-                                notSuspended.getFlowScopeKey(),
+                                completed.getFlowScopeKey(),
                                 eventTrigger,
-                                notSuspended)));
+                                completed)));
   }
 
   @Override

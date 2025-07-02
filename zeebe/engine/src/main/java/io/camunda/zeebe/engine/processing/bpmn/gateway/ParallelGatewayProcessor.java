@@ -53,8 +53,7 @@ public final class ParallelGatewayProcessor implements BpmnElementProcessor<Exec
                     // gateway
                     .ifLeft(
                         notSuspended ->
-                            stateTransitionBehavior.takeOutgoingSequenceFlows(
-                                element, notSuspended)));
+                            stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed)));
   }
 
   @Override

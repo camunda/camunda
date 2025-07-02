@@ -68,8 +68,7 @@ public final class BoundaryEventProcessor implements BpmnElementProcessor<Execut
                     .suspendProcessInstanceIfNeeded(element, completed)
                     .ifLeft(
                         notSuspended ->
-                            stateTransitionBehavior.takeOutgoingSequenceFlows(
-                                element, notSuspended)));
+                            stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed)));
   }
 
   @Override

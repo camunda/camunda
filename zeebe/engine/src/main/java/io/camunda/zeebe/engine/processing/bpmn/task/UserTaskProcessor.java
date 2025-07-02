@@ -116,7 +116,7 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
                   .suspendProcessInstanceIfNeeded(element, completed)
                   .ifLeft(
                       notSuspended ->
-                          stateTransitionBehavior.takeOutgoingSequenceFlows(element, notSuspended));
+                          stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
             });
   }
 

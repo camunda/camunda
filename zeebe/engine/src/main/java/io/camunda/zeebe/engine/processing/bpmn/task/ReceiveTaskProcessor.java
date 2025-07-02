@@ -83,7 +83,7 @@ public final class ReceiveTaskProcessor implements BpmnElementProcessor<Executab
                   .suspendProcessInstanceIfNeeded(element, completed)
                   .ifLeft(
                       notSuspended ->
-                          stateTransitionBehavior.takeOutgoingSequenceFlows(element, notSuspended));
+                          stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
             });
   }
 

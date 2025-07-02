@@ -105,7 +105,7 @@ public final class BusinessRuleTaskProcessor
                   .suspendProcessInstanceIfNeeded(element, completed)
                   .ifLeft(
                       notSuspended ->
-                          stateTransitionBehavior.takeOutgoingSequenceFlows(element, notSuspended));
+                          stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
             });
   }
 

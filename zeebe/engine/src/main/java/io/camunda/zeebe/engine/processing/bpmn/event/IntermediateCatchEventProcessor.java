@@ -79,8 +79,7 @@ public class IntermediateCatchEventProcessor
                     .suspendProcessInstanceIfNeeded(element, completed)
                     .ifLeft(
                         notSuspended ->
-                            stateTransitionBehavior.takeOutgoingSequenceFlows(
-                                element, notSuspended)));
+                            stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed)));
   }
 
   @Override

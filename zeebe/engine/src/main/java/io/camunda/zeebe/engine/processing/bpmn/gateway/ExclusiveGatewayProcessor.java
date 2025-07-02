@@ -68,7 +68,7 @@ public final class ExclusiveGatewayProcessor
                                       optFlow.ifPresent(
                                           flow ->
                                               stateTransitionBehavior.takeSequenceFlow(
-                                                  notSuspended, flow))));
+                                                  completed, flow))));
             });
   }
 

@@ -186,7 +186,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
                       .ifLeft(
                           notSuspended ->
                               stateTransitionBehavior.takeOutgoingSequenceFlows(
-                                  element, notSuspended)));
+                                  element, completed)));
     }
   }
 
@@ -270,7 +270,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
                       .ifLeft(
                           notSuspended ->
                               stateTransitionBehavior.takeOutgoingSequenceFlows(
-                                  element, notSuspended)));
+                                  element, completed)));
     }
 
     @Override
@@ -353,7 +353,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
                       .ifLeft(
                           notSuspended ->
                               stateTransitionBehavior.takeOutgoingSequenceFlows(
-                                  element, notSuspended)));
+                                  element, completed)));
     }
 
     private Either<Failure, DirectBuffer> evaluateEscalationCode(
@@ -414,7 +414,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
                       .ifLeft(
                           notSuspended ->
                               stateTransitionBehavior.takeOutgoingSequenceFlows(
-                                  element, notSuspended)));
+                                  element, completed)));
     }
   }
 
@@ -458,7 +458,7 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
                       .ifLeft(
                           notSuspended ->
                               stateTransitionBehavior.takeOutgoingSequenceFlows(
-                                  element, notSuspended)));
+                                  element, completed)));
     }
   }
 }

@@ -185,8 +185,8 @@ public class IntermediateThrowEventProcessor
                       .suspendProcessInstanceIfNeeded(element, completed)
                       .ifLeft(
                           notSuspended ->
-                              stateTransitionBehavior.takeOutgoingSequenceFlows(
-                                  element, notSuspended)));
+                              stateTransitionBehavior.activateElementInstanceInFlowScope(
+                                  completed, element.getLink().getCatchEventElement())));
     }
   }
 
@@ -239,7 +239,7 @@ public class IntermediateThrowEventProcessor
                       .ifLeft(
                           notSuspended ->
                               stateTransitionBehavior.takeOutgoingSequenceFlows(
-                                  element, notSuspended)));
+                                  element, completed)));
     }
 
     @Override
@@ -284,7 +284,7 @@ public class IntermediateThrowEventProcessor
                       .ifLeft(
                           notSuspended ->
                               stateTransitionBehavior.takeOutgoingSequenceFlows(
-                                  element, notSuspended)));
+                                  element, completed)));
     }
   }
 
@@ -332,7 +332,7 @@ public class IntermediateThrowEventProcessor
                       .ifLeft(
                           notSuspended ->
                               stateTransitionBehavior.takeOutgoingSequenceFlows(
-                                  element, notSuspended)));
+                                  element, completed)));
     }
 
     private Either<Failure, DirectBuffer> evaluateEscalationCode(
@@ -394,7 +394,7 @@ public class IntermediateThrowEventProcessor
                       .ifLeft(
                           notSuspended ->
                               stateTransitionBehavior.takeOutgoingSequenceFlows(
-                                  element, notSuspended)));
+                                  element, completed)));
     }
   }
 
@@ -438,7 +438,7 @@ public class IntermediateThrowEventProcessor
                       .ifLeft(
                           notSuspended ->
                               stateTransitionBehavior.takeOutgoingSequenceFlows(
-                                  element, notSuspended)));
+                                  element, completed)));
     }
   }
 }
