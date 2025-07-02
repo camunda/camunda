@@ -238,7 +238,7 @@ jobs:
             # NOTE: optimize-qa-integrity-tests is temporarily skipped because it needs adjustment
             #   to work with migration from 8.7.0 to 8.8.0.
             # NOTE: Operate and Optimize are skipped here as their UTs are run in consolidated-unit-tests
-            maven-modules: "'-:zeebe-workflow-engine','-:zeebe-broker','-:camunda-process-test-java','-:zeebe-gateway-rest','-:camunda-client-java','-:zeebe-elasticsearch-exporter','-:zeebe-opensearch-exporter','-:camunda-exporter','-:zeebe-atomix-cluster','-:zeebe-cluster-config','-:optimize-schema-integrity-tests','-:operate-common','-:operate-importer-8_7','-:operate-schema','-:operate-webapp','-:optimize-backend','-:upgrade-optimize','-:optimize-commons','-:camunda-optimize','-:tasklist-common','-:tasklist-els-schema','-:tasklist-importer','-:tasklist-importer-common','-:tasklist-webapp','-:camunda-authentication'"
+            maven-modules: "'-:zeebe-workflow-engine','-:zeebe-broker','-:camunda-process-test-java','-:zeebe-gateway-rest','-:camunda-client-java','-:zeebe-elasticsearch-exporter','-:zeebe-opensearch-exporter','-:camunda-exporter','-:zeebe-atomix-cluster','-:zeebe-cluster-config','-:optimize-schema-integrity-tests','-:operate-common','-:operate-importer-8_7','-:operate-schema','-:operate-webapp','-:optimize-backend','-:upgrade-optimize','-:optimize-commons','-:camunda-optimize','-:tasklist-common','-:tasklist-els-schema','-:tasklist-importer','-:tasklist-importer-common','-:tasklist-webapp','-:camunda-authentication','-:camunda-schema-manager'"
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: gcp-perf-core-16-default
@@ -327,6 +327,8 @@ jobs:
             suiteName: Core Features
           - component: Authentication
             suiteName: Identity
+          - component: SchemaManager
+            suite: DataLayer
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
