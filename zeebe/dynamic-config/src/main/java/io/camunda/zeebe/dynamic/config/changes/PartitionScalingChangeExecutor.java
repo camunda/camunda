@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.dynamic.config.changes;
 
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.time.Duration;
@@ -30,6 +31,8 @@ public interface PartitionScalingChangeExecutor {
 
   ActorFuture<Void> notifyPartitionBootstrapped(int partitionId);
 
+  ActorFuture<RoutingState> getRoutingState();
+
   final class NoopPartitionScalingChangeExecutor implements PartitionScalingChangeExecutor {
     @Override
     public ActorFuture<Void> initiateScaleUp(final int desiredPartitionCount) {
@@ -47,6 +50,11 @@ public interface PartitionScalingChangeExecutor {
     @Override
     public ActorFuture<Void> notifyPartitionBootstrapped(final int partitionId) {
       return CompletableActorFuture.completed();
+    }
+
+    @Override
+    public ActorFuture<RoutingState> getRoutingState() {
+      return CompletableActorFuture.completed(null);
     }
   }
 }

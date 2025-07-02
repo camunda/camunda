@@ -7,5 +7,36 @@
  */
 package io.camunda.zeebe.dynamic.config.api;
 
-public class UpdateRoutingStateTransformer {
+import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import io.camunda.zeebe.util.Either;
+import java.util.List;
+import java.util.Optional;
+
+public class UpdateRoutingStateTransformer implements ConfigurationChangeRequest {
+
+  private final boolean enablePartitionScaling;
+  private final Optional<RoutingState> routingState;
+
+  public UpdateRoutingStateTransformer(
+      final boolean enablePartitionScaling, final Optional<RoutingState> routingState) {
+    this.enablePartitionScaling = enablePartitionScaling;
+    this.routingState = routingState;
+  }
+
+  @Override
+  public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
+      final ClusterConfiguration clusterConfiguration) {
+    if (!enablePartitionScaling) {
+      return Either.left(
+          new IllegalStateException("Partition scaling is disabled. Cannot update routing state."));
+    }
+    final var coordinatorSupplier =
+        ClusterConfigurationCoordinatorSupplier.of(() -> clusterConfiguration);
+    final var coordinator = coordinatorSupplier.getDefaultCoordinator();
+    return Either.right(List.of(new UpdateRoutingState(coordinator, routingState)));
+  }
 }
