@@ -60,6 +60,7 @@ import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TimerRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
+import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
@@ -170,6 +171,7 @@ public class CompactRecordLogger {
         ValueType.AD_HOC_SUB_PROCESS_ACTIVITY_ACTIVATION,
         this::summarizeAdHocSubProcessActivityActivation);
     valueLoggers.put(ValueType.VARIABLE, this::summarizeVariable);
+    valueLoggers.put(ValueType.VARIABLE_DOCUMENT, this::summarizeVariableDocument);
     valueLoggers.put(ValueType.TIMER, this::summarizeTimer);
     valueLoggers.put(ValueType.ERROR, this::summarizeError);
     valueLoggers.put(ValueType.PROCESS_EVENT, this::summarizeProcessEvent);
@@ -427,7 +429,7 @@ public class CompactRecordLogger {
 
   private String summarizeVariables(final Map<String, Object> variables) {
     if (variables != null && !variables.isEmpty()) {
-      return " with variables: " + variables;
+      return " vars: " + variables;
     } else {
       return " (no vars)";
     }
@@ -812,6 +814,17 @@ public class CompactRecordLogger {
       builder.append(String.format(" at [%s]", shortenKey(value.getScopeKey())));
     }
     return builder.append(">").toString();
+  }
+
+  private String summarizeVariableDocument(final Record<?> record) {
+    final var value = (VariableDocumentRecordValue) record.getValue();
+
+    return "[%s] in <scope [%s]>%s (tenant: %s)"
+        .formatted(
+            value.getUpdateSemantics(),
+            shortenKey(value.getScopeKey()),
+            summarizeVariables(value.getVariables()),
+            value.getTenantId());
   }
 
   private StringBuilder summarizeRejection(final Record<?> record) {
