@@ -125,7 +125,7 @@ public class CamundaRdbmsInvocationContextProviderExtension
       public List<Extension> getAdditionalExtensions() {
 
         return List.of(
-            new CamundaDatabaseTestApplicationParameterResolver(
+            new CamundaDatabaseTestApplicationResolver(
                 standaloneCamundaKey, SUPPORTED_TEST_APPLICATIONS.get(standaloneCamundaKey)));
       }
     };
