@@ -17,8 +17,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "18"
-          cache: "yarn"
-          cache-dependency-path: operate/client/yarn.lock
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        with:
+          directory: operate/client
       - run: npx update-browserslist-db@latest --yes
         name: Update DB
       - uses: stefanzweifel/git-auto-commit-action@01d77ca6cb089da1360e540865f7d035c95aa199
