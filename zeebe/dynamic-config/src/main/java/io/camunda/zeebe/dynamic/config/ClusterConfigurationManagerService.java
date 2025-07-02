@@ -147,10 +147,7 @@ public final class ClusterConfigurationManagerService
                 staticConfiguration.partitionConfig().exporting().exporters().keySet(),
                 staticConfiguration.localMemberId(),
                 managerActor))
-        .andThen(
-            new RoutingStateInitializer(
-                staticConfiguration.enablePartitionScaling(),
-                staticConfiguration.partitionCount()));
+        .andThen(new RoutingStateInitializer(staticConfiguration.enablePartitionScaling()));
   }
 
   private ClusterConfigurationInitializer getCoordinatorInitializer(
@@ -172,10 +169,7 @@ public final class ClusterConfigurationManagerService
                 staticConfiguration.partitionConfig().exporting().exporters().keySet(),
                 staticConfiguration.localMemberId(),
                 managerActor))
-        .andThen(
-            new RoutingStateInitializer(
-                staticConfiguration.enablePartitionScaling(),
-                staticConfiguration.partitionCount()));
+        .andThen(new RoutingStateInitializer(staticConfiguration.enablePartitionScaling()));
   }
 
   /** Starts ClusterConfigurationManager which initializes ClusterConfiguration */

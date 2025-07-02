@@ -56,7 +56,7 @@ final class ClusterConfigurationModifierTest {
     @Test
     void shouldNotInitializeRoutingStateIfPartitionScalingIsDisabled() {
       // given
-      final var routingStateInitializer = new RoutingStateInitializer(false, 3);
+      final var routingStateInitializer = new RoutingStateInitializer(false);
 
       // when
       final var newConfiguration = routingStateInitializer.modify(currentConfiguration).join();
@@ -68,7 +68,7 @@ final class ClusterConfigurationModifierTest {
     @Test
     void shouldInitializeRoutingStateIfPartitionScalingIsEnabled() {
       // given
-      final var routingStateInitializer = new RoutingStateInitializer(true, 5);
+      final var routingStateInitializer = new RoutingStateInitializer(true);
 
       // when
       final var newConfiguration = routingStateInitializer.modify(currentConfiguration).join();
