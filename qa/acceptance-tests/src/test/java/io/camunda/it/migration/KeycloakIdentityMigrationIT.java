@@ -64,6 +64,12 @@ public class KeycloakIdentityMigrationIT {
 
   private static final GenericContainer<?> IDENTITY =
       IdentityMigrationTestUtil.getManagementIdentitySMKeycloak(KEYCLOAK)
+          // this triggers the setup of the default roles for operate, tasklist and zeebe
+          .withEnv("KEYCLOAK_INIT_OPERATE_SECRET", "operate")
+          .withEnv("KEYCLOAK_INIT_OPERATE_ROOT_URL", "http://localhost:8081")
+          .withEnv("KEYCLOAK_INIT_TASKLIST_SECRET", "tasklist")
+          .withEnv("KEYCLOAK_INIT_TASKLIST_ROOT_URL", "http://localhost:8081")
+          .withEnv("KEYCLOAK_INIT_ZEEBE_NAME", "zeebe")
           // create groups
           .withEnv("KEYCLOAK_GROUPS_0_NAME", "groupA")
           .withEnv("KEYCLOAK_GROUPS_1_NAME", "groupB")
@@ -77,6 +83,10 @@ public class KeycloakIdentityMigrationIT {
           .withEnv("KEYCLOAK_USERS_0_GROUPS_0", "groupA")
           .withEnv("KEYCLOAK_USERS_0_GROUPS_1", "groupB")
           .withEnv("KEYCLOAK_USERS_0_ROLES_0", "Identity")
+          .withEnv("KEYCLOAK_USERS_0_ROLES_1", "Operate")
+          .withEnv("KEYCLOAK_USERS_0_ROLES_2", "Tasklist")
+          .withEnv("KEYCLOAK_USERS_0_ROLES_3", "Zeebe")
+          //          .withEnv("KEYCLOAK_USERS_0_ROLES_1", "Zeebe")
           .withEnv("KEYCLOAK_USERS_1_EMAIL", "user1@email.com")
           .withEnv("KEYCLOAK_USERS_1_FIRST-NAME", "user1")
           .withEnv("KEYCLOAK_USERS_1_LAST-NAME", "user1")
