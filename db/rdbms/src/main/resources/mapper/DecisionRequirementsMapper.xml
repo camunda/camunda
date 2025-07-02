@@ -87,10 +87,7 @@
     </constructor>
   </resultMap>
 
-  <insert
-    id="insert"
-    parameterType="io.camunda.db.rdbms.write.domain.DecisionRequirementsDbModel"
-    flushCache="true">
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.DecisionRequirementsDbModel">
     INSERT INTO ${prefix}DECISION_REQUIREMENTS (DECISION_REQUIREMENTS_KEY, DECISION_REQUIREMENTS_ID,
                                                 NAME, TENANT_ID, VERSION, RESOURCE_NAME, XML)
     VALUES (#{decisionRequirementsKey}, #{decisionRequirementsId}, #{name},

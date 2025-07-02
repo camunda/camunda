@@ -116,8 +116,7 @@
 
   <select id="search"
     parameterType="io.camunda.db.rdbms.read.domain.BatchOperationDbQuery"
-    resultMap="BatchOperationResultMap"
-    statementType="PREPARED">
+    resultMap="BatchOperationResultMap">
 
   SELECT * FROM (
     SELECT
@@ -171,8 +170,7 @@
 
   <select id="searchItems"
     parameterType="io.camunda.db.rdbms.read.domain.BatchOperationItemDbQuery"
-    resultMap="BatchOperationItemResultMap"
-    statementType="PREPARED">
+    resultMap="BatchOperationItemResultMap">
 
     SELECT * FROM (
     SELECT BATCH_OPERATION_ID, ITEM_KEY, PROCESS_INSTANCE_KEY, STATE, PROCESSED_DATE, ERROR_MESSAGE

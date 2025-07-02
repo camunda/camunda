@@ -27,19 +27,13 @@
     WHERE JOB_KEY = #{jobKey}
   </update>
 
-  <update
-    flushCache="true"
-    id="updateHistoryCleanupDate"
-    statementType="PREPARED">
+  <update id="updateHistoryCleanupDate">
     UPDATE ${prefix}JOB SET
       HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
     WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
   </update>
 
-  <delete
-    flushCache="true"
-    id="cleanupHistory"
-    statementType="PREPARED">
+  <delete id="cleanupHistory">
     <bind name="tableName" value="'JOB'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
   </delete>
