@@ -31,14 +31,12 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Optional;
 import java.util.UUID;
 import org.apache.http.HttpHost;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -52,9 +50,7 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.core.search.Hit;
-import org.opensearch.client.opensearch.generic.Body;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
-import org.opensearch.client.opensearch.generic.Request;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.transport.aws.AwsSdk2Transport;
 import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
@@ -83,6 +79,16 @@ final class OpenSearchArchiverRepositoryIT {
   private final String batchOperationIndex =
       ARCHIVER_IDX_PREFIX + "batch-operation-" + UUID.randomUUID();
   private final OpenSearchClient testClient = createOpenSearchClient();
+  private final String zeebeIndexPrefix = "zeebe-record";
+  private final String zeebeIndex = zeebeIndexPrefix + "-" + UUID.randomUUID();
+
+  @AfterEach
+  void afterEach() throws IOException {
+    // wipes all data in OS between tests
+    final var response =
+        transport.restClient().performRequest(new org.opensearch.client.Request("DELETE", "_all"));
+    assertThat(response.getStatusLine().getStatusCode()).isEqualTo(200);
+  }
 
   @Test
   void shouldDeleteDocuments() throws IOException {
@@ -423,6 +429,66 @@ final class OpenSearchArchiverRepositoryIT {
                         .equals(dateFormatter.format(now.minus(Duration.ofHours(2)))));
   }
 
+  @Test
+  void shouldFetchHistoricalDatesOnStart() throws IOException {
+    final var dateFormatter =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+    final var now = Instant.now();
+    final var documents =
+        List.of(
+            new TestBatchOperation("1", now.minus(Duration.ofDays(1)).toString()),
+            new TestBatchOperation("2", now.minus(Duration.ofDays(1)).toString()));
+
+    final var repository = createRepository();
+    // we have an already existing index with a date of 3 days ago.
+    testClient
+        .indices()
+        .create(
+            r ->
+                r.index(
+                    batchOperationIndex
+                        + "_"
+                        + dateFormatter.format(now.minus(Duration.ofDays(3)))));
+
+    createBatchOperationIndex();
+    documents.forEach(doc -> index(batchOperationIndex, doc));
+    testClient.indices().refresh(r -> r.index(batchOperationIndex));
+    config.setRolloverInterval("3d");
+
+    // then the batch finish date should not update:
+    final var batch = repository.getBatchOperationsNextBatch().join();
+    assertThat(batch.ids()).containsAll(List.of("1", "2"));
+    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(3))));
+  }
+
+  @Test
+  void shouldFetchHistoricalDatesOnStartAndExcludeZeebePrefix() throws IOException {
+    final var dateFormatter =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+    final var now = Instant.now();
+    final var documents =
+        List.of(
+            new TestBatchOperation("1", now.minus(Duration.ofDays(1)).toString()),
+            new TestBatchOperation("2", now.minus(Duration.ofDays(1)).toString()));
+
+    final var repository = createRepository();
+    // we have an already existing Zeebe index with a date of 3 days ago.
+    testClient
+        .indices()
+        .create(
+            r -> r.index(zeebeIndex + "_" + dateFormatter.format(now.minus(Duration.ofDays(3)))));
+
+    createBatchOperationIndex();
+    documents.forEach(doc -> index(batchOperationIndex, doc));
+    testClient.indices().refresh(r -> r.index(batchOperationIndex));
+    config.setRolloverInterval("3d");
+
+    // then the batch finish date should update since zeebe index should be excluded:
+    final var batch = repository.getBatchOperationsNextBatch().join();
+    assertThat(batch.ids()).containsAll(List.of("1", "2"));
+    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(1))));
+  }
+
   private void createBatchOperationIndex() throws IOException {
     final var idProp = Property.of(p -> p.keyword(k -> k.index(true)));
     final var endDateProp =
@@ -490,6 +556,7 @@ final class OpenSearchArchiverRepositoryIT {
         connectConfiguration.getIndexPrefix(),
         processInstanceIndex,
         batchOperationIndex,
+        zeebeIndexPrefix,
         client,
         Runnable::run,
         metrics,
@@ -564,34 +631,6 @@ final class OpenSearchArchiverRepositoryIT {
 
   private record TestProcessInstance(
       String id, String endDate, String joinRelation, int partitionId) implements TDocument {}
-
-  private record DeleteRequest(String endpoint) implements Request {
-
-    @Override
-    public String getMethod() {
-      return "DELETE";
-    }
-
-    @Override
-    public String getEndpoint() {
-      return endpoint;
-    }
-
-    @Override
-    public Map<String, String> getParameters() {
-      return Map.of();
-    }
-
-    @Override
-    public Collection<Entry<String, String>> getHeaders() {
-      return List.of();
-    }
-
-    @Override
-    public Optional<Body> getBody() {
-      return Optional.empty();
-    }
-  }
 
   private interface TDocument {
     String id();

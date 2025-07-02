@@ -52,6 +52,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final long AUTO_SLICES = 0; // see OS docs; 0 means auto
   private static final String INDEX_WILDCARD = ".+-\\d+\\.\\d+\\.\\d+_.+$";
+  private static final String ALL_INDICES_PATTERN = ".*";
 
   private final int partitionId;
   private final HistoryConfiguration config;
@@ -62,6 +63,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private final CamundaExporterMetrics metrics;
   private final OpenSearchGenericClient genericClient;
   private String lastHistoricalArchiverDate = null;
+  private final String zeebeIndexPrefix;
 
   public OpenSearchArchiverRepository(
       final int partitionId,
@@ -70,6 +72,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       final String indexPrefix,
       final String processInstanceIndex,
       final String batchOperationIndex,
+      final String zeebeIndexPrefix,
       @WillCloseWhenClosed final OpenSearchAsyncClient client,
       final Executor executor,
       final CamundaExporterMetrics metrics,
@@ -82,6 +85,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     this.processInstanceIndex = processInstanceIndex;
     this.batchOperationIndex = batchOperationIndex;
     this.metrics = metrics;
+    this.zeebeIndexPrefix = zeebeIndexPrefix;
 
     genericClient = new OpenSearchGenericClient(client._transport(), client._transportOptions());
   }
@@ -93,7 +97,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(request, Object.class))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenApplyAsync(
+        .thenComposeAsync(
             (response) -> createArchiveBatch(response, ListViewTemplate.END_DATE), executor);
   }
 
@@ -104,7 +108,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(searchRequest, Object.class))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
-        .thenApplyAsync(
+        .thenComposeAsync(
             (response) -> createArchiveBatch(response, BatchOperationTemplate.END_DATE), executor);
   }
 
@@ -235,28 +239,46 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         batchOperationIndex, endDateQ.toQuery(), BatchOperationTemplate.END_DATE);
   }
 
-  private ArchiveBatch createArchiveBatch(final SearchResponse<?> response, final String field) {
+  private CompletableFuture<ArchiveBatch> createArchiveBatch(
+      final SearchResponse<?> response, final String field) {
     final var hits = response.hits().hits();
     if (hits.isEmpty()) {
-      return new ArchiveBatch(null, List.of());
+      return CompletableFuture.completedFuture(new ArchiveBatch(null, List.of()));
     }
     final var endDate = hits.getFirst().fields().get(field).toJson().asJsonArray().getString(0);
 
-    lastHistoricalArchiverDate =
-        DateOfArchivedDocumentsUtil.calculateDateOfArchiveIndexForBatch(
-            endDate,
-            lastHistoricalArchiverDate,
-            config.getRolloverInterval(),
-            config.getElsRolloverDateFormat());
+    final CompletableFuture<String> dateFuture;
+    try {
+      dateFuture =
+          (lastHistoricalArchiverDate == null)
+              ? DateOfArchivedDocumentsUtil.getLastHistoricalArchiverDate(
+                  fetchIndexMatchingIndexes(ALL_INDICES_PATTERN), zeebeIndexPrefix)
+              : CompletableFuture.completedFuture(lastHistoricalArchiverDate);
+    } catch (final IOException e) {
+      return CompletableFuture.failedFuture(new ExporterException("Failed to fetch indexes:", e));
+    }
 
-    final var ids =
-        hits.stream()
-            .takeWhile(
-                hit -> hit.fields().get(field).toJson().asJsonArray().getString(0).equals(endDate))
-            .map(Hit::id)
-            .toList();
+    return dateFuture.thenApply(
+        date -> {
+          lastHistoricalArchiverDate =
+              DateOfArchivedDocumentsUtil.calculateDateOfArchiveIndexForBatch(
+                  endDate, date, config.getRolloverInterval(), config.getElsRolloverDateFormat());
 
-    return new ArchiveBatch(lastHistoricalArchiverDate, ids);
+          final var ids =
+              hits.stream()
+                  .takeWhile(
+                      hit ->
+                          hit.fields()
+                              .get(field)
+                              .toJson()
+                              .asJsonArray()
+                              .getString(0)
+                              .equals(endDate))
+                  .map(Hit::id)
+                  .toList();
+
+          return new ArchiveBatch(lastHistoricalArchiverDate, ids);
+        });
   }
 
   private TermsQuery buildIdTermsQuery(final String idFieldName, final List<String> idValues) {
