@@ -58,7 +58,7 @@ jobs:
         with:
           method: chat.postMessage
           token: ${{ steps.secrets.outputs.SLACK_API_KEY }}
-          # "C04FM0DRJT0" is the ID of the #team-core-features channel
+          # "C08G19SQ1BM" is the ID of the #team-core-features channel
           payload: |
             {
               "channel": "C08G19SQ1BM",
@@ -109,7 +109,7 @@ jobs:
         with:
           method: chat.postMessage
           token: ${{ steps.secrets.outputs.SLACK_API_KEY }}
-          # "C04FM0DRJT0" is the ID of the #team-data-layer channel
+          # "C08GPP57D8R" is the ID of the #team-data-layer channel
           payload: |
             {
               "channel": "C08GPP57D8R",
