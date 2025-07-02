@@ -141,12 +141,12 @@ public final class BatchOperationLeadPartitionCompleteProcessor
           batchOperationKey, BatchOperationIntent.COMPLETED, batchCompleted, metadata);
     } else {
       LOGGER.debug(
-          "Some partitions ({}) finished with errors, appending COMPLETED_WITH_ERRORS event for batch operation {}",
+          "Some partitions ({}) finished with errors, appending PARTIALLY_COMPLETED event for batch operation {}",
           bo.getErrors().size(),
           batchOperationKey);
       batchCompleted.setErrors(bo.getErrors());
       stateWriter.appendFollowUpEvent(
-          batchOperationKey, BatchOperationIntent.COMPLETED_WITH_ERRORS, batchCompleted, metadata);
+          batchOperationKey, BatchOperationIntent.PARTIALLY_COMPLETED, batchCompleted, metadata);
     }
 
     metrics.recordCompleted(bo.getBatchOperationType());

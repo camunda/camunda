@@ -437,7 +437,7 @@ public class BatchOperationIT {
     final BatchOperationEntity batchOperationEntity = updatedBatchOperation.items().getFirst();
     assertThat(batchOperationEntity.endDate())
         .isCloseTo(endDate, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
-    assertThat(batchOperationEntity.state()).isEqualTo(BatchOperationState.COMPLETED_WITH_ERRORS);
+    assertThat(batchOperationEntity.state()).isEqualTo(BatchOperationState.PARTIALLY_COMPLETED);
     assertThat(batchOperationEntity.errors()).isNotNull();
     assertThat(batchOperationEntity.errors()).hasSize(2);
     final var error1 =

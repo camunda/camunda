@@ -99,7 +99,7 @@ class BatchOperationControllerTest extends RestControllerTest {
             """
           {
               "batchOperationId":"1",
-              "state":"COMPLETED_WITH_ERRORS",
+              "state":"PARTIALLY_COMPLETED",
               "batchOperationType":"CANCEL_PROCESS_INSTANCE",
               "startDate":"2025-03-18T10:57:44.000+01:00",
               "endDate":"2025-03-18T10:57:45.000+01:00",
@@ -270,7 +270,7 @@ class BatchOperationControllerTest extends RestControllerTest {
   private static BatchOperationEntity getFailedBatchOperationEntity(final String batchOperationId) {
     return new BatchOperationEntity(
         batchOperationId,
-        BatchOperationState.COMPLETED_WITH_ERRORS,
+        BatchOperationState.PARTIALLY_COMPLETED,
         "CANCEL_PROCESS_INSTANCE",
         OffsetDateTime.parse("2025-03-18T10:57:44+01:00"),
         OffsetDateTime.parse("2025-03-18T10:57:45+01:00"),

@@ -30,7 +30,7 @@ public class BatchOperationLifecycleManagementExportHandler
           BatchOperationIntent.SUSPENDED,
           BatchOperationIntent.RESUMED,
           BatchOperationIntent.COMPLETED,
-          BatchOperationIntent.COMPLETED_WITH_ERRORS);
+          BatchOperationIntent.PARTIALLY_COMPLETED);
 
   private final BatchOperationWriter batchOperationWriter;
 
@@ -57,7 +57,7 @@ public class BatchOperationLifecycleManagementExportHandler
     } else if (record.getIntent().equals(BatchOperationIntent.COMPLETED)) {
       batchOperationWriter.finish(
           batchOperationId, DateUtil.toOffsetDateTime(record.getTimestamp()));
-    } else if (record.getIntent().equals(BatchOperationIntent.COMPLETED_WITH_ERRORS)) {
+    } else if (record.getIntent().equals(BatchOperationIntent.PARTIALLY_COMPLETED)) {
       batchOperationWriter.finishWithErrors(
           batchOperationId,
           DateUtil.toOffsetDateTime(record.getTimestamp()),

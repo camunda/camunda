@@ -126,7 +126,7 @@ public class BatchOperationWriter {
     updateCompleted(
         batchOperationId,
         new BatchOperationUpdateDto(
-            batchOperationId, BatchOperationState.COMPLETED_WITH_ERRORS, endDate));
+            batchOperationId, BatchOperationState.PARTIALLY_COMPLETED, endDate));
   }
 
   public void cancel(final String batchOperationId, final OffsetDateTime endDate) {
