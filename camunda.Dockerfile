@@ -19,7 +19,7 @@ FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base
 WORKDIR /
 
 # Use custom APT timeout and retry values for more resilient builds
-COPY .github/actions/build-pplatform-docker/99apt-timeout-and-retries /etc/apt/apt.conf.d/
+COPY .github/actions/build-platform-docker/99apt-timeout-and-retries /etc/apt/apt.conf.d/
 
 # Upgrade all outdated packages and install missing ones (e.g. locales, tini)
 # This breaks reproducibility of builds, but is acceptable to gain access to security patches faster
