@@ -23,7 +23,8 @@ public enum ClusterConfigurationRequestTopics {
   SCALE_CLUSTER("topology-cluster-scale"),
   PATCH_CLUSTER("topology-cluster-patch"),
   PURGE("topology-cluster-purge"),
-  FORCE_REMOVE_BROKERS("topology-broker-force-remove");
+  FORCE_REMOVE_BROKERS("topology-broker-force-remove"),
+  UPDATE_ROUTING_STATE("topology-cluster-update-routing-state");
 
   private final String topic;
 
