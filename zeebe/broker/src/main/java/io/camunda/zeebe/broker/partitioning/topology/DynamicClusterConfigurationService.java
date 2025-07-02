@@ -25,7 +25,7 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
 
   private PartitionDistribution partitionDistribution;
 
-  private ClusterConfiguration initialClusterConfiguration;
+  private volatile ClusterConfiguration initialClusterConfiguration;
 
   private ClusterConfigurationManagerService clusterConfigurationManagerService;
 
