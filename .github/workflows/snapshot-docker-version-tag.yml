@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions: {}
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/')
+    if: github.repository == 'camunda/camunda' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     outputs:
       tag: ${{ steps.set_docker_snapshot_version_tag.outputs.tag }}
     steps:
