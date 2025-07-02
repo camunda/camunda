@@ -151,9 +151,9 @@ public final class ActivateJobsTest extends ClientTest {
                     .addChangedAttributes("assignee")
                     .setDueDate("2019-04-22T00:00:00Z")
                     .setFollowUpDate("2018-04-23T00:00:00Z")
-                    .setFormKey("formKey_007")
+                    .setFormKey(123)
                     .setPriority(10)
-                    .setUserTaskKey("userTaskKey_123")
+                    .setUserTaskKey(456)
                     .build())
             .build();
 
@@ -196,9 +196,9 @@ public final class ActivateJobsTest extends ClientTest {
               assertThat(props.getChangedAttributes()).containsExactly("assignee");
               assertThat(props.getDueDate()).isEqualTo("2019-04-22T00:00:00Z");
               assertThat(props.getFollowUpDate()).isEqualTo("2018-04-23T00:00:00Z");
-              assertThat(props.getFormKey()).isEqualTo("formKey_007");
+              assertThat(props.getFormKey()).isEqualTo(123);
               assertThat(props.getPriority()).isEqualTo(10);
-              assertThat(props.getUserTaskKey()).isEqualTo("userTaskKey_123");
+              assertThat(props.getUserTaskKey()).isEqualTo(456);
             });
 
     job = response.getJobs().get(1);

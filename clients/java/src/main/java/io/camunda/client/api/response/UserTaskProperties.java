@@ -58,7 +58,7 @@ public interface UserTaskProperties {
   /**
    * @return the key of the form associated with the user task.
    */
-  String getFormKey();
+  Long getFormKey();
 
   /**
    * @return the priority of the user task (0-100).
@@ -68,5 +68,5 @@ public interface UserTaskProperties {
   /**
    * @return the unique key identifying the user task.
    */
-  String getUserTaskKey();
+  Long getUserTaskKey();
 }

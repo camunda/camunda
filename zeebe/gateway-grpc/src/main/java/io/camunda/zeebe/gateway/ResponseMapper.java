@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsArray;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
@@ -400,14 +401,24 @@ public final class ResponseMapper {
                   builder.addAllChangedAttributes(toStringList(value));
               case Protocol.USER_TASK_DUE_DATE_HEADER_NAME -> builder.setDueDate(value);
               case Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME -> builder.setFollowUpDate(value);
-              case Protocol.USER_TASK_FORM_KEY_HEADER_NAME -> builder.setFormKey(value);
+              case Protocol.USER_TASK_FORM_KEY_HEADER_NAME -> {
+                final Long formKey = toLongOrNull(value);
+                if (formKey != null) {
+                  builder.setFormKey(formKey);
+                }
+              }
               case Protocol.USER_TASK_PRIORITY_HEADER_NAME -> {
-                final var priority = toInteger(value);
+                final Integer priority = toIntegerOrNull(value);
                 if (priority != null) {
                   builder.setPriority(priority);
                 }
               }
-              case Protocol.USER_TASK_KEY_HEADER_NAME -> builder.setUserTaskKey(value);
+              case Protocol.USER_TASK_KEY_HEADER_NAME -> {
+                final Long userTaskKey = toLongOrNull(value);
+                if (userTaskKey != null) {
+                  builder.setUserTaskKey(userTaskKey);
+                }
+              }
               default -> {
                 /* Ignore not user task headers */
               }
@@ -423,22 +434,33 @@ public final class ResponseMapper {
     }
 
     try {
-      return OBJECT_MAPPER.readValue(
-          input, OBJECT_MAPPER.getTypeFactory().constructCollectionType(List.class, String.class));
+      return OBJECT_MAPPER.readValue(input, new TypeReference<>() {});
     } catch (final Exception e) {
       LOG.warn("Failed to parse string to list: {}", input, e);
       return List.of();
     }
   }
 
-  public static Integer toInteger(final String value) {
+  public static Integer toIntegerOrNull(final String value) {
     if (value.isEmpty()) {
       return null;
     }
     try {
       return Integer.parseInt(value);
     } catch (final NumberFormatException e) {
-      LOG.warn("Failed to parse integer from value: {}", value, e);
+      LOG.warn("Failed to parse Integer from value: {}", value, e);
+      return null;
+    }
+  }
+
+  public static Long toLongOrNull(final String value) {
+    if (value.isEmpty()) {
+      return null;
+    }
+    try {
+      return Long.parseLong(value);
+    } catch (final NumberFormatException e) {
+      LOG.warn("Failed to parse Long from value: {}", value, e);
       return null;
     }
   }

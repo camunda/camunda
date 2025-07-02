@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
+import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.api.response.UserTaskProperties;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.List;
@@ -30,9 +31,9 @@ public final class UserTaskPropertiesImpl implements UserTaskProperties {
   private final List<String> changedAttributes;
   private final String dueDate;
   private final String followUpDate;
-  private final String formKey;
+  private final Long formKey;
   private final Integer priority;
-  private final String userTaskKey;
+  private final Long userTaskKey;
 
   public UserTaskPropertiesImpl(final GatewayOuterClass.UserTaskProperties props) {
     action = orNull(props::hasAction, props::getAction);
@@ -55,9 +56,9 @@ public final class UserTaskPropertiesImpl implements UserTaskProperties {
     changedAttributes = props.getChangedAttributes();
     dueDate = props.getDueDate();
     followUpDate = props.getFollowUpDate();
-    formKey = props.getFormKey();
+    formKey = ParseUtil.parseLongOrNull(props.getFormKey());
     priority = props.getPriority();
-    userTaskKey = props.getUserTaskKey();
+    userTaskKey = ParseUtil.parseLongOrNull(props.getUserTaskKey());
   }
 
   @Override
@@ -96,7 +97,7 @@ public final class UserTaskPropertiesImpl implements UserTaskProperties {
   }
 
   @Override
-  public String getFormKey() {
+  public Long getFormKey() {
     return formKey;
   }
 
@@ -106,7 +107,7 @@ public final class UserTaskPropertiesImpl implements UserTaskProperties {
   }
 
   @Override
-  public String getUserTaskKey() {
+  public Long getUserTaskKey() {
     return userTaskKey;
   }
 

@@ -110,13 +110,13 @@ message UserTaskProperties {
   optional string followUpDate = 7;
 
   // The key of the form associated with the user task.
-  optional string formKey = 8;
+  optional int64 formKey = 8;
 
   // The priority of the user task (0-100).
   optional int32 priority = 9;
 
   // The unique key identifying the user task.
-  optional string userTaskKey = 10;
+  optional int64 userTaskKey = 10;
 }
 
 message CancelProcessInstanceRequest {

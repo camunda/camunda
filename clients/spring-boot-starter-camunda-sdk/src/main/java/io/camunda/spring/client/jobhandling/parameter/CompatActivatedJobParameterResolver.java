@@ -17,6 +17,7 @@ package io.camunda.spring.client.jobhandling.parameter;
 
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
+import io.camunda.zeebe.client.api.response.UserTaskProperties;
 import java.util.List;
 import java.util.Map;
 
@@ -116,12 +117,12 @@ public class CompatActivatedJobParameterResolver implements ParameterResolver {
     }
 
     @Override
-    public io.camunda.zeebe.client.api.response.UserTaskProperties getUserTask() {
+    public UserTaskProperties getUserTask() {
       if (job.getUserTask() == null) {
         return null;
       }
 
-      return new io.camunda.zeebe.client.api.response.UserTaskProperties() {
+      return new UserTaskProperties() {
         @Override
         public String getAction() {
           return job.getUserTask().getAction();
@@ -158,7 +159,7 @@ public class CompatActivatedJobParameterResolver implements ParameterResolver {
         }
 
         @Override
-        public String getFormKey() {
+        public Long getFormKey() {
           return job.getUserTask().getFormKey();
         }
 
@@ -168,7 +169,7 @@ public class CompatActivatedJobParameterResolver implements ParameterResolver {
         }
 
         @Override
-        public String getUserTaskKey() {
+        public Long getUserTaskKey() {
           return job.getUserTask().getUserTaskKey();
         }
       };

@@ -49,9 +49,9 @@ class ResponseMapperTest {
                   Protocol.USER_TASK_CHANGED_ATTRIBUTES_HEADER_NAME, "[\"assignee\"]",
                   Protocol.USER_TASK_DUE_DATE_HEADER_NAME, "2024-07-01",
                   Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME, "2024-07-02",
-                  Protocol.USER_TASK_FORM_KEY_HEADER_NAME, "formKey",
+                  Protocol.USER_TASK_FORM_KEY_HEADER_NAME, "1",
                   Protocol.USER_TASK_PRIORITY_HEADER_NAME, "10",
-                  Protocol.USER_TASK_KEY_HEADER_NAME, "utKey"),
+                  Protocol.USER_TASK_KEY_HEADER_NAME, "100"),
               props -> {
                 // Verify all user task properties are correctly mapped
                 assertThat(props.getAction()).isEqualTo("complete");
@@ -61,9 +61,9 @@ class ResponseMapperTest {
                 assertThat(props.getChangedAttributes()).containsExactly("assignee");
                 assertThat(props.getDueDate()).isEqualTo("2024-07-01");
                 assertThat(props.getFollowUpDate()).isEqualTo("2024-07-02");
-                assertThat(props.getFormKey()).isEqualTo("formKey");
+                assertThat(props.getFormKey()).isEqualTo("1");
                 assertThat(props.getPriority()).isEqualTo(10);
-                assertThat(props.getUserTaskKey()).isEqualTo("utKey");
+                assertThat(props.getUserTaskKey()).isEqualTo("100");
               }),
           new ActivatedJobWithUserTaskPropsCase(
               "TASK_LISTENER job with invalid or empty header values",

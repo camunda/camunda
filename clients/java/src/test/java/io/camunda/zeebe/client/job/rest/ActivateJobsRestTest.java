@@ -162,9 +162,9 @@ public final class ActivateJobsRestTest extends ClientRestTest {
                 .addChangedAttributesItem("assignee")
                 .dueDate("2019-04-22T00:00:00Z")
                 .followUpDate("2018-04-23T00:00:00Z")
-                .formKey("formKey_007")
+                .formKey("1")
                 .priority(10)
-                .userTaskKey("userTaskKey_123"),
+                .userTaskKey("100"),
             props -> {
               assertThat(props.getAction()).isEqualTo("update");
               assertThat(props.getAssignee()).isEqualTo("tony");
@@ -173,9 +173,9 @@ public final class ActivateJobsRestTest extends ClientRestTest {
               assertThat(props.getChangedAttributes()).containsExactly("assignee");
               assertThat(props.getDueDate()).isEqualTo("2019-04-22T00:00:00Z");
               assertThat(props.getFollowUpDate()).isEqualTo("2018-04-23T00:00:00Z");
-              assertThat(props.getFormKey()).isEqualTo("formKey_007");
+              assertThat(props.getFormKey()).isEqualTo(1);
               assertThat(props.getPriority()).isEqualTo(10);
-              assertThat(props.getUserTaskKey()).isEqualTo("userTaskKey_123");
+              assertThat(props.getUserTaskKey()).isEqualTo(100);
             }),
         new ActivateJobWithUserTaskPropsTestCase(
             "should activate job with empty user task properties",

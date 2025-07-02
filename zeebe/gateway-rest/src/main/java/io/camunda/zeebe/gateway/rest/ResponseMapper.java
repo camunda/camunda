@@ -13,6 +13,7 @@ import static java.time.temporal.ChronoField.MINUTE_OF_HOUR;
 import static java.time.temporal.ChronoField.NANO_OF_SECOND;
 import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentError;
 import io.camunda.document.api.DocumentError.DocumentAlreadyExists;
@@ -218,7 +219,7 @@ public final class ResponseMapper {
     props.setDueDate(headers.get(Protocol.USER_TASK_DUE_DATE_HEADER_NAME));
     props.setFollowUpDate(headers.get(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME));
     props.setFormKey(headers.get(Protocol.USER_TASK_FORM_KEY_HEADER_NAME));
-    props.setPriority(toInteger(headers.get(Protocol.USER_TASK_PRIORITY_HEADER_NAME)));
+    props.setPriority(toIntegerOrNull(headers.get(Protocol.USER_TASK_PRIORITY_HEADER_NAME)));
     props.setUserTaskKey(headers.get(Protocol.USER_TASK_KEY_HEADER_NAME));
 
     return props;
@@ -230,22 +231,21 @@ public final class ResponseMapper {
     }
 
     try {
-      return OBJECT_MAPPER.readValue(
-          input, OBJECT_MAPPER.getTypeFactory().constructCollectionType(List.class, String.class));
+      return OBJECT_MAPPER.readValue(input, new TypeReference<>() {});
     } catch (final Exception e) {
       LOG.warn("Failed to map string to list: {}", input, e);
       return List.of();
     }
   }
 
-  public static Integer toInteger(final String value) {
+  public static Integer toIntegerOrNull(final String value) {
     if (value == null || value.isEmpty()) {
       return null;
     }
     try {
       return Integer.parseInt(value);
     } catch (final NumberFormatException e) {
-      LOG.warn("Failed to parse integer from value: {}", value, e);
+      LOG.warn("Failed to parse Integer from value: {}", value, e);
       return null;
     }
   }
