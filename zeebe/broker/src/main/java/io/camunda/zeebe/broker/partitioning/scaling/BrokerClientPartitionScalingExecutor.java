@@ -14,6 +14,9 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotRequest.DeleteSnapshotForBootstrapRequest;
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotBrokerRequest;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import io.camunda.zeebe.gateway.impl.broker.request.scaling.BrokerPartitionBootstrappedRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.scaling.BrokerPartitionScaleUpRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.scaling.GetScaleUpProgress;
@@ -26,6 +29,8 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.time.Duration;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,6 +99,28 @@ public class BrokerClientPartitionScalingExecutor implements PartitionScalingCha
           }
         },
         concurrencyControl);
+  }
+
+  @Override
+  public ActorFuture<RoutingState> getRoutingState() {
+    final var result = concurrencyControl.<Void>createFuture();
+    brokerClient.sendRequestWithRetry(
+        new GetScaleUpProgress(),
+        (key, response) -> {
+          final var requestHandling =
+              (response.getRedistributedPartitions().size() == response.getDesiredPartitionCount())
+                  ? new RequestHandling.AllPartitions(response.getDesiredPartitionCount())
+                  : new RequestHandling.ActivePartitions(
+                      response.getRedistributedPartitions().size(),
+                      Set.of(),
+                      IntStream.rangeClosed(
+                              response.getRedistributedPartitions().size(),
+                              response.getDesiredPartitionCount())
+                          .boxed()
+                          .collect(Collectors.toSet()));
+          final var mesageCorrelation = new MessageCorrelation.HashMod()
+        },
+        error -> {});
   }
 
   private ActorFuture<Void> awaitRedistributionProgress(
