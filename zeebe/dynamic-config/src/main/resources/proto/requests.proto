@@ -53,6 +53,11 @@ message ClusterPatchRequest {
   bool dryRun = 5;
 }
 
+message UpdateRoutingStateRequest{
+  topology_protocol.RoutingState routing_state = 1;
+  bool dryRun = 2;
+}
+
 message ForceRemoveBrokersRequest {
   repeated string membersToRemove = 1;
   bool dryRun = 2;
