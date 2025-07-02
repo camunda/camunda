@@ -102,6 +102,32 @@ public class BasicAuthWebSecurityConfigTest extends AbstractWebSecurityConfigTes
     assertThat(result).hasStatusOk();
   }
 
+  @Test
+  public void shouldAcceptRequestsToProtectedWebResourcesWithoutAuthentication() {
+    // when
+    final MvcTestResult testResult =
+        mockMvcTester
+            .get()
+            .uri("https://localhost" + TestApiController.DUMMY_WEBAPP_ENDPOINT)
+            .exchange();
+
+    // then
+    assertThat(testResult).hasStatusOk();
+  }
+
+  @Test
+  public void shouldAcceptRequestToUnprotectedWebResourcesWithoutAuthentication() {
+    // when
+    final MvcTestResult testResult =
+        mockMvcTester
+            .get()
+            .uri("https://localhost" + TestApiController.DUMMY_UNPROTECTED_ENDPOINT)
+            .exchange();
+
+    // then
+    assertThat(testResult).hasStatusOk();
+  }
+
   protected static HttpHeaders basicAuthDemo() {
     final HttpHeaders headers = new HttpHeaders();
 
