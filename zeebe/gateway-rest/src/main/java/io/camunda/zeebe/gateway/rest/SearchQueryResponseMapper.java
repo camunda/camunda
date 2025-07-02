@@ -42,7 +42,6 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.service.cache.ProcessCacheItem;
 import io.camunda.zeebe.gateway.protocol.rest.AdHocSubProcessActivityResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationResult;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResult;
@@ -128,7 +127,6 @@ import io.camunda.zeebe.gateway.rest.util.KeyUtil;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class SearchQueryResponseMapper {
@@ -371,14 +369,13 @@ public final class SearchQueryResponseMapper {
   }
 
   public static ElementInstanceSearchQueryResult toElementInstanceSearchQueryResponse(
-      final SearchQueryResult<FlowNodeInstanceEntity> result,
-      final Map<Long, ProcessCacheItem> processCacheItems) {
+      final SearchQueryResult<FlowNodeInstanceEntity> result) {
     final var page = toSearchQueryPageResponse(result);
     return new ElementInstanceSearchQueryResult()
         .page(page)
         .items(
             ofNullable(result.items())
-                .map(instances -> toElementInstance(instances, processCacheItems))
+                .map(instances -> toElementInstance(instances))
                 .orElseGet(Collections::emptyList));
   }
 
@@ -699,28 +696,15 @@ public final class SearchQueryResponseMapper {
   }
 
   private static List<ElementInstanceResult> toElementInstance(
-      final List<FlowNodeInstanceEntity> instances,
-      final Map<Long, ProcessCacheItem> processCacheItems) {
-    return instances.stream()
-        .map(
-            instance -> {
-              final var elementName =
-                  (instance.flowNodeName() != null)
-                      ? instance.flowNodeName()
-                      : processCacheItems
-                          .getOrDefault(instance.processDefinitionKey(), ProcessCacheItem.EMPTY)
-                          .getElementName(instance.flowNodeId());
-              return toElementInstance(instance, elementName);
-            })
-        .toList();
+      final List<FlowNodeInstanceEntity> instances) {
+    return instances.stream().map(SearchQueryResponseMapper::toElementInstance).toList();
   }
 
-  public static ElementInstanceResult toElementInstance(
-      final FlowNodeInstanceEntity instance, final String name) {
+  public static ElementInstanceResult toElementInstance(final FlowNodeInstanceEntity instance) {
     return new ElementInstanceResult()
         .elementInstanceKey(KeyUtil.keyToString(instance.flowNodeInstanceKey()))
         .elementId(instance.flowNodeId())
-        .elementName(name)
+        .elementName(instance.flowNodeName())
         .processDefinitionKey(KeyUtil.keyToString(instance.processDefinitionKey()))
         .processDefinitionId(instance.processDefinitionId())
         .processInstanceKey(KeyUtil.keyToString(instance.processInstanceKey()))

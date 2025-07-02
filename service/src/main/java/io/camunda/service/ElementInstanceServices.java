@@ -15,6 +15,7 @@ import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -25,35 +26,47 @@ import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentReco
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public final class ElementInstanceServices
     extends SearchQueryService<
         ElementInstanceServices, FlowNodeInstanceQuery, FlowNodeInstanceEntity> {
 
   private final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient;
+  private final ProcessCache processCache;
 
   public ElementInstanceServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
+      final ProcessCache processCache,
       final CamundaAuthentication authentication) {
     super(brokerClient, securityContextProvider, authentication);
     this.flowNodeInstanceSearchClient = flowNodeInstanceSearchClient;
+    this.processCache = processCache;
   }
 
   @Override
   public ElementInstanceServices withAuthentication(final CamundaAuthentication authentication) {
     return new ElementInstanceServices(
-        brokerClient, securityContextProvider, flowNodeInstanceSearchClient, authentication);
+        brokerClient,
+        securityContextProvider,
+        flowNodeInstanceSearchClient,
+        processCache,
+        authentication);
   }
 
   @Override
   public SearchQueryResult<FlowNodeInstanceEntity> search(final FlowNodeInstanceQuery query) {
-    return flowNodeInstanceSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
-        .searchFlowNodeInstances(query);
+    final var result =
+        flowNodeInstanceSearchClient
+            .withSecurityContext(
+                securityContextProvider.provideSecurityContext(
+                    authentication,
+                    Authorization.of(a -> a.processDefinition().readProcessInstance())))
+            .searchFlowNodeInstances(query);
+
+    return toCacheEnrichedResult(result);
   }
 
   public SearchQueryResult<FlowNodeInstanceEntity> search(
@@ -63,13 +76,9 @@ public final class ElementInstanceServices
 
   public FlowNodeInstanceEntity getByKey(final Long key) {
     final var result =
-        flowNodeInstanceSearchClient
-            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
-            .searchFlowNodeInstances(
-                flownodeInstanceSearchQuery(
-                    q -> q.filter(f -> f.flowNodeInstanceKeys(key)).singleResult()))
-            .items()
-            .getFirst();
+        search(FlowNodeInstanceQuery.of(q -> q.filter(f -> f.flowNodeInstanceKeys(key))));
+    final var flowNodeInstance = getSingleResultOrThrow(result, key, "Flow node instance");
+
     final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
     if (!securityContextProvider.isAuthorized(
         result.processDefinitionId(), authentication, authorization)) {
@@ -90,6 +99,33 @@ public final class ElementInstanceServices
       brokerRequest.setOperationReference(request.operationReference());
     }
     return sendBrokerRequest(brokerRequest);
+  }
+
+  private SearchQueryResult<FlowNodeInstanceEntity> toCacheEnrichedResult(
+      final SearchQueryResult<FlowNodeInstanceEntity> result) {
+    final var itemsWithoutName = result.items().stream().filter(u -> !u.hasFlowNodeName()).toList();
+
+    if (itemsWithoutName.isEmpty()) {
+      return result;
+    }
+
+    final var cacheResult =
+        processCache.getCacheItems(
+            itemsWithoutName.stream()
+                .map(FlowNodeInstanceEntity::processDefinitionKey)
+                .collect(Collectors.toSet()));
+
+    return result.withItems(
+        result.items().stream()
+            .map(
+                item ->
+                    item.hasFlowNodeName()
+                        ? item
+                        : item.withFlowNodeName(
+                            cacheResult
+                                .getProcessItem(item.processDefinitionKey())
+                                .getElementName(item.flowNodeId())))
+            .collect(Collectors.toList()));
   }
 
   public record SetVariablesRequest(

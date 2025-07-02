@@ -8,6 +8,7 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.instancio.Select.field;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -15,15 +16,20 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
+import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.service.cache.ProcessCache;
+import io.camunda.service.cache.ProcessCacheResult;
 import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import java.util.List;
+import java.util.Set;
+import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
 
@@ -31,50 +37,94 @@ public final class ElementInstanceServiceTest {
 
   private ElementInstanceServices services;
   private FlowNodeInstanceSearchClient client;
+  private ProcessCache processCache;
   private SecurityContextProvider securityContextProvider;
   private CamundaAuthentication authentication;
 
   @BeforeEach
   public void before() {
     client = mock(FlowNodeInstanceSearchClient.class);
-    when(client.withSecurityContext(any())).thenReturn(client);
+    processCache = mock(ProcessCache.class);
     securityContextProvider = mock(SecurityContextProvider.class);
     authentication = mock(CamundaAuthentication.class);
     services =
         new ElementInstanceServices(
-            mock(BrokerClient.class), securityContextProvider, client, authentication);
+            mock(BrokerClient.class),
+            securityContextProvider,
+            client,
+            processCache,
+            authentication);
+
+    when(client.withSecurityContext(any())).thenReturn(client);
+    when(processCache.getCacheItems(any())).thenReturn(ProcessCacheResult.EMPTY);
   }
 
-  @Test
-  public void shouldReturnElementInstance() {
-    // given
-    final var result = mock(SearchQueryResult.class);
-    when(client.searchFlowNodeInstances(any())).thenReturn(result);
+  @Nested
+  class Search {
 
-    final var searchQuery = SearchQueryBuilders.flownodeInstanceSearchQuery().build();
+    @Test
+    public void shouldReturnElementInstance() {
+      // given
+      final var entity = Instancio.create(FlowNodeInstanceEntity.class);
+      when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
 
-    // when
-    final var searchQueryResult = services.search(searchQuery);
+      // when
+      final var searchQueryResult =
+          services.search(SearchQueryBuilders.flownodeInstanceSearchQuery().build());
 
-    // then
-    assertThat(result).isEqualTo(searchQueryResult);
+      // then
+      assertThat(searchQueryResult.items()).contains(entity);
+    }
+
+    @Test
+    void shouldReturnUserTaskWithCachedName() {
+      final var entity =
+          Instancio.of(FlowNodeInstanceEntity.class)
+              .set(field(FlowNodeInstanceEntity::flowNodeName), null)
+              .create();
+      when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
+      when(processCache.getCacheItems(Set.of(entity.processDefinitionKey())))
+          .thenReturn(
+              ProcessCacheResult.of(
+                  entity.processDefinitionKey(), entity.flowNodeId(), "cached name"));
+
+      final var searchQueryResult = services.search(FlowNodeInstanceQuery.of(q -> q));
+
+      assertThat(searchQueryResult.items()).contains(entity.withFlowNodeName("cached name"));
+    }
+
+    @Test
+    void shouldReturnUserTaskWithElementIdAsDefaultName() {
+      final var entity =
+          Instancio.of(FlowNodeInstanceEntity.class)
+              .set(field(FlowNodeInstanceEntity::flowNodeName), null)
+              .create();
+
+      when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
+
+      final var searchQueryResult = services.search(FlowNodeInstanceQuery.of(q -> q));
+
+      assertThat(searchQueryResult.items()).contains(entity.withFlowNodeName(entity.flowNodeId()));
+    }
   }
+}
+
+@Nested
+class GetByKey {
 
   @Test
   public void shouldReturnFlowNodeInstanceByKey() {
     // given
-    final var entity = mock(FlowNodeInstanceEntity.class);
-    final var processId = "processId";
-    when(entity.processDefinitionId()).thenReturn(processId);
-    when(client.searchFlowNodeInstances(any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(entity), null, null));
+    final var entity = Instancio.create(FlowNodeInstanceEntity.class);
+    when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
     when(securityContextProvider.isAuthorized(
-            processId,
+            entity.processDefinitionId(),
             authentication,
             Authorization.of(a -> a.processDefinition().readProcessInstance())))
         .thenReturn(true);
+
     // when
-    final var searchQueryResult = services.getByKey(1L);
+    final var searchQueryResult = services.getByKey(entity.flowNodeInstanceKey());
 
     // then
     assertThat(searchQueryResult).isEqualTo(entity);
@@ -83,22 +133,68 @@ public final class ElementInstanceServiceTest {
   @Test
   public void getByKeyShouldThrowForbiddenExceptionIfNotAuthorized() {
     // given
-    final var entity = mock(FlowNodeInstanceEntity.class);
-    final var processId = "processId";
-    when(entity.processDefinitionId()).thenReturn(processId);
-    when(client.searchFlowNodeInstances(any()))
-        .thenReturn(new SearchQueryResult<>(1, false, List.of(entity), null, null));
+    final var entity = Instancio.create(FlowNodeInstanceEntity.class);
+    when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
     when(securityContextProvider.isAuthorized(
-            processId,
+            entity.processDefinitionId(),
             authentication,
             Authorization.of(a -> a.processDefinition().readProcessInstance())))
         .thenReturn(false);
+
     // when
-    final Executable executeGetByKey = () -> services.getByKey(1L);
+    final Executable executeGetByKey = () -> services.getByKey(entity.flowNodeInstanceKey());
     // then
     final var exception = assertThrowsExactly(ForbiddenException.class, executeGetByKey);
     assertThat(exception.getMessage())
         .isEqualTo(
             "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
+  }
+
+  @Test
+  public void shouldReturnFlowNodeInstanceWithCachedName() {
+    // given
+    final var entity =
+        Instancio.of(FlowNodeInstanceEntity.class)
+            .set(field(FlowNodeInstanceEntity::flowNodeName), null)
+            .create();
+
+    when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
+    when(securityContextProvider.isAuthorized(
+            entity.processDefinitionId(),
+            authentication,
+            Authorization.of(a -> a.processDefinition().readProcessInstance())))
+        .thenReturn(true);
+    when(processCache.getCacheItems(Set.of(entity.processDefinitionKey())))
+        .thenReturn(
+            ProcessCacheResult.of(
+                entity.processDefinitionKey(), entity.flowNodeId(), "cached name"));
+
+    // when
+    final var foundEntity = services.getByKey(entity.flowNodeInstanceKey());
+
+    // then
+    assertThat(foundEntity.flowNodeName()).isEqualTo("cached name");
+  }
+
+  @Test
+  public void shouldReturnFlowNodeInstanceWithElementIdAsDefaultName() {
+    // given
+    final var entity =
+        Instancio.of(FlowNodeInstanceEntity.class)
+            .set(field(FlowNodeInstanceEntity::flowNodeName), null)
+            .create();
+
+    when(client.searchFlowNodeInstances(any())).thenReturn(SearchQueryResult.of(entity));
+    when(securityContextProvider.isAuthorized(
+            entity.processDefinitionId(),
+            authentication,
+            Authorization.of(a -> a.processDefinition().readProcessInstance())))
+        .thenReturn(true);
+
+    // when
+    final var foundEntity = services.getByKey(entity.flowNodeInstanceKey());
+
+    // then
+    assertThat(foundEntity.flowNodeName()).isEqualTo(entity.flowNodeId());
   }
 }

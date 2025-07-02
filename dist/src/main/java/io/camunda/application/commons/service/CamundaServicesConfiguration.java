@@ -152,9 +152,10 @@ public class CamundaServicesConfiguration {
   public ElementInstanceServices elementInstanceServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient) {
+      final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
+      final ProcessCache processCache) {
     return new ElementInstanceServices(
-        brokerClient, securityContextProvider, flowNodeInstanceSearchClient, null);
+        brokerClient, securityContextProvider, flowNodeInstanceSearchClient, processCache, null);
   }
 
   @Bean
