@@ -139,7 +139,7 @@ public class RoleMigrationHandlerTest {
                 "role_1",
                 AuthorizationOwnerType.ROLE,
                 AuthorizationResourceType.BATCH_OPERATION,
-                Set.of(PermissionType.DELETE, PermissionType.CREATE, PermissionType.READ)),
+                Set.of(PermissionType.CREATE, PermissionType.READ)),
             tuple(
                 "role_1",
                 AuthorizationOwnerType.ROLE,

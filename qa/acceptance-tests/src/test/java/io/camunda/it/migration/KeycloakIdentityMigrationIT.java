@@ -18,21 +18,29 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.tomakehurst.wiremock.junit5.WireMockRuntimeInfo;
-import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.search.response.RoleUser;
+import io.camunda.client.api.search.enums.OwnerType;
+import io.camunda.client.api.search.enums.PermissionType;
+import io.camunda.client.api.search.enums.ResourceType;
+import io.camunda.client.api.search.response.Role;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.config.IdentityMigrationProperties.Mode;
-import io.camunda.migration.identity.console.ConsoleClient.Role;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneIdentityMigration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.Base64;
 import java.util.List;
+import java.util.Set;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
@@ -44,7 +52,6 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-@WireMockTest
 @ZeebeIntegration
 @Testcontainers(parallel = true)
 public class KeycloakIdentityMigrationIT {
@@ -102,9 +109,9 @@ public class KeycloakIdentityMigrationIT {
                   .withReadTimeout(Duration.ofSeconds(10))
                   .withStartupTimeout(Duration.ofMinutes(5)));
 
-  @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
   private static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+  @AutoClose private final HttpClient httpClient = HttpClient.newHttpClient();
   private TestStandaloneIdentityMigration migration;
   private CamundaClient client;
 
@@ -116,7 +123,6 @@ public class KeycloakIdentityMigrationIT {
         .withEnv(
             "IDENTITY_AUTH_PROVIDER_ISSUER_URL",
             "http://localhost:%d/realms/camunda-platform".formatted(KEYCLOAK.getMappedPort(8080)))
-        .withEnv("IDENTITY_URL", "http://localhost:8081")
         .start();
   }
 
@@ -127,7 +133,7 @@ public class KeycloakIdentityMigrationIT {
   }
 
   @BeforeEach
-  public void setup(final WireMockRuntimeInfo wmRuntimeInfo) throws Exception {
+  public void setup() throws Exception {
     // given
     final IdentityMigrationProperties migrationProperties = new IdentityMigrationProperties();
     migrationProperties.setMode(Mode.KEYCLOAK);
@@ -139,52 +145,176 @@ public class KeycloakIdentityMigrationIT {
     migrationProperties.getManagementIdentity().setClientId(IDENTITY_CLIENT);
     migrationProperties.getManagementIdentity().setClientSecret(IDENTITY_CLIENT_SECRET);
     migrationProperties.getManagementIdentity().setAudience(CAMUNDA_IDENTITY_RESOURCE_SERVER);
-    // Console properties
-    migrationProperties.setOrganizationId("org123");
-    migrationProperties.getConsole().setBaseUrl(wmRuntimeInfo.getHttpBaseUrl());
     migrationProperties
-        .getConsole()
-        .setIssuerBackendUrl(wmRuntimeInfo.getHttpBaseUrl() + "/oauth/token");
-    migrationProperties.getConsole().setClientId("client-id");
-    migrationProperties.getConsole().setClientSecret("client-secret");
-    migrationProperties.getConsole().setAudience("test-audience");
-    migrationProperties.getConsole().setClusterId("cluster123");
-    migrationProperties.getConsole().setInternalClientId("client123");
-
-    migration =
-        new TestStandaloneIdentityMigration(migrationProperties)
-            .withAppConfig(
-                config -> {
-                  config
-                      .getCluster()
-                      .setInitialContactPoints(List.of("localhost:" + BROKER.mappedPort(CLUSTER)));
-                });
+        .getCluster()
+        .setInitialContactPoints(List.of("localhost:" + BROKER.mappedPort(CLUSTER)));
+    migration = new TestStandaloneIdentityMigration(migrationProperties);
 
     client = BROKER.newClientBuilder().build();
   }
 
   @Test
-  public void canMigrateRoles() {
+  public void canMigrateRoles() throws URISyntaxException, IOException, InterruptedException {
     // when
     migration.start();
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var roles = client.newRolesSearchRequest().send().join();
+              assertThat(roles.items())
+                  .extracting(Role::getRoleId)
+                  .contains("operate", "tasklist", "zeebe", "identity");
+            });
 
     // then
     assertThat(migration.getExitCode()).isEqualTo(0);
 
     final var roles = client.newRolesSearchRequest().send().join();
     assertThat(roles.items())
-        .map(
-            io.camunda.client.api.search.response.Role::getRoleId,
-            io.camunda.client.api.search.response.Role::getName)
+        .extracting(Role::getRoleId, Role::getName)
         .contains(
-            tuple(Role.DEVELOPER.getName(), "Developer"),
-            tuple(Role.OPERATIONS_ENGINEER.getName(), "Operations Engineer"),
-            tuple(Role.TASK_USER.getName(), "Task User"),
-            tuple(Role.VISITOR.getName(), "Visitor"));
-    final var members = client.newUsersByRoleSearchRequest("admin").send().join();
-    assertThat(members.items()).map(RoleUser::getUsername).contains("user@example.com");
-    final var members2 = client.newUsersByRoleSearchRequest("developer").send().join();
-    assertThat(members2.items().size()).isEqualTo(1);
-    assertThat(members2.items().getFirst().getUsername()).isEqualTo("user@example.com");
+            tuple("operate", "Operate"),
+            tuple("tasklist", "Tasklist"),
+            tuple("zeebe", "Zeebe"),
+            tuple("identity", "Identity"));
+
+    final var restAddress = client.getConfiguration().getRestAddress().toString();
+    final var authorizations = searchAuthorizations(restAddress);
+    assertThat(authorizations.items())
+        .extracting(
+            AuthorizationResponse::ownerId,
+            AuthorizationResponse::resourceType,
+            AuthorizationResponse::permissionTypes)
+        .contains(
+            tuple("operate", ResourceType.MESSAGE, Set.of(PermissionType.READ)),
+            tuple("operate", ResourceType.RESOURCE, Set.of(PermissionType.READ)),
+            tuple(
+                "operate",
+                ResourceType.DECISION_DEFINITION,
+                Set.of(
+                    PermissionType.CREATE_DECISION_INSTANCE,
+                    PermissionType.READ_DECISION_INSTANCE,
+                    PermissionType.READ_DECISION_DEFINITION,
+                    PermissionType.DELETE_DECISION_INSTANCE)),
+            tuple("operate", ResourceType.APPLICATION, Set.of(PermissionType.ACCESS)),
+            tuple(
+                "operate",
+                ResourceType.DECISION_REQUIREMENTS_DEFINITION,
+                Set.of(PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE)),
+            tuple(
+                "operate",
+                ResourceType.PROCESS_DEFINITION,
+                Set.of(
+                    PermissionType.READ_PROCESS_DEFINITION,
+                    PermissionType.DELETE_PROCESS_INSTANCE,
+                    PermissionType.UPDATE_PROCESS_INSTANCE,
+                    PermissionType.READ_PROCESS_INSTANCE)),
+            tuple(
+                "operate",
+                ResourceType.BATCH_OPERATION,
+                Set.of(PermissionType.READ, PermissionType.CREATE)),
+            tuple(
+                "zeebe",
+                ResourceType.DECISION_DEFINITION,
+                Set.of(
+                    PermissionType.CREATE_DECISION_INSTANCE,
+                    PermissionType.DELETE_DECISION_INSTANCE)),
+            tuple("zeebe", ResourceType.MESSAGE, Set.of(PermissionType.CREATE)),
+            tuple(
+                "zeebe",
+                ResourceType.PROCESS_DEFINITION,
+                Set.of(
+                    PermissionType.CREATE_PROCESS_INSTANCE,
+                    PermissionType.DELETE_PROCESS_INSTANCE,
+                    PermissionType.UPDATE_PROCESS_INSTANCE,
+                    PermissionType.UPDATE_USER_TASK)),
+            tuple(
+                "zeebe",
+                ResourceType.RESOURCE,
+                Set.of(
+                    PermissionType.DELETE_FORM,
+                    PermissionType.DELETE_PROCESS,
+                    PermissionType.DELETE_DRD,
+                    PermissionType.CREATE,
+                    PermissionType.DELETE_RESOURCE)),
+            tuple("zeebe", ResourceType.SYSTEM, Set.of(PermissionType.READ, PermissionType.UPDATE)),
+            tuple(
+                "zeebe",
+                ResourceType.DECISION_REQUIREMENTS_DEFINITION,
+                Set.of(PermissionType.UPDATE, PermissionType.DELETE)),
+            tuple(
+                "tasklist",
+                ResourceType.PROCESS_DEFINITION,
+                Set.of(
+                    PermissionType.READ_USER_TASK,
+                    PermissionType.UPDATE_USER_TASK,
+                    PermissionType.READ_PROCESS_DEFINITION)),
+            tuple("tasklist", ResourceType.APPLICATION, Set.of(PermissionType.ACCESS)),
+            tuple("tasklist", ResourceType.RESOURCE, Set.of(PermissionType.READ)),
+            tuple("tasklist", ResourceType.RESOURCE, Set.of(PermissionType.READ)),
+            tuple(
+                "identity",
+                ResourceType.GROUP,
+                Set.of(
+                    PermissionType.READ,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE,
+                    PermissionType.CREATE)),
+            tuple(
+                "identity",
+                ResourceType.TENANT,
+                Set.of(
+                    PermissionType.READ,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE,
+                    PermissionType.CREATE)),
+            tuple(
+                "identity",
+                ResourceType.ROLE,
+                Set.of(
+                    PermissionType.READ,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE,
+                    PermissionType.CREATE)),
+            tuple(
+                "identity",
+                ResourceType.AUTHORIZATION,
+                Set.of(
+                    PermissionType.READ,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE,
+                    PermissionType.CREATE)),
+            tuple("identity", ResourceType.USER, Set.of(PermissionType.READ)),
+            tuple("identity", ResourceType.APPLICATION, Set.of(PermissionType.ACCESS)));
   }
+
+  // TODO: refactor this once https://github.com/camunda/camunda/issues/32721 is implemented
+  private AuthorizationSearchResponse searchAuthorizations(final String restAddress)
+      throws URISyntaxException, IOException, InterruptedException {
+    final var encodedCredentials =
+        Base64.getEncoder().encodeToString("%s:%s".formatted("demo", "demo").getBytes());
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(new URI("%s%s".formatted(restAddress, "v2/authorizations/search")))
+            .POST(HttpRequest.BodyPublishers.ofString(""))
+            .header("Authorization", "Basic %s".formatted(encodedCredentials))
+            .build();
+
+    final HttpResponse<String> response =
+        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+    return OBJECT_MAPPER.readValue(response.body(), AuthorizationSearchResponse.class);
+  }
+
+  private record AuthorizationSearchResponse(List<AuthorizationResponse> items) {}
+
+  private record AuthorizationResponse(
+      String ownerId,
+      OwnerType ownerType,
+      ResourceType resourceType,
+      String resourceId,
+      Set<PermissionType> permissionTypes,
+      String authorizationKey) {}
 }
