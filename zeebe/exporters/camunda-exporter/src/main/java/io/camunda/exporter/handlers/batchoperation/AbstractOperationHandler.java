@@ -32,13 +32,13 @@ public class AbstractOperationHandler {
 
   /**
    * Generates a unique document identifier for a batch operation item based on the batch operation
-   * ID and the itemKey
+   * KEY and the itemKey
    *
-   * @param batchOperationId the ID of the batch operation
+   * @param batchOperationKey the ID of the batch operation
    * @param itemKey the key of the item within the batch operation
    * @return a unique identifier string for an item in a batch operation
    */
-  protected String generateId(final long batchOperationId, final long itemKey) {
-    return String.format(ID_PATTERN, batchOperationId, itemKey);
+  protected String generateId(final long batchOperationKey, final long itemKey) {
+    return String.format(ID_PATTERN, batchOperationKey, itemKey);
   }
 }

@@ -77,7 +77,7 @@ public class BatchOperationCreatedHandler
     // update local cache so that the batch operation info is available immediately to operation
     // status handlers
     final var cachedEntity = new CachedBatchOperationEntity(entity.getId(), entity.getType());
-    batchOperationCache.put(cachedEntity.batchOperationId(), cachedEntity);
+    batchOperationCache.put(cachedEntity.batchOperationKey(), cachedEntity);
   }
 
   @Override

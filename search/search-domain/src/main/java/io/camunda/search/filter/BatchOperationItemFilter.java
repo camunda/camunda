@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Objects;
 
 public record BatchOperationItemFilter(
-    List<Operation<String>> batchOperationIdOperations,
+    List<Operation<String>> batchOperationKeyOperations,
     List<Operation<Long>> itemKeyOperations,
     List<Operation<Long>> processInstanceKeyOperations,
     List<Operation<String>> stateOperations)
@@ -26,29 +26,29 @@ public record BatchOperationItemFilter(
 
   public static final class Builder implements ObjectBuilder<BatchOperationItemFilter> {
 
-    private List<Operation<String>> batchOperationIdOperations;
+    private List<Operation<String>> batchOperationKeyOperations;
     private List<Operation<Long>> itemKeyOperations;
     private List<Operation<Long>> processInstanceKeyOperations;
     private List<Operation<String>> stateOperations;
 
-    public Builder batchOperationIdOperations(final List<Operation<String>> operations) {
-      batchOperationIdOperations = addValuesToList(batchOperationIdOperations, operations);
+    public Builder batchOperationKeyOperations(final List<Operation<String>> operations) {
+      batchOperationKeyOperations = addValuesToList(batchOperationKeyOperations, operations);
       return this;
     }
 
-    public Builder batchOperationIds(final String value, final String... values) {
-      return batchOperationIdOperations(FilterUtil.mapDefaultToOperation(value, values));
+    public Builder batchOperationKeys(final String value, final String... values) {
+      return batchOperationKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
-    public Builder replaceBatchOperationIdOperations(final List<Operation<String>> operations) {
-      batchOperationIdOperations = new ArrayList<>(operations);
+    public Builder replaceBatchOperationKeyOperations(final List<Operation<String>> operations) {
+      batchOperationKeyOperations = new ArrayList<>(operations);
       return this;
     }
 
     @SafeVarargs
-    public final Builder batchOperationIdOperations(
+    public final Builder batchOperationKeyOperations(
         final Operation<String> operation, final Operation<String>... operations) {
-      return batchOperationIdOperations(collectValues(operation, operations));
+      return batchOperationKeyOperations(collectValues(operation, operations));
     }
 
     public Builder itemKeyOperations(final List<Operation<Long>> operations) {
@@ -114,7 +114,7 @@ public record BatchOperationItemFilter(
     @Override
     public BatchOperationItemFilter build() {
       return new BatchOperationItemFilter(
-          Objects.requireNonNullElse(batchOperationIdOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(batchOperationKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(itemKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(stateOperations, Collections.emptyList()));

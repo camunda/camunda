@@ -1942,7 +1942,7 @@ paths:
         Cancels multiple running process instances.
         Since only ACTIVE root instances can be cancelled, any given filters for state and
         parentProcessInstanceKey are ignored and overridden during this batch operation.
-        This is done asynchronously, the progress can be tracked using the batchOperationId from the response and the batch operation status endpoint (/batch-operations/{batchOperationId}).
+        This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: false
         content:
@@ -1981,7 +1981,7 @@ paths:
         Resolves multiple instances of process instances.
         Since only process instances with ACTIVE state can have unresolved incidents, any given
         filters for state are ignored and overridden during this batch operation.
-        This is done asynchronously, the progress can be tracked using the batchOperationId from the response and the batch operation status endpoint (/batch-operations/{batchOperationId}).
+        This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: false
         content:
@@ -2020,7 +2020,7 @@ paths:
         Migrate multiple instances of process instances.
         Since only process instances with ACTIVE state can be migrated, any given
         filters for state are ignored and overridden during this batch operation.
-        This is done asynchronously, the progress can be tracked using the batchOperationId from the response and the batch operation status endpoint (/batch-operations/{batchOperationId}).
+        This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
         content:
@@ -2061,7 +2061,7 @@ paths:
         filters for state are ignored and overridden during this batch operation.
         In contrast to single modification operation, it is not possible to add variable instructions or modify by element key.
         It is only possible to use the element id of the source and target.
-        This is done asynchronously, the progress can be tracked using the batchOperationId from the response and the batch operation status endpoint (/batch-operations/{batchOperationId}).
+        This is done asynchronously, the progress can be tracked using the batchOperationKey from the response and the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       requestBody:
         required: true
         content:
@@ -5098,7 +5098,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /batch-operations/{batchOperationId}:
+  /batch-operations/{batchOperationKey}:
     get:
       tags:
         - Batch operation
@@ -5106,7 +5106,7 @@ paths:
       summary: Get batch operation
       description: Get batch operation by key.
       parameters:
-        - name: batchOperationId
+        - name: batchOperationKey
           in: path
           required: true
           description: |
@@ -5164,7 +5164,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /batch-operations/{batchOperationId}/cancellation:
+  /batch-operations/{batchOperationKey}/cancellation:
     put:
       tags:
         - Batch operation
@@ -5172,9 +5172,9 @@ paths:
       summary: Cancel Batch operation
       description: |
         Cancels a running batch operation.
-        This is done asynchronously, the progress can be tracked using the batch operation status endpoint (/batch-operations/{batchOperationId}).
+        This is done asynchronously, the progress can be tracked using the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       parameters:
-        - name: batchOperationId
+        - name: batchOperationKey
           in: path
           required: true
           description: |
@@ -5205,7 +5205,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /batch-operations/{batchOperationId}/suspension:
+  /batch-operations/{batchOperationKey}/suspension:
     put:
       tags:
         - Batch operation
@@ -5213,9 +5213,9 @@ paths:
       summary: Suspend Batch operation
       description: |
         Suspends a running batch operation.
-        This is done asynchronously, the progress can be tracked using the batch operation status endpoint (/batch-operations/{batchOperationId}).
+        This is done asynchronously, the progress can be tracked using the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       parameters:
-        - name: batchOperationId
+        - name: batchOperationKey
           in: path
           required: true
           description: |
@@ -5246,7 +5246,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /batch-operations/{batchOperationId}/resumption:
+  /batch-operations/{batchOperationKey}/resumption:
     put:
       tags:
         - Batch operation
@@ -5254,9 +5254,9 @@ paths:
       summary: Resume Batch operation
       description: |
         Resumes a suspended batch operation.
-        This is done asynchronously, the progress can be tracked using the batch operation status endpoint (/batch-operations/{batchOperationId}).
+        This is done asynchronously, the progress can be tracked using the batch operation status endpoint (/batch-operations/{batchOperationKey}).
       parameters:
-        - name: batchOperationId
+        - name: batchOperationKey
           in: path
           required: true
           description: |
@@ -10403,7 +10403,7 @@ components:
     BatchOperationCreatedResult:
       type: object
       properties:
-        batchOperationId:
+        batchOperationKey:
           description: Id of the batch operation.
           type: string
         batchOperationType:
@@ -10415,7 +10415,7 @@ components:
           description: The field to sort by.
           type: string
           enum:
-            - batchOperationId
+            - batchOperationKey
             - operationType
             - state
             - startDate
@@ -10443,7 +10443,7 @@ components:
       description: Batch operation filter request.
       type: object
       properties:
-        batchOperationId:
+        batchOperationKey:
           description: The key (or operate legacy ID) of the batch operation.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
@@ -10538,7 +10538,7 @@ components:
           description: The field to sort by.
           type: string
           enum:
-            - batchOperationId
+            - batchOperationKey
             - itemKey
             - processInstanceKey
             - state
@@ -10565,7 +10565,7 @@ components:
       description: Batch operation item filter request.
       type: object
       properties:
-        batchOperationId:
+        batchOperationKey:
           description: The key (or operate legacy ID) of the batch operation.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
@@ -10635,7 +10635,7 @@ components:
     BatchOperationResponse:
       type: object
       properties:
-        batchOperationId:
+        batchOperationKey:
           description: Key or (Operate Legacy ID = UUID) of the batch operation.
           type: string
         state:
@@ -10704,7 +10704,7 @@ components:
     BatchOperationItemResponse:
       type: object
       properties:
-        batchOperationId:
+        batchOperationKey:
           description: The key (or operate legacy ID) of the batch operation.
           type: string
         itemKey:

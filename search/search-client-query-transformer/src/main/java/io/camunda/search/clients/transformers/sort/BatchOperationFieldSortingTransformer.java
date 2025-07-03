@@ -18,7 +18,7 @@ public class BatchOperationFieldSortingTransformer implements FieldSortingTransf
   @Override
   public String apply(final String domainField) {
     return switch (domainField) {
-      case "batchOperationId" -> ID;
+      case "batchOperationKey" -> ID;
       case "state" -> STATE;
       case "operationType" -> TYPE;
       case "startDate" -> START_DATE;

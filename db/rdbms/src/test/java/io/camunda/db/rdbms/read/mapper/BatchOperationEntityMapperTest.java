@@ -25,7 +25,7 @@ class BatchOperationEntityMapperTest {
 
     final var dbModel =
         new BatchOperationDbModel.Builder()
-            .batchOperationId("id-1")
+            .batchOperationKey("id-1")
             .state(io.camunda.search.entities.BatchOperationEntity.BatchOperationState.ACTIVE)
             .operationType("TYPE")
             .startDate(OffsetDateTime.parse("2024-07-01T10:00:00Z"))
@@ -38,7 +38,7 @@ class BatchOperationEntityMapperTest {
 
     final var entity = BatchOperationEntityMapper.toEntity(dbModel);
 
-    assertThat(entity.batchOperationId()).isEqualTo("id-1");
+    assertThat(entity.batchOperationKey()).isEqualTo("id-1");
     assertThat(entity.state())
         .isEqualTo(io.camunda.search.entities.BatchOperationEntity.BatchOperationState.ACTIVE);
     assertThat(entity.operationType()).isEqualTo("TYPE");

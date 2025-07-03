@@ -17,5 +17,5 @@ package io.camunda.client.api.response;
 
 public interface CreateBatchOperationResponse {
 
-  String getBatchOperationId();
+  String getBatchOperationKey();
 }

@@ -11,7 +11,7 @@ import io.camunda.search.entities.BatchOperationEntity;
 import java.time.OffsetDateTime;
 
 public record BatchOperationItemDbModel(
-    String batchOperationId,
+    String batchOperationKey,
     long itemKey,
     long processInstanceKey,
     BatchOperationEntity.BatchOperationItemState state,

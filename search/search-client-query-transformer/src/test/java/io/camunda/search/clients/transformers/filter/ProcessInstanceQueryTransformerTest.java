@@ -344,7 +344,7 @@ public final class ProcessInstanceQueryTransformerTest extends AbstractTransform
   }
 
   @Test
-  public void shouldQueryByBatchOperationId() {
+  public void shouldQueryByBatchOperationKey() {
     // given
     final var processInstanceFilter =
         FilterBuilders.processInstance(
