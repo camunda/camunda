@@ -112,8 +112,7 @@ public class SnapshotTransferTest {
             snapshot -> {
               assertThat(snapshot.getId()).isEqualTo("1-1-0-0-0");
               assertThat(snapshot.getMetadata())
-                  .isEqualTo(FileBasedSnapshotMetadata.forBootstrap(1));
-              assertThat(snapshot.isBootstrap()).isTrue();
+                  .isEqualTo(FileBasedSnapshotMetadata.forBootstrap(1).notBootstrap());
               assertThat(snapshot.files()).isNotEmpty();
             });
     assertThat(snapshotMetrics.getTransferDuration(true).mean(TimeUnit.MILLISECONDS))

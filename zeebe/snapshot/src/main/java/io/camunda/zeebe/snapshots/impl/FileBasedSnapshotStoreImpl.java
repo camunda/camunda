@@ -116,6 +116,7 @@ public final class FileBasedSnapshotStoreImpl {
   }
 
   public void close() {
+    LOGGER.debug("Closing snapshot store {}", snapshotsDirectory);
     listeners.clear();
     deleteBootstrapSnapshotsInternal();
   }
@@ -511,7 +512,7 @@ public final class FileBasedSnapshotStoreImpl {
       // it's important to persist the checksum file only after the move is finished, since we use
       // it as a marker file to guarantee the move was complete and not partial
       final var checksumPath =
-          computeChecksum(snapshotId, immutableChecksumsSFV, destination, isBootstrap);
+          computeChecksum(destination, snapshotId, immutableChecksumsSFV, destination);
 
       final var newPersistedSnapshot =
           new FileBasedSnapshot(
@@ -561,11 +562,11 @@ public final class FileBasedSnapshotStoreImpl {
   }
 
   private Path computeChecksum(
+      final Path source,
       final FileBasedSnapshotId snapshotId,
       final ImmutableChecksumsSFV immutableChecksumsSFV,
-      final Path destination,
-      final boolean isBootstrap) {
-    final var checksumPath = buildSnapshotsChecksumPath(snapshotId, isBootstrap);
+      final Path destination) {
+    final var checksumPath = buildSnapshotsChecksumPath(source, snapshotId);
     final var tmpChecksumPath =
         checksumPath.resolveSibling(checksumPath.getFileName().toString() + TMP_CHECKSUM_SUFFIX);
     try {
@@ -624,12 +625,6 @@ public final class FileBasedSnapshotStoreImpl {
 
   private Path buildSnapshotsChecksumPath(final Path snapshotPath, final SnapshotId snapshotId) {
     return snapshotPath.getParent().resolve(snapshotId.getSnapshotIdAsString() + CHECKSUM_SUFFIX);
-  }
-
-  private Path buildSnapshotsChecksumPath(
-      final FileBasedSnapshotId snapshotId, final boolean isBoostrap) {
-    final var directory = isBoostrap ? bootstrapSnapshotsDirectory : snapshotsDirectory;
-    return directory.resolve(snapshotId.getSnapshotIdAsString() + CHECKSUM_SUFFIX);
   }
 
   private boolean isChecksumFile(final String name) {
