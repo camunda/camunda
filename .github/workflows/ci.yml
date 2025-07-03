@@ -325,7 +325,7 @@ jobs:
             isZeebeTest: true
             suite: CoreFeatures
             suiteName: Core Features
-            maven-modules: "':zeebe-atomix-parent',':zeebe-auth',':zeebe-benchmark',':zeebe-bpmn-model',':zeebe-broker-client',':zeebe-dmn',':zeebe-expression-language',':zeebe-feel-integration',':zeebe-journal',':zeebe-logstreams',':zeebe-msgpack-core',':zeebe-msgpack-value',':zeebe-qa-update-tests',':zeebe-qa-util',':zeebe-restore',':zeebe-scheduler',':zeebe-snapshots',':zeebe-stream-platform',':zeebe-test-util',':zeebe-transport',':zeebe-util',':zeebe-db'"
+            maven-modules: "':zeebe-atomix-parent',':zeebe-auth',':zeebe-benchmark',':zeebe-bpmn-model',':zeebe-broker-client',':zeebe-dmn',':zeebe-expression-language',':zeebe-feel-integration',':zeebe-journal',':zeebe-logstreams',':zeebe-msgpack-core',':zeebe-msgpack-value',':zeebe-restore',':zeebe-scheduler',':zeebe-snapshots',':zeebe-stream-platform',':zeebe-test-util',':zeebe-transport',':zeebe-util',':zeebe-db'"
           - component: Zeebe Big Unit Tests
             isZeebeTest: true
             suite: CoreFeatures
@@ -335,7 +335,7 @@ jobs:
             isZeebeTest: true
             suite: CoreFeatures
             suiteName: Core Features
-            maven-modules: "':camunda-process-test-java',':camunda-client-java''"
+            maven-modules: "':camunda-process-test-java',':camunda-client-java'"
           - component: Zeebe Exporter Tests
             isZeebeTest: true
             suite: DataLayer
@@ -356,6 +356,8 @@ jobs:
             suite: CoreFeatures
             suiteName: Core Features
             maven-modules: "':zeebe-protocol',':zeebe-protocol-asserts',':zeebe-protocol-impl',':zeebe-protocol-jackson',':zeebe-protocol-test-util'"
+            # TODO - try to test ':zeebe-qa-update-tests',':zeebe-qa-util'
+            #  PL command cannot find those modules when mvn is run
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
