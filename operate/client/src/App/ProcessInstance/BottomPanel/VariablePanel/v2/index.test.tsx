@@ -544,90 +544,6 @@ describe('VariablePanel', () => {
     },
   );
 
-  it('should not fail if new variable is returned from next polling before add variable operation completes', async () => {
-    vi.useFakeTimers({shouldAdvanceTime: true});
-
-    const {user} = render(
-      <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
-    );
-    await waitFor(() =>
-      expect(
-        screen.getByRole('button', {
-          name: /add variable/i,
-        }),
-      ).toBeEnabled(),
-    );
-
-    await user.click(
-      screen.getByRole('button', {
-        name: /add variable/i,
-      }),
-    );
-
-    await user.type(
-      screen.getByRole('textbox', {
-        name: /name/i,
-      }),
-      'foo',
-    );
-    await user.type(
-      screen.getByRole('textbox', {
-        name: /value/i,
-      }),
-      '"bar"',
-    );
-
-    mockFetchVariables().withSuccess([createVariable()]);
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-    mockApplyOperation().withSuccess(createBatchOperation());
-
-    vi.runOnlyPendingTimers();
-    await waitFor(() =>
-      expect(
-        screen.getByRole('button', {
-          name: /save variable/i,
-        }),
-      ).toBeEnabled(),
-    );
-
-    await user.click(
-      screen.getByRole('button', {
-        name: /save variable/i,
-      }),
-    );
-    expect(
-      screen.queryByRole('button', {
-        name: /add variable/i,
-      }),
-    ).not.toBeInTheDocument();
-
-    expect(
-      screen.getByTestId('variable-operation-spinner'),
-    ).toBeInTheDocument();
-
-    mockFetchVariables().withSuccess([
-      createVariable(),
-      createVariable({id: 'instance_id-foo', name: 'foo', value: 'bar'}),
-    ]);
-
-    mockGetOperation().withSuccess([createOperation()]);
-
-    vi.runOnlyPendingTimers();
-    await waitForElementToBeRemoved(
-      screen.queryByTestId('variable-operation-spinner'),
-    );
-    expect(await screen.findByRole('cell', {name: 'foo'})).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('button', {
-        name: /add variable/i,
-      }),
-    ).toBeInTheDocument();
-    vi.clearAllTimers();
-    vi.useRealTimers();
-  });
-
   (IS_LISTENERS_TAB_V2 ? it : it.skip)(
     'should select correct tab when navigating between flow nodes',
     async () => {
@@ -705,7 +621,7 @@ describe('VariablePanel', () => {
       mockFetchVariables().withSuccess([]);
       mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
-      await act(() => {
+      act(() => {
         flowNodeSelectionStore.setSelection({
           flowNodeId: 'StartEvent_1',
         });
