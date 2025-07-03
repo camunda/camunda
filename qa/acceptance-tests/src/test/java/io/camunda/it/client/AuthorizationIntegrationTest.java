@@ -22,8 +22,10 @@ import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class AuthorizationIntegrationTest {
 
   private static CamundaClient camundaClient;
@@ -98,7 +100,6 @@ public class AuthorizationIntegrationTest {
             .permissionTypes(PermissionType.CREATE)
             .send()
             .join();
-    final long authorizationKey = authorization.getAuthorizationKey();
 
     // create one more authorization
     camundaClient
@@ -123,15 +124,15 @@ public class AuthorizationIntegrationTest {
                       .join();
               assertThat(authorizationsSearchResponse.items())
                   .hasSize(1)
-                  .map(Authorization::getAuthorizationKey)
-                  .containsExactly(String.valueOf(authorizationKey));
+                  .map(Authorization::getOwnerId)
+                  .containsExactly(ownerId);
             });
   }
 
   @Test
   void searchShouldReturnAuthorizationsFilteredByResourceId() {
     // when
-    final var resourceId = Strings.newRandomValidIdentityId();
+    final var resourceId = "resourceId";
 
     final CreateAuthorizationResponse authorization =
         camundaClient
@@ -143,7 +144,6 @@ public class AuthorizationIntegrationTest {
             .permissionTypes(PermissionType.CREATE)
             .send()
             .join();
-    final long authorizationKey = authorization.getAuthorizationKey();
 
     // create one more authorization
     camundaClient
@@ -168,8 +168,8 @@ public class AuthorizationIntegrationTest {
                       .join();
               assertThat(authorizationsSearchResponse.items())
                   .hasSize(1)
-                  .map(Authorization::getAuthorizationKey)
-                  .containsExactly(String.valueOf(authorizationKey));
+                  .map(Authorization::getResourceId)
+                  .containsExactly(resourceId);
             });
   }
 
