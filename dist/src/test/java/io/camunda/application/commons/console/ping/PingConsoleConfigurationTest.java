@@ -15,9 +15,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration;
-import io.camunda.application.commons.console.ping.PingConsoleRunner.ConsolePingConfiguration.RetryConfiguration;
 import io.camunda.service.ManagementServices;
 import io.camunda.service.license.LicenseType;
+import io.camunda.zeebe.util.retry.RetryConfiguration;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -43,7 +43,7 @@ class PingConsoleConfigurationTest {
           "clusterId",
           "clusterName",
           Duration.ofMillis(1000),
-          new RetryConfiguration(3, 2, Duration.ofMillis(5000)),
+          new RetryConfiguration(),
           null);
   private final String licensePayload =
       "{\"type\":\"SAAS\",\"valid\":true,\"expiresAt\":null,\"commercial\":true}";
@@ -65,7 +65,7 @@ class PingConsoleConfigurationTest {
             "clusterId",
             "clusterName",
             Duration.ofMillis(5000),
-            new RetryConfiguration(3, 2, Duration.ofMillis(5000)),
+            new RetryConfiguration(),
             null);
 
     // then
@@ -87,7 +87,7 @@ class PingConsoleConfigurationTest {
             "clusterId",
             "clusterName",
             Duration.ofMillis(5000),
-            new RetryConfiguration(3, 2, Duration.ofMillis(5000)),
+            new RetryConfiguration(),
             null);
 
     // then
@@ -109,7 +109,7 @@ class PingConsoleConfigurationTest {
             null,
             "clusterName",
             Duration.ofMillis(5000),
-            new RetryConfiguration(3, 2, Duration.ofMillis(5000)),
+            new RetryConfiguration(),
             null);
 
     // then
@@ -131,7 +131,7 @@ class PingConsoleConfigurationTest {
             "clusterId",
             "",
             Duration.ofMillis(5000),
-            new RetryConfiguration(3, 2, Duration.ofMillis(5000)),
+            new RetryConfiguration(),
             null);
 
     // then
@@ -153,7 +153,7 @@ class PingConsoleConfigurationTest {
             "clusterId",
             "clusterName",
             Duration.ofMillis(-333),
-            new RetryConfiguration(3, 2, Duration.ofMillis(5000)),
+            new RetryConfiguration(),
             null);
 
     // then
@@ -168,6 +168,9 @@ class PingConsoleConfigurationTest {
   @Test
   void numberOfMaxRetriesMustBePositive() {
     // given
+    final RetryConfiguration retryConfiguration = new RetryConfiguration();
+    retryConfiguration.setMaxRetries(0);
+
     final ConsolePingConfiguration consolePingConfiguration =
         new ConsolePingConfiguration(
             true,
@@ -175,7 +178,7 @@ class PingConsoleConfigurationTest {
             "clusterId",
             "clusterName",
             Duration.ofMillis(5000),
-            new RetryConfiguration(0, 2, Duration.ofMillis(5000)),
+            retryConfiguration,
             null);
 
     // then
@@ -190,6 +193,9 @@ class PingConsoleConfigurationTest {
   @Test
   void retryDelayMultiplierMustBePositive() {
     // given
+    final RetryConfiguration retryConfiguration = new RetryConfiguration();
+    retryConfiguration.setRetryDelayMultiplier(0.0);
+
     final ConsolePingConfiguration consolePingConfiguration =
         new ConsolePingConfiguration(
             true,
@@ -197,7 +203,7 @@ class PingConsoleConfigurationTest {
             "clusterId",
             "clusterName",
             Duration.ofMillis(5000),
-            new RetryConfiguration(3, 0, Duration.ofMillis(5000)),
+            retryConfiguration,
             null);
 
     // then
@@ -229,6 +235,9 @@ class PingConsoleConfigurationTest {
   @Test
   void maxRetryDelayMustBePositive() {
     // given
+    final RetryConfiguration retryConfiguration = new RetryConfiguration();
+    retryConfiguration.setMaxRetryDelay(Duration.ofMillis(0));
+
     final ConsolePingConfiguration consolePingConfiguration =
         new ConsolePingConfiguration(
             true,
@@ -236,7 +245,7 @@ class PingConsoleConfigurationTest {
             "clusterId",
             "clusterName",
             Duration.ofMillis(5000),
-            new RetryConfiguration(3, 2, Duration.ZERO),
+            retryConfiguration,
             null);
 
     // then
@@ -249,6 +258,59 @@ class PingConsoleConfigurationTest {
   }
 
   @Test
+  void minRetryDelayMustBePositive() {
+    // given
+    final RetryConfiguration retryConfiguration = new RetryConfiguration();
+    retryConfiguration.setMinRetryDelay(Duration.ofMillis(0));
+
+    final ConsolePingConfiguration consolePingConfiguration =
+        new ConsolePingConfiguration(
+            true,
+            URI.create("http://localhost:8080"),
+            "clusterId",
+            "clusterName",
+            Duration.ofMillis(5000),
+            retryConfiguration,
+            null);
+
+    // then
+    final IllegalArgumentException exception =
+        assertThrows(
+            IllegalArgumentException.class,
+            new PingConsoleRunner(consolePingConfiguration, MANAGEMENT_SERVICES)
+                ::validateConfiguration);
+    assertEquals("Min retry delay must be greater than zero.", exception.getMessage());
+  }
+
+  @Test
+  void maxRetryDelayMustBeGreaterThanMinRetryDelay() {
+    // given
+    final RetryConfiguration retryConfiguration = new RetryConfiguration();
+    retryConfiguration.setMinRetryDelay(Duration.ofMillis(1000));
+    retryConfiguration.setMaxRetryDelay(Duration.ofMillis(500));
+
+    final ConsolePingConfiguration consolePingConfiguration =
+        new ConsolePingConfiguration(
+            true,
+            URI.create("http://localhost:8080"),
+            "clusterId",
+            "clusterName",
+            Duration.ofMillis(5000),
+            retryConfiguration,
+            null);
+
+    // then
+    final IllegalArgumentException exception =
+        assertThrows(
+            IllegalArgumentException.class,
+            new PingConsoleRunner(consolePingConfiguration, MANAGEMENT_SERVICES)
+                ::validateConfiguration);
+    assertEquals(
+        "Max retry delay must be greater than or equal to min retry delay.",
+        exception.getMessage());
+  }
+
+  @Test
   void shouldSucceedToStartConsolePingForValidConfig() {
     // given
     final ConsolePingConfiguration consolePingConfiguration =
@@ -258,7 +320,7 @@ class PingConsoleConfigurationTest {
             "clusterId",
             "clusterName",
             Duration.ofMillis(5000),
-            new RetryConfiguration(3, 2, Duration.ofMillis(5000)),
+            new RetryConfiguration(),
             null);
     // then
     assertDoesNotThrow(() -> new PingConsoleRunner(consolePingConfiguration, MANAGEMENT_SERVICES));
@@ -274,7 +336,7 @@ class PingConsoleConfigurationTest {
             "",
             null,
             Duration.ofMillis(-300),
-            new RetryConfiguration(3, 2, Duration.ofMillis(5000)),
+            new RetryConfiguration(),
             null);
 
     // then we assert that it is not throwing an exception due to the feature being disabled
