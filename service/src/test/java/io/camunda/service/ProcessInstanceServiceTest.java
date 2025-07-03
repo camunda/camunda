@@ -45,6 +45,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
@@ -81,7 +82,8 @@ public final class ProcessInstanceServiceTest {
             processInstanceSearchClient,
             sequenceFlowSearchClient,
             incidentSearchClient,
-            authentication, meterRegistry);
+            authentication,
+            new SimpleMeterRegistry());
   }
 
   @Test
