@@ -56,7 +56,7 @@ public class PingConsoleRunner implements ApplicationRunner {
     try {
       validateConfiguration();
       LOGGER.info(
-          "Console ping is enabled with endpoint: {}, and delay: {} " + "minutes",
+          "Console ping is enabled with endpoint: {}, and delay of {}.",
           pingConfiguration.endpoint(),
           pingConfiguration.pingPeriod());
       final var executor = createTaskExecutor();
