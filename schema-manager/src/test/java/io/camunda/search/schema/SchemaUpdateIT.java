@@ -19,12 +19,14 @@ import io.camunda.search.schema.utils.SchemaManagerITInvocationProvider;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.zeebe.util.VersionUtil;
 import io.zeebe.containers.ZeebeContainer;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.IntStream;
@@ -104,8 +106,14 @@ class SchemaUpdateIT {
     final var indexDescriptors =
         new IndexDescriptors(
             config.connect().getIndexPrefix(), config.connect().getTypeEnum().isElasticSearch());
+    // create dated indices for all templates that are from the previous versions
     final int numberOfDatedIndices =
-        createDatedIndices(config, searchClientAdapter, indexDescriptors);
+        createDatedIndices(
+            config,
+            searchClientAdapter,
+            indexDescriptors.templates().stream()
+                .filter(template -> !template.getVersion().startsWith(currentMinorVersion))
+                .toList());
     final SchemaManager schemaManager =
         createSchemaManager(indexDescriptors.indices(), indexDescriptors.templates(), config);
     final var exceptions = new ConcurrentLinkedQueue<Throwable>();
@@ -133,6 +141,8 @@ class SchemaUpdateIT {
     // then
     assertThat(exceptions).isEmpty();
     assertThat(schemaManager.isSchemaReadyForUse()).isTrue();
+
+    // validate "camunda-history-retention-policy" retention policy is created
     assertThat(
             searchClientAdapter.getPolicyAsNode(config.retention().getPolicyName()).get("policy"))
         .isNotNull();
@@ -176,13 +186,10 @@ class SchemaUpdateIT {
   private static int createDatedIndices(
       final SearchEngineConfiguration config,
       final SearchClientAdapter searchClientAdapter,
-      final IndexDescriptors indexDescriptors) {
+      final List<IndexTemplateDescriptor> indexTemplateDescriptors) {
     final int archivePeriodInDays = 30;
     final LocalDate today = LocalDate.now();
-    for (final var indexTemplate :
-        indexDescriptors.templates().stream()
-            .filter(template -> !template.getVersion().startsWith(currentMinorVersion))
-            .toList()) {
+    for (final var indexTemplate : indexTemplateDescriptors) {
       IntStream.range(0, archivePeriodInDays)
           .mapToObj(i -> today.minusDays(i).format(DateTimeFormatter.ISO_DATE))
           .map(date -> indexTemplate.getIndexPattern().replace("*", date))
@@ -195,7 +202,7 @@ class SchemaUpdateIT {
                 }
               });
     }
-    return archivePeriodInDays * indexDescriptors.templates().size();
+    return archivePeriodInDays * indexTemplateDescriptors.size();
   }
 
   @AfterEach

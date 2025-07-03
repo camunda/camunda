@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
@@ -102,14 +101,14 @@ public final class SchemaTestUtil {
                   Map.class);
       final var actualMappingsTree =
           TestObjectMapper.objectMapper().convertValue(mappings, Map.class);
-      final MapDifference difference =
-          Maps.difference(
-              actualMappingsTree, expectedMappingsTree, OrderInsensitiveEquivalence.equals());
       if (parseBoolean(actualMappingsTree.getOrDefault("dynamic", "false").toString())
           && parseBoolean(expectedMappingsTree.getOrDefault("dynamic", "false").toString())) {
         // if dynamic is true, skip mappings validation
         return;
       }
+      final var difference =
+          Maps.difference(
+              actualMappingsTree, expectedMappingsTree, OrderInsensitiveEquivalence.equals());
       assertThat(difference.areEqual())
           .isTrue()
           .withFailMessage("Mappings did not match: %s", difference);
