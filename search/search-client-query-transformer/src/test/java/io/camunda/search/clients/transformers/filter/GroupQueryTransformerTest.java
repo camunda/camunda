@@ -65,6 +65,33 @@ public class GroupQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
+  public void shouldQueryByGroupIds() {
+    // given
+    final var filter =
+        FilterBuilders.group(
+            (f) -> f.groupIdOperations(Operation.eq("group1"), Operation.eq("group2")));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    assertThat(searchRequest)
+        .isEqualTo(
+            SearchQuery.of(
+                q ->
+                    q.bool(
+                        b ->
+                            b.must(
+                                List.of(
+                                    SearchQuery.of(
+                                        q1 -> q.term(t -> t.field("groupId").value("group1"))),
+                                    SearchQuery.of(
+                                        q1 -> q.term(t -> t.field("groupId").value("group2"))),
+                                    SearchQuery.of(
+                                        q1 -> q.term(t -> t.field("join").value("group"))))))));
+  }
+
+  @Test
   public void shouldQueryByGroupName() {
     // given
     final var filter = FilterBuilders.group((f) -> f.name("groupName"));

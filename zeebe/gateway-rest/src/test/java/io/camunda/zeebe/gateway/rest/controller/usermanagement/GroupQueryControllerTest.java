@@ -13,6 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.MappingEntity;
@@ -374,6 +375,93 @@ public class GroupQueryControllerTest extends RestControllerTest {
                     description3));
 
     verify(groupServices).search(new GroupQuery.Builder().build());
+  }
+
+  @Test
+  void shouldSearchGroupsWithIdsWithEmptyQuery() throws JsonProcessingException {
+    // given
+    final var groupKey1 = 111L;
+    final var groupKey2 = 222L;
+    final var groupKey3 = 333L;
+    final var groupId1 = Strings.newRandomValidIdentityId();
+    final var groupId2 = Strings.newRandomValidIdentityId();
+    final var groupId3 = Strings.newRandomValidIdentityId();
+    final var groupName1 = "Group 1";
+    final var groupName2 = "Group 2";
+    final var groupName3 = "Group 3";
+    final var description1 = "Description 1";
+    final var description2 = "Description 2";
+    final var description3 = "Description 3";
+    when(groupServices.search(any(GroupQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<GroupEntity>()
+                .total(3)
+                .startCursor("f")
+                .endCursor("v")
+                .items(
+                    List.of(
+                        new GroupEntity(groupKey1, groupId1, groupName1, description1),
+                        new GroupEntity(groupKey2, groupId2, groupName2, description2),
+                        new GroupEntity(groupKey3, groupId3, groupName3, description3)))
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri(GROUP_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            "{\"sort\":[],\"filter\":{\"groupId\":{\"$in\":[\""
+                + groupId1
+                + "\",\""
+                + groupId2
+                + "\"],\"$notIn\":[]}}}")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {
+             "items": [
+               {
+                 "groupId": "%s",
+                 "name": "%s",
+                 "description": "%s"
+               },
+               {
+                 "groupId": "%s",
+                 "name": "%s",
+                 "description": "%s"
+               },
+               {
+                 "groupId": "%s",
+                 "name": "%s",
+                 "description": "%s"
+               }
+             ],
+             "page": {
+               "totalItems": 3,
+               "startCursor": "f",
+               "endCursor": "v"
+             }
+           }"""
+                .formatted(
+                    groupId1,
+                    groupName1,
+                    description1,
+                    groupId2,
+                    groupName2,
+                    description2,
+                    groupId3,
+                    groupName3,
+                    description3));
+
+    verify(groupServices)
+        .search(new GroupQuery.Builder().filter(fn -> fn.groupIds(groupId1, groupId2)).build());
   }
 
   @Test

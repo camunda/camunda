@@ -135,6 +135,31 @@ public class GroupIT {
   }
 
   @TestTemplate
+  public void shouldFindByGroupIds(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final GroupReader groupReader = rdbmsService.getGroupReader();
+
+    final var group1 = GroupFixtures.createRandomized(b -> b);
+    final var group2 = GroupFixtures.createRandomized(b -> b);
+    createAndSaveGroup(rdbmsWriter, group1);
+    createAndSaveGroup(rdbmsWriter, group2);
+
+    final var searchResult =
+        groupReader.search(
+            new GroupQuery(
+                new GroupFilter.Builder().groupIds(group1.groupId(), group2.groupId()).build(),
+                GroupSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items()).hasSize(2);
+    assertThat(searchResult.items().stream().map(GroupEntity::groupId).toList())
+        .containsExactlyInAnyOrder(group1.groupId(), group2.groupId());
+  }
+
+  @TestTemplate
   public void shouldFindAllPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
