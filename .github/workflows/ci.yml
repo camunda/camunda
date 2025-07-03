@@ -292,7 +292,7 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
-  consolidated-unit-test-setup:
+  consolidated-unit-test-var-setup:
     runs-on: ubuntu-latest
     outputs:
       ZEEBE_UNIT_TESTS: ${{ steps.ZEEBE_UNIT_TESTS.val}}
@@ -307,9 +307,15 @@ jobs:
         run: echo "val=':zeebe-atomix-parent',':zeebe-auth',':zeebe-benchmark',':zeebe-bpmn-model',':zeebe-broker-client',':zeebe-dmn',':zeebe-expression-language',':zeebe-feel-integration',':zeebe-journal',':zeebe-logstreams',':zeebe-msgpack-core',':zeebe-msgpack-value',':zeebe-restore',':zeebe-scheduler',':zeebe-snapshots',':zeebe-stream-platform',':zeebe-test-util',':zeebe-transport',':zeebe-util',':zeebe-db'"  >> "$GITHUB_OUTPUT"
       - id: ZEEBE_BIG_TEST
         run: echo "val=':zeebe-workflow-engine',':zeebe-broker',':zeebe-atomix-cluster',':zeebe-cluster-config'"  >> "$GITHUB_OUTPUT"
-      - name: "Output"
-        run: |
-          echo "REPLACED= echo \"${{steps.consolidated-unit-test-setup.outputs.ZEEBE_UNIT_TESTS}},${{steps.consolidated-unit-test-setup.outputs.ZEEBE_UNIT_TESTS}}\" | sed 's/\:/-:/g'"
+
+  consolidated-unit-test-setup:
+    runs-on: ubuntu-latest
+    needs: [ consolidated-unit-test-var-setup ]
+    outputs:
+      REPLACED: ${{ steps.ZEEBE_UNIT_TESTS.val}}
+    steps:
+      - id: REPLACED
+        run: echo "REPLACED= echo \"${{needs.consolidated-unit-test-setup.outputs.ZEEBE_UNIT_TESTS}},${{needs.consolidated-unit-test-setup.outputs.ZEEBE_UNIT_TESTS}}\" | sed 's/\:/-:/g'"  >> "$GITHUB_OUTPUT"
 
   # description: Runs unit tests broken down by component and team. Tests are run by JUnit5 Suite and is invoked by the maven command
   # test location: Operate, Optimize, Tasklist
@@ -1255,6 +1261,7 @@ jobs:
       - build-platform-frontend
       - commitlint
       - consolidated-unit-test-setup
+      - consolidated-unit-test-var-setup
       - consolidated-unit-tests
       - detect-changes
       - docker-checks
