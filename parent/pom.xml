@@ -169,7 +169,6 @@
     <version.elasticsearch-test-container>1.21.3</version.elasticsearch-test-container>
     <version.postgres-test-container>1.21.3</version.postgres-test-container>
     <version.elasticsearch7>7.17.29</version.elasticsearch7>
-    <version.com.squareup.okhttp3>4.12.0</version.com.squareup.okhttp3>
     <!-- the lucene version must be coupled with version.elasticsearch7 -->
     <version.lucene>8.11.3</version.lucene>
     <version.hdr-histogram>2.2.2</version.hdr-histogram>
@@ -1329,20 +1328,6 @@
         <groupId>org.instancio</groupId>
         <artifactId>instancio-core</artifactId>
         <version>${version.instancio}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>com.squareup.okhttp3</groupId>
-        <artifactId>mockwebserver</artifactId>
-        <version>${version.com.squareup.okhttp3}</version>
-        <scope>test</scope>
-      </dependency>
-
-      <dependency>
-        <groupId>com.squareup.okhttp3</groupId>
-        <artifactId>okhttp</artifactId>
-        <version>${version.com.squareup.okhttp3}</version>
         <scope>test</scope>
       </dependency>
 
