@@ -270,7 +270,7 @@ public final class EventAppliers implements EventApplier {
     register(
         ProcessInstanceCreationIntent.CREATED,
         1,
-        new ProcessInstanceCreationCreatedApplier(processState, elementInstanceState));
+        new ProcessInstanceCreationCreatedV1Applier(processState, elementInstanceState));
     register(
         ProcessInstanceCreationIntent.CREATED,
         2,
