@@ -167,7 +167,7 @@ public final class ElementInstanceServiceTest {
     }
 
     @Test
-    void shouldReturnUserTaskWithCachedName() {
+    void shouldReturnElementInstanceWithCachedName() {
       final var entity =
           Instancio.of(FlowNodeInstanceEntity.class)
               .set(field(FlowNodeInstanceEntity::flowNodeName), null)
@@ -184,7 +184,7 @@ public final class ElementInstanceServiceTest {
     }
 
     @Test
-    void shouldReturnUserTaskWithElementIdAsDefaultName() {
+    void shouldReturnElementInstanceWithElementIdAsDefaultName() {
       final var entity =
           Instancio.of(FlowNodeInstanceEntity.class)
               .set(field(FlowNodeInstanceEntity::flowNodeName), null)
