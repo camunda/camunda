@@ -55,6 +55,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordV
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationVariableInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalRecordValue;
 import io.camunda.zeebe.protocol.record.value.SignalSubscriptionRecordValue;
@@ -197,6 +198,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.USER, this::summarizeUser);
     valueLoggers.put(ValueType.AUTHORIZATION, this::summarizeAuthorization);
     valueLoggers.put(ValueType.RESOURCE, this::summarizeResource);
+    valueLoggers.put(ValueType.RESOURCE_DELETION, this::summarizeResourceDeletion);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -1189,15 +1191,21 @@ public class CompactRecordLogger {
     return result.append(formatTenant(value)).toString();
   }
 
+  private String summarizeResourceDeletion(final Record<?> record) {
+    final var value = (ResourceDeletionRecordValue) record.getValue();
+    return "res:%s%s".formatted(shortenKey(value.getResourceKey()), formatTenant(value));
+  }
+
   private String formatPinnedTime(final long time) {
     final var dateTime = Instant.ofEpochMilli(time).atZone(ZoneId.systemDefault());
     return "%s (timestamp: %d)".formatted(shortenDateTime(dateTime), time);
   }
 
   private String formatTenant(final TenantOwned value) {
-    return TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(value.getTenantId())
+    final String tenantId = value.getTenantId();
+    return StringUtils.isEmpty(tenantId) || TenantOwned.DEFAULT_TENANT_IDENTIFIER.equals(tenantId)
         ? ""
-        : " (tenant: %s)".formatted(value.getTenantId());
+        : " (tenant: %s)".formatted(tenantId);
   }
 
   private String formatVariables(final RecordValueWithVariables value) {
