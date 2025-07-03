@@ -23,12 +23,11 @@ import io.camunda.client.api.worker.JobWorkerMetrics;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.WorkerCfg;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import io.grpc.Status.Code;
+import io.grpc.StatusRuntimeException;
 import io.micrometer.core.instrument.Tags;
 import java.net.URI;
 import java.time.Duration;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,7 +50,6 @@ public class Worker extends App {
     final long completionDelay = workerCfg.getCompletionDelay().toMillis();
     final boolean isStreamEnabled = workerCfg.isStreamEnabled();
     final var variables = readVariables(workerCfg.getPayloadPath());
-    final BlockingQueue<Future<?>> requestFutures = new ArrayBlockingQueue<>(10_000);
     final CamundaClient client = createCamundaClient();
     final JobWorkerMetrics metrics =
         JobWorkerMetrics.micrometer()
@@ -64,13 +62,10 @@ public class Worker extends App {
         client
             .newWorker()
             .jobType(jobType)
-            .handler(handleJob(client, variables, completionDelay, requestFutures))
+            .handler(handleJob(client, variables, completionDelay))
             .streamEnabled(isStreamEnabled)
             .metrics(metrics)
             .open();
-
-    final ResponseChecker responseChecker = new ResponseChecker(requestFutures);
-    responseChecker.start();
 
     Runtime.getRuntime()
         .addShutdownHook(
@@ -78,15 +73,11 @@ public class Worker extends App {
                 () -> {
                   worker.close();
                   client.close();
-                  responseChecker.close();
                 }));
   }
 
   private JobHandler handleJob(
-      final CamundaClient client,
-      final String variables,
-      final long completionDelay,
-      final BlockingQueue<Future<?>> requestFutures) {
+      final CamundaClient client, final String variables, final long completionDelay) {
     return (jobClient, job) -> {
       // we record the start handling time to better calculate the completion delay
       // as when we send a message we already have a delay due to waiting on the response
@@ -119,7 +110,22 @@ public class Worker extends App {
 
       final var command = jobClient.newCompleteCommand(job.getKey()).variables(variables);
       addDelayToCompletion(completionDelay, startHandlingTime);
-      requestFutures.add(command.send());
+      command
+          .send()
+          .whenComplete(
+              (v, e) -> {
+                if (e == null) {
+                  return;
+                }
+
+                final Throwable cause = e.getCause();
+                if (cause instanceof final StatusRuntimeException statusRuntimeException) {
+                  if (statusRuntimeException.getStatus().getCode() != Code.RESOURCE_EXHAUSTED) {
+                    // we don't want to flood the log
+                    THROTTLED_LOGGER.warn("Request failed", e);
+                  }
+                }
+              });
     };
   }
 
