@@ -302,18 +302,16 @@ jobs:
       # ZEEBE_BACKUP: "':zeebe-backup',':zeebe-backup-store-filesystem',':zeebe-backup-store-gcs',':zeebe-backup-store-s3'"
       # ZEEBE_PROTOCOL: "':zeebe-protocol',':zeebe-protocol-asserts',':zeebe-protocol-impl',':zeebe-protocol-jackson',':zeebe-protocol-test-util'"
       # API_TEST: "':camunda-process-test-java',':camunda-client-java'"
-      REPLACED: ${{ steps.ZEEBE_UNIT_TESTS.outputs.replaced}}
+      REPLACED: ${{ steps.REPLACED.outputs.replaced}}
     steps:
       - id: ZEEBE_UNIT_TESTS
         run: |
-          ZEEBE_UNIT_TESTS="':zeebe-atomix-parent',':zeebe-auth',':zeebe-benchmark',':zeebe-bpmn-model',':zeebe-broker-client',':zeebe-dmn',':zeebe-expression-language',':zeebe-feel-integration',':zeebe-journal',':zeebe-logstreams',':zeebe-msgpack-core',':zeebe-msgpack-value',':zeebe-restore',':zeebe-scheduler',':zeebe-snapshots',':zeebe-stream-platform',':zeebe-test-util',':zeebe-transport',':zeebe-util',':zeebe-db'"
-          echo "val=$ZEEBE_UNIT_TESTS"  >> "$GITHUB_OUTPUT"
+          echo "val=':zeebe-atomix-parent',':zeebe-auth',':zeebe-benchmark',':zeebe-bpmn-model',':zeebe-broker-client',':zeebe-dmn',':zeebe-expression-language',':zeebe-feel-integration',':zeebe-journal',':zeebe-logstreams',':zeebe-msgpack-core',':zeebe-msgpack-value',':zeebe-restore',':zeebe-scheduler',':zeebe-snapshots',':zeebe-stream-platform',':zeebe-test-util',':zeebe-transport',':zeebe-util',':zeebe-db'" >> "$GITHUB_OUTPUT"
       - id: ZEEBE_BIG_TEST
         run: |
-          ZEEBE_BIG_TEST="':zeebe-workflow-engine',':zeebe-broker',':zeebe-atomix-cluster',':zeebe-cluster-config'"
-          echo "val=$ZEEBE_BIG_TEST"  >> "$GITHUB_OUTPUT"
+          echo "val=':zeebe-workflow-engine',':zeebe-broker',':zeebe-atomix-cluster',':zeebe-cluster-config'" >> "$GITHUB_OUTPUT"
       - id: REPLACED
-        run: echo "replaced=\"$ZEEBE_BIG_TEST,$ZEEBE_UNIT_TESTS\" | sed 's/\:/-:/g'"  >> "$GITHUB_OUTPUT"
+        run: echo "replaced=\"${{steps.ZEEBE_BIG_TEST}},${{steps.ZEEBE_UNIT_TESTS}}}}\" | sed 's/\:/-:/g'"  >> "$GITHUB_OUTPUT"
 
   # description: Runs unit tests broken down by component and team. Tests are run by JUnit5 Suite and is invoked by the maven command
   # test location: Operate, Optimize, Tasklist
@@ -349,7 +347,7 @@ jobs:
             isZeebeTest: true
             suite: CoreFeatures
             suiteName: Core Features
-            maven-modules: "${{ needs.consolidated-unit-test-setup.ZEEBE_UNIT_TESTS}}"
+            maven-modules: "${{ needs.consolidated-unit-test-setup.outputs.ZEEBE_UNIT_TESTS}}"
           - component: Zeebe Big Unit Tests
             isZeebeTest: true
             suite: CoreFeatures
