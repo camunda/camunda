@@ -7,15 +7,16 @@
  */
 
 import { FC, useState } from "react";
+import { Stack } from "@carbon/react";
+import { spacing06 } from "@carbon/elements";
 import TextField from "src/components/form/TextField";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import { FormModal, UseModalProps } from "src/components/modal";
 import { createTenant } from "src/utility/api/tenants";
 import { useNotifications } from "src/components/notifications";
-import { Stack } from "@carbon/react";
-import { spacing06 } from "@carbon/elements";
 import { ErrorResponse } from "src/utility/api/request";
+import { isValidTenantId } from "./isValidTenantId";
 
 const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("tenants");
@@ -26,8 +27,9 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const [name, setName] = useState("");
   const [tenantId, setTenantId] = useState("");
   const [description, setDescription] = useState("");
+  const [isTenantIdValid, setIsTenantIdValid] = useState(true);
 
-  const submitDisabled = loading || !name || !tenantId;
+  const submitDisabled = loading || !name || !tenantId || !isTenantIdValid;
 
   const handleSubmit = async () => {
     const { success, error } = await apiCall({
@@ -56,6 +58,10 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     }
   };
 
+  const validateTenantId = (id: string) => {
+    setIsTenantIdValid(isValidTenantId(id));
+  };
+
   return (
     <FormModal
       headline={t("createNewTenant")}
@@ -70,8 +76,12 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         <TextField
           label={t("tenantId")}
           placeholder={t("tenantIdPlaceholder")}
-          onChange={setTenantId}
+          onChange={(value) => {
+            validateTenantId(value);
+            setTenantId(value);
+          }}
           value={tenantId}
+          errors={!isTenantIdValid ? [t("pleaseEnterValidTenantId")] : []}
           helperText={t("tenantIdHelperText")}
           autoFocus
         />

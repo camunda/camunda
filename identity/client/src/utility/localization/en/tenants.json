@@ -79,5 +79,6 @@
   "tenantClientRemoved": "Tenant client removed",
   "removeClientFromTenant": "Are you sure you want to remove <strong>{{clientId}}</strong> from this tenant?",
   "assignClientsToTenant": "Assign clients to this Tenant",
-  "failedToCreateTenant": "Failed to create tenant"
+  "failedToCreateTenant": "Failed to create tenant",
+  "pleaseEnterValidTenantId": "Please enter a valid Tenant ID. Allowed special characters: - _ . @"
 }
