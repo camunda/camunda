@@ -15,8 +15,6 @@ import io.camunda.zeebe.broker.partitioning.scaling.snapshot.SnapshotRequest.Del
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotBrokerRequest;
 import io.camunda.zeebe.dynamic.config.changes.PartitionScalingChangeExecutor;
 import io.camunda.zeebe.dynamic.config.state.RoutingState;
-import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation;
-import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import io.camunda.zeebe.gateway.impl.broker.request.scaling.BrokerPartitionBootstrappedRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.scaling.BrokerPartitionScaleUpRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.scaling.GetScaleUpProgress;
@@ -29,8 +27,6 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.time.Duration;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,6 +65,15 @@ public class BrokerClientPartitionScalingExecutor implements PartitionScalingCha
   }
 
   @Override
+  public ActorFuture<Void> awaitRedistributionCompletion(
+      final int desiredPartitionCount,
+      final Set<Integer> redistributedPartitions,
+      final Duration timeout) {
+    return awaitRedistributionProgress(desiredPartitionCount, redistributedPartitions)
+        .andThen(ignored -> deleteSnapshot(), concurrencyControl);
+  }
+
+  @Override
   public ActorFuture<Void> notifyPartitionBootstrapped(final int partitionId) {
     final ActorFuture<BrokerResponse<ScaleRecord>> bootstrapFuture =
         concurrencyControl.createFuture();
@@ -97,33 +102,9 @@ public class BrokerClientPartitionScalingExecutor implements PartitionScalingCha
     final var result = concurrencyControl.<RoutingState>createFuture();
     brokerClient.sendRequestWithRetry(
         new GetScaleUpProgress(),
-        (key, response) -> {
-          final var requestHandling =
-              (response.getRedistributedPartitions().size() == response.getDesiredPartitionCount())
-                  ? new RequestHandling.AllPartitions(response.getDesiredPartitionCount())
-                  : new RequestHandling.ActivePartitions(
-                      response.getRedistributedPartitions().size(),
-                      Set.of(),
-                      IntStream.rangeClosed(
-                              response.getRedistributedPartitions().size(),
-                              response.getDesiredPartitionCount())
-                          .boxed()
-                          .collect(Collectors.toSet()));
-          final var messageCorrelation =
-              new MessageCorrelation.HashMod(response.getMessageCorrelationPartitions());
-          result.complete(new RoutingState(0L, requestHandling, messageCorrelation));
-        },
+        (key, record) -> result.complete(RoutingStateConverter.fromScaleRecord(record)),
         result::completeExceptionally);
     return result;
-  }
-
-  @Override
-  public ActorFuture<Void> awaitRedistributionCompletion(
-      final int desiredPartitionCount,
-      final Set<Integer> redistributedPartitions,
-      final Duration timeout) {
-    return awaitRedistributionProgress(desiredPartitionCount, redistributedPartitions)
-        .andThen(ignored -> deleteSnapshot(), concurrencyControl);
   }
 
   private ActorFuture<Void> awaitRedistributionProgress(
