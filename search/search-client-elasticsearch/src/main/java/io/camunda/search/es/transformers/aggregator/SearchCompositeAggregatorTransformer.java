@@ -7,14 +7,17 @@
  */
 package io.camunda.search.es.transformers.aggregator;
 
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.CompositeAggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.CompositeAggregationSource;
+import co.elastic.clients.elasticsearch._types.aggregations.CompositeTermsAggregation.Builder;
 import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.aggregator.SearchCompositeAggregator;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.transformers.query.Cursor;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
+import io.camunda.search.sort.SortOption.FieldSorting;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -56,11 +59,40 @@ public class SearchCompositeAggregatorTransformer
                             switch (agg) {
                               case final SearchTermsAggregator terms ->
                                   sourceBuilder.terms(
-                                      termsBuilder -> termsBuilder.field(terms.field()));
+                                      termsBuilder -> buildTerms(terms, termsBuilder));
                               default ->
                                   throw new IllegalStateException(
                                       "Unsupported aggregator type: " + agg.getClass());
                             })))
         .collect(Collectors.toList());
+  }
+
+  private Builder buildTerms(final SearchTermsAggregator terms, final Builder termsBuilder) {
+    var bulder = termsBuilder.field(terms.field());
+    if (terms.sorting() != null && !terms.sorting().isEmpty()) {
+      bulder = bulder.order(toSortOrder(terms.field(), terms.sorting()));
+    }
+    return bulder;
+  }
+
+  private SortOrder toSortOrder(final String termsField, final List<FieldSorting> sortings) {
+    final var sorting =
+        sortings.stream()
+            .filter(s -> s.field().equals(termsField))
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "No sorting found for Terms aggregation field: "
+                            + termsField
+                            + ". "
+                            + "Available sortings: "
+                            + sortings.stream()
+                                .map(FieldSorting::field)
+                                .collect(Collectors.joining(", "))));
+    return switch (sorting.order()) {
+      case ASC -> SortOrder.Asc;
+      case DESC -> SortOrder.Desc;
+    };
   }
 }
