@@ -306,11 +306,11 @@ jobs:
     steps:
       - id: ZEEBE_UNIT_TESTS
         run: |
-          ZEEBE_UNIT_TESTS=':zeebe-atomix-parent',':zeebe-auth',':zeebe-benchmark',':zeebe-bpmn-model',':zeebe-broker-client',':zeebe-dmn',':zeebe-expression-language',':zeebe-feel-integration',':zeebe-journal',':zeebe-logstreams',':zeebe-msgpack-core',':zeebe-msgpack-value',':zeebe-restore',':zeebe-scheduler',':zeebe-snapshots',':zeebe-stream-platform',':zeebe-test-util',':zeebe-transport',':zeebe-util',':zeebe-db'
+          ZEEBE_UNIT_TESTS="':zeebe-atomix-parent',':zeebe-auth',':zeebe-benchmark',':zeebe-bpmn-model',':zeebe-broker-client',':zeebe-dmn',':zeebe-expression-language',':zeebe-feel-integration',':zeebe-journal',':zeebe-logstreams',':zeebe-msgpack-core',':zeebe-msgpack-value',':zeebe-restore',':zeebe-scheduler',':zeebe-snapshots',':zeebe-stream-platform',':zeebe-test-util',':zeebe-transport',':zeebe-util',':zeebe-db'"
           echo "val=$ZEEBE_UNIT_TESTS"  >> "$GITHUB_OUTPUT"
       - id: ZEEBE_BIG_TEST
         run: |
-          ZEEBE_BIG_TEST=':zeebe-workflow-engine',':zeebe-broker',':zeebe-atomix-cluster',':zeebe-cluster-config'
+          ZEEBE_BIG_TEST="':zeebe-workflow-engine',':zeebe-broker',':zeebe-atomix-cluster',':zeebe-cluster-config'"
           echo "val=$ZEEBE_BIG_TEST"  >> "$GITHUB_OUTPUT"
       - id: REPLACED
         run: echo "replaced=\"$ZEEBE_BIG_TEST,$ZEEBE_UNIT_TESTS\" | sed 's/\:/-:/g'"  >> "$GITHUB_OUTPUT"
