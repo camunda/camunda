@@ -50,6 +50,9 @@ public class JobSearchTest {
     startProcessInstance(camundaClient, process.getBpmnProcessId());
     waitForProcessInstancesToStart(camundaClient, 1);
 
+    // Wait until the total number of jobs in the system reaches 1
+    waitUntilNewJobHasBeenCreated(1);
+
     final var executionStartListenerJob =
         camundaClient
             .newJobSearchRequest()
@@ -62,6 +65,7 @@ public class JobSearchTest {
 
     camundaClient.newCompleteCommand(executionStartListenerJob.getJobKey()).send().join();
 
+    // Wait until the total number of jobs in the system reaches 2
     waitUntilNewJobHasBeenCreated(2);
 
     final var taskABpmnJob =
@@ -78,6 +82,7 @@ public class JobSearchTest {
 
     camundaClient.newCompleteCommand(taskABpmnJob.getKey()).send().join();
 
+    // Wait until the total number of jobs in the system reaches 3
     waitUntilNewJobHasBeenCreated(3);
 
     final var executionEndListenerJob =
@@ -107,6 +112,7 @@ public class JobSearchTest {
         .assignee("testAssignee")
         .send();
 
+    // Wait until the total number of jobs in the system reaches 4
     waitUntilNewJobHasBeenCreated(4);
 
     final var userTaskListenerAssigningJob1 =
@@ -132,6 +138,7 @@ public class JobSearchTest {
 
     waitUntilNewUserTaskHasBeenCreated();
 
+    // Wait until the total number of jobs in the system reaches 5
     waitUntilNewJobHasBeenCreated(5);
 
     final var userTaskListenerAssigningJob2 =
@@ -163,6 +170,7 @@ public class JobSearchTest {
         .variable("name", "test")
         .send();
 
+    // Wait until the total number of jobs in the system reaches 6
     waitUntilNewJobHasBeenCreated(6);
 
     final var taskCBpmnJob =
