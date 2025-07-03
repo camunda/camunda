@@ -61,8 +61,7 @@ public class ActivateAdHocSubProcessActivityTest {
   }
 
   @Test
-  public void
-      givenRunningAdHocSubProcessInstanceWhenActivatingExistingElementThenTheElementIsActivated() {
+  public void shouldActivateElement() {
     ENGINE
         .adHocSubProcessActivity()
         .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
@@ -83,8 +82,7 @@ public class ActivateAdHocSubProcessActivityTest {
   }
 
   @Test
-  public void
-      givenRunningAdHocSubProcessInstanceWhenActivatingExistingElementThenTheElementHasCorrectTreePath() {
+  public void shouldSetElementTreePath() {
     ENGINE
         .adHocSubProcessActivity()
         .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
@@ -100,17 +98,14 @@ public class ActivateAdHocSubProcessActivityTest {
     final var expectedElementPath =
         List.of(
             List.of(
-                processInstanceKey,
-                adHocSubProcessInstanceKey,
-                activatedElementInstance.getKey()));
+                processInstanceKey, adHocSubProcessInstanceKey, activatedElementInstance.getKey()));
 
     assertThat(activatedElementInstance.getValue().getElementInstancePath())
         .isEqualTo(expectedElementPath);
   }
 
   @Test
-  public void
-      givenRunningAdHocSubProcessInstanceWhenActivatingElementsThenAdHocSubProcessIsOnlyCompletedWhenCompletionConditionIsMet() {
+  public void shouldCompleteAdHocSubProcessWhenCompletionConditionIsMet() {
     // prepare the test case by setting the completion condition variable to false which ensures
     // that the ad-hoc sub-process doesn't complete before we want it to.
     ENGINE
@@ -157,8 +152,7 @@ public class ActivateAdHocSubProcessActivityTest {
   }
 
   @Test
-  public void
-      givenRunningAdHocSubProcessInstanceWhenElementIsSuccessfullyActivatedThenActivatedEventIsWrittenToLog() {
+  public void shouldConfirmActivationCommand() {
     ENGINE
         .adHocSubProcessActivity()
         .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
@@ -176,8 +170,7 @@ public class ActivateAdHocSubProcessActivityTest {
   }
 
   @Test
-  public void
-      givenRunningAdHocSubProcessInstanceWhenActivatingMoreThanOneElementThenAllGivenElementsAreActivated() {
+  public void shouldActivateMultipleElements() {
     ENGINE
         .adHocSubProcessActivity()
         .withAdHocSubProcessInstanceKey(String.valueOf(adHocSubProcessInstanceKey))
@@ -199,8 +192,7 @@ public class ActivateAdHocSubProcessActivityTest {
   }
 
   @Test
-  public void
-      givenRunningAdHocSubProcessInstanceWhenActivatingElementThatDoesNotExistThenTheActivationIsRejected() {
+  public void shouldRejectCommandIfElementDoesntExist() {
     final var nonExistingActivities = List.of("does_not_exist");
     final var rejection =
         ENGINE
@@ -229,8 +221,7 @@ public class ActivateAdHocSubProcessActivityTest {
   }
 
   @Test
-  public void
-      givenAdHocSubProcessThatDoesNotExistWhenActivatingElementsThenTheActivationIsRejected() {
+  public void shouldRejectCommandIfAdHocSubProcessInstanceDoesntExist() {
     final var nonExistingAdHocSubProcessInstanceKey = "1";
 
     final var rejection =
@@ -259,7 +250,7 @@ public class ActivateAdHocSubProcessActivityTest {
   }
 
   @Test
-  public void givenNotActiveAdHocSubProcessWhenActivatingElementsThenTheActivationIsRejected() {
+  public void shouldRejectCommandIfAdHocSubProcessInstanceIsNotActive() {
     final var faultyProcessId = "process-rejection-test";
     deployProcess(
         faultyProcessId,
@@ -299,8 +290,7 @@ public class ActivateAdHocSubProcessActivityTest {
   }
 
   @Test
-  public void
-      givenRunningAdHocSubProcessWhenAttemptingToActivateDuplicateElementsThenTheActivationIsRejected() {
+  public void shouldRejectCommandIfElementIsDuplicated() {
     final var rejection =
         ENGINE
             .adHocSubProcessActivity()
