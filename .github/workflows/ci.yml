@@ -306,12 +306,18 @@ jobs:
     steps:
       - id: ZEEBE_UNIT_TESTS
         run: |
+          # shellcheck disable=SC2086
           echo "ZEEBE_UNIT_TESTS=\"':zeebe-atomix-parent',':zeebe-auth',':zeebe-benchmark',':zeebe-bpmn-model',':zeebe-broker-client',':zeebe-dmn',':zeebe-expression-language',':zeebe-feel-integration',':zeebe-journal',':zeebe-logstreams',':zeebe-msgpack-core',':zeebe-msgpack-value',':zeebe-restore',':zeebe-scheduler',':zeebe-snapshots',':zeebe-stream-platform',':zeebe-test-util',':zeebe-transport',':zeebe-util',':zeebe-db'\"" >> $GITHUB_OUTPUT
       - id: ZEEBE_BIG_TEST
         run: |
+          # shellcheck disable=SC2086
           echo "ZEEBE_BIG_TEST=\"':zeebe-workflow-engine',':zeebe-broker',':zeebe-atomix-cluster',':zeebe-cluster-config'\"" >> $GITHUB_OUTPUT
       - id: REPLACED
-        run: echo "replaced=\"${{env.ZEEBE_UNIT_TESTS}},${{env.ZEEBE_BIG_TEST}}\" | sed 's/\:/-:/g'"  >> $GITHUB_OUTPUT
+        run: |
+          # shellcheck disable=SC2086
+          echo "replaced=\"${{env.ZEEBE_UNIT_TESTS}},${{env.ZEEBE_BIG_TEST}}\" | sed 's/\:/-:/g'"  >> $GITHUB_OUTPUT
+
+
 
   # description: Runs unit tests broken down by component and team. Tests are run by JUnit5 Suite and is invoked by the maven command
   # test location: Operate, Optimize, Tasklist
